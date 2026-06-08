@@ -50,7 +50,7 @@ describe("State Director learner home — spec sections present", () => {
 
   it("right sidebar shows launch progress + Need help?, not Required Due", () => {
     expect(src).toMatch(/data-testid="sd-launch-progress"/);
-    expect(src).toMatch(/data-testid="sd-need-help"/);
+    expect(src).toMatch(/<NeedHelpPanel/);
     expect(src).not.toMatch(/Required Due/);
     expect(src).toMatch(/Shadow hours/);
     expect(src).toMatch(/Check-ins/);

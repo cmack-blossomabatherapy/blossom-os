@@ -24,6 +24,7 @@ import {
 } from "@/lib/training/academyData";
 import { SDJourneyView } from "@/components/training/SDJourneyView";
 import { SDLearnerHome } from "@/components/training/SDLearnerHome";
+import { NeedHelpPanel } from "@/components/training/NeedHelpPanel";
 import { cleanSdTitle, sdWeekDayChip } from "@/lib/training/sdDisplayTitle";
 import {
   loadLearnerHome,
@@ -668,32 +669,7 @@ export default function OSTraining() {
 
           {/* Need help? — SD-specific calm panel replaces anxiety-heavy Required Due */}
           {isSD ? (
-            <div className="rounded-2xl border border-border/70 bg-card p-5">
-              <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Need help?</h3>
-              <p className="mt-1 text-[11.5px] text-muted-foreground">
-                Nothing here has to be solved alone.
-              </p>
-              <div className="mt-3 space-y-1 text-[12.5px]">
-                {[
-                  { label: "Ask my mentor", icon: UsersIcon, to: "/messages" },
-                  { label: "HR partner", icon: Heart, to: "/messages" },
-                  { label: "Resource Library", icon: BookMarked, to: "/resource-library" },
-                  { label: "Ask Blossom AI", icon: Sparkles, to: "/ai/assistant" },
-                ].map(({ label, icon: Icon, to }) => (
-                  <Link
-                    key={label}
-                    to={to}
-                    className="flex items-center justify-between rounded-lg px-2 py-1.5 text-foreground hover:bg-muted/50"
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                      {label}
-                    </span>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <NeedHelpPanel learnerHome={learnerHome} learnerName={firstName} />
           ) : required.length > 0 ? (
             <div className="rounded-2xl border border-border/70 bg-card p-5">
               <div className="flex items-center justify-between">

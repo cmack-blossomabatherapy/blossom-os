@@ -146,6 +146,7 @@ type EmploymentRow = {
   pay_type: PayType;
   work_setting: WorkSetting;
   manager_id: string | null;
+  mentor_id: string | null;
   viventium_employee_id: string | null;
   viventium_sync_status: string | null;
   viventium_last_sync: string | null;
@@ -206,6 +207,8 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [managerId, setManagerId] = useState<string | null>(null);
   const [managerOpen, setManagerOpen] = useState(false);
+  const [mentorId, setMentorId] = useState<string | null>(null);
+  const [mentorOpen, setMentorOpen] = useState(false);
   const [title, setTitle] = useState<string>(m.title ?? "");
   const [departmentId, setDepartmentId] = useState<string>(m.departmentId ?? "unassigned");
   const [state, setState] = useState<string>(m.states?.[0] ?? "GA");
@@ -229,14 +232,14 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     const [{ data }, { data: deptRows }] = await Promise.all([
       supabase
         .from("employees")
-        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,job_title,department_id,state,email,phone,credential,pronouns")
+        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,mentor_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,job_title,department_id,state,email,phone,credential,pronouns")
         .eq("id", m.uuid)
         .maybeSingle(),
       supabase.from("hr_departments").select("id,name").order("name"),
     ]);
     setDepartments(deptRows ?? []);
     if (!data) return;
-    setRow(data);
+    setRow(data as EmploymentRow);
     setTitle(data.job_title ?? "");
     setDepartmentId(data.department_id ?? "unassigned");
     setState(data.state ?? "GA");
@@ -249,6 +252,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     setCredential(data.credential ?? "");
     setPronouns(data.pronouns ?? "");
     setManagerId(data.manager_id ?? null);
+    setMentorId((data as any).mentor_id ?? null);
   }, [m.uuid]);
 
   useEffect(() => {
@@ -294,6 +298,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
   };
 
   const manager = managerId ? directoryByUuid.get(managerId) ?? null : null;
+  const mentor = mentorId ? directoryByUuid.get(mentorId) ?? null : null;
   const directReports = m.uuid ? reportsOf(m.uuid) : [];
   const managerCandidates = useMemo(
     () => directoryMembers
@@ -310,6 +315,19 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     const { error } = await supabase.from("employees").update({ manager_id: nextId }).eq("id", m.uuid);
     if (error) { toast.error(error.message); return; }
     toast.success(nextId ? "Reports-to updated" : "Manager cleared");
+    window.dispatchEvent(new Event("employee-directory:refresh"));
+    window.dispatchEvent(new Event("team-directory:refresh"));
+  }
+
+  async function saveMentor(nextId: string | null) {
+    if (!m.uuid) return;
+    if (!canEditEmployment) { toast.error("You don't have permission to edit mentor."); return; }
+    if (nextId && nextId === m.uuid) { toast.error("An employee can't mentor themselves."); return; }
+    setMentorId(nextId);
+    setMentorOpen(false);
+    const { error } = await (supabase.from("employees") as any).update({ mentor_id: nextId }).eq("id", m.uuid);
+    if (error) { toast.error(error.message); return; }
+    toast.success(nextId ? "Mentor updated" : "Mentor cleared");
     window.dispatchEvent(new Event("employee-directory:refresh"));
     window.dispatchEvent(new Event("team-directory:refresh"));
   }
@@ -423,6 +441,53 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
                 </Command>
               </PopoverContent>
             </Popover>
+          </div>
+          <div id="employment-mentor" data-testid="employment-mentor" className="scroll-mt-24">
+            <EditableLabel label="Mentor" source={sourceBadge(false)} />
+            <Popover open={mentorOpen} onOpenChange={setMentorOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  disabled={!canEditEmployment}
+                  data-testid="mentor-trigger"
+                  className="mt-1 h-9 w-full justify-between font-normal"
+                >
+                  <span className="truncate">{mentor ? mentor.name : "Select mentor…"}</span>
+                  <ChevronsUpDown className="ml-2 size-3.5 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[320px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search employee…" />
+                  <CommandList>
+                    <CommandEmpty>No employees found.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem value="__none__" onSelect={() => void saveMentor(null)}>
+                        <Check className={cn("mr-2 size-3.5", !mentorId ? "opacity-100" : "opacity-0")} />
+                        <span className="text-muted-foreground">No mentor</span>
+                      </CommandItem>
+                      {managerCandidates.map((d) => (
+                        <CommandItem
+                          key={d.uuid}
+                          value={`${d.name} ${d.title ?? ""}`}
+                          onSelect={() => void saveMentor(d.uuid!)}
+                        >
+                          <Check className={cn("mr-2 size-3.5", mentorId === d.uuid ? "opacity-100" : "opacity-0")} />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm">{d.name}</p>
+                            <p className="truncate text-[11px] text-muted-foreground">{d.title}</p>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Used by Training Academy for mentor help, shadowing sign-offs, and check-ins.
+            </p>
           </div>
           <div id="employment-email" className="scroll-mt-24">
             <EditableLabel label="Email" source={sourceBadge(false)} />

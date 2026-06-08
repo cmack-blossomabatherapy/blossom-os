@@ -51,7 +51,7 @@ describe("Training Academy visual upgrade — State Director first", () => {
   });
 
   it("SD module detail includes Start here, Why this matters, Walkthrough, Practice scenario, Completion evidence", () => {
-    expect(DETAIL).toMatch(/data-testid="sd-start-here"/);
+    expect(DETAIL).toMatch(/data-testid="sd-module-hero"/);
     expect(DETAIL).toMatch(/data-testid="sd-why-matters"/);
     expect(DETAIL).toMatch(/data-testid="sd-walkthrough"/);
     expect(DETAIL).toMatch(/data-testid="sd-scenario"/);

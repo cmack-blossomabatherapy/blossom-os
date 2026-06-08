@@ -22,9 +22,7 @@ describe("Training Academy Redesign Pass 2 — learner surface", () => {
   });
 
   it("OSTraining replaces global 'Required Due' / 'Overdue' for SD with a calm Help panel", () => {
-    expect(osTraining).toMatch(/Need help\?/);
-    expect(osTraining).toMatch(/Ask my mentor/);
-    expect(osTraining).toMatch(/Nothing here has to be solved alone/);
+    expect(osTraining).toMatch(/<NeedHelpPanel/);
     expect(osTraining).toMatch(/Your launch progress/);
   });
 
