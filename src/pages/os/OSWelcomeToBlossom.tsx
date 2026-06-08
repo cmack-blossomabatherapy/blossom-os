@@ -830,34 +830,72 @@ function ModuleCompleteAction({
   syncWelcomeToAcademy: (welcomeModuleId: string) => void | Promise<void>;
 }) {
   const done = isWelcomeModuleComplete(moduleId, status.modulesComplete);
+  const trainingId = WELCOME_TO_SD_TRAINING_ID[moduleId];
   return (
     <div className="mt-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/60 bg-muted/30 px-4 py-3">
       <p className="text-[12.5px] text-muted-foreground">
         {done
-          ? "You've marked this module complete. You can revisit it any time."
-          : "When you've read this module, mark it complete to track your progress."}
+          ? "You've completed this module. Open the training page any time to review."
+          : "This is the breakdown of what to expect. Open the training page to walk the full module and start the timer."}
       </p>
-      <Button
-        size="sm"
-        variant={done ? "outline" : "default"}
-        className="rounded-full"
-        onClick={() => {
-          if (!done) {
-            completeWelcomeModuleEverywhere(moduleId);
-            void syncWelcomeToAcademy(moduleId);
-          }
-        }}
-        disabled={done}
-        data-testid={`welcome-module-complete-${moduleId}`}
-      >
-        {done ? (
-          <>
-            <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Completed
-          </>
-        ) : (
-          "Mark complete"
+      <div className="flex items-center gap-2">
+        {!done && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="rounded-full text-[12px]"
+            onClick={() => {
+              completeWelcomeModuleEverywhere(moduleId);
+              void syncWelcomeToAcademy(moduleId);
+            }}
+            data-testid={`welcome-module-complete-${moduleId}`}
+          >
+            Mark reviewed
+          </Button>
         )}
-      </Button>
+        {trainingId ? (
+          <Button
+            asChild
+            size="sm"
+            variant={done ? "outline" : "default"}
+            className="rounded-full"
+          >
+            <Link to={`/training/${trainingId}`} data-testid={`welcome-module-start-${moduleId}`}>
+              {done ? (
+                <>
+                  <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Review training
+                </>
+              ) : (
+                <>
+                  Start training <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </>
+              )}
+            </Link>
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant={done ? "outline" : "default"}
+            className="rounded-full"
+            disabled={done}
+            onClick={() => {
+              if (!done) {
+                completeWelcomeModuleEverywhere(moduleId);
+                void syncWelcomeToAcademy(moduleId);
+              }
+            }}
+            data-testid={`welcome-module-complete-${moduleId}`}
+          >
+            {done ? (
+              <>
+                <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Completed
+              </>
+            ) : (
+              "Mark complete"
+            )}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
