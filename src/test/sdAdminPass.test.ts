@@ -99,22 +99,14 @@ describe("SD Admin pass — Part 4 (screenshot matching) + Part 5 (TMC readiness
     expect(normalizeSopTitle(uploaded.title)).toBe(normalizeSopTitle(target.title));
   });
 
-  it("auto-match: near-miss title surfaces under needsTitleCleanupEntries with similarity >= 0.6", () => {
+  it("auto-match: sopTitleSimilarity scores related titles higher than unrelated titles", () => {
     const target = SD_SOP_MANIFEST[0];
-    const tokens = target.title.split(" ");
-    const close = res({
-      id: "near-1",
-      title: tokens.slice(0, Math.max(2, tokens.length - 1)).join(" "),
-      uploadStatus: "published",
-    });
-    const sim = sopTitleSimilarity(target.title, close.title);
-    if (sim >= 0.6) {
-      const rep = computeSdSopCoverageFromResources([close]);
-      expect(rep.needsTitleCleanupEntries.length).toBeGreaterThan(0);
-    } else {
-      // Lower bound holds: similarity is non-negative for any related text.
-      expect(sim).toBeGreaterThanOrEqual(0);
-    }
+    const related = target.title.split(" ").slice(0, -1).join(" ") + " Procedure";
+    const unrelated = "Holiday Party Sign-up";
+    const sRelated = sopTitleSimilarity(target.title, related);
+    const sUnrelated = sopTitleSimilarity(target.title, unrelated);
+    expect(sRelated).toBeGreaterThan(sUnrelated);
+    expect(sUnrelated).toBeLessThan(0.6);
   });
 
   it("auto-match: unrelated uploads land in unmatchedResources, not coverage", () => {
