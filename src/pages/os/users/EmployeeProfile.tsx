@@ -637,6 +637,220 @@ function EditableLabel({ label, source }: { label: string; source: React.ReactNo
 // TRAINING (real: employee_trainings × training_courses)
 // ============================================================================
 
+type AcademyTrackRow = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
+type AcademyEnrollmentStatus = "active" | "paused" | "completed" | "not_started" | "withdrawn";
+
+type AcademyEnrollmentRow = {
+  id: string;
+  track_id: string;
+  status: AcademyEnrollmentStatus;
+  start_date: string;
+  path: "new_hire" | "existing_state" | "expansion_state" | "internal_promotion" | string;
+  assigned_state: string | null;
+  track: { id: string; name: string } | null;
+};
+
+const PATH_OPTIONS: { value: string; label: string }[] = [
+  { value: "new_hire", label: "New hire" },
+  { value: "existing_state", label: "Existing state" },
+  { value: "expansion_state", label: "Expansion state" },
+  { value: "internal_promotion", label: "Internal promotion" },
+];
+
+function AcademyJourneyPanel({ employee }: { employee: DirectoryEmployee }) {
+  const navigate = useNavigate();
+  const [tracks, setTracks] = useState<AcademyTrackRow[]>([]);
+  const [enrollments, setEnrollments] = useState<AcademyEnrollmentRow[]>([]);
+  const [open, setOpen] = useState(false);
+  const [trackId, setTrackId] = useState<string>("");
+  const [path, setPath] = useState<string>("new_hire");
+  const [assignedState, setAssignedState] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!employee.uuid) return;
+    const [{ data: t }, { data: e }] = await Promise.all([
+      supabase
+        .from("academy_tracks")
+        .select("id,name,description")
+        .eq("is_active", true)
+        .eq("is_archived", false)
+        .order("name"),
+      supabase
+        .from("academy_enrollments")
+        .select("id,track_id,status,start_date,path,assigned_state,track:academy_tracks(id,name)")
+        .eq("employee_id", employee.uuid)
+        .order("start_date", { ascending: false }),
+    ]);
+    setTracks((t ?? []) as AcademyTrackRow[]);
+    setEnrollments((e ?? []) as AcademyEnrollmentRow[]);
+  }, [employee.uuid]);
+  useEffect(() => { void load(); }, [load]);
+
+  const enrolledTrackIds = useMemo(() => new Set(enrollments.map((r) => r.track_id)), [enrollments]);
+  const assignableTracks = useMemo(
+    () => tracks.filter((t) => !enrolledTrackIds.has(t.id)),
+    [tracks, enrolledTrackIds],
+  );
+
+  async function assign() {
+    if (!employee.uuid || !trackId) return;
+    setBusy(true);
+    const { error } = await supabase.from("academy_enrollments").insert({
+      employee_id: employee.uuid,
+      track_id: trackId,
+      path: path as any,
+      assigned_state: assignedState.trim() || null,
+    });
+    setBusy(false);
+    if (error) return toast.error("Could not assign journey", { description: error.message });
+    toast.success("Journey assigned — visible in Training Management");
+    setOpen(false); setTrackId(""); setAssignedState(""); setPath("new_hire");
+    void load();
+  }
+
+  async function setStatus(id: string, status: AcademyEnrollmentStatus) {
+    const { error } = await supabase.from("academy_enrollments").update({ status }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(`Journey ${status}`);
+    void load();
+  }
+
+  return (
+    <Card>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign academy journey</DialogTitle>
+            <DialogDescription>
+              Enroll {employee.name} in a guided training journey. Progress will sync to the Training Management Center.
+            </DialogDescription>
+          </DialogHeader>
+          {assignableTracks.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-4 text-center text-sm text-muted-foreground">
+              {tracks.length === 0
+                ? <>No active journeys yet. Build one in <Link to="/hr/training-center" className="text-primary underline">Training Management</Link>.</>
+                : "This employee is already enrolled in every available journey."}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Journey</label>
+                <Select value={trackId} onValueChange={setTrackId}>
+                  <SelectTrigger><SelectValue placeholder="Select a journey" /></SelectTrigger>
+                  <SelectContent>
+                    {assignableTracks.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {trackId && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {assignableTracks.find((t) => t.id === trackId)?.description}
+                  </p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Path</label>
+                  <Select value={path} onValueChange={setPath}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {PATH_OPTIONS.map((p) => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Assigned state (optional)</label>
+                  <Input
+                    placeholder="e.g. NC"
+                    value={assignedState}
+                    onChange={(e) => setAssignedState(e.target.value)}
+                    maxLength={32}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button onClick={assign} disabled={!trackId || busy}>Assign journey</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Academy journey</p>
+          <p className="mt-1 text-lg font-semibold tracking-tight">
+            {enrollments.length === 0
+              ? "No journey assigned"
+              : enrollments.map((e) => e.track?.name).filter(Boolean).join(", ")}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {enrollments.length === 0
+              ? "Pick a journey to launch this employee's guided onboarding."
+              : `${enrollments.filter((e) => e.status === "active").length} active · ${enrollments.length} total`}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <Button size="sm" onClick={() => setOpen(true)} disabled={tracks.length === 0}>
+            <Plus className="size-3.5" /> Assign journey
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => navigate("/hr/training-center")}>
+            Open Training Management
+          </Button>
+        </div>
+      </div>
+
+      {enrollments.length > 0 && (
+        <ul className="mt-4 divide-y divide-border/60 border-t border-border/60">
+          {enrollments.map((e) => {
+            const tone: "ok" | "warn" | "muted" =
+              e.status === "completed" ? "ok" : e.status === "active" ? "warn" : "muted";
+            return (
+              <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 pt-3 first:pt-4">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{e.track?.name ?? "—"}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Started {fmtDate(e.start_date)} · {PATH_OPTIONS.find((p) => p.value === e.path)?.label ?? e.path}
+                    {e.assigned_state && ` · ${e.assigned_state}`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge tone={tone}>{e.status}</StatusBadge>
+                  {e.status === "active" && (
+                    <Button size="sm" variant="ghost" className="text-xs" onClick={() => setStatus(e.id, "paused")}>
+                      Pause
+                    </Button>
+                  )}
+                  {e.status === "paused" && (
+                    <Button size="sm" variant="ghost" className="text-xs" onClick={() => setStatus(e.id, "active")}>
+                      Resume
+                    </Button>
+                  )}
+                  {e.status !== "completed" && (
+                    <Button size="sm" variant="ghost" className="text-xs" onClick={() => setStatus(e.id, "completed")}>
+                      <CheckCircle2 className="size-3.5" /> Mark complete
+                    </Button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
 type TrainingRow = {
   id: string; status: string; assigned_at: string; due_date: string | null;
   completed_at: string | null; score: number | null; certificate_url: string | null;
@@ -691,6 +905,7 @@ function TrainingTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; o
 
   return (
     <div className="space-y-6">
+      <AcademyJourneyPanel employee={m} />
       <Dialog open={openAssign} onOpenChange={setOpenAssign}>
         <DialogContent>
           <DialogHeader>
