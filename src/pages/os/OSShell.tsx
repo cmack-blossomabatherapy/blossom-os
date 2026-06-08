@@ -489,7 +489,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         { to: "/hr/org-chart/manage", label: "Org Chart Settings", icon: Network, module: "hr", disabled: true },
         { to: "/payroll/workspace", label: "Payroll", icon: Wallet, module: "payroll", disabled: true },
         { to: "/hr", label: "HR Suite", icon: Building2, module: "hr", end: true, disabled: true },
-        { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "hr" },
+        { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "training" },
       ],
     },
   ];
