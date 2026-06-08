@@ -110,9 +110,14 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
   const launchDone = hasDb ? learnerHome.launchProgress.requiredCompleted : totalDone;
   const launchTotal = hasDb ? learnerHome.launchProgress.requiredTotal : allIds.length;
   const readinessPct = learnerHome.readiness ? Math.round(learnerHome.readiness.overall) : null;
-  const mentorLabel = learnerHome.employee?.state
-    ? `Mentor · ${learnerHome.employee.state}`
-    : "Mentor assigned";
+  const mentorName = learnerHome.mentor
+    ? [learnerHome.mentor.first_name, learnerHome.mentor.last_name].filter(Boolean).join(" ").trim()
+    : "";
+  const mentorLabel = mentorName
+    ? mentorName
+    : learnerHome.employee?.state
+      ? `Mentor · ${learnerHome.employee.state}`
+      : "Not assigned";
 
   const welcomeComplete = hasDb ? learnerHome.welcomeComplete : false;
 
