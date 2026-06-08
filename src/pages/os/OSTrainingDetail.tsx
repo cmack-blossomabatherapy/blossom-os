@@ -616,6 +616,11 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
     [training.id],
   );
 
+  const noScreenshotDecision = useMemo(
+    () => getStateDirectorNoScreenshotDecision(training.id),
+    [training.id],
+  );
+
   async function refresh() {
     if (!user?.id) return;
     try { setLearnerHome(await loadLearnerHome(user.id)); } catch { /* non-fatal */ }
