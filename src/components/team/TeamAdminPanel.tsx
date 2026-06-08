@@ -310,7 +310,7 @@ export function TeamAdminPanel() {
 
   const saveInfo = async (
     member: Member,
-    next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean },
+    next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean; mentor_employee_id: string | null },
   ) => {
     setSavingId(member.user_id);
     const { error } = await supabase
@@ -348,6 +348,7 @@ export function TeamAdminPanel() {
       dashboard_access: next.dashboard_access,
       new_state_employee: next.new_state_employee,
       active: next.active,
+      mentor_employee_id: next.mentor_employee_id,
     });
     toast.success(syncedEmployeeId ? "Saved and HR record linked" : "Saved");
     return true;
