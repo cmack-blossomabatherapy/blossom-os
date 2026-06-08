@@ -637,6 +637,9 @@ export default function OSWelcomeToBlossom() {
             </ul>
           </div>
 
+          {/* HIPAA knowledge check — gates progress to launch path */}
+          <WelcomeHipaaQuiz passed={hipaaQuizPassed} />
+
           {/* Guide blocks */}
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <GuideBlock icon={ListChecks} label="What to do" items={[
