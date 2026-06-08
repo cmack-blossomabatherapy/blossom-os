@@ -21,6 +21,7 @@ import {
   Video as VideoIcon,
 } from "lucide-react";
 import { useAdminResources } from "@/hooks/useAdminResources";
+import { cn } from "@/lib/utils";
 import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
 import {
   computeSdContentReadiness,
