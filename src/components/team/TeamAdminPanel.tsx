@@ -553,6 +553,7 @@ function MemberRow({
     setDraftDashboard(member.dashboard_access);
     setDraftNewState(member.new_state_employee);
     setDraftActive(member.active);
+    setDraftMentor(member.mentor_employee_id);
     setEditing(false);
   };
 
