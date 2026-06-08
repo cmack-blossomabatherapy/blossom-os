@@ -83,6 +83,7 @@ import {
   SDMentorCheckInGuide,
   SDScreenshotReadinessPanel,
 } from "@/components/training/SDLaunchReadinessPanel";
+import { SDDayOneAdminPanel } from "@/components/training/SDDayOneAdminPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AppRole } from "@/lib/roles";
 
