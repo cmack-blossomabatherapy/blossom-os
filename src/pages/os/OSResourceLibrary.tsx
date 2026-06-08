@@ -181,7 +181,11 @@ export default function OSResourceLibrary() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); setActiveCategory(null); }}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActiveCategory(null);
+                  setActiveCollection(null);
+                }}
                 placeholder="Search SOPs, guides, templates, workflows…"
                 className="h-11 rounded-xl border-border/70 bg-white/80 pl-9 text-[14px] backdrop-blur"
               />
@@ -195,9 +199,20 @@ export default function OSResourceLibrary() {
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-              <Filter className="h-3.5 w-3.5" />
-              <span>{filteredScope.length} of {scope.length} resources</span>
+            <div className="flex items-center gap-3 text-[12px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Filter className="h-3.5 w-3.5" />
+                {filteredScope.length} of {scope.length} resources
+              </span>
+              {canManage && adminHiddenCount > 0 && (
+                <span
+                  data-testid="resource-admin-hidden-count"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-white/70 px-2 py-0.5 text-[11px] text-muted-foreground"
+                  title="Pending, held, vault, or excluded resources only visible in Resource Management."
+                >
+                  {adminHiddenCount} hidden (admin)
+                </span>
+              )}
             </div>
           </div>
 
