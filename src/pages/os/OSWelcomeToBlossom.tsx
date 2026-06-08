@@ -12,6 +12,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { markModuleComplete } from "@/lib/onboarding/storage";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
+import { useAdminResources } from "@/hooks/useAdminResources";
+import { computeSdWelcomeVideoState } from "@/lib/training/sdRuntimeReadiness";
+import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import {
   WELCOME_TO_BLOSSOM_HERO,
   WELCOME_TO_BLOSSOM_MODULES,
@@ -22,14 +25,13 @@ import {
 } from "@/lib/training/welcomeToBlossomContent";
 
 /**
- * Welcome video configuration.
+ * Welcome video configuration — resolved from Resource Library at runtime.
  *
- * Replace these constants when the real Blossom welcome video (Chad / Shira)
- * is uploaded. While empty, the page renders a calm "being prepared" panel
- * instead of a broken video element.
- *
- * - WELCOME_VIDEO_URL: path or full URL to the welcome MP4
- * - WELCOME_VIDEO_POSTER_URL: poster image shown before play
+ * The video is loaded by looking up a published Resource titled
+ * "Welcome Video from Blossom" (or close variants). If none exists,
+ * the page renders a calm "being prepared" panel instead of a broken
+ * <video> element. WELCOME_VIDEO_URL is kept as an empty fallback so
+ * the rest of the component logic stays simple.
  */
 const WELCOME_VIDEO_URL = "";
 const WELCOME_VIDEO_POSTER_URL = "";
@@ -43,6 +45,28 @@ export default function OSWelcomeToBlossom() {
   const status = useOnboardingStatus();
   const [displayName, setDisplayName] = useState<string>("");
   const [videoBroken, setVideoBroken] = useState(false);
+  const { resources } = useAdminResources();
+  const welcomeVideo = computeSdWelcomeVideoState(resources, WELCOME_VIDEO_URL);
+  const [resolvedVideoUrl, setResolvedVideoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (welcomeVideo.url) {
+      setResolvedVideoUrl(welcomeVideo.url);
+      return;
+    }
+    // Storage-path-only resource — resolve to signed URL.
+    if (welcomeVideo.resource) {
+      void resolveResourceOpenUrl(welcomeVideo.resource).then((url) => {
+        if (!cancelled) setResolvedVideoUrl(url);
+      });
+    } else {
+      setResolvedVideoUrl(null);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [welcomeVideo.url, welcomeVideo.resource?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -59,7 +83,7 @@ export default function OSWelcomeToBlossom() {
       .split(" ")[0];
 
   const videoDone = status.modulesComplete.includes("p0.intro-video");
-  const hasVideo = Boolean(WELCOME_VIDEO_URL) && !videoBroken;
+  const hasVideo = Boolean(resolvedVideoUrl) && !videoBroken;
 
   const markReviewed = () => {
     if (!videoDone) markModuleComplete("p0.intro-video");
@@ -155,7 +179,7 @@ export default function OSWelcomeToBlossom() {
         <section className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-sm">
           {hasVideo ? (
             <video
-              src={WELCOME_VIDEO_URL}
+              src={resolvedVideoUrl ?? undefined}
               poster={WELCOME_VIDEO_POSTER_URL || undefined}
               controls
               playsInline
