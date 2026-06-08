@@ -197,8 +197,8 @@ export default function OSWelcomeToBlossom() {
                 </div>
                 <p className="text-base font-semibold text-foreground">Welcome Video from Blossom</p>
                 <p className="max-w-md text-[13px] leading-relaxed text-muted-foreground">
-                  The welcome video is being prepared. You can continue with the written Welcome to
-                  Blossom guidance now and revisit the video later.
+                  The welcome video is being prepared. You can complete the written Welcome to
+                  Blossom guidance below right now — nothing on Day 1 is blocked by the video.
                 </p>
                 <Badge variant="outline" className="mt-1 gap-1 text-[10px] backdrop-blur">
                   <Sparkles className="h-3 w-3 text-primary" /> Pending upload
