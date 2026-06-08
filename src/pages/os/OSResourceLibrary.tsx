@@ -703,76 +703,12 @@ export default function OSResourceLibrary() {
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto bg-card">
           {selected && (
-            <>
-              <SheetHeader>
-                <div className="flex items-start gap-3">
-                  <TypeChip type={selected.type} />
-                  <div className="min-w-0 flex-1">
-                    <SheetTitle className="text-[18px]">{selected.title}</SheetTitle>
-                    <SheetDescription className="mt-1 text-[13px]">
-                      {categoryById(selected.category).name} · Updated {formatRelative(selected.updatedAt)}
-                    </SheetDescription>
-                  </div>
-                </div>
-              </SheetHeader>
-              <div className="mt-6 space-y-5">
-                <p className="text-[13.5px] text-foreground">{selected.description}</p>
-
-                <MetaRow label="Type" value={selected.type} />
-                <MetaRow label="Status" value={selected.status} />
-                <MetaRow label="Uploaded by" value={selected.uploadedBy} />
-                <MetaRow label="Departments" value={selected.departments.join(", ") || "All"} />
-                <MetaRow label="States" value={selected.states.join(", ") || "All states"} />
-                <MetaRow label="Roles" value={selected.roles.length ? selected.roles.map(roleLabel).join(", ") : "All roles"} />
-
-                {selected.tags.length > 0 && (
-                  <div>
-                    <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Tags</div>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {selected.tags.map((t) => (
-                        <Badge key={t} variant="secondary" className="rounded-full text-[11px] font-normal">{t}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {(() => {
-                    const href = selected.url || selected.fileUrl;
-                    const hasStorage = Boolean((selected as any).storagePath);
-                    const pending =
-                      (!href && !hasStorage) || selected.attachmentStatus === "pending_upload";
-                    if (pending) {
-                      return (
-                        <div
-                          className="inline-flex items-center gap-2 rounded-xl border border-dashed border-border bg-muted/40 px-3 h-10 text-xs text-muted-foreground"
-                          data-testid="resource-attachment-pending"
-                        >
-                          <ClipboardList className="h-4 w-4" />
-                          Attachment pending — file will be linked once it's added to the Resource Library.
-                        </div>
-                      );
-                    }
-                    return (
-                      <Button
-                        data-testid="resource-open-button"
-                        onClick={async () => {
-                          const url = await resolveResourceOpenUrl(selected);
-                          if (url) window.open(url, "_blank", "noopener,noreferrer");
-                          else toast.error("This resource could not be opened. Try again or contact an admin.");
-                        }}
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" /> Open resource
-                      </Button>
-                    );
-                  })()}
-                  <Button variant="outline" onClick={() => toggleFavorite(selected.id)}>
-                    <Star className={cn("mr-2 h-4 w-4", favorites.has(selected.id) && "fill-current text-amber-500")} />
-                    {favorites.has(selected.id) ? "Favorited" : "Favorite"}
-                  </Button>
-                </div>
-              </div>
-            </>
+            <ResourceDrawerBody
+              resource={selected}
+              canManage={canManage}
+              isFavorite={favorites.has(selected.id)}
+              onFavorite={() => toggleFavorite(selected.id)}
+            />
           )}
         </SheetContent>
       </Sheet>
