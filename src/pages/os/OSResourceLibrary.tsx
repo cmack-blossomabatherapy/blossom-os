@@ -31,7 +31,6 @@ import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import { isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
 import { cleanSdTitle } from "@/lib/training/sdDisplayTitle";
 import { ChevronDown } from "lucide-react";
-import { useState as useReactState } from "react";
 import {
   collectSmartCollections,
   countAdminHiddenResources,
