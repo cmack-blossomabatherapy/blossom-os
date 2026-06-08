@@ -23,9 +23,11 @@ import {
   WELCOME_LEADERSHIP_LETTERS,
   WELCOME_HIPAA_CONTENT,
   WELCOME_COMPLETION,
+  WELCOME_HIPAA_QUIZ,
 } from "@/lib/training/welcomeToBlossomContent";
 import introVideoAsset from "@/assets/intro-video-1.1.mp4.asset.json";
 import { WelcomeReflectionForm } from "@/components/training/WelcomeReflectionForm";
+import { WelcomeHipaaQuiz } from "@/components/training/WelcomeHipaaQuiz";
 
 /**
  * Welcome video configuration — resolved from Resource Library at runtime.
