@@ -625,6 +625,11 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
     [training.id],
   );
 
+  const evidencePanel = useMemo<SDEvidencePanel | null>(
+    () => getStateDirectorEvidencePanel(training.id),
+    [training.id],
+  );
+
   async function refresh() {
     if (!user?.id) return;
     try { setLearnerHome(await loadLearnerHome(user.id)); } catch { /* non-fatal */ }
