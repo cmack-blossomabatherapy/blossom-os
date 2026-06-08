@@ -34,7 +34,7 @@ describe("Training Academy visual upgrade — State Director first", () => {
 
   it("Welcome to Blossom renders a dedicated reflection prompt section", () => {
     expect(WELCOME).toMatch(/data-testid="welcome-reflection-prompt"/);
-    expect(WELCOME).toMatch(/Reflection prompt/);
+    expect(WELCOME).toMatch(/eyebrow="Reflection"/);
   });
 
   it("Welcome to Blossom completion CTA points to the launch path", () => {
