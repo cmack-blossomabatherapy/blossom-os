@@ -20,12 +20,18 @@ describe("Part 1 — SD module detail has no generic-layout duplication", () => 
     expect(DETAIL).not.toMatch(/\{isSD && <SDModuleDetailPanel/);
   });
 
-  it("SD panel keeps a single action set (sticky-strip Mark complete only)", () => {
-    // Exactly one occurrence of the test-id sd-mark-complete should remain
+  it("SD panel keeps a single primary action set, in the hero — strip is passive", () => {
+    // Exactly one Mark complete action total, and it lives in the hero.
     const matches = DETAIL.match(/data-testid="sd-mark-complete"/g) ?? [];
     expect(matches.length).toBe(1);
     // The old secondary header summary action row is gone
     expect(DETAIL).not.toMatch(/Mark started/);
+    // Sticky progress strip must stay passive — no Button / handleStart / handleComplete.
+    const stripChunk =
+      DETAIL.split('data-testid="sd-progress-strip"')[1]?.split('data-testid="sd-module-hero"')[0] ?? "";
+    expect(stripChunk).not.toMatch(/<Button/);
+    expect(stripChunk).not.toMatch(/handleStart/);
+    expect(stripChunk).not.toMatch(/handleComplete/);
   });
 });
 
@@ -145,7 +151,7 @@ describe("Part 8 — strict literal mojibake scan", () => {
   ];
   it.each(files)("%s has no literal mojibake bytes", (rel) => {
     const t = fs.readFileSync(path.join(process.cwd(), rel), "utf8");
-    for (const bad of ["Â", "â€”", "â€“", "â€¦", "â†’", "â‰¥"]) {
+    for (const bad of ["Â", "â€¦", "â€”", "â€“", "â€œ", "â€\u009d", "â†’", "â‰¥", "Ã©", "Ã¨"]) {
       expect(t.includes(bad), `${rel} contains ${bad}`).toBe(false);
     }
   });
