@@ -494,16 +494,40 @@ export default function OSWelcomeToBlossom() {
                 <MessageSquare className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Before you continue</p>
-                <h3 className="mt-0.5 text-[16px] font-semibold tracking-tight text-foreground">Bring one sentence forward</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">Day-One evidence</p>
+                  <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                    Part of training
+                  </span>
+                </div>
+                <h3 className="mt-1 text-[16px] font-semibold tracking-tight text-foreground">Leadership-letter takeaway</h3>
                 <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
-                  Write one sentence from these letters that you want to carry into your first 30 days as a State Director.
+                  Write one sentence from Chad or Shira&apos;s letter that you want to carry into your first 30 days as a State Director. This is not a side note — it is the first piece of evidence your mentor will ask you about.
                 </p>
                 <div className="mt-4 rounded-xl border border-border/60 bg-muted/30 p-4">
                   <p className="text-[13px] leading-relaxed text-foreground">
                     <span className="font-medium text-foreground">Completion evidence:</span>{' '}
-                    Bring that sentence to your first mentor check-in.
+                    Bring that sentence to your first mentor check-in, and mark the
+                    <em> Leadership-letter takeaway</em> signal on your Day-One readiness panel.
                   </p>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => navigate("/training")}
+                    data-testid="welcome-reflection-continue"
+                  >
+                    Continue to my launch path <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={markReviewed}
+                  >
+                    {videoDone ? "Marked reviewed" : "Mark welcome reviewed"}
+                  </Button>
                 </div>
               </div>
             </div>
