@@ -250,9 +250,9 @@ const SD_SCREENSHOTS_LIST: SDScreenshotAsset[] = [
       { label: "Payer visibility", description: "Who is paying, who is slow." },
     ]),
   mkShot("sd-w1d4-communication-standards", "w1d4-phone-workspace",
-    "Phone and communication workspace",
-    "Phone workspace. Used to model the communication standard a State Director expects.",
-    "Phone workspace with call queue, scripts, escalation, and follow-up tracking", [
+    "Calls and communication workspace",
+    "Calls workspace. Used to model the communication standard a State Director expects.",
+    "Calls and communication workspace with call queue, scripts, escalation, and follow-up tracking", [
       { label: "Call queue", description: "Inbound + outbound queue." },
       { label: "Scripts", description: "Approved language for common situations." },
       { label: "Escalation handoff", description: "When to bring a call to the SD." },
