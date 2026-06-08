@@ -88,8 +88,6 @@ function CheckList({ group }: { group: CheckGroup }) {
 export function SDLaunchReadinessPanel() {
   const { resources } = useAdminResources();
   const coverage = computeSdSopCoverageFromResources(resources);
-  const screenshots = computeSdScreenshotReadiness();
-  const welcomeVideo = computeSdWelcomeVideoState(resources);
   const allManifestPublished =
     coverage.total === SD_SOP_MANIFEST.length && coverage.published === coverage.total;
 
