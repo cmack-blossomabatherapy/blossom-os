@@ -86,7 +86,10 @@ export default function OSTrainingDetail() {
 
   const activeSection = sections.find((s) => s.id === activeSectionId) ?? sections[0];
 
-  const isSD = training.id.startsWith("sd-") || training.department === "state_director";
+  const isSD =
+    training.id.startsWith("sd-") ||
+    training.department === "state_director" ||
+    training.department === "state_operations";
 
   if (isSD) {
     return (

@@ -1201,7 +1201,7 @@ function buildSdModule(weekNum: number, dayNum: number, position: number, title:
 
   return {
     id,
-    title: `W${weekNum} · D${dayNum} — ${title}`,
+    title,
     description: spec.description,
     type: spec.type,
     estimatedMinutes: spec.minutes,
