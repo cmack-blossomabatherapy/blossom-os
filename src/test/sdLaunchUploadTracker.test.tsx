@@ -139,7 +139,7 @@ describe("OSResourceLibrary — State Director Launch smart collection", () => {
     const SRC = fs.readFileSync("src/pages/os/OSResourceLibrary.tsx", "utf8");
     expect(SRC).toMatch(/sd-launch-collection/);
     expect(SRC).toMatch(/isSdSopVisibleToRole\(role\)/);
-    expect(SRC).toMatch(/State Director launch resources are being connected/);
+    expect(SRC).toMatch(/keep moving in the Academy/);
   });
 });
 

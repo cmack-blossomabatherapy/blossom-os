@@ -28,8 +28,13 @@ import {
 } from "@/lib/resources/resourceData";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
-import { SD_SOP_MANIFEST, isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
-import { normalizeSopTitle } from "@/lib/resources/sdSopCoverage";
+import { isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
+import {
+  collectSmartCollections,
+  countAdminHiddenResources,
+  type SmartCollectionId,
+  type SmartCollectionResult,
+} from "@/lib/resources/smartCollections";
 
 const TONE_BG: Record<string, string> = {
   purple:  "bg-[hsl(265_70%_96%)] text-[hsl(265_70%_45%)]",
@@ -53,6 +58,8 @@ export default function OSResourceLibrary() {
   const [activeCategory, setActiveCategory] = useState<ResourceCategoryId | null>(null);
   const [selected, setSelected] = useState<Resource | null>(null);
   const [typeFilter, setTypeFilter] = useState<Resource["type"] | null>(null);
+  const [activeCollection, setActiveCollection] =
+    useState<SmartCollectionId | null>(null);
   const [requestOpen, setRequestOpen] = useState(false);
   const [reqTitle, setReqTitle] = useState("");
   const [reqType, setReqType] = useState("");
@@ -80,24 +87,41 @@ export default function OSResourceLibrary() {
 
   const roleLabelText = roleLabel(role);
 
+  // Smart collections — computed off the live, learner-safe library so role,
+  // state, upload status, and sensitivity rules are honored everywhere.
+  const smartCollections: SmartCollectionResult[] = useMemo(
+    () => collectSmartCollections(libraryResources, role, activeState),
+    [libraryResources, role, activeState],
+  );
+  const collectionsToShow = useMemo(
+    () => smartCollections.filter((c) => c.items.length > 0),
+    [smartCollections],
+  );
+  const sdLaunchVisible = useMemo(
+    () =>
+      smartCollections.find((c) => c.collection.id === "state-director-launch")?.items ?? [],
+    [smartCollections],
+  );
+  const adminHiddenCount = useMemo(
+    () => (canManage ? countAdminHiddenResources(libraryResources) : 0),
+    [canManage, libraryResources],
+  );
+  const activeCollectionResult = useMemo(
+    () =>
+      activeCollection
+        ? smartCollections.find((c) => c.collection.id === activeCollection) ?? null
+        : null,
+    [activeCollection, smartCollections],
+  );
+  const showSdLaunchCollection =
+    isSdSopVisibleToRole(role) && !query && !activeCategory && !activeCollection;
+
   const visibleList: Resource[] = useMemo(() => {
     if (query) return searchResults;
+    if (activeCollectionResult) return activeCollectionResult.items;
     if (activeCategory) return resourcesByCategory(activeCategory, filteredScope);
     return [];
-  }, [query, activeCategory, searchResults, filteredScope]);
-
-  // State Director Launch smart collection — only published / openable /
-  // role-visible items whose normalized title exactly matches the manifest.
-  const sdLaunchVisible = useMemo(() => {
-    if (!isSdSopVisibleToRole(role)) return [];
-    const keys = new Set(SD_SOP_MANIFEST.map((e) => normalizeSopTitle(e.title)));
-    return scope.filter((r) => {
-      if (!keys.has(normalizeSopTitle(r.title))) return false;
-      const hasOpenable = !!(r.url || r.fileUrl || r.storagePath);
-      return hasOpenable;
-    });
-  }, [scope, role]);
-  const showSdLaunchCollection = isSdSopVisibleToRole(role) && !query && !activeCategory;
+  }, [query, activeCategory, searchResults, filteredScope, activeCollectionResult]);
 
   const toggleFavorite = (id: string) =>
     setFavorites((prev) => {
@@ -156,7 +180,11 @@ export default function OSResourceLibrary() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); setActiveCategory(null); }}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActiveCategory(null);
+                  setActiveCollection(null);
+                }}
                 placeholder="Search SOPs, guides, templates, workflows…"
                 className="h-11 rounded-xl border-border/70 bg-white/80 pl-9 text-[14px] backdrop-blur"
               />
@@ -170,9 +198,20 @@ export default function OSResourceLibrary() {
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-              <Filter className="h-3.5 w-3.5" />
-              <span>{filteredScope.length} of {scope.length} resources</span>
+            <div className="flex items-center gap-3 text-[12px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Filter className="h-3.5 w-3.5" />
+                {filteredScope.length} of {scope.length} resources
+              </span>
+              {canManage && adminHiddenCount > 0 && (
+                <span
+                  data-testid="resource-admin-hidden-count"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-white/70 px-2 py-0.5 text-[11px] text-muted-foreground"
+                  title="Pending, held, vault, or excluded resources only visible in Resource Management."
+                >
+                  {adminHiddenCount} hidden (admin)
+                </span>
+              )}
             </div>
           </div>
 
@@ -238,7 +277,7 @@ export default function OSResourceLibrary() {
             )}
 
             {/* QUICK LINKS STRIP */}
-            {!query && !activeCategory && !typeFilter && quickLinks.length > 0 && (
+            {!query && !activeCategory && !activeCollection && !typeFilter && quickLinks.length > 0 && (
               <section>
                 <SectionHeader title="Quick links & walkthroughs" subtitle="Jump straight into the tools you use daily" icon={Link2} />
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
@@ -265,7 +304,7 @@ export default function OSResourceLibrary() {
             )}
 
             {/* PINNED */}
-            {pinned.length > 0 && !query && !activeCategory && (
+            {pinned.length > 0 && !query && !activeCategory && !activeCollection && (
               <section>
                 <SectionHeader title="Pinned for you" subtitle="Quick access to your most-used resources" icon={Pin} />
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -281,6 +320,57 @@ export default function OSResourceLibrary() {
               </section>
             )}
 
+            {/* SMART COLLECTIONS GRID */}
+            {!query && !activeCategory && !activeCollection && (
+              <section data-testid="smart-collections">
+                <SectionHeader
+                  title="Smart collections"
+                  subtitle="Curated, role-aware bundles of the resources you use most"
+                  icon={Star}
+                />
+                {collectionsToShow.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-border/60 bg-card p-5 text-[12.5px] text-muted-foreground">
+                    Smart collections will fill in as published resources are connected.
+                    Keep moving in the Academy — your guides will land here as soon as
+                    they are live.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+                    {collectionsToShow.map((c) => {
+                      const Icon = c.collection.icon;
+                      return (
+                        <button
+                          key={c.collection.id}
+                          data-testid={`smart-collection-${c.collection.id}`}
+                          onClick={() => {
+                            setActiveCollection(c.collection.id);
+                            setActiveCategory(null);
+                            setQuery("");
+                          }}
+                          className="group flex flex-col items-start gap-2 rounded-2xl border border-border/60 bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_hsl(220_15%_30%/0.12)]"
+                        >
+                          <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", TONE_BG[c.collection.tone])}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="truncate text-[13.5px] font-semibold text-foreground">
+                              {c.collection.name}
+                            </div>
+                            <div className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">
+                              {c.collection.description}
+                            </div>
+                          </div>
+                          <div className="mt-1 text-[11px] text-muted-foreground">
+                            {c.items.length} resource{c.items.length === 1 ? "" : "s"}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* STATE DIRECTOR LAUNCH SMART COLLECTION */}
             {showSdLaunchCollection && (
               <section data-testid="sd-launch-collection">
@@ -290,8 +380,14 @@ export default function OSResourceLibrary() {
                   icon={GraduationCap}
                 />
                 {sdLaunchVisible.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-border/60 bg-card p-5 text-[12.5px] text-muted-foreground">
-                    Your State Director launch resources are being connected. Training guidance is still available in the Academy.
+                  <div
+                    data-testid="sd-launch-empty"
+                    className="rounded-2xl border border-dashed border-border/60 bg-card p-5 text-[12.5px] text-muted-foreground"
+                  >
+                    Everything here will support your State Director launch path. If a
+                    resource is not here yet, keep moving in the Academy and review it
+                    with your mentor — guides will appear here as soon as they are
+                    published.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -306,15 +402,24 @@ export default function OSResourceLibrary() {
                   </div>
                 )}
                 {sdLaunchVisible.length > 9 && (
-                  <p className="mt-2 text-[11.5px] text-muted-foreground">
-                    + {sdLaunchVisible.length - 9} more in the State Director launch collection.
-                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-[11.5px] text-muted-foreground">
+                      + {sdLaunchVisible.length - 9} more in the State Director launch collection.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setActiveCollection("state-director-launch")}
+                    >
+                      Open collection <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 )}
               </section>
             )}
 
             {/* ROLE RESOURCES */}
-            {!query && !activeCategory && (
+            {!query && !activeCategory && !activeCollection && (
               <section>
                 <SectionHeader
                   title={`Resources for ${roleLabelText}s`}
@@ -335,7 +440,7 @@ export default function OSResourceLibrary() {
             )}
 
             {/* CATEGORIES */}
-            {!query && (
+            {!query && !activeCollection && (
               <section>
                 <SectionHeader title="Browse by category" subtitle="Organized operational knowledge" icon={BookOpen} />
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
@@ -371,19 +476,33 @@ export default function OSResourceLibrary() {
             )}
 
             {/* CATEGORY / SEARCH RESULTS */}
-            {(query || activeCategory) && (
+            {(query || activeCategory || activeCollection) && (
               <section>
                 <div className="mb-3 flex items-center justify-between">
                   <div>
                     <h2 className="text-[15px] font-semibold text-foreground">
-                      {query ? `Results for "${query}"` : categoryById(activeCategory!).name}
+                      {query
+                        ? `Results for "${query}"`
+                        : activeCollectionResult
+                          ? activeCollectionResult.collection.name
+                          : categoryById(activeCategory!).name}
                     </h2>
                     <p className="text-[12.5px] text-muted-foreground">
-                      {visibleList.length} resource{visibleList.length === 1 ? "" : "s"}
+                      {activeCollectionResult
+                        ? `${activeCollectionResult.collection.description} · ${visibleList.length} resource${visibleList.length === 1 ? "" : "s"}`
+                        : `${visibleList.length} resource${visibleList.length === 1 ? "" : "s"}`}
                     </p>
                   </div>
-                  {(query || activeCategory) && (
-                    <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setActiveCategory(null); }}>
+                  {(query || activeCategory || activeCollection) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setQuery("");
+                        setActiveCategory(null);
+                        setActiveCollection(null);
+                      }}
+                    >
                       <X className="mr-1 h-3.5 w-3.5" /> Clear
                     </Button>
                   )}
@@ -406,7 +525,7 @@ export default function OSResourceLibrary() {
             )}
 
             {/* RECENT */}
-            {!query && !activeCategory && recent.length > 0 && (
+            {!query && !activeCategory && !activeCollection && recent.length > 0 && (
               <section>
                 <SectionHeader title="Recently updated" subtitle="What's new in your library" icon={ArrowRight} />
                 <div className="space-y-2">
