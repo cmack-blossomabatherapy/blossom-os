@@ -502,7 +502,7 @@ export default function OSWelcomeToBlossom() {
                 </div>
                 <h3 className="mt-1 text-[16px] font-semibold tracking-tight text-foreground">Leadership-letter takeaway</h3>
                 <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
-                  Write one sentence from Chad or Shira&apos;s letter that you want to carry into your first 30 days as a State Director. This is not a side note — it is the first piece of evidence your mentor will ask you about.
+                  Write one sentence from these letters — something from Chad or Shira you want to carry into your first 30 days as a State Director. This is not a side note — it is the first piece of evidence your mentor will ask you about.
                 </p>
                 <div className="mt-4 rounded-xl border border-border/60 bg-muted/30 p-4">
                   <p className="text-[13px] leading-relaxed text-foreground">
