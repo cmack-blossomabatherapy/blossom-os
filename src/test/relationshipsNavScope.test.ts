@@ -7,6 +7,11 @@ const shellSrc = readFileSync(
   "utf8",
 );
 
+const appSrc = readFileSync(
+  resolve(__dirname, "../App.tsx"),
+  "utf8",
+);
+
 // These tests are source-level guards that lock in the access rules for the
 // Relationships menu group. They intentionally read OSShell.tsx as text so we
 // catch accidental regressions (duplicate sections, placeholder hrefs,
@@ -71,6 +76,27 @@ describe("Relationships nav scope", () => {
       for (const to of tos) {
         expect(to.startsWith("/marketing/")).toBe(true);
       }
+    }
+  });
+
+  it("route-gates the Relationships pages to Marketing + Super Admin (App.tsx)", () => {
+    const relRoutes = [
+      "/marketing/referrals",
+      "/marketing/recruiting",
+      "/marketing/outreach",
+      "/marketing/reputation",
+    ];
+    for (const path of relRoutes) {
+      // Each route must be wrapped in a PermissionRoute that allows the
+      // "marketing" app role. Super Admin (isAdmin) bypasses inside
+      // PermissionRoute, so no extra wiring is needed there.
+      const re = new RegExp(
+        `path="${path}"\\s+element=\\{<PermissionRoute allowedRoles=\\{\\["marketing"\\]\\}>`,
+      );
+      expect(appSrc, `${path} must be gated by PermissionRoute`).toMatch(re);
+      // No duplicate route declaration for any of these paths.
+      const occurrences = appSrc.split(`path="${path}"`).length - 1;
+      expect(occurrences, `${path} should only be declared once`).toBe(1);
     }
   });
 });
