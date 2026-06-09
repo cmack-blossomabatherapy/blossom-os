@@ -3,7 +3,8 @@ import {
   LayoutDashboard, Users, Building2, HeartHandshake, ListChecks, ListFilter,
   Workflow, BarChart3, Upload, Download, Settings2, ShieldCheck, Trash2,
   Plus, Search, X, CheckCircle2, Pencil, RotateCcw, Activity, AlertCircle,
-  ChevronRight, Tag, UserPlus,
+  ChevronRight, Tag, UserPlus, Paperclip, FileText, History, Phone, Mail,
+  Calendar, StickyNote, FileUp,
 } from "lucide-react";
 import { MktgPage } from "./_shared";
 import { Button } from "@/components/ui/button";
@@ -22,12 +23,13 @@ import {
   useCrm, crm, fullName, activeContacts, activeCompanies, activeReferrals,
   userName, companyName, evalList, STATES,
   type Contact, type Company, type Referral, type Task, type ID,
+  type ActivityEvent, type Attachment,
 } from "@/lib/os/referralCrm/store";
 
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
   | "workflows" | "reports" | "imports" | "exports" | "duplicates"
-  | "settings" | "users" | "deleted";
+  | "settings" | "users" | "deleted" | "files" | "audit" | "activities";
 
 const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -35,12 +37,15 @@ const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] =
   { id: "companies", label: "Companies", icon: Building2 },
   { id: "referrals", label: "Referrals", icon: HeartHandshake },
   { id: "tasks", label: "Tasks", icon: ListChecks },
+  { id: "activities", label: "Activities", icon: Activity },
   { id: "lists", label: "Lists", icon: ListFilter },
   { id: "workflows", label: "Workflows", icon: Workflow },
   { id: "reports", label: "Reports", icon: BarChart3 },
+  { id: "files", label: "Files", icon: Paperclip },
   { id: "imports", label: "Imports", icon: Upload },
   { id: "exports", label: "Exports", icon: Download },
   { id: "duplicates", label: "Duplicate Mgmt", icon: ShieldCheck },
+  { id: "audit", label: "Audit Log", icon: History },
   { id: "settings", label: "Settings", icon: Settings2 },
   { id: "users", label: "Users & Permissions", icon: UserPlus },
   { id: "deleted", label: "Deleted Records", icon: Trash2 },
