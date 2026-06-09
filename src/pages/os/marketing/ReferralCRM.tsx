@@ -542,6 +542,7 @@ function NewCompanyDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
 function ReferralsModule() {
   const s = useCrm();
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<ID | null>(null);
   const rows = activeReferrals(s);
 
   return (
@@ -571,7 +572,9 @@ function ReferralsModule() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t hover:bg-muted/30">
-                  <td className="px-3 py-2 font-medium">{r.name}</td>
+                  <td className="px-3 py-2 font-medium">
+                    <button className="hover:text-primary" onClick={() => setEditingId(r.id)}>{r.name}</button>
+                  </td>
                   <td className="px-3 py-2">{companyName(s, r.companyId)}</td>
                   <td className="px-3 py-2">{r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "—"}</td>
                   <td className="px-3 py-2">{r.state || "—"}</td>
@@ -579,7 +582,14 @@ function ReferralsModule() {
                   <td className="px-3 py-2"><Badge variant="secondary">{r.referralStatus}</Badge></td>
                   <td className="px-3 py-2 text-muted-foreground">{r.insuranceType || "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{userName(s, r.assignedIntakeOwnerId)}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.referralDate)}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{fmtDate(r.referralDate)}</span>
+                      <button className="text-muted-foreground hover:text-primary" onClick={() => setEditingId(r.id)}>
+                        <Pencil className="size-3" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 && <tr><td colSpan={9} className="text-center text-muted-foreground py-10">No referrals yet.</td></tr>}
@@ -589,6 +599,7 @@ function ReferralsModule() {
       </div>
 
       <NewReferralDialog open={creating} onOpenChange={setCreating} />
+      <EditReferralDialog id={editingId} open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)} />
     </div>
   );
 }
