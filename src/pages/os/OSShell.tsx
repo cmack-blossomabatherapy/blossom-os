@@ -106,6 +106,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     id: "relationships", label: "Relationships", items: [
       { to: "/marketing/referrals", label: "Referrals", icon: HeartHandshake, module: "referrals" },
+      { to: "/marketing/referral-crm", label: "Referral CRM", icon: HeartHandshake, module: "referrals" },
       { to: "/marketing/recruiting", label: "Recruiting Marketing", icon: UserPlus, module: "recruiting_marketing" },
       { to: "/marketing/outreach", label: "Community Outreach", icon: Users2, module: "community_outreach" },
       { to: "/marketing/reputation", label: "Reputation", icon: Star, module: "reputation" },
@@ -418,6 +419,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     {
       id: "relationships", label: "Relationships", items: [
         { to: "/marketing/referrals", label: "Referrals", icon: HeartHandshake, module: "dashboard" },
+        { to: "/marketing/referral-crm", label: "Referral CRM", icon: HeartHandshake, module: "dashboard" },
         { to: "/marketing/recruiting", label: "Recruiting Marketing", icon: UserPlus, module: "dashboard", disabled: true },
         { to: "/marketing/outreach", label: "Community Outreach", icon: Users2, module: "dashboard", disabled: true },
         { to: "/marketing/reputation", label: "Reputation", icon: Star, module: "dashboard", disabled: true },
