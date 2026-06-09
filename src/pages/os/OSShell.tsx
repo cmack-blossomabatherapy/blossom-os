@@ -389,11 +389,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
       ],
     },
-    {
-      id: "relationships", label: "Relationships", items: [
-        { to: "/marketing/referrals", label: "Referrals", icon: HeartHandshake, module: "referrals" },
-      ],
-    },
     PHONE_SYSTEM_SECTION,
     {
       id: "resources", label: "Resources", items: [
