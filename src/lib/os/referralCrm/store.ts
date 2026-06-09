@@ -589,6 +589,62 @@ export const crm = {
     logAudit({ action: "delete", objectType: "company", objectId: id, summary: "Company permanently deleted" });
   },
 
+  mergeCompanies(winnerId: ID, loserId: ID) {
+    const winner = state.companies.find((c) => c.id === winnerId);
+    const loser = state.companies.find((c) => c.id === loserId);
+    if (!winner || !loser) return;
+    const pickMaxDate = (a?: string, b?: string) =>
+      [a, b].filter(Boolean).sort().reverse()[0];
+    const merged: Company = {
+      ...winner,
+      website: winner.website || loser.website,
+      mainPhone: winner.mainPhone || loser.mainPhone,
+      generalEmail: winner.generalEmail || loser.generalEmail,
+      address: winner.address || loser.address,
+      city: winner.city || loser.city,
+      state: winner.state || loser.state,
+      zip: winner.zip || loser.zip,
+      companyType: winner.companyType || loser.companyType,
+      specialty: winner.specialty || loser.specialty,
+      referralPartnerStatus: winner.referralPartnerStatus || loser.referralPartnerStatus,
+      ownerId: winner.ownerId || loser.ownerId,
+      territory: winner.territory || loser.territory,
+      relationshipTier: winner.relationshipTier || loser.relationshipTier,
+      activeReferralPartner: winner.activeReferralPartner || loser.activeReferralPartner,
+      strategicPartner: winner.strategicPartner || loser.strategicPartner,
+      lunchLearnStatus: winner.lunchLearnStatus || loser.lunchLearnStatus,
+      notes: [winner.notes, loser.notes].filter(Boolean).join("\n---\n") || undefined,
+      tags: Array.from(new Set([...(winner.tags || []), ...(loser.tags || [])])),
+      referralCount: (winner.referralCount || 0) + (loser.referralCount || 0),
+      referralsYTD: (winner.referralsYTD || 0) + (loser.referralsYTD || 0),
+      lastReferralDate: pickMaxDate(winner.lastReferralDate, loser.lastReferralDate),
+      lastContactedDate: pickMaxDate(winner.lastContactedDate, loser.lastContactedDate),
+      nextFollowUpDate: pickMaxDate(winner.nextFollowUpDate, loser.nextFollowUpDate),
+      updatedAt: now(),
+    };
+    const newCompanies = state.companies
+      .filter((c) => c.id !== loserId)
+      .map((c) => c.id === winnerId ? merged : c);
+    const newContacts = state.contacts.map((c) =>
+      c.companyId === loserId ? { ...c, companyId: winnerId } : (
+        c.associatedCompanyIds?.includes(loserId)
+          ? { ...c, associatedCompanyIds: Array.from(new Set(c.associatedCompanyIds.map((x) => x === loserId ? winnerId : x))) }
+          : c
+      ));
+    const newReferrals = state.referrals.map((r) => r.companyId === loserId ? { ...r, companyId: winnerId } : r);
+    const newTasks = state.tasks.map((t) => t.companyId === loserId ? { ...t, companyId: winnerId } : t);
+    const newActivity = state.activity.map((a) => a.companyId === loserId ? { ...a, companyId: winnerId } : a);
+    const newAttachments = state.attachments.map((a) =>
+      a.objectType === "company" && a.objectId === loserId ? { ...a, objectId: winnerId } : a);
+    set({
+      companies: newCompanies, contacts: newContacts, referrals: newReferrals,
+      tasks: newTasks, activity: newActivity, attachments: newAttachments,
+    });
+    logActivity({ type: "property_change", message: `Merged company "${loser.name}" into "${winner.name}"`, companyId: winnerId });
+    logAudit({ action: "merge", objectType: "company", objectId: winnerId, objectLabel: winner.name,
+      summary: `Merged duplicate "${loser.name}" into winner` });
+  },
+
   // referrals — also bumps contact + company stats
   addReferral(input: Partial<Referral> & { patientFirstName: string; patientLastInitial: string }) {
     const r: Referral = {

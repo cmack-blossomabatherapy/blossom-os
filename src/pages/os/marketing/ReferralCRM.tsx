@@ -1372,6 +1372,10 @@ const IMPORT_FIELDS: Record<ImportObject, { key: string; label: string; required
     { key: "email", label: "Email" }, { key: "phone", label: "Phone" },
     { key: "jobTitle", label: "Job Title" }, { key: "state", label: "State" },
     { key: "companyName", label: "Company Name" },
+    { key: "companyCity", label: "Company City" },
+    { key: "companyState", label: "Company State" },
+    { key: "companyWebsite", label: "Company Website" },
+    { key: "companyPhone", label: "Company Phone" },
   ],
   companies: [
     { key: "name", label: "Name", required: true },
@@ -1398,67 +1402,290 @@ function autoMap(headers: string[], fields: { key: string; label: string }[]): R
   return map;
 }
 
+// ---------- duplicate detection helpers (shared with imports) ----------
+function normName(s?: string) { return (s || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+function normPhone(s?: string) { return (s || "").replace(/\D/g, ""); }
+function normDomain(website?: string, email?: string): string {
+  if (website) {
+    try {
+      const u = website.startsWith("http") ? website : `https://${website}`;
+      const h = new URL(u).hostname.toLowerCase().replace(/^www\./, "");
+      if (h) return h;
+    } catch { /* ignore */ }
+    const h = website.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+    if (h) return h;
+  }
+  if (email && email.includes("@")) {
+    const d = email.split("@")[1]?.toLowerCase().trim();
+    if (d && !/(gmail|yahoo|hotmail|outlook|aol|icloud)\./i.test(d)) return d;
+  }
+  return "";
+}
+
+function findContactDuplicate(
+  contacts: Contact[],
+  row: { firstName?: string; lastName?: string; email?: string; phone?: string; companyId?: string },
+): { contact: Contact; reason: string } | null {
+  if (row.email) {
+    const hit = contacts.find((c) => c.email && c.email.toLowerCase() === row.email!.toLowerCase());
+    if (hit) return { contact: hit, reason: "email" };
+  }
+  if (row.phone) {
+    const p = normPhone(row.phone);
+    if (p) {
+      const hit = contacts.find((c) => normPhone(c.phone) === p || normPhone(c.mobilePhone) === p);
+      if (hit) return { contact: hit, reason: "phone" };
+    }
+  }
+  if (row.firstName && row.lastName && row.companyId) {
+    const hit = contacts.find((c) =>
+      c.companyId === row.companyId &&
+      c.firstName.toLowerCase() === row.firstName!.toLowerCase() &&
+      c.lastName.toLowerCase() === row.lastName!.toLowerCase());
+    if (hit) return { contact: hit, reason: "name+company" };
+  }
+  return null;
+}
+
+function findCompanyDuplicate(
+  companies: Company[],
+  row: { name?: string; website?: string; phone?: string; city?: string; state?: string },
+): { company: Company; reason: string } | null {
+  if (row.name) {
+    const n = normName(row.name);
+    const hit = companies.find((c) => normName(c.name) === n);
+    if (hit) return { company: hit, reason: "name" };
+  }
+  const d = normDomain(row.website);
+  if (d) {
+    const hit = companies.find((c) => normDomain(c.website) === d);
+    if (hit) return { company: hit, reason: "domain" };
+  }
+  if (row.phone) {
+    const p = normPhone(row.phone);
+    if (p) {
+      const hit = companies.find((c) => normPhone(c.mainPhone) === p);
+      if (hit) return { company: hit, reason: "phone" };
+    }
+  }
+  if (row.name && row.city && row.state) {
+    const n = normName(row.name);
+    const hit = companies.find((c) =>
+      normName(c.name).includes(n.slice(0, 6)) &&
+      (c.city || "").toLowerCase() === row.city!.toLowerCase() &&
+      (c.state || "").toLowerCase() === row.state!.toLowerCase());
+    if (hit) return { company: hit, reason: "name+city+state" };
+  }
+  return null;
+}
+
+type ImportMode = "skip" | "merge" | "create";
+type PlanItem =
+  | { kind: "create"; row: Record<string, string>; data: Record<string, unknown> }
+  | { kind: "dup"; row: Record<string, string>; data: Record<string, unknown>; matchId: string; matchLabel: string; reason: string }
+  | { kind: "error"; row: Record<string, string>; reason: string };
+
 function ImportsModule() {
   const s = useCrm();
   const [object, setObject] = useState<ImportObject>("contacts");
   const [text, setText] = useState("");
   const [parsed, setParsed] = useState<{ headers: string[]; rows: Record<string, string>[] } | null>(null);
   const [map, setMap] = useState<Record<string, string>>({});
+  const [mode, setMode] = useState<ImportMode>("skip");
 
-  const onFile = async (file: File) => {
-    const t = await file.text(); setText(t); doParse(t);
-  };
+  const onFile = async (file: File) => { const t = await file.text(); setText(t); doParse(t); };
   const doParse = (raw: string) => {
     const p = parseCsv(raw);
     setParsed(p);
     setMap(autoMap(p.headers, IMPORT_FIELDS[object]));
   };
 
-  const commit = () => {
-    if (!parsed) return;
-    let created = 0;
+  // Build an import plan: classify every row as create / dup / error.
+  const plan: PlanItem[] = useMemo(() => {
+    if (!parsed) return [];
+    const items: PlanItem[] = [];
+    const get = (row: Record<string, string>, k: string) => map[k] ? (row[map[k]] ?? "").trim() : "";
     for (const row of parsed.rows) {
-      const get = (k: string) => map[k] ? (row[map[k]] ?? "").trim() : "";
       if (object === "contacts") {
-        if (!get("firstName") || !get("lastName")) continue;
-        const compName = get("companyName");
+        const firstName = get(row, "firstName"), lastName = get(row, "lastName");
+        if (!firstName || !lastName) { items.push({ kind: "error", row, reason: "Missing First Name or Last Name" }); continue; }
+        // resolve / detect company for this contact row
+        const compName = get(row, "companyName");
         let companyId: string | undefined;
         if (compName) {
-          const existing = s.companies.find((c) => c.name.toLowerCase() === compName.toLowerCase());
-          companyId = existing?.id ?? crm.addCompany({ name: compName, state: get("state") || undefined }).id;
+          const compMatch = findCompanyDuplicate(activeCompanies(s), {
+            name: compName,
+            website: get(row, "companyWebsite") || undefined,
+            phone: get(row, "companyPhone") || undefined,
+            city: get(row, "companyCity") || undefined,
+            state: get(row, "companyState") || undefined,
+          });
+          companyId = compMatch?.company.id;
         }
-        crm.addContact({
-          firstName: get("firstName"), lastName: get("lastName"),
-          email: get("email") || undefined, phone: get("phone") || undefined,
-          jobTitle: get("jobTitle") || undefined, state: get("state") || undefined,
+        const data = {
+          firstName, lastName,
+          email: get(row, "email") || undefined,
+          phone: get(row, "phone") || undefined,
+          jobTitle: get(row, "jobTitle") || undefined,
+          state: get(row, "state") || undefined,
           companyId,
-        });
-        created++;
+          _companyName: compName || undefined,
+          _companyCity: get(row, "companyCity") || undefined,
+          _companyState: get(row, "companyState") || undefined,
+          _companyWebsite: get(row, "companyWebsite") || undefined,
+          _companyPhone: get(row, "companyPhone") || undefined,
+        } as Record<string, unknown>;
+        const dup = findContactDuplicate(activeContacts(s), { firstName, lastName, email: data.email as string | undefined, phone: data.phone as string | undefined, companyId });
+        if (dup) {
+          items.push({ kind: "dup", row, data, matchId: dup.contact.id, matchLabel: `${dup.contact.firstName} ${dup.contact.lastName}`, reason: dup.reason });
+        } else {
+          items.push({ kind: "create", row, data });
+        }
       } else if (object === "companies") {
-        if (!get("name")) continue;
-        crm.addCompany({
-          name: get("name"), companyType: get("companyType") || undefined,
-          city: get("city") || undefined, state: get("state") || undefined,
-          website: get("website") || undefined, mainPhone: get("mainPhone") || undefined,
+        const name = get(row, "name");
+        if (!name) { items.push({ kind: "error", row, reason: "Missing Name" }); continue; }
+        const data = {
+          name, companyType: get(row, "companyType") || undefined,
+          city: get(row, "city") || undefined, state: get(row, "state") || undefined,
+          website: get(row, "website") || undefined, mainPhone: get(row, "mainPhone") || undefined,
+        } as Record<string, unknown>;
+        const dup = findCompanyDuplicate(activeCompanies(s), {
+          name, website: data.website as string | undefined,
+          phone: data.mainPhone as string | undefined,
+          city: data.city as string | undefined, state: data.state as string | undefined,
         });
-        created++;
+        if (dup) {
+          items.push({ kind: "dup", row, data, matchId: dup.company.id, matchLabel: dup.company.name, reason: dup.reason });
+        } else {
+          items.push({ kind: "create", row, data });
+        }
       } else {
-        if (!get("patientFirstName") || !get("patientLastInitial")) continue;
-        const compName = get("companyName");
-        const company = compName ? s.companies.find((c) => c.name.toLowerCase() === compName.toLowerCase()) : undefined;
-        crm.addReferral({
-          patientFirstName: get("patientFirstName"),
-          patientLastInitial: get("patientLastInitial").slice(0, 1).toUpperCase(),
+        const pf = get(row, "patientFirstName"), pl = get(row, "patientLastInitial");
+        if (!pf || !pl) { items.push({ kind: "error", row, reason: "Missing patient name fields" }); continue; }
+        const compName = get(row, "companyName");
+        const company = compName ? findCompanyDuplicate(activeCompanies(s), { name: compName })?.company : undefined;
+        const data = {
+          patientFirstName: pf, patientLastInitial: pl.slice(0, 1).toUpperCase(),
           companyId: company?.id,
-          state: get("state") || undefined,
-          serviceType: get("serviceType") || undefined,
-          insuranceType: get("insuranceType") || undefined,
-        });
-        created++;
+          state: get(row, "state") || undefined,
+          serviceType: get(row, "serviceType") || undefined,
+          insuranceType: get(row, "insuranceType") || undefined,
+        } as Record<string, unknown>;
+        items.push({ kind: "create", row, data });
       }
     }
-    crm.recordImport(`Imported ${created} ${object}`);
-    toast({ title: `Imported ${created} ${object}` });
+    return items;
+  }, [parsed, map, object, s]);
+
+  const counts = useMemo(() => ({
+    create: plan.filter((p) => p.kind === "create").length,
+    dup: plan.filter((p) => p.kind === "dup").length,
+    error: plan.filter((p) => p.kind === "error").length,
+  }), [plan]);
+
+  const downloadErrorReport = () => {
+    const errs = plan.filter((p): p is Extract<PlanItem, { kind: "error" }> => p.kind === "error");
+    if (!parsed || !errs.length) return;
+    const headers = ["__reason", ...parsed.headers];
+    const rows = errs.map((e) => {
+      const r: Record<string, string> = { __reason: e.reason };
+      for (const h of parsed.headers) r[h] = e.row[h] ?? "";
+      return r;
+    });
+    downloadCsv(`import-errors-${Date.now()}.csv`, rowsToCsv(rows, headers));
+  };
+
+  const commit = () => {
+    if (!parsed) return;
+    let created = 0, merged = 0, skipped = 0;
+    const failed = counts.error;
+
+    for (const item of plan) {
+      if (item.kind === "error") continue;
+      if (item.kind === "dup") {
+        if (mode === "skip") { skipped++; continue; }
+        if (mode === "merge") {
+          if (object === "contacts") {
+            crm.updateContact(item.matchId, {
+              email: (item.data.email as string) || undefined,
+              phone: (item.data.phone as string) || undefined,
+              jobTitle: (item.data.jobTitle as string) || undefined,
+              state: (item.data.state as string) || undefined,
+              companyId: (item.data.companyId as string) || undefined,
+            });
+          } else if (object === "companies") {
+            crm.updateCompany(item.matchId, {
+              companyType: (item.data.companyType as string) || undefined,
+              city: (item.data.city as string) || undefined,
+              state: (item.data.state as string) || undefined,
+              website: (item.data.website as string) || undefined,
+              mainPhone: (item.data.mainPhone as string) || undefined,
+            });
+          }
+          merged++;
+          continue;
+        }
+        // mode === "create" — fall through to create anyway
+      }
+      // CREATE path
+      if (object === "contacts") {
+        let companyId = item.data.companyId as string | undefined;
+        const compName = item.data._companyName as string | undefined;
+        if (!companyId && compName) {
+          // duplicate-aware: reuse existing match first
+          const compMatch = findCompanyDuplicate(activeCompanies(s), {
+            name: compName,
+            website: item.data._companyWebsite as string | undefined,
+            phone: item.data._companyPhone as string | undefined,
+            city: item.data._companyCity as string | undefined,
+            state: item.data._companyState as string | undefined,
+          });
+          companyId = compMatch?.company.id ?? crm.addCompany({
+            name: compName,
+            city: item.data._companyCity as string | undefined,
+            state: (item.data._companyState as string) || (item.data.state as string) || undefined,
+            website: item.data._companyWebsite as string | undefined,
+            mainPhone: item.data._companyPhone as string | undefined,
+          }).id;
+        }
+        crm.addContact({
+          firstName: item.data.firstName as string,
+          lastName: item.data.lastName as string,
+          email: item.data.email as string | undefined,
+          phone: item.data.phone as string | undefined,
+          jobTitle: item.data.jobTitle as string | undefined,
+          state: item.data.state as string | undefined,
+          companyId,
+        });
+      } else if (object === "companies") {
+        crm.addCompany({
+          name: item.data.name as string,
+          companyType: item.data.companyType as string | undefined,
+          city: item.data.city as string | undefined,
+          state: item.data.state as string | undefined,
+          website: item.data.website as string | undefined,
+          mainPhone: item.data.mainPhone as string | undefined,
+        });
+      } else {
+        crm.addReferral({
+          patientFirstName: item.data.patientFirstName as string,
+          patientLastInitial: item.data.patientLastInitial as string,
+          companyId: item.data.companyId as string | undefined,
+          state: item.data.state as string | undefined,
+          serviceType: item.data.serviceType as string | undefined,
+          insuranceType: item.data.insuranceType as string | undefined,
+        });
+      }
+      created++;
+    }
+
+    crm.recordImport(
+      `Imported ${object}: ${created} created, ${merged} merged, ${skipped} skipped, ${failed} failed (mode: ${mode})`
+    );
+    toast({
+      title: `Import complete`,
+      description: `${created} created · ${merged} merged · ${skipped} skipped · ${failed} failed`,
+    });
     setText(""); setParsed(null); setMap({});
   };
 
@@ -1518,9 +1745,80 @@ function ImportsModule() {
             </div>
           </div>
 
+          <div className="rounded-2xl border bg-card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm">Import Review</h3>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground">Duplicate mode</Label>
+                <Select value={mode} onValueChange={(v) => setMode(v as ImportMode)}>
+                  <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="skip">Skip duplicates</SelectItem>
+                    <SelectItem value="merge">Merge into existing</SelectItem>
+                    <SelectItem value="create">Create anyway</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl border bg-background p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Will create</p>
+                <p className="text-2xl font-semibold tabular-nums text-emerald-700">{counts.create}</p>
+              </div>
+              <div className="rounded-xl border bg-background p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Duplicates</p>
+                <p className="text-2xl font-semibold tabular-nums text-amber-700">{counts.dup}</p>
+              </div>
+              <div className="rounded-xl border bg-background p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Errors</p>
+                <p className="text-2xl font-semibold tabular-nums text-destructive">{counts.error}</p>
+              </div>
+            </div>
+
+            {counts.dup > 0 && (
+              <div className="rounded-xl border overflow-hidden">
+                <div className="px-3 py-2 text-xs font-medium bg-muted/40">Duplicate matches (first 10)</div>
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/20"><tr>
+                    <th className="text-left px-3 py-1.5">Row</th>
+                    <th className="text-left px-3 py-1.5">Matched record</th>
+                    <th className="text-left px-3 py-1.5">Reason</th>
+                  </tr></thead>
+                  <tbody>
+                    {plan.filter((p) => p.kind === "dup").slice(0, 10).map((p, i) => {
+                      const dup = p as Extract<PlanItem, { kind: "dup" }>;
+                      const label = object === "contacts"
+                        ? `${dup.data.firstName} ${dup.data.lastName}`
+                        : (dup.data.name as string) || "—";
+                      return (
+                        <tr key={i} className="border-t">
+                          <td className="px-3 py-1.5">{label}</td>
+                          <td className="px-3 py-1.5">{dup.matchLabel}</td>
+                          <td className="px-3 py-1.5"><Badge variant="secondary" className="text-[10px]">{dup.reason}</Badge></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {counts.error > 0 && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs flex items-start gap-2">
+                <AlertCircle className="size-4 text-destructive mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-destructive">{counts.error} rows will be skipped (errors).</p>
+                  <Button size="sm" variant="outline" className="h-7 mt-2" onClick={downloadErrorReport}>
+                    <Download className="size-3 mr-1" /> Download error report CSV
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="rounded-2xl border bg-card overflow-hidden">
             <div className="px-4 py-2 text-xs text-muted-foreground bg-muted/40">
-              Preview · first 10 of {parsed.rows.length} rows
+              Source preview · first 10 of {parsed.rows.length} rows
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -1540,7 +1838,7 @@ function ImportsModule() {
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => { setParsed(null); setText(""); }}>Cancel</Button>
-            <Button size="sm" onClick={commit}>Import {parsed.rows.length} rows</Button>
+            <Button size="sm" onClick={commit}>Run import</Button>
           </div>
         </>
       )}
@@ -1553,69 +1851,161 @@ function ImportsModule() {
 // ===========================================================
 function DuplicatesModule() {
   const s = useCrm();
+  const [tab, setTab] = useState<"contacts" | "companies">("contacts");
   const [ignored, setIgnored] = useState<Set<string>>(new Set());
-  const pairs = useMemo(() => {
+
+  const contactPairs = useMemo(() => {
     const out: { a: Contact; b: Contact; reason: string }[] = [];
     const cs = activeContacts(s);
     for (let i = 0; i < cs.length; i++) {
       for (let j = i + 1; j < cs.length; j++) {
         const a = cs[i], b = cs[j];
-        const key = [a.id, b.id].sort().join("|");
+        const key = `ct|${[a.id, b.id].sort().join("|")}`;
         if (ignored.has(key)) continue;
         const sameEmail = a.email && b.email && a.email.toLowerCase() === b.email.toLowerCase();
-        const samePhone = a.phone && b.phone && a.phone.replace(/\D/g, "") === b.phone.replace(/\D/g, "");
+        const samePhone = a.phone && b.phone && normPhone(a.phone) === normPhone(b.phone);
         const sameName = a.lastName && a.lastName.toLowerCase() === b.lastName.toLowerCase()
-          && a.firstName?.[0]?.toLowerCase() === b.firstName?.[0]?.toLowerCase();
+          && a.firstName?.[0]?.toLowerCase() === b.firstName?.[0]?.toLowerCase()
+          && a.companyId && a.companyId === b.companyId;
         if (sameEmail || samePhone || sameName) {
-          out.push({ a, b, reason: sameEmail ? "Same email" : samePhone ? "Same phone" : "Same last name + initial" });
+          out.push({ a, b, reason: sameEmail ? "Same email" : samePhone ? "Same phone" : "Same name + company" });
         }
       }
     }
     return out;
   }, [s, ignored]);
 
-  const merge = (winner: Contact, loser: Contact) => {
+  const companyPairs = useMemo(() => {
+    const out: { a: Company; b: Company; reason: string }[] = [];
+    const cs = activeCompanies(s);
+    for (let i = 0; i < cs.length; i++) {
+      for (let j = i + 1; j < cs.length; j++) {
+        const a = cs[i], b = cs[j];
+        const key = `co|${[a.id, b.id].sort().join("|")}`;
+        if (ignored.has(key)) continue;
+        const sameName = normName(a.name) && normName(a.name) === normName(b.name);
+        const da = normDomain(a.website, a.generalEmail);
+        const db = normDomain(b.website, b.generalEmail);
+        const sameDomain = da && da === db;
+        const sameMain = a.mainPhone && b.mainPhone && normPhone(a.mainPhone) === normPhone(b.mainPhone);
+        const sameNCS = a.name && b.name && a.city && b.city && a.state && b.state
+          && normName(a.name).slice(0, 6) === normName(b.name).slice(0, 6)
+          && a.city.toLowerCase() === b.city.toLowerCase()
+          && a.state.toLowerCase() === b.state.toLowerCase();
+        if (sameName || sameDomain || sameMain || sameNCS) {
+          const reason = sameName ? "Same company name"
+            : sameDomain ? "Same website domain"
+            : sameMain ? "Same phone"
+            : "Same name + city + state";
+          out.push({ a, b, reason });
+        }
+      }
+    }
+    return out;
+  }, [s, ignored]);
+
+  const mergeContact = (winner: Contact, loser: Contact) => {
     crm.mergeContacts(winner.id, loser.id);
     toast({ title: `Merged "${loser.firstName} ${loser.lastName}" into "${winner.firstName} ${winner.lastName}"` });
+  };
+  const mergeCompany = (winner: Company, loser: Company) => {
+    crm.mergeCompanies(winner.id, loser.id);
+    toast({ title: `Merged "${loser.name}" into "${winner.name}"` });
   };
 
   return (
     <div className="space-y-4">
-      {pairs.length === 0 && (
-        <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">
-          No likely duplicates detected.
-        </div>
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant={tab === "contacts" ? "default" : "outline"} className="h-8" onClick={() => setTab("contacts")}>
+          Contacts <Badge variant="secondary" className="ml-2 text-[10px]">{contactPairs.length}</Badge>
+        </Button>
+        <Button size="sm" variant={tab === "companies" ? "default" : "outline"} className="h-8" onClick={() => setTab("companies")}>
+          Companies <Badge variant="secondary" className="ml-2 text-[10px]">{companyPairs.length}</Badge>
+        </Button>
+      </div>
+
+      {tab === "contacts" && (
+        <>
+          {contactPairs.length === 0 && (
+            <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">
+              No likely contact duplicates detected.
+            </div>
+          )}
+          {contactPairs.map((p) => {
+            const key = `ct|${[p.a.id, p.b.id].sort().join("|")}`;
+            return (
+              <div key={key} className="rounded-2xl border bg-card p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-sm">Possible contact duplicate</h3>
+                  <Badge variant="secondary" className="text-[10px]">{p.reason}</Badge>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {[p.a, p.b].map((c, idx) => {
+                    const other = idx === 0 ? p.b : p.a;
+                    return (
+                      <div key={c.id} className="rounded-xl border p-3 text-sm space-y-1">
+                        <p className="font-medium">{fullName(c)}</p>
+                        <p className="text-xs text-muted-foreground">{c.email || "no email"}</p>
+                        <p className="text-xs text-muted-foreground">{c.phone || "no phone"}</p>
+                        <p className="text-xs text-muted-foreground">{c.jobTitle || "—"} · {c.referralCount} referrals</p>
+                        <p className="text-xs text-muted-foreground">{companyName(s, c.companyId)}</p>
+                        <Button size="sm" className="h-7 mt-2 w-full" onClick={() => mergeContact(c, other)}>
+                          Keep this · merge other in
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-end mt-3">
+                  <Button size="sm" variant="outline" onClick={() => setIgnored(new Set([...ignored, key]))}>Not a duplicate</Button>
+                </div>
+              </div>
+            );
+          })}
+        </>
       )}
-      {pairs.map((p) => {
-        const key = [p.a.id, p.b.id].sort().join("|");
-        return (
-          <div key={key} className="rounded-2xl border bg-card p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-sm">Possible duplicate</h3>
-              <Badge variant="secondary" className="text-[10px]">{p.reason}</Badge>
+
+      {tab === "companies" && (
+        <>
+          {companyPairs.length === 0 && (
+            <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">
+              No likely company duplicates detected.
             </div>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {[p.a, p.b].map((c, idx) => {
-                const other = idx === 0 ? p.b : p.a;
-                return (
-                  <div key={c.id} className="rounded-xl border p-3 text-sm space-y-1">
-                    <p className="font-medium">{fullName(c)}</p>
-                    <p className="text-xs text-muted-foreground">{c.email || "no email"}</p>
-                    <p className="text-xs text-muted-foreground">{c.phone || "no phone"}</p>
-                    <p className="text-xs text-muted-foreground">{c.jobTitle || "—"} · {c.referralCount} referrals</p>
-                    <Button size="sm" className="h-7 mt-2 w-full" onClick={() => merge(c, other)}>
-                      Keep this · merge other in
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex justify-end mt-3">
-              <Button size="sm" variant="outline" onClick={() => setIgnored(new Set([...ignored, key]))}>Not a duplicate</Button>
-            </div>
-          </div>
-        );
-      })}
+          )}
+          {companyPairs.map((p) => {
+            const key = `co|${[p.a.id, p.b.id].sort().join("|")}`;
+            return (
+              <div key={key} className="rounded-2xl border bg-card p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-sm">Possible company duplicate</h3>
+                  <Badge variant="secondary" className="text-[10px]">{p.reason}</Badge>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {[p.a, p.b].map((c, idx) => {
+                    const other = idx === 0 ? p.b : p.a;
+                    const contactCount = s.contacts.filter((x) => x.companyId === c.id && !x.deletedAt).length;
+                    return (
+                      <div key={c.id} className="rounded-xl border p-3 text-sm space-y-1">
+                        <p className="font-medium">{c.name}</p>
+                        <p className="text-xs text-muted-foreground">{c.website || "no website"}</p>
+                        <p className="text-xs text-muted-foreground">{c.mainPhone || "no phone"}</p>
+                        <p className="text-xs text-muted-foreground">{[c.city, c.state].filter(Boolean).join(", ") || "—"}</p>
+                        <p className="text-xs text-muted-foreground">{contactCount} contacts · {c.referralCount} referrals</p>
+                        <Button size="sm" className="h-7 mt-2 w-full" onClick={() => mergeCompany(c, other)}>
+                          Keep this · merge other in
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-end mt-3">
+                  <Button size="sm" variant="outline" onClick={() => setIgnored(new Set([...ignored, key]))}>Not a duplicate</Button>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }
