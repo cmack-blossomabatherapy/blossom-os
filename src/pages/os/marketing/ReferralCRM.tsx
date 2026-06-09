@@ -428,6 +428,7 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
+  const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
 
   const rows = useMemo(() => {
     let r = activeCompanies(s);
@@ -441,7 +442,54 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
   const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
-  const bulkDelete = () => { selected.forEach((id) => crm.softDeleteCompany(id)); toast({ title: `${selected.size} company(ies) deleted` }); setSelected(new Set()); };
+  const ids = () => Array.from(selected);
+  const clear = () => setSelected(new Set());
+  const bulkAssignOwner = (uid: ID) => {
+    ids().forEach((id) => crm.updateCompany(id, { ownerId: uid }));
+    toast({ title: `Assigned ${selected.size} company(ies)` }); clear();
+  };
+  const bulkPartnerStatus = (v: string) => {
+    ids().forEach((id) => crm.updateCompany(id, { referralPartnerStatus: v, activeReferralPartner: v === "Active Referral Partner" }));
+    toast({ title: `Updated partner status on ${selected.size}` }); clear();
+  };
+  const bulkTier = (v: string) => {
+    ids().forEach((id) => crm.updateCompany(id, { relationshipTier: v as Company["relationshipTier"] }));
+    toast({ title: `Updated tier on ${selected.size}` }); clear();
+  };
+  const bulkAddTag = () => {
+    const tag = window.prompt("Tag to add:"); if (!tag) return;
+    ids().forEach((id) => {
+      const c = s.companies.find((x) => x.id === id);
+      if (c && !c.tags.includes(tag)) crm.updateCompany(id, { tags: [...c.tags, tag] });
+    });
+    toast({ title: `Tagged ${selected.size} company(ies)` }); clear();
+  };
+  const bulkRemoveTag = () => {
+    const tag = window.prompt("Tag to remove:"); if (!tag) return;
+    ids().forEach((id) => {
+      const c = s.companies.find((x) => x.id === id);
+      if (c && c.tags.includes(tag)) crm.updateCompany(id, { tags: c.tags.filter((t) => t !== tag) });
+    });
+    toast({ title: `Removed tag from ${selected.size}` }); clear();
+  };
+  const bulkExport = () => {
+    const data = s.companies.filter((c) => selected.has(c.id)).map((c) => ({
+      id: c.id, name: c.name, companyType: c.companyType, city: c.city, state: c.state,
+      referralPartnerStatus: c.referralPartnerStatus, relationshipTier: c.relationshipTier,
+      activeReferralPartner: c.activeReferralPartner, ownerName: userName(s, c.ownerId),
+      referralCount: c.referralCount, referralsYTD: c.referralsYTD,
+      lastReferralDate: c.lastReferralDate, lastContactedDate: c.lastContactedDate,
+      mainPhone: c.mainPhone, generalEmail: c.generalEmail, website: c.website,
+      tags: c.tags.join("|"),
+    }));
+    downloadCsv(`companies-selected-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} selected companies`);
+    toast({ title: `Exported ${data.length} company(ies)` });
+  };
+  const bulkDelete = () => {
+    ids().forEach((id) => crm.softDeleteCompany(id));
+    toast({ title: `${selected.size} company(ies) deleted` }); clear();
+  };
 
   return (
     <div className="space-y-4">
@@ -465,8 +513,36 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
       </div>
 
       {selected.size > 0 && (
-        <div className="rounded-xl bg-foreground text-background px-3 py-2 flex items-center gap-2 text-sm">
+        <div className="rounded-xl bg-foreground text-background px-3 py-2 flex flex-wrap items-center gap-2 text-sm">
+          <button onClick={clear} className="size-6 grid place-items-center rounded hover:bg-background/10">
+            <X className="size-3.5" />
+          </button>
           <span className="font-medium">{selected.size} selected</span>
+          <span className="mx-1 h-4 w-px bg-background/20" />
+          <Select onValueChange={bulkAssignOwner}>
+            <SelectTrigger className="h-7 w-[150px] bg-transparent border-background/20 text-xs text-background"><SelectValue placeholder="Assign owner" /></SelectTrigger>
+            <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select onValueChange={bulkPartnerStatus}>
+            <SelectTrigger className="h-7 w-[170px] bg-transparent border-background/20 text-xs text-background"><SelectValue placeholder="Partner status" /></SelectTrigger>
+            <SelectContent>{["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select onValueChange={bulkTier}>
+            <SelectTrigger className="h-7 w-[110px] bg-transparent border-background/20 text-xs text-background"><SelectValue placeholder="Tier" /></SelectTrigger>
+            <SelectContent>{["Tier A", "Tier B", "Tier C"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkAddTag}>
+            <Tag className="size-3 mr-1" /> Add tag
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkRemoveTag}>
+            <X className="size-3 mr-1" /> Remove tag
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={() => setBulkTaskOpen(true)}>
+            <ListChecks className="size-3 mr-1" /> Create task
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkExport}>
+            <Download className="size-3 mr-1" /> Export
+          </Button>
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
@@ -511,6 +587,16 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
       </div>
 
       <NewCompanyDialog open={creating} onOpenChange={setCreating} />
+      <BulkCreateTaskDialog
+        open={bulkTaskOpen}
+        onOpenChange={setBulkTaskOpen}
+        targetCount={selected.size}
+        onSubmit={(payload) => {
+          ids().forEach((cid) => crm.addTask({ ...payload, companyId: cid }));
+          toast({ title: `Created ${selected.size} task(s)` });
+          setBulkTaskOpen(false); clear();
+        }}
+      />
     </div>
   );
 }
@@ -549,6 +635,66 @@ function NewCompanyDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
 }
 
 // ===========================================================
+// Shared bulk create-task dialog
+// ===========================================================
+function BulkCreateTaskDialog({
+  open, onOpenChange, targetCount, onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (b: boolean) => void;
+  targetCount: number;
+  onSubmit: (payload: { title: string; type: Task["type"]; priority: Task["priority"]; assignedUserId?: ID; dueDate?: string; notes?: string }) => void;
+}) {
+  const s = useCrm();
+  const [f, setF] = useState({ title: "", type: "Call" as Task["type"], priority: "Medium" as Task["priority"], assignedUserId: "", dueDate: "", notes: "" });
+  const submit = () => {
+    if (!f.title) { toast({ title: "Title required" }); return; }
+    onSubmit({
+      title: f.title, type: f.type, priority: f.priority,
+      assignedUserId: f.assignedUserId || undefined,
+      dueDate: f.dueDate || undefined, notes: f.notes || undefined,
+    });
+    setF({ title: "", type: "Call", priority: "Medium", assignedUserId: "", dueDate: "", notes: "" });
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Create task for {targetCount} record(s)</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div><Label className="text-xs">Title</Label><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label className="text-xs">Type</Label>
+              <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v as Task["type"] })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{["Call", "Email", "Meeting", "Lunch & Learn", "Follow-Up", "Other"].map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label className="text-xs">Priority</Label>
+              <Select value={f.priority} onValueChange={(v) => setF({ ...f, priority: v as Task["priority"] })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{["Low", "Medium", "High"].map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label className="text-xs">Owner</Label>
+              <Select value={f.assignedUserId} onValueChange={(v) => setF({ ...f, assignedUserId: v })}>
+                <SelectTrigger><SelectValue placeholder="Assign" /></SelectTrigger>
+                <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label className="text-xs">Due date</Label><Input type="date" value={f.dueDate} onChange={(e) => setF({ ...f, dueDate: e.target.value })} /></div>
+          </div>
+          <div><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={2} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={submit}>Create {targetCount} task(s)</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ===========================================================
 // Referrals
 // ===========================================================
 function ReferralsModule() {
@@ -556,7 +702,46 @@ function ReferralsModule() {
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
   const [logId, setLogId] = useState<ID | null>(null);
+  const [selected, setSelected] = useState<Set<ID>>(new Set());
+  const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
   const rows = activeReferrals(s);
+
+  const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
+  const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
+  const ids = () => Array.from(selected);
+  const clear = () => setSelected(new Set());
+  const bulkStatus = (v: string) => {
+    ids().forEach((id) => crm.updateReferral(id, { referralStatus: v as Referral["referralStatus"] }));
+    toast({ title: `Updated status on ${selected.size}` }); clear();
+  };
+  const bulkIntakeStatus = () => {
+    const v = window.prompt("New intake status:"); if (!v) return;
+    ids().forEach((id) => crm.updateReferral(id, { intakeStatus: v }));
+    toast({ title: `Updated intake status on ${selected.size}` }); clear();
+  };
+  const bulkAssignIntake = (uid: ID) => {
+    ids().forEach((id) => crm.updateReferral(id, { assignedIntakeOwnerId: uid }));
+    toast({ title: `Assigned intake owner on ${selected.size}` }); clear();
+  };
+  const bulkExport = () => {
+    const data = s.referrals.filter((r) => selected.has(r.id)).map((r) => ({
+      id: r.id, name: r.name, referralDate: r.referralDate,
+      companyName: companyName(s, r.companyId),
+      contactName: r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "",
+      state: r.state, serviceType: r.serviceType, referralStatus: r.referralStatus,
+      intakeStatus: r.intakeStatus, insuranceType: r.insuranceType,
+      intakeOwner: userName(s, r.assignedIntakeOwnerId),
+      notes: r.notes,
+    }));
+    downloadCsv(`referrals-selected-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} selected referrals`);
+    toast({ title: `Exported ${data.length} referral(s)` });
+  };
+  const bulkDelete = () => {
+    ids().forEach((id) => crm.softDeleteReferral(id));
+    toast({ title: `${selected.size} referral(s) deleted` }); clear();
+  };
 
   return (
     <div className="space-y-4">
@@ -566,11 +751,40 @@ function ReferralsModule() {
         </Button>
       </div>
 
+      {selected.size > 0 && (
+        <div className="rounded-xl bg-foreground text-background px-3 py-2 flex flex-wrap items-center gap-2 text-sm">
+          <button onClick={clear} className="size-6 grid place-items-center rounded hover:bg-background/10"><X className="size-3.5" /></button>
+          <span className="font-medium">{selected.size} selected</span>
+          <span className="mx-1 h-4 w-px bg-background/20" />
+          <Select onValueChange={bulkStatus}>
+            <SelectTrigger className="h-7 w-[160px] bg-transparent border-background/20 text-xs text-background"><SelectValue placeholder="Referral status" /></SelectTrigger>
+            <SelectContent>{["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkIntakeStatus}>
+            <Pencil className="size-3 mr-1" /> Intake status
+          </Button>
+          <Select onValueChange={bulkAssignIntake}>
+            <SelectTrigger className="h-7 w-[160px] bg-transparent border-background/20 text-xs text-background"><SelectValue placeholder="Intake owner" /></SelectTrigger>
+            <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={() => setBulkTaskOpen(true)}>
+            <ListChecks className="size-3 mr-1" /> Create task
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkExport}>
+            <Download className="size-3 mr-1" /> Export
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+            <Trash2 className="size-3 mr-1" /> Delete
+          </Button>
+        </div>
+      )}
+
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr>
+                <th className="w-10 px-3 py-2"><Checkbox checked={allChecked} onCheckedChange={toggleAll} /></th>
                 <th className="text-left px-3 py-2 font-medium">Patient</th>
                 <th className="text-left px-3 py-2 font-medium">Source Company</th>
                 <th className="text-left px-3 py-2 font-medium">Source Contact</th>
@@ -585,6 +799,7 @@ function ReferralsModule() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t hover:bg-muted/30">
+                  <td className="px-3 py-2"><Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleOne(r.id)} /></td>
                   <td className="px-3 py-2 font-medium">
                     <button className="hover:text-primary" onClick={() => setEditingId(r.id)}>{r.name}</button>
                   </td>
@@ -610,7 +825,7 @@ function ReferralsModule() {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={9} className="text-center text-muted-foreground py-10">No referrals yet.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={10} className="text-center text-muted-foreground py-10">No referrals yet.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -619,6 +834,19 @@ function ReferralsModule() {
       <NewReferralDialog open={creating} onOpenChange={setCreating} />
       <EditReferralDialog id={editingId} open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)} />
       <LogActivityDialog open={!!logId} onOpenChange={(o) => !o && setLogId(null)} referralId={logId ?? undefined} />
+      <BulkCreateTaskDialog
+        open={bulkTaskOpen}
+        onOpenChange={setBulkTaskOpen}
+        targetCount={selected.size}
+        onSubmit={(payload) => {
+          ids().forEach((rid) => {
+            const r = s.referrals.find((x) => x.id === rid);
+            crm.addTask({ ...payload, referralId: rid, companyId: r?.companyId, contactId: r?.contactId });
+          });
+          toast({ title: `Created ${selected.size} task(s)` });
+          setBulkTaskOpen(false); clear();
+        }}
+      />
     </div>
   );
 }
@@ -684,6 +912,7 @@ function TasksModule() {
   const s = useCrm();
   const [groupBy, setGroupBy] = useState<"owner" | "state" | "status">("owner");
   const [creating, setCreating] = useState(false);
+  const [selected, setSelected] = useState<Set<ID>>(new Set());
 
   const groups = useMemo(() => {
     const map = new Map<string, Task[]>();
@@ -700,6 +929,46 @@ function TasksModule() {
     return [...map.entries()];
   }, [s, groupBy]);
 
+  const visibleIds = s.tasks.map((t) => t.id);
+  const allChecked = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
+  const toggleAll = () => setSelected(allChecked ? new Set() : new Set(visibleIds));
+  const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
+  const ids = () => Array.from(selected);
+  const clear = () => setSelected(new Set());
+  const bulkComplete = () => {
+    ids().forEach((id) => crm.updateTask(id, { status: "Completed" }));
+    toast({ title: `Completed ${selected.size} task(s)` }); clear();
+  };
+  const bulkAssign = (uid: ID) => {
+    ids().forEach((id) => crm.updateTask(id, { assignedUserId: uid }));
+    toast({ title: `Reassigned ${selected.size} task(s)` }); clear();
+  };
+  const bulkPriority = (v: string) => {
+    ids().forEach((id) => crm.updateTask(id, { priority: v as Task["priority"] }));
+    toast({ title: `Updated priority on ${selected.size}` }); clear();
+  };
+  const bulkDueDate = () => {
+    const v = window.prompt("Due date (YYYY-MM-DD):"); if (!v) return;
+    ids().forEach((id) => crm.updateTask(id, { dueDate: v }));
+    toast({ title: `Updated due date on ${selected.size}` }); clear();
+  };
+  const bulkDelete = () => {
+    ids().forEach((id) => crm.deleteTask(id));
+    toast({ title: `${selected.size} task(s) deleted` }); clear();
+  };
+  const bulkExport = () => {
+    const data = s.tasks.filter((t) => selected.has(t.id)).map((t) => ({
+      id: t.id, title: t.title, type: t.type, priority: t.priority, status: t.status,
+      dueDate: t.dueDate, assignedUser: userName(s, t.assignedUserId),
+      company: companyName(s, t.companyId),
+      contact: t.contactId ? fullName(s.contacts.find((c) => c.id === t.contactId)!) : "",
+      referralId: t.referralId, notes: t.notes, createdAt: t.createdAt,
+    }));
+    downloadCsv(`tasks-selected-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} selected tasks`);
+    toast({ title: `Exported ${data.length} task(s)` });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -712,9 +981,40 @@ function TasksModule() {
             <SelectItem value="status">Status</SelectItem>
           </SelectContent>
         </Select>
+        <label className="ml-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <Checkbox checked={allChecked} onCheckedChange={toggleAll} /> Select all
+        </label>
         <div className="flex-1" />
         <Button size="sm" className="h-9 gap-1.5" onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Task</Button>
       </div>
+
+      {selected.size > 0 && (
+        <div className="rounded-xl bg-foreground text-background px-3 py-2 flex flex-wrap items-center gap-2 text-sm">
+          <button onClick={clear} className="size-6 grid place-items-center rounded hover:bg-background/10"><X className="size-3.5" /></button>
+          <span className="font-medium">{selected.size} selected</span>
+          <span className="mx-1 h-4 w-px bg-background/20" />
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkComplete}>
+            <CheckCircle2 className="size-3 mr-1" /> Complete
+          </Button>
+          <Select onValueChange={bulkAssign}>
+            <SelectTrigger className="h-7 w-[150px] bg-transparent border-background/20 text-xs text-background"><SelectValue placeholder="Reassign owner" /></SelectTrigger>
+            <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select onValueChange={bulkPriority}>
+            <SelectTrigger className="h-7 w-[120px] bg-transparent border-background/20 text-xs text-background"><SelectValue placeholder="Priority" /></SelectTrigger>
+            <SelectContent>{["Low", "Medium", "High"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDueDate}>
+            <Calendar className="size-3 mr-1" /> Due date
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkExport}>
+            <Download className="size-3 mr-1" /> Export
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+            <Trash2 className="size-3 mr-1" /> Delete
+          </Button>
+        </div>
+      )}
 
       <div className="space-y-4">
         {groups.map(([key, items]) => (
@@ -728,6 +1028,7 @@ function TasksModule() {
                 const overdue = t.dueDate && new Date(t.dueDate).getTime() < Date.now() && t.status !== "Completed";
                 return (
                   <div key={t.id} className="px-4 py-2.5 flex items-center gap-3 text-sm">
+                    <Checkbox checked={selected.has(t.id)} onCheckedChange={() => toggleOne(t.id)} />
                     <button
                       className={cn("size-4 rounded border flex items-center justify-center",
                         t.status === "Completed" ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/30")}
