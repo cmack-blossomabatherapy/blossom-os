@@ -1851,69 +1851,161 @@ function ImportsModule() {
 // ===========================================================
 function DuplicatesModule() {
   const s = useCrm();
+  const [tab, setTab] = useState<"contacts" | "companies">("contacts");
   const [ignored, setIgnored] = useState<Set<string>>(new Set());
-  const pairs = useMemo(() => {
+
+  const contactPairs = useMemo(() => {
     const out: { a: Contact; b: Contact; reason: string }[] = [];
     const cs = activeContacts(s);
     for (let i = 0; i < cs.length; i++) {
       for (let j = i + 1; j < cs.length; j++) {
         const a = cs[i], b = cs[j];
-        const key = [a.id, b.id].sort().join("|");
+        const key = `ct|${[a.id, b.id].sort().join("|")}`;
         if (ignored.has(key)) continue;
         const sameEmail = a.email && b.email && a.email.toLowerCase() === b.email.toLowerCase();
-        const samePhone = a.phone && b.phone && a.phone.replace(/\D/g, "") === b.phone.replace(/\D/g, "");
+        const samePhone = a.phone && b.phone && normPhone(a.phone) === normPhone(b.phone);
         const sameName = a.lastName && a.lastName.toLowerCase() === b.lastName.toLowerCase()
-          && a.firstName?.[0]?.toLowerCase() === b.firstName?.[0]?.toLowerCase();
+          && a.firstName?.[0]?.toLowerCase() === b.firstName?.[0]?.toLowerCase()
+          && a.companyId && a.companyId === b.companyId;
         if (sameEmail || samePhone || sameName) {
-          out.push({ a, b, reason: sameEmail ? "Same email" : samePhone ? "Same phone" : "Same last name + initial" });
+          out.push({ a, b, reason: sameEmail ? "Same email" : samePhone ? "Same phone" : "Same name + company" });
         }
       }
     }
     return out;
   }, [s, ignored]);
 
-  const merge = (winner: Contact, loser: Contact) => {
+  const companyPairs = useMemo(() => {
+    const out: { a: Company; b: Company; reason: string }[] = [];
+    const cs = activeCompanies(s);
+    for (let i = 0; i < cs.length; i++) {
+      for (let j = i + 1; j < cs.length; j++) {
+        const a = cs[i], b = cs[j];
+        const key = `co|${[a.id, b.id].sort().join("|")}`;
+        if (ignored.has(key)) continue;
+        const sameName = normName(a.name) && normName(a.name) === normName(b.name);
+        const da = normDomain(a.website, a.generalEmail);
+        const db = normDomain(b.website, b.generalEmail);
+        const sameDomain = da && da === db;
+        const sameMain = a.mainPhone && b.mainPhone && normPhone(a.mainPhone) === normPhone(b.mainPhone);
+        const sameNCS = a.name && b.name && a.city && b.city && a.state && b.state
+          && normName(a.name).slice(0, 6) === normName(b.name).slice(0, 6)
+          && a.city.toLowerCase() === b.city.toLowerCase()
+          && a.state.toLowerCase() === b.state.toLowerCase();
+        if (sameName || sameDomain || sameMain || sameNCS) {
+          const reason = sameName ? "Same company name"
+            : sameDomain ? "Same website domain"
+            : sameMain ? "Same phone"
+            : "Same name + city + state";
+          out.push({ a, b, reason });
+        }
+      }
+    }
+    return out;
+  }, [s, ignored]);
+
+  const mergeContact = (winner: Contact, loser: Contact) => {
     crm.mergeContacts(winner.id, loser.id);
     toast({ title: `Merged "${loser.firstName} ${loser.lastName}" into "${winner.firstName} ${winner.lastName}"` });
+  };
+  const mergeCompany = (winner: Company, loser: Company) => {
+    crm.mergeCompanies(winner.id, loser.id);
+    toast({ title: `Merged "${loser.name}" into "${winner.name}"` });
   };
 
   return (
     <div className="space-y-4">
-      {pairs.length === 0 && (
-        <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">
-          No likely duplicates detected.
-        </div>
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant={tab === "contacts" ? "default" : "outline"} className="h-8" onClick={() => setTab("contacts")}>
+          Contacts <Badge variant="secondary" className="ml-2 text-[10px]">{contactPairs.length}</Badge>
+        </Button>
+        <Button size="sm" variant={tab === "companies" ? "default" : "outline"} className="h-8" onClick={() => setTab("companies")}>
+          Companies <Badge variant="secondary" className="ml-2 text-[10px]">{companyPairs.length}</Badge>
+        </Button>
+      </div>
+
+      {tab === "contacts" && (
+        <>
+          {contactPairs.length === 0 && (
+            <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">
+              No likely contact duplicates detected.
+            </div>
+          )}
+          {contactPairs.map((p) => {
+            const key = `ct|${[p.a.id, p.b.id].sort().join("|")}`;
+            return (
+              <div key={key} className="rounded-2xl border bg-card p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-sm">Possible contact duplicate</h3>
+                  <Badge variant="secondary" className="text-[10px]">{p.reason}</Badge>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {[p.a, p.b].map((c, idx) => {
+                    const other = idx === 0 ? p.b : p.a;
+                    return (
+                      <div key={c.id} className="rounded-xl border p-3 text-sm space-y-1">
+                        <p className="font-medium">{fullName(c)}</p>
+                        <p className="text-xs text-muted-foreground">{c.email || "no email"}</p>
+                        <p className="text-xs text-muted-foreground">{c.phone || "no phone"}</p>
+                        <p className="text-xs text-muted-foreground">{c.jobTitle || "—"} · {c.referralCount} referrals</p>
+                        <p className="text-xs text-muted-foreground">{companyName(s, c.companyId)}</p>
+                        <Button size="sm" className="h-7 mt-2 w-full" onClick={() => mergeContact(c, other)}>
+                          Keep this · merge other in
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-end mt-3">
+                  <Button size="sm" variant="outline" onClick={() => setIgnored(new Set([...ignored, key]))}>Not a duplicate</Button>
+                </div>
+              </div>
+            );
+          })}
+        </>
       )}
-      {pairs.map((p) => {
-        const key = [p.a.id, p.b.id].sort().join("|");
-        return (
-          <div key={key} className="rounded-2xl border bg-card p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-sm">Possible duplicate</h3>
-              <Badge variant="secondary" className="text-[10px]">{p.reason}</Badge>
+
+      {tab === "companies" && (
+        <>
+          {companyPairs.length === 0 && (
+            <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">
+              No likely company duplicates detected.
             </div>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {[p.a, p.b].map((c, idx) => {
-                const other = idx === 0 ? p.b : p.a;
-                return (
-                  <div key={c.id} className="rounded-xl border p-3 text-sm space-y-1">
-                    <p className="font-medium">{fullName(c)}</p>
-                    <p className="text-xs text-muted-foreground">{c.email || "no email"}</p>
-                    <p className="text-xs text-muted-foreground">{c.phone || "no phone"}</p>
-                    <p className="text-xs text-muted-foreground">{c.jobTitle || "—"} · {c.referralCount} referrals</p>
-                    <Button size="sm" className="h-7 mt-2 w-full" onClick={() => merge(c, other)}>
-                      Keep this · merge other in
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex justify-end mt-3">
-              <Button size="sm" variant="outline" onClick={() => setIgnored(new Set([...ignored, key]))}>Not a duplicate</Button>
-            </div>
-          </div>
-        );
-      })}
+          )}
+          {companyPairs.map((p) => {
+            const key = `co|${[p.a.id, p.b.id].sort().join("|")}`;
+            return (
+              <div key={key} className="rounded-2xl border bg-card p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-sm">Possible company duplicate</h3>
+                  <Badge variant="secondary" className="text-[10px]">{p.reason}</Badge>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {[p.a, p.b].map((c, idx) => {
+                    const other = idx === 0 ? p.b : p.a;
+                    const contactCount = s.contacts.filter((x) => x.companyId === c.id && !x.deletedAt).length;
+                    return (
+                      <div key={c.id} className="rounded-xl border p-3 text-sm space-y-1">
+                        <p className="font-medium">{c.name}</p>
+                        <p className="text-xs text-muted-foreground">{c.website || "no website"}</p>
+                        <p className="text-xs text-muted-foreground">{c.mainPhone || "no phone"}</p>
+                        <p className="text-xs text-muted-foreground">{[c.city, c.state].filter(Boolean).join(", ") || "—"}</p>
+                        <p className="text-xs text-muted-foreground">{contactCount} contacts · {c.referralCount} referrals</p>
+                        <Button size="sm" className="h-7 mt-2 w-full" onClick={() => mergeCompany(c, other)}>
+                          Keep this · merge other in
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-end mt-3">
+                  <Button size="sm" variant="outline" onClick={() => setIgnored(new Set([...ignored, key]))}>Not a duplicate</Button>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }
