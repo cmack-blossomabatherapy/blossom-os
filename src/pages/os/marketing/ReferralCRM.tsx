@@ -1267,36 +1267,264 @@ function WorkflowsModule() {
 // ===========================================================
 function ReportsModule() {
   const s = useCrm();
-  const byOwner = s.users.map((u) => ({
-    user: u.name,
-    contacts: activeContacts(s).filter((c) => c.ownerId === u.id).length,
-    referrals: activeReferrals(s).filter((r) => {
-      const co = s.companies.find((x) => x.id === r.companyId);
-      return co?.ownerId === u.id;
+  const [range, setRange] = useState<"30" | "60" | "90" | "ytd" | "all">("90");
+  const [stateF, setStateF] = useState<string>("all");
+  const [ownerF, setOwnerF] = useState<string>("all");
+  const [typeF, setTypeF] = useState<string>("all");
+  const [srcF, setSrcF] = useState<string>("all");
+  const [partnerF, setPartnerF] = useState<string>("all");
+
+  const since = useMemo(() => {
+    if (range === "all") return 0;
+    if (range === "ytd") return new Date(new Date().getFullYear(), 0, 1).getTime();
+    return Date.now() - Number(range) * 86_400_000;
+  }, [range]);
+  const inRange = (iso?: string) => !iso || new Date(iso).getTime() >= since;
+
+  const companyTypes = useMemo(
+    () => Array.from(new Set(s.companies.map((c) => c.companyType).filter(Boolean))) as string[],
+    [s.companies],
+  );
+  const sourceTypes = useMemo(
+    () => Array.from(new Set(s.contacts.map((c) => c.referralSourceType).filter(Boolean))) as string[],
+    [s.contacts],
+  );
+  const partnerStatuses = useMemo(
+    () => Array.from(new Set([
+      ...s.companies.map((c) => c.referralPartnerStatus),
+      ...s.contacts.map((c) => c.referralPartnerStatus),
+    ].filter(Boolean))) as string[],
+    [s.companies, s.contacts],
+  );
+
+  const cos = useMemo(() => activeCompanies(s).filter((c) =>
+    (stateF === "all" || c.state === stateF) &&
+    (ownerF === "all" || c.ownerId === ownerF) &&
+    (typeF === "all" || c.companyType === typeF) &&
+    (partnerF === "all" || c.referralPartnerStatus === partnerF)
+  ), [s, stateF, ownerF, typeF, partnerF]);
+
+  const cts = useMemo(() => activeContacts(s).filter((c) =>
+    (stateF === "all" || c.state === stateF) &&
+    (ownerF === "all" || c.ownerId === ownerF) &&
+    (srcF === "all" || c.referralSourceType === srcF) &&
+    (partnerF === "all" || c.referralPartnerStatus === partnerF)
+  ), [s, stateF, ownerF, srcF, partnerF]);
+
+  const refs = useMemo(() => activeReferrals(s).filter((r) =>
+    (stateF === "all" || r.state === stateF) &&
+    inRange(r.referralDate) &&
+    (ownerF === "all" || s.companies.find((x) => x.id === r.companyId)?.ownerId === ownerF)
+  ), [s, stateF, ownerF, since]);
+
+  // Reports
+  const topPartners = [...cos].sort((a, b) => b.referralCount - a.referralCount).slice(0, 10);
+  const noActivity = cos
+    .map((c) => ({ c, days: daysSince(c.lastContactedDate) }))
+    .filter((x) => x.days > 60)
+    .sort((a, b) => b.days - a.days);
+
+  const byState = STATES.map((st) => {
+    const ssCos = cos.filter((c) => c.state === st);
+    const ssRefs = refs.filter((r) => r.state === st);
+    const ssCts = cts.filter((c) => c.state === st);
+    return {
+      st,
+      companies: ssCos.length,
+      contacts: ssCts.length,
+      referrals: ssRefs.length,
+      activePartners: ssCos.filter((c) => c.activeReferralPartner).length,
+    };
+  });
+
+  const outreach = s.users.map((u) => {
+    const userTasks = s.tasks.filter((t) => t.assignedUserId === u.id && inRange(t.createdAt));
+    const userActs = s.activity.filter((a) => a.userId === u.id && inRange(a.createdAt));
+    return {
+      user: u.name,
+      calls: userActs.filter((a) => a.type === "call").length,
+      emails: userActs.filter((a) => a.type === "email").length,
+      meetings: userActs.filter((a) => a.type === "meeting").length,
+      tasksCompleted: userTasks.filter((t) => t.status === "Completed").length,
+      tasksOpen: userTasks.filter((t) => t.status !== "Completed").length,
+    };
+  });
+
+  const bySourceType = sourceTypes.map((t) => ({
+    type: t,
+    contacts: cts.filter((c) => c.referralSourceType === t).length,
+    referrals: refs.filter((r) => {
+      const ct = s.contacts.find((x) => x.id === r.contactId);
+      return ct?.referralSourceType === t;
     }).length,
-    tasks: s.tasks.filter((t) => t.assignedUserId === u.id && t.status !== "Completed").length,
-  }));
+  })).sort((a, b) => b.referrals - a.referrals);
+
+  const byCompany = cos.map((c) => ({
+    name: c.name, state: c.state, type: c.companyType,
+    referrals: refs.filter((r) => r.companyId === c.id).length,
+  })).filter((x) => x.referrals > 0).sort((a, b) => b.referrals - a.referrals).slice(0, 15);
+
+  const byContact = cts.map((c) => ({
+    name: fullName(c), company: companyName(s, c.companyId), state: c.state,
+    referrals: refs.filter((r) => r.contactId === c.id).length,
+  })).filter((x) => x.referrals > 0).sort((a, b) => b.referrals - a.referrals).slice(0, 15);
+
+  const llContactsScheduled = cts.filter((c) => c.lunchLearnStatus === "Scheduled").length;
+  const llContactsCompleted = cts.filter((c) => c.lunchLearnStatus === "Completed").length;
+  const llCompaniesScheduled = cos.filter((c) => c.lunchLearnStatus === "Scheduled").length;
+  const llCompaniesCompleted = cos.filter((c) => c.lunchLearnStatus === "Completed").length;
+
   return (
     <div className="space-y-4">
+      {/* Filters */}
+      <div className="rounded-2xl border bg-card p-3 flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">Filters</span>
+        <Select value={range} onValueChange={(v) => setRange(v as typeof range)}>
+          <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="30">Last 30 days</SelectItem>
+            <SelectItem value="60">Last 60 days</SelectItem>
+            <SelectItem value="90">Last 90 days</SelectItem>
+            <SelectItem value="ytd">Year to date</SelectItem>
+            <SelectItem value="all">All time</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={stateF} onValueChange={setStateF}>
+          <SelectTrigger className="h-8 w-28 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All states</SelectItem>
+            {STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={ownerF} onValueChange={setOwnerF}>
+          <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Owner" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All owners</SelectItem>
+            {s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={typeF} onValueChange={setTypeF}>
+          <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="Company Type" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All company types</SelectItem>
+            {companyTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={srcF} onValueChange={setSrcF}>
+          <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="Source Type" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All source types</SelectItem>
+            {sourceTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={partnerF} onValueChange={setPartnerF}>
+          <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="Partner Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All partner statuses</SelectItem>
+            {partnerStatuses.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Top Referral Partners */}
+      <ReportTable title="Top Referral Partners"
+        headers={["Company", "Type", "State", "Referrals"]}
+        rows={topPartners.map((c) => [c.name, c.companyType ?? "—", c.state ?? "—",
+          <span className="tabular-nums font-medium">{c.referralCount}</span>])} />
+
+      {/* No Activity */}
       <div className="rounded-2xl border bg-card p-5">
-        <SectionHeader title="Outreach Performance" subtitle="Snapshot by owner" />
+        <SectionHeader title="No Activity 60 / 90 Day Report" subtitle="Companies needing outreach" />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-[11px] uppercase text-muted-foreground">
-              <tr><th className="text-left py-2">Owner</th><th className="text-right">Contacts</th><th className="text-right">Referrals</th><th className="text-right">Open Tasks</th></tr>
+              <tr><th className="text-left py-2">Company</th><th className="text-left">State</th><th className="text-left">Owner</th><th className="text-left">Last Contact</th><th className="text-right">Days</th></tr>
             </thead>
             <tbody>
-              {byOwner.map((r) => (
-                <tr key={r.user} className="border-t">
-                  <td className="py-2">{r.user}</td>
-                  <td className="text-right tabular-nums">{r.contacts}</td>
-                  <td className="text-right tabular-nums">{r.referrals}</td>
-                  <td className="text-right tabular-nums">{r.tasks}</td>
+              {noActivity.length === 0 && (
+                <tr><td colSpan={5} className="py-3 text-muted-foreground">All companies have recent activity.</td></tr>
+              )}
+              {noActivity.slice(0, 20).map(({ c, days }) => (
+                <tr key={c.id} className="border-t">
+                  <td className="py-2">{c.name}</td>
+                  <td>{c.state ?? "—"}</td>
+                  <td>{userName(s, c.ownerId)}</td>
+                  <td>{fmtDate(c.lastContactedDate)}</td>
+                  <td className="text-right">
+                    <Badge variant={days > 90 ? "destructive" : "secondary"} className="tabular-nums">{Number.isFinite(days) ? `${days}d` : "—"}</Badge>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* State Performance */}
+      <ReportTable title="State Performance Report"
+        headers={["State", "Companies", "Contacts", "Referrals", "Active Partners"]}
+        rows={byState.map((r) => [r.st, r.companies, r.contacts, r.referrals, r.activePartners])} />
+
+      {/* Outreach Productivity */}
+      <ReportTable title="Outreach Productivity Report"
+        headers={["Owner", "Calls", "Emails", "Meetings", "Tasks Done", "Tasks Open"]}
+        rows={outreach.map((r) => [r.user, r.calls, r.emails, r.meetings, r.tasksCompleted, r.tasksOpen])} />
+
+      {/* Referral Source Type */}
+      <ReportTable title="Referral Source Type Report"
+        headers={["Source Type", "Contacts", "Referrals"]}
+        rows={bySourceType.map((r) => [r.type, r.contacts, r.referrals])} />
+
+      {/* Referrals by Company */}
+      <ReportTable title="Referrals by Company"
+        headers={["Company", "Type", "State", "Referrals"]}
+        rows={byCompany.map((r) => [r.name, r.type ?? "—", r.state ?? "—", r.referrals])} />
+
+      {/* Referrals by Contact */}
+      <ReportTable title="Referrals by Contact"
+        headers={["Contact", "Company", "State", "Referrals"]}
+        rows={byContact.map((r) => [r.name, r.company, r.state ?? "—", r.referrals])} />
+
+      {/* Lunch & Learn */}
+      <div className="rounded-2xl border bg-card p-5">
+        <SectionHeader title="Lunch & Learn Summary" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Kpi label="Companies Scheduled" value={llCompaniesScheduled} icon={Calendar} />
+          <Kpi label="Companies Completed" value={llCompaniesCompleted} icon={CheckCircle2} />
+          <Kpi label="Contacts Scheduled" value={llContactsScheduled} icon={Calendar} />
+          <Kpi label="Contacts Completed" value={llContactsCompleted} icon={CheckCircle2} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReportTable({ title, headers, rows }: { title: string; headers: string[]; rows: React.ReactNode[][] }) {
+  return (
+    <div className="rounded-2xl border bg-card p-5">
+      <SectionHeader title={title} />
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-[11px] uppercase text-muted-foreground">
+            <tr>
+              {headers.map((h, i) => (
+                <th key={h} className={cn("py-2", i === 0 ? "text-left" : "text-right")}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr><td colSpan={headers.length} className="py-3 text-muted-foreground">No data for current filters.</td></tr>
+            )}
+            {rows.map((r, idx) => (
+              <tr key={idx} className="border-t">
+                {r.map((cell, i) => (
+                  <td key={i} className={cn("py-2", i === 0 ? "text-left" : "text-right tabular-nums")}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
