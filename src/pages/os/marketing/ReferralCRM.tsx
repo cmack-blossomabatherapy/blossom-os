@@ -300,7 +300,19 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkTag}>
             <Tag className="size-3 mr-1" /> Add tag
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={() => { toast({ title: "Export queued" }); }}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={() => {
+            const ids = Array.from(selected);
+            const data = s.contacts.filter((c) => ids.includes(c.id)).map((c) => ({
+              id: c.id, firstName: c.firstName, lastName: c.lastName, email: c.email, phone: c.phone,
+              jobTitle: c.jobTitle, companyName: companyName(s, c.companyId), state: c.state,
+              ownerName: userName(s, c.ownerId), referralCount: c.referralCount,
+              referralPartnerStatus: c.referralPartnerStatus, lastContactedDate: c.lastContactedDate,
+              tags: c.tags.join("|"),
+            }));
+            downloadCsv(`contacts-selected-${Date.now()}.csv`, rowsToCsv(data));
+            crm.recordExport(`Exported ${data.length} selected contacts`);
+            toast({ title: `Exported ${data.length} contact(s)` });
+          }}>
             <Download className="size-3 mr-1" /> Export
           </Button>
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
@@ -685,7 +697,7 @@ function TasksModule() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Label className="text-xs">Group by</Label>
-        <Select value={groupBy} onValueChange={(v: never) => setGroupBy(v)}>
+        <Select value={groupBy} onValueChange={(v) => setGroupBy(v as "owner" | "state" | "status")}>
           <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="owner">Owner</SelectItem>
@@ -1342,7 +1354,7 @@ function SettingsModule() {
               <SelectItem value="referral">Referral</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={type} onValueChange={(v: never) => setType(v)}>
+          <Select value={type} onValueChange={(v) => setType(v as "text" | "number" | "date" | "select" | "boolean")}>
             <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
               {["text", "number", "date", "select", "boolean"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
