@@ -29,10 +29,11 @@ import {
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
   | "workflows" | "reports" | "imports" | "exports" | "duplicates"
-  | "settings" | "users" | "deleted" | "files" | "audit" | "activities";
+  | "settings" | "users" | "deleted" | "files" | "audit" | "activities" | "search";
 
 const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "search", label: "Global Search", icon: Search },
   { id: "contacts", label: "Contacts", icon: Users },
   { id: "companies", label: "Companies", icon: Building2 },
   { id: "referrals", label: "Referrals", icon: HeartHandshake },
