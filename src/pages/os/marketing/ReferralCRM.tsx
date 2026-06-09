@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Users, Building2, HeartHandshake, ListChecks, ListFilter,
   Workflow, BarChart3, Upload, Download, Settings2, ShieldCheck, Trash2,
@@ -1584,13 +1584,13 @@ function EditContactDialog({ id, open, onOpenChange }: { id: ID | null; open: bo
   const s = useCrm();
   const c = s.contacts.find((x) => x.id === id);
   const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", jobTitle: "", state: "", companyId: "", ownerId: "", notes: "" });
-  useMemo(() => {
+  useEffect(() => {
     if (c) setF({
       firstName: c.firstName, lastName: c.lastName, email: c.email ?? "", phone: c.phone ?? "",
       jobTitle: c.jobTitle ?? "", state: c.state ?? "", companyId: c.companyId ?? "",
       ownerId: c.ownerId ?? "", notes: c.notes ?? "",
     });
-  }, [c?.id]);
+  }, [c?.id, open]);
   if (!c) return null;
   const save = () => {
     crm.updateContact(c.id, {
@@ -1644,13 +1644,13 @@ function EditCompanyDialog({ id, open, onOpenChange }: { id: ID | null; open: bo
   const s = useCrm();
   const c = s.companies.find((x) => x.id === id);
   const [f, setF] = useState({ name: "", companyType: "", city: "", state: "", website: "", mainPhone: "", ownerId: "", relationshipTier: "", notes: "" });
-  useMemo(() => {
+  useEffect(() => {
     if (c) setF({
       name: c.name, companyType: c.companyType ?? "", city: c.city ?? "", state: c.state ?? "",
       website: c.website ?? "", mainPhone: c.mainPhone ?? "", ownerId: c.ownerId ?? "",
       relationshipTier: c.relationshipTier ?? "", notes: c.notes ?? "",
     });
-  }, [c?.id]);
+  }, [c?.id, open]);
   if (!c) return null;
   const save = () => {
     crm.updateCompany(c.id, {
@@ -1707,7 +1707,7 @@ function EditReferralDialog({ id, open, onOpenChange }: { id: ID | null; open: b
   const s = useCrm();
   const r = s.referrals.find((x) => x.id === id);
   const [f, setF] = useState({ patientFirstName: "", patientLastInitial: "", referralStatus: "New", intakeStatus: "", serviceType: "", insuranceType: "", state: "", companyId: "", contactId: "", assignedIntakeOwnerId: "", notes: "" });
-  useMemo(() => {
+  useEffect(() => {
     if (r) setF({
       patientFirstName: r.patientFirstName, patientLastInitial: r.patientLastInitial,
       referralStatus: r.referralStatus, intakeStatus: r.intakeStatus ?? "",
@@ -1715,7 +1715,7 @@ function EditReferralDialog({ id, open, onOpenChange }: { id: ID | null; open: b
       state: r.state ?? "", companyId: r.companyId ?? "", contactId: r.contactId ?? "",
       assignedIntakeOwnerId: r.assignedIntakeOwnerId ?? "", notes: r.notes ?? "",
     });
-  }, [r?.id]);
+  }, [r?.id, open]);
   if (!r) return null;
   const save = () => {
     crm.updateReferral(r.id, {
