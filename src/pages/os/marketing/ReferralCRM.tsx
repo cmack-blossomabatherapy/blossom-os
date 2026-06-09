@@ -29,10 +29,11 @@ import {
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
   | "workflows" | "reports" | "imports" | "exports" | "duplicates"
-  | "settings" | "users" | "deleted" | "files" | "audit" | "activities";
+  | "settings" | "users" | "deleted" | "files" | "audit" | "activities" | "search";
 
 const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "search", label: "Global Search", icon: Search },
   { id: "contacts", label: "Contacts", icon: Users },
   { id: "companies", label: "Companies", icon: Building2 },
   { id: "referrals", label: "Referrals", icon: HeartHandshake },
@@ -100,11 +101,24 @@ function DashboardModule() {
   const overdue = openTasks.filter((t) => t.dueDate && new Date(t.dueDate).getTime() < Date.now());
   const activePartners = co.filter((c) => c.activeReferralPartner).length;
   const inactive60 = co.filter((c) => daysSince(c.lastContactedDate) > 60);
+  const inactive90 = co.filter((c) => daysSince(c.lastContactedDate) > 90);
 
   const byState = STATES.map((st) => ({
     st, count: rf.filter((r) => r.state === st).length,
   }));
+  const contactsByState = STATES.map((st) => ({ st, count: ct.filter((c) => c.state === st).length }));
+  const companiesByState = STATES.map((st) => ({ st, count: co.filter((c) => c.state === st).length }));
   const topPartners = [...co].sort((a, b) => b.referralCount - a.referralCount).slice(0, 5);
+
+  const last30 = (iso?: string) => !!iso && daysSince(iso) <= 30;
+  const newSources30 = co.filter((c) => last30(c.createdAt)).length;
+  const outreachDone30 = s.tasks.filter((t) => t.status === "Completed" && last30(t.createdAt)).length;
+  const callsDone30 = s.activity.filter((a) => a.type === "call" && last30(a.createdAt)).length;
+  const meetingsDone30 = s.activity.filter((a) => a.type === "meeting" && last30(a.createdAt)).length;
+  const llScheduled = co.filter((c) => c.lunchLearnStatus === "Scheduled").length
+    + ct.filter((c) => c.lunchLearnStatus === "Scheduled").length;
+  const llCompleted = co.filter((c) => c.lunchLearnStatus === "Completed").length
+    + ct.filter((c) => c.lunchLearnStatus === "Completed").length;
 
   return (
     <div className="space-y-6">
@@ -114,10 +128,21 @@ function DashboardModule() {
         <Kpi label="Referrals" value={rf.length} icon={HeartHandshake} />
         <Kpi label="Open Tasks" value={openTasks.length} hint={`${overdue.length} overdue`} icon={ListChecks} />
         <Kpi label="Active Partners" value={activePartners} icon={ShieldCheck} />
-        <Kpi label="No Activity 60d+" value={inactive60.length} icon={AlertCircle} />
+        <Kpi label="No Activity 60d+" value={inactive60.length} hint={`${inactive90.length} at 90d+`} icon={AlertCircle} />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Kpi label="New Sources (30d)" value={newSources30} icon={Plus} />
+        <Kpi label="Outreach Tasks Done (30d)" value={outreachDone30} icon={CheckCircle2} />
+        <Kpi label="Calls (30d)" value={callsDone30} icon={Phone} />
+        <Kpi label="Meetings (30d)" value={meetingsDone30} icon={Calendar} />
+        <Kpi label="L&L Scheduled" value={llScheduled} icon={Calendar} />
+        <Kpi label="L&L Completed" value={llCompleted} icon={CheckCircle2} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
+        <StateBars title="Contacts by State" rows={contactsByState} />
+        <StateBars title="Companies by State" rows={companiesByState} />
         <div className="rounded-2xl border bg-card p-5">
           <SectionHeader title="Referrals by State" subtitle="YTD totals from referral records" />
           <div className="space-y-2">
@@ -149,6 +174,27 @@ function DashboardModule() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="rounded-2xl border bg-card p-5">
+          <SectionHeader title="Companies with No Activity" subtitle="Reach out to keep partners warm" />
+          {inactive60.length === 0 ? (
+            <p className="text-sm text-muted-foreground">All companies have recent activity.</p>
+          ) : (
+            <div className="divide-y">
+              {inactive60.slice(0, 8).map((c) => (
+                <div key={c.id} className="flex items-center justify-between py-2 text-sm">
+                  <div>
+                    <p className="font-medium">{c.name}</p>
+                    <p className="text-xs text-muted-foreground">{c.state} · last contact {fmtDate(c.lastContactedDate)}</p>
+                  </div>
+                  <Badge variant={daysSince(c.lastContactedDate) > 90 ? "destructive" : "secondary"}>
+                    {daysSince(c.lastContactedDate) > 90 ? "90d+" : "60d+"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border bg-card p-5">
@@ -184,6 +230,26 @@ function DashboardModule() {
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function StateBars({ title, rows }: { title: string; rows: { st: string; count: number }[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  return (
+    <div className="rounded-2xl border bg-card p-5">
+      <SectionHeader title={title} />
+      <div className="space-y-2">
+        {rows.map(({ st, count }) => (
+          <div key={st} className="flex items-center gap-3 text-sm">
+            <span className="w-10 text-muted-foreground tabular-nums">{st}</span>
+            <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+              <div className="h-full bg-primary/70" style={{ width: `${(count / max) * 100}%` }} />
+            </div>
+            <span className="w-8 text-right tabular-nums font-medium">{count}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1201,36 +1267,264 @@ function WorkflowsModule() {
 // ===========================================================
 function ReportsModule() {
   const s = useCrm();
-  const byOwner = s.users.map((u) => ({
-    user: u.name,
-    contacts: activeContacts(s).filter((c) => c.ownerId === u.id).length,
-    referrals: activeReferrals(s).filter((r) => {
-      const co = s.companies.find((x) => x.id === r.companyId);
-      return co?.ownerId === u.id;
+  const [range, setRange] = useState<"30" | "60" | "90" | "ytd" | "all">("90");
+  const [stateF, setStateF] = useState<string>("all");
+  const [ownerF, setOwnerF] = useState<string>("all");
+  const [typeF, setTypeF] = useState<string>("all");
+  const [srcF, setSrcF] = useState<string>("all");
+  const [partnerF, setPartnerF] = useState<string>("all");
+
+  const since = useMemo(() => {
+    if (range === "all") return 0;
+    if (range === "ytd") return new Date(new Date().getFullYear(), 0, 1).getTime();
+    return Date.now() - Number(range) * 86_400_000;
+  }, [range]);
+  const inRange = (iso?: string) => !iso || new Date(iso).getTime() >= since;
+
+  const companyTypes = useMemo(
+    () => Array.from(new Set(s.companies.map((c) => c.companyType).filter(Boolean))) as string[],
+    [s.companies],
+  );
+  const sourceTypes = useMemo(
+    () => Array.from(new Set(s.contacts.map((c) => c.referralSourceType).filter(Boolean))) as string[],
+    [s.contacts],
+  );
+  const partnerStatuses = useMemo(
+    () => Array.from(new Set([
+      ...s.companies.map((c) => c.referralPartnerStatus),
+      ...s.contacts.map((c) => c.referralPartnerStatus),
+    ].filter(Boolean))) as string[],
+    [s.companies, s.contacts],
+  );
+
+  const cos = useMemo(() => activeCompanies(s).filter((c) =>
+    (stateF === "all" || c.state === stateF) &&
+    (ownerF === "all" || c.ownerId === ownerF) &&
+    (typeF === "all" || c.companyType === typeF) &&
+    (partnerF === "all" || c.referralPartnerStatus === partnerF)
+  ), [s, stateF, ownerF, typeF, partnerF]);
+
+  const cts = useMemo(() => activeContacts(s).filter((c) =>
+    (stateF === "all" || c.state === stateF) &&
+    (ownerF === "all" || c.ownerId === ownerF) &&
+    (srcF === "all" || c.referralSourceType === srcF) &&
+    (partnerF === "all" || c.referralPartnerStatus === partnerF)
+  ), [s, stateF, ownerF, srcF, partnerF]);
+
+  const refs = useMemo(() => activeReferrals(s).filter((r) =>
+    (stateF === "all" || r.state === stateF) &&
+    inRange(r.referralDate) &&
+    (ownerF === "all" || s.companies.find((x) => x.id === r.companyId)?.ownerId === ownerF)
+  ), [s, stateF, ownerF, since]);
+
+  // Reports
+  const topPartners = [...cos].sort((a, b) => b.referralCount - a.referralCount).slice(0, 10);
+  const noActivity = cos
+    .map((c) => ({ c, days: daysSince(c.lastContactedDate) }))
+    .filter((x) => x.days > 60)
+    .sort((a, b) => b.days - a.days);
+
+  const byState = STATES.map((st) => {
+    const ssCos = cos.filter((c) => c.state === st);
+    const ssRefs = refs.filter((r) => r.state === st);
+    const ssCts = cts.filter((c) => c.state === st);
+    return {
+      st,
+      companies: ssCos.length,
+      contacts: ssCts.length,
+      referrals: ssRefs.length,
+      activePartners: ssCos.filter((c) => c.activeReferralPartner).length,
+    };
+  });
+
+  const outreach = s.users.map((u) => {
+    const userTasks = s.tasks.filter((t) => t.assignedUserId === u.id && inRange(t.createdAt));
+    const userActs = s.activity.filter((a) => a.userId === u.id && inRange(a.createdAt));
+    return {
+      user: u.name,
+      calls: userActs.filter((a) => a.type === "call").length,
+      emails: userActs.filter((a) => a.type === "email").length,
+      meetings: userActs.filter((a) => a.type === "meeting").length,
+      tasksCompleted: userTasks.filter((t) => t.status === "Completed").length,
+      tasksOpen: userTasks.filter((t) => t.status !== "Completed").length,
+    };
+  });
+
+  const bySourceType = sourceTypes.map((t) => ({
+    type: t,
+    contacts: cts.filter((c) => c.referralSourceType === t).length,
+    referrals: refs.filter((r) => {
+      const ct = s.contacts.find((x) => x.id === r.contactId);
+      return ct?.referralSourceType === t;
     }).length,
-    tasks: s.tasks.filter((t) => t.assignedUserId === u.id && t.status !== "Completed").length,
-  }));
+  })).sort((a, b) => b.referrals - a.referrals);
+
+  const byCompany = cos.map((c) => ({
+    name: c.name, state: c.state, type: c.companyType,
+    referrals: refs.filter((r) => r.companyId === c.id).length,
+  })).filter((x) => x.referrals > 0).sort((a, b) => b.referrals - a.referrals).slice(0, 15);
+
+  const byContact = cts.map((c) => ({
+    name: fullName(c), company: companyName(s, c.companyId), state: c.state,
+    referrals: refs.filter((r) => r.contactId === c.id).length,
+  })).filter((x) => x.referrals > 0).sort((a, b) => b.referrals - a.referrals).slice(0, 15);
+
+  const llContactsScheduled = cts.filter((c) => c.lunchLearnStatus === "Scheduled").length;
+  const llContactsCompleted = cts.filter((c) => c.lunchLearnStatus === "Completed").length;
+  const llCompaniesScheduled = cos.filter((c) => c.lunchLearnStatus === "Scheduled").length;
+  const llCompaniesCompleted = cos.filter((c) => c.lunchLearnStatus === "Completed").length;
+
   return (
     <div className="space-y-4">
+      {/* Filters */}
+      <div className="rounded-2xl border bg-card p-3 flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">Filters</span>
+        <Select value={range} onValueChange={(v) => setRange(v as typeof range)}>
+          <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="30">Last 30 days</SelectItem>
+            <SelectItem value="60">Last 60 days</SelectItem>
+            <SelectItem value="90">Last 90 days</SelectItem>
+            <SelectItem value="ytd">Year to date</SelectItem>
+            <SelectItem value="all">All time</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={stateF} onValueChange={setStateF}>
+          <SelectTrigger className="h-8 w-28 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All states</SelectItem>
+            {STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={ownerF} onValueChange={setOwnerF}>
+          <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Owner" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All owners</SelectItem>
+            {s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={typeF} onValueChange={setTypeF}>
+          <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="Company Type" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All company types</SelectItem>
+            {companyTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={srcF} onValueChange={setSrcF}>
+          <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="Source Type" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All source types</SelectItem>
+            {sourceTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={partnerF} onValueChange={setPartnerF}>
+          <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="Partner Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All partner statuses</SelectItem>
+            {partnerStatuses.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Top Referral Partners */}
+      <ReportTable title="Top Referral Partners"
+        headers={["Company", "Type", "State", "Referrals"]}
+        rows={topPartners.map((c) => [c.name, c.companyType ?? "—", c.state ?? "—",
+          <span className="tabular-nums font-medium">{c.referralCount}</span>])} />
+
+      {/* No Activity */}
       <div className="rounded-2xl border bg-card p-5">
-        <SectionHeader title="Outreach Performance" subtitle="Snapshot by owner" />
+        <SectionHeader title="No Activity 60 / 90 Day Report" subtitle="Companies needing outreach" />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-[11px] uppercase text-muted-foreground">
-              <tr><th className="text-left py-2">Owner</th><th className="text-right">Contacts</th><th className="text-right">Referrals</th><th className="text-right">Open Tasks</th></tr>
+              <tr><th className="text-left py-2">Company</th><th className="text-left">State</th><th className="text-left">Owner</th><th className="text-left">Last Contact</th><th className="text-right">Days</th></tr>
             </thead>
             <tbody>
-              {byOwner.map((r) => (
-                <tr key={r.user} className="border-t">
-                  <td className="py-2">{r.user}</td>
-                  <td className="text-right tabular-nums">{r.contacts}</td>
-                  <td className="text-right tabular-nums">{r.referrals}</td>
-                  <td className="text-right tabular-nums">{r.tasks}</td>
+              {noActivity.length === 0 && (
+                <tr><td colSpan={5} className="py-3 text-muted-foreground">All companies have recent activity.</td></tr>
+              )}
+              {noActivity.slice(0, 20).map(({ c, days }) => (
+                <tr key={c.id} className="border-t">
+                  <td className="py-2">{c.name}</td>
+                  <td>{c.state ?? "—"}</td>
+                  <td>{userName(s, c.ownerId)}</td>
+                  <td>{fmtDate(c.lastContactedDate)}</td>
+                  <td className="text-right">
+                    <Badge variant={days > 90 ? "destructive" : "secondary"} className="tabular-nums">{Number.isFinite(days) ? `${days}d` : "—"}</Badge>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* State Performance */}
+      <ReportTable title="State Performance Report"
+        headers={["State", "Companies", "Contacts", "Referrals", "Active Partners"]}
+        rows={byState.map((r) => [r.st, r.companies, r.contacts, r.referrals, r.activePartners])} />
+
+      {/* Outreach Productivity */}
+      <ReportTable title="Outreach Productivity Report"
+        headers={["Owner", "Calls", "Emails", "Meetings", "Tasks Done", "Tasks Open"]}
+        rows={outreach.map((r) => [r.user, r.calls, r.emails, r.meetings, r.tasksCompleted, r.tasksOpen])} />
+
+      {/* Referral Source Type */}
+      <ReportTable title="Referral Source Type Report"
+        headers={["Source Type", "Contacts", "Referrals"]}
+        rows={bySourceType.map((r) => [r.type, r.contacts, r.referrals])} />
+
+      {/* Referrals by Company */}
+      <ReportTable title="Referrals by Company"
+        headers={["Company", "Type", "State", "Referrals"]}
+        rows={byCompany.map((r) => [r.name, r.type ?? "—", r.state ?? "—", r.referrals])} />
+
+      {/* Referrals by Contact */}
+      <ReportTable title="Referrals by Contact"
+        headers={["Contact", "Company", "State", "Referrals"]}
+        rows={byContact.map((r) => [r.name, r.company, r.state ?? "—", r.referrals])} />
+
+      {/* Lunch & Learn */}
+      <div className="rounded-2xl border bg-card p-5">
+        <SectionHeader title="Lunch & Learn Summary" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Kpi label="Companies Scheduled" value={llCompaniesScheduled} icon={Calendar} />
+          <Kpi label="Companies Completed" value={llCompaniesCompleted} icon={CheckCircle2} />
+          <Kpi label="Contacts Scheduled" value={llContactsScheduled} icon={Calendar} />
+          <Kpi label="Contacts Completed" value={llContactsCompleted} icon={CheckCircle2} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReportTable({ title, headers, rows }: { title: string; headers: string[]; rows: React.ReactNode[][] }) {
+  return (
+    <div className="rounded-2xl border bg-card p-5">
+      <SectionHeader title={title} />
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-[11px] uppercase text-muted-foreground">
+            <tr>
+              {headers.map((h, i) => (
+                <th key={h} className={cn("py-2", i === 0 ? "text-left" : "text-right")}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr><td colSpan={headers.length} className="py-3 text-muted-foreground">No data for current filters.</td></tr>
+            )}
+            {rows.map((r, idx) => (
+              <tr key={idx} className="border-t">
+                {r.map((cell, i) => (
+                  <td key={i} className={cn("py-2", i === 0 ? "text-left" : "text-right tabular-nums")}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -2866,6 +3160,196 @@ function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
 }
 
 // ===========================================================
+// Global Search
+// ===========================================================
+function GlobalSearchModule({
+  onOpenContact, onOpenCompany, onJumpModule,
+}: {
+  onOpenContact: (id: ID) => void;
+  onOpenCompany: (id: ID) => void;
+  onJumpModule: (m: ModuleId) => void;
+}) {
+  const s = useCrm();
+  const [q, setQ] = useState("");
+  const ql = q.trim().toLowerCase();
+
+  const tokens = ql.split(/\s+/).filter(Boolean);
+  const match = (hay: string) => {
+    if (!ql) return false;
+    const h = hay.toLowerCase();
+    return tokens.every((t) => h.includes(t));
+  };
+
+  const results = useMemo(() => {
+    if (!ql) return null;
+    const companies = activeCompanies(s).filter((c) => match([
+      c.name, c.companyType, c.state, c.city, c.mainPhone, c.generalEmail, c.website,
+      c.referralPartnerStatus, c.tags.join(" "), c.notes,
+    ].filter(Boolean).join(" ")));
+    const contacts = activeContacts(s).filter((c) => match([
+      fullName(c), c.email, c.phone, c.mobilePhone, c.jobTitle, c.specialty,
+      c.state, c.referralSourceType, c.referralPartnerStatus,
+      companyName(s, c.companyId), c.tags.join(" "), c.notes,
+    ].filter(Boolean).join(" ")));
+    const referrals = activeReferrals(s).filter((r) => match([
+      r.name, r.patientFirstName, r.patientLastInitial, r.state, r.serviceType,
+      r.referralStatus, r.intakeStatus, r.insuranceType, r.notes,
+      companyName(s, r.companyId),
+    ].filter(Boolean).join(" ")));
+    const tasks = s.tasks.filter((t) => match([
+      t.title, t.type, t.status, t.priority, t.notes,
+      userName(s, t.assignedUserId), companyName(s, t.companyId),
+    ].filter(Boolean).join(" ")));
+    const activities = s.activity.filter((a) => match([
+      a.message, a.type,
+      a.contactId ? fullName(s.contacts.find((c) => c.id === a.contactId)!) : "",
+      companyName(s, a.companyId),
+    ].filter(Boolean).join(" ")));
+    return { companies, contacts, referrals, tasks, activities };
+  }, [s, ql]);
+
+  const total = results
+    ? results.companies.length + results.contacts.length + results.referrals.length + results.tasks.length + results.activities.length
+    : 0;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border bg-card p-5">
+        <SectionHeader title="Global Search"
+          subtitle="Search across contacts, companies, referrals, tasks, activity, emails, phones, and tags." />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)}
+            placeholder='Try "Bright Path", "Sarah Miller", "NC pediatrician", or a phone number'
+            className="pl-9 h-10" />
+        </div>
+        {q && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {total} result{total === 1 ? "" : "s"} for “{q}”
+          </p>
+        )}
+      </div>
+
+      {!results && (
+        <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
+          Start typing to search the entire CRM.
+        </div>
+      )}
+
+      {results && total === 0 && (
+        <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
+          No matches. Try a company name, contact name, state, phone, or tag.
+        </div>
+      )}
+
+      {results && results.companies.length > 0 && (
+        <ResultGroup label="Companies" count={results.companies.length} icon={Building2}>
+          {results.companies.slice(0, 25).map((c) => (
+            <ResultRow key={c.id} onClick={() => onOpenCompany(c.id)}
+              title={c.name}
+              meta={`${c.companyType ?? "—"} · ${c.state ?? "—"} · ${c.referralCount} referrals`}
+              detail={[c.mainPhone, c.generalEmail, c.website, c.tags.join(", ")].filter(Boolean).join(" · ")} />
+          ))}
+        </ResultGroup>
+      )}
+
+      {results && results.contacts.length > 0 && (
+        <ResultGroup label="Contacts" count={results.contacts.length} icon={Users}>
+          {results.contacts.slice(0, 25).map((c) => (
+            <ResultRow key={c.id} onClick={() => onOpenContact(c.id)}
+              title={fullName(c)}
+              meta={`${c.jobTitle ?? "—"} · ${companyName(s, c.companyId)} · ${c.state ?? "—"}`}
+              detail={[c.email, c.phone, c.referralSourceType, c.tags.join(", ")].filter(Boolean).join(" · ")} />
+          ))}
+        </ResultGroup>
+      )}
+
+      {results && results.referrals.length > 0 && (
+        <ResultGroup label="Referrals" count={results.referrals.length} icon={HeartHandshake}
+          onJump={() => onJumpModule("referrals")}>
+          {results.referrals.slice(0, 25).map((r) => (
+            <ResultRow key={r.id}
+              onClick={() => r.companyId && onOpenCompany(r.companyId)}
+              title={r.name}
+              meta={`${companyName(s, r.companyId)} · ${r.state ?? "—"} · ${r.referralStatus}`}
+              detail={`${fmtDate(r.referralDate)}${r.serviceType ? ` · ${r.serviceType}` : ""}${r.insuranceType ? ` · ${r.insuranceType}` : ""}`} />
+          ))}
+        </ResultGroup>
+      )}
+
+      {results && results.tasks.length > 0 && (
+        <ResultGroup label="Tasks" count={results.tasks.length} icon={ListChecks}
+          onJump={() => onJumpModule("tasks")}>
+          {results.tasks.slice(0, 25).map((t) => (
+            <ResultRow key={t.id}
+              onClick={() => t.companyId ? onOpenCompany(t.companyId) : t.contactId && onOpenContact(t.contactId)}
+              title={t.title}
+              meta={`${t.type} · ${t.status} · ${userName(s, t.assignedUserId)}`}
+              detail={`${t.dueDate ? `due ${fmtDate(t.dueDate)}` : "no due date"}${t.companyId ? ` · ${companyName(s, t.companyId)}` : ""}`} />
+          ))}
+        </ResultGroup>
+      )}
+
+      {results && results.activities.length > 0 && (
+        <ResultGroup label="Activity & Notes" count={results.activities.length} icon={Activity}
+          onJump={() => onJumpModule("activities")}>
+          {results.activities.slice(0, 25).map((a) => {
+            const ct = a.contactId ? s.contacts.find((c) => c.id === a.contactId) : undefined;
+            return (
+              <ResultRow key={a.id}
+                onClick={() => a.companyId ? onOpenCompany(a.companyId) : a.contactId && onOpenContact(a.contactId)}
+                title={a.message}
+                meta={`${a.type.replace("_", " ")} · ${fmtDate(a.createdAt)}`}
+                detail={[ct ? fullName(ct) : "", companyName(s, a.companyId)].filter((x) => x && x !== "—").join(" · ")} />
+            );
+          })}
+        </ResultGroup>
+      )}
+    </div>
+  );
+}
+
+function ResultGroup({
+  label, count, icon: Icon, onJump, children,
+}: {
+  label: string; count: number; icon: typeof Users; onJump?: () => void; children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border bg-card p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Icon className="size-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold">{label}</h3>
+          <Badge variant="secondary" className="tabular-nums">{count}</Badge>
+        </div>
+        {onJump && (
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onJump}>
+            Open module <ChevronRight className="size-3 ml-1" />
+          </Button>
+        )}
+      </div>
+      <div className="divide-y">{children}</div>
+    </div>
+  );
+}
+
+function ResultRow({ title, meta, detail, onClick }: {
+  title: string; meta?: string; detail?: string; onClick?: () => void;
+}) {
+  return (
+    <button onClick={onClick}
+      className="w-full text-left py-2.5 px-1 hover:bg-muted/40 rounded-md transition-colors flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium truncate">{title}</p>
+        {meta && <p className="text-xs text-muted-foreground truncate">{meta}</p>}
+        {detail && <p className="text-[11px] text-muted-foreground/80 truncate">{detail}</p>}
+      </div>
+      <ChevronRight className="size-4 text-muted-foreground mt-1 shrink-0" />
+    </button>
+  );
+}
+
+// ===========================================================
 // Page shell with internal nav
 // ===========================================================
 export default function ReferralCRM() {
@@ -2892,6 +3376,7 @@ export default function ReferralCRM() {
       case "files": return <FilesModule />;
       case "audit": return <AuditModule />;
       case "activities": return <ActivitiesModule />;
+      case "search": return <GlobalSearchModule onOpenContact={setContactId} onOpenCompany={setCompanyId} onJumpModule={setModule} />;
     }
   })();
 
