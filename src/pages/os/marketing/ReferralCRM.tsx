@@ -555,6 +555,7 @@ function ReferralsModule() {
   const s = useCrm();
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
+  const [logId, setLogId] = useState<ID | null>(null);
   const rows = activeReferrals(s);
 
   return (
@@ -597,9 +598,14 @@ function ReferralsModule() {
                   <td className="px-3 py-2 text-muted-foreground">
                     <div className="flex items-center justify-between gap-2">
                       <span>{fmtDate(r.referralDate)}</span>
-                      <button className="text-muted-foreground hover:text-primary" onClick={() => setEditingId(r.id)}>
-                        <Pencil className="size-3" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button className="text-muted-foreground hover:text-primary" title="Log activity" onClick={() => setLogId(r.id)}>
+                          <Activity className="size-3" />
+                        </button>
+                        <button className="text-muted-foreground hover:text-primary" title="Edit" onClick={() => setEditingId(r.id)}>
+                          <Pencil className="size-3" />
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -612,6 +618,7 @@ function ReferralsModule() {
 
       <NewReferralDialog open={creating} onOpenChange={setCreating} />
       <EditReferralDialog id={editingId} open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)} />
+      <LogActivityDialog open={!!logId} onOpenChange={(o) => !o && setLogId(null)} referralId={logId ?? undefined} />
     </div>
   );
 }
