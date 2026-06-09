@@ -300,7 +300,19 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkTag}>
             <Tag className="size-3 mr-1" /> Add tag
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={() => { toast({ title: "Export queued" }); }}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={() => {
+            const ids = Array.from(selected);
+            const data = s.contacts.filter((c) => ids.includes(c.id)).map((c) => ({
+              id: c.id, firstName: c.firstName, lastName: c.lastName, email: c.email, phone: c.phone,
+              jobTitle: c.jobTitle, companyName: companyName(s, c.companyId), state: c.state,
+              ownerName: userName(s, c.ownerId), referralCount: c.referralCount,
+              referralPartnerStatus: c.referralPartnerStatus, lastContactedDate: c.lastContactedDate,
+              tags: c.tags.join("|"),
+            }));
+            downloadCsv(`contacts-selected-${Date.now()}.csv`, rowsToCsv(data));
+            crm.recordExport(`Exported ${data.length} selected contacts`);
+            toast({ title: `Exported ${data.length} contact(s)` });
+          }}>
             <Download className="size-3 mr-1" /> Export
           </Button>
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
@@ -543,6 +555,7 @@ function ReferralsModule() {
   const s = useCrm();
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
+  const [logId, setLogId] = useState<ID | null>(null);
   const rows = activeReferrals(s);
 
   return (
@@ -585,9 +598,14 @@ function ReferralsModule() {
                   <td className="px-3 py-2 text-muted-foreground">
                     <div className="flex items-center justify-between gap-2">
                       <span>{fmtDate(r.referralDate)}</span>
-                      <button className="text-muted-foreground hover:text-primary" onClick={() => setEditingId(r.id)}>
-                        <Pencil className="size-3" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button className="text-muted-foreground hover:text-primary" title="Log activity" onClick={() => setLogId(r.id)}>
+                          <Activity className="size-3" />
+                        </button>
+                        <button className="text-muted-foreground hover:text-primary" title="Edit" onClick={() => setEditingId(r.id)}>
+                          <Pencil className="size-3" />
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -600,6 +618,7 @@ function ReferralsModule() {
 
       <NewReferralDialog open={creating} onOpenChange={setCreating} />
       <EditReferralDialog id={editingId} open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)} />
+      <LogActivityDialog open={!!logId} onOpenChange={(o) => !o && setLogId(null)} referralId={logId ?? undefined} />
     </div>
   );
 }
@@ -685,7 +704,7 @@ function TasksModule() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Label className="text-xs">Group by</Label>
-        <Select value={groupBy} onValueChange={(v: never) => setGroupBy(v)}>
+        <Select value={groupBy} onValueChange={(v) => setGroupBy(v as "owner" | "state" | "status")}>
           <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="owner">Owner</SelectItem>
@@ -1342,7 +1361,7 @@ function SettingsModule() {
               <SelectItem value="referral">Referral</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={type} onValueChange={(v: never) => setType(v)}>
+          <Select value={type} onValueChange={(v) => setType(v as "text" | "number" | "date" | "select" | "boolean")}>
             <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
               {["text", "number", "date", "select", "boolean"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
@@ -1707,6 +1726,7 @@ function EditReferralDialog({ id, open, onOpenChange }: { id: ID | null; open: b
   const s = useCrm();
   const r = s.referrals.find((x) => x.id === id);
   const [f, setF] = useState({ patientFirstName: "", patientLastInitial: "", referralStatus: "New", intakeStatus: "", serviceType: "", insuranceType: "", state: "", companyId: "", contactId: "", assignedIntakeOwnerId: "", notes: "" });
+  const [logging, setLogging] = useState(false);
   useEffect(() => {
     if (r) setF({
       patientFirstName: r.patientFirstName, patientLastInitial: r.patientLastInitial,
@@ -1733,6 +1753,7 @@ function EditReferralDialog({ id, open, onOpenChange }: { id: ID | null; open: b
     onOpenChange(false);
   };
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader><DialogTitle>Edit Referral</DialogTitle></DialogHeader>
@@ -1763,11 +1784,17 @@ function EditReferralDialog({ id, open, onOpenChange }: { id: ID | null; open: b
           <div className="col-span-2"><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={3} /></div>
         </div>
         <DialogFooter>
+          <Button variant="ghost" onClick={() => setLogging(true)}>
+            <Activity className="size-3.5 mr-1" /> Log Activity
+          </Button>
+          <div className="flex-1" />
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={save}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <LogActivityDialog open={logging} onOpenChange={setLogging} referralId={r.id} />
+    </>
   );
 }
 
