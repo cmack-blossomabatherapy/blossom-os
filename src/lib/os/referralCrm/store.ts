@@ -430,10 +430,35 @@ interface State {
   activity: ActivityEvent[];
   workflows: WorkflowDef[];
   lists: ListDef[];
+  attachments: Attachment[];
+  auditLog: AuditLogEntry[];
+  customFields: CustomFieldDef[];
 }
 
 let state: State = {
   users, contacts, companies, referrals, tasks, activity, workflows, lists,
+  attachments: [
+    { id: "att-1", fileName: "Bright Path - Lunch & Learn slides.pdf", mimeType: "application/pdf", sizeBytes: 482_113,
+      objectType: "company", objectId: "c-bright", uploadedByUserId: "u-nc",
+      uploadedAt: daysAgo(20), category: "Lunch & Learn" },
+    { id: "att-2", fileName: "Rosen referral packet.pdf", mimeType: "application/pdf", sizeBytes: 312_004,
+      objectType: "company", objectId: "c-rosen", uploadedByUserId: "u-va",
+      uploadedAt: daysAgo(8), category: "Outreach" },
+    { id: "att-3", fileName: "Jacob M. intake form.pdf", mimeType: "application/pdf", sizeBytes: 88_220,
+      objectType: "referral", objectId: "r-jacob", uploadedByUserId: "u-intake",
+      uploadedAt: daysAgo(6), category: "Insurance" },
+  ],
+  auditLog: [
+    { id: "al-seed-1", at: daysAgo(7), actor: "System", action: "create", objectType: "referral",
+      objectId: "r-jacob", objectLabel: "Jacob M.", summary: "Referral received from Bright Path Pediatrics" },
+    { id: "al-seed-2", at: daysAgo(3), actor: "NC Outreach Rep", userId: "u-nc", action: "update",
+      objectType: "contact", objectId: "ct-sarah", objectLabel: "Sarah Miller",
+      summary: "Logged Q3 update email" },
+  ],
+  customFields: [
+    { id: "cf-seed-1", object: "contact", label: "EHR System", type: "text", createdAt: daysAgo(60) },
+    { id: "cf-seed-2", object: "company", label: "Annual Referral Goal", type: "number", createdAt: daysAgo(45) },
+  ],
 };
 
 const listeners = new Set<() => void>();
@@ -455,6 +480,12 @@ const logActivity = (e: Omit<ActivityEvent, "id" | "createdAt"> & { createdAt?: 
   set({ activity: [{ id: newId(), createdAt: now(), ...e }, ...state.activity] });
 };
 
+function logAudit(entry: Omit<AuditLogEntry, "id" | "at" | "actor"> & { actor?: string }) {
+  const actor = entry.actor ?? (entry.userId ? state.users.find((u) => u.id === entry.userId)?.name ?? "System" : "Current User");
+  const row: AuditLogEntry = { id: newId(), at: now(), actor, ...entry };
+  set({ auditLog: [row, ...state.auditLog].slice(0, 500) });
+}
+
 // ---------- mutators ----------
 export const crm = {
   // contacts
@@ -465,20 +496,64 @@ export const crm = {
     } as Contact;
     set({ contacts: [c, ...state.contacts] });
     logActivity({ type: "property_change", message: `Contact created: ${c.firstName} ${c.lastName}`, contactId: c.id });
+    logAudit({ action: "create", objectType: "contact", objectId: c.id, objectLabel: `${c.firstName} ${c.lastName}`, summary: "Contact created" });
     return c;
   },
   updateContact(id: ID, patch: Partial<Contact>) {
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, ...patch, updatedAt: now() } : c) });
     logActivity({ type: "property_change", message: `Contact updated`, contactId: id });
+    const c = state.contacts.find((x) => x.id === id);
+    logAudit({ action: "update", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id,
+      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
   },
   softDeleteContact(id: ID) {
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
+    const c = state.contacts.find((x) => x.id === id);
+    logAudit({ action: "delete", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact moved to deleted" });
   },
   restoreContact(id: ID) {
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
+    const c = state.contacts.find((x) => x.id === id);
+    logAudit({ action: "restore", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact restored" });
   },
   hardDeleteContact(id: ID) {
     set({ contacts: state.contacts.filter((c) => c.id !== id) });
+    logAudit({ action: "delete", objectType: "contact", objectId: id, summary: "Contact permanently deleted" });
+  },
+
+  mergeContacts(winnerId: ID, loserId: ID) {
+    const winner = state.contacts.find((c) => c.id === winnerId);
+    const loser = state.contacts.find((c) => c.id === loserId);
+    if (!winner || !loser) return;
+    const merged: Contact = {
+      ...winner,
+      email: winner.email || loser.email,
+      phone: winner.phone || loser.phone,
+      mobilePhone: winner.mobilePhone || loser.mobilePhone,
+      jobTitle: winner.jobTitle || loser.jobTitle,
+      companyId: winner.companyId || loser.companyId,
+      ownerId: winner.ownerId || loser.ownerId,
+      notes: [winner.notes, loser.notes].filter(Boolean).join("\n---\n") || undefined,
+      tags: Array.from(new Set([...(winner.tags || []), ...(loser.tags || [])])),
+      referralCount: winner.referralCount + loser.referralCount,
+      lastReferralDate: [winner.lastReferralDate, loser.lastReferralDate].filter(Boolean).sort().reverse()[0],
+      lastContactedDate: [winner.lastContactedDate, loser.lastContactedDate].filter(Boolean).sort().reverse()[0],
+      updatedAt: now(),
+    };
+    // re-point related rows
+    const newContacts = state.contacts
+      .filter((c) => c.id !== loserId)
+      .map((c) => c.id === winnerId ? merged : c);
+    const newReferrals = state.referrals.map((r) => r.contactId === loserId ? { ...r, contactId: winnerId } : r);
+    const newTasks = state.tasks.map((t) => t.contactId === loserId ? { ...t, contactId: winnerId } : t);
+    const newActivity = state.activity.map((a) => a.contactId === loserId ? { ...a, contactId: winnerId } : a);
+    const newAttachments = state.attachments.map((a) =>
+      a.objectType === "contact" && a.objectId === loserId ? { ...a, objectId: winnerId } : a);
+    set({ contacts: newContacts, referrals: newReferrals, tasks: newTasks, activity: newActivity, attachments: newAttachments });
+    logActivity({ type: "property_change", message: `Merged ${loser.firstName} ${loser.lastName} into ${winner.firstName} ${winner.lastName}`, contactId: winnerId });
+    logAudit({ action: "merge", objectType: "contact", objectId: winnerId,
+      objectLabel: `${winner.firstName} ${winner.lastName}`,
+      summary: `Merged duplicate "${loser.firstName} ${loser.lastName}" into winner` });
   },
 
   // companies
