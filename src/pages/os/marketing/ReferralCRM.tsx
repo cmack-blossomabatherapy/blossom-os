@@ -1293,8 +1293,22 @@ function DuplicatesModule() {
 // Settings + Users + Deleted
 // ===========================================================
 function SettingsModule() {
+  const s = useCrm();
+  const [object, setObject] = useState<"contact" | "company" | "referral">("contact");
+  const [label, setLabel] = useState("");
+  const [type, setType] = useState<"text" | "number" | "date" | "select" | "boolean">("text");
+
+  const add = () => {
+    if (!label.trim()) { toast({ title: "Field label required" }); return; }
+    crm.addCustomField({ object, label: label.trim(), type });
+    setLabel("");
+    toast({ title: "Field added" });
+  };
+
+  const fields = s.customFields;
+
   return (
-    <div className="grid md:grid-cols-2 gap-4">
+    <div className="grid lg:grid-cols-2 gap-4">
       <div className="rounded-2xl border bg-card p-5">
         <h3 className="font-semibold">General</h3>
         <p className="text-xs text-muted-foreground mt-1">CRM-wide preferences.</p>
@@ -1305,11 +1319,523 @@ function SettingsModule() {
         </div>
       </div>
       <div className="rounded-2xl border bg-card p-5">
-        <h3 className="font-semibold">Field Customization</h3>
-        <p className="text-xs text-muted-foreground mt-1">Add custom fields to Contacts / Companies / Referrals.</p>
-        <Button size="sm" variant="outline" className="mt-3 h-8">Manage fields</Button>
+        <h3 className="font-semibold">Custom Fields</h3>
+        <p className="text-xs text-muted-foreground mt-1">Add custom fields to Contacts, Companies, or Referrals.</p>
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_120px_120px_auto] gap-2">
+          <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Field label" className="h-9 text-sm" />
+          <Select value={object} onValueChange={(v: "contact" | "company" | "referral") => setObject(v)}>
+            <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="contact">Contact</SelectItem>
+              <SelectItem value="company">Company</SelectItem>
+              <SelectItem value="referral">Referral</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={type} onValueChange={(v: never) => setType(v)}>
+            <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {["text", "number", "date", "select", "boolean"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button size="sm" className="h-9" onClick={add}><Plus className="size-3.5 mr-1" /> Add</Button>
+        </div>
+        <div className="mt-4 divide-y text-sm">
+          {fields.length === 0 && <p className="text-xs text-muted-foreground py-4">No custom fields yet.</p>}
+          {fields.map((f) => (
+            <div key={f.id} className="py-2 flex items-center justify-between gap-3">
+              <div>
+                <p className="font-medium">{f.label}</p>
+                <p className="text-xs text-muted-foreground">{f.object} · {f.type}</p>
+              </div>
+              <button onClick={() => { crm.removeCustomField(f.id); toast({ title: "Field removed" }); }} className="text-muted-foreground hover:text-destructive">
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
+  );
+}
+
+// ===========================================================
+// Files / Attachments module
+// ===========================================================
+function FilesModule() {
+  const s = useCrm();
+  const [q, setQ] = useState("");
+  const [type, setType] = useState<string>("all");
+  const objectLabel = (a: Attachment): string => {
+    if (a.objectType === "contact") {
+      const c = s.contacts.find((x) => x.id === a.objectId); return c ? fullName(c) : a.objectId;
+    }
+    if (a.objectType === "company") return s.companies.find((x) => x.id === a.objectId)?.name ?? a.objectId;
+    return s.referrals.find((x) => x.id === a.objectId)?.name ?? a.objectId;
+  };
+  const rows = s.attachments.filter((a) => {
+    if (type !== "all" && a.objectType !== type) return false;
+    if (q && !a.fileName.toLowerCase().includes(q.toLowerCase()) && !objectLabel(a).toLowerCase().includes(q.toLowerCase())) return false;
+    return true;
+  });
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search files…" className="pl-8 h-9 text-sm" />
+        </div>
+        <Select value={type} onValueChange={setType}>
+          <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All objects</SelectItem>
+            <SelectItem value="contact">Contacts</SelectItem>
+            <SelectItem value="company">Companies</SelectItem>
+            <SelectItem value="referral">Referrals</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="text-left px-3 py-2 font-medium">File</th>
+                <th className="text-left px-3 py-2 font-medium">Attached to</th>
+                <th className="text-left px-3 py-2 font-medium">Category</th>
+                <th className="text-left px-3 py-2 font-medium">Uploaded by</th>
+                <th className="text-left px-3 py-2 font-medium">Date</th>
+                <th className="w-10 px-3 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((a) => (
+                <tr key={a.id} className="border-t hover:bg-muted/30">
+                  <td className="px-3 py-2 flex items-center gap-2">
+                    <FileText className="size-3.5 text-muted-foreground" />
+                    <span className="font-medium">{a.fileName}</span>
+                  </td>
+                  <td className="px-3 py-2"><span className="text-muted-foreground capitalize">{a.objectType}: </span>{objectLabel(a)}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{a.category || "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{userName(s, a.uploadedByUserId)}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{fmtDate(a.uploadedAt)}</td>
+                  <td className="px-3 py-2 text-right">
+                    <button onClick={() => { crm.removeAttachment(a.id); toast({ title: "File removed" }); }} className="text-muted-foreground hover:text-destructive">
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {rows.length === 0 && <tr><td colSpan={6} className="text-center text-muted-foreground py-10">No files yet. Attach from a contact, company, or referral.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================
+// Audit Log module
+// ===========================================================
+const AUDIT_ICON: Record<string, typeof Activity> = {
+  create: Plus, update: Pencil, delete: Trash2, restore: RotateCcw,
+  merge: ShieldCheck, import: Upload, export: Download,
+  workflow_toggle: Workflow, workflow_run: Workflow,
+  attachment_added: Paperclip, attachment_removed: Paperclip,
+  field_added: Settings2, field_removed: Settings2,
+};
+
+function AuditModule() {
+  const s = useCrm();
+  const [q, setQ] = useState("");
+  const [action, setAction] = useState<string>("all");
+  const rows = s.auditLog.filter((r) => {
+    if (action !== "all" && r.action !== action) return false;
+    if (q) {
+      const ql = q.toLowerCase();
+      if (!r.summary.toLowerCase().includes(ql) && !(r.objectLabel ?? "").toLowerCase().includes(ql) && !r.actor.toLowerCase().includes(ql)) return false;
+    }
+    return true;
+  });
+  const actions = Array.from(new Set(s.auditLog.map((r) => r.action)));
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search audit log…" className="pl-8 h-9 text-sm" />
+        </div>
+        <Select value={action} onValueChange={setAction}>
+          <SelectTrigger className="w-[160px] h-9 text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All actions</SelectItem>
+            {actions.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="text-left px-3 py-2 font-medium">When</th>
+                <th className="text-left px-3 py-2 font-medium">Actor</th>
+                <th className="text-left px-3 py-2 font-medium">Action</th>
+                <th className="text-left px-3 py-2 font-medium">Object</th>
+                <th className="text-left px-3 py-2 font-medium">Summary</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const Icon = AUDIT_ICON[r.action] ?? Activity;
+                return (
+                  <tr key={r.id} className="border-t">
+                    <td className="px-3 py-2 text-muted-foreground tabular-nums">{new Date(r.at).toLocaleString()}</td>
+                    <td className="px-3 py-2">{r.actor}</td>
+                    <td className="px-3 py-2"><span className="inline-flex items-center gap-1.5 text-xs"><Icon className="size-3" /> {r.action}</span></td>
+                    <td className="px-3 py-2"><span className="text-muted-foreground capitalize">{r.objectType}: </span>{r.objectLabel || r.objectId || "—"}</td>
+                    <td className="px-3 py-2">{r.summary}</td>
+                  </tr>
+                );
+              })}
+              {rows.length === 0 && <tr><td colSpan={5} className="text-center text-muted-foreground py-10">No audit entries.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================
+// Activities center
+// ===========================================================
+const ACTIVITY_ICON: Partial<Record<ActivityEvent["type"], typeof Activity>> = {
+  note: StickyNote, call: Phone, email: Mail, meeting: Calendar, task: ListChecks,
+  referral_received: HeartHandshake, file_uploaded: Paperclip,
+};
+const ACTIVITY_FILTERS: { id: "all" | ActivityEvent["type"]; label: string }[] = [
+  { id: "all", label: "All" }, { id: "note", label: "Notes" }, { id: "call", label: "Calls" },
+  { id: "email", label: "Emails" }, { id: "meeting", label: "Meetings" },
+  { id: "task", label: "Tasks" }, { id: "referral_received", label: "Referrals" },
+  { id: "file_uploaded", label: "Files" },
+];
+
+function ActivitiesModule() {
+  const s = useCrm();
+  const [f, setF] = useState<"all" | ActivityEvent["type"]>("all");
+  const rows = s.activity.filter((a) => f === "all" || a.type === f);
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {ACTIVITY_FILTERS.map((x) => (
+          <button key={x.id} onClick={() => setF(x.id)}
+            className={cn("px-3 py-1 rounded-lg text-xs font-medium border transition-colors",
+              f === x.id ? "bg-primary/10 text-primary border-primary/20" : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted")}>
+            {x.label}
+          </button>
+        ))}
+      </div>
+      <div className="rounded-2xl border bg-card divide-y">
+        {rows.length === 0 && <p className="text-sm text-muted-foreground text-center py-10">No activity in this view.</p>}
+        {rows.map((a) => {
+          const Icon = ACTIVITY_ICON[a.type] ?? Activity;
+          const targetName = a.contactId
+            ? fullName(s.contacts.find((c) => c.id === a.contactId) ?? { firstName: "?", lastName: "" } as Contact)
+            : a.companyId
+              ? companyName(s, a.companyId)
+              : a.referralId
+                ? (s.referrals.find((r) => r.id === a.referralId)?.name ?? "—")
+                : "—";
+          return (
+            <div key={a.id} className="px-4 py-3 flex items-start gap-3 text-sm">
+              <div className="size-7 rounded-lg bg-muted grid place-items-center shrink-0">
+                <Icon className="size-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">{a.message}</p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="capitalize">{a.type.replace("_", " ")}</span> · {targetName} · {fmtDate(a.createdAt)}{a.userId ? ` · ${userName(s, a.userId)}` : ""}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================
+// Edit dialogs
+// ===========================================================
+function EditContactDialog({ id, open, onOpenChange }: { id: ID | null; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const s = useCrm();
+  const c = s.contacts.find((x) => x.id === id);
+  const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", jobTitle: "", state: "", companyId: "", ownerId: "", notes: "" });
+  useMemo(() => {
+    if (c) setF({
+      firstName: c.firstName, lastName: c.lastName, email: c.email ?? "", phone: c.phone ?? "",
+      jobTitle: c.jobTitle ?? "", state: c.state ?? "", companyId: c.companyId ?? "",
+      ownerId: c.ownerId ?? "", notes: c.notes ?? "",
+    });
+  }, [c?.id]);
+  if (!c) return null;
+  const save = () => {
+    crm.updateContact(c.id, {
+      firstName: f.firstName, lastName: f.lastName, email: f.email || undefined, phone: f.phone || undefined,
+      jobTitle: f.jobTitle || undefined, state: f.state || undefined,
+      companyId: f.companyId || undefined, ownerId: f.ownerId || undefined, notes: f.notes || undefined,
+    });
+    toast({ title: "Contact updated" });
+    onOpenChange(false);
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Edit Contact</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label className="text-xs">First name</Label><Input value={f.firstName} onChange={(e) => setF({ ...f, firstName: e.target.value })} /></div>
+          <div><Label className="text-xs">Last name</Label><Input value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} /></div>
+          <div><Label className="text-xs">Email</Label><Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
+          <div><Label className="text-xs">Phone</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
+          <div><Label className="text-xs">Title</Label><Input value={f.jobTitle} onChange={(e) => setF({ ...f, jobTitle: e.target.value })} /></div>
+          <div><Label className="text-xs">State</Label>
+            <Select value={f.state} onValueChange={(v) => setF({ ...f, state: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Company</Label>
+            <Select value={f.companyId} onValueChange={(v) => setF({ ...f, companyId: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{s.companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Owner</Label>
+            <Select value={f.ownerId} onValueChange={(v) => setF({ ...f, ownerId: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={3} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditCompanyDialog({ id, open, onOpenChange }: { id: ID | null; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const s = useCrm();
+  const c = s.companies.find((x) => x.id === id);
+  const [f, setF] = useState({ name: "", companyType: "", city: "", state: "", website: "", mainPhone: "", ownerId: "", relationshipTier: "", notes: "" });
+  useMemo(() => {
+    if (c) setF({
+      name: c.name, companyType: c.companyType ?? "", city: c.city ?? "", state: c.state ?? "",
+      website: c.website ?? "", mainPhone: c.mainPhone ?? "", ownerId: c.ownerId ?? "",
+      relationshipTier: c.relationshipTier ?? "", notes: c.notes ?? "",
+    });
+  }, [c?.id]);
+  if (!c) return null;
+  const save = () => {
+    crm.updateCompany(c.id, {
+      name: f.name, companyType: f.companyType || undefined,
+      city: f.city || undefined, state: f.state || undefined,
+      website: f.website || undefined, mainPhone: f.mainPhone || undefined,
+      ownerId: f.ownerId || undefined,
+      relationshipTier: (f.relationshipTier || undefined) as Company["relationshipTier"],
+      notes: f.notes || undefined,
+    });
+    toast({ title: "Company updated" });
+    onOpenChange(false);
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Edit Company</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2"><Label className="text-xs">Name</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+          <div><Label className="text-xs">Type</Label><Input value={f.companyType} onChange={(e) => setF({ ...f, companyType: e.target.value })} /></div>
+          <div><Label className="text-xs">Website</Label><Input value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} /></div>
+          <div><Label className="text-xs">City</Label><Input value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} /></div>
+          <div><Label className="text-xs">State</Label>
+            <Select value={f.state} onValueChange={(v) => setF({ ...f, state: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Phone</Label><Input value={f.mainPhone} onChange={(e) => setF({ ...f, mainPhone: e.target.value })} /></div>
+          <div><Label className="text-xs">Owner</Label>
+            <Select value={f.ownerId} onValueChange={(v) => setF({ ...f, ownerId: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Tier</Label>
+            <Select value={f.relationshipTier} onValueChange={(v) => setF({ ...f, relationshipTier: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{["Tier A", "Tier B", "Tier C"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={3} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditReferralDialog({ id, open, onOpenChange }: { id: ID | null; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const s = useCrm();
+  const r = s.referrals.find((x) => x.id === id);
+  const [f, setF] = useState({ patientFirstName: "", patientLastInitial: "", referralStatus: "New", intakeStatus: "", serviceType: "", insuranceType: "", state: "", companyId: "", contactId: "", assignedIntakeOwnerId: "", notes: "" });
+  useMemo(() => {
+    if (r) setF({
+      patientFirstName: r.patientFirstName, patientLastInitial: r.patientLastInitial,
+      referralStatus: r.referralStatus, intakeStatus: r.intakeStatus ?? "",
+      serviceType: r.serviceType ?? "", insuranceType: r.insuranceType ?? "",
+      state: r.state ?? "", companyId: r.companyId ?? "", contactId: r.contactId ?? "",
+      assignedIntakeOwnerId: r.assignedIntakeOwnerId ?? "", notes: r.notes ?? "",
+    });
+  }, [r?.id]);
+  if (!r) return null;
+  const save = () => {
+    crm.updateReferral(r.id, {
+      patientFirstName: f.patientFirstName, patientLastInitial: f.patientLastInitial,
+      name: `${f.patientFirstName} ${f.patientLastInitial}.`,
+      referralStatus: f.referralStatus as Referral["referralStatus"],
+      intakeStatus: f.intakeStatus || undefined,
+      serviceType: f.serviceType || undefined, insuranceType: f.insuranceType || undefined,
+      state: f.state || undefined, companyId: f.companyId || undefined,
+      contactId: f.contactId || undefined,
+      assignedIntakeOwnerId: f.assignedIntakeOwnerId || undefined,
+      notes: f.notes || undefined,
+    });
+    toast({ title: "Referral updated" });
+    onOpenChange(false);
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Edit Referral</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label className="text-xs">Patient first name</Label><Input value={f.patientFirstName} onChange={(e) => setF({ ...f, patientFirstName: e.target.value })} /></div>
+          <div><Label className="text-xs">Last initial</Label><Input value={f.patientLastInitial} onChange={(e) => setF({ ...f, patientLastInitial: e.target.value.slice(0, 1).toUpperCase() })} /></div>
+          <div><Label className="text-xs">Status</Label>
+            <Select value={f.referralStatus} onValueChange={(v) => setF({ ...f, referralStatus: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"].map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Intake status</Label><Input value={f.intakeStatus} onChange={(e) => setF({ ...f, intakeStatus: e.target.value })} /></div>
+          <div><Label className="text-xs">Service type</Label><Input value={f.serviceType} onChange={(e) => setF({ ...f, serviceType: e.target.value })} /></div>
+          <div><Label className="text-xs">Insurance</Label><Input value={f.insuranceType} onChange={(e) => setF({ ...f, insuranceType: e.target.value })} /></div>
+          <div><Label className="text-xs">State</Label>
+            <Select value={f.state} onValueChange={(v) => setF({ ...f, state: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Source company</Label>
+            <Select value={f.companyId} onValueChange={(v) => setF({ ...f, companyId: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{s.companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={3} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ===========================================================
+// Log activity dialog (Note / Call / Email / Meeting / Task / File)
+// ===========================================================
+const LOG_TYPES: { id: ActivityEvent["type"]; label: string; icon: typeof Activity }[] = [
+  { id: "note", label: "Note", icon: StickyNote },
+  { id: "call", label: "Call", icon: Phone },
+  { id: "email", label: "Email", icon: Mail },
+  { id: "meeting", label: "Meeting", icon: Calendar },
+  { id: "task", label: "Task", icon: ListChecks },
+  { id: "file_uploaded", label: "File", icon: FileUp },
+];
+
+function LogActivityDialog({ open, onOpenChange, contactId, companyId, referralId }:
+  { open: boolean; onOpenChange: (o: boolean) => void; contactId?: ID; companyId?: ID; referralId?: ID }) {
+  const [type, setType] = useState<ActivityEvent["type"]>("note");
+  const [message, setMessage] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDue, setTaskDue] = useState("");
+
+  const reset = () => { setMessage(""); setFileName(""); setTaskTitle(""); setTaskDue(""); setType("note"); };
+
+  const submit = () => {
+    if (type === "task") {
+      if (!taskTitle.trim()) { toast({ title: "Task title required" }); return; }
+      crm.addTask({ title: taskTitle, type: "Other", contactId, companyId, referralId, dueDate: taskDue || undefined });
+    } else if (type === "file_uploaded") {
+      if (!fileName.trim()) { toast({ title: "File name required" }); return; }
+      const objectType = contactId ? "contact" : companyId ? "company" : referralId ? "referral" : "contact";
+      const objectId = (contactId ?? companyId ?? referralId)!;
+      crm.addAttachment({ fileName, objectType, objectId, category: "Other" });
+    } else {
+      if (!message.trim()) { toast({ title: "Add a message" }); return; }
+      crm.logCustomActivity({ type, message, contactId, companyId, referralId });
+    }
+    toast({ title: "Activity logged" });
+    reset();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Log Activity</DialogTitle></DialogHeader>
+        <div className="flex flex-wrap gap-1.5">
+          {LOG_TYPES.map((lt) => {
+            const I = lt.icon;
+            return (
+              <button key={lt.id} onClick={() => setType(lt.id)}
+                className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border inline-flex items-center gap-1.5",
+                  type === lt.id ? "bg-primary/10 text-primary border-primary/20" : "text-muted-foreground border-transparent hover:bg-muted")}>
+                <I className="size-3.5" /> {lt.label}
+              </button>
+            );
+          })}
+        </div>
+        {type === "task" ? (
+          <div className="space-y-3 mt-2">
+            <div><Label className="text-xs">Task title</Label><Input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} /></div>
+            <div><Label className="text-xs">Due date</Label><Input type="date" value={taskDue} onChange={(e) => setTaskDue(e.target.value)} /></div>
+          </div>
+        ) : type === "file_uploaded" ? (
+          <div className="space-y-2 mt-2">
+            <Label className="text-xs">File name</Label>
+            <Input placeholder="e.g. Welcome packet.pdf" value={fileName} onChange={(e) => setFileName(e.target.value)} />
+            <p className="text-[11px] text-muted-foreground">Metadata only — no upload required.</p>
+          </div>
+        ) : (
+          <Textarea placeholder={`Log a ${type}…`} rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={submit}>Log</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
