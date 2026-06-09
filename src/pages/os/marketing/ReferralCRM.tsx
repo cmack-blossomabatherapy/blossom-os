@@ -912,6 +912,7 @@ function TasksModule() {
   const s = useCrm();
   const [groupBy, setGroupBy] = useState<"owner" | "state" | "status">("owner");
   const [creating, setCreating] = useState(false);
+  const [selected, setSelected] = useState<Set<ID>>(new Set());
 
   const groups = useMemo(() => {
     const map = new Map<string, Task[]>();
@@ -928,6 +929,46 @@ function TasksModule() {
     return [...map.entries()];
   }, [s, groupBy]);
 
+  const visibleIds = s.tasks.map((t) => t.id);
+  const allChecked = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
+  const toggleAll = () => setSelected(allChecked ? new Set() : new Set(visibleIds));
+  const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
+  const ids = () => Array.from(selected);
+  const clear = () => setSelected(new Set());
+  const bulkComplete = () => {
+    ids().forEach((id) => crm.updateTask(id, { status: "Completed" }));
+    toast({ title: `Completed ${selected.size} task(s)` }); clear();
+  };
+  const bulkAssign = (uid: ID) => {
+    ids().forEach((id) => crm.updateTask(id, { assignedUserId: uid }));
+    toast({ title: `Reassigned ${selected.size} task(s)` }); clear();
+  };
+  const bulkPriority = (v: string) => {
+    ids().forEach((id) => crm.updateTask(id, { priority: v as Task["priority"] }));
+    toast({ title: `Updated priority on ${selected.size}` }); clear();
+  };
+  const bulkDueDate = () => {
+    const v = window.prompt("Due date (YYYY-MM-DD):"); if (!v) return;
+    ids().forEach((id) => crm.updateTask(id, { dueDate: v }));
+    toast({ title: `Updated due date on ${selected.size}` }); clear();
+  };
+  const bulkDelete = () => {
+    ids().forEach((id) => crm.deleteTask(id));
+    toast({ title: `${selected.size} task(s) deleted` }); clear();
+  };
+  const bulkExport = () => {
+    const data = s.tasks.filter((t) => selected.has(t.id)).map((t) => ({
+      id: t.id, title: t.title, type: t.type, priority: t.priority, status: t.status,
+      dueDate: t.dueDate, assignedUser: userName(s, t.assignedUserId),
+      company: companyName(s, t.companyId),
+      contact: t.contactId ? fullName(s.contacts.find((c) => c.id === t.contactId)!) : "",
+      referralId: t.referralId, notes: t.notes, createdAt: t.createdAt,
+    }));
+    downloadCsv(`tasks-selected-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} selected tasks`);
+    toast({ title: `Exported ${data.length} task(s)` });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -940,9 +981,40 @@ function TasksModule() {
             <SelectItem value="status">Status</SelectItem>
           </SelectContent>
         </Select>
+        <label className="ml-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <Checkbox checked={allChecked} onCheckedChange={toggleAll} /> Select all
+        </label>
         <div className="flex-1" />
         <Button size="sm" className="h-9 gap-1.5" onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Task</Button>
       </div>
+
+      {selected.size > 0 && (
+        <div className="rounded-xl bg-foreground text-background px-3 py-2 flex flex-wrap items-center gap-2 text-sm">
+          <button onClick={clear} className="size-6 grid place-items-center rounded hover:bg-background/10"><X className="size-3.5" /></button>
+          <span className="font-medium">{selected.size} selected</span>
+          <span className="mx-1 h-4 w-px bg-background/20" />
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkComplete}>
+            <CheckCircle2 className="size-3 mr-1" /> Complete
+          </Button>
+          <Select onValueChange={bulkAssign}>
+            <SelectTrigger className="h-7 w-[150px] bg-transparent border-background/20 text-xs text-background"><SelectValue placeholder="Reassign owner" /></SelectTrigger>
+            <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select onValueChange={bulkPriority}>
+            <SelectTrigger className="h-7 w-[120px] bg-transparent border-background/20 text-xs text-background"><SelectValue placeholder="Priority" /></SelectTrigger>
+            <SelectContent>{["Low", "Medium", "High"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDueDate}>
+            <Calendar className="size-3 mr-1" /> Due date
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkExport}>
+            <Download className="size-3 mr-1" /> Export
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+            <Trash2 className="size-3 mr-1" /> Delete
+          </Button>
+        </div>
+      )}
 
       <div className="space-y-4">
         {groups.map(([key, items]) => (
@@ -956,6 +1028,7 @@ function TasksModule() {
                 const overdue = t.dueDate && new Date(t.dueDate).getTime() < Date.now() && t.status !== "Completed";
                 return (
                   <div key={t.id} className="px-4 py-2.5 flex items-center gap-3 text-sm">
+                    <Checkbox checked={selected.has(t.id)} onCheckedChange={() => toggleOne(t.id)} />
                     <button
                       className={cn("size-4 rounded border flex items-center justify-center",
                         t.status === "Completed" ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/30")}
