@@ -82,6 +82,7 @@ describe("Relationships nav scope", () => {
   it("route-gates the Relationships pages to Marketing + Super Admin (App.tsx)", () => {
     const relRoutes = [
       "/marketing/referrals",
+      "/marketing/referral-crm",
       "/marketing/recruiting",
       "/marketing/outreach",
       "/marketing/reputation",
