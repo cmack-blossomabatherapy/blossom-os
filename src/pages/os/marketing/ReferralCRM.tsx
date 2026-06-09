@@ -635,6 +635,66 @@ function NewCompanyDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
 }
 
 // ===========================================================
+// Shared bulk create-task dialog
+// ===========================================================
+function BulkCreateTaskDialog({
+  open, onOpenChange, targetCount, onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (b: boolean) => void;
+  targetCount: number;
+  onSubmit: (payload: { title: string; type: Task["type"]; priority: Task["priority"]; assignedUserId?: ID; dueDate?: string; notes?: string }) => void;
+}) {
+  const s = useCrm();
+  const [f, setF] = useState({ title: "", type: "Call" as Task["type"], priority: "Medium" as Task["priority"], assignedUserId: "", dueDate: "", notes: "" });
+  const submit = () => {
+    if (!f.title) { toast({ title: "Title required" }); return; }
+    onSubmit({
+      title: f.title, type: f.type, priority: f.priority,
+      assignedUserId: f.assignedUserId || undefined,
+      dueDate: f.dueDate || undefined, notes: f.notes || undefined,
+    });
+    setF({ title: "", type: "Call", priority: "Medium", assignedUserId: "", dueDate: "", notes: "" });
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Create task for {targetCount} record(s)</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div><Label className="text-xs">Title</Label><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label className="text-xs">Type</Label>
+              <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v as Task["type"] })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{["Call", "Email", "Meeting", "Lunch & Learn", "Follow-Up", "Other"].map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label className="text-xs">Priority</Label>
+              <Select value={f.priority} onValueChange={(v) => setF({ ...f, priority: v as Task["priority"] })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{["Low", "Medium", "High"].map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label className="text-xs">Owner</Label>
+              <Select value={f.assignedUserId} onValueChange={(v) => setF({ ...f, assignedUserId: v })}>
+                <SelectTrigger><SelectValue placeholder="Assign" /></SelectTrigger>
+                <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label className="text-xs">Due date</Label><Input type="date" value={f.dueDate} onChange={(e) => setF({ ...f, dueDate: e.target.value })} /></div>
+          </div>
+          <div><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={2} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={submit}>Create {targetCount} task(s)</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ===========================================================
 // Referrals
 // ===========================================================
 function ReferralsModule() {
