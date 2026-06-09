@@ -101,11 +101,24 @@ function DashboardModule() {
   const overdue = openTasks.filter((t) => t.dueDate && new Date(t.dueDate).getTime() < Date.now());
   const activePartners = co.filter((c) => c.activeReferralPartner).length;
   const inactive60 = co.filter((c) => daysSince(c.lastContactedDate) > 60);
+  const inactive90 = co.filter((c) => daysSince(c.lastContactedDate) > 90);
 
   const byState = STATES.map((st) => ({
     st, count: rf.filter((r) => r.state === st).length,
   }));
+  const contactsByState = STATES.map((st) => ({ st, count: ct.filter((c) => c.state === st).length }));
+  const companiesByState = STATES.map((st) => ({ st, count: co.filter((c) => c.state === st).length }));
   const topPartners = [...co].sort((a, b) => b.referralCount - a.referralCount).slice(0, 5);
+
+  const last30 = (iso?: string) => !!iso && daysSince(iso) <= 30;
+  const newSources30 = co.filter((c) => last30(c.createdAt)).length;
+  const outreachDone30 = s.tasks.filter((t) => t.status === "Completed" && last30(t.createdAt)).length;
+  const callsDone30 = s.activity.filter((a) => a.type === "call" && last30(a.createdAt)).length;
+  const meetingsDone30 = s.activity.filter((a) => a.type === "meeting" && last30(a.createdAt)).length;
+  const llScheduled = co.filter((c) => c.lunchLearnStatus === "Scheduled").length
+    + ct.filter((c) => c.lunchLearnStatus === "Scheduled").length;
+  const llCompleted = co.filter((c) => c.lunchLearnStatus === "Completed").length
+    + ct.filter((c) => c.lunchLearnStatus === "Completed").length;
 
   return (
     <div className="space-y-6">
@@ -115,10 +128,21 @@ function DashboardModule() {
         <Kpi label="Referrals" value={rf.length} icon={HeartHandshake} />
         <Kpi label="Open Tasks" value={openTasks.length} hint={`${overdue.length} overdue`} icon={ListChecks} />
         <Kpi label="Active Partners" value={activePartners} icon={ShieldCheck} />
-        <Kpi label="No Activity 60d+" value={inactive60.length} icon={AlertCircle} />
+        <Kpi label="No Activity 60d+" value={inactive60.length} hint={`${inactive90.length} at 90d+`} icon={AlertCircle} />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Kpi label="New Sources (30d)" value={newSources30} icon={Plus} />
+        <Kpi label="Outreach Tasks Done (30d)" value={outreachDone30} icon={CheckCircle2} />
+        <Kpi label="Calls (30d)" value={callsDone30} icon={Phone} />
+        <Kpi label="Meetings (30d)" value={meetingsDone30} icon={Calendar} />
+        <Kpi label="L&L Scheduled" value={llScheduled} icon={Calendar} />
+        <Kpi label="L&L Completed" value={llCompleted} icon={CheckCircle2} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
+        <StateBars title="Contacts by State" rows={contactsByState} />
+        <StateBars title="Companies by State" rows={companiesByState} />
         <div className="rounded-2xl border bg-card p-5">
           <SectionHeader title="Referrals by State" subtitle="YTD totals from referral records" />
           <div className="space-y-2">
@@ -150,6 +174,27 @@ function DashboardModule() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="rounded-2xl border bg-card p-5">
+          <SectionHeader title="Companies with No Activity" subtitle="Reach out to keep partners warm" />
+          {inactive60.length === 0 ? (
+            <p className="text-sm text-muted-foreground">All companies have recent activity.</p>
+          ) : (
+            <div className="divide-y">
+              {inactive60.slice(0, 8).map((c) => (
+                <div key={c.id} className="flex items-center justify-between py-2 text-sm">
+                  <div>
+                    <p className="font-medium">{c.name}</p>
+                    <p className="text-xs text-muted-foreground">{c.state} · last contact {fmtDate(c.lastContactedDate)}</p>
+                  </div>
+                  <Badge variant={daysSince(c.lastContactedDate) > 90 ? "destructive" : "secondary"}>
+                    {daysSince(c.lastContactedDate) > 90 ? "90d+" : "60d+"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border bg-card p-5">
@@ -185,6 +230,26 @@ function DashboardModule() {
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function StateBars({ title, rows }: { title: string; rows: { st: string; count: number }[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  return (
+    <div className="rounded-2xl border bg-card p-5">
+      <SectionHeader title={title} />
+      <div className="space-y-2">
+        {rows.map(({ st, count }) => (
+          <div key={st} className="flex items-center gap-3 text-sm">
+            <span className="w-10 text-muted-foreground tabular-nums">{st}</span>
+            <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+              <div className="h-full bg-primary/70" style={{ width: `${(count / max) * 100}%` }} />
+            </div>
+            <span className="w-8 text-right tabular-nums font-medium">{count}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
