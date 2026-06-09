@@ -57,11 +57,17 @@ describe("Relationships nav scope", () => {
   it("has no broken placeholder href=\"#\" links inside the Relationships entries", () => {
     // Pull every NAV_SECTIONS-style block tagged 'relationships' and assert
     // each `to:` points to a real /marketing/* route, never '#'.
-    const groups = [...shellSrc.matchAll(/id:\s*"relationships",[\s\S]*?\n\s{4}\},/g)];
-    expect(groups.length).toBeGreaterThan(0);
+    const groups = [
+      ...shellSrc.matchAll(
+        /id:\s*"relationships",\s*label:\s*"Relationships",\s*items:\s*\[([\s\S]*?)\],/g,
+      ),
+    ];
+    expect(groups.length).toBe(2);
     for (const g of groups) {
-      expect(g[0]).not.toMatch(/to:\s*"#"/);
-      const tos = [...g[0].matchAll(/to:\s*"([^"]+)"/g)].map((m) => m[1]);
+      const body = g[1];
+      expect(body).not.toMatch(/to:\s*"#"/);
+      const tos = [...body.matchAll(/to:\s*"([^"]+)"/g)].map((m) => m[1]);
+      expect(tos.length).toBeGreaterThan(0);
       for (const to of tos) {
         expect(to.startsWith("/marketing/")).toBe(true);
       }
