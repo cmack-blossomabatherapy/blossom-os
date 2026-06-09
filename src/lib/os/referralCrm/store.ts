@@ -1,0 +1,558 @@
+import { useSyncExternalStore } from "react";
+
+// =====================================================================
+// Blossom Referral CRM — in-memory store (first-pass, frontend-only)
+// Designed so the surface matches a future API/DB layer.
+// =====================================================================
+
+export type ID = string;
+
+export interface CrmUser {
+  id: ID;
+  name: string;
+  email: string;
+  role: "admin" | "marketing_director" | "outreach_rep" | "intake" | "state_director" | "read_only";
+  state?: string;
+}
+
+export interface Contact {
+  id: ID;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  mobilePhone?: string;
+  jobTitle?: string;
+  specialty?: string;
+  department?: string;
+  companyId?: ID;
+  associatedCompanyIds?: ID[];
+  state?: string;
+  territory?: string;
+  ownerId?: ID;
+  lifecycleStage?: string;
+  leadStatus?: string;
+  referralSourceType?: string;
+  referralPartnerStatus?: string;
+  preferredContactMethod?: "Email" | "Phone" | "Text" | "In-Person";
+  lastContactedDate?: string;
+  nextFollowUpDate?: string;
+  lastReferralDate?: string;
+  referralCount: number;
+  relationshipStrength?: "Cold" | "Warm" | "Strong" | "Champion";
+  lunchLearnStatus?: "Not Scheduled" | "Scheduled" | "Completed" | "Declined";
+  tags: string[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export interface Company {
+  id: ID;
+  name: string;
+  website?: string;
+  mainPhone?: string;
+  generalEmail?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  companyType?: string;
+  specialty?: string;
+  referralPartnerStatus?: string;
+  activeReferralPartner?: boolean;
+  ownerId?: ID;
+  territory?: string;
+  referralCount: number;
+  referralsYTD: number;
+  lastReferralDate?: string;
+  lastContactedDate?: string;
+  nextFollowUpDate?: string;
+  relationshipTier?: "Tier A" | "Tier B" | "Tier C";
+  lunchLearnStatus?: "Not Scheduled" | "Scheduled" | "Completed" | "Declined";
+  strategicPartner?: boolean;
+  tags: string[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export interface Referral {
+  id: ID;
+  name: string;
+  patientFirstName: string;
+  patientLastInitial: string;
+  referralDate: string;
+  contactId?: ID;
+  companyId?: ID;
+  state?: string;
+  serviceType?: string;
+  referralStatus: "New" | "In Review" | "Intake Form Sent" | "Scheduled" | "Active" | "Closed" | "Lost";
+  intakeStatus?: string;
+  insuranceType?: string;
+  assignedIntakeOwnerId?: ID;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export interface Task {
+  id: ID;
+  title: string;
+  type: "Call" | "Email" | "Meeting" | "Lunch & Learn" | "Follow-Up" | "Other";
+  assignedUserId?: ID;
+  contactId?: ID;
+  companyId?: ID;
+  referralId?: ID;
+  dueDate?: string;
+  priority: "Low" | "Medium" | "High";
+  status: "Open" | "In Progress" | "Completed";
+  notes?: string;
+  createdAt: string;
+}
+
+export interface ActivityEvent {
+  id: ID;
+  type:
+    | "note" | "call" | "email" | "meeting" | "task" | "referral_received"
+    | "file_uploaded" | "property_change" | "owner_change" | "workflow_enrollment" | "list_membership";
+  message: string;
+  contactId?: ID;
+  companyId?: ID;
+  referralId?: ID;
+  userId?: ID;
+  createdAt: string;
+}
+
+export interface WorkflowDef {
+  id: ID;
+  name: string;
+  trigger: string;
+  actions: string[];
+  enabled: boolean;
+  lastRun?: string;
+  runs: number;
+}
+
+export interface ListDef {
+  id: ID;
+  name: string;
+  kind: "static" | "active";
+  object: "contacts" | "companies";
+  criteria?: string;
+  staticIds?: ID[];
+  matcher?: (rows: (Contact | Company)[]) => (Contact | Company)[];
+}
+
+export const STATES = ["GA", "MD", "NC", "TN", "VA"] as const;
+
+// ---------- seed ----------
+const now = () => new Date().toISOString();
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+const daysAhead = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
+
+const users: CrmUser[] = [
+  { id: "u-admin", name: "Admin User", email: "admin@blossomaba.com", role: "admin" },
+  { id: "u-mkt", name: "Marketing Director", email: "marketing@blossomaba.com", role: "marketing_director" },
+  { id: "u-nc", name: "NC Outreach Rep", email: "nc.outreach@blossomaba.com", role: "outreach_rep", state: "NC" },
+  { id: "u-va", name: "VA Outreach Rep", email: "va.outreach@blossomaba.com", role: "outreach_rep", state: "VA" },
+  { id: "u-ga", name: "GA Outreach Rep", email: "ga.outreach@blossomaba.com", role: "outreach_rep", state: "GA" },
+  { id: "u-tn", name: "TN Outreach Rep", email: "tn.outreach@blossomaba.com", role: "outreach_rep", state: "TN" },
+  { id: "u-md", name: "MD Outreach Rep", email: "md.outreach@blossomaba.com", role: "outreach_rep", state: "MD" },
+  { id: "u-intake", name: "Intake Team User", email: "intake@blossomaba.com", role: "intake" },
+];
+
+const companies: Company[] = [
+  {
+    id: "c-bright", name: "Bright Path Pediatrics", website: "brightpathpeds.com",
+    mainPhone: "(919) 555-0142", generalEmail: "office@brightpathpeds.com",
+    address: "120 Oak St", city: "Raleigh", state: "NC", zip: "27601",
+    companyType: "Pediatrician Office", specialty: "Pediatrics",
+    referralPartnerStatus: "Warm Relationship", activeReferralPartner: true,
+    ownerId: "u-nc", territory: "NC-Triangle",
+    referralCount: 12, referralsYTD: 12, lastReferralDate: daysAgo(7), lastContactedDate: daysAgo(3),
+    nextFollowUpDate: daysAhead(4), relationshipTier: "Tier A",
+    lunchLearnStatus: "Completed", strategicPartner: true,
+    tags: ["NC", "Pediatrics", "Warm"], notes: "Strong referral pipeline. Loves quarterly visits.",
+    createdAt: daysAgo(180), updatedAt: daysAgo(3),
+  },
+  {
+    id: "c-rosen", name: "Rosen Child Psychology", website: "rosenchild.com",
+    mainPhone: "(804) 555-0188", generalEmail: "front@rosenchild.com",
+    address: "44 Cary St", city: "Richmond", state: "VA", zip: "23220",
+    companyType: "Diagnostic Center", specialty: "Psychology",
+    referralPartnerStatus: "Active Referral Partner", activeReferralPartner: true,
+    ownerId: "u-va", territory: "VA-Richmond",
+    referralCount: 20, referralsYTD: 20, lastReferralDate: daysAgo(2), lastContactedDate: daysAgo(10),
+    nextFollowUpDate: daysAhead(2), relationshipTier: "Tier A",
+    lunchLearnStatus: "Scheduled", strategicPartner: true,
+    tags: ["VA", "Diagnostics", "Tier A"], notes: "Dr. Rosen sends weekly. Send Q4 outcomes packet.",
+    createdAt: daysAgo(220), updatedAt: daysAgo(2),
+  },
+  {
+    id: "c-oak", name: "Oak Valley Elementary School", website: "oakvalley.k12.ga.us",
+    mainPhone: "(770) 555-0199", generalEmail: "info@oakvalley.k12.ga.us",
+    city: "Marietta", state: "GA", zip: "30060",
+    companyType: "School", specialty: "Special Education",
+    referralPartnerStatus: "New Target", activeReferralPartner: false,
+    ownerId: "u-ga", territory: "GA-Metro",
+    referralCount: 0, referralsYTD: 0,
+    nextFollowUpDate: daysAhead(7), relationshipTier: "Tier C",
+    lunchLearnStatus: "Not Scheduled", strategicPartner: false,
+    tags: ["GA", "School", "Target"], notes: "Cold outreach in progress. Reach out to SPED director.",
+    createdAt: daysAgo(40), updatedAt: daysAgo(40),
+  },
+  {
+    id: "c-tn", name: "Tennessee Family Health", website: "tnfamilyhealth.com",
+    mainPhone: "(615) 555-0123", city: "Nashville", state: "TN",
+    companyType: "Pediatrician Office",
+    referralPartnerStatus: "Connected", activeReferralPartner: true,
+    ownerId: "u-tn", referralCount: 4, referralsYTD: 4,
+    lastReferralDate: daysAgo(20), lastContactedDate: daysAgo(30),
+    relationshipTier: "Tier B", lunchLearnStatus: "Not Scheduled",
+    tags: ["TN", "Pediatrics"], createdAt: daysAgo(120), updatedAt: daysAgo(30),
+  },
+  {
+    id: "c-md", name: "Maryland Autism Diagnostics", website: "mdautismdx.com",
+    mainPhone: "(410) 555-0177", city: "Baltimore", state: "MD",
+    companyType: "Diagnostic Center",
+    referralPartnerStatus: "Active Referral Partner", activeReferralPartner: true,
+    ownerId: "u-md", referralCount: 7, referralsYTD: 7,
+    lastReferralDate: daysAgo(14), lastContactedDate: daysAgo(70),
+    relationshipTier: "Tier B", lunchLearnStatus: "Not Scheduled",
+    tags: ["MD", "Diagnostics"], createdAt: daysAgo(150), updatedAt: daysAgo(70),
+  },
+];
+
+const contacts: Contact[] = [
+  {
+    id: "ct-sarah", firstName: "Sarah", lastName: "Miller",
+    email: "sarah.miller@brightpathpeds.com", phone: "(919) 555-0142",
+    mobilePhone: "(919) 555-0152", jobTitle: "Referral Coordinator",
+    specialty: "Pediatrician", department: "Front Office",
+    companyId: "c-bright", state: "NC", territory: "NC-Triangle",
+    ownerId: "u-nc", lifecycleStage: "Active Partner",
+    leadStatus: "Engaged", referralSourceType: "Pediatrician",
+    referralPartnerStatus: "Warm Relationship",
+    preferredContactMethod: "Email",
+    lastContactedDate: daysAgo(3), nextFollowUpDate: daysAhead(4),
+    lastReferralDate: daysAgo(7), referralCount: 9,
+    relationshipStrength: "Strong", lunchLearnStatus: "Completed",
+    tags: ["NC", "Champion"], notes: "Prefers email. Loves the parent welcome kit.",
+    createdAt: daysAgo(180), updatedAt: daysAgo(3),
+  },
+  {
+    id: "ct-david", firstName: "David", lastName: "Rosen",
+    email: "dr.rosen@rosenchild.com", phone: "(804) 555-0188",
+    jobTitle: "Psychologist", specialty: "Child Psychology",
+    department: "Clinical", companyId: "c-rosen", state: "VA",
+    territory: "VA-Richmond", ownerId: "u-va", lifecycleStage: "Strategic Partner",
+    leadStatus: "Engaged", referralSourceType: "Psychologist",
+    referralPartnerStatus: "Active Referral Partner",
+    preferredContactMethod: "Phone",
+    lastContactedDate: daysAgo(10), nextFollowUpDate: daysAhead(2),
+    lastReferralDate: daysAgo(2), referralCount: 8,
+    relationshipStrength: "Champion", lunchLearnStatus: "Scheduled",
+    tags: ["VA", "Champion", "Tier A"], notes: "Schedule quarterly clinical sync.",
+    createdAt: daysAgo(220), updatedAt: daysAgo(2),
+  },
+  {
+    id: "ct-jane", firstName: "Jane", lastName: "Carter",
+    email: "", phone: "(770) 555-0199",
+    jobTitle: "SPED Director", companyId: "c-oak", state: "GA",
+    ownerId: "u-ga", lifecycleStage: "Prospect", leadStatus: "New",
+    referralSourceType: "Educator", referralPartnerStatus: "New Target",
+    preferredContactMethod: "Email",
+    nextFollowUpDate: daysAhead(5),
+    referralCount: 0, relationshipStrength: "Cold", lunchLearnStatus: "Not Scheduled",
+    tags: ["GA", "School", "Needs Email"],
+    createdAt: daysAgo(30), updatedAt: daysAgo(30),
+  },
+  {
+    id: "ct-mike", firstName: "Mike", lastName: "Thompson",
+    email: "mthompson@tnfamilyhealth.com", phone: "(615) 555-0123",
+    jobTitle: "Office Manager", companyId: "c-tn", state: "TN",
+    ownerId: "u-tn", lifecycleStage: "Active Partner", leadStatus: "Engaged",
+    referralSourceType: "Pediatrician", referralPartnerStatus: "Connected",
+    preferredContactMethod: "Phone",
+    lastContactedDate: daysAgo(75), lastReferralDate: daysAgo(20),
+    referralCount: 4, relationshipStrength: "Warm",
+    lunchLearnStatus: "Not Scheduled",
+    tags: ["TN", "Lunch & Learn Needed"],
+    createdAt: daysAgo(120), updatedAt: daysAgo(75),
+  },
+  {
+    id: "ct-lisa", firstName: "Lisa", lastName: "Park",
+    email: "lpark@mdautismdx.com", phone: "(410) 555-0177",
+    jobTitle: "Intake Coordinator", companyId: "c-md", state: "MD",
+    ownerId: "u-md", lifecycleStage: "Active Partner", leadStatus: "Engaged",
+    referralSourceType: "Diagnostic Provider",
+    referralPartnerStatus: "Active Referral Partner",
+    preferredContactMethod: "Email",
+    lastContactedDate: daysAgo(70), lastReferralDate: daysAgo(14),
+    referralCount: 5, relationshipStrength: "Warm",
+    lunchLearnStatus: "Not Scheduled",
+    tags: ["MD", "Diagnostics"],
+    createdAt: daysAgo(150), updatedAt: daysAgo(70),
+  },
+];
+
+const referrals: Referral[] = [
+  {
+    id: "r-jacob", name: "Jacob M.", patientFirstName: "Jacob", patientLastInitial: "M",
+    referralDate: daysAgo(7), contactId: "ct-sarah", companyId: "c-bright",
+    state: "NC", serviceType: "In-Home ABA",
+    referralStatus: "Intake Form Sent", intakeStatus: "Awaiting Response",
+    insuranceType: "BCBS NC", assignedIntakeOwnerId: "u-intake",
+    notes: "Mom contacted via email. Eligibility looks good.",
+    createdAt: daysAgo(7), updatedAt: daysAgo(7),
+  },
+  {
+    id: "r-ella", name: "Ella R.", patientFirstName: "Ella", patientLastInitial: "R",
+    referralDate: daysAgo(2), contactId: "ct-david", companyId: "c-rosen",
+    state: "VA", serviceType: "Center-Based ABA",
+    referralStatus: "New", intakeStatus: "Pending",
+    insuranceType: "Anthem VA", assignedIntakeOwnerId: "u-intake",
+    createdAt: daysAgo(2), updatedAt: daysAgo(2),
+  },
+];
+
+const tasks: Task[] = [
+  {
+    id: "t-1", title: "Call Bright Path Pediatrics", type: "Call",
+    assignedUserId: "u-nc", companyId: "c-bright", contactId: "ct-sarah",
+    dueDate: "2026-06-12", priority: "High", status: "Open",
+    notes: "Confirm Q3 referral pipeline.", createdAt: daysAgo(2),
+  },
+  {
+    id: "t-2", title: "Schedule Lunch & Learn", type: "Lunch & Learn",
+    assignedUserId: "u-va", companyId: "c-rosen", contactId: "ct-david",
+    dueDate: daysAhead(5).slice(0, 10), priority: "Medium", status: "Open",
+    notes: "Confirm catering + clinical attendees.", createdAt: daysAgo(1),
+  },
+  {
+    id: "t-3", title: "Send welcome packet to Oak Valley", type: "Email",
+    assignedUserId: "u-ga", companyId: "c-oak", contactId: "ct-jane",
+    dueDate: daysAhead(1).slice(0, 10), priority: "Medium", status: "Open",
+    createdAt: daysAgo(3),
+  },
+  {
+    id: "t-4", title: "Follow up — TN Family Health (60+ days)", type: "Follow-Up",
+    assignedUserId: "u-tn", companyId: "c-tn", contactId: "ct-mike",
+    dueDate: daysAgo(2).slice(0, 10), priority: "High", status: "Open",
+    notes: "Overdue. No activity 60+ days.", createdAt: daysAgo(5),
+  },
+];
+
+const activity: ActivityEvent[] = [
+  { id: "a1", type: "referral_received", message: "Referral received: Jacob M.", companyId: "c-bright", contactId: "ct-sarah", createdAt: daysAgo(7) },
+  { id: "a2", type: "email", message: "Sent Q3 update email", companyId: "c-bright", contactId: "ct-sarah", userId: "u-nc", createdAt: daysAgo(3) },
+  { id: "a3", type: "referral_received", message: "Referral received: Ella R.", companyId: "c-rosen", contactId: "ct-david", createdAt: daysAgo(2) },
+  { id: "a4", type: "meeting", message: "Quarterly clinical sync booked", companyId: "c-rosen", contactId: "ct-david", userId: "u-va", createdAt: daysAgo(10) },
+  { id: "a5", type: "note", message: "Cold outreach started", companyId: "c-oak", contactId: "ct-jane", userId: "u-ga", createdAt: daysAgo(30) },
+];
+
+const workflows: WorkflowDef[] = [
+  { id: "w1", name: "New Referral Source Added", trigger: "Contact created with referralSourceType set",
+    actions: ["Assign owner by state", "Create welcome task", "Add to NC/GA/VA/TN/MD list"], enabled: true, runs: 12, lastRun: daysAgo(2) },
+  { id: "w2", name: "No Activity in 60 Days", trigger: "Last contact > 60 days",
+    actions: ["Create follow-up task", "Notify owner", "Tag as 'Re-engage'"], enabled: true, runs: 4, lastRun: daysAgo(1) },
+  { id: "w3", name: "Referral Received", trigger: "Referral created",
+    actions: ["Increment referral count", "Update last referral date", "Notify intake team"], enabled: true, runs: 32, lastRun: daysAgo(2) },
+  { id: "w4", name: "Lunch & Learn Needed", trigger: "Active partner without L&L in 6 months",
+    actions: ["Create L&L task", "Notify Marketing Director"], enabled: true, runs: 6, lastRun: daysAgo(7) },
+  { id: "w5", name: "Inactive Referral Partner", trigger: "No referrals in 120 days",
+    actions: ["Tag as inactive", "Create check-in task"], enabled: false, runs: 2, lastRun: daysAgo(40) },
+];
+
+const lists: ListDef[] = [
+  { id: "l1", name: "NC Referral Sources", kind: "active", object: "contacts",
+    criteria: "state = NC AND referralSourceType is set" },
+  { id: "l2", name: "Missing Email", kind: "active", object: "contacts",
+    criteria: "email is empty" },
+  { id: "l3", name: "Active Referral Partners", kind: "active", object: "companies",
+    criteria: "activeReferralPartner = true" },
+  { id: "l4", name: "Lunch & Learn Needed", kind: "active", object: "contacts",
+    criteria: "lunchLearnStatus = Not Scheduled AND relationshipStrength in (Warm, Strong)" },
+  { id: "l5", name: "Top 5 Strategic Partners (static)", kind: "static", object: "companies",
+    staticIds: ["c-bright", "c-rosen", "c-md"] },
+];
+
+// ---------- store ----------
+interface State {
+  users: CrmUser[];
+  contacts: Contact[];
+  companies: Company[];
+  referrals: Referral[];
+  tasks: Task[];
+  activity: ActivityEvent[];
+  workflows: WorkflowDef[];
+  lists: ListDef[];
+}
+
+let state: State = {
+  users, contacts, companies, referrals, tasks, activity, workflows, lists,
+};
+
+const listeners = new Set<() => void>();
+function emit() { listeners.forEach((l) => l()); }
+function set(next: Partial<State>) {
+  state = { ...state, ...next };
+  emit();
+}
+
+const subscribe = (cb: () => void) => { listeners.add(cb); return () => { listeners.delete(cb); }; };
+const getSnapshot = () => state;
+
+export function useCrm() {
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+const newId = () => Math.random().toString(36).slice(2, 10);
+const logActivity = (e: Omit<ActivityEvent, "id" | "createdAt"> & { createdAt?: string }) => {
+  set({ activity: [{ id: newId(), createdAt: now(), ...e }, ...state.activity] });
+};
+
+// ---------- mutators ----------
+export const crm = {
+  // contacts
+  addContact(input: Partial<Contact> & { firstName: string; lastName: string }) {
+    const c: Contact = {
+      id: newId(), referralCount: 0, tags: [], createdAt: now(), updatedAt: now(),
+      ...input,
+    } as Contact;
+    set({ contacts: [c, ...state.contacts] });
+    logActivity({ type: "property_change", message: `Contact created: ${c.firstName} ${c.lastName}`, contactId: c.id });
+    return c;
+  },
+  updateContact(id: ID, patch: Partial<Contact>) {
+    set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, ...patch, updatedAt: now() } : c) });
+    logActivity({ type: "property_change", message: `Contact updated`, contactId: id });
+  },
+  softDeleteContact(id: ID) {
+    set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
+  },
+  restoreContact(id: ID) {
+    set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
+  },
+  hardDeleteContact(id: ID) {
+    set({ contacts: state.contacts.filter((c) => c.id !== id) });
+  },
+
+  // companies
+  addCompany(input: Partial<Company> & { name: string }) {
+    const c: Company = {
+      id: newId(), referralCount: 0, referralsYTD: 0, tags: [],
+      createdAt: now(), updatedAt: now(), ...input,
+    } as Company;
+    set({ companies: [c, ...state.companies] });
+    logActivity({ type: "property_change", message: `Company created: ${c.name}`, companyId: c.id });
+    return c;
+  },
+  updateCompany(id: ID, patch: Partial<Company>) {
+    set({ companies: state.companies.map((c) => c.id === id ? { ...c, ...patch, updatedAt: now() } : c) });
+    logActivity({ type: "property_change", message: `Company updated`, companyId: id });
+  },
+  softDeleteCompany(id: ID) {
+    set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
+  },
+  restoreCompany(id: ID) {
+    set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
+  },
+  hardDeleteCompany(id: ID) {
+    set({ companies: state.companies.filter((c) => c.id !== id) });
+  },
+
+  // referrals — also bumps contact + company stats
+  addReferral(input: Partial<Referral> & { patientFirstName: string; patientLastInitial: string }) {
+    const r: Referral = {
+      id: newId(),
+      name: `${input.patientFirstName} ${input.patientLastInitial}.`,
+      referralDate: input.referralDate ?? now(),
+      referralStatus: input.referralStatus ?? "New",
+      createdAt: now(), updatedAt: now(),
+      ...input,
+    } as Referral;
+    set({ referrals: [r, ...state.referrals] });
+    if (r.contactId) {
+      const c = state.contacts.find((x) => x.id === r.contactId);
+      if (c) crm.updateContact(c.id, { referralCount: c.referralCount + 1, lastReferralDate: r.referralDate });
+    }
+    if (r.companyId) {
+      const co = state.companies.find((x) => x.id === r.companyId);
+      if (co) crm.updateCompany(co.id, {
+        referralCount: co.referralCount + 1,
+        referralsYTD: co.referralsYTD + 1,
+        lastReferralDate: r.referralDate,
+      });
+    }
+    logActivity({
+      type: "referral_received", message: `Referral received: ${r.name}`,
+      contactId: r.contactId, companyId: r.companyId, referralId: r.id,
+    });
+    return r;
+  },
+  updateReferral(id: ID, patch: Partial<Referral>) {
+    set({ referrals: state.referrals.map((r) => r.id === id ? { ...r, ...patch, updatedAt: now() } : r) });
+  },
+  softDeleteReferral(id: ID) {
+    set({ referrals: state.referrals.map((r) => r.id === id ? { ...r, deletedAt: now() } : r) });
+  },
+  restoreReferral(id: ID) {
+    set({ referrals: state.referrals.map((r) => r.id === id ? { ...r, deletedAt: undefined } : r) });
+  },
+
+  // tasks
+  addTask(input: Partial<Task> & { title: string }) {
+    const t: Task = {
+      id: newId(), type: "Other", priority: "Medium", status: "Open",
+      createdAt: now(), ...input,
+    } as Task;
+    set({ tasks: [t, ...state.tasks] });
+    logActivity({ type: "task", message: `Task created: ${t.title}`, contactId: t.contactId, companyId: t.companyId, referralId: t.referralId });
+    return t;
+  },
+  updateTask(id: ID, patch: Partial<Task>) {
+    set({ tasks: state.tasks.map((t) => t.id === id ? { ...t, ...patch } : t) });
+  },
+  deleteTask(id: ID) {
+    set({ tasks: state.tasks.filter((t) => t.id !== id) });
+  },
+
+  // notes
+  addNote(message: string, ref: { contactId?: ID; companyId?: ID; referralId?: ID }) {
+    logActivity({ type: "note", message, ...ref });
+  },
+
+  // workflows
+  toggleWorkflow(id: ID) {
+    set({ workflows: state.workflows.map((w) => w.id === id ? { ...w, enabled: !w.enabled } : w) });
+  },
+  runWorkflow(id: ID) {
+    set({ workflows: state.workflows.map((w) => w.id === id ? { ...w, runs: w.runs + 1, lastRun: now() } : w) });
+  },
+};
+
+// ---------- selectors / helpers ----------
+export function fullName(c: Contact) { return `${c.firstName} ${c.lastName}`.trim(); }
+export function activeContacts(s: State) { return s.contacts.filter((c) => !c.deletedAt); }
+export function activeCompanies(s: State) { return s.companies.filter((c) => !c.deletedAt); }
+export function activeReferrals(s: State) { return s.referrals.filter((r) => !r.deletedAt); }
+export function userName(s: State, id?: ID) { return s.users.find((u) => u.id === id)?.name ?? "—"; }
+export function companyName(s: State, id?: ID) { return s.companies.find((c) => c.id === id)?.name ?? "—"; }
+
+export function evalList(s: State, list: ListDef): (Contact | Company)[] {
+  const rows = list.object === "contacts" ? activeContacts(s) : activeCompanies(s);
+  if (list.kind === "static") return rows.filter((r) => list.staticIds?.includes(r.id));
+  switch (list.id) {
+    case "l1": return (rows as Contact[]).filter((c) => c.state === "NC" && !!c.referralSourceType);
+    case "l2": return (rows as Contact[]).filter((c) => !c.email);
+    case "l3": return (rows as Company[]).filter((c) => c.activeReferralPartner);
+    case "l4": return (rows as Contact[]).filter((c) =>
+      c.lunchLearnStatus === "Not Scheduled" && (c.relationshipStrength === "Warm" || c.relationshipStrength === "Strong"));
+    default: return rows;
+  }
+}

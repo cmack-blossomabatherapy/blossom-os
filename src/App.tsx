@@ -324,6 +324,7 @@ import MarketingSEO from "./pages/os/marketing/SEOContent";
 import MarketingWebAnalytics from "./pages/os/marketing/WebAnalytics";
 import MarketingCallTracking from "./pages/os/marketing/CallTracking";
 import MarketingReferrals from "./pages/os/marketing/Referrals";
+import ReferralCRM from "./pages/os/marketing/ReferralCRM";
 import MarketingRecruiting from "./pages/os/marketing/RecruitingMarketing";
 import MarketingOutreach from "./pages/os/marketing/CommunityOutreach";
 import MarketingReputation from "./pages/os/marketing/Reputation";
@@ -717,6 +718,7 @@ const App = () => (
                   <Route path="/marketing/call-tracking" element={<MarketingCallTracking />} />
                   {/* Relationships routes — Marketing + Super Admin only */}
                   <Route path="/marketing/referrals" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingReferrals /></PermissionRoute>} />
+                  <Route path="/marketing/referral-crm" element={<PermissionRoute allowedRoles={["marketing"]}><ReferralCRM /></PermissionRoute>} />
                   <Route path="/marketing/recruiting" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingRecruiting /></PermissionRoute>} />
                   <Route path="/marketing/outreach" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingOutreach /></PermissionRoute>} />
                   <Route path="/marketing/reputation" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingReputation /></PermissionRoute>} />
