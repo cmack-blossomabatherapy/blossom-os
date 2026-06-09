@@ -3160,6 +3160,196 @@ function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
 }
 
 // ===========================================================
+// Global Search
+// ===========================================================
+function GlobalSearchModule({
+  onOpenContact, onOpenCompany, onJumpModule,
+}: {
+  onOpenContact: (id: ID) => void;
+  onOpenCompany: (id: ID) => void;
+  onJumpModule: (m: ModuleId) => void;
+}) {
+  const s = useCrm();
+  const [q, setQ] = useState("");
+  const ql = q.trim().toLowerCase();
+
+  const tokens = ql.split(/\s+/).filter(Boolean);
+  const match = (hay: string) => {
+    if (!ql) return false;
+    const h = hay.toLowerCase();
+    return tokens.every((t) => h.includes(t));
+  };
+
+  const results = useMemo(() => {
+    if (!ql) return null;
+    const companies = activeCompanies(s).filter((c) => match([
+      c.name, c.companyType, c.state, c.city, c.mainPhone, c.generalEmail, c.website,
+      c.referralPartnerStatus, c.tags.join(" "), c.notes,
+    ].filter(Boolean).join(" ")));
+    const contacts = activeContacts(s).filter((c) => match([
+      fullName(c), c.email, c.phone, c.mobilePhone, c.jobTitle, c.specialty,
+      c.state, c.referralSourceType, c.referralPartnerStatus,
+      companyName(s, c.companyId), c.tags.join(" "), c.notes,
+    ].filter(Boolean).join(" ")));
+    const referrals = activeReferrals(s).filter((r) => match([
+      r.name, r.patientFirstName, r.patientLastInitial, r.state, r.serviceType,
+      r.referralStatus, r.intakeStatus, r.insuranceType, r.notes,
+      companyName(s, r.companyId),
+    ].filter(Boolean).join(" ")));
+    const tasks = s.tasks.filter((t) => match([
+      t.title, t.type, t.status, t.priority, t.notes,
+      userName(s, t.assignedUserId), companyName(s, t.companyId),
+    ].filter(Boolean).join(" ")));
+    const activities = s.activity.filter((a) => match([
+      a.message, a.type,
+      a.contactId ? fullName(s.contacts.find((c) => c.id === a.contactId)!) : "",
+      companyName(s, a.companyId),
+    ].filter(Boolean).join(" ")));
+    return { companies, contacts, referrals, tasks, activities };
+  }, [s, ql]);
+
+  const total = results
+    ? results.companies.length + results.contacts.length + results.referrals.length + results.tasks.length + results.activities.length
+    : 0;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border bg-card p-5">
+        <SectionHeader title="Global Search"
+          subtitle="Search across contacts, companies, referrals, tasks, activity, emails, phones, and tags." />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)}
+            placeholder='Try "Bright Path", "Sarah Miller", "NC pediatrician", or a phone number'
+            className="pl-9 h-10" />
+        </div>
+        {q && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {total} result{total === 1 ? "" : "s"} for “{q}”
+          </p>
+        )}
+      </div>
+
+      {!results && (
+        <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
+          Start typing to search the entire CRM.
+        </div>
+      )}
+
+      {results && total === 0 && (
+        <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
+          No matches. Try a company name, contact name, state, phone, or tag.
+        </div>
+      )}
+
+      {results && results.companies.length > 0 && (
+        <ResultGroup label="Companies" count={results.companies.length} icon={Building2}>
+          {results.companies.slice(0, 25).map((c) => (
+            <ResultRow key={c.id} onClick={() => onOpenCompany(c.id)}
+              title={c.name}
+              meta={`${c.companyType ?? "—"} · ${c.state ?? "—"} · ${c.referralCount} referrals`}
+              detail={[c.mainPhone, c.generalEmail, c.website, c.tags.join(", ")].filter(Boolean).join(" · ")} />
+          ))}
+        </ResultGroup>
+      )}
+
+      {results && results.contacts.length > 0 && (
+        <ResultGroup label="Contacts" count={results.contacts.length} icon={Users}>
+          {results.contacts.slice(0, 25).map((c) => (
+            <ResultRow key={c.id} onClick={() => onOpenContact(c.id)}
+              title={fullName(c)}
+              meta={`${c.jobTitle ?? "—"} · ${companyName(s, c.companyId)} · ${c.state ?? "—"}`}
+              detail={[c.email, c.phone, c.referralSourceType, c.tags.join(", ")].filter(Boolean).join(" · ")} />
+          ))}
+        </ResultGroup>
+      )}
+
+      {results && results.referrals.length > 0 && (
+        <ResultGroup label="Referrals" count={results.referrals.length} icon={HeartHandshake}
+          onJump={() => onJumpModule("referrals")}>
+          {results.referrals.slice(0, 25).map((r) => (
+            <ResultRow key={r.id}
+              onClick={() => r.companyId && onOpenCompany(r.companyId)}
+              title={r.name}
+              meta={`${companyName(s, r.companyId)} · ${r.state ?? "—"} · ${r.referralStatus}`}
+              detail={`${fmtDate(r.referralDate)}${r.serviceType ? ` · ${r.serviceType}` : ""}${r.insuranceType ? ` · ${r.insuranceType}` : ""}`} />
+          ))}
+        </ResultGroup>
+      )}
+
+      {results && results.tasks.length > 0 && (
+        <ResultGroup label="Tasks" count={results.tasks.length} icon={ListChecks}
+          onJump={() => onJumpModule("tasks")}>
+          {results.tasks.slice(0, 25).map((t) => (
+            <ResultRow key={t.id}
+              onClick={() => t.companyId ? onOpenCompany(t.companyId) : t.contactId && onOpenContact(t.contactId)}
+              title={t.title}
+              meta={`${t.type} · ${t.status} · ${userName(s, t.assignedUserId)}`}
+              detail={`${t.dueDate ? `due ${fmtDate(t.dueDate)}` : "no due date"}${t.companyId ? ` · ${companyName(s, t.companyId)}` : ""}`} />
+          ))}
+        </ResultGroup>
+      )}
+
+      {results && results.activities.length > 0 && (
+        <ResultGroup label="Activity & Notes" count={results.activities.length} icon={Activity}
+          onJump={() => onJumpModule("activities")}>
+          {results.activities.slice(0, 25).map((a) => {
+            const ct = a.contactId ? s.contacts.find((c) => c.id === a.contactId) : undefined;
+            return (
+              <ResultRow key={a.id}
+                onClick={() => a.companyId ? onOpenCompany(a.companyId) : a.contactId && onOpenContact(a.contactId)}
+                title={a.message}
+                meta={`${a.type.replace("_", " ")} · ${fmtDate(a.createdAt)}`}
+                detail={[ct ? fullName(ct) : "", companyName(s, a.companyId)].filter((x) => x && x !== "—").join(" · ")} />
+            );
+          })}
+        </ResultGroup>
+      )}
+    </div>
+  );
+}
+
+function ResultGroup({
+  label, count, icon: Icon, onJump, children,
+}: {
+  label: string; count: number; icon: typeof Users; onJump?: () => void; children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border bg-card p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Icon className="size-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold">{label}</h3>
+          <Badge variant="secondary" className="tabular-nums">{count}</Badge>
+        </div>
+        {onJump && (
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onJump}>
+            Open module <ChevronRight className="size-3 ml-1" />
+          </Button>
+        )}
+      </div>
+      <div className="divide-y">{children}</div>
+    </div>
+  );
+}
+
+function ResultRow({ title, meta, detail, onClick }: {
+  title: string; meta?: string; detail?: string; onClick?: () => void;
+}) {
+  return (
+    <button onClick={onClick}
+      className="w-full text-left py-2.5 px-1 hover:bg-muted/40 rounded-md transition-colors flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium truncate">{title}</p>
+        {meta && <p className="text-xs text-muted-foreground truncate">{meta}</p>}
+        {detail && <p className="text-[11px] text-muted-foreground/80 truncate">{detail}</p>}
+      </div>
+      <ChevronRight className="size-4 text-muted-foreground mt-1 shrink-0" />
+    </button>
+  );
+}
+
+// ===========================================================
 // Page shell with internal nav
 // ===========================================================
 export default function ReferralCRM() {
