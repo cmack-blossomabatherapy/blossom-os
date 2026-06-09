@@ -389,11 +389,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
       ],
     },
-    {
-      id: "relationships", label: "Relationships", items: [
-        { to: "/marketing/referrals", label: "Referrals", icon: HeartHandshake, module: "referrals" },
-      ],
-    },
     PHONE_SYSTEM_SECTION,
     {
       id: "resources", label: "Resources", items: [
@@ -549,7 +544,13 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ]
     : [homeSection, ...NAV_SECTIONS]
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
-        .filter((s) => s.items.length > 0);
+        .filter((s) => s.items.length > 0)
+        // Relationships (Referrals, Recruiting Marketing, Community Outreach,
+        // Reputation, plus future CRM pages added here) is intentionally
+        // scoped to Marketing (handled by its own section list) and Super
+        // Admin only. Hide the entire section from any other role in the
+        // fallback path that may have the underlying module access.
+        .filter((s) => s.id !== "relationships" || role === "super_admin");
 
 
   const mobileSections = (() => {
