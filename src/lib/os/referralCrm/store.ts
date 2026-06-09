@@ -564,20 +564,29 @@ export const crm = {
     } as Company;
     set({ companies: [c, ...state.companies] });
     logActivity({ type: "property_change", message: `Company created: ${c.name}`, companyId: c.id });
+    logAudit({ action: "create", objectType: "company", objectId: c.id, objectLabel: c.name, summary: "Company created" });
     return c;
   },
   updateCompany(id: ID, patch: Partial<Company>) {
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, ...patch, updatedAt: now() } : c) });
     logActivity({ type: "property_change", message: `Company updated`, companyId: id });
+    const co = state.companies.find((x) => x.id === id);
+    logAudit({ action: "update", objectType: "company", objectId: id, objectLabel: co?.name,
+      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
   },
   softDeleteCompany(id: ID) {
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
+    const co = state.companies.find((x) => x.id === id);
+    logAudit({ action: "delete", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company moved to deleted" });
   },
   restoreCompany(id: ID) {
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
+    const co = state.companies.find((x) => x.id === id);
+    logAudit({ action: "restore", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company restored" });
   },
   hardDeleteCompany(id: ID) {
     set({ companies: state.companies.filter((c) => c.id !== id) });
+    logAudit({ action: "delete", objectType: "company", objectId: id, summary: "Company permanently deleted" });
   },
 
   // referrals — also bumps contact + company stats
@@ -607,16 +616,24 @@ export const crm = {
       type: "referral_received", message: `Referral received: ${r.name}`,
       contactId: r.contactId, companyId: r.companyId, referralId: r.id,
     });
+    logAudit({ action: "create", objectType: "referral", objectId: r.id, objectLabel: r.name, summary: "Referral created" });
     return r;
   },
   updateReferral(id: ID, patch: Partial<Referral>) {
     set({ referrals: state.referrals.map((r) => r.id === id ? { ...r, ...patch, updatedAt: now() } : r) });
+    const r = state.referrals.find((x) => x.id === id);
+    logAudit({ action: "update", objectType: "referral", objectId: id, objectLabel: r?.name,
+      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
   },
   softDeleteReferral(id: ID) {
     set({ referrals: state.referrals.map((r) => r.id === id ? { ...r, deletedAt: now() } : r) });
+    const r = state.referrals.find((x) => x.id === id);
+    logAudit({ action: "delete", objectType: "referral", objectId: id, objectLabel: r?.name, summary: "Referral moved to deleted" });
   },
   restoreReferral(id: ID) {
     set({ referrals: state.referrals.map((r) => r.id === id ? { ...r, deletedAt: undefined } : r) });
+    const r = state.referrals.find((x) => x.id === id);
+    logAudit({ action: "restore", objectType: "referral", objectId: id, objectLabel: r?.name, summary: "Referral restored" });
   },
 
   // tasks
@@ -627,13 +644,18 @@ export const crm = {
     } as Task;
     set({ tasks: [t, ...state.tasks] });
     logActivity({ type: "task", message: `Task created: ${t.title}`, contactId: t.contactId, companyId: t.companyId, referralId: t.referralId });
+    logAudit({ action: "create", objectType: "task", objectId: t.id, objectLabel: t.title, summary: "Task created" });
     return t;
   },
   updateTask(id: ID, patch: Partial<Task>) {
     set({ tasks: state.tasks.map((t) => t.id === id ? { ...t, ...patch } : t) });
+    const t = state.tasks.find((x) => x.id === id);
+    logAudit({ action: "update", objectType: "task", objectId: id, objectLabel: t?.title,
+      summary: `Updated: ${Object.keys(patch).join(", ") || "—"}` });
   },
   deleteTask(id: ID) {
     set({ tasks: state.tasks.filter((t) => t.id !== id) });
+    logAudit({ action: "delete", objectType: "task", objectId: id, summary: "Task deleted" });
   },
 
   // notes
@@ -641,12 +663,68 @@ export const crm = {
     logActivity({ type: "note", message, ...ref });
   },
 
+  logCustomActivity(input: {
+    type: ActivityEvent["type"]; message: string;
+    contactId?: ID; companyId?: ID; referralId?: ID; userId?: ID;
+  }) {
+    logActivity(input);
+  },
+
+  // attachments
+  addAttachment(input: Omit<Attachment, "id" | "uploadedAt"> & { uploadedAt?: string }) {
+    const a: Attachment = { id: newId(), uploadedAt: input.uploadedAt ?? now(), ...input };
+    set({ attachments: [a, ...state.attachments] });
+    logActivity({
+      type: "file_uploaded",
+      message: `File uploaded: ${a.fileName}`,
+      contactId: a.objectType === "contact" ? a.objectId : undefined,
+      companyId: a.objectType === "company" ? a.objectId : undefined,
+      referralId: a.objectType === "referral" ? a.objectId : undefined,
+      userId: a.uploadedByUserId,
+    });
+    logAudit({ action: "attachment_added", objectType: "attachment", objectId: a.id,
+      objectLabel: a.fileName, summary: `Attached to ${a.objectType} ${a.objectId}` });
+    return a;
+  },
+  removeAttachment(id: ID) {
+    const a = state.attachments.find((x) => x.id === id);
+    set({ attachments: state.attachments.filter((x) => x.id !== id) });
+    if (a) logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment removed" });
+  },
+
+  // custom fields
+  addCustomField(input: Omit<CustomFieldDef, "id" | "createdAt">) {
+    const f: CustomFieldDef = { id: newId(), createdAt: now(), ...input };
+    set({ customFields: [f, ...state.customFields] });
+    logAudit({ action: "field_added", objectType: "field", objectId: f.id, objectLabel: f.label,
+      summary: `Added ${f.type} field on ${f.object}` });
+    return f;
+  },
+  removeCustomField(id: ID) {
+    const f = state.customFields.find((x) => x.id === id);
+    set({ customFields: state.customFields.filter((x) => x.id !== id) });
+    if (f) logAudit({ action: "field_removed", objectType: "field", objectId: id, objectLabel: f.label, summary: "Removed custom field" });
+  },
+
+  // audit + import/export markers
+  recordImport(summary: string) {
+    logAudit({ action: "import", objectType: "system", summary });
+  },
+  recordExport(summary: string) {
+    logAudit({ action: "export", objectType: "system", summary });
+  },
+
   // workflows
   toggleWorkflow(id: ID) {
     set({ workflows: state.workflows.map((w) => w.id === id ? { ...w, enabled: !w.enabled } : w) });
+    const w = state.workflows.find((x) => x.id === id);
+    logAudit({ action: "workflow_toggle", objectType: "workflow", objectId: id, objectLabel: w?.name,
+      summary: w?.enabled ? "Workflow enabled" : "Workflow disabled" });
   },
   runWorkflow(id: ID) {
     set({ workflows: state.workflows.map((w) => w.id === id ? { ...w, runs: w.runs + 1, lastRun: now() } : w) });
+    const w = state.workflows.find((x) => x.id === id);
+    logAudit({ action: "workflow_run", objectType: "workflow", objectId: id, objectLabel: w?.name, summary: "Ran workflow" });
   },
 };
 
