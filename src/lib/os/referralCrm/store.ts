@@ -147,6 +147,45 @@ export interface ListDef {
   matcher?: (rows: (Contact | Company)[]) => (Contact | Company)[];
 }
 
+export interface Attachment {
+  id: ID;
+  fileName: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  objectType: "contact" | "company" | "referral";
+  objectId: ID;
+  uploadedByUserId?: ID;
+  uploadedAt: string;
+  category?: "Lunch & Learn" | "Insurance" | "Outreach" | "Welcome Packet" | "Other";
+  notes?: string;
+}
+
+export interface AuditLogEntry {
+  id: ID;
+  at: string;
+  userId?: ID;
+  actor: string; // display name (user or "System")
+  action:
+    | "create" | "update" | "delete" | "restore"
+    | "merge" | "import" | "export"
+    | "workflow_toggle" | "workflow_run"
+    | "attachment_added" | "attachment_removed"
+    | "field_added" | "field_removed";
+  objectType: "contact" | "company" | "referral" | "task" | "workflow" | "attachment" | "field" | "system";
+  objectId?: ID;
+  objectLabel?: string;
+  summary: string;
+}
+
+export interface CustomFieldDef {
+  id: ID;
+  object: "contact" | "company" | "referral";
+  label: string;
+  type: "text" | "number" | "date" | "select" | "boolean";
+  options?: string[];
+  createdAt: string;
+}
+
 export const STATES = ["GA", "MD", "NC", "TN", "VA"] as const;
 
 // ---------- seed ----------
