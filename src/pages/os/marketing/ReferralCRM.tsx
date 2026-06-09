@@ -1719,6 +1719,7 @@ function EditReferralDialog({ id, open, onOpenChange }: { id: ID | null; open: b
   const s = useCrm();
   const r = s.referrals.find((x) => x.id === id);
   const [f, setF] = useState({ patientFirstName: "", patientLastInitial: "", referralStatus: "New", intakeStatus: "", serviceType: "", insuranceType: "", state: "", companyId: "", contactId: "", assignedIntakeOwnerId: "", notes: "" });
+  const [logging, setLogging] = useState(false);
   useEffect(() => {
     if (r) setF({
       patientFirstName: r.patientFirstName, patientLastInitial: r.patientLastInitial,
@@ -1745,6 +1746,7 @@ function EditReferralDialog({ id, open, onOpenChange }: { id: ID | null; open: b
     onOpenChange(false);
   };
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader><DialogTitle>Edit Referral</DialogTitle></DialogHeader>
@@ -1775,11 +1777,17 @@ function EditReferralDialog({ id, open, onOpenChange }: { id: ID | null; open: b
           <div className="col-span-2"><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={3} /></div>
         </div>
         <DialogFooter>
+          <Button variant="ghost" onClick={() => setLogging(true)}>
+            <Activity className="size-3.5 mr-1" /> Log Activity
+          </Button>
+          <div className="flex-1" />
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={save}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <LogActivityDialog open={logging} onOpenChange={setLogging} referralId={r.id} />
+    </>
   );
 }
 
