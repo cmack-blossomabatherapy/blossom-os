@@ -1372,6 +1372,10 @@ const IMPORT_FIELDS: Record<ImportObject, { key: string; label: string; required
     { key: "email", label: "Email" }, { key: "phone", label: "Phone" },
     { key: "jobTitle", label: "Job Title" }, { key: "state", label: "State" },
     { key: "companyName", label: "Company Name" },
+    { key: "companyCity", label: "Company City" },
+    { key: "companyState", label: "Company State" },
+    { key: "companyWebsite", label: "Company Website" },
+    { key: "companyPhone", label: "Company Phone" },
   ],
   companies: [
     { key: "name", label: "Name", required: true },
