@@ -2171,6 +2171,9 @@ export default function ReferralCRM() {
       case "settings": return <SettingsModule />;
       case "users": return <UsersModule />;
       case "deleted": return <DeletedModule />;
+      case "files": return <FilesModule />;
+      case "audit": return <AuditModule />;
+      case "activities": return <ActivitiesModule />;
     }
   })();
 
@@ -2179,8 +2182,28 @@ export default function ReferralCRM() {
       title="Blossom Referral CRM"
       subtitle="Track contacts, companies, referrals, and outreach for every state."
     >
+      {/* mobile / tablet: horizontal scroll tab bar */}
+      <div className="lg:hidden -mx-1 mb-4 overflow-x-auto">
+        <div className="flex gap-1 px-1 min-w-max">
+          {MODULES.map((m) => {
+            const Icon = m.icon;
+            const active = module === m.id;
+            return (
+              <button key={m.id} onClick={() => setModule(m.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap",
+                  active ? "bg-primary/10 text-primary border-primary/20" : "text-muted-foreground border-transparent hover:bg-muted",
+                )}
+              >
+                <Icon className="size-3.5" /> {m.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="flex gap-6">
-        <aside className="w-56 shrink-0">
+        <aside className="hidden lg:block w-56 shrink-0">
           <div className="rounded-2xl border bg-card p-2 sticky top-4">
             {MODULES.map((m) => {
               const Icon = m.icon;
