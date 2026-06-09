@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Users, Building2, HeartHandshake, ListChecks, ListFilter,
   Workflow, BarChart3, Upload, Download, Settings2, ShieldCheck, Trash2,
   Plus, Search, X, CheckCircle2, Pencil, RotateCcw, Activity, AlertCircle,
-  ChevronRight, Tag, UserPlus,
+  ChevronRight, Tag, UserPlus, Paperclip, FileText, History, Phone, Mail,
+  Calendar, StickyNote, FileUp,
 } from "lucide-react";
 import { MktgPage } from "./_shared";
 import { Button } from "@/components/ui/button";
@@ -22,12 +23,13 @@ import {
   useCrm, crm, fullName, activeContacts, activeCompanies, activeReferrals,
   userName, companyName, evalList, STATES,
   type Contact, type Company, type Referral, type Task, type ID,
+  type ActivityEvent, type Attachment,
 } from "@/lib/os/referralCrm/store";
 
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
   | "workflows" | "reports" | "imports" | "exports" | "duplicates"
-  | "settings" | "users" | "deleted";
+  | "settings" | "users" | "deleted" | "files" | "audit" | "activities";
 
 const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -35,12 +37,15 @@ const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] =
   { id: "companies", label: "Companies", icon: Building2 },
   { id: "referrals", label: "Referrals", icon: HeartHandshake },
   { id: "tasks", label: "Tasks", icon: ListChecks },
+  { id: "activities", label: "Activities", icon: Activity },
   { id: "lists", label: "Lists", icon: ListFilter },
   { id: "workflows", label: "Workflows", icon: Workflow },
   { id: "reports", label: "Reports", icon: BarChart3 },
+  { id: "files", label: "Files", icon: Paperclip },
   { id: "imports", label: "Imports", icon: Upload },
   { id: "exports", label: "Exports", icon: Download },
   { id: "duplicates", label: "Duplicate Mgmt", icon: ShieldCheck },
+  { id: "audit", label: "Audit Log", icon: History },
   { id: "settings", label: "Settings", icon: Settings2 },
   { id: "users", label: "Users & Permissions", icon: UserPlus },
   { id: "deleted", label: "Deleted Records", icon: Trash2 },
@@ -537,6 +542,7 @@ function NewCompanyDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
 function ReferralsModule() {
   const s = useCrm();
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<ID | null>(null);
   const rows = activeReferrals(s);
 
   return (
@@ -566,7 +572,9 @@ function ReferralsModule() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t hover:bg-muted/30">
-                  <td className="px-3 py-2 font-medium">{r.name}</td>
+                  <td className="px-3 py-2 font-medium">
+                    <button className="hover:text-primary" onClick={() => setEditingId(r.id)}>{r.name}</button>
+                  </td>
                   <td className="px-3 py-2">{companyName(s, r.companyId)}</td>
                   <td className="px-3 py-2">{r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "—"}</td>
                   <td className="px-3 py-2">{r.state || "—"}</td>
@@ -574,7 +582,14 @@ function ReferralsModule() {
                   <td className="px-3 py-2"><Badge variant="secondary">{r.referralStatus}</Badge></td>
                   <td className="px-3 py-2 text-muted-foreground">{r.insuranceType || "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{userName(s, r.assignedIntakeOwnerId)}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.referralDate)}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{fmtDate(r.referralDate)}</span>
+                      <button className="text-muted-foreground hover:text-primary" onClick={() => setEditingId(r.id)}>
+                        <Pencil className="size-3" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 && <tr><td colSpan={9} className="text-center text-muted-foreground py-10">No referrals yet.</td></tr>}
@@ -584,6 +599,7 @@ function ReferralsModule() {
       </div>
 
       <NewReferralDialog open={creating} onOpenChange={setCreating} />
+      <EditReferralDialog id={editingId} open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)} />
     </div>
   );
 }
@@ -901,59 +917,123 @@ function ReportsModule() {
 }
 
 // ===========================================================
-// Imports / Exports
+// CSV helpers (frontend only)
 // ===========================================================
-function ImportsModule() {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border-2 border-dashed bg-card p-10 text-center">
-        <Upload className="size-8 mx-auto text-muted-foreground" />
-        <p className="mt-3 font-medium">Drop a CSV here or click to browse</p>
-        <p className="text-xs text-muted-foreground mt-1">Contacts, Companies, or Referrals — up to 10MB</p>
-        <Button className="mt-4" size="sm" onClick={() => toast({ title: "File picker (mock)" })}>Select File</Button>
-      </div>
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="rounded-2xl border bg-card p-5">
-          <h3 className="font-semibold text-sm">Column Mapping</h3>
-          <p className="text-xs text-muted-foreground mt-1">Map CSV headers to CRM fields. Saved per object.</p>
-          <div className="mt-3 space-y-1.5 text-xs">
-            {["First Name → firstName", "Last Name → lastName", "Email → email", "Phone → phone", "Company → companyId"].map((m) => (
-              <div key={m} className="px-2 py-1 rounded bg-muted/50">{m}</div>
-            ))}
-          </div>
-        </div>
-        <div className="rounded-2xl border bg-card p-5">
-          <h3 className="font-semibold text-sm">Preview</h3>
-          <p className="text-xs text-muted-foreground mt-1">Preview the first 10 rows before committing.</p>
-          <p className="text-xs mt-3 text-muted-foreground italic">Upload a file to preview.</p>
-        </div>
-        <div className="rounded-2xl border bg-card p-5">
-          <h3 className="font-semibold text-sm">Duplicate Detection</h3>
-          <p className="text-xs text-muted-foreground mt-1">Matches existing records by name + email + phone before import.</p>
-          <Badge className="mt-3 bg-emerald-500/15 text-emerald-700">No duplicates detected</Badge>
-        </div>
-      </div>
-    </div>
-  );
+function escapeCsv(v: unknown): string {
+  if (v == null) return "";
+  const s = String(v);
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+function rowsToCsv(rows: Record<string, unknown>[], headers?: string[]): string {
+  if (!rows.length) return headers?.join(",") ?? "";
+  const hs = headers ?? Object.keys(rows[0]);
+  const head = hs.join(",");
+  const body = rows.map((r) => hs.map((h) => escapeCsv(r[h])).join(",")).join("\n");
+  return `${head}\n${body}`;
+}
+function downloadCsv(filename: string, csv: string) {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function parseCsv(text: string): { headers: string[]; rows: Record<string, string>[] } {
+  const out: string[][] = [];
+  let row: string[] = [];
+  let cur = "";
+  let inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"' && text[i + 1] === '"') { cur += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else cur += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ",") { row.push(cur); cur = ""; }
+      else if (c === "\n") { row.push(cur); out.push(row); row = []; cur = ""; }
+      else if (c === "\r") { /* skip */ }
+      else cur += c;
+    }
+  }
+  if (cur.length || row.length) { row.push(cur); out.push(row); }
+  const headers = (out.shift() ?? []).map((h) => h.trim());
+  const rows = out.filter((r) => r.some((c) => c.trim() !== ""))
+    .map((r) => Object.fromEntries(headers.map((h, i) => [h, (r[i] ?? "").trim()])));
+  return { headers, rows };
 }
 
+// ===========================================================
+// Exports — real CSV downloads
+// ===========================================================
 function ExportsModule() {
-  const exp = (kind: string) => toast({ title: `Exported ${kind} (mock CSV)` });
+  const s = useCrm();
+  const exportContacts = () => {
+    const data = activeContacts(s).map((c) => ({
+      id: c.id, firstName: c.firstName, lastName: c.lastName, email: c.email, phone: c.phone,
+      jobTitle: c.jobTitle, companyName: companyName(s, c.companyId), state: c.state,
+      ownerName: userName(s, c.ownerId), referralCount: c.referralCount,
+      referralPartnerStatus: c.referralPartnerStatus, lastContactedDate: c.lastContactedDate,
+      tags: c.tags.join("|"),
+    }));
+    downloadCsv(`contacts-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} contacts`);
+    toast({ title: `Exported ${data.length} contacts` });
+  };
+  const exportCompanies = () => {
+    const data = activeCompanies(s).map((c) => ({
+      id: c.id, name: c.name, companyType: c.companyType, website: c.website, phone: c.mainPhone,
+      city: c.city, state: c.state, ownerName: userName(s, c.ownerId), tier: c.relationshipTier,
+      activePartner: c.activeReferralPartner ? "yes" : "no", referralsYTD: c.referralsYTD,
+      lastReferralDate: c.lastReferralDate, tags: c.tags.join("|"),
+    }));
+    downloadCsv(`companies-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} companies`);
+    toast({ title: `Exported ${data.length} companies` });
+  };
+  const exportReferrals = () => {
+    const data = activeReferrals(s).map((r) => ({
+      id: r.id, patient: r.name, referralDate: r.referralDate,
+      sourceCompany: companyName(s, r.companyId),
+      sourceContact: r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "",
+      state: r.state, serviceType: r.serviceType, status: r.referralStatus,
+      intakeStatus: r.intakeStatus, insurance: r.insuranceType,
+      intakeOwner: userName(s, r.assignedIntakeOwnerId),
+    }));
+    downloadCsv(`referrals-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} referrals`);
+    toast({ title: `Exported ${data.length} referrals` });
+  };
+  const exportTasks = () => {
+    const data = s.tasks.map((t) => ({
+      id: t.id, title: t.title, type: t.type, status: t.status, priority: t.priority,
+      dueDate: t.dueDate, owner: userName(s, t.assignedUserId),
+      company: companyName(s, t.companyId), notes: t.notes,
+    }));
+    downloadCsv(`tasks-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} tasks`);
+    toast({ title: `Exported ${data.length} tasks` });
+  };
+  const items = [
+    { id: "contacts", label: "Contacts", fn: exportContacts, count: activeContacts(s).length },
+    { id: "companies", label: "Companies", fn: exportCompanies, count: activeCompanies(s).length },
+    { id: "referrals", label: "Referrals", fn: exportReferrals, count: activeReferrals(s).length },
+    { id: "tasks", label: "Tasks", fn: exportTasks, count: s.tasks.length },
+  ];
   return (
-    <div className="grid md:grid-cols-2 gap-4">
-      {[
-        { id: "contacts", label: "Contacts" },
-        { id: "companies", label: "Companies" },
-        { id: "referrals", label: "Referrals" },
-        { id: "tasks", label: "Tasks" },
-      ].map((o) => (
+    <div className="grid sm:grid-cols-2 gap-4">
+      {items.map((o) => (
         <div key={o.id} className="rounded-2xl border bg-card p-5">
-          <h3 className="font-semibold">{o.label}</h3>
-          <p className="text-xs text-muted-foreground mt-1">Export selected, filtered view, or all records.</p>
-          <div className="mt-3 flex gap-2">
-            <Button size="sm" variant="outline" className="h-8" onClick={() => exp(`${o.label} (selected)`)}>Selected</Button>
-            <Button size="sm" variant="outline" className="h-8" onClick={() => exp(`${o.label} (filtered)`)}>Filtered</Button>
-            <Button size="sm" className="h-8" onClick={() => exp(`${o.label} (all)`)}><Download className="size-3 mr-1" /> All</Button>
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-semibold">{o.label}</h3>
+              <p className="text-xs text-muted-foreground mt-1">{o.count} active records</p>
+            </div>
+            <Button size="sm" className="h-8" onClick={o.fn}>
+              <Download className="size-3 mr-1" /> Download CSV
+            </Button>
           </div>
         </div>
       ))}
@@ -962,21 +1042,223 @@ function ExportsModule() {
 }
 
 // ===========================================================
-// Duplicate management
+// Imports — paste/upload CSV → preview → commit
+// ===========================================================
+type ImportObject = "contacts" | "companies" | "referrals";
+const IMPORT_FIELDS: Record<ImportObject, { key: string; label: string; required?: boolean }[]> = {
+  contacts: [
+    { key: "firstName", label: "First Name", required: true },
+    { key: "lastName", label: "Last Name", required: true },
+    { key: "email", label: "Email" }, { key: "phone", label: "Phone" },
+    { key: "jobTitle", label: "Job Title" }, { key: "state", label: "State" },
+    { key: "companyName", label: "Company Name" },
+  ],
+  companies: [
+    { key: "name", label: "Name", required: true },
+    { key: "companyType", label: "Type" }, { key: "city", label: "City" },
+    { key: "state", label: "State" }, { key: "website", label: "Website" },
+    { key: "mainPhone", label: "Phone" },
+  ],
+  referrals: [
+    { key: "patientFirstName", label: "Patient First Name", required: true },
+    { key: "patientLastInitial", label: "Patient Last Initial", required: true },
+    { key: "companyName", label: "Source Company Name" },
+    { key: "state", label: "State" }, { key: "serviceType", label: "Service Type" },
+    { key: "insuranceType", label: "Insurance" },
+  ],
+};
+
+function autoMap(headers: string[], fields: { key: string; label: string }[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const f of fields) {
+    const hit = headers.find((h) => h.toLowerCase().replace(/[\s_-]/g, "") === f.key.toLowerCase());
+    const hit2 = hit ?? headers.find((h) => h.toLowerCase() === f.label.toLowerCase());
+    if (hit2) map[f.key] = hit2;
+  }
+  return map;
+}
+
+function ImportsModule() {
+  const s = useCrm();
+  const [object, setObject] = useState<ImportObject>("contacts");
+  const [text, setText] = useState("");
+  const [parsed, setParsed] = useState<{ headers: string[]; rows: Record<string, string>[] } | null>(null);
+  const [map, setMap] = useState<Record<string, string>>({});
+
+  const onFile = async (file: File) => {
+    const t = await file.text(); setText(t); doParse(t);
+  };
+  const doParse = (raw: string) => {
+    const p = parseCsv(raw);
+    setParsed(p);
+    setMap(autoMap(p.headers, IMPORT_FIELDS[object]));
+  };
+
+  const commit = () => {
+    if (!parsed) return;
+    let created = 0;
+    for (const row of parsed.rows) {
+      const get = (k: string) => map[k] ? (row[map[k]] ?? "").trim() : "";
+      if (object === "contacts") {
+        if (!get("firstName") || !get("lastName")) continue;
+        const compName = get("companyName");
+        let companyId: string | undefined;
+        if (compName) {
+          const existing = s.companies.find((c) => c.name.toLowerCase() === compName.toLowerCase());
+          companyId = existing?.id ?? crm.addCompany({ name: compName, state: get("state") || undefined }).id;
+        }
+        crm.addContact({
+          firstName: get("firstName"), lastName: get("lastName"),
+          email: get("email") || undefined, phone: get("phone") || undefined,
+          jobTitle: get("jobTitle") || undefined, state: get("state") || undefined,
+          companyId,
+        });
+        created++;
+      } else if (object === "companies") {
+        if (!get("name")) continue;
+        crm.addCompany({
+          name: get("name"), companyType: get("companyType") || undefined,
+          city: get("city") || undefined, state: get("state") || undefined,
+          website: get("website") || undefined, mainPhone: get("mainPhone") || undefined,
+        });
+        created++;
+      } else {
+        if (!get("patientFirstName") || !get("patientLastInitial")) continue;
+        const compName = get("companyName");
+        const company = compName ? s.companies.find((c) => c.name.toLowerCase() === compName.toLowerCase()) : undefined;
+        crm.addReferral({
+          patientFirstName: get("patientFirstName"),
+          patientLastInitial: get("patientLastInitial").slice(0, 1).toUpperCase(),
+          companyId: company?.id,
+          state: get("state") || undefined,
+          serviceType: get("serviceType") || undefined,
+          insuranceType: get("insuranceType") || undefined,
+        });
+        created++;
+      }
+    }
+    crm.recordImport(`Imported ${created} ${object}`);
+    toast({ title: `Imported ${created} ${object}` });
+    setText(""); setParsed(null); setMap({});
+  };
+
+  const fields = IMPORT_FIELDS[object];
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border bg-card p-5 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Label className="text-xs">Import into</Label>
+          <Select value={object} onValueChange={(v: ImportObject) => { setObject(v); if (parsed) setMap(autoMap(parsed.headers, IMPORT_FIELDS[v])); }}>
+            <SelectTrigger className="w-[160px] h-9 text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="contacts">Contacts</SelectItem>
+              <SelectItem value="companies">Companies</SelectItem>
+              <SelectItem value="referrals">Referrals</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex-1" />
+          <input id="csv-file" type="file" accept=".csv,text/csv" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
+          <Button size="sm" variant="outline" className="h-9" onClick={() => document.getElementById("csv-file")?.click()}>
+            <Upload className="size-3.5 mr-1.5" /> Choose file
+          </Button>
+        </div>
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Or paste CSV here (first row = headers)…"
+          rows={6}
+          className="font-mono text-xs"
+        />
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => doParse(text)} disabled={!text.trim()}>Parse CSV</Button>
+        </div>
+      </div>
+
+      {parsed && (
+        <>
+          <div className="rounded-2xl border bg-card p-5">
+            <h3 className="font-semibold text-sm mb-3">Column Mapping</h3>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {fields.map((f) => (
+                <div key={f.key} className="flex items-center gap-2 text-xs">
+                  <span className="w-40 text-muted-foreground">
+                    {f.label}{f.required && <span className="text-destructive"> *</span>}
+                  </span>
+                  <Select value={map[f.key] ?? "__none"} onValueChange={(v) => setMap({ ...map, [f.key]: v === "__none" ? "" : v })}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">— ignore —</SelectItem>
+                      {parsed.headers.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="px-4 py-2 text-xs text-muted-foreground bg-muted/40">
+              Preview · first 10 of {parsed.rows.length} rows
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/30">
+                  <tr>{parsed.headers.map((h) => <th key={h} className="text-left px-3 py-2 font-medium">{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {parsed.rows.slice(0, 10).map((r, i) => (
+                    <tr key={i} className="border-t">
+                      {parsed.headers.map((h) => <td key={h} className="px-3 py-1.5">{r[h]}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => { setParsed(null); setText(""); }}>Cancel</Button>
+            <Button size="sm" onClick={commit}>Import {parsed.rows.length} rows</Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ===========================================================
+// Duplicate management — real merge
 // ===========================================================
 function DuplicatesModule() {
   const s = useCrm();
-  // naive duplicate finder
-  const pairs: { a: Contact; b: Contact }[] = [];
-  const cs = activeContacts(s);
-  for (let i = 0; i < cs.length; i++) {
-    for (let j = i + 1; j < cs.length; j++) {
-      const a = cs[i], b = cs[j];
-      if (a.lastName && a.lastName === b.lastName && a.firstName?.[0] === b.firstName?.[0]) {
-        pairs.push({ a, b });
+  const [ignored, setIgnored] = useState<Set<string>>(new Set());
+  const pairs = useMemo(() => {
+    const out: { a: Contact; b: Contact; reason: string }[] = [];
+    const cs = activeContacts(s);
+    for (let i = 0; i < cs.length; i++) {
+      for (let j = i + 1; j < cs.length; j++) {
+        const a = cs[i], b = cs[j];
+        const key = [a.id, b.id].sort().join("|");
+        if (ignored.has(key)) continue;
+        const sameEmail = a.email && b.email && a.email.toLowerCase() === b.email.toLowerCase();
+        const samePhone = a.phone && b.phone && a.phone.replace(/\D/g, "") === b.phone.replace(/\D/g, "");
+        const sameName = a.lastName && a.lastName.toLowerCase() === b.lastName.toLowerCase()
+          && a.firstName?.[0]?.toLowerCase() === b.firstName?.[0]?.toLowerCase();
+        if (sameEmail || samePhone || sameName) {
+          out.push({ a, b, reason: sameEmail ? "Same email" : samePhone ? "Same phone" : "Same last name + initial" });
+        }
       }
     }
-  }
+    return out;
+  }, [s, ignored]);
+
+  const merge = (winner: Contact, loser: Contact) => {
+    crm.mergeContacts(winner.id, loser.id);
+    toast({ title: `Merged "${loser.firstName} ${loser.lastName}" into "${winner.firstName} ${winner.lastName}"` });
+  };
+
   return (
     <div className="space-y-4">
       {pairs.length === 0 && (
@@ -984,25 +1266,36 @@ function DuplicatesModule() {
           No likely duplicates detected.
         </div>
       )}
-      {pairs.map((p, i) => (
-        <div key={i} className="rounded-2xl border bg-card p-5">
-          <h3 className="font-semibold text-sm mb-3">Possible duplicate</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {[p.a, p.b].map((c) => (
-              <div key={c.id} className="rounded-xl border p-3 text-sm">
-                <p className="font-medium">{fullName(c)}</p>
-                <p className="text-xs text-muted-foreground">{c.email || "no email"}</p>
-                <p className="text-xs text-muted-foreground">{c.phone || "no phone"}</p>
-                <p className="text-xs text-muted-foreground">{c.jobTitle || "—"}</p>
-              </div>
-            ))}
+      {pairs.map((p) => {
+        const key = [p.a.id, p.b.id].sort().join("|");
+        return (
+          <div key={key} className="rounded-2xl border bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-sm">Possible duplicate</h3>
+              <Badge variant="secondary" className="text-[10px]">{p.reason}</Badge>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[p.a, p.b].map((c, idx) => {
+                const other = idx === 0 ? p.b : p.a;
+                return (
+                  <div key={c.id} className="rounded-xl border p-3 text-sm space-y-1">
+                    <p className="font-medium">{fullName(c)}</p>
+                    <p className="text-xs text-muted-foreground">{c.email || "no email"}</p>
+                    <p className="text-xs text-muted-foreground">{c.phone || "no phone"}</p>
+                    <p className="text-xs text-muted-foreground">{c.jobTitle || "—"} · {c.referralCount} referrals</p>
+                    <Button size="sm" className="h-7 mt-2 w-full" onClick={() => merge(c, other)}>
+                      Keep this · merge other in
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-end mt-3">
+              <Button size="sm" variant="outline" onClick={() => setIgnored(new Set([...ignored, key]))}>Not a duplicate</Button>
+            </div>
           </div>
-          <div className="flex justify-end gap-2 mt-3">
-            <Button size="sm" variant="outline" onClick={() => toast({ title: "Ignored" })}>Not a duplicate</Button>
-            <Button size="sm" onClick={() => toast({ title: "Merged — activity preserved (mock)" })}>Merge</Button>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1011,8 +1304,22 @@ function DuplicatesModule() {
 // Settings + Users + Deleted
 // ===========================================================
 function SettingsModule() {
+  const s = useCrm();
+  const [object, setObject] = useState<"contact" | "company" | "referral">("contact");
+  const [label, setLabel] = useState("");
+  const [type, setType] = useState<"text" | "number" | "date" | "select" | "boolean">("text");
+
+  const add = () => {
+    if (!label.trim()) { toast({ title: "Field label required" }); return; }
+    crm.addCustomField({ object, label: label.trim(), type });
+    setLabel("");
+    toast({ title: "Field added" });
+  };
+
+  const fields = s.customFields;
+
   return (
-    <div className="grid md:grid-cols-2 gap-4">
+    <div className="grid lg:grid-cols-2 gap-4">
       <div className="rounded-2xl border bg-card p-5">
         <h3 className="font-semibold">General</h3>
         <p className="text-xs text-muted-foreground mt-1">CRM-wide preferences.</p>
@@ -1023,11 +1330,523 @@ function SettingsModule() {
         </div>
       </div>
       <div className="rounded-2xl border bg-card p-5">
-        <h3 className="font-semibold">Field Customization</h3>
-        <p className="text-xs text-muted-foreground mt-1">Add custom fields to Contacts / Companies / Referrals.</p>
-        <Button size="sm" variant="outline" className="mt-3 h-8">Manage fields</Button>
+        <h3 className="font-semibold">Custom Fields</h3>
+        <p className="text-xs text-muted-foreground mt-1">Add custom fields to Contacts, Companies, or Referrals.</p>
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_120px_120px_auto] gap-2">
+          <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Field label" className="h-9 text-sm" />
+          <Select value={object} onValueChange={(v: "contact" | "company" | "referral") => setObject(v)}>
+            <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="contact">Contact</SelectItem>
+              <SelectItem value="company">Company</SelectItem>
+              <SelectItem value="referral">Referral</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={type} onValueChange={(v: never) => setType(v)}>
+            <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {["text", "number", "date", "select", "boolean"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button size="sm" className="h-9" onClick={add}><Plus className="size-3.5 mr-1" /> Add</Button>
+        </div>
+        <div className="mt-4 divide-y text-sm">
+          {fields.length === 0 && <p className="text-xs text-muted-foreground py-4">No custom fields yet.</p>}
+          {fields.map((f) => (
+            <div key={f.id} className="py-2 flex items-center justify-between gap-3">
+              <div>
+                <p className="font-medium">{f.label}</p>
+                <p className="text-xs text-muted-foreground">{f.object} · {f.type}</p>
+              </div>
+              <button onClick={() => { crm.removeCustomField(f.id); toast({ title: "Field removed" }); }} className="text-muted-foreground hover:text-destructive">
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
+  );
+}
+
+// ===========================================================
+// Files / Attachments module
+// ===========================================================
+function FilesModule() {
+  const s = useCrm();
+  const [q, setQ] = useState("");
+  const [type, setType] = useState<string>("all");
+  const objectLabel = (a: Attachment): string => {
+    if (a.objectType === "contact") {
+      const c = s.contacts.find((x) => x.id === a.objectId); return c ? fullName(c) : a.objectId;
+    }
+    if (a.objectType === "company") return s.companies.find((x) => x.id === a.objectId)?.name ?? a.objectId;
+    return s.referrals.find((x) => x.id === a.objectId)?.name ?? a.objectId;
+  };
+  const rows = s.attachments.filter((a) => {
+    if (type !== "all" && a.objectType !== type) return false;
+    if (q && !a.fileName.toLowerCase().includes(q.toLowerCase()) && !objectLabel(a).toLowerCase().includes(q.toLowerCase())) return false;
+    return true;
+  });
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search files…" className="pl-8 h-9 text-sm" />
+        </div>
+        <Select value={type} onValueChange={setType}>
+          <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All objects</SelectItem>
+            <SelectItem value="contact">Contacts</SelectItem>
+            <SelectItem value="company">Companies</SelectItem>
+            <SelectItem value="referral">Referrals</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="text-left px-3 py-2 font-medium">File</th>
+                <th className="text-left px-3 py-2 font-medium">Attached to</th>
+                <th className="text-left px-3 py-2 font-medium">Category</th>
+                <th className="text-left px-3 py-2 font-medium">Uploaded by</th>
+                <th className="text-left px-3 py-2 font-medium">Date</th>
+                <th className="w-10 px-3 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((a) => (
+                <tr key={a.id} className="border-t hover:bg-muted/30">
+                  <td className="px-3 py-2 flex items-center gap-2">
+                    <FileText className="size-3.5 text-muted-foreground" />
+                    <span className="font-medium">{a.fileName}</span>
+                  </td>
+                  <td className="px-3 py-2"><span className="text-muted-foreground capitalize">{a.objectType}: </span>{objectLabel(a)}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{a.category || "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{userName(s, a.uploadedByUserId)}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{fmtDate(a.uploadedAt)}</td>
+                  <td className="px-3 py-2 text-right">
+                    <button onClick={() => { crm.removeAttachment(a.id); toast({ title: "File removed" }); }} className="text-muted-foreground hover:text-destructive">
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {rows.length === 0 && <tr><td colSpan={6} className="text-center text-muted-foreground py-10">No files yet. Attach from a contact, company, or referral.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================
+// Audit Log module
+// ===========================================================
+const AUDIT_ICON: Record<string, typeof Activity> = {
+  create: Plus, update: Pencil, delete: Trash2, restore: RotateCcw,
+  merge: ShieldCheck, import: Upload, export: Download,
+  workflow_toggle: Workflow, workflow_run: Workflow,
+  attachment_added: Paperclip, attachment_removed: Paperclip,
+  field_added: Settings2, field_removed: Settings2,
+};
+
+function AuditModule() {
+  const s = useCrm();
+  const [q, setQ] = useState("");
+  const [action, setAction] = useState<string>("all");
+  const rows = s.auditLog.filter((r) => {
+    if (action !== "all" && r.action !== action) return false;
+    if (q) {
+      const ql = q.toLowerCase();
+      if (!r.summary.toLowerCase().includes(ql) && !(r.objectLabel ?? "").toLowerCase().includes(ql) && !r.actor.toLowerCase().includes(ql)) return false;
+    }
+    return true;
+  });
+  const actions = Array.from(new Set(s.auditLog.map((r) => r.action)));
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search audit log…" className="pl-8 h-9 text-sm" />
+        </div>
+        <Select value={action} onValueChange={setAction}>
+          <SelectTrigger className="w-[160px] h-9 text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All actions</SelectItem>
+            {actions.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="text-left px-3 py-2 font-medium">When</th>
+                <th className="text-left px-3 py-2 font-medium">Actor</th>
+                <th className="text-left px-3 py-2 font-medium">Action</th>
+                <th className="text-left px-3 py-2 font-medium">Object</th>
+                <th className="text-left px-3 py-2 font-medium">Summary</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const Icon = AUDIT_ICON[r.action] ?? Activity;
+                return (
+                  <tr key={r.id} className="border-t">
+                    <td className="px-3 py-2 text-muted-foreground tabular-nums">{new Date(r.at).toLocaleString()}</td>
+                    <td className="px-3 py-2">{r.actor}</td>
+                    <td className="px-3 py-2"><span className="inline-flex items-center gap-1.5 text-xs"><Icon className="size-3" /> {r.action}</span></td>
+                    <td className="px-3 py-2"><span className="text-muted-foreground capitalize">{r.objectType}: </span>{r.objectLabel || r.objectId || "—"}</td>
+                    <td className="px-3 py-2">{r.summary}</td>
+                  </tr>
+                );
+              })}
+              {rows.length === 0 && <tr><td colSpan={5} className="text-center text-muted-foreground py-10">No audit entries.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================
+// Activities center
+// ===========================================================
+const ACTIVITY_ICON: Partial<Record<ActivityEvent["type"], typeof Activity>> = {
+  note: StickyNote, call: Phone, email: Mail, meeting: Calendar, task: ListChecks,
+  referral_received: HeartHandshake, file_uploaded: Paperclip,
+};
+const ACTIVITY_FILTERS: { id: "all" | ActivityEvent["type"]; label: string }[] = [
+  { id: "all", label: "All" }, { id: "note", label: "Notes" }, { id: "call", label: "Calls" },
+  { id: "email", label: "Emails" }, { id: "meeting", label: "Meetings" },
+  { id: "task", label: "Tasks" }, { id: "referral_received", label: "Referrals" },
+  { id: "file_uploaded", label: "Files" },
+];
+
+function ActivitiesModule() {
+  const s = useCrm();
+  const [f, setF] = useState<"all" | ActivityEvent["type"]>("all");
+  const rows = s.activity.filter((a) => f === "all" || a.type === f);
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {ACTIVITY_FILTERS.map((x) => (
+          <button key={x.id} onClick={() => setF(x.id)}
+            className={cn("px-3 py-1 rounded-lg text-xs font-medium border transition-colors",
+              f === x.id ? "bg-primary/10 text-primary border-primary/20" : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted")}>
+            {x.label}
+          </button>
+        ))}
+      </div>
+      <div className="rounded-2xl border bg-card divide-y">
+        {rows.length === 0 && <p className="text-sm text-muted-foreground text-center py-10">No activity in this view.</p>}
+        {rows.map((a) => {
+          const Icon = ACTIVITY_ICON[a.type] ?? Activity;
+          const targetName = a.contactId
+            ? fullName(s.contacts.find((c) => c.id === a.contactId) ?? { firstName: "?", lastName: "" } as Contact)
+            : a.companyId
+              ? companyName(s, a.companyId)
+              : a.referralId
+                ? (s.referrals.find((r) => r.id === a.referralId)?.name ?? "—")
+                : "—";
+          return (
+            <div key={a.id} className="px-4 py-3 flex items-start gap-3 text-sm">
+              <div className="size-7 rounded-lg bg-muted grid place-items-center shrink-0">
+                <Icon className="size-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">{a.message}</p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="capitalize">{a.type.replace("_", " ")}</span> · {targetName} · {fmtDate(a.createdAt)}{a.userId ? ` · ${userName(s, a.userId)}` : ""}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================
+// Edit dialogs
+// ===========================================================
+function EditContactDialog({ id, open, onOpenChange }: { id: ID | null; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const s = useCrm();
+  const c = s.contacts.find((x) => x.id === id);
+  const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", jobTitle: "", state: "", companyId: "", ownerId: "", notes: "" });
+  useEffect(() => {
+    if (c) setF({
+      firstName: c.firstName, lastName: c.lastName, email: c.email ?? "", phone: c.phone ?? "",
+      jobTitle: c.jobTitle ?? "", state: c.state ?? "", companyId: c.companyId ?? "",
+      ownerId: c.ownerId ?? "", notes: c.notes ?? "",
+    });
+  }, [c?.id, open]);
+  if (!c) return null;
+  const save = () => {
+    crm.updateContact(c.id, {
+      firstName: f.firstName, lastName: f.lastName, email: f.email || undefined, phone: f.phone || undefined,
+      jobTitle: f.jobTitle || undefined, state: f.state || undefined,
+      companyId: f.companyId || undefined, ownerId: f.ownerId || undefined, notes: f.notes || undefined,
+    });
+    toast({ title: "Contact updated" });
+    onOpenChange(false);
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Edit Contact</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label className="text-xs">First name</Label><Input value={f.firstName} onChange={(e) => setF({ ...f, firstName: e.target.value })} /></div>
+          <div><Label className="text-xs">Last name</Label><Input value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} /></div>
+          <div><Label className="text-xs">Email</Label><Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
+          <div><Label className="text-xs">Phone</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
+          <div><Label className="text-xs">Title</Label><Input value={f.jobTitle} onChange={(e) => setF({ ...f, jobTitle: e.target.value })} /></div>
+          <div><Label className="text-xs">State</Label>
+            <Select value={f.state} onValueChange={(v) => setF({ ...f, state: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Company</Label>
+            <Select value={f.companyId} onValueChange={(v) => setF({ ...f, companyId: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{s.companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Owner</Label>
+            <Select value={f.ownerId} onValueChange={(v) => setF({ ...f, ownerId: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={3} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditCompanyDialog({ id, open, onOpenChange }: { id: ID | null; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const s = useCrm();
+  const c = s.companies.find((x) => x.id === id);
+  const [f, setF] = useState({ name: "", companyType: "", city: "", state: "", website: "", mainPhone: "", ownerId: "", relationshipTier: "", notes: "" });
+  useEffect(() => {
+    if (c) setF({
+      name: c.name, companyType: c.companyType ?? "", city: c.city ?? "", state: c.state ?? "",
+      website: c.website ?? "", mainPhone: c.mainPhone ?? "", ownerId: c.ownerId ?? "",
+      relationshipTier: c.relationshipTier ?? "", notes: c.notes ?? "",
+    });
+  }, [c?.id, open]);
+  if (!c) return null;
+  const save = () => {
+    crm.updateCompany(c.id, {
+      name: f.name, companyType: f.companyType || undefined,
+      city: f.city || undefined, state: f.state || undefined,
+      website: f.website || undefined, mainPhone: f.mainPhone || undefined,
+      ownerId: f.ownerId || undefined,
+      relationshipTier: (f.relationshipTier || undefined) as Company["relationshipTier"],
+      notes: f.notes || undefined,
+    });
+    toast({ title: "Company updated" });
+    onOpenChange(false);
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Edit Company</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2"><Label className="text-xs">Name</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+          <div><Label className="text-xs">Type</Label><Input value={f.companyType} onChange={(e) => setF({ ...f, companyType: e.target.value })} /></div>
+          <div><Label className="text-xs">Website</Label><Input value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} /></div>
+          <div><Label className="text-xs">City</Label><Input value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} /></div>
+          <div><Label className="text-xs">State</Label>
+            <Select value={f.state} onValueChange={(v) => setF({ ...f, state: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Phone</Label><Input value={f.mainPhone} onChange={(e) => setF({ ...f, mainPhone: e.target.value })} /></div>
+          <div><Label className="text-xs">Owner</Label>
+            <Select value={f.ownerId} onValueChange={(v) => setF({ ...f, ownerId: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Tier</Label>
+            <Select value={f.relationshipTier} onValueChange={(v) => setF({ ...f, relationshipTier: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{["Tier A", "Tier B", "Tier C"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={3} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditReferralDialog({ id, open, onOpenChange }: { id: ID | null; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const s = useCrm();
+  const r = s.referrals.find((x) => x.id === id);
+  const [f, setF] = useState({ patientFirstName: "", patientLastInitial: "", referralStatus: "New", intakeStatus: "", serviceType: "", insuranceType: "", state: "", companyId: "", contactId: "", assignedIntakeOwnerId: "", notes: "" });
+  useEffect(() => {
+    if (r) setF({
+      patientFirstName: r.patientFirstName, patientLastInitial: r.patientLastInitial,
+      referralStatus: r.referralStatus, intakeStatus: r.intakeStatus ?? "",
+      serviceType: r.serviceType ?? "", insuranceType: r.insuranceType ?? "",
+      state: r.state ?? "", companyId: r.companyId ?? "", contactId: r.contactId ?? "",
+      assignedIntakeOwnerId: r.assignedIntakeOwnerId ?? "", notes: r.notes ?? "",
+    });
+  }, [r?.id, open]);
+  if (!r) return null;
+  const save = () => {
+    crm.updateReferral(r.id, {
+      patientFirstName: f.patientFirstName, patientLastInitial: f.patientLastInitial,
+      name: `${f.patientFirstName} ${f.patientLastInitial}.`,
+      referralStatus: f.referralStatus as Referral["referralStatus"],
+      intakeStatus: f.intakeStatus || undefined,
+      serviceType: f.serviceType || undefined, insuranceType: f.insuranceType || undefined,
+      state: f.state || undefined, companyId: f.companyId || undefined,
+      contactId: f.contactId || undefined,
+      assignedIntakeOwnerId: f.assignedIntakeOwnerId || undefined,
+      notes: f.notes || undefined,
+    });
+    toast({ title: "Referral updated" });
+    onOpenChange(false);
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Edit Referral</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label className="text-xs">Patient first name</Label><Input value={f.patientFirstName} onChange={(e) => setF({ ...f, patientFirstName: e.target.value })} /></div>
+          <div><Label className="text-xs">Last initial</Label><Input value={f.patientLastInitial} onChange={(e) => setF({ ...f, patientLastInitial: e.target.value.slice(0, 1).toUpperCase() })} /></div>
+          <div><Label className="text-xs">Status</Label>
+            <Select value={f.referralStatus} onValueChange={(v) => setF({ ...f, referralStatus: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"].map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Intake status</Label><Input value={f.intakeStatus} onChange={(e) => setF({ ...f, intakeStatus: e.target.value })} /></div>
+          <div><Label className="text-xs">Service type</Label><Input value={f.serviceType} onChange={(e) => setF({ ...f, serviceType: e.target.value })} /></div>
+          <div><Label className="text-xs">Insurance</Label><Input value={f.insuranceType} onChange={(e) => setF({ ...f, insuranceType: e.target.value })} /></div>
+          <div><Label className="text-xs">State</Label>
+            <Select value={f.state} onValueChange={(v) => setF({ ...f, state: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label className="text-xs">Source company</Label>
+            <Select value={f.companyId} onValueChange={(v) => setF({ ...f, companyId: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{s.companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={3} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ===========================================================
+// Log activity dialog (Note / Call / Email / Meeting / Task / File)
+// ===========================================================
+const LOG_TYPES: { id: ActivityEvent["type"]; label: string; icon: typeof Activity }[] = [
+  { id: "note", label: "Note", icon: StickyNote },
+  { id: "call", label: "Call", icon: Phone },
+  { id: "email", label: "Email", icon: Mail },
+  { id: "meeting", label: "Meeting", icon: Calendar },
+  { id: "task", label: "Task", icon: ListChecks },
+  { id: "file_uploaded", label: "File", icon: FileUp },
+];
+
+function LogActivityDialog({ open, onOpenChange, contactId, companyId, referralId }:
+  { open: boolean; onOpenChange: (o: boolean) => void; contactId?: ID; companyId?: ID; referralId?: ID }) {
+  const [type, setType] = useState<ActivityEvent["type"]>("note");
+  const [message, setMessage] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDue, setTaskDue] = useState("");
+
+  const reset = () => { setMessage(""); setFileName(""); setTaskTitle(""); setTaskDue(""); setType("note"); };
+
+  const submit = () => {
+    if (type === "task") {
+      if (!taskTitle.trim()) { toast({ title: "Task title required" }); return; }
+      crm.addTask({ title: taskTitle, type: "Other", contactId, companyId, referralId, dueDate: taskDue || undefined });
+    } else if (type === "file_uploaded") {
+      if (!fileName.trim()) { toast({ title: "File name required" }); return; }
+      const objectType = contactId ? "contact" : companyId ? "company" : referralId ? "referral" : "contact";
+      const objectId = (contactId ?? companyId ?? referralId)!;
+      crm.addAttachment({ fileName, objectType, objectId, category: "Other" });
+    } else {
+      if (!message.trim()) { toast({ title: "Add a message" }); return; }
+      crm.logCustomActivity({ type, message, contactId, companyId, referralId });
+    }
+    toast({ title: "Activity logged" });
+    reset();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Log Activity</DialogTitle></DialogHeader>
+        <div className="flex flex-wrap gap-1.5">
+          {LOG_TYPES.map((lt) => {
+            const I = lt.icon;
+            return (
+              <button key={lt.id} onClick={() => setType(lt.id)}
+                className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border inline-flex items-center gap-1.5",
+                  type === lt.id ? "bg-primary/10 text-primary border-primary/20" : "text-muted-foreground border-transparent hover:bg-muted")}>
+                <I className="size-3.5" /> {lt.label}
+              </button>
+            );
+          })}
+        </div>
+        {type === "task" ? (
+          <div className="space-y-3 mt-2">
+            <div><Label className="text-xs">Task title</Label><Input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} /></div>
+            <div><Label className="text-xs">Due date</Label><Input type="date" value={taskDue} onChange={(e) => setTaskDue(e.target.value)} /></div>
+          </div>
+        ) : type === "file_uploaded" ? (
+          <div className="space-y-2 mt-2">
+            <Label className="text-xs">File name</Label>
+            <Input placeholder="e.g. Welcome packet.pdf" value={fileName} onChange={(e) => setFileName(e.target.value)} />
+            <p className="text-[11px] text-muted-foreground">Metadata only — no upload required.</p>
+          </div>
+        ) : (
+          <Textarea placeholder={`Log a ${type}…`} rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={submit}>Log</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1134,12 +1953,16 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
   const s = useCrm();
   const c = s.contacts.find((x) => x.id === id);
   const [note, setNote] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [logging, setLogging] = useState(false);
   if (!c) return null;
   const events = s.activity.filter((a) => a.contactId === c.id);
   const cTasks = s.tasks.filter((t) => t.contactId === c.id);
   const cRefs = s.referrals.filter((r) => r.contactId === c.id);
+  const cFiles = s.attachments.filter((a) => a.objectType === "contact" && a.objectId === c.id);
 
   return (
+    <>
     <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader>
@@ -1147,6 +1970,10 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
         </SheetHeader>
         <div className="mt-2 space-y-4 text-sm">
           <div className="text-xs text-muted-foreground">{c.jobTitle || "—"}{c.companyId ? <> · <button className="hover:text-primary" onClick={() => onOpenCompany(c.companyId!)}>{companyName(s, c.companyId)}</button></> : null}</div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" className="h-8" onClick={() => setEditing(true)}><Pencil className="size-3 mr-1.5" /> Edit</Button>
+            <Button size="sm" className="h-8" onClick={() => setLogging(true)}><Plus className="size-3 mr-1.5" /> Log activity</Button>
+          </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div><p className="text-muted-foreground">Email</p><p>{c.email || "—"}</p></div>
             <div><p className="text-muted-foreground">Phone</p><p>{c.phone || "—"}</p></div>
@@ -1184,38 +2011,56 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Activity Timeline</h4>
-            <div className="space-y-2">
-              {events.length === 0 ? <p className="text-xs text-muted-foreground">No activity.</p> :
-                events.map((a) => (
-                  <div key={a.id} className="flex items-start gap-2 text-xs">
-                    <Activity className="size-3 mt-1 text-muted-foreground" />
-                    <div><p>{a.message}</p><p className="text-muted-foreground">{fmtDate(a.createdAt)}</p></div>
+            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Files ({cFiles.length})</h4>
+            <div className="divide-y border rounded-xl">
+              {cFiles.length === 0 ? <p className="text-xs text-muted-foreground px-3 py-2">None.</p> :
+                cFiles.map((a) => (
+                  <div key={a.id} className="px-3 py-2 flex items-center gap-2 text-xs">
+                    <FileText className="size-3.5 text-muted-foreground" />
+                    <span className="flex-1 truncate">{a.fileName}</span>
+                    <span className="text-muted-foreground">{fmtDate(a.uploadedAt)}</span>
+                    <button onClick={() => crm.removeAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
                   </div>
                 ))}
             </div>
           </div>
+
+          <div>
+            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Activity Timeline</h4>
+            <ActivityTimeline events={events} />
+          </div>
         </div>
       </SheetContent>
     </Sheet>
+    <EditContactDialog id={c.id} open={editing} onOpenChange={setEditing} />
+    <LogActivityDialog open={logging} onOpenChange={setLogging} contactId={c.id} companyId={c.companyId} />
+    </>
   );
 }
 
 function CompanyDrawer({ id, onClose, onOpenContact }: { id: ID | null; onClose: () => void; onOpenContact: (id: ID) => void }) {
   const s = useCrm();
   const c = s.companies.find((x) => x.id === id);
+  const [editing, setEditing] = useState(false);
+  const [logging, setLogging] = useState(false);
   if (!c) return null;
   const associated = s.contacts.filter((x) => x.companyId === c.id && !x.deletedAt);
   const cRefs = s.referrals.filter((r) => r.companyId === c.id);
   const cTasks = s.tasks.filter((t) => t.companyId === c.id);
   const events = s.activity.filter((a) => a.companyId === c.id);
+  const cFiles = s.attachments.filter((a) => a.objectType === "company" && a.objectId === c.id);
 
   return (
+    <>
     <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader><SheetTitle>{c.name}</SheetTitle></SheetHeader>
         <div className="mt-2 space-y-4 text-sm">
           <div className="text-xs text-muted-foreground">{c.companyType || "—"} · {c.city || ""}{c.city && c.state ? ", " : ""}{c.state || ""}</div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" className="h-8" onClick={() => setEditing(true)}><Pencil className="size-3 mr-1.5" /> Edit</Button>
+            <Button size="sm" className="h-8" onClick={() => setLogging(true)}><Plus className="size-3 mr-1.5" /> Log activity</Button>
+          </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div><p className="text-muted-foreground">Website</p><p>{c.website || "—"}</p></div>
             <div><p className="text-muted-foreground">Phone</p><p>{c.mainPhone || "—"}</p></div>
@@ -1253,20 +2098,52 @@ function CompanyDrawer({ id, onClose, onOpenContact }: { id: ID | null; onClose:
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Activity Timeline</h4>
-            <div className="space-y-2">
-              {events.length === 0 ? <p className="text-xs text-muted-foreground">No activity.</p> :
-                events.map((a) => (
-                  <div key={a.id} className="flex items-start gap-2 text-xs">
-                    <Activity className="size-3 mt-1 text-muted-foreground" />
-                    <div><p>{a.message}</p><p className="text-muted-foreground">{fmtDate(a.createdAt)}</p></div>
+            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Files ({cFiles.length})</h4>
+            <div className="divide-y border rounded-xl">
+              {cFiles.length === 0 ? <p className="text-xs text-muted-foreground px-3 py-2">None.</p> :
+                cFiles.map((a) => (
+                  <div key={a.id} className="px-3 py-2 flex items-center gap-2 text-xs">
+                    <FileText className="size-3.5 text-muted-foreground" />
+                    <span className="flex-1 truncate">{a.fileName}</span>
+                    <span className="text-muted-foreground">{fmtDate(a.uploadedAt)}</span>
+                    <button onClick={() => crm.removeAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
                   </div>
                 ))}
             </div>
           </div>
+
+          <div>
+            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Activity Timeline</h4>
+            <ActivityTimeline events={events} />
+          </div>
         </div>
       </SheetContent>
     </Sheet>
+    <EditCompanyDialog id={c.id} open={editing} onOpenChange={setEditing} />
+    <LogActivityDialog open={logging} onOpenChange={setLogging} companyId={c.id} />
+    </>
+  );
+}
+
+function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
+  if (events.length === 0) return <p className="text-xs text-muted-foreground">No activity.</p>;
+  return (
+    <div className="space-y-2">
+      {events.map((a) => {
+        const Icon = ACTIVITY_ICON[a.type] ?? Activity;
+        return (
+          <div key={a.id} className="flex items-start gap-2 text-xs">
+            <Icon className="size-3.5 mt-0.5 text-muted-foreground" />
+            <div className="flex-1">
+              <p>{a.message}</p>
+              <p className="text-muted-foreground">
+                <span className="capitalize">{a.type.replace("_", " ")}</span> · {fmtDate(a.createdAt)}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -1294,6 +2171,9 @@ export default function ReferralCRM() {
       case "settings": return <SettingsModule />;
       case "users": return <UsersModule />;
       case "deleted": return <DeletedModule />;
+      case "files": return <FilesModule />;
+      case "audit": return <AuditModule />;
+      case "activities": return <ActivitiesModule />;
     }
   })();
 
@@ -1302,8 +2182,28 @@ export default function ReferralCRM() {
       title="Blossom Referral CRM"
       subtitle="Track contacts, companies, referrals, and outreach for every state."
     >
+      {/* mobile / tablet: horizontal scroll tab bar */}
+      <div className="lg:hidden -mx-1 mb-4 overflow-x-auto">
+        <div className="flex gap-1 px-1 min-w-max">
+          {MODULES.map((m) => {
+            const Icon = m.icon;
+            const active = module === m.id;
+            return (
+              <button key={m.id} onClick={() => setModule(m.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap",
+                  active ? "bg-primary/10 text-primary border-primary/20" : "text-muted-foreground border-transparent hover:bg-muted",
+                )}
+              >
+                <Icon className="size-3.5" /> {m.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="flex gap-6">
-        <aside className="w-56 shrink-0">
+        <aside className="hidden lg:block w-56 shrink-0">
           <div className="rounded-2xl border bg-card p-2 sticky top-4">
             {MODULES.map((m) => {
               const Icon = m.icon;
