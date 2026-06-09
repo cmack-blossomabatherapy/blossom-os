@@ -702,7 +702,46 @@ function ReferralsModule() {
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
   const [logId, setLogId] = useState<ID | null>(null);
+  const [selected, setSelected] = useState<Set<ID>>(new Set());
+  const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
   const rows = activeReferrals(s);
+
+  const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
+  const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
+  const ids = () => Array.from(selected);
+  const clear = () => setSelected(new Set());
+  const bulkStatus = (v: string) => {
+    ids().forEach((id) => crm.updateReferral(id, { referralStatus: v as Referral["referralStatus"] }));
+    toast({ title: `Updated status on ${selected.size}` }); clear();
+  };
+  const bulkIntakeStatus = () => {
+    const v = window.prompt("New intake status:"); if (!v) return;
+    ids().forEach((id) => crm.updateReferral(id, { intakeStatus: v }));
+    toast({ title: `Updated intake status on ${selected.size}` }); clear();
+  };
+  const bulkAssignIntake = (uid: ID) => {
+    ids().forEach((id) => crm.updateReferral(id, { assignedIntakeOwnerId: uid }));
+    toast({ title: `Assigned intake owner on ${selected.size}` }); clear();
+  };
+  const bulkExport = () => {
+    const data = s.referrals.filter((r) => selected.has(r.id)).map((r) => ({
+      id: r.id, name: r.name, referralDate: r.referralDate,
+      companyName: companyName(s, r.companyId),
+      contactName: r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "",
+      state: r.state, serviceType: r.serviceType, referralStatus: r.referralStatus,
+      intakeStatus: r.intakeStatus, insuranceType: r.insuranceType,
+      intakeOwner: userName(s, r.assignedIntakeOwnerId),
+      notes: r.notes,
+    }));
+    downloadCsv(`referrals-selected-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} selected referrals`);
+    toast({ title: `Exported ${data.length} referral(s)` });
+  };
+  const bulkDelete = () => {
+    ids().forEach((id) => crm.softDeleteReferral(id));
+    toast({ title: `${selected.size} referral(s) deleted` }); clear();
+  };
 
   return (
     <div className="space-y-4">
@@ -712,11 +751,40 @@ function ReferralsModule() {
         </Button>
       </div>
 
+      {selected.size > 0 && (
+        <div className="rounded-xl bg-foreground text-background px-3 py-2 flex flex-wrap items-center gap-2 text-sm">
+          <button onClick={clear} className="size-6 grid place-items-center rounded hover:bg-background/10"><X className="size-3.5" /></button>
+          <span className="font-medium">{selected.size} selected</span>
+          <span className="mx-1 h-4 w-px bg-background/20" />
+          <Select onValueChange={bulkStatus}>
+            <SelectTrigger className="h-7 w-[160px] bg-transparent border-background/20 text-xs text-background"><SelectValue placeholder="Referral status" /></SelectTrigger>
+            <SelectContent>{["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkIntakeStatus}>
+            <Pencil className="size-3 mr-1" /> Intake status
+          </Button>
+          <Select onValueChange={bulkAssignIntake}>
+            <SelectTrigger className="h-7 w-[160px] bg-transparent border-background/20 text-xs text-background"><SelectValue placeholder="Intake owner" /></SelectTrigger>
+            <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={() => setBulkTaskOpen(true)}>
+            <ListChecks className="size-3 mr-1" /> Create task
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkExport}>
+            <Download className="size-3 mr-1" /> Export
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+            <Trash2 className="size-3 mr-1" /> Delete
+          </Button>
+        </div>
+      )}
+
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr>
+                <th className="w-10 px-3 py-2"><Checkbox checked={allChecked} onCheckedChange={toggleAll} /></th>
                 <th className="text-left px-3 py-2 font-medium">Patient</th>
                 <th className="text-left px-3 py-2 font-medium">Source Company</th>
                 <th className="text-left px-3 py-2 font-medium">Source Contact</th>
@@ -731,6 +799,7 @@ function ReferralsModule() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t hover:bg-muted/30">
+                  <td className="px-3 py-2"><Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleOne(r.id)} /></td>
                   <td className="px-3 py-2 font-medium">
                     <button className="hover:text-primary" onClick={() => setEditingId(r.id)}>{r.name}</button>
                   </td>
@@ -756,7 +825,7 @@ function ReferralsModule() {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={9} className="text-center text-muted-foreground py-10">No referrals yet.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={10} className="text-center text-muted-foreground py-10">No referrals yet.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -765,6 +834,19 @@ function ReferralsModule() {
       <NewReferralDialog open={creating} onOpenChange={setCreating} />
       <EditReferralDialog id={editingId} open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)} />
       <LogActivityDialog open={!!logId} onOpenChange={(o) => !o && setLogId(null)} referralId={logId ?? undefined} />
+      <BulkCreateTaskDialog
+        open={bulkTaskOpen}
+        onOpenChange={setBulkTaskOpen}
+        targetCount={selected.size}
+        onSubmit={(payload) => {
+          ids().forEach((rid) => {
+            const r = s.referrals.find((x) => x.id === rid);
+            crm.addTask({ ...payload, referralId: rid, companyId: r?.companyId, contactId: r?.contactId });
+          });
+          toast({ title: `Created ${selected.size} task(s)` });
+          setBulkTaskOpen(false); clear();
+        }}
+      />
     </div>
   );
 }
