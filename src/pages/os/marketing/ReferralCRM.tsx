@@ -906,62 +906,313 @@ function ReportsModule() {
 }
 
 // ===========================================================
-// Imports / Exports
+// CSV helpers (frontend only)
 // ===========================================================
-function ImportsModule() {
+function escapeCsv(v: unknown): string {
+  if (v == null) return "";
+  const s = String(v);
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+function rowsToCsv(rows: Record<string, unknown>[], headers?: string[]): string {
+  if (!rows.length) return headers?.join(",") ?? "";
+  const hs = headers ?? Object.keys(rows[0]);
+  const head = hs.join(",");
+  const body = rows.map((r) => hs.map((h) => escapeCsv(r[h])).join(",")).join("\n");
+  return `${head}\n${body}`;
+}
+function downloadCsv(filename: string, csv: string) {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function parseCsv(text: string): { headers: string[]; rows: Record<string, string>[] } {
+  const out: string[][] = [];
+  let row: string[] = [];
+  let cur = "";
+  let inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"' && text[i + 1] === '"') { cur += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else cur += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ",") { row.push(cur); cur = ""; }
+      else if (c === "\n") { row.push(cur); out.push(row); row = []; cur = ""; }
+      else if (c === "\r") { /* skip */ }
+      else cur += c;
+    }
+  }
+  if (cur.length || row.length) { row.push(cur); out.push(row); }
+  const headers = (out.shift() ?? []).map((h) => h.trim());
+  const rows = out.filter((r) => r.some((c) => c.trim() !== ""))
+    .map((r) => Object.fromEntries(headers.map((h, i) => [h, (r[i] ?? "").trim()])));
+  return { headers, rows };
+}
+
+// ===========================================================
+// Exports — real CSV downloads
+// ===========================================================
+function ExportsModule() {
+  const s = useCrm();
+  const exportContacts = () => {
+    const data = activeContacts(s).map((c) => ({
+      id: c.id, firstName: c.firstName, lastName: c.lastName, email: c.email, phone: c.phone,
+      jobTitle: c.jobTitle, companyName: companyName(s, c.companyId), state: c.state,
+      ownerName: userName(s, c.ownerId), referralCount: c.referralCount,
+      referralPartnerStatus: c.referralPartnerStatus, lastContactedDate: c.lastContactedDate,
+      tags: c.tags.join("|"),
+    }));
+    downloadCsv(`contacts-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} contacts`);
+    toast({ title: `Exported ${data.length} contacts` });
+  };
+  const exportCompanies = () => {
+    const data = activeCompanies(s).map((c) => ({
+      id: c.id, name: c.name, companyType: c.companyType, website: c.website, phone: c.mainPhone,
+      city: c.city, state: c.state, ownerName: userName(s, c.ownerId), tier: c.relationshipTier,
+      activePartner: c.activeReferralPartner ? "yes" : "no", referralsYTD: c.referralsYTD,
+      lastReferralDate: c.lastReferralDate, tags: c.tags.join("|"),
+    }));
+    downloadCsv(`companies-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} companies`);
+    toast({ title: `Exported ${data.length} companies` });
+  };
+  const exportReferrals = () => {
+    const data = activeReferrals(s).map((r) => ({
+      id: r.id, patient: r.name, referralDate: r.referralDate,
+      sourceCompany: companyName(s, r.companyId),
+      sourceContact: r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "",
+      state: r.state, serviceType: r.serviceType, status: r.referralStatus,
+      intakeStatus: r.intakeStatus, insurance: r.insuranceType,
+      intakeOwner: userName(s, r.assignedIntakeOwnerId),
+    }));
+    downloadCsv(`referrals-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} referrals`);
+    toast({ title: `Exported ${data.length} referrals` });
+  };
+  const exportTasks = () => {
+    const data = s.tasks.map((t) => ({
+      id: t.id, title: t.title, type: t.type, status: t.status, priority: t.priority,
+      dueDate: t.dueDate, owner: userName(s, t.assignedUserId),
+      company: companyName(s, t.companyId), notes: t.notes,
+    }));
+    downloadCsv(`tasks-${Date.now()}.csv`, rowsToCsv(data));
+    crm.recordExport(`Exported ${data.length} tasks`);
+    toast({ title: `Exported ${data.length} tasks` });
+  };
+  const items = [
+    { id: "contacts", label: "Contacts", fn: exportContacts, count: activeContacts(s).length },
+    { id: "companies", label: "Companies", fn: exportCompanies, count: activeCompanies(s).length },
+    { id: "referrals", label: "Referrals", fn: exportReferrals, count: activeReferrals(s).length },
+    { id: "tasks", label: "Tasks", fn: exportTasks, count: s.tasks.length },
+  ];
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border-2 border-dashed bg-card p-10 text-center">
-        <Upload className="size-8 mx-auto text-muted-foreground" />
-        <p className="mt-3 font-medium">Drop a CSV here or click to browse</p>
-        <p className="text-xs text-muted-foreground mt-1">Contacts, Companies, or Referrals — up to 10MB</p>
-        <Button className="mt-4" size="sm" onClick={() => toast({ title: "File picker (mock)" })}>Select File</Button>
-      </div>
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="rounded-2xl border bg-card p-5">
-          <h3 className="font-semibold text-sm">Column Mapping</h3>
-          <p className="text-xs text-muted-foreground mt-1">Map CSV headers to CRM fields. Saved per object.</p>
-          <div className="mt-3 space-y-1.5 text-xs">
-            {["First Name → firstName", "Last Name → lastName", "Email → email", "Phone → phone", "Company → companyId"].map((m) => (
-              <div key={m} className="px-2 py-1 rounded bg-muted/50">{m}</div>
-            ))}
+    <div className="grid sm:grid-cols-2 gap-4">
+      {items.map((o) => (
+        <div key={o.id} className="rounded-2xl border bg-card p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-semibold">{o.label}</h3>
+              <p className="text-xs text-muted-foreground mt-1">{o.count} active records</p>
+            </div>
+            <Button size="sm" className="h-8" onClick={o.fn}>
+              <Download className="size-3 mr-1" /> Download CSV
+            </Button>
           </div>
         </div>
-        <div className="rounded-2xl border bg-card p-5">
-          <h3 className="font-semibold text-sm">Preview</h3>
-          <p className="text-xs text-muted-foreground mt-1">Preview the first 10 rows before committing.</p>
-          <p className="text-xs mt-3 text-muted-foreground italic">Upload a file to preview.</p>
-        </div>
-        <div className="rounded-2xl border bg-card p-5">
-          <h3 className="font-semibold text-sm">Duplicate Detection</h3>
-          <p className="text-xs text-muted-foreground mt-1">Matches existing records by name + email + phone before import.</p>
-          <Badge className="mt-3 bg-emerald-500/15 text-emerald-700">No duplicates detected</Badge>
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
 
-function ExportsModule() {
-  const exp = (kind: string) => toast({ title: `Exported ${kind} (mock CSV)` });
+// ===========================================================
+// Imports — paste/upload CSV → preview → commit
+// ===========================================================
+type ImportObject = "contacts" | "companies" | "referrals";
+const IMPORT_FIELDS: Record<ImportObject, { key: string; label: string; required?: boolean }[]> = {
+  contacts: [
+    { key: "firstName", label: "First Name", required: true },
+    { key: "lastName", label: "Last Name", required: true },
+    { key: "email", label: "Email" }, { key: "phone", label: "Phone" },
+    { key: "jobTitle", label: "Job Title" }, { key: "state", label: "State" },
+    { key: "companyName", label: "Company Name" },
+  ],
+  companies: [
+    { key: "name", label: "Name", required: true },
+    { key: "companyType", label: "Type" }, { key: "city", label: "City" },
+    { key: "state", label: "State" }, { key: "website", label: "Website" },
+    { key: "mainPhone", label: "Phone" },
+  ],
+  referrals: [
+    { key: "patientFirstName", label: "Patient First Name", required: true },
+    { key: "patientLastInitial", label: "Patient Last Initial", required: true },
+    { key: "companyName", label: "Source Company Name" },
+    { key: "state", label: "State" }, { key: "serviceType", label: "Service Type" },
+    { key: "insuranceType", label: "Insurance" },
+  ],
+};
+
+function autoMap(headers: string[], fields: { key: string; label: string }[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const f of fields) {
+    const hit = headers.find((h) => h.toLowerCase().replace(/[\s_-]/g, "") === f.key.toLowerCase());
+    const hit2 = hit ?? headers.find((h) => h.toLowerCase() === f.label.toLowerCase());
+    if (hit2) map[f.key] = hit2;
+  }
+  return map;
+}
+
+function ImportsModule() {
+  const s = useCrm();
+  const [object, setObject] = useState<ImportObject>("contacts");
+  const [text, setText] = useState("");
+  const [parsed, setParsed] = useState<{ headers: string[]; rows: Record<string, string>[] } | null>(null);
+  const [map, setMap] = useState<Record<string, string>>({});
+
+  const onFile = async (file: File) => {
+    const t = await file.text(); setText(t); doParse(t);
+  };
+  const doParse = (raw: string) => {
+    const p = parseCsv(raw);
+    setParsed(p);
+    setMap(autoMap(p.headers, IMPORT_FIELDS[object]));
+  };
+
+  const commit = () => {
+    if (!parsed) return;
+    let created = 0;
+    for (const row of parsed.rows) {
+      const get = (k: string) => map[k] ? (row[map[k]] ?? "").trim() : "";
+      if (object === "contacts") {
+        if (!get("firstName") || !get("lastName")) continue;
+        const compName = get("companyName");
+        let companyId: string | undefined;
+        if (compName) {
+          const existing = s.companies.find((c) => c.name.toLowerCase() === compName.toLowerCase());
+          companyId = existing?.id ?? crm.addCompany({ name: compName, state: get("state") || undefined }).id;
+        }
+        crm.addContact({
+          firstName: get("firstName"), lastName: get("lastName"),
+          email: get("email") || undefined, phone: get("phone") || undefined,
+          jobTitle: get("jobTitle") || undefined, state: get("state") || undefined,
+          companyId,
+        });
+        created++;
+      } else if (object === "companies") {
+        if (!get("name")) continue;
+        crm.addCompany({
+          name: get("name"), companyType: get("companyType") || undefined,
+          city: get("city") || undefined, state: get("state") || undefined,
+          website: get("website") || undefined, mainPhone: get("mainPhone") || undefined,
+        });
+        created++;
+      } else {
+        if (!get("patientFirstName") || !get("patientLastInitial")) continue;
+        const compName = get("companyName");
+        const company = compName ? s.companies.find((c) => c.name.toLowerCase() === compName.toLowerCase()) : undefined;
+        crm.addReferral({
+          patientFirstName: get("patientFirstName"),
+          patientLastInitial: get("patientLastInitial").slice(0, 1).toUpperCase(),
+          companyId: company?.id,
+          state: get("state") || undefined,
+          serviceType: get("serviceType") || undefined,
+          insuranceType: get("insuranceType") || undefined,
+        });
+        created++;
+      }
+    }
+    crm.recordImport(`Imported ${created} ${object}`);
+    toast({ title: `Imported ${created} ${object}` });
+    setText(""); setParsed(null); setMap({});
+  };
+
+  const fields = IMPORT_FIELDS[object];
+
   return (
-    <div className="grid md:grid-cols-2 gap-4">
-      {[
-        { id: "contacts", label: "Contacts" },
-        { id: "companies", label: "Companies" },
-        { id: "referrals", label: "Referrals" },
-        { id: "tasks", label: "Tasks" },
-      ].map((o) => (
-        <div key={o.id} className="rounded-2xl border bg-card p-5">
-          <h3 className="font-semibold">{o.label}</h3>
-          <p className="text-xs text-muted-foreground mt-1">Export selected, filtered view, or all records.</p>
-          <div className="mt-3 flex gap-2">
-            <Button size="sm" variant="outline" className="h-8" onClick={() => exp(`${o.label} (selected)`)}>Selected</Button>
-            <Button size="sm" variant="outline" className="h-8" onClick={() => exp(`${o.label} (filtered)`)}>Filtered</Button>
-            <Button size="sm" className="h-8" onClick={() => exp(`${o.label} (all)`)}><Download className="size-3 mr-1" /> All</Button>
-          </div>
+    <div className="space-y-4">
+      <div className="rounded-2xl border bg-card p-5 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Label className="text-xs">Import into</Label>
+          <Select value={object} onValueChange={(v: ImportObject) => { setObject(v); if (parsed) setMap(autoMap(parsed.headers, IMPORT_FIELDS[v])); }}>
+            <SelectTrigger className="w-[160px] h-9 text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="contacts">Contacts</SelectItem>
+              <SelectItem value="companies">Companies</SelectItem>
+              <SelectItem value="referrals">Referrals</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex-1" />
+          <input id="csv-file" type="file" accept=".csv,text/csv" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
+          <Button size="sm" variant="outline" className="h-9" onClick={() => document.getElementById("csv-file")?.click()}>
+            <Upload className="size-3.5 mr-1.5" /> Choose file
+          </Button>
         </div>
-      ))}
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Or paste CSV here (first row = headers)…"
+          rows={6}
+          className="font-mono text-xs"
+        />
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => doParse(text)} disabled={!text.trim()}>Parse CSV</Button>
+        </div>
+      </div>
+
+      {parsed && (
+        <>
+          <div className="rounded-2xl border bg-card p-5">
+            <h3 className="font-semibold text-sm mb-3">Column Mapping</h3>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {fields.map((f) => (
+                <div key={f.key} className="flex items-center gap-2 text-xs">
+                  <span className="w-40 text-muted-foreground">
+                    {f.label}{f.required && <span className="text-destructive"> *</span>}
+                  </span>
+                  <Select value={map[f.key] ?? "__none"} onValueChange={(v) => setMap({ ...map, [f.key]: v === "__none" ? "" : v })}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">— ignore —</SelectItem>
+                      {parsed.headers.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="px-4 py-2 text-xs text-muted-foreground bg-muted/40">
+              Preview · first 10 of {parsed.rows.length} rows
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/30">
+                  <tr>{parsed.headers.map((h) => <th key={h} className="text-left px-3 py-2 font-medium">{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {parsed.rows.slice(0, 10).map((r, i) => (
+                    <tr key={i} className="border-t">
+                      {parsed.headers.map((h) => <td key={h} className="px-3 py-1.5">{r[h]}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => { setParsed(null); setText(""); }}>Cancel</Button>
+            <Button size="sm" onClick={commit}>Import {parsed.rows.length} rows</Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
