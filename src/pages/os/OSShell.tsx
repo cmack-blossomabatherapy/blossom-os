@@ -547,9 +547,10 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         .filter((s) => s.items.length > 0)
         // Relationships (Referrals, Recruiting Marketing, Community Outreach,
         // Reputation, plus future CRM pages added here) is intentionally
-        // scoped to Marketing and Super Admin only. Hide the entire section
-        // from any other role that may have the underlying module access.
-        .filter((s) => s.id !== "relationships" || role === "super_admin" || role === "marketing_team");
+        // scoped to Marketing (handled by its own section list) and Super
+        // Admin only. Hide the entire section from any other role in the
+        // fallback path that may have the underlying module access.
+        .filter((s) => s.id !== "relationships" || role === "super_admin");
 
 
   const mobileSections = (() => {
