@@ -715,10 +715,11 @@ const App = () => (
                   <Route path="/marketing/seo" element={<MarketingSEO />} />
                   <Route path="/marketing/web-analytics" element={<MarketingWebAnalytics />} />
                   <Route path="/marketing/call-tracking" element={<MarketingCallTracking />} />
-                  <Route path="/marketing/referrals" element={<MarketingReferrals />} />
-                  <Route path="/marketing/recruiting" element={<MarketingRecruiting />} />
-                  <Route path="/marketing/outreach" element={<MarketingOutreach />} />
-                  <Route path="/marketing/reputation" element={<MarketingReputation />} />
+                  {/* Relationships routes — Marketing + Super Admin only */}
+                  <Route path="/marketing/referrals" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingReferrals /></PermissionRoute>} />
+                  <Route path="/marketing/recruiting" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingRecruiting /></PermissionRoute>} />
+                  <Route path="/marketing/outreach" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingOutreach /></PermissionRoute>} />
+                  <Route path="/marketing/reputation" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingReputation /></PermissionRoute>} />
                   <Route path="/marketing/attribution" element={<MarketingAttribution />} />
                   <Route path="/marketing/state-growth" element={<MarketingStateGrowth />} />
                   <Route path="/marketing/reports" element={<MarketingReports />} />
