@@ -544,7 +544,12 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ]
     : [homeSection, ...NAV_SECTIONS]
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
-        .filter((s) => s.items.length > 0);
+        .filter((s) => s.items.length > 0)
+        // Relationships (Referrals, Recruiting Marketing, Community Outreach,
+        // Reputation, plus future CRM pages added here) is intentionally
+        // scoped to Marketing and Super Admin only. Hide the entire section
+        // from any other role that may have the underlying module access.
+        .filter((s) => s.id !== "relationships" || role === "super_admin" || role === "marketing_team");
 
 
   const mobileSections = (() => {
