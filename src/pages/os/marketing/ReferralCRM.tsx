@@ -3376,6 +3376,7 @@ export default function ReferralCRM() {
       case "files": return <FilesModule />;
       case "audit": return <AuditModule />;
       case "activities": return <ActivitiesModule />;
+      case "search": return <GlobalSearchModule onOpenContact={setContactId} onOpenCompany={setCompanyId} onJumpModule={setModule} />;
     }
   })();
 
