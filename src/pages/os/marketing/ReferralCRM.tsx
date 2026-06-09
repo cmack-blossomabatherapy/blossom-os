@@ -1942,12 +1942,16 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
   const s = useCrm();
   const c = s.contacts.find((x) => x.id === id);
   const [note, setNote] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [logging, setLogging] = useState(false);
   if (!c) return null;
   const events = s.activity.filter((a) => a.contactId === c.id);
   const cTasks = s.tasks.filter((t) => t.contactId === c.id);
   const cRefs = s.referrals.filter((r) => r.contactId === c.id);
+  const cFiles = s.attachments.filter((a) => a.objectType === "contact" && a.objectId === c.id);
 
   return (
+    <>
     <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader>
@@ -1955,6 +1959,10 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
         </SheetHeader>
         <div className="mt-2 space-y-4 text-sm">
           <div className="text-xs text-muted-foreground">{c.jobTitle || "—"}{c.companyId ? <> · <button className="hover:text-primary" onClick={() => onOpenCompany(c.companyId!)}>{companyName(s, c.companyId)}</button></> : null}</div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" className="h-8" onClick={() => setEditing(true)}><Pencil className="size-3 mr-1.5" /> Edit</Button>
+            <Button size="sm" className="h-8" onClick={() => setLogging(true)}><Plus className="size-3 mr-1.5" /> Log activity</Button>
+          </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div><p className="text-muted-foreground">Email</p><p>{c.email || "—"}</p></div>
             <div><p className="text-muted-foreground">Phone</p><p>{c.phone || "—"}</p></div>
@@ -1992,38 +2000,56 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Activity Timeline</h4>
-            <div className="space-y-2">
-              {events.length === 0 ? <p className="text-xs text-muted-foreground">No activity.</p> :
-                events.map((a) => (
-                  <div key={a.id} className="flex items-start gap-2 text-xs">
-                    <Activity className="size-3 mt-1 text-muted-foreground" />
-                    <div><p>{a.message}</p><p className="text-muted-foreground">{fmtDate(a.createdAt)}</p></div>
+            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Files ({cFiles.length})</h4>
+            <div className="divide-y border rounded-xl">
+              {cFiles.length === 0 ? <p className="text-xs text-muted-foreground px-3 py-2">None.</p> :
+                cFiles.map((a) => (
+                  <div key={a.id} className="px-3 py-2 flex items-center gap-2 text-xs">
+                    <FileText className="size-3.5 text-muted-foreground" />
+                    <span className="flex-1 truncate">{a.fileName}</span>
+                    <span className="text-muted-foreground">{fmtDate(a.uploadedAt)}</span>
+                    <button onClick={() => crm.removeAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
                   </div>
                 ))}
             </div>
           </div>
+
+          <div>
+            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Activity Timeline</h4>
+            <ActivityTimeline events={events} />
+          </div>
         </div>
       </SheetContent>
     </Sheet>
+    <EditContactDialog id={c.id} open={editing} onOpenChange={setEditing} />
+    <LogActivityDialog open={logging} onOpenChange={setLogging} contactId={c.id} companyId={c.companyId} />
+    </>
   );
 }
 
 function CompanyDrawer({ id, onClose, onOpenContact }: { id: ID | null; onClose: () => void; onOpenContact: (id: ID) => void }) {
   const s = useCrm();
   const c = s.companies.find((x) => x.id === id);
+  const [editing, setEditing] = useState(false);
+  const [logging, setLogging] = useState(false);
   if (!c) return null;
   const associated = s.contacts.filter((x) => x.companyId === c.id && !x.deletedAt);
   const cRefs = s.referrals.filter((r) => r.companyId === c.id);
   const cTasks = s.tasks.filter((t) => t.companyId === c.id);
   const events = s.activity.filter((a) => a.companyId === c.id);
+  const cFiles = s.attachments.filter((a) => a.objectType === "company" && a.objectId === c.id);
 
   return (
+    <>
     <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader><SheetTitle>{c.name}</SheetTitle></SheetHeader>
         <div className="mt-2 space-y-4 text-sm">
           <div className="text-xs text-muted-foreground">{c.companyType || "—"} · {c.city || ""}{c.city && c.state ? ", " : ""}{c.state || ""}</div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" className="h-8" onClick={() => setEditing(true)}><Pencil className="size-3 mr-1.5" /> Edit</Button>
+            <Button size="sm" className="h-8" onClick={() => setLogging(true)}><Plus className="size-3 mr-1.5" /> Log activity</Button>
+          </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div><p className="text-muted-foreground">Website</p><p>{c.website || "—"}</p></div>
             <div><p className="text-muted-foreground">Phone</p><p>{c.mainPhone || "—"}</p></div>
@@ -2061,20 +2087,52 @@ function CompanyDrawer({ id, onClose, onOpenContact }: { id: ID | null; onClose:
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Activity Timeline</h4>
-            <div className="space-y-2">
-              {events.length === 0 ? <p className="text-xs text-muted-foreground">No activity.</p> :
-                events.map((a) => (
-                  <div key={a.id} className="flex items-start gap-2 text-xs">
-                    <Activity className="size-3 mt-1 text-muted-foreground" />
-                    <div><p>{a.message}</p><p className="text-muted-foreground">{fmtDate(a.createdAt)}</p></div>
+            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Files ({cFiles.length})</h4>
+            <div className="divide-y border rounded-xl">
+              {cFiles.length === 0 ? <p className="text-xs text-muted-foreground px-3 py-2">None.</p> :
+                cFiles.map((a) => (
+                  <div key={a.id} className="px-3 py-2 flex items-center gap-2 text-xs">
+                    <FileText className="size-3.5 text-muted-foreground" />
+                    <span className="flex-1 truncate">{a.fileName}</span>
+                    <span className="text-muted-foreground">{fmtDate(a.uploadedAt)}</span>
+                    <button onClick={() => crm.removeAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
                   </div>
                 ))}
             </div>
           </div>
+
+          <div>
+            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Activity Timeline</h4>
+            <ActivityTimeline events={events} />
+          </div>
         </div>
       </SheetContent>
     </Sheet>
+    <EditCompanyDialog id={c.id} open={editing} onOpenChange={setEditing} />
+    <LogActivityDialog open={logging} onOpenChange={setLogging} companyId={c.id} />
+    </>
+  );
+}
+
+function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
+  if (events.length === 0) return <p className="text-xs text-muted-foreground">No activity.</p>;
+  return (
+    <div className="space-y-2">
+      {events.map((a) => {
+        const Icon = ACTIVITY_ICON[a.type] ?? Activity;
+        return (
+          <div key={a.id} className="flex items-start gap-2 text-xs">
+            <Icon className="size-3.5 mt-0.5 text-muted-foreground" />
+            <div className="flex-1">
+              <p>{a.message}</p>
+              <p className="text-muted-foreground">
+                <span className="capitalize">{a.type.replace("_", " ")}</span> · {fmtDate(a.createdAt)}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
