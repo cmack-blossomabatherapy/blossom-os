@@ -135,6 +135,9 @@ export interface WorkflowDef {
   enabled: boolean;
   lastRun?: string;
   runs: number;
+  triggerType?: WorkflowTrigger;
+  triggerConfig?: { days?: number; count?: number; listId?: ID; property?: string };
+  lastRunResult?: string;
 }
 
 export interface ListDef {
@@ -145,7 +148,56 @@ export interface ListDef {
   criteria?: string;
   staticIds?: ID[];
   matcher?: (rows: (Contact | Company)[]) => (Contact | Company)[];
+  criteriaRules?: ListCriteria;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+export interface ListCriteria {
+  state?: string;
+  companyType?: string;
+  referralSourceType?: string;
+  referralPartnerStatus?: string;
+  relationshipTier?: string;
+  lastContactedOlderThanDays?: number;
+  referralCountGte?: number;
+  missingEmail?: boolean;
+  missingPhone?: boolean;
+  nextFollowUpEmpty?: boolean;
+}
+
+export type WorkflowTrigger =
+  | "contact_created" | "company_created" | "referral_created"
+  | "property_updated" | "task_completed" | "no_activity_days"
+  | "contact_added_to_list" | "company_added_to_list"
+  | "referral_status_changed" | "referral_count_reaches"
+  | "lunch_learn_needed";
+
+export const WORKFLOW_TRIGGERS: { id: WorkflowTrigger; label: string }[] = [
+  { id: "contact_created", label: "Contact created" },
+  { id: "company_created", label: "Company created" },
+  { id: "referral_created", label: "Referral created" },
+  { id: "property_updated", label: "Property updated" },
+  { id: "task_completed", label: "Task completed" },
+  { id: "no_activity_days", label: "No activity for X days" },
+  { id: "contact_added_to_list", label: "Contact added to list" },
+  { id: "company_added_to_list", label: "Company added to list" },
+  { id: "referral_status_changed", label: "Referral status changed" },
+  { id: "referral_count_reaches", label: "Referral count reaches number" },
+  { id: "lunch_learn_needed", label: "Lunch & Learn needed (active partner, no L&L)" },
+];
+
+export const WORKFLOW_ACTIONS: { id: string; label: string }[] = [
+  { id: "create_task", label: "Create task" },
+  { id: "update_property", label: "Update property" },
+  { id: "assign_owner", label: "Assign owner" },
+  { id: "add_to_list", label: "Add to list" },
+  { id: "remove_from_list", label: "Remove from list" },
+  { id: "add_tag", label: "Add tag" },
+  { id: "remove_tag", label: "Remove tag" },
+  { id: "notify_user", label: "Notify user" },
+  { id: "change_partner_status", label: "Change referral partner status" },
+];
 
 export interface Attachment {
   id: ID;
@@ -777,10 +829,84 @@ export const crm = {
     logAudit({ action: "workflow_toggle", objectType: "workflow", objectId: id, objectLabel: w?.name,
       summary: w?.enabled ? "Workflow enabled" : "Workflow disabled" });
   },
-  runWorkflow(id: ID) {
-    set({ workflows: state.workflows.map((w) => w.id === id ? { ...w, runs: w.runs + 1, lastRun: now() } : w) });
+  runWorkflow(id: ID): string {
     const w = state.workflows.find((x) => x.id === id);
-    logAudit({ action: "workflow_run", objectType: "workflow", objectId: id, objectLabel: w?.name, summary: "Ran workflow" });
+    if (!w) return "Workflow not found";
+    const result = executeWorkflow(w);
+    set({
+      workflows: state.workflows.map((x) =>
+        x.id === id ? { ...x, runs: x.runs + 1, lastRun: now(), lastRunResult: result } : x,
+      ),
+    });
+    logAudit({ action: "workflow_run", objectType: "workflow", objectId: id, objectLabel: w.name, summary: `Ran workflow — ${result}` });
+    return result;
+  },
+
+  addWorkflow(input: Partial<WorkflowDef> & { name: string }) {
+    const w: WorkflowDef = {
+      id: newId(), name: input.name, trigger: input.trigger ?? "Manual",
+      actions: input.actions ?? [], enabled: input.enabled ?? true, runs: 0,
+      triggerType: input.triggerType, triggerConfig: input.triggerConfig,
+    };
+    set({ workflows: [w, ...state.workflows] });
+    logAudit({ action: "create", objectType: "workflow", objectId: w.id, objectLabel: w.name, summary: "Workflow created" });
+    return w;
+  },
+  updateWorkflow(id: ID, patch: Partial<WorkflowDef>) {
+    set({ workflows: state.workflows.map((w) => w.id === id ? { ...w, ...patch } : w) });
+    const w = state.workflows.find((x) => x.id === id);
+    logAudit({ action: "update", objectType: "workflow", objectId: id, objectLabel: w?.name,
+      summary: `Updated: ${Object.keys(patch).join(", ") || "—"}` });
+  },
+  deleteWorkflow(id: ID) {
+    const w = state.workflows.find((x) => x.id === id);
+    set({ workflows: state.workflows.filter((x) => x.id !== id) });
+    logAudit({ action: "delete", objectType: "workflow", objectId: id, objectLabel: w?.name, summary: "Workflow deleted" });
+  },
+
+  // lists
+  addList(input: Partial<ListDef> & { name: string; kind: "static" | "active"; object: "contacts" | "companies" }) {
+    const l: ListDef = {
+      id: newId(), name: input.name, kind: input.kind, object: input.object,
+      criteria: input.criteria, staticIds: input.staticIds ?? (input.kind === "static" ? [] : undefined),
+      criteriaRules: input.criteriaRules, createdAt: now(), updatedAt: now(),
+    };
+    set({ lists: [l, ...state.lists] });
+    logAudit({ action: "create", objectType: "system", objectId: l.id, objectLabel: l.name, summary: `List created (${l.kind} · ${l.object})` });
+    return l;
+  },
+  updateList(id: ID, patch: Partial<ListDef>) {
+    set({ lists: state.lists.map((l) => l.id === id ? { ...l, ...patch, updatedAt: now() } : l) });
+    const l = state.lists.find((x) => x.id === id);
+    logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: l?.name,
+      summary: `List updated: ${Object.keys(patch).join(", ") || "—"}` });
+  },
+  deleteList(id: ID) {
+    const l = state.lists.find((x) => x.id === id);
+    set({ lists: state.lists.filter((x) => x.id !== id) });
+    logAudit({ action: "delete", objectType: "system", objectId: id, objectLabel: l?.name, summary: "List deleted" });
+  },
+  addRecordToStaticList(listId: ID, recordId: ID) {
+    const l = state.lists.find((x) => x.id === listId);
+    if (!l || l.kind !== "static") return;
+    const ids = Array.from(new Set([...(l.staticIds ?? []), recordId]));
+    set({ lists: state.lists.map((x) => x.id === listId ? { ...x, staticIds: ids, updatedAt: now() } : x) });
+    logActivity({ type: "list_membership", message: `Added to list "${l.name}"`,
+      contactId: l.object === "contacts" ? recordId : undefined,
+      companyId: l.object === "companies" ? recordId : undefined });
+    logAudit({ action: "update", objectType: "system", objectId: listId, objectLabel: l.name,
+      summary: `Added ${l.object.slice(0, -1)} ${recordId} to static list` });
+  },
+  removeRecordFromStaticList(listId: ID, recordId: ID) {
+    const l = state.lists.find((x) => x.id === listId);
+    if (!l || l.kind !== "static") return;
+    const ids = (l.staticIds ?? []).filter((x) => x !== recordId);
+    set({ lists: state.lists.map((x) => x.id === listId ? { ...x, staticIds: ids, updatedAt: now() } : x) });
+    logActivity({ type: "list_membership", message: `Removed from list "${l.name}"`,
+      contactId: l.object === "contacts" ? recordId : undefined,
+      companyId: l.object === "companies" ? recordId : undefined });
+    logAudit({ action: "update", objectType: "system", objectId: listId, objectLabel: l.name,
+      summary: `Removed ${l.object.slice(0, -1)} ${recordId} from static list` });
   },
 };
 
@@ -795,6 +921,7 @@ export function companyName(s: State, id?: ID) { return s.companies.find((c) => 
 export function evalList(s: State, list: ListDef): (Contact | Company)[] {
   const rows = list.object === "contacts" ? activeContacts(s) : activeCompanies(s);
   if (list.kind === "static") return rows.filter((r) => list.staticIds?.includes(r.id));
+  if (list.criteriaRules) return matchCriteria(rows, list.object, list.criteriaRules);
   switch (list.id) {
     case "l1": return (rows as Contact[]).filter((c) => c.state === "NC" && !!c.referralSourceType);
     case "l2": return (rows as Contact[]).filter((c) => !c.email);
@@ -803,4 +930,113 @@ export function evalList(s: State, list: ListDef): (Contact | Company)[] {
       c.lunchLearnStatus === "Not Scheduled" && (c.relationshipStrength === "Warm" || c.relationshipStrength === "Strong"));
     default: return rows;
   }
+}
+
+function matchCriteria(
+  rows: (Contact | Company)[],
+  object: "contacts" | "companies",
+  c: ListCriteria,
+): (Contact | Company)[] {
+  const olderThanMs = (iso: string | undefined, days: number) =>
+    !!iso && Date.now() - new Date(iso).getTime() >= days * 86_400_000;
+  return rows.filter((r) => {
+    const anyR = r as Contact & Company;
+    if (c.state && anyR.state !== c.state) return false;
+    if (c.companyType && object === "companies" && (r as Company).companyType !== c.companyType) return false;
+    if (c.referralSourceType && object === "contacts" && (r as Contact).referralSourceType !== c.referralSourceType) return false;
+    if (c.referralPartnerStatus && (anyR.referralPartnerStatus ?? "") !== c.referralPartnerStatus) return false;
+    if (c.relationshipTier && object === "companies" && (r as Company).relationshipTier !== c.relationshipTier) return false;
+    if (typeof c.lastContactedOlderThanDays === "number" &&
+        !olderThanMs(anyR.lastContactedDate, c.lastContactedOlderThanDays)) return false;
+    if (typeof c.referralCountGte === "number" && (anyR.referralCount ?? 0) < c.referralCountGte) return false;
+    if (c.missingEmail) {
+      const email = object === "contacts" ? (r as Contact).email : (r as Company).generalEmail;
+      if (email) return false;
+    }
+    if (c.missingPhone) {
+      const phone = object === "contacts"
+        ? ((r as Contact).phone || (r as Contact).mobilePhone)
+        : (r as Company).mainPhone;
+      if (phone) return false;
+    }
+    if (c.nextFollowUpEmpty && anyR.nextFollowUpDate) return false;
+    return true;
+  });
+}
+
+// ---------- workflow execution ----------
+function executeWorkflow(w: WorkflowDef): string {
+  const t = w.triggerType;
+  if (!t) return `Logged run (no executable trigger)`;
+
+  if (t === "no_activity_days") {
+    const days = w.triggerConfig?.days ?? 60;
+    const cutoff = Date.now() - days * 86_400_000;
+    const targets = activeCompanies(state).filter((c) =>
+      !c.lastContactedDate || new Date(c.lastContactedDate).getTime() < cutoff,
+    );
+    let created = 0;
+    for (const co of targets.slice(0, 25)) {
+      crm.addTask({
+        title: `Follow-up: ${co.name} (no activity ${days}+ days)`,
+        type: "Follow-Up", priority: "Medium", status: "Open",
+        companyId: co.id, assignedUserId: co.ownerId,
+        notes: `Auto-created by workflow "${w.name}"`,
+      });
+      created++;
+    }
+    return `${created} follow-up task${created === 1 ? "" : "s"} created`;
+  }
+
+  if (t === "lunch_learn_needed") {
+    const targets = activeCompanies(state).filter((c) =>
+      c.activeReferralPartner && c.lunchLearnStatus === "Not Scheduled",
+    );
+    let created = 0;
+    for (const co of targets.slice(0, 25)) {
+      crm.addTask({
+        title: `Schedule Lunch & Learn: ${co.name}`,
+        type: "Lunch & Learn", priority: "Medium", status: "Open",
+        companyId: co.id, assignedUserId: co.ownerId,
+        notes: `Auto-created by workflow "${w.name}"`,
+      });
+      created++;
+    }
+    return `${created} Lunch & Learn task${created === 1 ? "" : "s"} created`;
+  }
+
+  if (t === "referral_created") {
+    const cutoff = Date.now() - 30 * 86_400_000;
+    const targets = activeCompanies(state).filter((c) =>
+      c.lastReferralDate && new Date(c.lastReferralDate).getTime() >= cutoff &&
+      c.referralPartnerStatus !== "Active Referral Partner",
+    );
+    let updated = 0;
+    for (const co of targets.slice(0, 50)) {
+      crm.updateCompany(co.id, { referralPartnerStatus: "Active Referral Partner", activeReferralPartner: true });
+      logActivity({ type: "property_change", message: `Marked as Active Referral Partner via workflow "${w.name}"`, companyId: co.id });
+      updated++;
+    }
+    return `${updated} partner status update${updated === 1 ? "" : "s"}`;
+  }
+
+  if (t === "referral_count_reaches") {
+    const n = w.triggerConfig?.count ?? 10;
+    const targets = activeCompanies(state).filter((c) => (c.referralCount ?? 0) >= n);
+    let tagged = 0;
+    for (const co of targets) {
+      const tag = `${n}+ referrals`;
+      if (!co.tags.includes(tag)) {
+        crm.updateCompany(co.id, { tags: [...co.tags, tag] });
+        tagged++;
+      }
+    }
+    return `${tagged} compan${tagged === 1 ? "y" : "ies"} tagged`;
+  }
+
+  // Fallback: just log the actions list as activity entries.
+  for (const a of w.actions.slice(0, 5)) {
+    logActivity({ type: "workflow_enrollment", message: `Workflow "${w.name}": ${a}` });
+  }
+  return `Executed ${w.actions.length} action${w.actions.length === 1 ? "" : "s"}`;
 }
