@@ -37,6 +37,7 @@ import {
 import { hydrateFromSupabase, installSupabaseSync } from "@/lib/os/referralCrm/bridge";
 import { parseReferralsCsv, type ParsedCsv } from "@/lib/os/referrals/csv";
 import { importReferralRows, failedRowsToCsv } from "@/lib/os/referrals/importer";
+import { supabase } from "@/integrations/supabase/client";
 
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
