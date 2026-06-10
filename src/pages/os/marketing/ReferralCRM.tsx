@@ -1056,7 +1056,7 @@ function TasksModule() {
     toast({ title: `Updated due date on ${selected.size}` }); clear();
   };
   const bulkDelete = () => {
-    ids().forEach((id) => crm.deleteTask(id));
+    ids().forEach((id) => crm.softDeleteTask(id));
     toast({ title: `${selected.size} task(s) deleted` }); clear();
   };
   const bulkExport = () => {
@@ -1149,7 +1149,7 @@ function TasksModule() {
                     <span className={cn("text-xs tabular-nums", overdue ? "text-destructive font-medium" : "text-muted-foreground")}>
                       {fmtDate(t.dueDate)}
                     </span>
-                    <button className="text-muted-foreground hover:text-destructive" onClick={() => crm.deleteTask(t.id)}>
+                    <button className="text-muted-foreground hover:text-destructive" onClick={() => crm.softDeleteTask(t.id)}>
                       <Trash2 className="size-3.5" />
                     </button>
                   </div>
