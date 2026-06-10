@@ -330,14 +330,20 @@ const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString
 const daysAhead = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
 
 const users: CrmUser[] = [
-  { id: "u-admin", name: "Admin User", email: "admin@blossomaba.com", role: "admin" },
-  { id: "u-mkt", name: "Marketing Director", email: "marketing@blossomaba.com", role: "marketing_director" },
-  { id: "u-nc", name: "NC Outreach Rep", email: "nc.outreach@blossomaba.com", role: "outreach_rep", state: "NC" },
-  { id: "u-va", name: "VA Outreach Rep", email: "va.outreach@blossomaba.com", role: "outreach_rep", state: "VA" },
-  { id: "u-ga", name: "GA Outreach Rep", email: "ga.outreach@blossomaba.com", role: "outreach_rep", state: "GA" },
-  { id: "u-tn", name: "TN Outreach Rep", email: "tn.outreach@blossomaba.com", role: "outreach_rep", state: "TN" },
-  { id: "u-md", name: "MD Outreach Rep", email: "md.outreach@blossomaba.com", role: "outreach_rep", state: "MD" },
-  { id: "u-intake", name: "Intake Team User", email: "intake@blossomaba.com", role: "intake" },
+  { id: "u-admin", name: "Admin User", firstName: "Admin", lastName: "User", email: "admin@blossomaba.com", role: "admin", active: true, states: [], teamIds: [] },
+  { id: "u-mkt", name: "Marketing Director", firstName: "Marketing", lastName: "Director", email: "marketing@blossomaba.com", role: "marketing_director", active: true, states: [], teamIds: [] },
+  { id: "u-nc", name: "NC Outreach Rep", firstName: "NC", lastName: "Outreach", email: "nc.outreach@blossomaba.com", role: "outreach_rep", state: "NC", states: ["NC"], active: true, teamIds: [] },
+  { id: "u-va", name: "VA Outreach Rep", firstName: "VA", lastName: "Outreach", email: "va.outreach@blossomaba.com", role: "outreach_rep", state: "VA", states: ["VA"], active: true, teamIds: [] },
+  { id: "u-ga", name: "GA Outreach Rep", firstName: "GA", lastName: "Outreach", email: "ga.outreach@blossomaba.com", role: "outreach_rep", state: "GA", states: ["GA"], active: true, teamIds: [] },
+  { id: "u-tn", name: "TN Outreach Rep", firstName: "TN", lastName: "Outreach", email: "tn.outreach@blossomaba.com", role: "outreach_rep", state: "TN", states: ["TN"], active: true, teamIds: [] },
+  { id: "u-md", name: "MD Outreach Rep", firstName: "MD", lastName: "Outreach", email: "md.outreach@blossomaba.com", role: "outreach_rep", state: "MD", states: ["MD"], active: true, teamIds: [] },
+  { id: "u-intake", name: "Intake Team User", firstName: "Intake", lastName: "Team", email: "intake@blossomaba.com", role: "intake", active: true, states: [], teamIds: [] },
+];
+
+const teams: CrmTeam[] = [
+  { id: "tm-mkt", name: "Marketing HQ", type: "Marketing", states: [], memberIds: ["u-mkt", "u-admin"], leadId: "u-mkt", active: true, createdAt: now(), updatedAt: now() },
+  { id: "tm-outreach", name: "Field Outreach", type: "Outreach", states: ["NC","VA","GA","TN","MD"], memberIds: ["u-nc","u-va","u-ga","u-tn","u-md"], leadId: "u-mkt", active: true, createdAt: now(), updatedAt: now() },
+  { id: "tm-intake", name: "Central Intake", type: "Intake", states: [], memberIds: ["u-intake"], leadId: "u-intake", active: true, createdAt: now(), updatedAt: now() },
 ];
 
 const companies: Company[] = [
