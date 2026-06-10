@@ -324,7 +324,6 @@ import MarketingLeadSources from "./pages/os/marketing/LeadSources";
 import MarketingSEO from "./pages/os/marketing/SEOContent";
 import MarketingWebAnalytics from "./pages/os/marketing/WebAnalytics";
 import MarketingCallTracking from "./pages/os/marketing/CallTracking";
-import MarketingReferrals from "./pages/os/marketing/Referrals";
 import ReferralCRM from "./pages/os/marketing/ReferralCRM";
 import MarketingRecruiting from "./pages/os/marketing/RecruitingMarketing";
 import MarketingOutreach from "./pages/os/marketing/CommunityOutreach";
@@ -719,7 +718,8 @@ const App = () => (
                   <Route path="/marketing/web-analytics" element={<MarketingWebAnalytics />} />
                   <Route path="/marketing/call-tracking" element={<MarketingCallTracking />} />
                   {/* Relationships routes — Marketing + Super Admin only */}
-                  <Route path="/marketing/referrals" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingReferrals /></PermissionRoute>} />
+                  {/* Old standalone Referrals page is retired — redirect to the unified CRM. */}
+                  <Route path="/marketing/referrals" element={<Navigate to="/marketing/referral-crm" replace />} />
                   <Route path="/marketing/referral-crm" element={<PermissionRoute allowedRoles={["marketing"]}><ReferralCRM /></PermissionRoute>} />
                   <Route path="/marketing/recruiting" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingRecruiting /></PermissionRoute>} />
                   <Route path="/marketing/outreach" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingOutreach /></PermissionRoute>} />
