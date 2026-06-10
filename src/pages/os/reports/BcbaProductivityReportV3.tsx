@@ -229,6 +229,7 @@ export default function BcbaProductivityReportV3() {
       const provNameH = findH(h, ["Provider", "Provider Name", "RenderingProvider", "Rendering Provider"]);
       const stateH = findH(h, ["ClientLocationStateProvince", "ServiceLocationStateProvince", "State"]);
       const payorH = findH(h, ["PayorNickname", "PayorName", "Payor Name", "Payor", "Payer", "Insurance"]);
+      const provLabelsH = findH(h, ["ProviderContactLabels", "Provider Contact Labels", "ProviderLabels", "Provider Labels"]);
 
       const miss: string[] = [];
       if (!clientNameH && !(cliFirstH || cliLastH)) miss.push("Client name");
@@ -274,6 +275,7 @@ export default function BcbaProductivityReportV3() {
           clientName,
           rbt: isRbt97153(code) ? renderingProvider : "",
           renderingProvider,
+          providerLabels: (provLabelsH ? String(r[provLabelsH] ?? "") : "").trim(),
           code,
           hours,
           date: dos,
