@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   Upload, FileSpreadsheet, Download, Search, ChevronRight, ChevronDown,
   Stethoscope, Plus, Trash2, Save, History, ArrowLeftRight, X, Pencil, Database, AlertTriangle,
+  UserPlus, RefreshCw,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -10,14 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
 import {
-  readAssignmentsV3, addAssignmentV3, updateAssignmentV3, deleteAssignmentV3,
+  readAssignmentsV3, loadAssignmentsV3, addAssignmentV3, updateAssignmentV3, deleteAssignmentV3,
   ownerForClientAtDateV3, deriveTransfersV3, readSavedReportsV3, saveReportV3,
   getSavedReportRowsV3, deleteSavedReportV3, saveLastBillingV3, loadLastBillingV3,
-  findDuplicateSavedV3, normalizeName, bulkReplaceAssignmentsV3,
+  findDuplicateSavedV3, normalizeName, bulkInsertAssignmentsV3,
   type BcbaAssignmentV3,
 } from "@/lib/os/bcbaProductivityV3/store";
 
