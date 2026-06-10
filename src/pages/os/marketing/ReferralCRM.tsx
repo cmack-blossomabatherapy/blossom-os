@@ -344,7 +344,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
           </SelectContent>
         </Select>
         <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" onClick={() => setCreating(true)}>
+        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
           <Plus className="size-3.5" /> New Contact
         </Button>
       </div>
@@ -390,7 +390,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
           }}>
             <Download className="size-3 mr-1" /> Export
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
         </div>
@@ -574,7 +574,7 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies…" className="pl-8 h-9 text-sm" />
         </div>
         <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Company</Button>
+        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Company</Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
@@ -615,10 +615,10 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={() => setBulkTaskOpen(true)}>
             <ListChecks className="size-3 mr-1" /> Create task
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkExport}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "export")} onClick={bulkExport}>
             <Download className="size-3 mr-1" /> Export
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
         </div>
@@ -821,7 +821,7 @@ function ReferralsModule() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button size="sm" className="h-9 gap-1.5" onClick={() => setCreating(true)}>
+        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
           <Plus className="size-3.5" /> New Referral
         </Button>
       </div>
@@ -845,10 +845,10 @@ function ReferralsModule() {
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={() => setBulkTaskOpen(true)}>
             <ListChecks className="size-3 mr-1" /> Create task
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkExport}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "export")} onClick={bulkExport}>
             <Download className="size-3 mr-1" /> Export
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
         </div>
@@ -1060,7 +1060,7 @@ function TasksModule() {
           <Checkbox checked={allChecked} onCheckedChange={toggleAll} /> Select all
         </label>
         <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Task</Button>
+        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Task</Button>
       </div>
 
       {selected.size > 0 && (
@@ -1082,10 +1082,10 @@ function TasksModule() {
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDueDate}>
             <Calendar className="size-3 mr-1" /> Due date
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkExport}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "export")} onClick={bulkExport}>
             <Download className="size-3 mr-1" /> Export
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
         </div>
