@@ -13,7 +13,91 @@ export interface CrmUser {
   email: string;
   role: "admin" | "marketing_director" | "outreach_rep" | "intake" | "state_director" | "read_only";
   state?: string;
+  firstName?: string;
+  lastName?: string;
+  mobilePhone?: string;
+  states?: string[];
+  teamIds?: ID[];
+  active?: boolean;
 }
+
+export type CrmRole = CrmUser["role"];
+
+export type CrmPermission =
+  | "view"
+  | "create"
+  | "edit"
+  | "delete"
+  | "import"
+  | "export"
+  | "manage_workflows"
+  | "manage_lists"
+  | "manage_users";
+
+export const CRM_PERMISSIONS: { id: CrmPermission; label: string }[] = [
+  { id: "view", label: "View" },
+  { id: "create", label: "Create" },
+  { id: "edit", label: "Edit" },
+  { id: "delete", label: "Delete" },
+  { id: "import", label: "Import" },
+  { id: "export", label: "Export" },
+  { id: "manage_workflows", label: "Workflows" },
+  { id: "manage_lists", label: "Lists" },
+  { id: "manage_users", label: "Users & Permissions" },
+];
+
+export const CRM_ROLES: { id: CrmRole; label: string }[] = [
+  { id: "admin", label: "Admin" },
+  { id: "marketing_director", label: "Marketing Director" },
+  { id: "outreach_rep", label: "Outreach Rep" },
+  { id: "intake", label: "Intake Team" },
+  { id: "state_director", label: "State Director" },
+  { id: "read_only", label: "Read Only" },
+];
+
+export const TEAM_TYPES = ["Marketing", "Outreach", "Intake", "State Leadership", "Admin"] as const;
+export type TeamType = (typeof TEAM_TYPES)[number];
+
+export interface CrmTeam {
+  id: ID;
+  name: string;
+  type: TeamType;
+  states: string[];
+  memberIds: ID[];
+  leadId?: ID;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PermissionMatrix = Record<CrmRole, Record<CrmPermission, boolean>>;
+
+export const DEFAULT_PERMISSIONS: PermissionMatrix = {
+  admin: {
+    view: true, create: true, edit: true, delete: true, import: true, export: true,
+    manage_workflows: true, manage_lists: true, manage_users: true,
+  },
+  marketing_director: {
+    view: true, create: true, edit: true, delete: true, import: true, export: true,
+    manage_workflows: true, manage_lists: true, manage_users: false,
+  },
+  outreach_rep: {
+    view: true, create: true, edit: true, delete: false, import: false, export: true,
+    manage_workflows: false, manage_lists: false, manage_users: false,
+  },
+  intake: {
+    view: true, create: true, edit: true, delete: false, import: false, export: false,
+    manage_workflows: false, manage_lists: false, manage_users: false,
+  },
+  state_director: {
+    view: true, create: false, edit: false, delete: false, import: false, export: true,
+    manage_workflows: false, manage_lists: false, manage_users: false,
+  },
+  read_only: {
+    view: true, create: false, edit: false, delete: false, import: false, export: false,
+    manage_workflows: false, manage_lists: false, manage_users: false,
+  },
+};
 
 export interface Contact {
   id: ID;
