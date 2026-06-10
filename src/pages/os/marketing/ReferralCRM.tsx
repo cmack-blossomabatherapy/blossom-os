@@ -25,6 +25,10 @@ import {
   type Contact, type Company, type Referral, type Task, type ID,
   type ActivityEvent, type Attachment,
 } from "@/lib/os/referralCrm/store";
+import {
+  WORKFLOW_TRIGGERS, WORKFLOW_ACTIONS,
+  type ListCriteria, type WorkflowTrigger,
+} from "@/lib/os/referralCrm/store";
 
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
