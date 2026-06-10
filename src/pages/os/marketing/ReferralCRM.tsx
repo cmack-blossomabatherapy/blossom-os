@@ -779,7 +779,7 @@ function ReferralsModule() {
   const [logId, setLogId] = useState<ID | null>(null);
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
-  const rows = activeReferrals(s);
+  const rows = scopedReferrals(s);
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
