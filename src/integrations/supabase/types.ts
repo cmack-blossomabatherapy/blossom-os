@@ -1360,6 +1360,42 @@ export type Database = {
           },
         ]
       }
+      bcba_assignment_history: {
+        Row: {
+          bcba_name: string
+          client_id: string | null
+          client_name: string
+          created_at: string
+          end_date: string | null
+          id: string
+          note: string | null
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          bcba_name: string
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          note?: string | null
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          bcba_name?: string
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          note?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bcba_billable_imports: {
         Row: {
           filename: string | null
