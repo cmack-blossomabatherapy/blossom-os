@@ -693,6 +693,10 @@ export interface CrmSideEffects {
   onTaskCreate?: (t: Task) => void;
   onTaskUpdate?: (id: ID, patch: Partial<Task>, full: Task | undefined) => void;
   onTaskDelete?: (id: ID, hard: boolean) => void;
+  onAttachmentCreate?: (a: Attachment) => void;
+  onAttachmentUpdate?: (id: ID, patch: Partial<Attachment>, full: Attachment | undefined) => void;
+  onAttachmentDelete?: (id: ID, hard: boolean, full: Attachment | undefined) => void;
+  onAuditCreate?: (e: AuditLogEntry) => void;
 }
 let sideEffects: CrmSideEffects = {};
 export function setCrmSideEffects(se: CrmSideEffects) { sideEffects = se ?? {}; }
