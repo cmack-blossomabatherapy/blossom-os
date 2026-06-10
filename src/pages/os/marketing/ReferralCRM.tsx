@@ -103,10 +103,10 @@ function daysSince(d?: string) {
 // ===========================================================
 function DashboardModule() {
   const s = useCrm();
-  const ct = activeContacts(s);
-  const co = activeCompanies(s);
-  const rf = activeReferrals(s);
-  const openTasks = s.tasks.filter((t) => t.status !== "Completed");
+  const ct = scopedContacts(s);
+  const co = scopedCompanies(s);
+  const rf = scopedReferrals(s);
+  const openTasks = scopedTasks(s).filter((t) => t.status !== "Completed");
   const overdue = openTasks.filter((t) => t.dueDate && new Date(t.dueDate).getTime() < Date.now());
   const activePartners = co.filter((c) => c.activeReferralPartner).length;
   const inactive60 = co.filter((c) => daysSince(c.lastContactedDate) > 60);
