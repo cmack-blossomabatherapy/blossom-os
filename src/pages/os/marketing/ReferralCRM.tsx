@@ -272,6 +272,22 @@ function StateBars({ title, rows }: { title: string; rows: { st: string; count: 
 // ===========================================================
 // Contacts
 // ===========================================================
+type SortState = { key: string; dir: "asc" | "desc" };
+function SortTh({ label, k, sort, onSort, align = "left" }:
+  { label: string; k: string; sort: SortState; onSort: (k: string) => void; align?: "left" | "right" }) {
+  const active = sort.key === k;
+  const Icon = active ? (sort.dir === "asc" ? ArrowUp : ArrowDown) : ChevronsUpDown;
+  return (
+    <th className={cn("px-3 py-2 font-medium", align === "right" ? "text-right" : "text-left")}>
+      <button type="button" onClick={() => onSort(k)}
+        className={cn("inline-flex items-center gap-1 hover:text-foreground", active && "text-foreground", align === "right" && "ml-auto")}>
+        <span>{label}</span>
+        <Icon className="size-3" />
+      </button>
+    </th>
+  );
+}
+
 const CONTACT_VIEWS = [
   { id: "all", label: "All Contacts" },
   { id: "nc", label: "NC Referral Sources" },
