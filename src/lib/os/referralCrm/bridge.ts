@@ -233,6 +233,49 @@ function taskFromRow(r: CrmTaskRow): Task {
   };
 }
 
+function attachmentFromRow(r: CrmAttachmentRow): Attachment {
+  const ot = (["contact","company","referral","task","activity","general"].includes(r.object_type)
+    ? r.object_type : "general") as Attachment["objectType"];
+  return {
+    id: r.id,
+    fileName: r.file_name,
+    fileType: r.file_type ?? undefined,
+    mimeType: r.file_type ?? undefined,
+    sizeBytes: r.file_size ?? undefined,
+    objectType: ot,
+    objectId: r.object_id,
+    uploadedByUserId: r.uploaded_by ?? undefined,
+    uploadedByName: r.uploaded_by_name ?? undefined,
+    uploadedAt: r.uploaded_at ?? r.created_at ?? new Date().toISOString(),
+    category: (r.category as Attachment["category"]) ?? undefined,
+    notes: r.notes ?? undefined,
+    storageBucket: r.storage_bucket ?? REFERRAL_CRM_BUCKET,
+    storagePath: r.storage_path,
+    archivedAt: r.archived_at ?? undefined,
+  };
+}
+
+function auditFromRow(r: CrmAuditRow): AuditLogEntry {
+  const allowedActions = new Set([
+    "create","update","delete","restore","merge","import","export",
+    "workflow_toggle","workflow_run","attachment_added","attachment_removed",
+    "field_added","field_removed",
+  ]);
+  const allowedObjs = new Set([
+    "contact","company","referral","task","workflow","attachment","field","system",
+  ]);
+  return {
+    id: r.id,
+    at: r.created_at,
+    userId: r.actor_user_id ?? undefined,
+    actor: r.actor_name ?? "System",
+    action: (allowedActions.has(r.action) ? r.action : "update") as AuditLogEntry["action"],
+    objectType: (allowedObjs.has(r.object_type) ? r.object_type : "system") as AuditLogEntry["objectType"],
+    objectId: r.object_id ?? undefined,
+    objectLabel: r.object_label ?? undefined,
+    summary: r.summary ?? r.action,
+  };
+}
 /* ---------------- hydrate ---------------- */
 
 // Tracks IDs that originated in Supabase. Locally-generated IDs (random base36)
