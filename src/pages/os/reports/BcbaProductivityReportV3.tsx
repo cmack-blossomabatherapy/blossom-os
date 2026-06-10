@@ -22,6 +22,7 @@ import {
   findDuplicateSavedV3, normalizeName, bulkInsertAssignmentsV3,
   type BcbaAssignmentV3,
 } from "@/lib/os/bcbaProductivityV3/store";
+import { inferAssignmentHistory, type OwnershipConflict } from "@/lib/os/bcbaProductivityV3/inferAssignments";
 
 /* ----- helpers ----- */
 const normH = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -61,6 +62,7 @@ interface BillingRow {
   clientName: string;
   rbt: string; // rendering provider for 97153 rows
   renderingProvider: string;
+  providerLabels: string;
   code: string;
   hours: number;
   date: string; // ISO
