@@ -575,10 +575,16 @@ interface State {
   attachments: Attachment[];
   auditLog: AuditLogEntry[];
   customFields: CustomFieldDef[];
+  teams: CrmTeam[];
+  permissions: PermissionMatrix;
+  currentUserId: ID;
 }
 
 let state: State = {
   users, contacts, companies, referrals, tasks, activity, workflows, lists,
+  teams,
+  permissions: DEFAULT_PERMISSIONS,
+  currentUserId: "u-admin",
   attachments: [
     { id: "att-1", fileName: "Bright Path - Lunch & Learn slides.pdf", mimeType: "application/pdf", sizeBytes: 482_113,
       objectType: "company", objectId: "c-bright", uploadedByUserId: "u-nc",
