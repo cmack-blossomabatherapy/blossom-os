@@ -333,12 +333,17 @@ export interface Attachment {
   fileName: string;
   mimeType?: string;
   sizeBytes?: number;
-  objectType: "contact" | "company" | "referral";
+  objectType: "contact" | "company" | "referral" | "task" | "activity" | "general";
   objectId: ID;
   uploadedByUserId?: ID;
+  uploadedByName?: string;
   uploadedAt: string;
   category?: "Lunch & Learn" | "Insurance" | "Outreach" | "Welcome Packet" | "Other";
   notes?: string;
+  storageBucket?: string;
+  storagePath?: string;
+  fileType?: string;
+  archivedAt?: string;
 }
 
 export interface AuditLogEntry {
@@ -688,6 +693,10 @@ export interface CrmSideEffects {
   onTaskCreate?: (t: Task) => void;
   onTaskUpdate?: (id: ID, patch: Partial<Task>, full: Task | undefined) => void;
   onTaskDelete?: (id: ID, hard: boolean) => void;
+  onAttachmentCreate?: (a: Attachment) => void;
+  onAttachmentUpdate?: (id: ID, patch: Partial<Attachment>, full: Attachment | undefined) => void;
+  onAttachmentDelete?: (id: ID, hard: boolean, full: Attachment | undefined) => void;
+  onAuditCreate?: (e: AuditLogEntry) => void;
 }
 let sideEffects: CrmSideEffects = {};
 export function setCrmSideEffects(se: CrmSideEffects) { sideEffects = se ?? {}; }
@@ -705,6 +714,8 @@ export function replaceCrmData(input: {
   importBatches?: ImportBatch[];
   referrals?: Referral[];
   tasks?: Task[];
+  attachments?: Attachment[];
+  auditLog?: AuditLogEntry[];
 }) {
   set({
     ...(input.contacts ? { contacts: input.contacts } : {}),
@@ -713,6 +724,8 @@ export function replaceCrmData(input: {
     ...(input.importBatches ? { importBatches: input.importBatches } : {}),
     ...(input.referrals ? { referrals: input.referrals } : {}),
     ...(input.tasks ? { tasks: input.tasks } : {}),
+    ...(input.attachments ? { attachments: input.attachments } : {}),
+    ...(input.auditLog ? { auditLog: input.auditLog } : {}),
   });
 }
 
@@ -730,6 +743,7 @@ function logAudit(entry: Omit<AuditLogEntry, "id" | "at" | "actor"> & { actor?: 
   const actor = entry.actor ?? (entry.userId ? state.users.find((u) => u.id === entry.userId)?.name ?? "System" : "Current User");
   const row: AuditLogEntry = { id: newId(), at: now(), actor, ...entry };
   set({ auditLog: [row, ...state.auditLog].slice(0, 500) });
+  fire("onAuditCreate", row);
 }
 
 // ---------- mutators ----------
@@ -1022,12 +1036,36 @@ export const crm = {
     });
     logAudit({ action: "attachment_added", objectType: "attachment", objectId: a.id,
       objectLabel: a.fileName, summary: `Attached to ${a.objectType} ${a.objectId}` });
+    fire("onAttachmentCreate", a);
     return a;
+  },
+  updateAttachment(id: ID, patch: Partial<Attachment>) {
+    const before = state.attachments.find((x) => x.id === id);
+    if (!before) return;
+    const next = { ...before, ...patch };
+    set({ attachments: state.attachments.map((x) => (x.id === id ? next : x)) });
+    fire("onAttachmentUpdate", id, patch, next);
+  },
+  archiveAttachment(id: ID) {
+    const a = state.attachments.find((x) => x.id === id);
+    if (!a) return;
+    const archivedAt = now();
+    set({ attachments: state.attachments.map((x) => (x.id === id ? { ...x, archivedAt } : x)) });
+    logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment archived" });
+    fire("onAttachmentUpdate", id, { archivedAt }, { ...a, archivedAt });
+  },
+  restoreAttachment(id: ID) {
+    const a = state.attachments.find((x) => x.id === id);
+    if (!a) return;
+    set({ attachments: state.attachments.map((x) => (x.id === id ? { ...x, archivedAt: undefined } : x)) });
+    logAudit({ action: "restore", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment restored" });
+    fire("onAttachmentUpdate", id, { archivedAt: undefined }, { ...a, archivedAt: undefined });
   },
   removeAttachment(id: ID) {
     const a = state.attachments.find((x) => x.id === id);
     set({ attachments: state.attachments.filter((x) => x.id !== id) });
     if (a) logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment removed" });
+    fire("onAttachmentDelete", id, true, a);
   },
 
   // custom fields

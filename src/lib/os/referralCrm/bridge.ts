@@ -22,6 +22,8 @@ import {
   type ImportBatch,
   type Referral,
   type Task,
+  type Attachment,
+  type AuditLogEntry,
   type ID,
 } from "./store";
 import type {
@@ -35,6 +37,10 @@ import type { Database } from "@/integrations/supabase/types";
 type CrmReferralRow = Database["public"]["Tables"]["referral_crm_referrals"]["Row"];
 type CrmTaskRow = Database["public"]["Tables"]["referral_crm_tasks"]["Row"];
 type LeadLinkRow = Database["public"]["Tables"]["referral_lead_links"]["Row"];
+type CrmAttachmentRow = Database["public"]["Tables"]["referral_crm_attachments"]["Row"];
+type CrmAuditRow = Database["public"]["Tables"]["referral_crm_audit_log"]["Row"];
+
+const REFERRAL_CRM_BUCKET = "referral-crm-files";
 
 /* ---------------- mapping: Supabase → CRM ---------------- */
 
@@ -227,6 +233,49 @@ function taskFromRow(r: CrmTaskRow): Task {
   };
 }
 
+function attachmentFromRow(r: CrmAttachmentRow): Attachment {
+  const ot = (["contact","company","referral","task","activity","general"].includes(r.object_type)
+    ? r.object_type : "general") as Attachment["objectType"];
+  return {
+    id: r.id,
+    fileName: r.file_name,
+    fileType: r.file_type ?? undefined,
+    mimeType: r.file_type ?? undefined,
+    sizeBytes: r.file_size ?? undefined,
+    objectType: ot,
+    objectId: r.object_id,
+    uploadedByUserId: r.uploaded_by ?? undefined,
+    uploadedByName: r.uploaded_by_name ?? undefined,
+    uploadedAt: r.uploaded_at ?? r.created_at ?? new Date().toISOString(),
+    category: (r.category as Attachment["category"]) ?? undefined,
+    notes: r.notes ?? undefined,
+    storageBucket: r.storage_bucket ?? REFERRAL_CRM_BUCKET,
+    storagePath: r.storage_path,
+    archivedAt: r.archived_at ?? undefined,
+  };
+}
+
+function auditFromRow(r: CrmAuditRow): AuditLogEntry {
+  const allowedActions = new Set([
+    "create","update","delete","restore","merge","import","export",
+    "workflow_toggle","workflow_run","attachment_added","attachment_removed",
+    "field_added","field_removed",
+  ]);
+  const allowedObjs = new Set([
+    "contact","company","referral","task","workflow","attachment","field","system",
+  ]);
+  return {
+    id: r.id,
+    at: r.created_at,
+    userId: r.actor_user_id ?? undefined,
+    actor: r.actor_name ?? "System",
+    action: (allowedActions.has(r.action) ? r.action : "update") as AuditLogEntry["action"],
+    objectType: (allowedObjs.has(r.object_type) ? r.object_type : "system") as AuditLogEntry["objectType"],
+    objectId: r.object_id ?? undefined,
+    objectLabel: r.object_label ?? undefined,
+    summary: r.summary ?? r.action,
+  };
+}
 /* ---------------- hydrate ---------------- */
 
 // Tracks IDs that originated in Supabase. Locally-generated IDs (random base36)
@@ -242,9 +291,10 @@ function isPersisted(id: ID): boolean {
 
 export async function hydrateFromSupabase(): Promise<{
   contacts: number; companies: number; activities: number; importBatches: number; referrals: number; tasks: number;
+  attachments: number; auditEntries: number;
   missing: string[];
 }> {
-  const [comp, cont, act, batches, crmRefs, leadLinks, crmTasks] = await Promise.all([
+  const [comp, cont, act, batches, crmRefs, leadLinks, crmTasks, atts, auditRows] = await Promise.all([
     supabase.from("referral_companies").select("*").order("company_name"),
     supabase.from("referral_contacts").select("*").order("updated_at", { ascending: false }),
     supabase.from("referral_activities").select("*").order("activity_date", { ascending: false }).limit(500),
@@ -252,6 +302,8 @@ export async function hydrateFromSupabase(): Promise<{
     supabase.from("referral_crm_referrals").select("*").order("referral_date", { ascending: false }).limit(1000),
     supabase.from("referral_lead_links").select("*").order("referral_date", { ascending: false }).limit(1000),
     supabase.from("referral_crm_tasks").select("*").order("created_at", { ascending: false }).limit(1000),
+    supabase.from("referral_crm_attachments").select("*").order("uploaded_at", { ascending: false }).limit(1000),
+    supabase.from("referral_crm_audit_log").select("*").order("created_at", { ascending: false }).limit(500),
   ]);
   if (comp.error) throw comp.error;
   if (cont.error) throw cont.error;
@@ -264,16 +316,22 @@ export async function hydrateFromSupabase(): Promise<{
   const legacyReferrals = leadLinks.error ? [] : (leadLinks.data ?? []).map(referralFromLeadLinkRow);
   const referrals = [...crmReferrals, ...legacyReferrals];
   const tasks = crmTasks.error ? [] : (crmTasks.data ?? []).map(taskFromRow);
+  const attachments = atts.error ? [] : (atts.data ?? []).map(attachmentFromRow);
+  const auditLog = auditRows.error ? [] : (auditRows.data ?? []).map(auditFromRow);
   const missing: string[] = [];
   if (crmRefs.error) { console.warn("[crm bridge] referral_crm_referrals unavailable", crmRefs.error); missing.push("referral_crm_referrals"); }
   if (crmTasks.error) { console.warn("[crm bridge] referral_crm_tasks unavailable", crmTasks.error); missing.push("referral_crm_tasks"); }
+  if (atts.error) { console.warn("[crm bridge] referral_crm_attachments unavailable", atts.error); missing.push("referral_crm_attachments"); }
+  if (auditRows.error) { console.warn("[crm bridge] referral_crm_audit_log unavailable", auditRows.error); missing.push("referral_crm_audit_log"); }
   knownIds.clear();
   for (const r of companies) knownIds.add(r.id);
   for (const r of contacts) knownIds.add(r.id);
   for (const r of crmReferrals) knownIds.add(r.id);
   for (const r of legacyReferrals) knownIds.add(r.id);
   for (const r of tasks) knownIds.add(r.id);
-  replaceCrmData({ companies, contacts, activity: activities, importBatches, referrals, tasks });
+  for (const r of attachments) knownIds.add(r.id);
+  for (const r of auditLog) knownIds.add(r.id);
+  replaceCrmData({ companies, contacts, activity: activities, importBatches, referrals, tasks, attachments, auditLog });
   return {
     contacts: contacts.length,
     companies: companies.length,
@@ -281,6 +339,8 @@ export async function hydrateFromSupabase(): Promise<{
     importBatches: importBatches.length,
     referrals: referrals.length,
     tasks: tasks.length,
+    attachments: attachments.length,
+    auditEntries: auditLog.length,
     missing,
   };
 }
@@ -625,6 +685,65 @@ export function installSupabaseSync() {
         if (error) console.warn("[crm bridge] task archive failed", error);
       }
       scheduleRehydrate();
+    },
+    onAttachmentCreate: async (a) => {
+      if (!a.storagePath) {
+        // No backing storage path — can't persist meaningfully.
+        return;
+      }
+      const payload = {
+        id: isPersisted(a.id) ? a.id : undefined,
+        object_type: a.objectType,
+        object_id: a.objectId,
+        file_name: a.fileName,
+        file_type: a.fileType ?? a.mimeType ?? null,
+        file_size: a.sizeBytes ?? null,
+        category: a.category ?? null,
+        storage_bucket: a.storageBucket ?? REFERRAL_CRM_BUCKET,
+        storage_path: a.storagePath,
+        uploaded_by_name: a.uploadedByName ?? null,
+        uploaded_at: a.uploadedAt,
+        notes: a.notes ?? null,
+      };
+      const { error } = await supabase.from("referral_crm_attachments").insert(payload as never);
+      if (error) { console.warn("[crm bridge] attachment insert failed", error); return; }
+      scheduleRehydrate();
+    },
+    onAttachmentUpdate: async (id, patch) => {
+      if (!isPersisted(id)) return;
+      const out: Record<string, unknown> = {};
+      if ("fileName" in patch) out.file_name = patch.fileName;
+      if ("category" in patch) out.category = patch.category ?? null;
+      if ("notes" in patch) out.notes = patch.notes ?? null;
+      if ("archivedAt" in patch) out.archived_at = patch.archivedAt ?? null;
+      if (Object.keys(out).length === 0) return;
+      const { error } = await supabase.from("referral_crm_attachments").update(out as never).eq("id", id);
+      if (error) console.warn("[crm bridge] attachment update failed", error);
+    },
+    onAttachmentDelete: async (id, _hard, full) => {
+      if (!isPersisted(id)) return;
+      const { error } = await supabase.from("referral_crm_attachments").delete().eq("id", id);
+      if (error) console.warn("[crm bridge] attachment delete failed", error);
+      if (full?.storagePath) {
+        const bucket = full.storageBucket ?? REFERRAL_CRM_BUCKET;
+        const { error: sErr } = await supabase.storage.from(bucket).remove([full.storagePath]);
+        if (sErr) console.warn("[crm bridge] attachment storage delete failed", sErr);
+      }
+    },
+    onAuditCreate: async (e) => {
+      // Don't echo entries that were just hydrated from Supabase (uuid ids).
+      if (isUuid(e.id)) return;
+      const payload = {
+        actor_user_id: null,
+        actor_name: e.actor ?? null,
+        action: e.action,
+        object_type: e.objectType,
+        object_id: e.objectId ?? null,
+        object_label: e.objectLabel ?? null,
+        summary: e.summary ?? null,
+      };
+      const { error } = await supabase.from("referral_crm_audit_log").insert(payload as never);
+      if (error) console.warn("[crm bridge] audit insert failed", error);
     },
   });
 }
