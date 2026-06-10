@@ -722,6 +722,9 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "export")} onClick={bulkExport}>
             <Download className="size-3 mr-1" /> Export
           </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkResetReferrals}>
+            <RotateCcw className="size-3 mr-1" /> Reset referrals
+          </Button>
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
@@ -734,13 +737,13 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
             <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="w-10 px-3 py-2"><Checkbox checked={allChecked} onCheckedChange={toggleAll} /></th>
-                <th className="text-left px-3 py-2 font-medium">Company</th>
-                <th className="text-left px-3 py-2 font-medium">Type</th>
-                <th className="text-left px-3 py-2 font-medium">State</th>
-                <th className="text-left px-3 py-2 font-medium">Tier</th>
-                <th className="text-left px-3 py-2 font-medium">Owner</th>
-                <th className="text-right px-3 py-2 font-medium">YTD</th>
-                <th className="text-left px-3 py-2 font-medium">Last Referral</th>
+                <SortTh label="Company" k="name" sort={sort} onSort={toggleSort} />
+                <SortTh label="Type" k="type" sort={sort} onSort={toggleSort} />
+                <SortTh label="State" k="state" sort={sort} onSort={toggleSort} />
+                <SortTh label="Tier" k="tier" sort={sort} onSort={toggleSort} />
+                <SortTh label="Owner" k="owner" sort={sort} onSort={toggleSort} />
+                <SortTh label="YTD" k="ytd" sort={sort} onSort={toggleSort} align="right" />
+                <SortTh label="Last Referral" k="last" sort={sort} onSort={toggleSort} />
               </tr>
             </thead>
             <tbody>
