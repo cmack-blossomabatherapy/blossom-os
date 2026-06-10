@@ -650,7 +650,13 @@ export default function BcbaProductivityReportV3() {
               </div>
               <div className="text-xs text-muted-foreground">
                 {rows.length > 0
-                  ? `${rows.length.toLocaleString()} rows accepted · ${assignments.length ? "ownership resolved via Assignment History" : "Assignment History setup required"}`
+                  ? `${rows.length.toLocaleString()} rows accepted · ${
+                      assignments.length
+                        ? "ownership resolved via saved Assignment History"
+                        : usingInferred
+                          ? `ownership inferred from this billing report (${inferred.assignments.length} assignments, ${inferred.uniqueBcbas} BCBAs)`
+                          : "Assignment History setup required"
+                    }`
                   : "Drag a file here, or click choose."}
               </div>
               {missingCols.length > 0 && (
