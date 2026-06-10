@@ -130,6 +130,18 @@ export interface Contact {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+  // ---- Original imported / Supabase-only fields, preserved through hydrate + write-back ----
+  directPhone?: string;
+  contactOwner?: string;
+  numberOfSalesActivities?: number;
+  numberOfTimesContacted?: number;
+  originalRecordId?: string;
+  importBatchId?: string;
+  recentEmailOpenedAt?: string;
+  lastMeetingBookedAt?: string;
+  source?: string;
+  fullAddress?: string;
+  websiteUrl?: string;
 }
 
 export interface Company {
@@ -161,6 +173,30 @@ export interface Company {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+  // ---- Original imported / Supabase-only fields, preserved through hydrate + write-back ----
+  domain?: string;
+  serviceArea?: string;
+  relationshipOwner?: string[];
+  importBatchId?: string;
+  source?: string;
+  normalizedName?: string;
+  fullAddress?: string;
+  websiteUrl?: string;
+  mainEmail?: string;
+}
+
+/** Hydrated row from referral_import_batches — surfaced as Import History in the CRM UI. */
+export interface ImportBatch {
+  id: ID;
+  fileName: string;
+  uploadedAt: string;
+  uploadedBy?: string;
+  totalRows: number;
+  successfulRows: number;
+  failedRows: number;
+  duplicateContacts: number;
+  duplicateCompanies: number;
+  status: string;
 }
 
 export interface Referral {
