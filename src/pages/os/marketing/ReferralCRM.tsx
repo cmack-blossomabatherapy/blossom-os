@@ -775,6 +775,12 @@ function BulkCreateTaskDialog({
 // ===========================================================
 // Referrals
 // ===========================================================
+function partitionLegacy(rows: Referral[], selectedIds: ID[]): { nativeIds: ID[]; skipped: number } {
+  const legacySet = new Set(rows.filter((r) => r.isLegacyLeadLink).map((r) => r.id));
+  const nativeIds = selectedIds.filter((id) => !legacySet.has(id));
+  return { nativeIds, skipped: selectedIds.length - nativeIds.length };
+}
+
 function ReferralsModule() {
   const s = useCrm();
   const [creating, setCreating] = useState(false);
