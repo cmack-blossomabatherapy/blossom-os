@@ -1,7 +1,9 @@
 /**
- * BCBA Productivity V3 — local store for assignment history and saved reports.
- * Source of truth for ownership at DOS. No seeded production data.
+ * BCBA Productivity V3 — persistent Assignment History plus saved report payloads.
+ * Assignment History is the source of truth for ownership at DOS. No seeded production data.
  */
+
+import { supabase } from "@/integrations/supabase/client";
 
 export interface BcbaAssignmentV3 {
   id: string;
@@ -12,6 +14,7 @@ export interface BcbaAssignmentV3 {
   endDate: string | null; // YYYY-MM-DD or null = open
   note?: string;
   createdAt: number;
+  updatedAt?: number;
 }
 
 export interface BcbaSavedReportV3 {
@@ -22,11 +25,24 @@ export interface BcbaSavedReportV3 {
   rowCount: number;
 }
 
-const ASSIGN_KEY = "bcba-prod-v3-assignments";
+const ASSIGN_KEY = "bcba-prod-v3-assignments-cache";
 const SAVED_KEY  = "bcba-prod-v3-saved";
 const LAST_KEY   = "bcba-prod-v3-last-meta";
 const IDB_NAME   = "blossom-bcba-v3";
 const IDB_STORE  = "payloads";
+const ASSIGNMENT_TABLE = "bcba_assignment_history";
+
+type DbAssignmentV3 = {
+  id: string;
+  client_id: string | null;
+  client_name: string;
+  bcba_name: string;
+  start_date: string;
+  end_date: string | null;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 function safeParse<T>(s: string | null, fb: T): T {
   if (!s) return fb;
