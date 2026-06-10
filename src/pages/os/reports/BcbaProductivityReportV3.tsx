@@ -631,7 +631,7 @@ export default function BcbaProductivityReportV3() {
               </div>
               <div className="text-xs text-muted-foreground">{validation.fileName}</div>
             </div>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
               <ValPill label="Raw rows" value={fmt0(validation.rawRowCount)} />
               <ValPill label="Accepted" value={fmt0(validation.acceptedRowCount)} />
               <ValPill label="Dropped" value={fmt0(validation.droppedRowCount)} tone={validation.droppedRowCount ? "warn" : undefined} />
@@ -639,6 +639,11 @@ export default function BcbaProductivityReportV3() {
               <ValPill label="Date range" value={validation.dateMin && validation.dateMax ? `${validation.dateMin} → ${validation.dateMax}` : "—"} />
               <ValPill label="Unique clients" value={fmt0(validation.uniqueClients)} />
               <ValPill label="Unique providers" value={fmt0(validation.uniqueProviders)} />
+              <ValPill label="Assignment rows" value={fmt0(validationCoverage.assignmentRows)} tone={!validationCoverage.assignmentRows ? "warn" : undefined} />
+              <ValPill label="Assigned rows" value={fmt0(validationCoverage.assignedRows)} />
+              <ValPill label="Assigned hours" value={fmt1(validationCoverage.assignedHours)} />
+              <ValPill label="Unassigned rows" value={fmt0(validationCoverage.unassignedRows)} tone={validationCoverage.unassignedRows ? "warn" : undefined} />
+              <ValPill label="Unassigned hours" value={fmt1(validationCoverage.unassignedHours)} tone={validationCoverage.unassignedHours ? "warn" : undefined} />
             </div>
             {Object.keys(validation.dropReasons).length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -661,6 +666,18 @@ export default function BcbaProductivityReportV3() {
                     </span>
                   ))}
                 </div>
+              </div>
+            )}
+            {(validationCoverage.missingClients.length > 0 || validationCoverage.dateGaps.length > 0) && (
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <MiniAuditList
+                  title="Clients missing assignment history"
+                  rows={validationCoverage.missingClients.slice(0, 10).map(c => [`${c.clientName || c.clientId}`, `${fmt1(c.hours)} hrs · ${fmt0(c.rows)} rows`])}
+                />
+                <MiniAuditList
+                  title="Clients with assignment date gaps"
+                  rows={validationCoverage.dateGaps.slice(0, 10).map(g => [g.clientName, g.detail])}
+                />
               </div>
             )}
           </div>
