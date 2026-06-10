@@ -2669,18 +2669,38 @@ function FilesModule() {
   const s = useCrm();
   const [q, setQ] = useState("");
   const [type, setType] = useState<string>("all");
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const objectLabel = (a: Attachment): string => {
     if (a.objectType === "contact") {
       const c = s.contacts.find((x) => x.id === a.objectId); return c ? fullName(c) : a.objectId;
     }
     if (a.objectType === "company") return s.companies.find((x) => x.id === a.objectId)?.name ?? a.objectId;
-    return s.referrals.find((x) => x.id === a.objectId)?.name ?? a.objectId;
+    if (a.objectType === "referral") return s.referrals.find((x) => x.id === a.objectId)?.name ?? a.objectId;
+    return a.objectId;
   };
   const rows = s.attachments.filter((a) => {
+    if (a.archivedAt) return false;
     if (type !== "all" && a.objectType !== type) return false;
     if (q && !a.fileName.toLowerCase().includes(q.toLowerCase()) && !objectLabel(a).toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
+  async function openFile(a: Attachment) {
+    if (!a.storagePath) {
+      toast({ title: "No file backing this attachment", variant: "destructive" });
+      return;
+    }
+    setBusyId(a.id);
+    const { data, error } = await supabase.storage
+      .from(a.storageBucket ?? "referral-crm-files")
+      .createSignedUrl(a.storagePath, 60 * 10);
+    setBusyId(null);
+    if (error || !data?.signedUrl) {
+      toast({ title: "Couldn't open file", description: error?.message, variant: "destructive" });
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -2695,8 +2715,12 @@ function FilesModule() {
             <SelectItem value="contact">Contacts</SelectItem>
             <SelectItem value="company">Companies</SelectItem>
             <SelectItem value="referral">Referrals</SelectItem>
+            <SelectItem value="general">General</SelectItem>
           </SelectContent>
         </Select>
+        <Button size="sm" className="h-9 ml-auto" onClick={() => setUploadOpen(true)}>
+          <Upload className="size-3.5 mr-1.5" /> Upload file
+        </Button>
       </div>
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
@@ -2714,13 +2738,20 @@ function FilesModule() {
             <tbody>
               {rows.map((a) => (
                 <tr key={a.id} className="border-t hover:bg-muted/30">
-                  <td className="px-3 py-2 flex items-center gap-2">
+                  <td className="px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => openFile(a)}
+                      disabled={busyId === a.id}
+                      className="flex items-center gap-2 text-left hover:underline disabled:opacity-50"
+                    >
                     <FileText className="size-3.5 text-muted-foreground" />
                     <span className="font-medium">{a.fileName}</span>
+                    </button>
                   </td>
                   <td className="px-3 py-2"><span className="text-muted-foreground capitalize">{a.objectType}: </span>{objectLabel(a)}</td>
                   <td className="px-3 py-2 text-muted-foreground">{a.category || "—"}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{userName(s, a.uploadedByUserId)}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{a.uploadedByName || userName(s, a.uploadedByUserId)}</td>
                   <td className="px-3 py-2 text-muted-foreground">{fmtDate(a.uploadedAt)}</td>
                   <td className="px-3 py-2 text-right">
                     <button onClick={() => { crm.removeAttachment(a.id); toast({ title: "File removed" }); }} className="text-muted-foreground hover:text-destructive">
@@ -2734,7 +2765,119 @@ function FilesModule() {
           </table>
         </div>
       </div>
+      <UploadFileDialog open={uploadOpen} onOpenChange={setUploadOpen} />
     </div>
+  );
+}
+
+function UploadFileDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const s = useCrm();
+  const [objectType, setObjectType] = useState<Attachment["objectType"]>("general");
+  const [objectId, setObjectId] = useState<string>("general");
+  const [category, setCategory] = useState<string>("");
+  const [notes, setNotes] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const options = (() => {
+    if (objectType === "contact") return s.contacts.filter((c) => !c.deletedAt).map((c) => ({ id: c.id, label: fullName(c) }));
+    if (objectType === "company") return s.companies.filter((c) => !c.deletedAt).map((c) => ({ id: c.id, label: c.name }));
+    if (objectType === "referral") return s.referrals.filter((r) => !r.deletedAt).map((r) => ({ id: r.id, label: r.name }));
+    return [];
+  })();
+
+  async function handleUpload() {
+    if (!file) { toast({ title: "Choose a file first", variant: "destructive" }); return; }
+    if (objectType !== "general" && !objectId) { toast({ title: "Pick a record to attach to", variant: "destructive" }); return; }
+    if (file.size > 20 * 1024 * 1024) { toast({ title: "File too large (max 20MB)", variant: "destructive" }); return; }
+    setBusy(true);
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 120);
+    const targetId = objectType === "general" ? "general" : objectId;
+    const path = `${objectType}/${targetId}/${Date.now()}-${safe}`;
+    const { error: upErr } = await supabase.storage
+      .from("referral-crm-files")
+      .upload(path, file, { contentType: file.type || undefined, upsert: false });
+    if (upErr) {
+      setBusy(false);
+      toast({ title: "Upload failed", description: upErr.message, variant: "destructive" });
+      return;
+    }
+    const { data: u } = await supabase.auth.getUser();
+    crm.addAttachment({
+      fileName: file.name,
+      fileType: file.type || undefined,
+      mimeType: file.type || undefined,
+      sizeBytes: file.size,
+      objectType,
+      objectId: targetId,
+      category: (category || undefined) as Attachment["category"],
+      notes: notes || undefined,
+      storageBucket: "referral-crm-files",
+      storagePath: path,
+      uploadedByUserId: u.user?.id,
+      uploadedByName: u.user?.email ?? undefined,
+    });
+    setBusy(false);
+    setFile(null); setNotes(""); setCategory("");
+    onOpenChange(false);
+    toast({ title: "File uploaded" });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Upload file</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Attach to</Label>
+              <Select value={objectType} onValueChange={(v) => { setObjectType(v as Attachment["objectType"]); setObjectId(v === "general" ? "general" : ""); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General (no record)</SelectItem>
+                  <SelectItem value="contact">Contact</SelectItem>
+                  <SelectItem value="company">Company</SelectItem>
+                  <SelectItem value="referral">Referral</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {objectType !== "general" && (
+              <div>
+                <Label>Record</Label>
+                <Select value={objectId} onValueChange={setObjectId}>
+                  <SelectTrigger><SelectValue placeholder="Pick one…" /></SelectTrigger>
+                  <SelectContent className="max-h-[260px]">
+                    {options.map((o) => <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <div>
+            <Label>Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+              <SelectContent>
+                {["Lunch & Learn", "Insurance", "Outreach", "Welcome Packet", "Other"].map((c) =>
+                  <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+          <div>
+            <Label>File (max 20MB)</Label>
+            <Input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
+          <Button onClick={handleUpload} disabled={busy || !file}>{busy ? "Uploading…" : "Upload"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
