@@ -759,33 +759,40 @@ export const crm = {
     } as Contact;
     set({ contacts: [c, ...state.contacts] });
     logActivity({ type: "property_change", message: `Contact created: ${c.firstName} ${c.lastName}`, contactId: c.id });
-    logAudit({ action: "create", objectType: "contact", objectId: c.id, objectLabel: `${c.firstName} ${c.lastName}`, summary: "Contact created" });
+    logAudit({ action: "create", objectType: "contact", objectId: c.id, objectLabel: `${c.firstName} ${c.lastName}`, summary: "Contact created", afterData: c as unknown as Record<string, unknown> });
     fire("onContactCreate", c);
     return c;
   },
   updateContact(id: ID, patch: Partial<Contact>) {
+    const before = state.contacts.find((x) => x.id === id);
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, ...patch, updatedAt: now() } : c) });
     logActivity({ type: "property_change", message: `Contact updated`, contactId: id });
     const c = state.contacts.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id,
-      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
+      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}`,
+      beforeData: before as unknown as Record<string, unknown> | undefined,
+      afterData: c as unknown as Record<string, unknown> | undefined,
+      metadata: { changedFields: Object.keys(patch).filter((k) => k !== "updatedAt") } });
     fire("onContactUpdate", id, patch, c);
   },
   softDeleteContact(id: ID) {
+    const before = state.contacts.find((x) => x.id === id);
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
     const c = state.contacts.find((x) => x.id === id);
-    logAudit({ action: "delete", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact moved to deleted" });
+    logAudit({ action: "delete", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact moved to deleted", beforeData: before as unknown as Record<string, unknown> | undefined });
     fire("onContactDelete", id, false);
   },
   restoreContact(id: ID) {
+    const before = state.contacts.find((x) => x.id === id);
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
     const c = state.contacts.find((x) => x.id === id);
-    logAudit({ action: "restore", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact restored" });
+    logAudit({ action: "restore", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact restored", beforeData: before as unknown as Record<string, unknown> | undefined, afterData: c as unknown as Record<string, unknown> | undefined });
     fire("onContactUpdate", id, { deletedAt: undefined } as Partial<Contact>, c);
   },
   hardDeleteContact(id: ID) {
+    const before = state.contacts.find((x) => x.id === id);
     set({ contacts: state.contacts.filter((c) => c.id !== id) });
-    logAudit({ action: "delete", objectType: "contact", objectId: id, summary: "Contact permanently deleted" });
+    logAudit({ action: "delete", objectType: "contact", objectId: id, summary: "Contact permanently deleted", beforeData: before as unknown as Record<string, unknown> | undefined, metadata: { permanent: true } });
     fire("onContactDelete", id, true);
   },
 
@@ -832,33 +839,40 @@ export const crm = {
     } as Company;
     set({ companies: [c, ...state.companies] });
     logActivity({ type: "property_change", message: `Company created: ${c.name}`, companyId: c.id });
-    logAudit({ action: "create", objectType: "company", objectId: c.id, objectLabel: c.name, summary: "Company created" });
+    logAudit({ action: "create", objectType: "company", objectId: c.id, objectLabel: c.name, summary: "Company created", afterData: c as unknown as Record<string, unknown> });
     fire("onCompanyCreate", c);
     return c;
   },
   updateCompany(id: ID, patch: Partial<Company>) {
+    const before = state.companies.find((x) => x.id === id);
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, ...patch, updatedAt: now() } : c) });
     logActivity({ type: "property_change", message: `Company updated`, companyId: id });
     const co = state.companies.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "company", objectId: id, objectLabel: co?.name,
-      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
+      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}`,
+      beforeData: before as unknown as Record<string, unknown> | undefined,
+      afterData: co as unknown as Record<string, unknown> | undefined,
+      metadata: { changedFields: Object.keys(patch).filter((k) => k !== "updatedAt") } });
     fire("onCompanyUpdate", id, patch, co);
   },
   softDeleteCompany(id: ID) {
+    const before = state.companies.find((x) => x.id === id);
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
     const co = state.companies.find((x) => x.id === id);
-    logAudit({ action: "delete", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company moved to deleted" });
+    logAudit({ action: "delete", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company moved to deleted", beforeData: before as unknown as Record<string, unknown> | undefined });
     fire("onCompanyDelete", id, false);
   },
   restoreCompany(id: ID) {
+    const before = state.companies.find((x) => x.id === id);
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
     const co = state.companies.find((x) => x.id === id);
-    logAudit({ action: "restore", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company restored" });
+    logAudit({ action: "restore", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company restored", beforeData: before as unknown as Record<string, unknown> | undefined, afterData: co as unknown as Record<string, unknown> | undefined });
     fire("onCompanyUpdate", id, { deletedAt: undefined } as Partial<Company>, co);
   },
   hardDeleteCompany(id: ID) {
+    const before = state.companies.find((x) => x.id === id);
     set({ companies: state.companies.filter((c) => c.id !== id) });
-    logAudit({ action: "delete", objectType: "company", objectId: id, summary: "Company permanently deleted" });
+    logAudit({ action: "delete", objectType: "company", objectId: id, summary: "Company permanently deleted", beforeData: before as unknown as Record<string, unknown> | undefined, metadata: { permanent: true } });
     fire("onCompanyDelete", id, true);
   },
 
@@ -945,27 +959,33 @@ export const crm = {
       type: "referral_received", message: `Referral received: ${r.name}`,
       contactId: r.contactId, companyId: r.companyId, referralId: r.id,
     });
-    logAudit({ action: "create", objectType: "referral", objectId: r.id, objectLabel: r.name, summary: "Referral created" });
+    logAudit({ action: "create", objectType: "referral", objectId: r.id, objectLabel: r.name, summary: "Referral created", afterData: r as unknown as Record<string, unknown> });
     fire("onReferralCreate", r);
     return r;
   },
   updateReferral(id: ID, patch: Partial<Referral>) {
+    const before = state.referrals.find((x) => x.id === id);
     set({ referrals: state.referrals.map((r) => r.id === id ? { ...r, ...patch, updatedAt: now() } : r) });
     const r = state.referrals.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "referral", objectId: id, objectLabel: r?.name,
-      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
+      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}`,
+      beforeData: before as unknown as Record<string, unknown> | undefined,
+      afterData: r as unknown as Record<string, unknown> | undefined,
+      metadata: { changedFields: Object.keys(patch).filter((k) => k !== "updatedAt") } });
     fire("onReferralUpdate", id, patch, r);
   },
   softDeleteReferral(id: ID) {
+    const before = state.referrals.find((x) => x.id === id);
     set({ referrals: state.referrals.map((r) => r.id === id ? { ...r, deletedAt: now() } : r) });
     const r = state.referrals.find((x) => x.id === id);
-    logAudit({ action: "delete", objectType: "referral", objectId: id, objectLabel: r?.name, summary: "Referral moved to deleted" });
+    logAudit({ action: "delete", objectType: "referral", objectId: id, objectLabel: r?.name, summary: "Referral moved to deleted", beforeData: before as unknown as Record<string, unknown> | undefined });
     fire("onReferralDelete", id, false);
   },
   restoreReferral(id: ID) {
+    const before = state.referrals.find((x) => x.id === id);
     set({ referrals: state.referrals.map((r) => r.id === id ? { ...r, deletedAt: undefined } : r) });
     const r = state.referrals.find((x) => x.id === id);
-    logAudit({ action: "restore", objectType: "referral", objectId: id, objectLabel: r?.name, summary: "Referral restored" });
+    logAudit({ action: "restore", objectType: "referral", objectId: id, objectLabel: r?.name, summary: "Referral restored", beforeData: before as unknown as Record<string, unknown> | undefined, afterData: r as unknown as Record<string, unknown> | undefined });
     fire("onReferralUpdate", id, { deletedAt: undefined } as Partial<Referral>, r);
   },
 
@@ -977,39 +997,47 @@ export const crm = {
     } as Task;
     set({ tasks: [t, ...state.tasks] });
     logActivity({ type: "task", message: `Task created: ${t.title}`, contactId: t.contactId, companyId: t.companyId, referralId: t.referralId });
-    logAudit({ action: "create", objectType: "task", objectId: t.id, objectLabel: t.title, summary: "Task created" });
+    logAudit({ action: "create", objectType: "task", objectId: t.id, objectLabel: t.title, summary: "Task created", afterData: t as unknown as Record<string, unknown> });
     fire("onTaskCreate", t);
     return t;
   },
   updateTask(id: ID, patch: Partial<Task>) {
+    const before = state.tasks.find((x) => x.id === id);
     const merged: Partial<Task> = { ...patch, updatedAt: now() };
     if (patch.status === "Completed" && !patch.completedAt) merged.completedAt = now();
     set({ tasks: state.tasks.map((t) => t.id === id ? { ...t, ...merged } : t) });
     const t = state.tasks.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "task", objectId: id, objectLabel: t?.title,
-      summary: `Updated: ${Object.keys(patch).join(", ") || "—"}` });
+      summary: `Updated: ${Object.keys(patch).join(", ") || "—"}`,
+      beforeData: before as unknown as Record<string, unknown> | undefined,
+      afterData: t as unknown as Record<string, unknown> | undefined,
+      metadata: { changedFields: Object.keys(patch) } });
     fire("onTaskUpdate", id, merged, t);
   },
   deleteTask(id: ID) {
+    const before = state.tasks.find((x) => x.id === id);
     set({ tasks: state.tasks.filter((t) => t.id !== id) });
-    logAudit({ action: "delete", objectType: "task", objectId: id, summary: "Task deleted" });
+    logAudit({ action: "delete", objectType: "task", objectId: id, summary: "Task deleted", beforeData: before as unknown as Record<string, unknown> | undefined, metadata: { permanent: true } });
     fire("onTaskDelete", id, true);
   },
   softDeleteTask(id: ID) {
+    const before = state.tasks.find((x) => x.id === id);
     set({ tasks: state.tasks.map((t) => t.id === id ? { ...t, deletedAt: now() } : t) });
     const t = state.tasks.find((x) => x.id === id);
-    logAudit({ action: "delete", objectType: "task", objectId: id, objectLabel: t?.title, summary: "Task moved to deleted" });
+    logAudit({ action: "delete", objectType: "task", objectId: id, objectLabel: t?.title, summary: "Task moved to deleted", beforeData: before as unknown as Record<string, unknown> | undefined });
     fire("onTaskDelete", id, false);
   },
   restoreTask(id: ID) {
+    const before = state.tasks.find((x) => x.id === id);
     set({ tasks: state.tasks.map((t) => t.id === id ? { ...t, deletedAt: undefined } : t) });
     const t = state.tasks.find((x) => x.id === id);
-    logAudit({ action: "restore", objectType: "task", objectId: id, objectLabel: t?.title, summary: "Task restored" });
+    logAudit({ action: "restore", objectType: "task", objectId: id, objectLabel: t?.title, summary: "Task restored", beforeData: before as unknown as Record<string, unknown> | undefined, afterData: t as unknown as Record<string, unknown> | undefined });
     fire("onTaskUpdate", id, { deletedAt: undefined } as Partial<Task>, t);
   },
   hardDeleteTask(id: ID) {
+    const before = state.tasks.find((x) => x.id === id);
     set({ tasks: state.tasks.filter((t) => t.id !== id) });
-    logAudit({ action: "delete", objectType: "task", objectId: id, summary: "Task permanently deleted" });
+    logAudit({ action: "delete", objectType: "task", objectId: id, summary: "Task permanently deleted", beforeData: before as unknown as Record<string, unknown> | undefined, metadata: { permanent: true } });
     fire("onTaskDelete", id, true);
   },
 
@@ -1038,7 +1066,9 @@ export const crm = {
       userId: a.uploadedByUserId,
     });
     logAudit({ action: "attachment_added", objectType: "attachment", objectId: a.id,
-      objectLabel: a.fileName, summary: `Attached to ${a.objectType} ${a.objectId}` });
+      objectLabel: a.fileName, summary: `Attached to ${a.objectType} ${a.objectId}`,
+      afterData: a as unknown as Record<string, unknown>,
+      metadata: { fileName: a.fileName, sizeBytes: a.sizeBytes, mimeType: a.mimeType, storageBucket: a.storageBucket, storagePath: a.storagePath, parentType: a.objectType, parentId: a.objectId } });
     fire("onAttachmentCreate", a);
     return a;
   },
@@ -1054,20 +1084,20 @@ export const crm = {
     if (!a) return;
     const archivedAt = now();
     set({ attachments: state.attachments.map((x) => (x.id === id ? { ...x, archivedAt } : x)) });
-    logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment archived" });
+    logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment archived", beforeData: a as unknown as Record<string, unknown>, metadata: { archived: true, fileName: a.fileName } });
     fire("onAttachmentUpdate", id, { archivedAt }, { ...a, archivedAt });
   },
   restoreAttachment(id: ID) {
     const a = state.attachments.find((x) => x.id === id);
     if (!a) return;
     set({ attachments: state.attachments.map((x) => (x.id === id ? { ...x, archivedAt: undefined } : x)) });
-    logAudit({ action: "restore", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment restored" });
+    logAudit({ action: "restore", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment restored", beforeData: a as unknown as Record<string, unknown>, afterData: { ...a, archivedAt: undefined } as unknown as Record<string, unknown> });
     fire("onAttachmentUpdate", id, { archivedAt: undefined }, { ...a, archivedAt: undefined });
   },
   removeAttachment(id: ID) {
     const a = state.attachments.find((x) => x.id === id);
     set({ attachments: state.attachments.filter((x) => x.id !== id) });
-    if (a) logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment removed" });
+    if (a) logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment removed", beforeData: a as unknown as Record<string, unknown>, metadata: { permanent: true, fileName: a.fileName, storagePath: a.storagePath } });
     fire("onAttachmentDelete", id, true, a);
   },
 
@@ -1087,10 +1117,10 @@ export const crm = {
 
   // audit + import/export markers
   recordImport(summary: string) {
-    logAudit({ action: "import", objectType: "system", summary });
+    logAudit({ action: "import", objectType: "system", summary, metadata: { source: "import", at: now() } });
   },
   recordExport(summary: string) {
-    logAudit({ action: "export", objectType: "system", summary });
+    logAudit({ action: "export", objectType: "system", summary, metadata: { source: "export", at: now() } });
   },
 
   // workflows
@@ -1098,7 +1128,7 @@ export const crm = {
     set({ workflows: state.workflows.map((w) => w.id === id ? { ...w, enabled: !w.enabled } : w) });
     const w = state.workflows.find((x) => x.id === id);
     logAudit({ action: "workflow_toggle", objectType: "workflow", objectId: id, objectLabel: w?.name,
-      summary: w?.enabled ? "Workflow enabled" : "Workflow disabled" });
+      summary: w?.enabled ? "Workflow enabled" : "Workflow disabled", metadata: { enabled: w?.enabled } });
   },
   runWorkflow(id: ID): string {
     const w = state.workflows.find((x) => x.id === id);
@@ -1109,7 +1139,7 @@ export const crm = {
         x.id === id ? { ...x, runs: x.runs + 1, lastRun: now(), lastRunResult: result } : x,
       ),
     });
-    logAudit({ action: "workflow_run", objectType: "workflow", objectId: id, objectLabel: w.name, summary: `Ran workflow — ${result}` });
+    logAudit({ action: "workflow_run", objectType: "workflow", objectId: id, objectLabel: w.name, summary: `Ran workflow — ${result}`, metadata: { result, trigger: w.trigger, runs: (w.runs ?? 0) + 1 } });
     return result;
   },
 
