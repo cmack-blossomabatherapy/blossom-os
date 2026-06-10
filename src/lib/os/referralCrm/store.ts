@@ -682,6 +682,12 @@ export interface CrmSideEffects {
   onCompanyUpdate?: (id: ID, patch: Partial<Company>, full: Company | undefined) => void;
   onCompanyDelete?: (id: ID, hard: boolean) => void;
   onActivityCreate?: (a: ActivityEvent) => void;
+  onReferralCreate?: (r: Referral) => void;
+  onReferralUpdate?: (id: ID, patch: Partial<Referral>, full: Referral | undefined) => void;
+  onReferralDelete?: (id: ID, hard: boolean) => void;
+  onTaskCreate?: (t: Task) => void;
+  onTaskUpdate?: (id: ID, patch: Partial<Task>, full: Task | undefined) => void;
+  onTaskDelete?: (id: ID, hard: boolean) => void;
 }
 let sideEffects: CrmSideEffects = {};
 export function setCrmSideEffects(se: CrmSideEffects) { sideEffects = se ?? {}; }
@@ -697,12 +703,16 @@ export function replaceCrmData(input: {
   companies?: Company[];
   activity?: ActivityEvent[];
   importBatches?: ImportBatch[];
+  referrals?: Referral[];
+  tasks?: Task[];
 }) {
   set({
     ...(input.contacts ? { contacts: input.contacts } : {}),
     ...(input.companies ? { companies: input.companies } : {}),
     ...(input.activity ? { activity: input.activity } : {}),
     ...(input.importBatches ? { importBatches: input.importBatches } : {}),
+    ...(input.referrals ? { referrals: input.referrals } : {}),
+    ...(input.tasks ? { tasks: input.tasks } : {}),
   });
 }
 
