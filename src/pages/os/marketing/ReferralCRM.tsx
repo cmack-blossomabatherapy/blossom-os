@@ -4098,12 +4098,27 @@ function ResultRow({ title, meta, detail, onClick }: {
 // Page shell with internal nav
 // ===========================================================
 export default function ReferralCRM() {
+  const s = useCrm();
+  const me = currentUser(s);
   const [module, setModule] = useState<ModuleId>("dashboard");
   const [contactId, setContactId] = useState<ID | null>(null);
   const [companyId, setCompanyId] = useState<ID | null>(null);
 
+  const moduleAllowed = (id: ModuleId): boolean => {
+    if (!canCrm(s, "view")) return id === "dashboard";
+    if (id === "users") return canCrm(s, "manage_users");
+    if (id === "imports") return canCrm(s, "import");
+    if (id === "exports") return canCrm(s, "export");
+    if (id === "workflows") return canCrm(s, "manage_workflows");
+    if (id === "lists") return canCrm(s, "manage_lists");
+    if (id === "deleted" || id === "duplicates") return canCrm(s, "delete");
+    return true;
+  };
+  const visibleModules = MODULES.filter((m) => moduleAllowed(m.id));
+  const activeModule: ModuleId = moduleAllowed(module) ? module : "dashboard";
+
   const body = (() => {
-    switch (module) {
+    switch (activeModule) {
       case "dashboard": return <DashboardModule />;
       case "contacts": return <ContactsModule onOpenContact={setContactId} onOpenCompany={setCompanyId} />;
       case "companies": return <CompaniesModule onOpen={setCompanyId} />;
@@ -4130,12 +4145,32 @@ export default function ReferralCRM() {
       title="Blossom Referral CRM"
       subtitle="Track contacts, companies, referrals, and outreach for every state."
     >
+      {/* Impersonation switcher — lets admins preview the CRM as any role */}
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs">
+        <span className="text-muted-foreground">Acting as:</span>
+        <Select value={s.currentUserId} onValueChange={(v) => crm.setCurrentUser(v)}>
+          <SelectTrigger className="h-7 w-[260px] text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {s.users.map((u) => (
+              <SelectItem key={u.id} value={u.id}>
+                {u.name} · {u.role.replace(/_/g, " ")}{u.states?.length ? ` · ${u.states.join(",")}` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {me && (
+          <Badge variant="outline" className="ml-auto">
+            {me.role.replace(/_/g, " ")}{me.states?.length ? ` · ${me.states.join(", ")}` : " · all states"}
+          </Badge>
+        )}
+      </div>
+
       {/* mobile / tablet: horizontal scroll tab bar */}
       <div className="lg:hidden -mx-1 mb-4 overflow-x-auto">
         <div className="flex gap-1 px-1 min-w-max">
-          {MODULES.map((m) => {
+          {visibleModules.map((m) => {
             const Icon = m.icon;
-            const active = module === m.id;
+            const active = activeModule === m.id;
             return (
               <button key={m.id} onClick={() => setModule(m.id)}
                 className={cn(
@@ -4153,9 +4188,9 @@ export default function ReferralCRM() {
       <div className="flex gap-6">
         <aside className="hidden lg:block w-56 shrink-0">
           <div className="rounded-2xl border bg-card p-2 sticky top-4">
-            {MODULES.map((m) => {
+            {visibleModules.map((m) => {
               const Icon = m.icon;
-              const active = module === m.id;
+              const active = activeModule === m.id;
               return (
                 <button
                   key={m.id}
