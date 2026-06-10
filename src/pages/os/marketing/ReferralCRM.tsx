@@ -422,6 +422,9 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
           }}>
             <Download className="size-3 mr-1" /> Export
           </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkResetReferrals}>
+            <RotateCcw className="size-3 mr-1" /> Reset referrals
+          </Button>
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
