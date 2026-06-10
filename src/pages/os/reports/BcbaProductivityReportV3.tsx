@@ -1347,3 +1347,85 @@ function AssignmentHistoryEditor({
     </div>
   );
 }
+function InferredAssignmentsTable({
+  assignments, onSave, usingInferred,
+}: { assignments: BcbaAssignmentV3[]; onSave: () => void; usingInferred: boolean }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <div className="text-xs text-muted-foreground">
+          {assignments.length === 0
+            ? "Upload a billing report to see inferred BCBA ownership."
+            : usingInferred
+              ? "These are being used right now because no saved Assignment History exists. Save them to make them editable."
+              : "Saved Assignment History is in use. These inferred records are shown for comparison only."}
+        </div>
+        <Button size="sm" onClick={onSave} disabled={!assignments.length}>
+          <Save className="mr-1.5 h-3.5 w-3.5" /> Save inferred ({assignments.length})
+        </Button>
+      </div>
+      <div className="rounded-lg border">
+        <table className="w-full min-w-[820px] text-sm">
+          <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2">Client</th>
+              <th className="px-3 py-2">Client ID</th>
+              <th className="px-3 py-2">BCBA</th>
+              <th className="px-3 py-2">Start</th>
+              <th className="px-3 py-2">End</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assignments.length === 0 && (
+              <tr><td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">No inferred assignments.</td></tr>
+            )}
+            {assignments.slice(0, 500).map(a => (
+              <tr key={a.id} className="border-t">
+                <td className="px-3 py-2 font-medium">{a.clientName}</td>
+                <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{a.clientId || "—"}</td>
+                <td className="px-3 py-2">{a.bcbaName}</td>
+                <td className="px-3 py-2 tabular-nums">{a.startDate}</td>
+                <td className="px-3 py-2 tabular-nums">{a.endDate ?? "—"}</td>
+              </tr>
+            ))}
+            {assignments.length > 500 && (
+              <tr><td colSpan={5} className="px-3 py-2 text-center text-xs text-muted-foreground">+{assignments.length - 500} more — save to view & edit all.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function OwnershipConflictsTable({ conflicts }: { conflicts: OwnershipConflict[] }) {
+  return (
+    <div className="rounded-lg border">
+      <table className="w-full min-w-[760px] text-sm">
+        <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th className="px-3 py-2">Client</th>
+            <th className="px-3 py-2">Date</th>
+            <th className="px-3 py-2">Candidates</th>
+            <th className="px-3 py-2">Chosen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {conflicts.length === 0 && (
+            <tr><td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">No ownership conflicts detected.</td></tr>
+          )}
+          {conflicts.slice(0, 500).map((c, i) => (
+            <tr key={`${c.clientId || c.clientName}-${c.date}-${i}`} className="border-t">
+              <td className="px-3 py-2 font-medium">{c.clientName}</td>
+              <td className="px-3 py-2 tabular-nums">{c.date}</td>
+              <td className="px-3 py-2 text-xs text-muted-foreground">
+                {c.candidates.map(x => `${x.bcba} (${x.hours.toFixed(2)}h)`).join(" · ")}
+              </td>
+              <td className="px-3 py-2">{c.chosen}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
