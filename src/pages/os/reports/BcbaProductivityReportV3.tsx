@@ -987,7 +987,7 @@ function FilterSelect({ label, value, onChange, options }: {
 }
 function Row({ bcba, expanded, onToggle }: {
   bcba: { bcba: string; isUnassigned: boolean; totalHours: number; h97153: number; directHours: number;
-          clients: Map<string, number>; rbts: Map<string, number>; codes: Map<string, number>; };
+          clients: Map<string, number>; rbts: Map<string, number>; codes: Map<string, number>; rows: OwnedRow[]; };
   expanded: boolean; onToggle: () => void;
 }) {
   return (
@@ -1017,10 +1017,34 @@ function Row({ bcba, expanded, onToggle }: {
               <DrillList title="RBTs / Rendering Providers" items={[...bcba.rbts.entries()]} />
               <DrillList title="Billing Codes" items={[...bcba.codes.entries()]} />
             </div>
+            <BillingRowsDrilldown rows={bcba.rows} />
           </td>
         </tr>
       )}
     </>
+  );
+}
+function BillingRowsDrilldown({ rows }: { rows: OwnedRow[] }) {
+  return (
+    <div className="mt-3 overflow-hidden rounded-lg border bg-background">
+      <div className="border-b bg-muted/30 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Billing Rows
+      </div>
+      <div className="max-h-56 overflow-auto">
+        <table className="w-full min-w-[760px] text-xs">
+          <thead className="sticky top-0 bg-background text-left uppercase tracking-wider text-muted-foreground">
+            <tr><th className="px-2 py-1">DOS</th><th className="px-2 py-1">Client</th><th className="px-2 py-1">Rendering Provider</th><th className="px-2 py-1">Code</th><th className="px-2 py-1 text-right">Hours</th><th className="px-2 py-1">Payor</th></tr>
+          </thead>
+          <tbody>
+            {rows.slice(0, 200).map((r, i) => (
+              <tr key={`${r.date}-${r.clientId}-${r.code}-${i}`} className="border-t">
+                <td className="px-2 py-1">{r.date}</td><td className="px-2 py-1 font-medium">{r.clientName}</td><td className="px-2 py-1">{r.renderingProvider || "—"}</td><td className="px-2 py-1">{r.code}</td><td className="px-2 py-1 text-right tabular-nums">{fmt1(r.hours)}</td><td className="px-2 py-1">{r.payor || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 function DrillList({ title, items }: { title: string; items: [string, number][] }) {
