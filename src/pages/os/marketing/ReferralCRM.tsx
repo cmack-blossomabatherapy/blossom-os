@@ -453,12 +453,21 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
 function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (b: boolean) => void }) {
   const s = useCrm();
   const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", state: "", companyId: "" });
+  const [newCo, setNewCo] = useState({ name: "", companyType: "", state: "" });
+  const creatingCo = f.companyId === "__create__";
   const submit = () => {
     if (!f.firstName || !f.lastName) { toast({ title: "First + last name required", variant: "destructive" as never }); return; }
-    crm.addContact({ ...f, companyId: f.companyId || undefined });
+    let companyId: string | undefined = f.companyId && f.companyId !== "__create__" ? f.companyId : undefined;
+    if (creatingCo) {
+      if (!newCo.name.trim()) { toast({ title: "New company name required", variant: "destructive" as never }); return; }
+      const co = crm.addCompany({ name: newCo.name.trim(), companyType: newCo.companyType || undefined, state: newCo.state || undefined });
+      companyId = co.id;
+    }
+    crm.addContact({ ...f, companyId });
     toast({ title: "Contact created" });
     onOpenChange(false);
     setF({ firstName: "", lastName: "", email: "", phone: "", state: "", companyId: "" });
+    setNewCo({ name: "", companyType: "", state: "" });
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -478,9 +487,27 @@ function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
           <div><Label className="text-xs">Company</Label>
             <Select value={f.companyId} onValueChange={(v) => setF({ ...f, companyId: v })}>
               <SelectTrigger><SelectValue placeholder="Pick company" /></SelectTrigger>
-              <SelectContent>{s.companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="__create__">+ Create new company…</SelectItem>
+                {s.companies.filter((c) => !c.deletedAt).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
+          {creatingCo ? (
+            <div className="col-span-2 rounded-md border border-border bg-muted/30 p-3 space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">New company</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2"><Label className="text-xs">Company name</Label><Input value={newCo.name} onChange={(e) => setNewCo({ ...newCo, name: e.target.value })} /></div>
+                <div><Label className="text-xs">Type</Label><Input value={newCo.companyType} onChange={(e) => setNewCo({ ...newCo, companyType: e.target.value })} placeholder="Pediatrician Office…" /></div>
+                <div><Label className="text-xs">State</Label>
+                  <Select value={newCo.state} onValueChange={(v) => setNewCo({ ...newCo, state: v })}>
+                    <SelectTrigger><SelectValue placeholder="Pick state" /></SelectTrigger>
+                    <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
