@@ -297,7 +297,7 @@ export default function BcbaProductivityReportV3() {
   const ownedRows: OwnedRow[] = useMemo(() => {
     return rows.map(r => {
       const owner = ownerForClientAtDateV3(assignments, r.clientId, r.clientName, r.date);
-      return { ...r, bcbaOwner: owner?.bcba ?? null, is97153: isRbt97153(r.code) };
+      return { ...r, bcbaOwner: owner?.bcba ?? null, assignmentId: owner?.assignmentId ?? null, is97153: isRbt97153(r.code) };
     });
   }, [rows, assignments]);
 
