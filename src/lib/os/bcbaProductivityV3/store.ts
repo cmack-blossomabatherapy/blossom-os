@@ -1,7 +1,9 @@
 /**
- * BCBA Productivity V3 — local store for assignment history and saved reports.
- * Source of truth for ownership at DOS. No seeded production data.
+ * BCBA Productivity V3 — persistent Assignment History plus saved report payloads.
+ * Assignment History is the source of truth for ownership at DOS. No seeded production data.
  */
+
+import { supabase } from "@/integrations/supabase/client";
 
 export interface BcbaAssignmentV3 {
   id: string;
@@ -12,6 +14,7 @@ export interface BcbaAssignmentV3 {
   endDate: string | null; // YYYY-MM-DD or null = open
   note?: string;
   createdAt: number;
+  updatedAt?: number;
 }
 
 export interface BcbaSavedReportV3 {
@@ -22,11 +25,24 @@ export interface BcbaSavedReportV3 {
   rowCount: number;
 }
 
-const ASSIGN_KEY = "bcba-prod-v3-assignments";
+const ASSIGN_KEY = "bcba-prod-v3-assignments-cache";
 const SAVED_KEY  = "bcba-prod-v3-saved";
 const LAST_KEY   = "bcba-prod-v3-last-meta";
 const IDB_NAME   = "blossom-bcba-v3";
 const IDB_STORE  = "payloads";
+const ASSIGNMENT_TABLE = "bcba_assignment_history";
+
+type DbAssignmentV3 = {
+  id: string;
+  client_id: string | null;
+  client_name: string;
+  bcba_name: string;
+  start_date: string;
+  end_date: string | null;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 function safeParse<T>(s: string | null, fb: T): T {
   if (!s) return fb;
@@ -87,31 +103,80 @@ export function readAssignmentsV3(): BcbaAssignmentV3[] {
   if (typeof window === "undefined") return [];
   return safeParse<BcbaAssignmentV3[]>(localStorage.getItem(ASSIGN_KEY), []);
 }
-export function writeAssignmentsV3(list: BcbaAssignmentV3[]) {
+function cacheAssignmentsV3(list: BcbaAssignmentV3[]) {
   if (typeof window === "undefined") return;
   try { localStorage.setItem(ASSIGN_KEY, JSON.stringify(list)); } catch {}
   try { window.dispatchEvent(new CustomEvent("bcba-prod-v3-assignments-changed")); } catch {}
 }
-export function addAssignmentV3(a: Omit<BcbaAssignmentV3, "id" | "createdAt">): BcbaAssignmentV3 {
-  const list = readAssignmentsV3();
-  const id = `a_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  const entry: BcbaAssignmentV3 = { ...a, id, createdAt: Date.now() };
-  list.unshift(entry);
-  writeAssignmentsV3(list);
-  return entry;
+const toMs = (s?: string | null) => {
+  const t = s ? Date.parse(s) : NaN;
+  return isFinite(t) ? t : Date.now();
+};
+const fromDbAssignmentV3 = (r: DbAssignmentV3): BcbaAssignmentV3 => ({
+  id: r.id,
+  clientId: r.client_id ?? "",
+  clientName: r.client_name,
+  bcbaName: r.bcba_name,
+  startDate: r.start_date,
+  endDate: r.end_date,
+  note: r.note ?? "",
+  createdAt: toMs(r.created_at),
+  updatedAt: toMs(r.updated_at),
+});
+const toDbAssignmentV3 = (a: Omit<BcbaAssignmentV3, "id" | "createdAt" | "updatedAt">) => ({
+  client_id: a.clientId?.trim() || null,
+  client_name: a.clientName.trim(),
+  bcba_name: a.bcbaName.trim(),
+  start_date: a.startDate,
+  end_date: a.endDate || null,
+  note: a.note?.trim() || null,
+});
+
+export async function loadAssignmentsV3(): Promise<BcbaAssignmentV3[]> {
+  const { data, error } = await supabase
+    .from(ASSIGNMENT_TABLE as any)
+    .select("id, client_id, client_name, bcba_name, start_date, end_date, note, created_at, updated_at")
+    .order("start_date", { ascending: false });
+  if (error) throw error;
+  const list = ((data ?? []) as unknown as DbAssignmentV3[]).map(fromDbAssignmentV3);
+  cacheAssignmentsV3(list);
+  return list;
 }
-export function updateAssignmentV3(id: string, patch: Partial<BcbaAssignmentV3>) {
+export async function addAssignmentV3(a: Omit<BcbaAssignmentV3, "id" | "createdAt" | "updatedAt">): Promise<BcbaAssignmentV3> {
+  const { data, error } = await supabase
+    .from(ASSIGNMENT_TABLE as any)
+    .insert(toDbAssignmentV3(a) as any)
+    .select("id, client_id, client_name, bcba_name, start_date, end_date, note, created_at, updated_at")
+    .single();
+  if (error) throw error;
+  const fresh = fromDbAssignmentV3(data as unknown as DbAssignmentV3);
+  cacheAssignmentsV3([fresh, ...readAssignmentsV3().filter(x => x.id !== fresh.id)]);
+  return fresh;
+}
+export async function updateAssignmentV3(id: string, patch: Partial<BcbaAssignmentV3>): Promise<void> {
+  const clean: Record<string, unknown> = {};
+  if (patch.clientId !== undefined) clean.client_id = patch.clientId.trim() || null;
+  if (patch.clientName !== undefined) clean.client_name = patch.clientName.trim();
+  if (patch.bcbaName !== undefined) clean.bcba_name = patch.bcbaName.trim();
+  if (patch.startDate !== undefined) clean.start_date = patch.startDate;
+  if (patch.endDate !== undefined) clean.end_date = patch.endDate || null;
+  if (patch.note !== undefined) clean.note = patch.note?.trim() || null;
+  const { error } = await supabase.from(ASSIGNMENT_TABLE as any).update(clean as any).eq("id", id);
+  if (error) throw error;
   const list = readAssignmentsV3();
   const i = list.findIndex(x => x.id === id);
-  if (i < 0) return;
-  list[i] = { ...list[i], ...patch };
-  writeAssignmentsV3(list);
+  if (i >= 0) { list[i] = { ...list[i], ...patch, updatedAt: Date.now() }; cacheAssignmentsV3(list); }
 }
-export function deleteAssignmentV3(id: string) {
-  writeAssignmentsV3(readAssignmentsV3().filter(x => x.id !== id));
+export async function deleteAssignmentV3(id: string): Promise<void> {
+  const { error } = await supabase.from(ASSIGNMENT_TABLE as any).delete().eq("id", id);
+  if (error) throw error;
+  cacheAssignmentsV3(readAssignmentsV3().filter(x => x.id !== id));
 }
-export function bulkReplaceAssignmentsV3(list: BcbaAssignmentV3[]) {
-  writeAssignmentsV3(list);
+export async function bulkInsertAssignmentsV3(list: Omit<BcbaAssignmentV3, "id" | "createdAt" | "updatedAt">[]): Promise<BcbaAssignmentV3[]> {
+  if (!list.length) return readAssignmentsV3();
+  const { error } = await supabase.from(ASSIGNMENT_TABLE as any).insert(list.map(toDbAssignmentV3) as any);
+  if (error) throw error;
+  return loadAssignmentsV3();
 }
 
 /**

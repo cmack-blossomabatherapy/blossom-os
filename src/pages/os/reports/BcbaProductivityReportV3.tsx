@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   Upload, FileSpreadsheet, Download, Search, ChevronRight, ChevronDown,
   Stethoscope, Plus, Trash2, Save, History, ArrowLeftRight, X, Pencil, Database, AlertTriangle,
+  UserPlus, RefreshCw,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -10,14 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
 import {
-  readAssignmentsV3, addAssignmentV3, updateAssignmentV3, deleteAssignmentV3,
+  readAssignmentsV3, loadAssignmentsV3, addAssignmentV3, updateAssignmentV3, deleteAssignmentV3,
   ownerForClientAtDateV3, deriveTransfersV3, readSavedReportsV3, saveReportV3,
   getSavedReportRowsV3, deleteSavedReportV3, saveLastBillingV3, loadLastBillingV3,
-  findDuplicateSavedV3, normalizeName, bulkReplaceAssignmentsV3,
+  findDuplicateSavedV3, normalizeName, bulkInsertAssignmentsV3,
   type BcbaAssignmentV3,
 } from "@/lib/os/bcbaProductivityV3/store";
 
@@ -67,6 +69,7 @@ interface BillingRow {
 }
 interface OwnedRow extends BillingRow {
   bcbaOwner: string | null;
+  assignmentId: string | null;
   is97153: boolean;
 }
 interface ValidationSummary {
@@ -82,8 +85,48 @@ interface ValidationSummary {
   uniqueProviders: number;
   topCodes: { code: string; rows: number; hours: number }[];
 }
+interface UnassignedAuditRow extends BillingRow {
+  reason: "No assignment covering DOS";
+}
+interface AssignmentIssue {
+  clientKey: string;
+  clientName: string;
+  type: "gap" | "overlap";
+  detail: string;
+}
 
 const isRbt97153 = (code: string) => /^97153\b/.test(code.trim()) || code.trim().startsWith("97153");
+
+function addDaysIso(date: string, days: number) {
+  const d = new Date(`${date}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function deriveAssignmentIssues(assignments: BcbaAssignmentV3[]): AssignmentIssue[] {
+  const byClient = new Map<string, BcbaAssignmentV3[]>();
+  for (const a of assignments) {
+    const key = a.clientId || normalizeName(a.clientName);
+    if (!key) continue;
+    if (!byClient.has(key)) byClient.set(key, []);
+    byClient.get(key)!.push(a);
+  }
+  const issues: AssignmentIssue[] = [];
+  for (const [clientKey, list] of byClient) {
+    const sorted = [...list].sort((a, b) => a.startDate.localeCompare(b.startDate));
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = sorted[i - 1];
+      const cur = sorted[i];
+      if (!prev.endDate) {
+        issues.push({ clientKey, clientName: cur.clientName || prev.clientName, type: "overlap", detail: `${prev.bcbaName} is open-ended before ${cur.bcbaName} starts ${cur.startDate}` });
+      } else if (prev.endDate >= cur.startDate) {
+        issues.push({ clientKey, clientName: cur.clientName || prev.clientName, type: "overlap", detail: `${prev.bcbaName} ends ${prev.endDate}; ${cur.bcbaName} starts ${cur.startDate}` });
+      } else if (addDaysIso(prev.endDate, 1) < cur.startDate) {
+        issues.push({ clientKey, clientName: cur.clientName || prev.clientName, type: "gap", detail: `No owner from ${addDaysIso(prev.endDate, 1)} to ${addDaysIso(cur.startDate, -1)}` });
+      }
+    }
+  }
+  return issues.sort((a, b) => a.clientName.localeCompare(b.clientName));
+}
 
 export default function BcbaProductivityReportV3() {
   const [params] = useSearchParams();
@@ -96,6 +139,8 @@ export default function BcbaProductivityReportV3() {
   const [missingCols, setMissingCols] = useState<string[]>([]);
 
   const [assignments, setAssignments] = useState<BcbaAssignmentV3[]>(() => readAssignmentsV3());
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
+  const [assignmentError, setAssignmentError] = useState("");
   const [savedList, setSavedList] = useState(() => readSavedReportsV3());
 
   // filters
@@ -111,6 +156,7 @@ export default function BcbaProductivityReportV3() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [showHistory, setShowHistory] = useState(false);
   const [editing, setEditing] = useState<BcbaAssignmentV3 | null>(null);
+  const [assignmentSearch, setAssignmentSearch] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const assignImportRef = useRef<HTMLInputElement>(null);
@@ -125,6 +171,22 @@ export default function BcbaProductivityReportV3() {
       window.removeEventListener("bcba-prod-v3-saved-changed", refreshSaved);
     };
   }, []);
+
+  async function refreshAssignments() {
+    setAssignmentLoading(true);
+    setAssignmentError("");
+    try {
+      setAssignments(await loadAssignmentsV3());
+    } catch (e: any) {
+      setAssignmentError(e?.message ?? "Assignment History could not be loaded");
+      setAssignments([]);
+      toast.error("Assignment History could not be loaded from the database");
+    } finally {
+      setAssignmentLoading(false);
+    }
+  }
+
+  useEffect(() => { void refreshAssignments(); }, []);
 
   useEffect(() => {
     (async () => {
@@ -267,9 +329,32 @@ export default function BcbaProductivityReportV3() {
   const ownedRows: OwnedRow[] = useMemo(() => {
     return rows.map(r => {
       const owner = ownerForClientAtDateV3(assignments, r.clientId, r.clientName, r.date);
-      return { ...r, bcbaOwner: owner?.bcba ?? null, is97153: isRbt97153(r.code) };
+      return { ...r, bcbaOwner: owner?.bcba ?? null, assignmentId: owner?.assignmentId ?? null, is97153: isRbt97153(r.code) };
     });
   }, [rows, assignments]);
+
+  const setupIncomplete = rows.length > 0 && assignments.length === 0;
+  const unassignedAudit: UnassignedAuditRow[] = useMemo(() => (
+    ownedRows.filter(r => !r.bcbaOwner).map(r => ({ ...r, reason: "No assignment covering DOS" as const }))
+  ), [ownedRows]);
+  const assignmentIssues = useMemo(() => deriveAssignmentIssues(assignments), [assignments]);
+  const validationCoverage = useMemo(() => {
+    let assignedRows = 0, unassignedRows = 0, assignedHours = 0, unassignedHours = 0;
+    const missing = new Map<string, { clientId: string; clientName: string; rows: number; hours: number }>();
+    for (const r of ownedRows) {
+      if (r.bcbaOwner) { assignedRows++; assignedHours += r.hours; continue; }
+      unassignedRows++; unassignedHours += r.hours;
+      const key = r.clientId || normalizeName(r.clientName);
+      const v = missing.get(key) || { clientId: r.clientId, clientName: r.clientName, rows: 0, hours: 0 };
+      v.rows += 1; v.hours += r.hours; missing.set(key, v);
+    }
+    return {
+      assignmentRows: assignments.length,
+      assignedRows, assignedHours, unassignedRows, unassignedHours,
+      missingClients: [...missing.values()].sort((a, b) => b.hours - a.hours),
+      dateGaps: assignmentIssues.filter(i => i.type === "gap"),
+    };
+  }, [ownedRows, assignments.length, assignmentIssues]);
 
   /* ----- filter options ----- */
   const bcbaOptions = useMemo(() => {
@@ -323,7 +408,7 @@ export default function BcbaProductivityReportV3() {
       totalHours += r.hours;
       if (r.is97153) h97153 += r.hours; else directHours += r.hours;
       clients.add(r.clientId || normalizeName(r.clientName));
-      if (r.renderingProvider) rbts.add(r.renderingProvider);
+      if (r.is97153 && r.renderingProvider) rbts.add(r.renderingProvider);
       if (r.bcbaOwner) bcbas.add(r.bcbaOwner); else unassigned += r.hours;
     }
     return { totalHours, h97153, directHours, unassigned,
@@ -359,7 +444,7 @@ export default function BcbaProductivityReportV3() {
       row.totalHours += r.hours;
       if (r.is97153) row.h97153 += r.hours; else row.directHours += r.hours;
       row.clients.set(r.clientName, (row.clients.get(r.clientName) || 0) + r.hours);
-      if (r.renderingProvider) row.rbts.set(r.renderingProvider, (row.rbts.get(r.renderingProvider) || 0) + r.hours);
+      if (r.is97153 && r.renderingProvider) row.rbts.set(r.renderingProvider, (row.rbts.get(r.renderingProvider) || 0) + r.hours);
       row.codes.set(r.code, (row.codes.get(r.code) || 0) + r.hours);
       row.rows.push(r);
     }
@@ -367,6 +452,20 @@ export default function BcbaProductivityReportV3() {
   }, [filtered]);
 
   const transfers = useMemo(() => deriveTransfersV3(assignments), [assignments]);
+  const knownClientsWithId = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of ownedRows) if (!m.has(r.clientName)) m.set(r.clientName, r.clientId);
+    return m;
+  }, [ownedRows]);
+  const filteredAssignments = useMemo(() => {
+    const q = assignmentSearch.trim().toLowerCase();
+    if (!q) return assignments;
+    return assignments.filter(a =>
+      a.clientName.toLowerCase().includes(q) ||
+      a.clientId.toLowerCase().includes(q) ||
+      a.bcbaName.toLowerCase().includes(q),
+    );
+  }, [assignments, assignmentSearch]);
 
   async function handleSaveReport() {
     if (!rows.length) { toast.error("Upload a billing file first"); return; }
@@ -405,6 +504,24 @@ export default function BcbaProductivityReportV3() {
       assignments.map(a => [a.clientId, a.clientName, a.bcbaName, a.startDate, a.endDate ?? "", a.note ?? ""])
     );
   }
+  function exportUnassignedCsv() {
+    downloadCsv(`bcba-unassigned-audit-v3-${Date.now()}.csv`,
+      ["ClientId", "ClientName", "DateOfService", "Code", "Rendering Provider", "Hours", "State", "Payor", "Reason"],
+      unassignedAudit.map(r => [r.clientId, r.clientName, r.date, r.code, r.renderingProvider, r.hours.toFixed(2), r.state, r.payor, r.reason]),
+    );
+  }
+  function startAssignmentForRow(row: UnassignedAuditRow) {
+    setEditing({
+      id: "__new__", clientId: row.clientId, clientName: row.clientName, bcbaName: "",
+      startDate: row.date, endDate: null, note: "Created from unassigned audit", createdAt: Date.now(),
+    });
+    setAssignmentSearch(row.clientId || row.clientName);
+    setShowHistory(true);
+  }
+  function openClientHistory(row: UnassignedAuditRow) {
+    setAssignmentSearch(row.clientId || row.clientName);
+    setShowHistory(true);
+  }
   async function importAssignmentsCsv(file: File) {
     try {
       const parsed = await parseAnyFile(file);
@@ -416,32 +533,30 @@ export default function BcbaProductivityReportV3() {
       const startH = findH(h, ["StartDate", "Start Date", "Start"]);
       const endH = findH(h, ["EndDate", "End Date", "End"]);
       const noteH = findH(h, ["Note", "Notes"]);
-      if (!nameH || !bcbaH || !startH) {
-        toast.error("Missing required columns: ClientName, BCBA, StartDate");
+      if (!bcbaH || !startH || (!nameH && !idH)) {
+        toast.error("Missing required columns: BCBA, StartDate, and ClientName or ClientId");
         return;
       }
-      const existing = readAssignmentsV3();
+      const imported: Omit<BcbaAssignmentV3, "id" | "createdAt" | "updatedAt">[] = [];
       let added = 0;
       for (const r of first.rows) {
-        const cn = (nameH ? r[nameH] : "").trim();
+        const cid = (idH ? r[idH] : "").trim();
+        const cn = (nameH ? r[nameH] : "").trim() || cid;
         const bn = (bcbaH ? r[bcbaH] : "").trim();
         const sd = isoDate((startH ? r[startH] : "").trim());
-        if (!cn || !bn || !sd) continue;
+        if ((!cn && !cid) || !bn || !sd) continue;
         const ed = endH ? isoDate(String(r[endH]).trim()) : "";
-        existing.unshift({
-          id: `a_${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${added}`,
-          clientId: (idH ? r[idH] : "").trim(),
+        imported.push({
+          clientId: cid,
           clientName: cn,
           bcbaName: bn,
           startDate: sd,
           endDate: ed || null,
           note: noteH ? String(r[noteH] || "") : "",
-          createdAt: Date.now(),
         });
         added++;
       }
-      bulkReplaceAssignmentsV3(existing);
-      setAssignments(readAssignmentsV3());
+      setAssignments(await bulkInsertAssignmentsV3(imported));
       toast.success(`Imported ${added} assignments`);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to import assignments");
@@ -493,7 +608,7 @@ export default function BcbaProductivityReportV3() {
               </div>
               <div className="text-xs text-muted-foreground">
                 {rows.length > 0
-                  ? `${rows.length.toLocaleString()} rows accepted · ownership resolved via Assignment History`
+                  ? `${rows.length.toLocaleString()} rows accepted · ${assignments.length ? "ownership resolved via Assignment History" : "Assignment History setup required"}`
                   : "Drag a file here, or click choose."}
               </div>
               {missingCols.length > 0 && (
@@ -521,7 +636,7 @@ export default function BcbaProductivityReportV3() {
               </div>
               <div className="text-xs text-muted-foreground">{validation.fileName}</div>
             </div>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
               <ValPill label="Raw rows" value={fmt0(validation.rawRowCount)} />
               <ValPill label="Accepted" value={fmt0(validation.acceptedRowCount)} />
               <ValPill label="Dropped" value={fmt0(validation.droppedRowCount)} tone={validation.droppedRowCount ? "warn" : undefined} />
@@ -529,12 +644,17 @@ export default function BcbaProductivityReportV3() {
               <ValPill label="Date range" value={validation.dateMin && validation.dateMax ? `${validation.dateMin} → ${validation.dateMax}` : "—"} />
               <ValPill label="Unique clients" value={fmt0(validation.uniqueClients)} />
               <ValPill label="Unique providers" value={fmt0(validation.uniqueProviders)} />
+              <ValPill label="Assignment rows" value={fmt0(validationCoverage.assignmentRows)} tone={!validationCoverage.assignmentRows ? "warn" : undefined} />
+              <ValPill label="Assigned rows" value={fmt0(validationCoverage.assignedRows)} />
+              <ValPill label="Assigned hours" value={fmt1(validationCoverage.assignedHours)} />
+              <ValPill label="Unassigned rows" value={fmt0(validationCoverage.unassignedRows)} tone={validationCoverage.unassignedRows ? "warn" : undefined} />
+              <ValPill label="Unassigned hours" value={fmt1(validationCoverage.unassignedHours)} tone={validationCoverage.unassignedHours ? "warn" : undefined} />
             </div>
             {Object.keys(validation.dropReasons).length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
                 {Object.entries(validation.dropReasons).map(([k, v]) => (
                   <Badge key={k} variant="outline" className="font-normal">
-                    <AlertTriangle className="mr-1 h-3 w-3 text-amber-600" />
+                    <AlertTriangle className="mr-1 h-3 w-3 text-warning" />
                     {k}: {v.toLocaleString()}
                   </Badge>
                 ))}
@@ -551,6 +671,18 @@ export default function BcbaProductivityReportV3() {
                     </span>
                   ))}
                 </div>
+              </div>
+            )}
+            {(validationCoverage.missingClients.length > 0 || validationCoverage.dateGaps.length > 0) && (
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <MiniAuditList
+                  title="Clients missing assignment history"
+                  rows={validationCoverage.missingClients.slice(0, 10).map(c => [`${c.clientName || c.clientId}`, `${fmt1(c.hours)} hrs · ${fmt0(c.rows)} rows`])}
+                />
+                <MiniAuditList
+                  title="Clients with assignment date gaps"
+                  rows={validationCoverage.dateGaps.slice(0, 10).map(g => [g.clientName, g.detail])}
+                />
               </div>
             )}
           </div>
@@ -589,10 +721,17 @@ export default function BcbaProductivityReportV3() {
           <KpiCard label="Unassigned Hours" value={fmt1(kpis.unassigned)} tone={kpis.unassigned > 0 ? "warn" : undefined} />
           <KpiCard label="Dropped Rows" value={fmt0(validation?.droppedRowCount ?? 0)} tone={(validation?.droppedRowCount ?? 0) > 0 ? "warn" : undefined} />
         </div>
+        {setupIncomplete && (
+          <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning-foreground">
+            <AlertTriangle className="mr-1.5 inline h-4 w-4" />
+            BCBA Assignment History is required before productivity can be assigned. Upload or create assignment history first.
+          </div>
+        )}
         {kpis.unassigned > 0 && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
             <AlertTriangle className="mr-1.5 inline h-3.5 w-3.5" />
             {fmt1(kpis.unassigned)} hrs have no Assignment History match. Open <button className="underline" onClick={() => setShowHistory(true)}>Assignment History</button> to add ownership entries.
+            {unassignedAudit.length > 0 && <button className="ml-2 underline" onClick={exportUnassignedCsv}>Export unassigned audit</button>}
           </div>
         )}
 
@@ -657,6 +796,49 @@ export default function BcbaProductivityReportV3() {
           </div>
         </div>
 
+        {/* Unassigned audit */}
+        {unassignedAudit.length > 0 && (
+          <div className="overflow-hidden rounded-xl border">
+            <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <AlertTriangle className="h-3.5 w-3.5" /> Unassigned Audit
+              </div>
+              <Button variant="ghost" size="sm" onClick={exportUnassignedCsv}>
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+              </Button>
+            </div>
+            <div className="max-h-80 overflow-auto">
+              <table className="w-full min-w-[980px] text-sm">
+                <thead className="sticky top-0 bg-background text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2">Client</th><th className="px-3 py-2">Client ID</th><th className="px-3 py-2">DOS</th>
+                    <th className="px-3 py-2">Code</th><th className="px-3 py-2">Rendering Provider</th><th className="px-3 py-2 text-right">Hours</th>
+                    <th className="px-3 py-2">State</th><th className="px-3 py-2">Payor</th><th className="px-3 py-2">Reason</th><th className="px-3 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {unassignedAudit.slice(0, 250).map((r, i) => (
+                    <tr key={`${r.clientId}-${r.clientName}-${r.date}-${i}`} className="border-t">
+                      <td className="px-3 py-2 font-medium">{r.clientName}</td><td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.clientId || "—"}</td>
+                      <td className="px-3 py-2">{r.date}</td><td className="px-3 py-2">{r.code}</td><td className="px-3 py-2">{r.renderingProvider || "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.hours)}</td><td className="px-3 py-2">{r.state || "—"}</td><td className="px-3 py-2">{r.payor || "—"}</td>
+                      <td className="px-3 py-2">{r.reason}</td>
+                      <td className="px-3 py-2 text-right">
+                        <Button variant="ghost" size="sm" onClick={() => openClientHistory(r)}>
+                          <History className="mr-1.5 h-3.5 w-3.5" /> Open history
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => startAssignmentForRow(r)}>
+                          <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Create assignment
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Transfer audit */}
         <div className="overflow-hidden rounded-xl border">
           <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
@@ -699,11 +881,19 @@ export default function BcbaProductivityReportV3() {
 
       {/* Assignment history drawer */}
       <Dialog open={showHistory} onOpenChange={setShowHistory}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-h-[88vh] max-w-6xl overflow-hidden">
           <DialogHeader>
             <DialogTitle>BCBA Assignment History</DialogTitle>
           </DialogHeader>
-          <div className="mb-2 flex flex-wrap justify-end gap-2">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="relative min-w-64 flex-1">
+              <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input value={assignmentSearch} onChange={e => setAssignmentSearch(e.target.value)} placeholder="Search client, ClientId, or BCBA…" className="h-8 pl-7" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={refreshAssignments} disabled={assignmentLoading}>
+                <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", assignmentLoading && "animate-spin")} /> Refresh
+              </Button>
             <input ref={assignImportRef} type="file" hidden accept={SUPPORTED_EXTENSIONS}
               onChange={e => e.target.files?.[0] && importAssignmentsCsv(e.target.files[0])} />
             <Button variant="outline" size="sm" onClick={() => assignImportRef.current?.click()}>
@@ -712,19 +902,32 @@ export default function BcbaProductivityReportV3() {
             <Button variant="outline" size="sm" onClick={exportAssignmentsCsv} disabled={!assignments.length}>
               <Download className="mr-1.5 h-3.5 w-3.5" /> Export CSV
             </Button>
+            </div>
           </div>
-          <AssignmentHistoryEditor
-            assignments={assignments}
-            knownClients={clientOptions}
-            knownClientsWithId={useMemo(() => {
-              const m = new Map<string, string>();
-              for (const r of ownedRows) if (!m.has(r.clientName)) m.set(r.clientName, r.clientId);
-              return m;
-            }, [ownedRows])}
-            onChange={() => setAssignments(readAssignmentsV3())}
-            editing={editing}
-            setEditing={setEditing}
-          />
+          {assignmentError && <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">{assignmentError}</div>}
+          <Tabs defaultValue="history" className="min-h-0">
+            <TabsList>
+              <TabsTrigger value="history">History ({assignments.length})</TabsTrigger>
+              <TabsTrigger value="issues">Gaps & overlaps ({assignmentIssues.length})</TabsTrigger>
+              <TabsTrigger value="unassigned">Unassigned ({unassignedAudit.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="history" className="max-h-[64vh] overflow-auto">
+              <AssignmentHistoryEditor
+                assignments={filteredAssignments}
+                knownClients={clientOptions}
+                knownClientsWithId={knownClientsWithId}
+                onChange={refreshAssignments}
+                editing={editing}
+                setEditing={setEditing}
+              />
+            </TabsContent>
+            <TabsContent value="issues" className="max-h-[64vh] overflow-auto">
+              <AssignmentIssuesTable issues={assignmentIssues} />
+            </TabsContent>
+            <TabsContent value="unassigned" className="max-h-[64vh] overflow-auto">
+              <UnassignedManagerTable rows={unassignedAudit} onCreate={startAssignmentForRow} onExport={exportUnassignedCsv} />
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </OSShell>
@@ -735,7 +938,7 @@ export default function BcbaProductivityReportV3() {
 function KpiCard({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
   return (
     <div className={cn("rounded-xl border p-3",
-      tone === "warn" ? "border-amber-300 bg-amber-50" : "bg-card/60")}>
+      tone === "warn" ? "border-warning/40 bg-warning/10" : "bg-card/60")}>
       <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-1 text-xl font-semibold tracking-tight">{value}</div>
     </div>
@@ -744,9 +947,25 @@ function KpiCard({ label, value, tone }: { label: string; value: string; tone?: 
 function ValPill({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
   return (
     <div className={cn("rounded-lg border bg-background px-3 py-2",
-      tone === "warn" && "border-amber-300 bg-amber-50")}>
+      tone === "warn" && "border-warning/40 bg-warning/10")}>
       <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-0.5 text-sm font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+function MiniAuditList({ title, rows }: { title: string; rows: [string, string][] }) {
+  return (
+    <div className="rounded-lg border bg-background p-2">
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+      <ul className="space-y-1 text-xs">
+        {rows.length === 0 && <li className="text-muted-foreground">None detected</li>}
+        {rows.map(([name, detail], i) => (
+          <li key={`${name}-${i}`} className="flex justify-between gap-3">
+            <span className="min-w-0 truncate font-medium">{name || "Unknown client"}</span>
+            <span className="shrink-0 text-right text-muted-foreground">{detail}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -768,12 +987,12 @@ function FilterSelect({ label, value, onChange, options }: {
 }
 function Row({ bcba, expanded, onToggle }: {
   bcba: { bcba: string; isUnassigned: boolean; totalHours: number; h97153: number; directHours: number;
-          clients: Map<string, number>; rbts: Map<string, number>; codes: Map<string, number>; };
+          clients: Map<string, number>; rbts: Map<string, number>; codes: Map<string, number>; rows: OwnedRow[]; };
   expanded: boolean; onToggle: () => void;
 }) {
   return (
     <>
-      <tr className={cn("border-t hover:bg-muted/30", bcba.isUnassigned && "bg-amber-50/60")}>
+      <tr className={cn("border-t hover:bg-muted/30", bcba.isUnassigned && "bg-warning/10")}>
         <td className="px-3 py-2">
           <button onClick={onToggle} className="text-muted-foreground hover:text-foreground">
             {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -781,7 +1000,7 @@ function Row({ bcba, expanded, onToggle }: {
         </td>
         <td className="px-3 py-2 font-medium">
           {bcba.bcba}
-          {bcba.isUnassigned && <Badge variant="outline" className="ml-2 border-amber-400 text-amber-700">No assignment history</Badge>}
+          {bcba.isUnassigned && <Badge variant="outline" className="ml-2 border-warning/50 text-warning-foreground">No assignment history</Badge>}
         </td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.totalHours)}</td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.h97153)}</td>
@@ -798,10 +1017,34 @@ function Row({ bcba, expanded, onToggle }: {
               <DrillList title="RBTs / Rendering Providers" items={[...bcba.rbts.entries()]} />
               <DrillList title="Billing Codes" items={[...bcba.codes.entries()]} />
             </div>
+            <BillingRowsDrilldown rows={bcba.rows} />
           </td>
         </tr>
       )}
     </>
+  );
+}
+function BillingRowsDrilldown({ rows }: { rows: OwnedRow[] }) {
+  return (
+    <div className="mt-3 overflow-hidden rounded-lg border bg-background">
+      <div className="border-b bg-muted/30 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Billing Rows
+      </div>
+      <div className="max-h-56 overflow-auto">
+        <table className="w-full min-w-[760px] text-xs">
+          <thead className="sticky top-0 bg-background text-left uppercase tracking-wider text-muted-foreground">
+            <tr><th className="px-2 py-1">DOS</th><th className="px-2 py-1">Client</th><th className="px-2 py-1">Rendering Provider</th><th className="px-2 py-1">Code</th><th className="px-2 py-1 text-right">Hours</th><th className="px-2 py-1">Payor</th></tr>
+          </thead>
+          <tbody>
+            {rows.slice(0, 200).map((r, i) => (
+              <tr key={`${r.date}-${r.clientId}-${r.code}-${i}`} className="border-t">
+                <td className="px-2 py-1">{r.date}</td><td className="px-2 py-1 font-medium">{r.clientName}</td><td className="px-2 py-1">{r.renderingProvider || "—"}</td><td className="px-2 py-1">{r.code}</td><td className="px-2 py-1 text-right tabular-nums">{fmt1(r.hours)}</td><td className="px-2 py-1">{r.payor || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 function DrillList({ title, items }: { title: string; items: [string, number][] }) {
@@ -827,13 +1070,60 @@ function DrillList({ title, items }: { title: string; items: [string, number][] 
   );
 }
 
+function AssignmentIssuesTable({ issues }: { issues: AssignmentIssue[] }) {
+  return (
+    <div className="rounded-lg border">
+      <table className="w-full min-w-[720px] text-sm">
+        <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+          <tr><th className="px-3 py-2">Client</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Details</th></tr>
+        </thead>
+        <tbody>
+          {issues.length === 0 && <tr><td colSpan={3} className="px-3 py-6 text-center text-muted-foreground">No date gaps or overlaps detected.</td></tr>}
+          {issues.map((i, idx) => (
+            <tr key={`${i.clientKey}-${idx}`} className="border-t">
+              <td className="px-3 py-2 font-medium">{i.clientName}</td>
+              <td className="px-3 py-2"><Badge variant="outline">{i.type}</Badge></td>
+              <td className="px-3 py-2 text-muted-foreground">{i.detail}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function UnassignedManagerTable({ rows, onCreate, onExport }: { rows: UnassignedAuditRow[]; onCreate: (row: UnassignedAuditRow) => void; onExport: () => void }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-end"><Button variant="outline" size="sm" onClick={onExport} disabled={!rows.length}><Download className="mr-1.5 h-3.5 w-3.5" /> Export unassigned</Button></div>
+      <div className="rounded-lg border">
+        <table className="w-full min-w-[900px] text-sm">
+          <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+            <tr><th className="px-3 py-2">Client</th><th className="px-3 py-2">Client ID</th><th className="px-3 py-2">DOS</th><th className="px-3 py-2">Code</th><th className="px-3 py-2">Provider</th><th className="px-3 py-2 text-right">Hours</th><th className="px-3 py-2"></th></tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">No unassigned rows.</td></tr>}
+            {rows.slice(0, 500).map((r, i) => (
+              <tr key={`${r.clientId}-${r.date}-${i}`} className="border-t">
+                <td className="px-3 py-2 font-medium">{r.clientName}</td><td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.clientId || "—"}</td>
+                <td className="px-3 py-2">{r.date}</td><td className="px-3 py-2">{r.code}</td><td className="px-3 py-2">{r.renderingProvider || "—"}</td><td className="px-3 py-2 text-right tabular-nums">{fmt1(r.hours)}</td>
+                <td className="px-3 py-2 text-right"><Button variant="outline" size="sm" onClick={() => onCreate(r)}><UserPlus className="mr-1.5 h-3.5 w-3.5" /> Create assignment</Button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function AssignmentHistoryEditor({
   assignments, knownClients, knownClientsWithId, onChange, editing, setEditing,
 }: {
   assignments: BcbaAssignmentV3[];
   knownClients: string[];
   knownClientsWithId: Map<string, string>;
-  onChange: () => void;
+  onChange: () => void | Promise<void>;
   editing: BcbaAssignmentV3 | null;
   setEditing: (a: BcbaAssignmentV3 | null) => void;
 }) {
@@ -857,14 +1147,14 @@ function AssignmentHistoryEditor({
       startDate: new Date().toISOString().slice(0, 10), endDate: null });
   }
 
-  function submit() {
+  async function submit() {
     if (!draft.clientName || !draft.bcbaName || !draft.startDate) {
       toast.error("Client, BCBA and Start Date are required"); return;
     }
     // Auto-fill clientId from billing if known
     const inferredId = draft.clientId || knownClientsWithId.get(draft.clientName) || "";
-    if (editing) {
-      updateAssignmentV3(editing.id, { ...draft, clientId: inferredId });
+    if (editing && editing.id !== "__new__") {
+      await updateAssignmentV3(editing.id, { ...draft, clientId: inferredId });
       toast.success("Assignment updated");
     } else {
       // Auto-close prior open assignment for same client with a different BCBA
@@ -875,12 +1165,12 @@ function AssignmentHistoryEditor({
       );
       for (const p of prior) {
         const end = new Date(draft.startDate); end.setDate(end.getDate() - 1);
-        updateAssignmentV3(p.id, { endDate: end.toISOString().slice(0, 10) });
+        await updateAssignmentV3(p.id, { endDate: end.toISOString().slice(0, 10) });
       }
-      addAssignmentV3({ ...draft, clientId: inferredId });
+      await addAssignmentV3({ ...draft, clientId: inferredId });
       toast.success("Assignment added");
     }
-    onChange();
+    await onChange();
     reset();
   }
 
@@ -960,7 +1250,7 @@ function AssignmentHistoryEditor({
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7"
-                          onClick={() => { if (confirm("Delete assignment?")) { deleteAssignmentV3(a.id); onChange(); } }}
+                          onClick={async () => { if (confirm("Delete assignment?")) { await deleteAssignmentV3(a.id); await onChange(); toast.success("Assignment deleted"); } }}
                           title="Delete">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
