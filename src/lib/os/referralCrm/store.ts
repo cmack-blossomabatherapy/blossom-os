@@ -921,6 +921,7 @@ export function companyName(s: State, id?: ID) { return s.companies.find((c) => 
 export function evalList(s: State, list: ListDef): (Contact | Company)[] {
   const rows = list.object === "contacts" ? activeContacts(s) : activeCompanies(s);
   if (list.kind === "static") return rows.filter((r) => list.staticIds?.includes(r.id));
+  if (list.criteriaRules) return matchCriteria(rows, list.object, list.criteriaRules);
   switch (list.id) {
     case "l1": return (rows as Contact[]).filter((c) => c.state === "NC" && !!c.referralSourceType);
     case "l2": return (rows as Contact[]).filter((c) => !c.email);
@@ -929,4 +930,113 @@ export function evalList(s: State, list: ListDef): (Contact | Company)[] {
       c.lunchLearnStatus === "Not Scheduled" && (c.relationshipStrength === "Warm" || c.relationshipStrength === "Strong"));
     default: return rows;
   }
+}
+
+function matchCriteria(
+  rows: (Contact | Company)[],
+  object: "contacts" | "companies",
+  c: ListCriteria,
+): (Contact | Company)[] {
+  const olderThanMs = (iso: string | undefined, days: number) =>
+    !!iso && Date.now() - new Date(iso).getTime() >= days * 86_400_000;
+  return rows.filter((r) => {
+    const anyR = r as Contact & Company;
+    if (c.state && anyR.state !== c.state) return false;
+    if (c.companyType && object === "companies" && (r as Company).companyType !== c.companyType) return false;
+    if (c.referralSourceType && object === "contacts" && (r as Contact).referralSourceType !== c.referralSourceType) return false;
+    if (c.referralPartnerStatus && (anyR.referralPartnerStatus ?? "") !== c.referralPartnerStatus) return false;
+    if (c.relationshipTier && object === "companies" && (r as Company).relationshipTier !== c.relationshipTier) return false;
+    if (typeof c.lastContactedOlderThanDays === "number" &&
+        !olderThanMs(anyR.lastContactedDate, c.lastContactedOlderThanDays)) return false;
+    if (typeof c.referralCountGte === "number" && (anyR.referralCount ?? 0) < c.referralCountGte) return false;
+    if (c.missingEmail) {
+      const email = object === "contacts" ? (r as Contact).email : (r as Company).generalEmail;
+      if (email) return false;
+    }
+    if (c.missingPhone) {
+      const phone = object === "contacts"
+        ? ((r as Contact).phone || (r as Contact).mobilePhone)
+        : (r as Company).mainPhone;
+      if (phone) return false;
+    }
+    if (c.nextFollowUpEmpty && anyR.nextFollowUpDate) return false;
+    return true;
+  });
+}
+
+// ---------- workflow execution ----------
+function executeWorkflow(w: WorkflowDef): string {
+  const t = w.triggerType;
+  if (!t) return `Logged run (no executable trigger)`;
+
+  if (t === "no_activity_days") {
+    const days = w.triggerConfig?.days ?? 60;
+    const cutoff = Date.now() - days * 86_400_000;
+    const targets = activeCompanies(state).filter((c) =>
+      !c.lastContactedDate || new Date(c.lastContactedDate).getTime() < cutoff,
+    );
+    let created = 0;
+    for (const co of targets.slice(0, 25)) {
+      crm.addTask({
+        title: `Follow-up: ${co.name} (no activity ${days}+ days)`,
+        type: "Follow-Up", priority: "Medium", status: "Open",
+        companyId: co.id, assignedUserId: co.ownerId,
+        notes: `Auto-created by workflow "${w.name}"`,
+      });
+      created++;
+    }
+    return `${created} follow-up task${created === 1 ? "" : "s"} created`;
+  }
+
+  if (t === "lunch_learn_needed") {
+    const targets = activeCompanies(state).filter((c) =>
+      c.activeReferralPartner && c.lunchLearnStatus === "Not Scheduled",
+    );
+    let created = 0;
+    for (const co of targets.slice(0, 25)) {
+      crm.addTask({
+        title: `Schedule Lunch & Learn: ${co.name}`,
+        type: "Lunch & Learn", priority: "Medium", status: "Open",
+        companyId: co.id, assignedUserId: co.ownerId,
+        notes: `Auto-created by workflow "${w.name}"`,
+      });
+      created++;
+    }
+    return `${created} Lunch & Learn task${created === 1 ? "" : "s"} created`;
+  }
+
+  if (t === "referral_created") {
+    const cutoff = Date.now() - 30 * 86_400_000;
+    const targets = activeCompanies(state).filter((c) =>
+      c.lastReferralDate && new Date(c.lastReferralDate).getTime() >= cutoff &&
+      c.referralPartnerStatus !== "Active Referral Partner",
+    );
+    let updated = 0;
+    for (const co of targets.slice(0, 50)) {
+      crm.updateCompany(co.id, { referralPartnerStatus: "Active Referral Partner", activeReferralPartner: true });
+      logActivity({ type: "property_change", message: `Marked as Active Referral Partner via workflow "${w.name}"`, companyId: co.id });
+      updated++;
+    }
+    return `${updated} partner status update${updated === 1 ? "" : "s"}`;
+  }
+
+  if (t === "referral_count_reaches") {
+    const n = w.triggerConfig?.count ?? 10;
+    const targets = activeCompanies(state).filter((c) => (c.referralCount ?? 0) >= n);
+    let tagged = 0;
+    for (const co of targets) {
+      const tag = `${n}+ referrals`;
+      if (!co.tags.includes(tag)) {
+        crm.updateCompany(co.id, { tags: [...co.tags, tag] });
+        tagged++;
+      }
+    }
+    return `${tagged} compan${tagged === 1 ? "y" : "ies"} tagged`;
+  }
+
+  // Fallback: just log the actions list as activity entries.
+  for (const a of w.actions.slice(0, 5)) {
+    logActivity({ type: "workflow_enrollment", message: `Workflow "${w.name}": ${a}` });
+  }
+  return `Executed ${w.actions.length} action${w.actions.length === 1 ? "" : "s"}`;
 }
