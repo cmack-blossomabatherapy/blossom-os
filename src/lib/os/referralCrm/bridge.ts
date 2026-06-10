@@ -22,6 +22,8 @@ import {
   type ImportBatch,
   type Referral,
   type Task,
+  type Attachment,
+  type AuditLogEntry,
   type ID,
 } from "./store";
 import type {
@@ -35,6 +37,10 @@ import type { Database } from "@/integrations/supabase/types";
 type CrmReferralRow = Database["public"]["Tables"]["referral_crm_referrals"]["Row"];
 type CrmTaskRow = Database["public"]["Tables"]["referral_crm_tasks"]["Row"];
 type LeadLinkRow = Database["public"]["Tables"]["referral_lead_links"]["Row"];
+type CrmAttachmentRow = Database["public"]["Tables"]["referral_crm_attachments"]["Row"];
+type CrmAuditRow = Database["public"]["Tables"]["referral_crm_audit_log"]["Row"];
+
+const REFERRAL_CRM_BUCKET = "referral-crm-files";
 
 /* ---------------- mapping: Supabase → CRM ---------------- */
 
