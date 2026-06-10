@@ -274,6 +274,9 @@ function auditFromRow(r: CrmAuditRow): AuditLogEntry {
     objectId: r.object_id ?? undefined,
     objectLabel: r.object_label ?? undefined,
     summary: r.summary ?? r.action,
+    beforeData: (r.before_data as Record<string, unknown> | null) ?? null,
+    afterData: (r.after_data as Record<string, unknown> | null) ?? null,
+    metadata: (r.metadata as Record<string, unknown> | null) ?? null,
   };
 }
 /* ---------------- hydrate ---------------- */
