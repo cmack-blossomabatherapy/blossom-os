@@ -679,6 +679,7 @@ export const crm = {
     set({ contacts: [c, ...state.contacts] });
     logActivity({ type: "property_change", message: `Contact created: ${c.firstName} ${c.lastName}`, contactId: c.id });
     logAudit({ action: "create", objectType: "contact", objectId: c.id, objectLabel: `${c.firstName} ${c.lastName}`, summary: "Contact created" });
+    fire("onContactCreate", c);
     return c;
   },
   updateContact(id: ID, patch: Partial<Contact>) {
@@ -687,20 +688,24 @@ export const crm = {
     const c = state.contacts.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id,
       summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
+    fire("onContactUpdate", id, patch, c);
   },
   softDeleteContact(id: ID) {
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
     const c = state.contacts.find((x) => x.id === id);
     logAudit({ action: "delete", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact moved to deleted" });
+    fire("onContactDelete", id, false);
   },
   restoreContact(id: ID) {
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
     const c = state.contacts.find((x) => x.id === id);
     logAudit({ action: "restore", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact restored" });
+    fire("onContactUpdate", id, { deletedAt: undefined } as Partial<Contact>, c);
   },
   hardDeleteContact(id: ID) {
     set({ contacts: state.contacts.filter((c) => c.id !== id) });
     logAudit({ action: "delete", objectType: "contact", objectId: id, summary: "Contact permanently deleted" });
+    fire("onContactDelete", id, true);
   },
 
   mergeContacts(winnerId: ID, loserId: ID) {
@@ -747,6 +752,7 @@ export const crm = {
     set({ companies: [c, ...state.companies] });
     logActivity({ type: "property_change", message: `Company created: ${c.name}`, companyId: c.id });
     logAudit({ action: "create", objectType: "company", objectId: c.id, objectLabel: c.name, summary: "Company created" });
+    fire("onCompanyCreate", c);
     return c;
   },
   updateCompany(id: ID, patch: Partial<Company>) {
@@ -755,20 +761,24 @@ export const crm = {
     const co = state.companies.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "company", objectId: id, objectLabel: co?.name,
       summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
+    fire("onCompanyUpdate", id, patch, co);
   },
   softDeleteCompany(id: ID) {
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
     const co = state.companies.find((x) => x.id === id);
     logAudit({ action: "delete", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company moved to deleted" });
+    fire("onCompanyDelete", id, false);
   },
   restoreCompany(id: ID) {
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
     const co = state.companies.find((x) => x.id === id);
     logAudit({ action: "restore", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company restored" });
+    fire("onCompanyUpdate", id, { deletedAt: undefined } as Partial<Company>, co);
   },
   hardDeleteCompany(id: ID) {
     set({ companies: state.companies.filter((c) => c.id !== id) });
     logAudit({ action: "delete", objectType: "company", objectId: id, summary: "Company permanently deleted" });
+    fire("onCompanyDelete", id, true);
   },
 
   mergeCompanies(winnerId: ID, loserId: ID) {
