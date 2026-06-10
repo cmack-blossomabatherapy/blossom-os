@@ -287,6 +287,8 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
+  const toggleSort = (key: string) => setSort((p) => p.key === key ? { key, dir: p.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
 
   const rows = useMemo(() => {
     let r = scopedContacts(s);
@@ -300,8 +302,27 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
       const ql = q.toLowerCase();
       r = r.filter((c) => fullName(c).toLowerCase().includes(ql) || c.email?.toLowerCase().includes(ql) || c.jobTitle?.toLowerCase().includes(ql));
     }
-    return r;
-  }, [s, view, q, stateFilter]);
+    const getKey = (c: typeof r[number]): string | number => {
+      switch (sort.key) {
+        case "name": return fullName(c).toLowerCase();
+        case "company": return (companyName(s, c.companyId) || "").toLowerCase();
+        case "title": return (c.jobTitle || "").toLowerCase();
+        case "state": return (c.state || "").toLowerCase();
+        case "owner": return (userName(s, c.ownerId) || "").toLowerCase();
+        case "status": return (c.referralPartnerStatus || "").toLowerCase();
+        case "referrals": return c.referralCount ?? 0;
+        case "last": return c.lastContactedDate || "";
+        default: return "";
+      }
+    };
+    const sorted = [...r].sort((a, b) => {
+      const av = getKey(a); const bv = getKey(b);
+      if (av < bv) return sort.dir === "asc" ? -1 : 1;
+      if (av > bv) return sort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [s, view, q, stateFilter, sort]);
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => {
@@ -331,6 +352,12 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
   const bulkDelete = () => {
     selected.forEach((id) => crm.softDeleteContact(id));
     toast({ title: `${selected.size} contact(s) moved to Deleted` });
+    setSelected(new Set());
+  };
+  const bulkResetReferrals = () => {
+    if (!window.confirm(`Reset referral count to 0 for ${selected.size} contact(s)?`)) return;
+    selected.forEach((id) => crm.updateContact(id, { referralCount: 0 }));
+    toast({ title: `Reset referrals on ${selected.size} contact(s)` });
     setSelected(new Set());
   };
 
