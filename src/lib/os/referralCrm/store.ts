@@ -1004,6 +1004,94 @@ export const crm = {
     logAudit({ action: "update", objectType: "system", objectId: listId, objectLabel: l.name,
       summary: `Removed ${l.object.slice(0, -1)} ${recordId} from static list` });
   },
+
+  // ---- users ----
+  setCurrentUser(id: ID) {
+    if (!state.users.find((u) => u.id === id)) return;
+    set({ currentUserId: id });
+  },
+  addUser(input: Partial<CrmUser> & { firstName: string; lastName: string; email: string; role: CrmRole }) {
+    const id = `u-${newId()}`;
+    const u: CrmUser = {
+      id,
+      name: `${input.firstName} ${input.lastName}`.trim(),
+      email: input.email,
+      role: input.role,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      mobilePhone: input.mobilePhone,
+      states: input.states ?? [],
+      teamIds: input.teamIds ?? [],
+      active: input.active ?? true,
+      state: (input.states ?? [])[0],
+    };
+    set({ users: [u, ...state.users] });
+    logAudit({ action: "create", objectType: "system", objectId: u.id, objectLabel: u.name, summary: `User created (${u.role})` });
+    return u;
+  },
+  updateUser(id: ID, patch: Partial<CrmUser>) {
+    const prev = state.users.find((u) => u.id === id);
+    const merged = prev ? { ...prev, ...patch } : prev;
+    if (merged && (patch.firstName || patch.lastName)) {
+      merged.name = `${merged.firstName ?? ""} ${merged.lastName ?? ""}`.trim() || merged.name;
+    }
+    if (merged && patch.states) {
+      merged.state = patch.states[0];
+    }
+    set({ users: state.users.map((u) => u.id === id ? (merged as CrmUser) : u) });
+    if (prev && patch.role && patch.role !== prev.role) {
+      logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: prev.name, summary: `Role changed: ${prev.role} → ${patch.role}` });
+    } else {
+      logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: prev?.name, summary: `User updated: ${Object.keys(patch).join(", ") || "—"}` });
+    }
+  },
+  setUserActive(id: ID, active: boolean) {
+    const u = state.users.find((x) => x.id === id);
+    set({ users: state.users.map((x) => x.id === id ? { ...x, active } : x) });
+    logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: u?.name, summary: active ? "User reactivated" : "User deactivated" });
+  },
+
+  // ---- teams ----
+  addTeam(input: Partial<CrmTeam> & { name: string; type: TeamType }) {
+    const t: CrmTeam = {
+      id: `tm-${newId()}`,
+      name: input.name,
+      type: input.type,
+      states: input.states ?? [],
+      memberIds: input.memberIds ?? [],
+      leadId: input.leadId,
+      active: input.active ?? true,
+      createdAt: now(),
+      updatedAt: now(),
+    };
+    set({ teams: [t, ...state.teams] });
+    logAudit({ action: "create", objectType: "system", objectId: t.id, objectLabel: t.name, summary: `Team created (${t.type})` });
+    return t;
+  },
+  updateTeam(id: ID, patch: Partial<CrmTeam>) {
+    set({ teams: state.teams.map((t) => t.id === id ? { ...t, ...patch, updatedAt: now() } : t) });
+    const t = state.teams.find((x) => x.id === id);
+    logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: t?.name, summary: `Team updated: ${Object.keys(patch).join(", ") || "—"}` });
+  },
+  setTeamActive(id: ID, active: boolean) {
+    const t = state.teams.find((x) => x.id === id);
+    set({ teams: state.teams.map((x) => x.id === id ? { ...x, active, updatedAt: now() } : x) });
+    logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: t?.name, summary: active ? "Team reactivated" : "Team deactivated" });
+  },
+
+  // ---- permissions ----
+  setPermission(role: CrmRole, perm: CrmPermission, value: boolean) {
+    const next: PermissionMatrix = {
+      ...state.permissions,
+      [role]: { ...state.permissions[role], [perm]: value },
+    };
+    set({ permissions: next });
+    logAudit({ action: "update", objectType: "system", objectLabel: role, summary: `Permission changed: ${role}.${perm} → ${value ? "allowed" : "denied"}` });
+  },
+  resetPermissions() {
+    set({ permissions: DEFAULT_PERMISSIONS });
+    logAudit({ action: "update", objectType: "system", summary: "Permission matrix reset to defaults" });
+  },
 };
 
 // ---------- selectors / helpers ----------
