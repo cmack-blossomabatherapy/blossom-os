@@ -477,6 +477,16 @@ export default function BcbaProductivityReportV3() {
     setSavedList(readSavedReportsV3());
     toast.success("Report saved");
   }
+  async function handleResetUpload() {
+    if (rows.length && !confirm("Clear the current upload? Unsaved data will be lost.")) return;
+    setRows([]);
+    setFileName("");
+    setValidation(null);
+    setMissingCols([]);
+    await clearLastBillingV3();
+    if (inputRef.current) inputRef.current.value = "";
+    toast.success("Upload cleared");
+  }
   async function handleRegenerate(id: string) {
     const data = await getSavedReportRowsV3(id);
     if (!data.length) { toast.error("Saved report payload not found"); return; }
