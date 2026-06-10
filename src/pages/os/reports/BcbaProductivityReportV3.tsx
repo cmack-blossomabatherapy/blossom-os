@@ -982,6 +982,8 @@ export default function BcbaProductivityReportV3() {
               <TabsTrigger value="history">History ({assignments.length})</TabsTrigger>
               <TabsTrigger value="issues">Gaps & overlaps ({assignmentIssues.length})</TabsTrigger>
               <TabsTrigger value="unassigned">Unassigned ({unassignedAudit.length})</TabsTrigger>
+              <TabsTrigger value="inferred">Inferred ({inferred.assignments.length})</TabsTrigger>
+              <TabsTrigger value="conflicts">Conflicts ({inferred.conflicts.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="history" className="max-h-[64vh] overflow-auto">
               <AssignmentHistoryEditor
@@ -998,6 +1000,16 @@ export default function BcbaProductivityReportV3() {
             </TabsContent>
             <TabsContent value="unassigned" className="max-h-[64vh] overflow-auto">
               <UnassignedManagerTable rows={unassignedAudit} onCreate={startAssignmentForRow} onExport={exportUnassignedCsv} />
+            </TabsContent>
+            <TabsContent value="inferred" className="max-h-[64vh] overflow-auto">
+              <InferredAssignmentsTable
+                assignments={inferred.assignments}
+                onSave={handleSaveInferred}
+                usingInferred={usingInferred}
+              />
+            </TabsContent>
+            <TabsContent value="conflicts" className="max-h-[64vh] overflow-auto">
+              <OwnershipConflictsTable conflicts={inferred.conflicts} />
             </TabsContent>
           </Tabs>
         </DialogContent>
