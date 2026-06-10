@@ -759,33 +759,40 @@ export const crm = {
     } as Contact;
     set({ contacts: [c, ...state.contacts] });
     logActivity({ type: "property_change", message: `Contact created: ${c.firstName} ${c.lastName}`, contactId: c.id });
-    logAudit({ action: "create", objectType: "contact", objectId: c.id, objectLabel: `${c.firstName} ${c.lastName}`, summary: "Contact created" });
+    logAudit({ action: "create", objectType: "contact", objectId: c.id, objectLabel: `${c.firstName} ${c.lastName}`, summary: "Contact created", afterData: c as unknown as Record<string, unknown> });
     fire("onContactCreate", c);
     return c;
   },
   updateContact(id: ID, patch: Partial<Contact>) {
+    const before = state.contacts.find((x) => x.id === id);
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, ...patch, updatedAt: now() } : c) });
     logActivity({ type: "property_change", message: `Contact updated`, contactId: id });
     const c = state.contacts.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id,
-      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
+      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}`,
+      beforeData: before as unknown as Record<string, unknown> | undefined,
+      afterData: c as unknown as Record<string, unknown> | undefined,
+      metadata: { changedFields: Object.keys(patch).filter((k) => k !== "updatedAt") } });
     fire("onContactUpdate", id, patch, c);
   },
   softDeleteContact(id: ID) {
+    const before = state.contacts.find((x) => x.id === id);
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
     const c = state.contacts.find((x) => x.id === id);
-    logAudit({ action: "delete", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact moved to deleted" });
+    logAudit({ action: "delete", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact moved to deleted", beforeData: before as unknown as Record<string, unknown> | undefined });
     fire("onContactDelete", id, false);
   },
   restoreContact(id: ID) {
+    const before = state.contacts.find((x) => x.id === id);
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
     const c = state.contacts.find((x) => x.id === id);
-    logAudit({ action: "restore", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact restored" });
+    logAudit({ action: "restore", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact restored", beforeData: before as unknown as Record<string, unknown> | undefined, afterData: c as unknown as Record<string, unknown> | undefined });
     fire("onContactUpdate", id, { deletedAt: undefined } as Partial<Contact>, c);
   },
   hardDeleteContact(id: ID) {
+    const before = state.contacts.find((x) => x.id === id);
     set({ contacts: state.contacts.filter((c) => c.id !== id) });
-    logAudit({ action: "delete", objectType: "contact", objectId: id, summary: "Contact permanently deleted" });
+    logAudit({ action: "delete", objectType: "contact", objectId: id, summary: "Contact permanently deleted", beforeData: before as unknown as Record<string, unknown> | undefined, metadata: { permanent: true } });
     fire("onContactDelete", id, true);
   },
 
