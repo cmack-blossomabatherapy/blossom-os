@@ -791,6 +791,46 @@ export default function BcbaProductivityReportV3() {
           </div>
         </div>
 
+        {/* Unassigned audit */}
+        {unassignedAudit.length > 0 && (
+          <div className="overflow-hidden rounded-xl border">
+            <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <AlertTriangle className="h-3.5 w-3.5" /> Unassigned Audit
+              </div>
+              <Button variant="ghost" size="sm" onClick={exportUnassignedCsv}>
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+              </Button>
+            </div>
+            <div className="max-h-80 overflow-auto">
+              <table className="w-full min-w-[980px] text-sm">
+                <thead className="sticky top-0 bg-background text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2">Client</th><th className="px-3 py-2">Client ID</th><th className="px-3 py-2">DOS</th>
+                    <th className="px-3 py-2">Code</th><th className="px-3 py-2">Rendering Provider</th><th className="px-3 py-2 text-right">Hours</th>
+                    <th className="px-3 py-2">State</th><th className="px-3 py-2">Payor</th><th className="px-3 py-2">Reason</th><th className="px-3 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {unassignedAudit.slice(0, 250).map((r, i) => (
+                    <tr key={`${r.clientId}-${r.clientName}-${r.date}-${i}`} className="border-t">
+                      <td className="px-3 py-2 font-medium">{r.clientName}</td><td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.clientId || "—"}</td>
+                      <td className="px-3 py-2">{r.date}</td><td className="px-3 py-2">{r.code}</td><td className="px-3 py-2">{r.renderingProvider || "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.hours)}</td><td className="px-3 py-2">{r.state || "—"}</td><td className="px-3 py-2">{r.payor || "—"}</td>
+                      <td className="px-3 py-2">{r.reason}</td>
+                      <td className="px-3 py-2 text-right">
+                        <Button variant="outline" size="sm" onClick={() => startAssignmentForRow(r)}>
+                          <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Create assignment
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Transfer audit */}
         <div className="overflow-hidden rounded-xl border">
           <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
