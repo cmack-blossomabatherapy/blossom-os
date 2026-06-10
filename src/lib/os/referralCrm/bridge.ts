@@ -744,6 +744,9 @@ export function installSupabaseSync() {
         object_id: e.objectId ?? null,
         object_label: e.objectLabel ?? null,
         summary: e.summary ?? null,
+        before_data: e.beforeData ?? null,
+        after_data: e.afterData ?? null,
+        metadata: e.metadata ?? null,
       };
       const { error } = await supabase.from("referral_crm_audit_log").insert(payload as never);
       if (error) console.warn("[crm bridge] audit insert failed", error);
