@@ -132,7 +132,7 @@ export interface Contact {
   deletedAt?: string;
   // ---- Original imported / Supabase-only fields, preserved through hydrate + write-back ----
   directPhone?: string;
-  contactOwner?: string;
+  contactOwner?: string[];
   numberOfSalesActivities?: number;
   numberOfTimesContacted?: number;
   originalRecordId?: string;
