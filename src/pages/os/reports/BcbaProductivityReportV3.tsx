@@ -376,7 +376,7 @@ export default function BcbaProductivityReportV3() {
       totalHours += r.hours;
       if (r.is97153) h97153 += r.hours; else directHours += r.hours;
       clients.add(r.clientId || normalizeName(r.clientName));
-      if (r.renderingProvider) rbts.add(r.renderingProvider);
+      if (r.is97153 && r.renderingProvider) rbts.add(r.renderingProvider);
       if (r.bcbaOwner) bcbas.add(r.bcbaOwner); else unassigned += r.hours;
     }
     return { totalHours, h97153, directHours, unassigned,
@@ -412,7 +412,7 @@ export default function BcbaProductivityReportV3() {
       row.totalHours += r.hours;
       if (r.is97153) row.h97153 += r.hours; else row.directHours += r.hours;
       row.clients.set(r.clientName, (row.clients.get(r.clientName) || 0) + r.hours);
-      if (r.renderingProvider) row.rbts.set(r.renderingProvider, (row.rbts.get(r.renderingProvider) || 0) + r.hours);
+      if (r.is97153 && r.renderingProvider) row.rbts.set(r.renderingProvider, (row.rbts.get(r.renderingProvider) || 0) + r.hours);
       row.codes.set(r.code, (row.codes.get(r.code) || 0) + r.hours);
       row.rows.push(r);
     }
