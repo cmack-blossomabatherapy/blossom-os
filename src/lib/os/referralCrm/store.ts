@@ -1102,6 +1102,47 @@ export function activeReferrals(s: State) { return s.referrals.filter((r) => !r.
 export function userName(s: State, id?: ID) { return s.users.find((u) => u.id === id)?.name ?? "—"; }
 export function companyName(s: State, id?: ID) { return s.companies.find((c) => c.id === id)?.name ?? "—"; }
 
+// ---- permissions + scoping ----
+export function currentUser(s: State): CrmUser | undefined {
+  return s.users.find((u) => u.id === s.currentUserId);
+}
+export function canCrm(s: State, perm: CrmPermission): boolean {
+  const u = currentUser(s);
+  if (!u || u.active === false) return perm === "view";
+  return !!s.permissions[u.role]?.[perm];
+}
+/** null = no state scoping (sees all), [] also = sees all (e.g. unconfigured). */
+export function scopeStates(s: State): string[] | null {
+  const u = currentUser(s);
+  if (!u) return null;
+  if (u.role === "admin" || u.role === "marketing_director") return null;
+  const list = u.states ?? (u.state ? [u.state] : []);
+  return list.length ? list : null;
+}
+function inScope(s: State, st?: string): boolean {
+  const scope = scopeStates(s);
+  if (!scope) return true;
+  return !!st && scope.includes(st);
+}
+export function scopedContacts(s: State): Contact[] {
+  return activeContacts(s).filter((c) => inScope(s, c.state));
+}
+export function scopedCompanies(s: State): Company[] {
+  return activeCompanies(s).filter((c) => inScope(s, c.state));
+}
+export function scopedReferrals(s: State): Referral[] {
+  return activeReferrals(s).filter((r) => inScope(s, r.state));
+}
+export function scopedTasks(s: State): Task[] {
+  const scope = scopeStates(s);
+  if (!scope) return s.tasks;
+  return s.tasks.filter((t) => {
+    const co = t.companyId ? s.companies.find((c) => c.id === t.companyId) : undefined;
+    const ct = t.contactId ? s.contacts.find((c) => c.id === t.contactId) : undefined;
+    return inScope(s, co?.state ?? ct?.state);
+  });
+}
+
 export function evalList(s: State, list: ListDef): (Contact | Company)[] {
   const rows = list.object === "contacts" ? activeContacts(s) : activeCompanies(s);
   if (list.kind === "static") return rows.filter((r) => list.staticIds?.includes(r.id));
