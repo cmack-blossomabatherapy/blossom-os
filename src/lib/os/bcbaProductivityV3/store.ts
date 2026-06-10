@@ -138,7 +138,7 @@ export async function loadAssignmentsV3(): Promise<BcbaAssignmentV3[]> {
     .select("id, client_id, client_name, bcba_name, start_date, end_date, note, created_at, updated_at")
     .order("start_date", { ascending: false });
   if (error) throw error;
-  const list = ((data ?? []) as DbAssignmentV3[]).map(fromDbAssignmentV3);
+  const list = ((data ?? []) as unknown as DbAssignmentV3[]).map(fromDbAssignmentV3);
   cacheAssignmentsV3(list);
   return list;
 }
@@ -149,7 +149,7 @@ export async function addAssignmentV3(a: Omit<BcbaAssignmentV3, "id" | "createdA
     .select("id, client_id, client_name, bcba_name, start_date, end_date, note, created_at, updated_at")
     .single();
   if (error) throw error;
-  const fresh = fromDbAssignmentV3(data as DbAssignmentV3);
+  const fresh = fromDbAssignmentV3(data as unknown as DbAssignmentV3);
   cacheAssignmentsV3([fresh, ...readAssignmentsV3().filter(x => x.id !== fresh.id)]);
   return fresh;
 }
