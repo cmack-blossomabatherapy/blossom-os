@@ -716,10 +716,17 @@ export default function BcbaProductivityReportV3() {
           <KpiCard label="Unassigned Hours" value={fmt1(kpis.unassigned)} tone={kpis.unassigned > 0 ? "warn" : undefined} />
           <KpiCard label="Dropped Rows" value={fmt0(validation?.droppedRowCount ?? 0)} tone={(validation?.droppedRowCount ?? 0) > 0 ? "warn" : undefined} />
         </div>
+        {setupIncomplete && (
+          <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning-foreground">
+            <AlertTriangle className="mr-1.5 inline h-4 w-4" />
+            BCBA Assignment History is required before productivity can be assigned. Upload or create assignment history first.
+          </div>
+        )}
         {kpis.unassigned > 0 && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
             <AlertTriangle className="mr-1.5 inline h-3.5 w-3.5" />
             {fmt1(kpis.unassigned)} hrs have no Assignment History match. Open <button className="underline" onClick={() => setShowHistory(true)}>Assignment History</button> to add ownership entries.
+            {unassignedAudit.length > 0 && <button className="ml-2 underline" onClick={exportUnassignedCsv}>Export unassigned audit</button>}
           </div>
         )}
 
