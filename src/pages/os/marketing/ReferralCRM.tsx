@@ -582,6 +582,8 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
+  const [sort, setSort] = useState<SortState>({ key: "name", dir: "asc" });
+  const toggleSort = (key: string) => setSort((p) => p.key === key ? { key, dir: p.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
 
   const rows = useMemo(() => {
     let r = scopedCompanies(s);
@@ -589,8 +591,27 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     if (view === "tier-a") r = r.filter((c) => c.relationshipTier === "Tier A");
     if (view === "targets") r = r.filter((c) => c.referralPartnerStatus === "New Target");
     if (q) { const ql = q.toLowerCase(); r = r.filter((c) => c.name.toLowerCase().includes(ql) || c.city?.toLowerCase().includes(ql)); }
-    return r;
-  }, [s, view, q]);
+    const getKey = (c: typeof r[number]): string | number => {
+      switch (sort.key) {
+        case "name": return c.name.toLowerCase();
+        case "type": return (c.companyType || "").toLowerCase();
+        case "state": return (c.state || "").toLowerCase();
+        case "tier": return (c.relationshipTier || "").toLowerCase();
+        case "owner": return (userName(s, c.ownerId) || "").toLowerCase();
+        case "ytd": return c.referralsYTD ?? 0;
+        case "referrals": return c.referralCount ?? 0;
+        case "last": return c.lastReferralDate || "";
+        default: return "";
+      }
+    };
+    const sorted = [...r].sort((a, b) => {
+      const av = getKey(a); const bv = getKey(b);
+      if (av < bv) return sort.dir === "asc" ? -1 : 1;
+      if (av > bv) return sort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [s, view, q, sort]);
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
@@ -642,6 +663,11 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const bulkDelete = () => {
     ids().forEach((id) => crm.softDeleteCompany(id));
     toast({ title: `${selected.size} company(ies) deleted` }); clear();
+  };
+  const bulkResetReferrals = () => {
+    if (!window.confirm(`Reset referral counts (total + YTD) to 0 for ${selected.size} company(ies)?`)) return;
+    ids().forEach((id) => crm.updateCompany(id, { referralCount: 0, referralsYTD: 0 }));
+    toast({ title: `Reset referrals on ${selected.size} company(ies)` }); clear();
   };
 
   return (
