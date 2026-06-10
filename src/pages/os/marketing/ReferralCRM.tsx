@@ -3523,6 +3523,7 @@ function DeletedModule() {
   const c = s.contacts.filter((x) => x.deletedAt);
   const co = s.companies.filter((x) => x.deletedAt);
   const r = s.referrals.filter((x) => x.deletedAt);
+  const t = s.tasks.filter((x) => x.deletedAt);
 
   const Section = ({ title, items, restore, hardDelete }: { title: string; items: { id: ID; label: string; deletedAt?: string }[]; restore: (id: ID) => void; hardDelete?: (id: ID) => void }) => (
     <div className="rounded-2xl border bg-card p-5">
@@ -3554,6 +3555,8 @@ function DeletedModule() {
         restore={crm.restoreCompany} hardDelete={crm.hardDeleteCompany} />
       <Section title="Deleted Referrals" items={r.map((x) => ({ id: x.id, label: x.name, deletedAt: x.deletedAt }))}
         restore={crm.restoreReferral} />
+      <Section title="Deleted Tasks" items={t.map((x) => ({ id: x.id, label: x.title, deletedAt: x.deletedAt }))}
+        restore={crm.restoreTask} hardDelete={crm.hardDeleteTask} />
     </div>
   );
 }
