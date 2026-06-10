@@ -1068,7 +1068,7 @@ export const crm = {
     logAudit({ action: "attachment_added", objectType: "attachment", objectId: a.id,
       objectLabel: a.fileName, summary: `Attached to ${a.objectType} ${a.objectId}`,
       afterData: a as unknown as Record<string, unknown>,
-      metadata: { fileName: a.fileName, fileSize: a.fileSize, mimeType: a.mimeType, storageBucket: a.storageBucket, storagePath: a.storagePath, parentType: a.objectType, parentId: a.objectId } });
+      metadata: { fileName: a.fileName, sizeBytes: a.sizeBytes, mimeType: a.mimeType, storageBucket: a.storageBucket, storagePath: a.storagePath, parentType: a.objectType, parentId: a.objectId } });
     fire("onAttachmentCreate", a);
     return a;
   },
