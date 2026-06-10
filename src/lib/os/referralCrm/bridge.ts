@@ -20,6 +20,8 @@ import {
   type Company,
   type ActivityEvent,
   type ImportBatch,
+  type Referral,
+  type Task,
   type ID,
 } from "./store";
 import type {
@@ -28,6 +30,11 @@ import type {
   ReferralActivity,
   ReferralImportBatch,
 } from "@/lib/os/referrals/types";
+import type { Database } from "@/integrations/supabase/types";
+
+type CrmReferralRow = Database["public"]["Tables"]["referral_crm_referrals"]["Row"];
+type CrmTaskRow = Database["public"]["Tables"]["referral_crm_tasks"]["Row"];
+type LeadLinkRow = Database["public"]["Tables"]["referral_lead_links"]["Row"];
 
 /* ---------------- mapping: Supabase → CRM ---------------- */
 
