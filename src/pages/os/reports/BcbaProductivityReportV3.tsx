@@ -301,6 +301,29 @@ export default function BcbaProductivityReportV3() {
     });
   }, [rows, assignments]);
 
+  const setupIncomplete = rows.length > 0 && assignments.length === 0;
+  const unassignedAudit: UnassignedAuditRow[] = useMemo(() => (
+    ownedRows.filter(r => !r.bcbaOwner).map(r => ({ ...r, reason: "No assignment covering DOS" as const }))
+  ), [ownedRows]);
+  const assignmentIssues = useMemo(() => deriveAssignmentIssues(assignments), [assignments]);
+  const validationCoverage = useMemo(() => {
+    let assignedRows = 0, unassignedRows = 0, assignedHours = 0, unassignedHours = 0;
+    const missing = new Map<string, { clientId: string; clientName: string; rows: number; hours: number }>();
+    for (const r of ownedRows) {
+      if (r.bcbaOwner) { assignedRows++; assignedHours += r.hours; continue; }
+      unassignedRows++; unassignedHours += r.hours;
+      const key = r.clientId || normalizeName(r.clientName);
+      const v = missing.get(key) || { clientId: r.clientId, clientName: r.clientName, rows: 0, hours: 0 };
+      v.rows += 1; v.hours += r.hours; missing.set(key, v);
+    }
+    return {
+      assignmentRows: assignments.length,
+      assignedRows, assignedHours, unassignedRows, unassignedHours,
+      missingClients: [...missing.values()].sort((a, b) => b.hours - a.hours),
+      dateGaps: assignmentIssues.filter(i => i.type === "gap"),
+    };
+  }, [ownedRows, assignments.length, assignmentIssues]);
+
   /* ----- filter options ----- */
   const bcbaOptions = useMemo(() => {
     const s = new Set<string>();
