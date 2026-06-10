@@ -35,7 +35,7 @@ describe("Relationships nav scope", () => {
     // Marketing role uses its own section list — confirm Referrals (and the
     // Relationships group) live there so marketing users see it naturally.
     expect(shellSrc).toMatch(/MARKETING_TEAM_SECTIONS[\s\S]*id:\s*"relationships"/);
-    expect(shellSrc).toMatch(/MARKETING_TEAM_SECTIONS[\s\S]*\/marketing\/referrals/);
+    expect(shellSrc).toMatch(/MARKETING_TEAM_SECTIONS[\s\S]*\/marketing\/referral-crm/);
   });
 
   it("does not appear in any other role's curated section list", () => {
@@ -81,7 +81,6 @@ describe("Relationships nav scope", () => {
 
   it("route-gates the Relationships pages to Marketing + Super Admin (App.tsx)", () => {
     const relRoutes = [
-      "/marketing/referrals",
       "/marketing/referral-crm",
       "/marketing/recruiting",
       "/marketing/outreach",
