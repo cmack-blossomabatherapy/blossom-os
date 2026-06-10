@@ -929,6 +929,7 @@ export const crm = {
       contactId: r.contactId, companyId: r.companyId, referralId: r.id,
     });
     logAudit({ action: "create", objectType: "referral", objectId: r.id, objectLabel: r.name, summary: "Referral created" });
+    fire("onReferralCreate", r);
     return r;
   },
   updateReferral(id: ID, patch: Partial<Referral>) {
@@ -936,38 +937,46 @@ export const crm = {
     const r = state.referrals.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "referral", objectId: id, objectLabel: r?.name,
       summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
+    fire("onReferralUpdate", id, patch, r);
   },
   softDeleteReferral(id: ID) {
     set({ referrals: state.referrals.map((r) => r.id === id ? { ...r, deletedAt: now() } : r) });
     const r = state.referrals.find((x) => x.id === id);
     logAudit({ action: "delete", objectType: "referral", objectId: id, objectLabel: r?.name, summary: "Referral moved to deleted" });
+    fire("onReferralDelete", id, false);
   },
   restoreReferral(id: ID) {
     set({ referrals: state.referrals.map((r) => r.id === id ? { ...r, deletedAt: undefined } : r) });
     const r = state.referrals.find((x) => x.id === id);
     logAudit({ action: "restore", objectType: "referral", objectId: id, objectLabel: r?.name, summary: "Referral restored" });
+    fire("onReferralUpdate", id, { deletedAt: undefined } as Partial<Referral>, r);
   },
 
   // tasks
   addTask(input: Partial<Task> & { title: string }) {
     const t: Task = {
       id: newId(), type: "Other", priority: "Medium", status: "Open",
-      createdAt: now(), ...input,
+      createdAt: now(), updatedAt: now(), ...input,
     } as Task;
     set({ tasks: [t, ...state.tasks] });
     logActivity({ type: "task", message: `Task created: ${t.title}`, contactId: t.contactId, companyId: t.companyId, referralId: t.referralId });
     logAudit({ action: "create", objectType: "task", objectId: t.id, objectLabel: t.title, summary: "Task created" });
+    fire("onTaskCreate", t);
     return t;
   },
   updateTask(id: ID, patch: Partial<Task>) {
-    set({ tasks: state.tasks.map((t) => t.id === id ? { ...t, ...patch } : t) });
+    const merged: Partial<Task> = { ...patch, updatedAt: now() };
+    if (patch.status === "Completed" && !patch.completedAt) merged.completedAt = now();
+    set({ tasks: state.tasks.map((t) => t.id === id ? { ...t, ...merged } : t) });
     const t = state.tasks.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "task", objectId: id, objectLabel: t?.title,
       summary: `Updated: ${Object.keys(patch).join(", ") || "—"}` });
+    fire("onTaskUpdate", id, merged, t);
   },
   deleteTask(id: ID) {
     set({ tasks: state.tasks.filter((t) => t.id !== id) });
     logAudit({ action: "delete", objectType: "task", objectId: id, summary: "Task deleted" });
+    fire("onTaskDelete", id, true);
   },
 
   // notes
