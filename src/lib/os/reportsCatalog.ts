@@ -131,7 +131,7 @@ export function visibleReportsForRole(role: OSRole): ReportDef[] {
   // BCBA Productivity Report and the Cancellation Command Center are surfaced.
   // Role-based scoping will be re-introduced in a later iteration.
   void role;
-  const SHARED_IDS = ["bcba-productivity-report", "cancellation-command-center"];
+  const SHARED_IDS = ["bcba-productivity-report", "bcba-productivity-report-v2", "cancellation-command-center"];
   return SHARED_IDS
     .map(id => REPORTS.find(r => r.id === id))
     .filter((r): r is ReportDef => Boolean(r));
