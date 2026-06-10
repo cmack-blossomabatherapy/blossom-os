@@ -97,6 +97,37 @@ interface AssignmentIssue {
 
 const isRbt97153 = (code: string) => /^97153\b/.test(code.trim()) || code.trim().startsWith("97153");
 
+function addDaysIso(date: string, days: number) {
+  const d = new Date(`${date}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function deriveAssignmentIssues(assignments: BcbaAssignmentV3[]): AssignmentIssue[] {
+  const byClient = new Map<string, BcbaAssignmentV3[]>();
+  for (const a of assignments) {
+    const key = a.clientId || normalizeName(a.clientName);
+    if (!key) continue;
+    if (!byClient.has(key)) byClient.set(key, []);
+    byClient.get(key)!.push(a);
+  }
+  const issues: AssignmentIssue[] = [];
+  for (const [clientKey, list] of byClient) {
+    const sorted = [...list].sort((a, b) => a.startDate.localeCompare(b.startDate));
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = sorted[i - 1];
+      const cur = sorted[i];
+      if (!prev.endDate) {
+        issues.push({ clientKey, clientName: cur.clientName || prev.clientName, type: "overlap", detail: `${prev.bcbaName} is open-ended before ${cur.bcbaName} starts ${cur.startDate}` });
+      } else if (prev.endDate >= cur.startDate) {
+        issues.push({ clientKey, clientName: cur.clientName || prev.clientName, type: "overlap", detail: `${prev.bcbaName} ends ${prev.endDate}; ${cur.bcbaName} starts ${cur.startDate}` });
+      } else if (addDaysIso(prev.endDate, 1) < cur.startDate) {
+        issues.push({ clientKey, clientName: cur.clientName || prev.clientName, type: "gap", detail: `No owner from ${addDaysIso(prev.endDate, 1)} to ${addDaysIso(cur.startDate, -1)}` });
+      }
+    }
+  }
+  return issues.sort((a, b) => a.clientName.localeCompare(b.clientName));
+}
+
 export default function BcbaProductivityReportV3() {
   const [params] = useSearchParams();
   const savedParam = params.get("saved");
