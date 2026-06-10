@@ -743,6 +743,7 @@ function logAudit(entry: Omit<AuditLogEntry, "id" | "at" | "actor"> & { actor?: 
   const actor = entry.actor ?? (entry.userId ? state.users.find((u) => u.id === entry.userId)?.name ?? "System" : "Current User");
   const row: AuditLogEntry = { id: newId(), at: now(), actor, ...entry };
   set({ auditLog: [row, ...state.auditLog].slice(0, 500) });
+  fire("onAuditCreate", row);
 }
 
 // ---------- mutators ----------
