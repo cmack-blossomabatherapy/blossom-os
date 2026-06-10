@@ -659,7 +659,12 @@ export function replaceCrmData(input: {
 
 const newId = () => Math.random().toString(36).slice(2, 10);
 const logActivity = (e: Omit<ActivityEvent, "id" | "createdAt"> & { createdAt?: string }) => {
-  set({ activity: [{ id: newId(), createdAt: now(), ...e }, ...state.activity] });
+  const row: ActivityEvent = { id: newId(), createdAt: now(), ...e };
+  set({ activity: [row, ...state.activity] });
+  // Only mirror user-authored activities (notes, calls, emails, meetings, referrals)
+  // to Supabase. Skip noisy property_change / list_membership / workflow events.
+  const mirror: ActivityEvent["type"][] = ["note", "call", "email", "meeting", "referral_received", "task"];
+  if (mirror.includes(row.type)) fire("onActivityCreate", row);
 };
 
 function logAudit(entry: Omit<AuditLogEntry, "id" | "at" | "actor"> & { actor?: string }) {
