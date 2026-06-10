@@ -330,18 +330,24 @@ export default function BcbaProductivityReportV3() {
   }
 
   /* ----- ownership-resolved rows ----- */
+  /* If no permanent Assignment History exists yet, infer one from the uploaded
+   * Billing Report so productivity is never left fully unassigned. */
+  const inferred = useMemo(() => inferAssignmentHistory(rows), [rows]);
+  const usingInferred = rows.length > 0 && assignments.length === 0 && inferred.assignments.length > 0;
+  const effectiveAssignments = usingInferred ? inferred.assignments : assignments;
+
   const ownedRows: OwnedRow[] = useMemo(() => {
     return rows.map(r => {
-      const owner = ownerForClientAtDateV3(assignments, r.clientId, r.clientName, r.date);
+      const owner = ownerForClientAtDateV3(effectiveAssignments, r.clientId, r.clientName, r.date);
       return { ...r, bcbaOwner: owner?.bcba ?? null, assignmentId: owner?.assignmentId ?? null, is97153: isRbt97153(r.code) };
     });
-  }, [rows, assignments]);
+  }, [rows, effectiveAssignments]);
 
-  const setupIncomplete = rows.length > 0 && assignments.length === 0;
+  const setupIncomplete = rows.length > 0 && effectiveAssignments.length === 0;
   const unassignedAudit: UnassignedAuditRow[] = useMemo(() => (
     ownedRows.filter(r => !r.bcbaOwner).map(r => ({ ...r, reason: "No assignment covering DOS" as const }))
   ), [ownedRows]);
-  const assignmentIssues = useMemo(() => deriveAssignmentIssues(assignments), [assignments]);
+  const assignmentIssues = useMemo(() => deriveAssignmentIssues(effectiveAssignments), [effectiveAssignments]);
   const validationCoverage = useMemo(() => {
     let assignedRows = 0, unassignedRows = 0, assignedHours = 0, unassignedHours = 0;
     const missing = new Map<string, { clientId: string; clientName: string; rows: number; hours: number }>();
@@ -353,12 +359,12 @@ export default function BcbaProductivityReportV3() {
       v.rows += 1; v.hours += r.hours; missing.set(key, v);
     }
     return {
-      assignmentRows: assignments.length,
+      assignmentRows: effectiveAssignments.length,
       assignedRows, assignedHours, unassignedRows, unassignedHours,
       missingClients: [...missing.values()].sort((a, b) => b.hours - a.hours),
       dateGaps: assignmentIssues.filter(i => i.type === "gap"),
     };
-  }, [ownedRows, assignments.length, assignmentIssues]);
+  }, [ownedRows, effectiveAssignments.length, assignmentIssues]);
 
   /* ----- filter options ----- */
   const bcbaOptions = useMemo(() => {
@@ -455,7 +461,7 @@ export default function BcbaProductivityReportV3() {
     return [...map.values()].sort((a, b) => b.totalHours - a.totalHours);
   }, [filtered]);
 
-  const transfers = useMemo(() => deriveTransfersV3(assignments), [assignments]);
+  const transfers = useMemo(() => deriveTransfersV3(effectiveAssignments), [effectiveAssignments]);
   const knownClientsWithId = useMemo(() => {
     const m = new Map<string, string>();
     for (const r of ownedRows) if (!m.has(r.clientName)) m.set(r.clientName, r.clientId);
