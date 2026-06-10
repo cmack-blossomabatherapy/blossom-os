@@ -893,7 +893,16 @@ function ReferralsModule() {
                 <tr key={r.id} className="border-t hover:bg-muted/30">
                   <td className="px-3 py-2"><Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleOne(r.id)} /></td>
                   <td className="px-3 py-2 font-medium">
-                    <button className="hover:text-primary" onClick={() => setEditingId(r.id)}>{r.name}</button>
+                    <div className="flex items-center gap-2">
+                      {r.isLegacyLeadLink ? (
+                        <span className="text-foreground">{r.name}</span>
+                      ) : (
+                        <button className="hover:text-primary" onClick={() => setEditingId(r.id)}>{r.name}</button>
+                      )}
+                      {r.isLegacyLeadLink && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">Read-only</Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-3 py-2">{companyName(s, r.companyId)}</td>
                   <td className="px-3 py-2">{r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "—"}</td>
@@ -909,9 +918,11 @@ function ReferralsModule() {
                         <button className="text-muted-foreground hover:text-primary" title="Log activity" onClick={() => setLogId(r.id)}>
                           <Activity className="size-3" />
                         </button>
-                        <button className="text-muted-foreground hover:text-primary" title="Edit" onClick={() => setEditingId(r.id)}>
-                          <Pencil className="size-3" />
-                        </button>
+                        {!r.isLegacyLeadLink && (
+                          <button className="text-muted-foreground hover:text-primary" title="Edit" onClick={() => setEditingId(r.id)}>
+                            <Pencil className="size-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </td>
