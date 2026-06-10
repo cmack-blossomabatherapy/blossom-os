@@ -873,11 +873,19 @@ export default function BcbaProductivityReportV3() {
 
       {/* Assignment history drawer */}
       <Dialog open={showHistory} onOpenChange={setShowHistory}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-h-[88vh] max-w-6xl overflow-hidden">
           <DialogHeader>
             <DialogTitle>BCBA Assignment History</DialogTitle>
           </DialogHeader>
-          <div className="mb-2 flex flex-wrap justify-end gap-2">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="relative min-w-64 flex-1">
+              <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input value={assignmentSearch} onChange={e => setAssignmentSearch(e.target.value)} placeholder="Search client, ClientId, or BCBA…" className="h-8 pl-7" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={refreshAssignments} disabled={assignmentLoading}>
+                <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", assignmentLoading && "animate-spin")} /> Refresh
+              </Button>
             <input ref={assignImportRef} type="file" hidden accept={SUPPORTED_EXTENSIONS}
               onChange={e => e.target.files?.[0] && importAssignmentsCsv(e.target.files[0])} />
             <Button variant="outline" size="sm" onClick={() => assignImportRef.current?.click()}>
@@ -886,19 +894,32 @@ export default function BcbaProductivityReportV3() {
             <Button variant="outline" size="sm" onClick={exportAssignmentsCsv} disabled={!assignments.length}>
               <Download className="mr-1.5 h-3.5 w-3.5" /> Export CSV
             </Button>
+            </div>
           </div>
-          <AssignmentHistoryEditor
-            assignments={assignments}
-            knownClients={clientOptions}
-            knownClientsWithId={useMemo(() => {
-              const m = new Map<string, string>();
-              for (const r of ownedRows) if (!m.has(r.clientName)) m.set(r.clientName, r.clientId);
-              return m;
-            }, [ownedRows])}
-            onChange={() => setAssignments(readAssignmentsV3())}
-            editing={editing}
-            setEditing={setEditing}
-          />
+          {assignmentError && <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">{assignmentError}</div>}
+          <Tabs defaultValue="history" className="min-h-0">
+            <TabsList>
+              <TabsTrigger value="history">History ({assignments.length})</TabsTrigger>
+              <TabsTrigger value="issues">Gaps & overlaps ({assignmentIssues.length})</TabsTrigger>
+              <TabsTrigger value="unassigned">Unassigned ({unassignedAudit.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="history" className="max-h-[64vh] overflow-auto">
+              <AssignmentHistoryEditor
+                assignments={filteredAssignments}
+                knownClients={clientOptions}
+                knownClientsWithId={knownClientsWithId}
+                onChange={refreshAssignments}
+                editing={editing}
+                setEditing={setEditing}
+              />
+            </TabsContent>
+            <TabsContent value="issues" className="max-h-[64vh] overflow-auto">
+              <AssignmentIssuesTable issues={assignmentIssues} />
+            </TabsContent>
+            <TabsContent value="unassigned" className="max-h-[64vh] overflow-auto">
+              <UnassignedManagerTable rows={unassignedAudit} onCreate={startAssignmentForRow} onExport={exportUnassignedCsv} />
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </OSShell>
