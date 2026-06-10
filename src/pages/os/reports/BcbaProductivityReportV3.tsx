@@ -517,6 +517,10 @@ export default function BcbaProductivityReportV3() {
     setAssignmentSearch(row.clientId || row.clientName);
     setShowHistory(true);
   }
+  function openClientHistory(row: UnassignedAuditRow) {
+    setAssignmentSearch(row.clientId || row.clientName);
+    setShowHistory(true);
+  }
   async function importAssignmentsCsv(file: File) {
     try {
       const parsed = await parseAnyFile(file);
@@ -819,6 +823,9 @@ export default function BcbaProductivityReportV3() {
                       <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.hours)}</td><td className="px-3 py-2">{r.state || "—"}</td><td className="px-3 py-2">{r.payor || "—"}</td>
                       <td className="px-3 py-2">{r.reason}</td>
                       <td className="px-3 py-2 text-right">
+                        <Button variant="ghost" size="sm" onClick={() => openClientHistory(r)}>
+                          <History className="mr-1.5 h-3.5 w-3.5" /> Open history
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => startAssignmentForRow(r)}>
                           <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Create assignment
                         </Button>
