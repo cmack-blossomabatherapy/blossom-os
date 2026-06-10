@@ -29,6 +29,11 @@ import {
   WORKFLOW_TRIGGERS, WORKFLOW_ACTIONS,
   type ListCriteria, type WorkflowTrigger,
 } from "@/lib/os/referralCrm/store";
+import {
+  canCrm, currentUser, scopedContacts, scopedCompanies, scopedReferrals, scopedTasks,
+  CRM_PERMISSIONS, CRM_ROLES, TEAM_TYPES,
+  type CrmPermission, type CrmRole, type CrmTeam, type CrmUser, type TeamType,
+} from "@/lib/os/referralCrm/store";
 
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
