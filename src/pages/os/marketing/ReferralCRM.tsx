@@ -5,6 +5,7 @@ import {
   Plus, Search, X, CheckCircle2, Pencil, RotateCcw, Activity, AlertCircle,
   ChevronRight, Tag, UserPlus, Paperclip, FileText, History, Phone, Mail,
   Calendar, StickyNote, FileUp,
+  ArrowUp, ArrowDown, ChevronsUpDown,
 } from "lucide-react";
 import { MktgPage } from "./_shared";
 import { Button } from "@/components/ui/button";
@@ -271,6 +272,22 @@ function StateBars({ title, rows }: { title: string; rows: { st: string; count: 
 // ===========================================================
 // Contacts
 // ===========================================================
+type SortState = { key: string; dir: "asc" | "desc" };
+function SortTh({ label, k, sort, onSort, align = "left" }:
+  { label: string; k: string; sort: SortState; onSort: (k: string) => void; align?: "left" | "right" }) {
+  const active = sort.key === k;
+  const Icon = active ? (sort.dir === "asc" ? ArrowUp : ArrowDown) : ChevronsUpDown;
+  return (
+    <th className={cn("px-3 py-2 font-medium", align === "right" ? "text-right" : "text-left")}>
+      <button type="button" onClick={() => onSort(k)}
+        className={cn("inline-flex items-center gap-1 hover:text-foreground", active && "text-foreground", align === "right" && "ml-auto")}>
+        <span>{label}</span>
+        <Icon className="size-3" />
+      </button>
+    </th>
+  );
+}
+
 const CONTACT_VIEWS = [
   { id: "all", label: "All Contacts" },
   { id: "nc", label: "NC Referral Sources" },
@@ -286,6 +303,8 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
+  const toggleSort = (key: string) => setSort((p) => p.key === key ? { key, dir: p.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
 
   const rows = useMemo(() => {
     let r = scopedContacts(s);
@@ -299,8 +318,27 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
       const ql = q.toLowerCase();
       r = r.filter((c) => fullName(c).toLowerCase().includes(ql) || c.email?.toLowerCase().includes(ql) || c.jobTitle?.toLowerCase().includes(ql));
     }
-    return r;
-  }, [s, view, q, stateFilter]);
+    const getKey = (c: typeof r[number]): string | number => {
+      switch (sort.key) {
+        case "name": return fullName(c).toLowerCase();
+        case "company": return (companyName(s, c.companyId) || "").toLowerCase();
+        case "title": return (c.jobTitle || "").toLowerCase();
+        case "state": return (c.state || "").toLowerCase();
+        case "owner": return (userName(s, c.ownerId) || "").toLowerCase();
+        case "status": return (c.referralPartnerStatus || "").toLowerCase();
+        case "referrals": return c.referralCount ?? 0;
+        case "last": return c.lastContactedDate || "";
+        default: return "";
+      }
+    };
+    const sorted = [...r].sort((a, b) => {
+      const av = getKey(a); const bv = getKey(b);
+      if (av < bv) return sort.dir === "asc" ? -1 : 1;
+      if (av > bv) return sort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [s, view, q, stateFilter, sort]);
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => {
@@ -330,6 +368,12 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
   const bulkDelete = () => {
     selected.forEach((id) => crm.softDeleteContact(id));
     toast({ title: `${selected.size} contact(s) moved to Deleted` });
+    setSelected(new Set());
+  };
+  const bulkResetReferrals = () => {
+    if (!window.confirm(`Reset referral count to 0 for ${selected.size} contact(s)?`)) return;
+    selected.forEach((id) => crm.updateContact(id, { referralCount: 0 }));
+    toast({ title: `Reset referrals on ${selected.size} contact(s)` });
     setSelected(new Set());
   };
 
@@ -394,6 +438,9 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
           }}>
             <Download className="size-3 mr-1" /> Export
           </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkResetReferrals}>
+            <RotateCcw className="size-3 mr-1" /> Reset referrals
+          </Button>
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
@@ -406,14 +453,14 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
             <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="w-10 px-3 py-2"><Checkbox checked={allChecked} onCheckedChange={toggleAll} /></th>
-                <th className="text-left px-3 py-2 font-medium">Name</th>
-                <th className="text-left px-3 py-2 font-medium">Company</th>
-                <th className="text-left px-3 py-2 font-medium">Title</th>
-                <th className="text-left px-3 py-2 font-medium">State</th>
-                <th className="text-left px-3 py-2 font-medium">Owner</th>
-                <th className="text-left px-3 py-2 font-medium">Status</th>
-                <th className="text-right px-3 py-2 font-medium">Referrals</th>
-                <th className="text-left px-3 py-2 font-medium">Last Contact</th>
+                <SortTh label="Name" k="name" sort={sort} onSort={toggleSort} />
+                <SortTh label="Company" k="company" sort={sort} onSort={toggleSort} />
+                <SortTh label="Title" k="title" sort={sort} onSort={toggleSort} />
+                <SortTh label="State" k="state" sort={sort} onSort={toggleSort} />
+                <SortTh label="Owner" k="owner" sort={sort} onSort={toggleSort} />
+                <SortTh label="Status" k="status" sort={sort} onSort={toggleSort} />
+                <SortTh label="Referrals" k="referrals" sort={sort} onSort={toggleSort} align="right" />
+                <SortTh label="Last Contact" k="last" sort={sort} onSort={toggleSort} />
               </tr>
             </thead>
             <tbody>
@@ -535,6 +582,8 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
+  const [sort, setSort] = useState<SortState>({ key: "name", dir: "asc" });
+  const toggleSort = (key: string) => setSort((p) => p.key === key ? { key, dir: p.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
 
   const rows = useMemo(() => {
     let r = scopedCompanies(s);
@@ -542,8 +591,27 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     if (view === "tier-a") r = r.filter((c) => c.relationshipTier === "Tier A");
     if (view === "targets") r = r.filter((c) => c.referralPartnerStatus === "New Target");
     if (q) { const ql = q.toLowerCase(); r = r.filter((c) => c.name.toLowerCase().includes(ql) || c.city?.toLowerCase().includes(ql)); }
-    return r;
-  }, [s, view, q]);
+    const getKey = (c: typeof r[number]): string | number => {
+      switch (sort.key) {
+        case "name": return c.name.toLowerCase();
+        case "type": return (c.companyType || "").toLowerCase();
+        case "state": return (c.state || "").toLowerCase();
+        case "tier": return (c.relationshipTier || "").toLowerCase();
+        case "owner": return (userName(s, c.ownerId) || "").toLowerCase();
+        case "ytd": return c.referralsYTD ?? 0;
+        case "referrals": return c.referralCount ?? 0;
+        case "last": return c.lastReferralDate || "";
+        default: return "";
+      }
+    };
+    const sorted = [...r].sort((a, b) => {
+      const av = getKey(a); const bv = getKey(b);
+      if (av < bv) return sort.dir === "asc" ? -1 : 1;
+      if (av > bv) return sort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [s, view, q, sort]);
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
@@ -595,6 +663,11 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const bulkDelete = () => {
     ids().forEach((id) => crm.softDeleteCompany(id));
     toast({ title: `${selected.size} company(ies) deleted` }); clear();
+  };
+  const bulkResetReferrals = () => {
+    if (!window.confirm(`Reset referral counts (total + YTD) to 0 for ${selected.size} company(ies)?`)) return;
+    ids().forEach((id) => crm.updateCompany(id, { referralCount: 0, referralsYTD: 0 }));
+    toast({ title: `Reset referrals on ${selected.size} company(ies)` }); clear();
   };
 
   return (
@@ -649,6 +722,9 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "export")} onClick={bulkExport}>
             <Download className="size-3 mr-1" /> Export
           </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkResetReferrals}>
+            <RotateCcw className="size-3 mr-1" /> Reset referrals
+          </Button>
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
@@ -661,13 +737,13 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
             <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="w-10 px-3 py-2"><Checkbox checked={allChecked} onCheckedChange={toggleAll} /></th>
-                <th className="text-left px-3 py-2 font-medium">Company</th>
-                <th className="text-left px-3 py-2 font-medium">Type</th>
-                <th className="text-left px-3 py-2 font-medium">State</th>
-                <th className="text-left px-3 py-2 font-medium">Tier</th>
-                <th className="text-left px-3 py-2 font-medium">Owner</th>
-                <th className="text-right px-3 py-2 font-medium">YTD</th>
-                <th className="text-left px-3 py-2 font-medium">Last Referral</th>
+                <SortTh label="Company" k="name" sort={sort} onSort={toggleSort} />
+                <SortTh label="Type" k="type" sort={sort} onSort={toggleSort} />
+                <SortTh label="State" k="state" sort={sort} onSort={toggleSort} />
+                <SortTh label="Tier" k="tier" sort={sort} onSort={toggleSort} />
+                <SortTh label="Owner" k="owner" sort={sort} onSort={toggleSort} />
+                <SortTh label="YTD" k="ytd" sort={sort} onSort={toggleSort} align="right" />
+                <SortTh label="Last Referral" k="last" sort={sort} onSort={toggleSort} />
               </tr>
             </thead>
             <tbody>
@@ -3083,12 +3159,12 @@ function ActivitiesModule() {
 function EditContactDialog({ id, open, onOpenChange }: { id: ID | null; open: boolean; onOpenChange: (o: boolean) => void }) {
   const s = useCrm();
   const c = s.contacts.find((x) => x.id === id);
-  const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", jobTitle: "", state: "", companyId: "", ownerId: "", notes: "" });
+  const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", jobTitle: "", state: "", companyId: "", ownerId: "", notes: "", referralCount: 0 });
   useEffect(() => {
     if (c) setF({
       firstName: c.firstName, lastName: c.lastName, email: c.email ?? "", phone: c.phone ?? "",
       jobTitle: c.jobTitle ?? "", state: c.state ?? "", companyId: c.companyId ?? "",
-      ownerId: c.ownerId ?? "", notes: c.notes ?? "",
+      ownerId: c.ownerId ?? "", notes: c.notes ?? "", referralCount: c.referralCount ?? 0,
     });
   }, [c?.id, open]);
   if (!c) return null;
@@ -3097,6 +3173,7 @@ function EditContactDialog({ id, open, onOpenChange }: { id: ID | null; open: bo
       firstName: f.firstName, lastName: f.lastName, email: f.email || undefined, phone: f.phone || undefined,
       jobTitle: f.jobTitle || undefined, state: f.state || undefined,
       companyId: f.companyId || undefined, ownerId: f.ownerId || undefined, notes: f.notes || undefined,
+      referralCount: Math.max(0, Number(f.referralCount) || 0),
     });
     toast({ title: "Contact updated" });
     onOpenChange(false);
@@ -3129,6 +3206,10 @@ function EditContactDialog({ id, open, onOpenChange }: { id: ID | null; open: bo
               <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <div><Label className="text-xs">Referrals (total)</Label>
+            <Input type="number" min={0} value={f.referralCount}
+              onChange={(e) => setF({ ...f, referralCount: e.target.value === "" ? 0 : Number(e.target.value) })} />
+          </div>
           <div className="col-span-2"><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={3} /></div>
         </div>
         <DialogFooter>
@@ -3143,12 +3224,13 @@ function EditContactDialog({ id, open, onOpenChange }: { id: ID | null; open: bo
 function EditCompanyDialog({ id, open, onOpenChange }: { id: ID | null; open: boolean; onOpenChange: (o: boolean) => void }) {
   const s = useCrm();
   const c = s.companies.find((x) => x.id === id);
-  const [f, setF] = useState({ name: "", companyType: "", city: "", state: "", website: "", mainPhone: "", ownerId: "", relationshipTier: "", notes: "" });
+  const [f, setF] = useState({ name: "", companyType: "", city: "", state: "", website: "", mainPhone: "", ownerId: "", relationshipTier: "", notes: "", referralCount: 0, referralsYTD: 0 });
   useEffect(() => {
     if (c) setF({
       name: c.name, companyType: c.companyType ?? "", city: c.city ?? "", state: c.state ?? "",
       website: c.website ?? "", mainPhone: c.mainPhone ?? "", ownerId: c.ownerId ?? "",
       relationshipTier: c.relationshipTier ?? "", notes: c.notes ?? "",
+      referralCount: c.referralCount ?? 0, referralsYTD: c.referralsYTD ?? 0,
     });
   }, [c?.id, open]);
   if (!c) return null;
@@ -3160,6 +3242,8 @@ function EditCompanyDialog({ id, open, onOpenChange }: { id: ID | null; open: bo
       ownerId: f.ownerId || undefined,
       relationshipTier: (f.relationshipTier || undefined) as Company["relationshipTier"],
       notes: f.notes || undefined,
+      referralCount: Math.max(0, Number(f.referralCount) || 0),
+      referralsYTD: Math.max(0, Number(f.referralsYTD) || 0),
     });
     toast({ title: "Company updated" });
     onOpenChange(false);
@@ -3191,6 +3275,14 @@ function EditCompanyDialog({ id, open, onOpenChange }: { id: ID | null; open: bo
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>{["Tier A", "Tier B", "Tier C"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
+          </div>
+          <div><Label className="text-xs">Referrals (total)</Label>
+            <Input type="number" min={0} value={f.referralCount}
+              onChange={(e) => setF({ ...f, referralCount: e.target.value === "" ? 0 : Number(e.target.value) })} />
+          </div>
+          <div><Label className="text-xs">Referrals (YTD)</Label>
+            <Input type="number" min={0} value={f.referralsYTD}
+              onChange={(e) => setF({ ...f, referralsYTD: e.target.value === "" ? 0 : Number(e.target.value) })} />
           </div>
           <div className="col-span-2"><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={3} /></div>
         </div>
