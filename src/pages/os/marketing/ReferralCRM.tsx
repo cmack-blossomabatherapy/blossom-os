@@ -790,17 +790,23 @@ function ReferralsModule() {
   const ids = () => Array.from(selected);
   const clear = () => setSelected(new Set());
   const bulkStatus = (v: string) => {
-    ids().forEach((id) => crm.updateReferral(id, { referralStatus: v as Referral["referralStatus"] }));
-    toast({ title: `Updated status on ${selected.size}` }); clear();
+    const { nativeIds, skipped } = partitionLegacy(rows, ids());
+    nativeIds.forEach((id) => crm.updateReferral(id, { referralStatus: v as Referral["referralStatus"] }));
+    toast({ title: `Updated status on ${nativeIds.length}`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
+    clear();
   };
   const bulkIntakeStatus = () => {
     const v = window.prompt("New intake status:"); if (!v) return;
-    ids().forEach((id) => crm.updateReferral(id, { intakeStatus: v }));
-    toast({ title: `Updated intake status on ${selected.size}` }); clear();
+    const { nativeIds, skipped } = partitionLegacy(rows, ids());
+    nativeIds.forEach((id) => crm.updateReferral(id, { intakeStatus: v }));
+    toast({ title: `Updated intake status on ${nativeIds.length}`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
+    clear();
   };
   const bulkAssignIntake = (uid: ID) => {
-    ids().forEach((id) => crm.updateReferral(id, { assignedIntakeOwnerId: uid }));
-    toast({ title: `Assigned intake owner on ${selected.size}` }); clear();
+    const { nativeIds, skipped } = partitionLegacy(rows, ids());
+    nativeIds.forEach((id) => crm.updateReferral(id, { assignedIntakeOwnerId: uid }));
+    toast({ title: `Assigned intake owner on ${nativeIds.length}`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
+    clear();
   };
   const bulkExport = () => {
     const data = s.referrals.filter((r) => selected.has(r.id)).map((r) => ({
@@ -817,8 +823,10 @@ function ReferralsModule() {
     toast({ title: `Exported ${data.length} referral(s)` });
   };
   const bulkDelete = () => {
-    ids().forEach((id) => crm.softDeleteReferral(id));
-    toast({ title: `${selected.size} referral(s) deleted` }); clear();
+    const { nativeIds, skipped } = partitionLegacy(rows, ids());
+    nativeIds.forEach((id) => crm.softDeleteReferral(id));
+    toast({ title: `${nativeIds.length} referral(s) deleted`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
+    clear();
   };
 
   return (
