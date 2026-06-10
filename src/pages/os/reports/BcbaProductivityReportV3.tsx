@@ -69,6 +69,7 @@ interface BillingRow {
 }
 interface OwnedRow extends BillingRow {
   bcbaOwner: string | null;
+  assignmentId: string | null;
   is97153: boolean;
 }
 interface ValidationSummary {
@@ -83,6 +84,15 @@ interface ValidationSummary {
   uniqueClients: number;
   uniqueProviders: number;
   topCodes: { code: string; rows: number; hours: number }[];
+}
+interface UnassignedAuditRow extends BillingRow {
+  reason: "No assignment covering DOS";
+}
+interface AssignmentIssue {
+  clientKey: string;
+  clientName: string;
+  type: "gap" | "overlap";
+  detail: string;
 }
 
 const isRbt97153 = (code: string) => /^97153\b/.test(code.trim()) || code.trim().startsWith("97153");
