@@ -3668,6 +3668,16 @@ function DeletedModule() {
   const co = s.companies.filter((x) => x.deletedAt);
   const r = s.referrals.filter((x) => x.deletedAt);
   const t = s.tasks.filter((x) => x.deletedAt);
+  const archivedFiles = s.attachments.filter((x) => x.archivedAt);
+
+  const fileLabel = (a: Attachment): string => {
+    if (a.objectType === "contact") {
+      const x = s.contacts.find((y) => y.id === a.objectId); return x ? `Contact: ${fullName(x)}` : `Contact: ${a.objectId}`;
+    }
+    if (a.objectType === "company") return `Company: ${s.companies.find((y) => y.id === a.objectId)?.name ?? a.objectId}`;
+    if (a.objectType === "referral") return `Referral: ${s.referrals.find((y) => y.id === a.objectId)?.name ?? a.objectId}`;
+    return a.objectType;
+  };
 
   const Section = ({ title, items, restore, hardDelete }: { title: string; items: { id: ID; label: string; deletedAt?: string }[]; restore: (id: ID) => void; hardDelete?: (id: ID) => void }) => (
     <div className="rounded-2xl border bg-card p-5">
@@ -3701,6 +3711,29 @@ function DeletedModule() {
         restore={crm.restoreReferral} />
       <Section title="Deleted Tasks" items={t.map((x) => ({ id: x.id, label: x.title, deletedAt: x.deletedAt }))}
         restore={crm.restoreTask} hardDelete={crm.hardDeleteTask} />
+      <div className="rounded-2xl border bg-card p-5">
+        <h3 className="font-semibold mb-3">Archived Files</h3>
+        {archivedFiles.length === 0 ? <p className="text-sm text-muted-foreground">Nothing here.</p> : (
+          <div className="divide-y text-sm">
+            {archivedFiles.map((a) => (
+              <div key={a.id} className="py-2 flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{a.fileName}</p>
+                  <p className="text-xs text-muted-foreground">{fileLabel(a)} · Archived {fmtDate(a.archivedAt)}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => { crm.restoreAttachment(a.id); toast({ title: "File restored" }); }}>
+                    <RotateCcw className="size-3 mr-1" /> Restore
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-destructive" onClick={() => { crm.removeAttachment(a.id); toast({ title: "File permanently deleted" }); }}>
+                    Delete forever
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
