@@ -90,7 +90,7 @@ function contactFromRow(r: ReferralContact): Contact {
     deletedAt: r.status === "Archived" ? (r.updated_at ?? new Date().toISOString()) : undefined,
     // preserved Supabase-only fields
     directPhone: (r as { direct_phone?: string | null }).direct_phone ?? undefined,
-    contactOwner: (r as { contact_owner?: string | null }).contact_owner ?? undefined,
+    contactOwner: (r as { contact_owner?: string[] | null }).contact_owner ?? undefined,
     numberOfSalesActivities: (r as { number_of_sales_activities?: number | null }).number_of_sales_activities ?? undefined,
     numberOfTimesContacted: (r as { number_of_times_contacted?: number | null }).number_of_times_contacted ?? undefined,
     originalRecordId: (r as { original_record_id?: string | null }).original_record_id ?? undefined,
