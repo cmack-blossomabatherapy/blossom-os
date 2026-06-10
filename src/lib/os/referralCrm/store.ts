@@ -614,6 +614,7 @@ interface State {
   teams: CrmTeam[];
   permissions: PermissionMatrix;
   currentUserId: ID;
+  importBatches: ImportBatch[];
 }
 
 let state: State = {
@@ -621,6 +622,7 @@ let state: State = {
   teams,
   permissions: DEFAULT_PERMISSIONS,
   currentUserId: "u-admin",
+  importBatches: [],
   attachments: [
     { id: "att-1", fileName: "Bright Path - Lunch & Learn slides.pdf", mimeType: "application/pdf", sizeBytes: 482_113,
       objectType: "company", objectId: "c-bright", uploadedByUserId: "u-nc",
@@ -685,11 +687,13 @@ export function replaceCrmData(input: {
   contacts?: Contact[];
   companies?: Company[];
   activity?: ActivityEvent[];
+  importBatches?: ImportBatch[];
 }) {
   set({
     ...(input.contacts ? { contacts: input.contacts } : {}),
     ...(input.companies ? { companies: input.companies } : {}),
     ...(input.activity ? { activity: input.activity } : {}),
+    ...(input.importBatches ? { importBatches: input.importBatches } : {}),
   });
 }
 
