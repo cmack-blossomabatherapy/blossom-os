@@ -2215,6 +2215,133 @@ type PlanItem =
   | { kind: "dup"; row: Record<string, string>; data: Record<string, unknown>; matchId: string; matchLabel: string; reason: string }
   | { kind: "error"; row: Record<string, string>; reason: string };
 
+/**
+ * SupabaseQuickImport — wraps the existing HubSpot importer pipeline
+ * (parseReferralsCsv + importReferralRows) so CSV/XLSX uploads land
+ * directly in referral_contacts / referral_companies / referral_import_batches,
+ * then re-hydrates the CRM store so the new rows appear immediately.
+ */
+function SupabaseQuickImport() {
+  const [busy, setBusy] = useState(false);
+  const [parsed, setParsed] = useState<ParsedCsv | null>(null);
+  const [fileName, setFileName] = useState<string>("");
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
+  const [result, setResult] = useState<{
+    created: number; updated: number; duplicates: number; failed: number;
+    errors: { row: number; reason: string; data: Record<string, string> }[];
+  } | null>(null);
+
+  const onChoose = async (file: File) => {
+    setBusy(true); setResult(null); setProgress(null);
+    try {
+      const p = await parseReferralsCsv(file);
+      setParsed(p); setFileName(file.name);
+    } catch (e) {
+      toast({ title: "Could not parse file", description: e instanceof Error ? e.message : String(e) });
+    } finally { setBusy(false); }
+  };
+
+  const runImport = async () => {
+    if (!parsed) return;
+    setBusy(true);
+    try {
+      const res = await importReferralRows(fileName, parsed.rows, setProgress);
+      setResult({
+        created: res.createdContacts,
+        updated: res.updatedContacts,
+        duplicates: res.duplicateContacts,
+        failed: res.failedRows,
+        errors: res.errors,
+      });
+      crm.recordImport(
+        `HubSpot import: ${res.createdContacts} created · ${res.updatedContacts} updated · ${res.failedRows} failed · companies +${res.createdCompanies}`,
+      );
+      toast({
+        title: "Import complete",
+        description: `${res.createdContacts} created · ${res.updatedContacts} updated · ${res.failedRows} failed`,
+      });
+      await hydrateFromSupabase().catch((e) => console.warn("[ImportsModule] rehydrate failed", e));
+    } catch (e) {
+      toast({ title: "Import failed", description: e instanceof Error ? e.message : String(e) });
+    } finally { setBusy(false); setProgress(null); }
+  };
+
+  const downloadErrorCsv = () => {
+    if (!result?.errors.length) return;
+    const csv = failedRowsToCsv(result.errors);
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = `referral-import-errors-${Date.now()}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="rounded-2xl border bg-card p-5 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-sm">HubSpot / CSV Import (writes to backend)</h3>
+          <p className="text-xs text-muted-foreground">
+            Drops referral contacts &amp; companies into the shared referral tables. Existing records are matched by email,
+            HubSpot Record ID, or name + company; companies are matched by normalized name + domain.
+          </p>
+        </div>
+        <input id="crm-hubspot-import" type="file" accept=".csv,.xlsx,.xls" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) onChoose(f); e.currentTarget.value = ""; }} />
+        <Button size="sm" disabled={busy} onClick={() => document.getElementById("crm-hubspot-import")?.click()}>
+          <Upload className="size-3.5 mr-1.5" /> Choose CSV / XLSX
+        </Button>
+      </div>
+
+      {parsed && (
+        <div className="rounded-xl border bg-background p-3 text-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <span>
+              <strong>{fileName}</strong> · {parsed.rows.length.toLocaleString()} rows ready
+            </span>
+            <Button size="sm" disabled={busy} onClick={runImport}>
+              {busy ? `Importing… ${progress?.current ?? 0}/${progress?.total ?? parsed.rows.length}` : "Import to backend"}
+            </Button>
+          </div>
+          {progress && (
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full bg-primary transition-all"
+                style={{ width: `${Math.min(100, (progress.current / Math.max(1, progress.total)) * 100)}%` }} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {result && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div className="rounded-lg border bg-background p-2">
+            <p className="text-[10px] uppercase text-muted-foreground">Created</p>
+            <p className="text-lg font-semibold tabular-nums text-emerald-700">{result.created}</p>
+          </div>
+          <div className="rounded-lg border bg-background p-2">
+            <p className="text-[10px] uppercase text-muted-foreground">Updated</p>
+            <p className="text-lg font-semibold tabular-nums">{result.updated}</p>
+          </div>
+          <div className="rounded-lg border bg-background p-2">
+            <p className="text-[10px] uppercase text-muted-foreground">Duplicates</p>
+            <p className="text-lg font-semibold tabular-nums text-amber-700">{result.duplicates}</p>
+          </div>
+          <div className="rounded-lg border bg-background p-2 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground">Failed</p>
+              <p className="text-lg font-semibold tabular-nums text-destructive">{result.failed}</p>
+            </div>
+            {result.failed > 0 && (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={downloadErrorCsv}>
+                <Download className="size-3 mr-1" /> CSV
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ImportsModule() {
   const s = useCrm();
   const [object, setObject] = useState<ImportObject>("contacts");
