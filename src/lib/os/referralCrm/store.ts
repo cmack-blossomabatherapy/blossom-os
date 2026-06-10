@@ -333,12 +333,17 @@ export interface Attachment {
   fileName: string;
   mimeType?: string;
   sizeBytes?: number;
-  objectType: "contact" | "company" | "referral";
+  objectType: "contact" | "company" | "referral" | "task" | "activity" | "general";
   objectId: ID;
   uploadedByUserId?: ID;
+  uploadedByName?: string;
   uploadedAt: string;
   category?: "Lunch & Learn" | "Insurance" | "Outreach" | "Welcome Packet" | "Other";
   notes?: string;
+  storageBucket?: string;
+  storagePath?: string;
+  fileType?: string;
+  archivedAt?: string;
 }
 
 export interface AuditLogEntry {
