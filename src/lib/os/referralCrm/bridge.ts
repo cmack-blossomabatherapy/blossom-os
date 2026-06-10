@@ -686,5 +686,64 @@ export function installSupabaseSync() {
       }
       scheduleRehydrate();
     },
+    onAttachmentCreate: async (a) => {
+      if (!a.storagePath) {
+        // No backing storage path — can't persist meaningfully.
+        return;
+      }
+      const payload = {
+        id: isPersisted(a.id) ? a.id : undefined,
+        object_type: a.objectType,
+        object_id: a.objectId,
+        file_name: a.fileName,
+        file_type: a.fileType ?? a.mimeType ?? null,
+        file_size: a.sizeBytes ?? null,
+        category: a.category ?? null,
+        storage_bucket: a.storageBucket ?? REFERRAL_CRM_BUCKET,
+        storage_path: a.storagePath,
+        uploaded_by_name: a.uploadedByName ?? null,
+        uploaded_at: a.uploadedAt,
+        notes: a.notes ?? null,
+      };
+      const { error } = await supabase.from("referral_crm_attachments").insert(payload as never);
+      if (error) { console.warn("[crm bridge] attachment insert failed", error); return; }
+      scheduleRehydrate();
+    },
+    onAttachmentUpdate: async (id, patch) => {
+      if (!isPersisted(id)) return;
+      const out: Record<string, unknown> = {};
+      if ("fileName" in patch) out.file_name = patch.fileName;
+      if ("category" in patch) out.category = patch.category ?? null;
+      if ("notes" in patch) out.notes = patch.notes ?? null;
+      if ("archivedAt" in patch) out.archived_at = patch.archivedAt ?? null;
+      if (Object.keys(out).length === 0) return;
+      const { error } = await supabase.from("referral_crm_attachments").update(out as never).eq("id", id);
+      if (error) console.warn("[crm bridge] attachment update failed", error);
+    },
+    onAttachmentDelete: async (id, _hard, full) => {
+      if (!isPersisted(id)) return;
+      const { error } = await supabase.from("referral_crm_attachments").delete().eq("id", id);
+      if (error) console.warn("[crm bridge] attachment delete failed", error);
+      if (full?.storagePath) {
+        const bucket = full.storageBucket ?? REFERRAL_CRM_BUCKET;
+        const { error: sErr } = await supabase.storage.from(bucket).remove([full.storagePath]);
+        if (sErr) console.warn("[crm bridge] attachment storage delete failed", sErr);
+      }
+    },
+    onAuditCreate: async (e) => {
+      // Don't echo entries that were just hydrated from Supabase (uuid ids).
+      if (isUuid(e.id)) return;
+      const payload = {
+        actor_user_id: null,
+        actor_name: e.actor ?? null,
+        action: e.action,
+        object_type: e.objectType,
+        object_id: e.objectId ?? null,
+        object_label: e.objectLabel ?? null,
+        summary: e.summary ?? null,
+      };
+      const { error } = await supabase.from("referral_crm_audit_log").insert(payload as never);
+      if (error) console.warn("[crm bridge] audit insert failed", error);
+    },
   });
 }
