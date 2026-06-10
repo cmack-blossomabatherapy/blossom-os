@@ -451,6 +451,20 @@ export default function BcbaProductivityReportV3() {
   }, [filtered]);
 
   const transfers = useMemo(() => deriveTransfersV3(assignments), [assignments]);
+  const knownClientsWithId = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of ownedRows) if (!m.has(r.clientName)) m.set(r.clientName, r.clientId);
+    return m;
+  }, [ownedRows]);
+  const filteredAssignments = useMemo(() => {
+    const q = assignmentSearch.trim().toLowerCase();
+    if (!q) return assignments;
+    return assignments.filter(a =>
+      a.clientName.toLowerCase().includes(q) ||
+      a.clientId.toLowerCase().includes(q) ||
+      a.bcbaName.toLowerCase().includes(q),
+    );
+  }, [assignments, assignmentSearch]);
 
   async function handleSaveReport() {
     if (!rows.length) { toast.error("Upload a billing file first"); return; }
@@ -488,6 +502,20 @@ export default function BcbaProductivityReportV3() {
       ["ClientId", "ClientName", "BCBA", "StartDate", "EndDate", "Note"],
       assignments.map(a => [a.clientId, a.clientName, a.bcbaName, a.startDate, a.endDate ?? "", a.note ?? ""])
     );
+  }
+  function exportUnassignedCsv() {
+    downloadCsv(`bcba-unassigned-audit-v3-${Date.now()}.csv`,
+      ["ClientId", "ClientName", "DateOfService", "Code", "Rendering Provider", "Hours", "State", "Payor", "Reason"],
+      unassignedAudit.map(r => [r.clientId, r.clientName, r.date, r.code, r.renderingProvider, r.hours.toFixed(2), r.state, r.payor, r.reason]),
+    );
+  }
+  function startAssignmentForRow(row: UnassignedAuditRow) {
+    setEditing({
+      id: "__new__", clientId: row.clientId, clientName: row.clientName, bcbaName: "",
+      startDate: row.date, endDate: null, note: "Created from unassigned audit", createdAt: Date.now(),
+    });
+    setAssignmentSearch(row.clientId || row.clientName);
+    setShowHistory(true);
   }
   async function importAssignmentsCsv(file: File) {
     try {
