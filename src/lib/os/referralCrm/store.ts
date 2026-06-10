@@ -839,33 +839,40 @@ export const crm = {
     } as Company;
     set({ companies: [c, ...state.companies] });
     logActivity({ type: "property_change", message: `Company created: ${c.name}`, companyId: c.id });
-    logAudit({ action: "create", objectType: "company", objectId: c.id, objectLabel: c.name, summary: "Company created" });
+    logAudit({ action: "create", objectType: "company", objectId: c.id, objectLabel: c.name, summary: "Company created", afterData: c as unknown as Record<string, unknown> });
     fire("onCompanyCreate", c);
     return c;
   },
   updateCompany(id: ID, patch: Partial<Company>) {
+    const before = state.companies.find((x) => x.id === id);
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, ...patch, updatedAt: now() } : c) });
     logActivity({ type: "property_change", message: `Company updated`, companyId: id });
     const co = state.companies.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "company", objectId: id, objectLabel: co?.name,
-      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
+      summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}`,
+      beforeData: before as unknown as Record<string, unknown> | undefined,
+      afterData: co as unknown as Record<string, unknown> | undefined,
+      metadata: { changedFields: Object.keys(patch).filter((k) => k !== "updatedAt") } });
     fire("onCompanyUpdate", id, patch, co);
   },
   softDeleteCompany(id: ID) {
+    const before = state.companies.find((x) => x.id === id);
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
     const co = state.companies.find((x) => x.id === id);
-    logAudit({ action: "delete", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company moved to deleted" });
+    logAudit({ action: "delete", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company moved to deleted", beforeData: before as unknown as Record<string, unknown> | undefined });
     fire("onCompanyDelete", id, false);
   },
   restoreCompany(id: ID) {
+    const before = state.companies.find((x) => x.id === id);
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
     const co = state.companies.find((x) => x.id === id);
-    logAudit({ action: "restore", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company restored" });
+    logAudit({ action: "restore", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company restored", beforeData: before as unknown as Record<string, unknown> | undefined, afterData: co as unknown as Record<string, unknown> | undefined });
     fire("onCompanyUpdate", id, { deletedAt: undefined } as Partial<Company>, co);
   },
   hardDeleteCompany(id: ID) {
+    const before = state.companies.find((x) => x.id === id);
     set({ companies: state.companies.filter((c) => c.id !== id) });
-    logAudit({ action: "delete", objectType: "company", objectId: id, summary: "Company permanently deleted" });
+    logAudit({ action: "delete", objectType: "company", objectId: id, summary: "Company permanently deleted", beforeData: before as unknown as Record<string, unknown> | undefined, metadata: { permanent: true } });
     fire("onCompanyDelete", id, true);
   },
 
