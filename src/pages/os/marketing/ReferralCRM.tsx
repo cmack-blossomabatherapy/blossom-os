@@ -709,12 +709,28 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
 
 function NewCompanyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (b: boolean) => void }) {
   const [f, setF] = useState({ name: "", companyType: "", state: "", city: "" });
+  const [addContact, setAddContact] = useState(false);
+  const [nc, setNc] = useState({ firstName: "", lastName: "", email: "", phone: "", jobTitle: "" });
   const submit = () => {
     if (!f.name) { toast({ title: "Company name required" }); return; }
-    crm.addCompany(f);
+    const co = crm.addCompany(f);
+    if (addContact) {
+      if (!nc.firstName.trim() || !nc.lastName.trim()) {
+        toast({ title: "Contact first + last name required", variant: "destructive" as never });
+        return;
+      }
+      crm.addContact({
+        firstName: nc.firstName.trim(), lastName: nc.lastName.trim(),
+        email: nc.email || undefined, phone: nc.phone || undefined,
+        jobTitle: nc.jobTitle || undefined,
+        companyId: co.id, state: f.state || undefined,
+      });
+    }
     toast({ title: "Company created" });
     onOpenChange(false);
     setF({ name: "", companyType: "", state: "", city: "" });
+    setAddContact(false);
+    setNc({ firstName: "", lastName: "", email: "", phone: "", jobTitle: "" });
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -730,6 +746,27 @@ function NewCompanyDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
             </Select>
           </div>
           <div className="col-span-2"><Label className="text-xs">City</Label><Input value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} /></div>
+          <div className="col-span-2 pt-1">
+            {!addContact ? (
+              <Button type="button" variant="outline" size="sm" onClick={() => setAddContact(true)}>
+                <Plus className="size-3.5 mr-1.5" /> Add primary contact
+              </Button>
+            ) : (
+              <div className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-medium text-muted-foreground">Primary contact</div>
+                  <button type="button" className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setAddContact(false)}>Remove</button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs">First name</Label><Input value={nc.firstName} onChange={(e) => setNc({ ...nc, firstName: e.target.value })} /></div>
+                  <div><Label className="text-xs">Last name</Label><Input value={nc.lastName} onChange={(e) => setNc({ ...nc, lastName: e.target.value })} /></div>
+                  <div><Label className="text-xs">Email</Label><Input value={nc.email} onChange={(e) => setNc({ ...nc, email: e.target.value })} /></div>
+                  <div><Label className="text-xs">Phone</Label><Input value={nc.phone} onChange={(e) => setNc({ ...nc, phone: e.target.value })} /></div>
+                  <div className="col-span-2"><Label className="text-xs">Job title</Label><Input value={nc.jobTitle} onChange={(e) => setNc({ ...nc, jobTitle: e.target.value })} /></div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
