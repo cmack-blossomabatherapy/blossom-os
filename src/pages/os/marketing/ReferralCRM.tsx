@@ -5,6 +5,7 @@ import {
   Plus, Search, X, CheckCircle2, Pencil, RotateCcw, Activity, AlertCircle,
   ChevronRight, Tag, UserPlus, Paperclip, FileText, History, Phone, Mail,
   Calendar, StickyNote, FileUp,
+  ArrowUp, ArrowDown, ChevronsUpDown,
 } from "lucide-react";
 import { MktgPage } from "./_shared";
 import { Button } from "@/components/ui/button";
