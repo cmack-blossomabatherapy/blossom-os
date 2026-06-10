@@ -9127,6 +9127,159 @@ export type Database = {
           },
         ]
       }
+      referral_crm_referrals: {
+        Row: {
+          archived_at: string | null
+          assigned_intake_owner_id: string | null
+          attribution_confidence: string | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          id: string
+          insurance_type: string | null
+          intake_status: string | null
+          lead_id: string | null
+          name: string | null
+          notes: string | null
+          patient_first_name: string | null
+          patient_last_initial: string | null
+          referral_date: string | null
+          referral_status: string
+          service_type: string | null
+          source_type: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          assigned_intake_owner_id?: string | null
+          attribution_confidence?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          insurance_type?: string | null
+          intake_status?: string | null
+          lead_id?: string | null
+          name?: string | null
+          notes?: string | null
+          patient_first_name?: string | null
+          patient_last_initial?: string | null
+          referral_date?: string | null
+          referral_status?: string
+          service_type?: string | null
+          source_type?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          assigned_intake_owner_id?: string | null
+          attribution_confidence?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          insurance_type?: string | null
+          intake_status?: string | null
+          lead_id?: string | null
+          name?: string | null
+          notes?: string | null
+          patient_first_name?: string | null
+          patient_last_initial?: string | null
+          referral_date?: string | null
+          referral_status?: string
+          service_type?: string | null
+          source_type?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_crm_referrals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "referral_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_crm_referrals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "referral_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_crm_tasks: {
+        Row: {
+          archived_at: string | null
+          assigned_user_id: string | null
+          company_id: string | null
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          notes: string | null
+          priority: string | null
+          referral_id: string | null
+          status: string
+          title: string
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          assigned_user_id?: string | null
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string | null
+          referral_id?: string | null
+          status?: string
+          title: string
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          assigned_user_id?: string | null
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string | null
+          referral_id?: string | null
+          status?: string
+          title?: string
+          type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_crm_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "referral_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_crm_tasks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "referral_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referral_import_batches: {
         Row: {
           created_at: string

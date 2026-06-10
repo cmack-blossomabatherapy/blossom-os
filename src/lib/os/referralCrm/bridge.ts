@@ -20,6 +20,8 @@ import {
   type Company,
   type ActivityEvent,
   type ImportBatch,
+  type Referral,
+  type Task,
   type ID,
 } from "./store";
 import type {
@@ -28,6 +30,11 @@ import type {
   ReferralActivity,
   ReferralImportBatch,
 } from "@/lib/os/referrals/types";
+import type { Database } from "@/integrations/supabase/types";
+
+type CrmReferralRow = Database["public"]["Tables"]["referral_crm_referrals"]["Row"];
+type CrmTaskRow = Database["public"]["Tables"]["referral_crm_tasks"]["Row"];
+type LeadLinkRow = Database["public"]["Tables"]["referral_lead_links"]["Row"];
 
 /* ---------------- mapping: Supabase → CRM ---------------- */
 
@@ -141,6 +148,85 @@ function batchFromRow(r: ReferralImportBatch): ImportBatch {
   };
 }
 
+/* ---- referrals + tasks mappers ---- */
+
+function normReferralStatus(s: string | null | undefined): Referral["referralStatus"] {
+  const allowed: Referral["referralStatus"][] = ["New","In Review","Intake Form Sent","Scheduled","Active","Closed","Lost"];
+  return (allowed as string[]).includes(s ?? "") ? (s as Referral["referralStatus"]) : "New";
+}
+
+function referralFromCrmRow(r: CrmReferralRow): Referral {
+  const fn = r.patient_first_name ?? "";
+  const li = r.patient_last_initial ?? "";
+  return {
+    id: r.id,
+    name: r.name ?? (fn || li ? `${fn} ${li}.`.trim() : "(Referral)"),
+    patientFirstName: fn,
+    patientLastInitial: li,
+    referralDate: r.referral_date ?? r.created_at ?? new Date().toISOString(),
+    contactId: r.contact_id ?? undefined,
+    companyId: r.company_id ?? undefined,
+    state: r.state ?? undefined,
+    serviceType: r.service_type ?? undefined,
+    sourceType: r.source_type ?? undefined,
+    referralStatus: normReferralStatus(r.referral_status),
+    intakeStatus: r.intake_status ?? undefined,
+    insuranceType: r.insurance_type ?? undefined,
+    assignedIntakeOwnerId: r.assigned_intake_owner_id ?? undefined,
+    attributionConfidence: r.attribution_confidence ?? undefined,
+    leadId: r.lead_id ?? undefined,
+    notes: r.notes ?? undefined,
+    createdAt: r.created_at ?? new Date().toISOString(),
+    updatedAt: r.updated_at ?? new Date().toISOString(),
+    deletedAt: r.archived_at ?? undefined,
+    isLegacyLeadLink: false,
+  };
+}
+
+function referralFromLeadLinkRow(r: LeadLinkRow): Referral {
+  return {
+    id: r.id,
+    name: "(Lead Link Referral)",
+    patientFirstName: "",
+    patientLastInitial: "",
+    referralDate: (r.referral_date as string | null) ?? r.created_at ?? new Date().toISOString(),
+    contactId: r.referral_contact_id ?? undefined,
+    companyId: r.referral_company_id ?? undefined,
+    serviceType: r.referral_source_type ?? undefined,
+    sourceType: r.referral_source_type ?? undefined,
+    referralStatus: "New",
+    attributionConfidence: r.attribution_confidence ?? undefined,
+    leadId: r.lead_id ?? undefined,
+    notes: r.notes ?? undefined,
+    createdAt: r.created_at ?? new Date().toISOString(),
+    updatedAt: r.updated_at ?? new Date().toISOString(),
+    isLegacyLeadLink: true,
+  };
+}
+
+function taskFromRow(r: CrmTaskRow): Task {
+  const t = (r.type ?? "Other") as Task["type"];
+  const p = (r.priority ?? "Medium") as Task["priority"];
+  const s = (r.status ?? "Open") as Task["status"];
+  return {
+    id: r.id,
+    title: r.title,
+    type: t,
+    priority: p,
+    status: s,
+    assignedUserId: r.assigned_user_id ?? undefined,
+    contactId: r.contact_id ?? undefined,
+    companyId: r.company_id ?? undefined,
+    referralId: r.referral_id ?? undefined,
+    dueDate: r.due_date ?? undefined,
+    notes: r.notes ?? undefined,
+    createdAt: r.created_at ?? new Date().toISOString(),
+    updatedAt: r.updated_at ?? new Date().toISOString(),
+    completedAt: r.completed_at ?? undefined,
+    deletedAt: r.archived_at ?? undefined,
+  };
+}
+
 /* ---------------- hydrate ---------------- */
 
 // Tracks IDs that originated in Supabase. Locally-generated IDs (random base36)
@@ -155,13 +241,16 @@ function isPersisted(id: ID): boolean {
 }
 
 export async function hydrateFromSupabase(): Promise<{
-  contacts: number; companies: number; activities: number; importBatches: number;
+  contacts: number; companies: number; activities: number; importBatches: number; referrals: number; tasks: number;
 }> {
-  const [comp, cont, act, batches] = await Promise.all([
+  const [comp, cont, act, batches, crmRefs, leadLinks, crmTasks] = await Promise.all([
     supabase.from("referral_companies").select("*").order("company_name"),
     supabase.from("referral_contacts").select("*").order("updated_at", { ascending: false }),
     supabase.from("referral_activities").select("*").order("activity_date", { ascending: false }).limit(500),
     supabase.from("referral_import_batches").select("*").order("uploaded_at", { ascending: false }).limit(200),
+    supabase.from("referral_crm_referrals").select("*").order("referral_date", { ascending: false }).limit(1000),
+    supabase.from("referral_lead_links").select("*").order("referral_date", { ascending: false }).limit(1000),
+    supabase.from("referral_crm_tasks").select("*").order("created_at", { ascending: false }).limit(1000),
   ]);
   if (comp.error) throw comp.error;
   if (cont.error) throw cont.error;
@@ -170,15 +259,23 @@ export async function hydrateFromSupabase(): Promise<{
   const contacts = (cont.data ?? []).map(contactFromRow);
   const activities = act.error ? [] : (act.data ?? []).map(activityFromRow);
   const importBatches = batches.error ? [] : (batches.data ?? []).map(batchFromRow);
+  const crmReferrals = crmRefs.error ? [] : (crmRefs.data ?? []).map(referralFromCrmRow);
+  const legacyReferrals = leadLinks.error ? [] : (leadLinks.data ?? []).map(referralFromLeadLinkRow);
+  const referrals = [...crmReferrals, ...legacyReferrals];
+  const tasks = crmTasks.error ? [] : (crmTasks.data ?? []).map(taskFromRow);
   knownIds.clear();
   for (const r of companies) knownIds.add(r.id);
   for (const r of contacts) knownIds.add(r.id);
-  replaceCrmData({ companies, contacts, activity: activities, importBatches });
+  for (const r of crmReferrals) knownIds.add(r.id);
+  for (const r of tasks) knownIds.add(r.id);
+  replaceCrmData({ companies, contacts, activity: activities, importBatches, referrals, tasks });
   return {
     contacts: contacts.length,
     companies: companies.length,
     activities: activities.length,
     importBatches: importBatches.length,
+    referrals: referrals.length,
+    tasks: tasks.length,
   };
 }
 
@@ -413,6 +510,113 @@ export function installSupabaseSync() {
       };
       const { error } = await supabase.from("referral_activities").insert(payload as never);
       if (error) console.warn("[crm bridge] activity insert failed", error);
+    },
+    onReferralCreate: async (r) => {
+      const payload = {
+        name: r.name,
+        patient_first_name: r.patientFirstName || null,
+        patient_last_initial: r.patientLastInitial || null,
+        referral_date: r.referralDate ? r.referralDate.slice(0, 10) : null,
+        contact_id: r.contactId && isPersisted(r.contactId) ? r.contactId : null,
+        company_id: r.companyId && isPersisted(r.companyId) ? r.companyId : null,
+        state: r.state ?? null,
+        service_type: r.serviceType ?? null,
+        source_type: r.sourceType ?? null,
+        referral_status: r.referralStatus,
+        intake_status: r.intakeStatus ?? null,
+        insurance_type: r.insuranceType ?? null,
+        assigned_intake_owner_id: r.assignedIntakeOwnerId ?? null,
+        attribution_confidence: r.attributionConfidence ?? null,
+        lead_id: r.leadId ?? null,
+        notes: r.notes ?? null,
+      };
+      const { error } = await supabase.from("referral_crm_referrals").insert(payload as never);
+      if (error) { console.warn("[crm bridge] referral insert failed", error); return; }
+      scheduleRehydrate();
+    },
+    onReferralUpdate: async (id, patch, full) => {
+      if (!isPersisted(id)) return;
+      if (full?.isLegacyLeadLink) return; // read-only mirror of referral_lead_links
+      const out: Record<string, unknown> = {};
+      if ("name" in patch) out.name = patch.name ?? null;
+      if ("patientFirstName" in patch) out.patient_first_name = patch.patientFirstName ?? null;
+      if ("patientLastInitial" in patch) out.patient_last_initial = patch.patientLastInitial ?? null;
+      if ("referralDate" in patch) out.referral_date = patch.referralDate ? patch.referralDate.slice(0, 10) : null;
+      if ("contactId" in patch) out.contact_id = patch.contactId && isPersisted(patch.contactId) ? patch.contactId : null;
+      if ("companyId" in patch) out.company_id = patch.companyId && isPersisted(patch.companyId) ? patch.companyId : null;
+      if ("state" in patch) out.state = patch.state ?? null;
+      if ("serviceType" in patch) out.service_type = patch.serviceType ?? null;
+      if ("sourceType" in patch) out.source_type = patch.sourceType ?? null;
+      if ("referralStatus" in patch) out.referral_status = patch.referralStatus ?? "New";
+      if ("intakeStatus" in patch) out.intake_status = patch.intakeStatus ?? null;
+      if ("insuranceType" in patch) out.insurance_type = patch.insuranceType ?? null;
+      if ("assignedIntakeOwnerId" in patch) out.assigned_intake_owner_id = patch.assignedIntakeOwnerId ?? null;
+      if ("attributionConfidence" in patch) out.attribution_confidence = patch.attributionConfidence ?? null;
+      if ("leadId" in patch) out.lead_id = patch.leadId ?? null;
+      if ("notes" in patch) out.notes = patch.notes ?? null;
+      if ("deletedAt" in patch) out.archived_at = patch.deletedAt ?? null;
+      if (Object.keys(out).length === 0) return;
+      const { error } = await supabase.from("referral_crm_referrals").update(out as never).eq("id", id);
+      if (error) console.warn("[crm bridge] referral update failed", error);
+    },
+    onReferralDelete: async (id, hard) => {
+      if (!isPersisted(id)) return;
+      if (hard) {
+        const { error } = await supabase.from("referral_crm_referrals").delete().eq("id", id);
+        if (error) console.warn("[crm bridge] referral delete failed", error);
+      } else {
+        const { error } = await supabase.from("referral_crm_referrals").update({ archived_at: new Date().toISOString() } as never).eq("id", id);
+        if (error) console.warn("[crm bridge] referral archive failed", error);
+      }
+      scheduleRehydrate();
+    },
+    onTaskCreate: async (t) => {
+      const payload = {
+        title: t.title,
+        type: t.type ?? null,
+        priority: t.priority ?? null,
+        status: t.status ?? "Open",
+        due_date: t.dueDate ? t.dueDate.slice(0, 10) : null,
+        completed_at: t.completedAt ?? null,
+        assigned_user_id: t.assignedUserId ?? null,
+        contact_id: t.contactId && isPersisted(t.contactId) ? t.contactId : null,
+        company_id: t.companyId && isPersisted(t.companyId) ? t.companyId : null,
+        referral_id: t.referralId && isPersisted(t.referralId) ? t.referralId : null,
+        notes: t.notes ?? null,
+      };
+      const { error } = await supabase.from("referral_crm_tasks").insert(payload as never);
+      if (error) { console.warn("[crm bridge] task insert failed", error); return; }
+      scheduleRehydrate();
+    },
+    onTaskUpdate: async (id, patch) => {
+      if (!isPersisted(id)) return;
+      const out: Record<string, unknown> = {};
+      if ("title" in patch) out.title = patch.title;
+      if ("type" in patch) out.type = patch.type ?? null;
+      if ("priority" in patch) out.priority = patch.priority ?? null;
+      if ("status" in patch) out.status = patch.status ?? "Open";
+      if ("dueDate" in patch) out.due_date = patch.dueDate ? patch.dueDate.slice(0, 10) : null;
+      if ("completedAt" in patch) out.completed_at = patch.completedAt ?? null;
+      if ("assignedUserId" in patch) out.assigned_user_id = patch.assignedUserId ?? null;
+      if ("contactId" in patch) out.contact_id = patch.contactId && isPersisted(patch.contactId) ? patch.contactId : null;
+      if ("companyId" in patch) out.company_id = patch.companyId && isPersisted(patch.companyId) ? patch.companyId : null;
+      if ("referralId" in patch) out.referral_id = patch.referralId && isPersisted(patch.referralId) ? patch.referralId : null;
+      if ("notes" in patch) out.notes = patch.notes ?? null;
+      if ("deletedAt" in patch) out.archived_at = patch.deletedAt ?? null;
+      if (Object.keys(out).length === 0) return;
+      const { error } = await supabase.from("referral_crm_tasks").update(out as never).eq("id", id);
+      if (error) console.warn("[crm bridge] task update failed", error);
+    },
+    onTaskDelete: async (id, hard) => {
+      if (!isPersisted(id)) return;
+      if (hard) {
+        const { error } = await supabase.from("referral_crm_tasks").delete().eq("id", id);
+        if (error) console.warn("[crm bridge] task delete failed", error);
+      } else {
+        const { error } = await supabase.from("referral_crm_tasks").update({ archived_at: new Date().toISOString() } as never).eq("id", id);
+        if (error) console.warn("[crm bridge] task archive failed", error);
+      }
+      scheduleRehydrate();
     },
   });
 }
