@@ -217,6 +217,12 @@ export interface Referral {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+  // Preserved cross-system fields
+  sourceType?: string;
+  attributionConfidence?: string;
+  leadId?: string;
+  /** True when this row originated from referral_lead_links (read-only mirror). */
+  isLegacyLeadLink?: boolean;
 }
 
 export interface Task {
@@ -232,6 +238,9 @@ export interface Task {
   status: "Open" | "In Progress" | "Completed";
   notes?: string;
   createdAt: string;
+  updatedAt?: string;
+  completedAt?: string;
+  deletedAt?: string;
 }
 
 export interface ActivityEvent {
