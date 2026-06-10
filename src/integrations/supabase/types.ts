@@ -9127,6 +9127,108 @@ export type Database = {
           },
         ]
       }
+      referral_crm_attachments: {
+        Row: {
+          archived_at: string | null
+          category: string | null
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          notes: string | null
+          object_id: string
+          object_type: string
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          category?: string | null
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          notes?: string | null
+          object_id: string
+          object_type: string
+          storage_bucket?: string
+          storage_path: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          category?: string | null
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          notes?: string | null
+          object_id?: string
+          object_type?: string
+          storage_bucket?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Relationships: []
+      }
+      referral_crm_audit_log: {
+        Row: {
+          action: string
+          actor_name: string | null
+          actor_user_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          object_id: string | null
+          object_label: string | null
+          object_type: string
+          summary: string | null
+        }
+        Insert: {
+          action: string
+          actor_name?: string | null
+          actor_user_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          object_id?: string | null
+          object_label?: string | null
+          object_type: string
+          summary?: string | null
+        }
+        Update: {
+          action?: string
+          actor_name?: string | null
+          actor_user_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          object_id?: string | null
+          object_label?: string | null
+          object_type?: string
+          summary?: string | null
+        }
+        Relationships: []
+      }
       referral_crm_referrals: {
         Row: {
           archived_at: string | null
