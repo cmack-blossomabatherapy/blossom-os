@@ -437,14 +437,14 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
             <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="w-10 px-3 py-2"><Checkbox checked={allChecked} onCheckedChange={toggleAll} /></th>
-                <th className="text-left px-3 py-2 font-medium">Name</th>
-                <th className="text-left px-3 py-2 font-medium">Company</th>
-                <th className="text-left px-3 py-2 font-medium">Title</th>
-                <th className="text-left px-3 py-2 font-medium">State</th>
-                <th className="text-left px-3 py-2 font-medium">Owner</th>
-                <th className="text-left px-3 py-2 font-medium">Status</th>
-                <th className="text-right px-3 py-2 font-medium">Referrals</th>
-                <th className="text-left px-3 py-2 font-medium">Last Contact</th>
+                <SortTh label="Name" k="name" sort={sort} onSort={toggleSort} />
+                <SortTh label="Company" k="company" sort={sort} onSort={toggleSort} />
+                <SortTh label="Title" k="title" sort={sort} onSort={toggleSort} />
+                <SortTh label="State" k="state" sort={sort} onSort={toggleSort} />
+                <SortTh label="Owner" k="owner" sort={sort} onSort={toggleSort} />
+                <SortTh label="Status" k="status" sort={sort} onSort={toggleSort} />
+                <SortTh label="Referrals" k="referrals" sort={sort} onSort={toggleSort} align="right" />
+                <SortTh label="Last Contact" k="last" sort={sort} onSort={toggleSort} />
               </tr>
             </thead>
             <tbody>
