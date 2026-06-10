@@ -179,6 +179,7 @@ export default function BcbaProductivityReportV3() {
       setAssignments(await loadAssignmentsV3());
     } catch (e: any) {
       setAssignmentError(e?.message ?? "Assignment History could not be loaded");
+      setAssignments([]);
       toast.error("Assignment History could not be loaded from the database");
     } finally {
       setAssignmentLoading(false);
