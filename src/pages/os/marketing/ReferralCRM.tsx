@@ -3961,13 +3961,16 @@ export default function ReferralCRM() {
   const [module, setModule] = useState<ModuleId>("dashboard");
   const [contactId, setContactId] = useState<ID | null>(null);
   const [companyId, setCompanyId] = useState<ID | null>(null);
+  const [backendMissing, setBackendMissing] = useState<string[]>([]);
 
   // Bridge: hydrate Supabase referral data into the CRM store and install
   // write-through sync so creates/edits land in referral_contacts /
   // referral_companies / referral_activities. Runs once on mount.
   useEffect(() => {
     installSupabaseSync();
-    hydrateFromSupabase().catch((e) => {
+    hydrateFromSupabase().then((res) => {
+      setBackendMissing(res.missing ?? []);
+    }).catch((e) => {
       console.warn("[ReferralCRM] hydrate failed", e);
       toast({
         title: "Could not load referral data",
