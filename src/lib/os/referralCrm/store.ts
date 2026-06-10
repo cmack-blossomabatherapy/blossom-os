@@ -623,6 +623,40 @@ export function useCrm() {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
+// ---------- Supabase sync side-effects ----------
+// The bridge layer registers async write handlers here so creates/updates
+// in the CRM are mirrored to the Supabase referral tables. Handlers are
+// fire-and-forget; the bridge re-hydrates the store after each batch.
+export interface CrmSideEffects {
+  onContactCreate?: (c: Contact) => void;
+  onContactUpdate?: (id: ID, patch: Partial<Contact>, full: Contact | undefined) => void;
+  onContactDelete?: (id: ID, hard: boolean) => void;
+  onCompanyCreate?: (c: Company) => void;
+  onCompanyUpdate?: (id: ID, patch: Partial<Company>, full: Company | undefined) => void;
+  onCompanyDelete?: (id: ID, hard: boolean) => void;
+  onActivityCreate?: (a: ActivityEvent) => void;
+}
+let sideEffects: CrmSideEffects = {};
+export function setCrmSideEffects(se: CrmSideEffects) { sideEffects = se ?? {}; }
+function fire<K extends keyof CrmSideEffects>(k: K, ...args: Parameters<NonNullable<CrmSideEffects[K]>>) {
+  const fn = sideEffects[k] as ((...a: unknown[]) => void) | undefined;
+  if (!fn) return;
+  try { fn(...(args as unknown[])); } catch (e) { console.warn("[crm sideEffect]", k, e); }
+}
+
+/** Bulk replace data from Supabase. Keeps users/teams/permissions/workflows/lists. */
+export function replaceCrmData(input: {
+  contacts?: Contact[];
+  companies?: Company[];
+  activity?: ActivityEvent[];
+}) {
+  set({
+    ...(input.contacts ? { contacts: input.contacts } : {}),
+    ...(input.companies ? { companies: input.companies } : {}),
+    ...(input.activity ? { activity: input.activity } : {}),
+  });
+}
+
 const newId = () => Math.random().toString(36).slice(2, 10);
 const logActivity = (e: Omit<ActivityEvent, "id" | "createdAt"> & { createdAt?: string }) => {
   set({ activity: [{ id: newId(), createdAt: now(), ...e }, ...state.activity] });
