@@ -1091,7 +1091,7 @@ function AssignmentHistoryEditor({
   assignments: BcbaAssignmentV3[];
   knownClients: string[];
   knownClientsWithId: Map<string, string>;
-  onChange: () => void;
+  onChange: () => void | Promise<void>;
   editing: BcbaAssignmentV3 | null;
   setEditing: (a: BcbaAssignmentV3 | null) => void;
 }) {
@@ -1218,7 +1218,7 @@ function AssignmentHistoryEditor({
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7"
-                          onClick={() => { if (confirm("Delete assignment?")) { deleteAssignmentV3(a.id); onChange(); } }}
+                          onClick={async () => { if (confirm("Delete assignment?")) { await deleteAssignmentV3(a.id); await onChange(); toast.success("Assignment deleted"); } }}
                           title="Delete">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
