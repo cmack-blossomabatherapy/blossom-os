@@ -4020,6 +4020,11 @@ export default function ReferralCRM() {
       title="Blossom Referral CRM"
       subtitle="Track contacts, companies, referrals, and outreach for every state."
     >
+      {backendMissing.length > 0 && (
+        <div className="mb-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+          <span className="font-medium">Heads up:</span> the following backend tables are unavailable or blocked by access rules — {backendMissing.join(", ")}. Contacts, companies, and imports loaded normally, but those modules will show empty until access is restored.
+        </div>
+      )}
       {/* Impersonation switcher — lets admins preview the CRM as any role */}
       <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs">
         <span className="text-muted-foreground">Acting as:</span>
