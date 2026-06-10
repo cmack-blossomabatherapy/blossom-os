@@ -878,9 +878,25 @@ function KpiCard({ label, value, tone }: { label: string; value: string; tone?: 
 function ValPill({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
   return (
     <div className={cn("rounded-lg border bg-background px-3 py-2",
-      tone === "warn" && "border-amber-300 bg-amber-50")}>
+      tone === "warn" && "border-warning/40 bg-warning/10")}>
       <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-0.5 text-sm font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+function MiniAuditList({ title, rows }: { title: string; rows: [string, string][] }) {
+  return (
+    <div className="rounded-lg border bg-background p-2">
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+      <ul className="space-y-1 text-xs">
+        {rows.length === 0 && <li className="text-muted-foreground">None detected</li>}
+        {rows.map(([name, detail], i) => (
+          <li key={`${name}-${i}`} className="flex justify-between gap-3">
+            <span className="min-w-0 truncate font-medium">{name || "Unknown client"}</span>
+            <span className="shrink-0 text-right text-muted-foreground">{detail}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
