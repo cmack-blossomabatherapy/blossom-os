@@ -583,6 +583,25 @@ export default function BcbaProductivityReportV3() {
     }
   }
 
+  async function handleSaveInferred() {
+    if (!inferred.assignments.length) return;
+    if (!confirm(`Save ${inferred.assignments.length} inferred BCBA assignments to Assignment History? You can edit them after.`)) return;
+    try {
+      const toInsert = inferred.assignments.map(a => ({
+        clientId: a.clientId,
+        clientName: a.clientName,
+        bcbaName: a.bcbaName,
+        startDate: a.startDate,
+        endDate: a.endDate,
+        note: a.note ?? "Inferred from Billing Report",
+      }));
+      setAssignments(await bulkInsertAssignmentsV3(toInsert));
+      toast.success(`Saved ${toInsert.length} inferred assignments`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to save inferred assignments");
+    }
+  }
+
   return (
     <OSShell>
       <div className="space-y-6 p-6">
