@@ -236,7 +236,7 @@ const MODULE_NAV_META: Partial<Record<OSModule, { label: string; icon: typeof La
   campaigns: { label: "Campaigns", icon: Megaphone },
   lead_sources: { label: "Lead Sources", icon: Inbox },
   seo_content: { label: "SEO & Content", icon: BookOpen },
-  referrals: { label: "Referrals", icon: HeartHandshake },
+  referrals: { label: "Referral CRM", icon: HeartHandshake },
   recruiting_marketing: { label: "Recruiting Marketing", icon: Briefcase },
   state_growth: { label: "State Growth", icon: BarChart3 },
   reputation: { label: "Reputation", icon: Star },

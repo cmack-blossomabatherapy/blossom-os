@@ -623,9 +623,48 @@ export function useCrm() {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
+// ---------- Supabase sync side-effects ----------
+// The bridge layer registers async write handlers here so creates/updates
+// in the CRM are mirrored to the Supabase referral tables. Handlers are
+// fire-and-forget; the bridge re-hydrates the store after each batch.
+export interface CrmSideEffects {
+  onContactCreate?: (c: Contact) => void;
+  onContactUpdate?: (id: ID, patch: Partial<Contact>, full: Contact | undefined) => void;
+  onContactDelete?: (id: ID, hard: boolean) => void;
+  onCompanyCreate?: (c: Company) => void;
+  onCompanyUpdate?: (id: ID, patch: Partial<Company>, full: Company | undefined) => void;
+  onCompanyDelete?: (id: ID, hard: boolean) => void;
+  onActivityCreate?: (a: ActivityEvent) => void;
+}
+let sideEffects: CrmSideEffects = {};
+export function setCrmSideEffects(se: CrmSideEffects) { sideEffects = se ?? {}; }
+function fire<K extends keyof CrmSideEffects>(k: K, ...args: Parameters<NonNullable<CrmSideEffects[K]>>) {
+  const fn = sideEffects[k] as ((...a: unknown[]) => void) | undefined;
+  if (!fn) return;
+  try { fn(...(args as unknown[])); } catch (e) { console.warn("[crm sideEffect]", k, e); }
+}
+
+/** Bulk replace data from Supabase. Keeps users/teams/permissions/workflows/lists. */
+export function replaceCrmData(input: {
+  contacts?: Contact[];
+  companies?: Company[];
+  activity?: ActivityEvent[];
+}) {
+  set({
+    ...(input.contacts ? { contacts: input.contacts } : {}),
+    ...(input.companies ? { companies: input.companies } : {}),
+    ...(input.activity ? { activity: input.activity } : {}),
+  });
+}
+
 const newId = () => Math.random().toString(36).slice(2, 10);
 const logActivity = (e: Omit<ActivityEvent, "id" | "createdAt"> & { createdAt?: string }) => {
-  set({ activity: [{ id: newId(), createdAt: now(), ...e }, ...state.activity] });
+  const row: ActivityEvent = { id: newId(), createdAt: now(), ...e };
+  set({ activity: [row, ...state.activity] });
+  // Only mirror user-authored activities (notes, calls, emails, meetings, referrals)
+  // to Supabase. Skip noisy property_change / list_membership / workflow events.
+  const mirror: ActivityEvent["type"][] = ["note", "call", "email", "meeting", "referral_received", "task"];
+  if (mirror.includes(row.type)) fire("onActivityCreate", row);
 };
 
 function logAudit(entry: Omit<AuditLogEntry, "id" | "at" | "actor"> & { actor?: string }) {
@@ -645,6 +684,7 @@ export const crm = {
     set({ contacts: [c, ...state.contacts] });
     logActivity({ type: "property_change", message: `Contact created: ${c.firstName} ${c.lastName}`, contactId: c.id });
     logAudit({ action: "create", objectType: "contact", objectId: c.id, objectLabel: `${c.firstName} ${c.lastName}`, summary: "Contact created" });
+    fire("onContactCreate", c);
     return c;
   },
   updateContact(id: ID, patch: Partial<Contact>) {
@@ -653,20 +693,24 @@ export const crm = {
     const c = state.contacts.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id,
       summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
+    fire("onContactUpdate", id, patch, c);
   },
   softDeleteContact(id: ID) {
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
     const c = state.contacts.find((x) => x.id === id);
     logAudit({ action: "delete", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact moved to deleted" });
+    fire("onContactDelete", id, false);
   },
   restoreContact(id: ID) {
     set({ contacts: state.contacts.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
     const c = state.contacts.find((x) => x.id === id);
     logAudit({ action: "restore", objectType: "contact", objectId: id, objectLabel: c ? `${c.firstName} ${c.lastName}` : id, summary: "Contact restored" });
+    fire("onContactUpdate", id, { deletedAt: undefined } as Partial<Contact>, c);
   },
   hardDeleteContact(id: ID) {
     set({ contacts: state.contacts.filter((c) => c.id !== id) });
     logAudit({ action: "delete", objectType: "contact", objectId: id, summary: "Contact permanently deleted" });
+    fire("onContactDelete", id, true);
   },
 
   mergeContacts(winnerId: ID, loserId: ID) {
@@ -713,6 +757,7 @@ export const crm = {
     set({ companies: [c, ...state.companies] });
     logActivity({ type: "property_change", message: `Company created: ${c.name}`, companyId: c.id });
     logAudit({ action: "create", objectType: "company", objectId: c.id, objectLabel: c.name, summary: "Company created" });
+    fire("onCompanyCreate", c);
     return c;
   },
   updateCompany(id: ID, patch: Partial<Company>) {
@@ -721,20 +766,24 @@ export const crm = {
     const co = state.companies.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "company", objectId: id, objectLabel: co?.name,
       summary: `Updated: ${Object.keys(patch).filter((k) => k !== "updatedAt").join(", ") || "—"}` });
+    fire("onCompanyUpdate", id, patch, co);
   },
   softDeleteCompany(id: ID) {
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: now() } : c) });
     const co = state.companies.find((x) => x.id === id);
     logAudit({ action: "delete", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company moved to deleted" });
+    fire("onCompanyDelete", id, false);
   },
   restoreCompany(id: ID) {
     set({ companies: state.companies.map((c) => c.id === id ? { ...c, deletedAt: undefined } : c) });
     const co = state.companies.find((x) => x.id === id);
     logAudit({ action: "restore", objectType: "company", objectId: id, objectLabel: co?.name, summary: "Company restored" });
+    fire("onCompanyUpdate", id, { deletedAt: undefined } as Partial<Company>, co);
   },
   hardDeleteCompany(id: ID) {
     set({ companies: state.companies.filter((c) => c.id !== id) });
     logAudit({ action: "delete", objectType: "company", objectId: id, summary: "Company permanently deleted" });
+    fire("onCompanyDelete", id, true);
   },
 
   mergeCompanies(winnerId: ID, loserId: ID) {
