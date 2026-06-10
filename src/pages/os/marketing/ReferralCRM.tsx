@@ -29,6 +29,11 @@ import {
   WORKFLOW_TRIGGERS, WORKFLOW_ACTIONS,
   type ListCriteria, type WorkflowTrigger,
 } from "@/lib/os/referralCrm/store";
+import {
+  canCrm, currentUser, scopedContacts, scopedCompanies, scopedReferrals, scopedTasks,
+  CRM_PERMISSIONS, CRM_ROLES, TEAM_TYPES,
+  type CrmPermission, type CrmRole, type CrmTeam, type CrmUser, type TeamType,
+} from "@/lib/os/referralCrm/store";
 
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
@@ -98,10 +103,10 @@ function daysSince(d?: string) {
 // ===========================================================
 function DashboardModule() {
   const s = useCrm();
-  const ct = activeContacts(s);
-  const co = activeCompanies(s);
-  const rf = activeReferrals(s);
-  const openTasks = s.tasks.filter((t) => t.status !== "Completed");
+  const ct = scopedContacts(s);
+  const co = scopedCompanies(s);
+  const rf = scopedReferrals(s);
+  const openTasks = scopedTasks(s).filter((t) => t.status !== "Completed");
   const overdue = openTasks.filter((t) => t.dueDate && new Date(t.dueDate).getTime() < Date.now());
   const activePartners = co.filter((c) => c.activeReferralPartner).length;
   const inactive60 = co.filter((c) => daysSince(c.lastContactedDate) > 60);
@@ -279,7 +284,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
   const [creating, setCreating] = useState(false);
 
   const rows = useMemo(() => {
-    let r = activeContacts(s);
+    let r = scopedContacts(s);
     if (view === "nc") r = r.filter((c) => c.state === "NC" && !!c.referralSourceType);
     if (view === "missing-email") r = r.filter((c) => !c.email);
     if (view === "active") r = r.filter((c) => c.referralPartnerStatus === "Active Referral Partner");
@@ -339,7 +344,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
           </SelectContent>
         </Select>
         <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" onClick={() => setCreating(true)}>
+        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
           <Plus className="size-3.5" /> New Contact
         </Button>
       </div>
@@ -385,7 +390,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
           }}>
             <Download className="size-3 mr-1" /> Export
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
         </div>
@@ -501,7 +506,7 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
 
   const rows = useMemo(() => {
-    let r = activeCompanies(s);
+    let r = scopedCompanies(s);
     if (view === "active") r = r.filter((c) => c.activeReferralPartner);
     if (view === "tier-a") r = r.filter((c) => c.relationshipTier === "Tier A");
     if (view === "targets") r = r.filter((c) => c.referralPartnerStatus === "New Target");
@@ -569,7 +574,7 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies…" className="pl-8 h-9 text-sm" />
         </div>
         <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Company</Button>
+        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Company</Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
@@ -610,10 +615,10 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={() => setBulkTaskOpen(true)}>
             <ListChecks className="size-3 mr-1" /> Create task
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkExport}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "export")} onClick={bulkExport}>
             <Download className="size-3 mr-1" /> Export
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
         </div>
@@ -774,7 +779,7 @@ function ReferralsModule() {
   const [logId, setLogId] = useState<ID | null>(null);
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
-  const rows = activeReferrals(s);
+  const rows = scopedReferrals(s);
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
@@ -816,7 +821,7 @@ function ReferralsModule() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button size="sm" className="h-9 gap-1.5" onClick={() => setCreating(true)}>
+        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
           <Plus className="size-3.5" /> New Referral
         </Button>
       </div>
@@ -840,10 +845,10 @@ function ReferralsModule() {
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={() => setBulkTaskOpen(true)}>
             <ListChecks className="size-3 mr-1" /> Create task
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkExport}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "export")} onClick={bulkExport}>
             <Download className="size-3 mr-1" /> Export
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
         </div>
@@ -986,7 +991,7 @@ function TasksModule() {
 
   const groups = useMemo(() => {
     const map = new Map<string, Task[]>();
-    for (const t of s.tasks) {
+    for (const t of scopedTasks(s)) {
       let key = "Unassigned";
       if (groupBy === "owner") key = userName(s, t.assignedUserId);
       else if (groupBy === "state") {
@@ -999,7 +1004,7 @@ function TasksModule() {
     return [...map.entries()];
   }, [s, groupBy]);
 
-  const visibleIds = s.tasks.map((t) => t.id);
+  const visibleIds = scopedTasks(s).map((t) => t.id);
   const allChecked = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(visibleIds));
   const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
@@ -1055,7 +1060,7 @@ function TasksModule() {
           <Checkbox checked={allChecked} onCheckedChange={toggleAll} /> Select all
         </label>
         <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Task</Button>
+        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Task</Button>
       </div>
 
       {selected.size > 0 && (
@@ -1077,10 +1082,10 @@ function TasksModule() {
           <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDueDate}>
             <Calendar className="size-3 mr-1" /> Due date
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkExport}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "export")} onClick={bulkExport}>
             <Download className="size-3 mr-1" /> Export
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" onClick={bulkDelete}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-background hover:bg-background/10" disabled={!canCrm(s, "delete")} onClick={bulkDelete}>
             <Trash2 className="size-3 mr-1" /> Delete
           </Button>
         </div>
@@ -3290,59 +3295,371 @@ function LogActivityDialog({ open, onOpenChange, contactId, companyId, referralI
   );
 }
 
-const PERMISSIONS = ["View", "Edit", "Delete", "Import", "Export", "Manage Users"];
-const ROLES = [
-  { id: "admin", name: "Admin", perms: [true, true, true, true, true, true] },
-  { id: "marketing_director", name: "Marketing Director", perms: [true, true, true, true, true, false] },
-  { id: "outreach_rep", name: "Outreach Rep", perms: [true, true, false, false, true, false] },
-  { id: "intake", name: "Intake Team", perms: [true, true, false, false, false, false] },
-  { id: "state_director", name: "State Director", perms: [true, false, false, false, true, false] },
-  { id: "read_only", name: "Read Only", perms: [true, false, false, false, false, false] },
-];
-
 function UsersModule() {
   const s = useCrm();
+  const canManage = canCrm(s, "manage_users");
+  const [editingUser, setEditingUser] = useState<CrmUser | "new" | null>(null);
+  const [editingTeam, setEditingTeam] = useState<CrmTeam | "new" | null>(null);
+
+  if (!canManage) {
+    return (
+      <div className="rounded-2xl border bg-card p-8 text-center">
+        <ShieldCheck className="size-8 mx-auto text-muted-foreground mb-2" />
+        <p className="font-medium">Restricted</p>
+        <p className="text-sm text-muted-foreground">Your role cannot manage users, teams, or permissions.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      {/* USERS */}
       <div className="rounded-2xl border bg-card p-5">
-        <h3 className="font-semibold">Users</h3>
-        <div className="mt-3 divide-y text-sm">
-          {s.users.map((u) => (
-            <div key={u.id} className="py-2 flex items-center justify-between">
-              <div>
-                <p className="font-medium">{u.name}</p>
-                <p className="text-xs text-muted-foreground">{u.email}{u.state ? ` · ${u.state}` : ""}</p>
-              </div>
-              <Badge variant="secondary">{u.role.replace("_", " ")}</Badge>
-            </div>
-          ))}
+        <SectionHeader
+          title="Users"
+          subtitle="Create, edit, and deactivate Referral CRM users."
+          right={<Button size="sm" className="h-8 gap-1.5" onClick={() => setEditingUser("new")}><Plus className="size-3.5" /> New User</Button>}
+        />
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-[11px] uppercase text-muted-foreground">
+              <tr>
+                <th className="text-left py-2">Name</th>
+                <th className="text-left py-2">Email / Mobile</th>
+                <th className="text-left py-2">Role</th>
+                <th className="text-left py-2">States</th>
+                <th className="text-left py-2">Teams</th>
+                <th className="text-left py-2">Status</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {s.users.map((u) => {
+                const userTeams = s.teams.filter((t) => t.memberIds.includes(u.id));
+                return (
+                  <tr key={u.id} className="border-t">
+                    <td className="py-2 font-medium">{u.name}</td>
+                    <td className="py-2 text-muted-foreground">
+                      <p>{u.email}</p>
+                      {u.mobilePhone && <p className="text-xs">{u.mobilePhone}</p>}
+                    </td>
+                    <td className="py-2"><Badge variant="secondary">{u.role.replace(/_/g, " ")}</Badge></td>
+                    <td className="py-2 text-xs">{(u.states ?? []).join(", ") || "—"}</td>
+                    <td className="py-2 text-xs">{userTeams.map((t) => t.name).join(", ") || "—"}</td>
+                    <td className="py-2">
+                      <Badge variant={u.active === false ? "outline" : "secondary"}>{u.active === false ? "Inactive" : "Active"}</Badge>
+                    </td>
+                    <td className="py-2 text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button size="sm" variant="ghost" className="h-7" onClick={() => setEditingUser(u)}><Pencil className="size-3" /></Button>
+                        <Button size="sm" variant="ghost" className="h-7" onClick={() => crm.setUserActive(u.id, u.active === false)}>
+                          {u.active === false ? "Reactivate" : "Deactivate"}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
+      {/* TEAMS */}
+      <div className="rounded-2xl border bg-card p-5">
+        <SectionHeader
+          title="Teams"
+          subtitle="Group users by Marketing, Outreach, Intake, State Leadership, or Admin."
+          right={<Button size="sm" className="h-8 gap-1.5" onClick={() => setEditingTeam("new")}><Plus className="size-3.5" /> New Team</Button>}
+        />
+        <div className="grid md:grid-cols-2 gap-3">
+          {s.teams.map((t) => {
+            const lead = s.users.find((u) => u.id === t.leadId);
+            return (
+              <div key={t.id} className="rounded-xl border p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{t.type}{t.states.length ? ` · ${t.states.join(", ")}` : ""}</p>
+                  </div>
+                  <Badge variant={t.active ? "secondary" : "outline"}>{t.active ? "Active" : "Inactive"}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">Lead: {lead?.name ?? "—"}</p>
+                <p className="text-xs text-muted-foreground">Members: {t.memberIds.length}</p>
+                <div className="mt-2 flex gap-1">
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => setEditingTeam(t)}><Pencil className="size-3 mr-1" />Edit</Button>
+                  <Button size="sm" variant="ghost" className="h-7" onClick={() => crm.setTeamActive(t.id, !t.active)}>
+                    {t.active ? "Deactivate" : "Reactivate"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* PERMISSION MATRIX */}
       <div className="rounded-2xl border bg-card p-5 overflow-x-auto">
-        <h3 className="font-semibold">Permission Matrix</h3>
-        <table className="w-full mt-3 text-sm">
+        <SectionHeader
+          title="Permission Matrix"
+          subtitle="Toggle to override the default permission for each role. Changes apply immediately."
+          right={<Button size="sm" variant="outline" className="h-8" onClick={() => crm.resetPermissions()}>Reset defaults</Button>}
+        />
+        <table className="w-full text-sm">
           <thead className="text-[11px] uppercase text-muted-foreground">
             <tr>
               <th className="text-left py-2">Role</th>
-              {PERMISSIONS.map((p) => <th key={p} className="text-center px-2">{p}</th>)}
+              {CRM_PERMISSIONS.map((p) => <th key={p.id} className="text-center px-2">{p.label}</th>)}
             </tr>
           </thead>
           <tbody>
-            {ROLES.map((r) => (
+            {CRM_ROLES.map((r) => (
               <tr key={r.id} className="border-t">
-                <td className="py-2 font-medium">{r.name}</td>
-                {r.perms.map((on, i) => (
-                  <td key={i} className="text-center px-2">
-                    {on ? <CheckCircle2 className="size-4 text-emerald-600 inline" /> : <X className="size-4 text-muted-foreground inline" />}
-                  </td>
-                ))}
+                <td className="py-2 font-medium">{r.label}</td>
+                {CRM_PERMISSIONS.map((p) => {
+                  const on = !!s.permissions[r.id]?.[p.id];
+                  return (
+                    <td key={p.id} className="text-center px-2">
+                      <Checkbox checked={on} onCheckedChange={(v) => crm.setPermission(r.id, p.id, !!v)} />
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <UserDialog
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+      />
+      <TeamDialog
+        team={editingTeam}
+        onClose={() => setEditingTeam(null)}
+      />
     </div>
+  );
+}
+
+function UserDialog({ user, onClose }: { user: CrmUser | "new" | null; onClose: () => void }) {
+  const s = useCrm();
+  const isNew = user === "new";
+  const u = isNew ? null : user;
+  const [f, setF] = useState({
+    firstName: u?.firstName ?? "",
+    lastName: u?.lastName ?? "",
+    email: u?.email ?? "",
+    mobilePhone: u?.mobilePhone ?? "",
+    role: (u?.role ?? "read_only") as CrmRole,
+    states: (u?.states ?? []) as string[],
+    teamIds: (u?.teamIds ?? []) as ID[],
+    active: u?.active ?? true,
+  });
+  useEffect(() => {
+    if (!user) return;
+    if (isNew) {
+      setF({ firstName: "", lastName: "", email: "", mobilePhone: "", role: "read_only", states: [], teamIds: [], active: true });
+    } else if (u) {
+      setF({
+        firstName: u.firstName ?? u.name.split(" ")[0] ?? "",
+        lastName: u.lastName ?? u.name.split(" ").slice(1).join(" ") ?? "",
+        email: u.email,
+        mobilePhone: u.mobilePhone ?? "",
+        role: u.role,
+        states: u.states ?? (u.state ? [u.state] : []),
+        teamIds: u.teamIds ?? s.teams.filter((t) => t.memberIds.includes(u.id)).map((t) => t.id),
+        active: u.active ?? true,
+      });
+    }
+  }, [user]); // eslint-disable-line
+
+  if (!user) return null;
+  const toggleState = (st: string) =>
+    setF((p) => ({ ...p, states: p.states.includes(st) ? p.states.filter((x) => x !== st) : [...p.states, st] }));
+  const toggleTeam = (tid: ID) =>
+    setF((p) => ({ ...p, teamIds: p.teamIds.includes(tid) ? p.teamIds.filter((x) => x !== tid) : [...p.teamIds, tid] }));
+
+  const submit = () => {
+    if (!f.firstName || !f.lastName || !f.email) {
+      toast({ title: "First name, last name, email required", variant: "destructive" as never });
+      return;
+    }
+    if (isNew) {
+      const created = crm.addUser(f);
+      // sync team memberships
+      for (const t of s.teams) {
+        const has = t.memberIds.includes(created.id);
+        const should = f.teamIds.includes(t.id);
+        if (has !== should) {
+          crm.updateTeam(t.id, {
+            memberIds: should ? [...t.memberIds, created.id] : t.memberIds.filter((x) => x !== created.id),
+          });
+        }
+      }
+      toast({ title: "User created" });
+    } else if (u) {
+      crm.updateUser(u.id, f);
+      for (const t of s.teams) {
+        const has = t.memberIds.includes(u.id);
+        const should = f.teamIds.includes(t.id);
+        if (has !== should) {
+          crm.updateTeam(t.id, {
+            memberIds: should ? [...t.memberIds, u.id] : t.memberIds.filter((x) => x !== u.id),
+          });
+        }
+      }
+      toast({ title: "User updated" });
+    }
+    onClose();
+  };
+
+  return (
+    <Dialog open={!!user} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>{isNew ? "New User" : `Edit ${u?.name}`}</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label className="text-xs">First name</Label><Input value={f.firstName} onChange={(e) => setF({ ...f, firstName: e.target.value })} /></div>
+          <div><Label className="text-xs">Last name</Label><Input value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} /></div>
+          <div><Label className="text-xs">Email</Label><Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
+          <div><Label className="text-xs">Mobile</Label><Input value={f.mobilePhone} onChange={(e) => setF({ ...f, mobilePhone: e.target.value })} /></div>
+          <div className="col-span-2">
+            <Label className="text-xs">Role</Label>
+            <Select value={f.role} onValueChange={(v) => setF({ ...f, role: v as CrmRole })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {CRM_ROLES.map((r) => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2">
+            <Label className="text-xs">Assigned states</Label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {STATES.map((st) => (
+                <button key={st} type="button" onClick={() => toggleState(st)}
+                  className={cn("px-2.5 py-1 rounded-md border text-xs",
+                    f.states.includes(st) ? "bg-primary/10 border-primary/30 text-primary" : "text-muted-foreground")}>
+                  {st}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">Leave empty for all-state access (Admin / Marketing Director).</p>
+          </div>
+          <div className="col-span-2">
+            <Label className="text-xs">Teams</Label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {s.teams.map((t) => (
+                <button key={t.id} type="button" onClick={() => toggleTeam(t.id)}
+                  className={cn("px-2.5 py-1 rounded-md border text-xs",
+                    f.teamIds.includes(t.id) ? "bg-primary/10 border-primary/30 text-primary" : "text-muted-foreground")}>
+                  {t.name}
+                </button>
+              ))}
+              {s.teams.length === 0 && <span className="text-xs text-muted-foreground">No teams yet.</span>}
+            </div>
+          </div>
+          <div className="col-span-2 flex items-center gap-2">
+            <Switch checked={f.active} onCheckedChange={(v) => setF({ ...f, active: v })} />
+            <Label className="text-xs">Active</Label>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit}>{isNew ? "Create user" : "Save"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TeamDialog({ team, onClose }: { team: CrmTeam | "new" | null; onClose: () => void }) {
+  const s = useCrm();
+  const isNew = team === "new";
+  const t = isNew ? null : team;
+  const [f, setF] = useState({
+    name: t?.name ?? "",
+    type: (t?.type ?? "Marketing") as TeamType,
+    states: (t?.states ?? []) as string[],
+    memberIds: (t?.memberIds ?? []) as ID[],
+    leadId: t?.leadId ?? "",
+    active: t?.active ?? true,
+  });
+  useEffect(() => {
+    if (!team) return;
+    if (isNew) setF({ name: "", type: "Marketing", states: [], memberIds: [], leadId: "", active: true });
+    else if (t) setF({ name: t.name, type: t.type, states: t.states, memberIds: t.memberIds, leadId: t.leadId ?? "", active: t.active });
+  }, [team]); // eslint-disable-line
+  if (!team) return null;
+
+  const toggleState = (st: string) =>
+    setF((p) => ({ ...p, states: p.states.includes(st) ? p.states.filter((x) => x !== st) : [...p.states, st] }));
+  const toggleMember = (uid: ID) =>
+    setF((p) => ({ ...p, memberIds: p.memberIds.includes(uid) ? p.memberIds.filter((x) => x !== uid) : [...p.memberIds, uid] }));
+
+  const submit = () => {
+    if (!f.name) { toast({ title: "Team name required", variant: "destructive" as never }); return; }
+    const payload = { ...f, leadId: f.leadId || undefined };
+    if (isNew) { crm.addTeam(payload); toast({ title: "Team created" }); }
+    else if (t) { crm.updateTeam(t.id, payload); toast({ title: "Team updated" }); }
+    onClose();
+  };
+
+  return (
+    <Dialog open={!!team} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>{isNew ? "New Team" : `Edit ${t?.name}`}</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2"><Label className="text-xs">Team name</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+          <div className="col-span-2">
+            <Label className="text-xs">Type</Label>
+            <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v as TeamType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{TEAM_TYPES.map((tt) => <SelectItem key={tt} value={tt}>{tt}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2">
+            <Label className="text-xs">States covered</Label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {STATES.map((st) => (
+                <button key={st} type="button" onClick={() => toggleState(st)}
+                  className={cn("px-2.5 py-1 rounded-md border text-xs",
+                    f.states.includes(st) ? "bg-primary/10 border-primary/30 text-primary" : "text-muted-foreground")}>{st}</button>
+              ))}
+            </div>
+          </div>
+          <div className="col-span-2">
+            <Label className="text-xs">Members</Label>
+            <div className="mt-1 grid grid-cols-2 gap-1 max-h-48 overflow-y-auto">
+              {s.users.map((u) => (
+                <label key={u.id} className="flex items-center gap-2 text-xs px-2 py-1 rounded hover:bg-muted">
+                  <Checkbox checked={f.memberIds.includes(u.id)} onCheckedChange={() => toggleMember(u.id)} />
+                  <span>{u.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="col-span-2">
+            <Label className="text-xs">Team lead</Label>
+            <Select value={f.leadId} onValueChange={(v) => setF({ ...f, leadId: v })}>
+              <SelectTrigger><SelectValue placeholder="Pick a lead" /></SelectTrigger>
+              <SelectContent>{f.memberIds.map((id) => {
+                const u = s.users.find((x) => x.id === id);
+                if (!u) return null;
+                return <SelectItem key={id} value={id}>{u.name}</SelectItem>;
+              })}</SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2 flex items-center gap-2">
+            <Switch checked={f.active} onCheckedChange={(v) => setF({ ...f, active: v })} />
+            <Label className="text-xs">Active</Label>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit}>{isNew ? "Create team" : "Save"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -3781,12 +4098,27 @@ function ResultRow({ title, meta, detail, onClick }: {
 // Page shell with internal nav
 // ===========================================================
 export default function ReferralCRM() {
+  const s = useCrm();
+  const me = currentUser(s);
   const [module, setModule] = useState<ModuleId>("dashboard");
   const [contactId, setContactId] = useState<ID | null>(null);
   const [companyId, setCompanyId] = useState<ID | null>(null);
 
+  const moduleAllowed = (id: ModuleId): boolean => {
+    if (!canCrm(s, "view")) return id === "dashboard";
+    if (id === "users") return canCrm(s, "manage_users");
+    if (id === "imports") return canCrm(s, "import");
+    if (id === "exports") return canCrm(s, "export");
+    if (id === "workflows") return canCrm(s, "manage_workflows");
+    if (id === "lists") return canCrm(s, "manage_lists");
+    if (id === "deleted" || id === "duplicates") return canCrm(s, "delete");
+    return true;
+  };
+  const visibleModules = MODULES.filter((m) => moduleAllowed(m.id));
+  const activeModule: ModuleId = moduleAllowed(module) ? module : "dashboard";
+
   const body = (() => {
-    switch (module) {
+    switch (activeModule) {
       case "dashboard": return <DashboardModule />;
       case "contacts": return <ContactsModule onOpenContact={setContactId} onOpenCompany={setCompanyId} />;
       case "companies": return <CompaniesModule onOpen={setCompanyId} />;
@@ -3813,12 +4145,32 @@ export default function ReferralCRM() {
       title="Blossom Referral CRM"
       subtitle="Track contacts, companies, referrals, and outreach for every state."
     >
+      {/* Impersonation switcher — lets admins preview the CRM as any role */}
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs">
+        <span className="text-muted-foreground">Acting as:</span>
+        <Select value={s.currentUserId} onValueChange={(v) => crm.setCurrentUser(v)}>
+          <SelectTrigger className="h-7 w-[260px] text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {s.users.map((u) => (
+              <SelectItem key={u.id} value={u.id}>
+                {u.name} · {u.role.replace(/_/g, " ")}{u.states?.length ? ` · ${u.states.join(",")}` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {me && (
+          <Badge variant="outline" className="ml-auto">
+            {me.role.replace(/_/g, " ")}{me.states?.length ? ` · ${me.states.join(", ")}` : " · all states"}
+          </Badge>
+        )}
+      </div>
+
       {/* mobile / tablet: horizontal scroll tab bar */}
       <div className="lg:hidden -mx-1 mb-4 overflow-x-auto">
         <div className="flex gap-1 px-1 min-w-max">
-          {MODULES.map((m) => {
+          {visibleModules.map((m) => {
             const Icon = m.icon;
-            const active = module === m.id;
+            const active = activeModule === m.id;
             return (
               <button key={m.id} onClick={() => setModule(m.id)}
                 className={cn(
@@ -3836,9 +4188,9 @@ export default function ReferralCRM() {
       <div className="flex gap-6">
         <aside className="hidden lg:block w-56 shrink-0">
           <div className="rounded-2xl border bg-card p-2 sticky top-4">
-            {MODULES.map((m) => {
+            {visibleModules.map((m) => {
               const Icon = m.icon;
-              const active = module === m.id;
+              const active = activeModule === m.id;
               return (
                 <button
                   key={m.id}
