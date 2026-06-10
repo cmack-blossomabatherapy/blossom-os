@@ -1066,7 +1066,9 @@ export const crm = {
       userId: a.uploadedByUserId,
     });
     logAudit({ action: "attachment_added", objectType: "attachment", objectId: a.id,
-      objectLabel: a.fileName, summary: `Attached to ${a.objectType} ${a.objectId}` });
+      objectLabel: a.fileName, summary: `Attached to ${a.objectType} ${a.objectId}`,
+      afterData: a as unknown as Record<string, unknown>,
+      metadata: { fileName: a.fileName, fileSize: a.fileSize, mimeType: a.mimeType, storageBucket: a.storageBucket, storagePath: a.storagePath, parentType: a.objectType, parentId: a.objectId } });
     fire("onAttachmentCreate", a);
     return a;
   },
@@ -1082,20 +1084,20 @@ export const crm = {
     if (!a) return;
     const archivedAt = now();
     set({ attachments: state.attachments.map((x) => (x.id === id ? { ...x, archivedAt } : x)) });
-    logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment archived" });
+    logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment archived", beforeData: a as unknown as Record<string, unknown>, metadata: { archived: true, fileName: a.fileName } });
     fire("onAttachmentUpdate", id, { archivedAt }, { ...a, archivedAt });
   },
   restoreAttachment(id: ID) {
     const a = state.attachments.find((x) => x.id === id);
     if (!a) return;
     set({ attachments: state.attachments.map((x) => (x.id === id ? { ...x, archivedAt: undefined } : x)) });
-    logAudit({ action: "restore", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment restored" });
+    logAudit({ action: "restore", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment restored", beforeData: a as unknown as Record<string, unknown>, afterData: { ...a, archivedAt: undefined } as unknown as Record<string, unknown> });
     fire("onAttachmentUpdate", id, { archivedAt: undefined }, { ...a, archivedAt: undefined });
   },
   removeAttachment(id: ID) {
     const a = state.attachments.find((x) => x.id === id);
     set({ attachments: state.attachments.filter((x) => x.id !== id) });
-    if (a) logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment removed" });
+    if (a) logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment removed", beforeData: a as unknown as Record<string, unknown>, metadata: { permanent: true, fileName: a.fileName, storagePath: a.storagePath } });
     fire("onAttachmentDelete", id, true, a);
   },
 
@@ -1115,10 +1117,10 @@ export const crm = {
 
   // audit + import/export markers
   recordImport(summary: string) {
-    logAudit({ action: "import", objectType: "system", summary });
+    logAudit({ action: "import", objectType: "system", summary, metadata: { source: "import", at: now() } });
   },
   recordExport(summary: string) {
-    logAudit({ action: "export", objectType: "system", summary });
+    logAudit({ action: "export", objectType: "system", summary, metadata: { source: "export", at: now() } });
   },
 
   // workflows
@@ -1126,7 +1128,7 @@ export const crm = {
     set({ workflows: state.workflows.map((w) => w.id === id ? { ...w, enabled: !w.enabled } : w) });
     const w = state.workflows.find((x) => x.id === id);
     logAudit({ action: "workflow_toggle", objectType: "workflow", objectId: id, objectLabel: w?.name,
-      summary: w?.enabled ? "Workflow enabled" : "Workflow disabled" });
+      summary: w?.enabled ? "Workflow enabled" : "Workflow disabled", metadata: { enabled: w?.enabled } });
   },
   runWorkflow(id: ID): string {
     const w = state.workflows.find((x) => x.id === id);
@@ -1137,7 +1139,7 @@ export const crm = {
         x.id === id ? { ...x, runs: x.runs + 1, lastRun: now(), lastRunResult: result } : x,
       ),
     });
-    logAudit({ action: "workflow_run", objectType: "workflow", objectId: id, objectLabel: w.name, summary: `Ran workflow — ${result}` });
+    logAudit({ action: "workflow_run", objectType: "workflow", objectId: id, objectLabel: w.name, summary: `Ran workflow — ${result}`, metadata: { result, trigger: w.trigger, runs: (w.runs ?? 0) + 1 } });
     return result;
   },
 
