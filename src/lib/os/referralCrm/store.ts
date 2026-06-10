@@ -714,6 +714,8 @@ export function replaceCrmData(input: {
   importBatches?: ImportBatch[];
   referrals?: Referral[];
   tasks?: Task[];
+  attachments?: Attachment[];
+  auditLog?: AuditLogEntry[];
 }) {
   set({
     ...(input.contacts ? { contacts: input.contacts } : {}),
@@ -722,6 +724,8 @@ export function replaceCrmData(input: {
     ...(input.importBatches ? { importBatches: input.importBatches } : {}),
     ...(input.referrals ? { referrals: input.referrals } : {}),
     ...(input.tasks ? { tasks: input.tasks } : {}),
+    ...(input.attachments ? { attachments: input.attachments } : {}),
+    ...(input.auditLog ? { auditLog: input.auditLog } : {}),
   });
 }
 
