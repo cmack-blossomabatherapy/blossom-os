@@ -18,7 +18,7 @@ import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/exc
 import {
   readAssignmentsV3, loadAssignmentsV3, addAssignmentV3, updateAssignmentV3, deleteAssignmentV3,
   ownerForClientAtDateV3, deriveTransfersV3, readSavedReportsV3, saveReportV3,
-  getSavedReportRowsV3, deleteSavedReportV3, saveLastBillingV3, loadLastBillingV3,
+  getSavedReportRowsV3, deleteSavedReportV3, clearLastBillingV3,
   findDuplicateSavedV3, normalizeName, bulkInsertAssignmentsV3,
   type BcbaAssignmentV3,
 } from "@/lib/os/bcbaProductivityV3/store";
@@ -199,8 +199,9 @@ export default function BcbaProductivityReportV3() {
           return;
         }
       }
-      const last = await loadLastBillingV3();
-      if (last) { setRows(last.rows); setFileName(last.fileName); }
+      // Unsaved billing data is intentionally not restored — users must re-upload
+      // or open a saved report so stale data never lingers between sessions.
+      await clearLastBillingV3();
     })();
   }, [savedParam]);
 
@@ -315,7 +316,6 @@ export default function BcbaProductivityReportV3() {
 
       setRows(parsedRows);
       setFileName(file.name);
-      await saveLastBillingV3(file.name, parsedRows);
 
       toast.success(`Parsed ${parsedRows.length.toLocaleString()} of ${first.rows.length.toLocaleString()} rows from ${file.name}`);
     } catch (e: any) {
@@ -477,6 +477,16 @@ export default function BcbaProductivityReportV3() {
     setSavedList(readSavedReportsV3());
     toast.success("Report saved");
   }
+  async function handleResetUpload() {
+    if (rows.length && !confirm("Clear the current upload? Unsaved data will be lost.")) return;
+    setRows([]);
+    setFileName("");
+    setValidation(null);
+    setMissingCols([]);
+    await clearLastBillingV3();
+    if (inputRef.current) inputRef.current.value = "";
+    toast.success("Upload cleared");
+  }
   async function handleRegenerate(id: string) {
     const data = await getSavedReportRowsV3(id);
     if (!data.length) { toast.error("Saved report payload not found"); return; }
@@ -583,6 +593,9 @@ export default function BcbaProductivityReportV3() {
             </Button>
             <Button variant="outline" size="sm" onClick={exportBcbaCsv} disabled={!bcbaTable.length}>
               <Download className="mr-2 h-4 w-4" /> Export CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleResetUpload} disabled={!rows.length && !fileName && !validation}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Reset
             </Button>
             <Button size="sm" onClick={handleSaveReport} disabled={!rows.length}>
               <Save className="mr-2 h-4 w-4" /> Save Report
