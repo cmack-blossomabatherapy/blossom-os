@@ -2754,7 +2754,7 @@ function FilesModule() {
                   <td className="px-3 py-2 text-muted-foreground">{a.uploadedByName || userName(s, a.uploadedByUserId)}</td>
                   <td className="px-3 py-2 text-muted-foreground">{fmtDate(a.uploadedAt)}</td>
                   <td className="px-3 py-2 text-right">
-                    <button onClick={() => { crm.removeAttachment(a.id); toast({ title: "File removed" }); }} className="text-muted-foreground hover:text-destructive">
+                    <button onClick={() => { crm.archiveAttachment(a.id); toast({ title: "File moved to Deleted" }); }} className="text-muted-foreground hover:text-destructive">
                       <Trash2 className="size-3.5" />
                     </button>
                   </td>
