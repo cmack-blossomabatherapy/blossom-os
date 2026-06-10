@@ -3159,12 +3159,12 @@ function ActivitiesModule() {
 function EditContactDialog({ id, open, onOpenChange }: { id: ID | null; open: boolean; onOpenChange: (o: boolean) => void }) {
   const s = useCrm();
   const c = s.contacts.find((x) => x.id === id);
-  const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", jobTitle: "", state: "", companyId: "", ownerId: "", notes: "" });
+  const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", jobTitle: "", state: "", companyId: "", ownerId: "", notes: "", referralCount: 0 });
   useEffect(() => {
     if (c) setF({
       firstName: c.firstName, lastName: c.lastName, email: c.email ?? "", phone: c.phone ?? "",
       jobTitle: c.jobTitle ?? "", state: c.state ?? "", companyId: c.companyId ?? "",
-      ownerId: c.ownerId ?? "", notes: c.notes ?? "",
+      ownerId: c.ownerId ?? "", notes: c.notes ?? "", referralCount: c.referralCount ?? 0,
     });
   }, [c?.id, open]);
   if (!c) return null;
@@ -3173,6 +3173,7 @@ function EditContactDialog({ id, open, onOpenChange }: { id: ID | null; open: bo
       firstName: f.firstName, lastName: f.lastName, email: f.email || undefined, phone: f.phone || undefined,
       jobTitle: f.jobTitle || undefined, state: f.state || undefined,
       companyId: f.companyId || undefined, ownerId: f.ownerId || undefined, notes: f.notes || undefined,
+      referralCount: Math.max(0, Number(f.referralCount) || 0),
     });
     toast({ title: "Contact updated" });
     onOpenChange(false);
@@ -3204,6 +3205,10 @@ function EditContactDialog({ id, open, onOpenChange }: { id: ID | null; open: bo
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
             </Select>
+          </div>
+          <div><Label className="text-xs">Referrals (total)</Label>
+            <Input type="number" min={0} value={f.referralCount}
+              onChange={(e) => setF({ ...f, referralCount: e.target.value === "" ? 0 : Number(e.target.value) })} />
           </div>
           <div className="col-span-2"><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={3} /></div>
         </div>
