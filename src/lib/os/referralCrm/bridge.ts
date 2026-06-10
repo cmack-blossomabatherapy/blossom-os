@@ -564,6 +564,7 @@ export function installSupabaseSync() {
       if (Object.keys(out).length === 0) return;
       const { error } = await supabase.from("referral_crm_referrals").update(out as never).eq("id", id);
       if (error) console.warn("[crm bridge] referral update failed", error);
+      scheduleRehydrate();
     },
     onReferralDelete: async (id, hard) => {
       if (!isPersisted(id)) return;
@@ -612,6 +613,7 @@ export function installSupabaseSync() {
       if (Object.keys(out).length === 0) return;
       const { error } = await supabase.from("referral_crm_tasks").update(out as never).eq("id", id);
       if (error) console.warn("[crm bridge] task update failed", error);
+      scheduleRehydrate();
     },
     onTaskDelete: async (id, hard) => {
       if (!isPersisted(id)) return;
