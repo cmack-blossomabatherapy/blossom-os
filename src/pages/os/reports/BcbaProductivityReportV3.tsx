@@ -446,32 +446,30 @@ export default function BcbaProductivityReportV3() {
       const startH = findH(h, ["StartDate", "Start Date", "Start"]);
       const endH = findH(h, ["EndDate", "End Date", "End"]);
       const noteH = findH(h, ["Note", "Notes"]);
-      if (!nameH || !bcbaH || !startH) {
-        toast.error("Missing required columns: ClientName, BCBA, StartDate");
+      if (!bcbaH || !startH || (!nameH && !idH)) {
+        toast.error("Missing required columns: BCBA, StartDate, and ClientName or ClientId");
         return;
       }
-      const existing = readAssignmentsV3();
+      const imported: Omit<BcbaAssignmentV3, "id" | "createdAt" | "updatedAt">[] = [];
       let added = 0;
       for (const r of first.rows) {
-        const cn = (nameH ? r[nameH] : "").trim();
+        const cid = (idH ? r[idH] : "").trim();
+        const cn = (nameH ? r[nameH] : "").trim() || cid;
         const bn = (bcbaH ? r[bcbaH] : "").trim();
         const sd = isoDate((startH ? r[startH] : "").trim());
-        if (!cn || !bn || !sd) continue;
+        if ((!cn && !cid) || !bn || !sd) continue;
         const ed = endH ? isoDate(String(r[endH]).trim()) : "";
-        existing.unshift({
-          id: `a_${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${added}`,
-          clientId: (idH ? r[idH] : "").trim(),
+        imported.push({
+          clientId: cid,
           clientName: cn,
           bcbaName: bn,
           startDate: sd,
           endDate: ed || null,
           note: noteH ? String(r[noteH] || "") : "",
-          createdAt: Date.now(),
         });
         added++;
       }
-      bulkReplaceAssignmentsV3(existing);
-      setAssignments(readAssignmentsV3());
+      setAssignments(await bulkInsertAssignmentsV3(imported));
       toast.success(`Imported ${added} assignments`);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to import assignments");
