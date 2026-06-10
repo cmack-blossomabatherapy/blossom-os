@@ -3231,21 +3231,51 @@ function LogActivityDialog({ open, onOpenChange, contactId, companyId, referralI
   { open: boolean; onOpenChange: (o: boolean) => void; contactId?: ID; companyId?: ID; referralId?: ID }) {
   const [type, setType] = useState<ActivityEvent["type"]>("note");
   const [message, setMessage] = useState("");
-  const [fileName, setFileName] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [fileCategory, setFileCategory] = useState<string>("");
+  const [fileNotes, setFileNotes] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDue, setTaskDue] = useState("");
 
-  const reset = () => { setMessage(""); setFileName(""); setTaskTitle(""); setTaskDue(""); setType("note"); };
+  const reset = () => { setMessage(""); setFile(null); setFileCategory(""); setFileNotes(""); setTaskTitle(""); setTaskDue(""); setType("note"); };
 
-  const submit = () => {
+  const submit = async () => {
     if (type === "task") {
       if (!taskTitle.trim()) { toast({ title: "Task title required" }); return; }
       crm.addTask({ title: taskTitle, type: "Other", contactId, companyId, referralId, dueDate: taskDue || undefined });
     } else if (type === "file_uploaded") {
-      if (!fileName.trim()) { toast({ title: "File name required" }); return; }
-      const objectType = contactId ? "contact" : companyId ? "company" : referralId ? "referral" : "contact";
-      const objectId = (contactId ?? companyId ?? referralId)!;
-      crm.addAttachment({ fileName, objectType, objectId, category: "Other" });
+      if (!file) { toast({ title: "Choose a file first", variant: "destructive" }); return; }
+      if (file.size > 20 * 1024 * 1024) { toast({ title: "File too large (max 20MB)", variant: "destructive" }); return; }
+      const objectType: Attachment["objectType"] = contactId ? "contact" : companyId ? "company" : referralId ? "referral" : "general";
+      const objectId = (contactId ?? companyId ?? referralId ?? "general");
+      setUploading(true);
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 120);
+      const path = `${objectType}/${objectId}/${Date.now()}-${safe}`;
+      const { error: upErr } = await supabase.storage
+        .from("referral-crm-files")
+        .upload(path, file, { contentType: file.type || undefined, upsert: false });
+      if (upErr) {
+        setUploading(false);
+        toast({ title: "Upload failed", description: upErr.message, variant: "destructive" });
+        return;
+      }
+      const { data: u } = await supabase.auth.getUser();
+      crm.addAttachment({
+        fileName: file.name,
+        fileType: file.type || undefined,
+        mimeType: file.type || undefined,
+        sizeBytes: file.size,
+        objectType,
+        objectId,
+        category: (fileCategory || "Other") as Attachment["category"],
+        notes: fileNotes || undefined,
+        storageBucket: "referral-crm-files",
+        storagePath: path,
+        uploadedByUserId: u.user?.id,
+        uploadedByName: u.user?.email ?? undefined,
+      });
+      setUploading(false);
     } else {
       if (!message.trim()) { toast({ title: "Add a message" }); return; }
       crm.logCustomActivity({ type, message, contactId, companyId, referralId });
@@ -3277,17 +3307,32 @@ function LogActivityDialog({ open, onOpenChange, contactId, companyId, referralI
             <div><Label className="text-xs">Due date</Label><Input type="date" value={taskDue} onChange={(e) => setTaskDue(e.target.value)} /></div>
           </div>
         ) : type === "file_uploaded" ? (
-          <div className="space-y-2 mt-2">
-            <Label className="text-xs">File name</Label>
-            <Input placeholder="e.g. Welcome packet.pdf" value={fileName} onChange={(e) => setFileName(e.target.value)} />
-            <p className="text-[11px] text-muted-foreground">Metadata only — no upload required.</p>
+          <div className="space-y-3 mt-2">
+            <div>
+              <Label className="text-xs">File (max 20MB)</Label>
+              <Input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            </div>
+            <div>
+              <Label className="text-xs">Category</Label>
+              <Select value={fileCategory} onValueChange={setFileCategory}>
+                <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                <SelectContent>
+                  {["Lunch & Learn", "Insurance", "Outreach", "Welcome Packet", "Other"].map((c) =>
+                    <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Notes (optional)</Label>
+              <Textarea rows={2} value={fileNotes} onChange={(e) => setFileNotes(e.target.value)} />
+            </div>
           </div>
         ) : (
           <Textarea placeholder={`Log a ${type}…`} rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
         )}
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit}>Log</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading}>Cancel</Button>
+          <Button onClick={submit} disabled={uploading}>{uploading ? "Uploading…" : "Log"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
