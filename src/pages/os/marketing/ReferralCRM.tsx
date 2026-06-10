@@ -34,6 +34,9 @@ import {
   CRM_PERMISSIONS, CRM_ROLES, TEAM_TYPES,
   type CrmPermission, type CrmRole, type CrmTeam, type CrmUser, type TeamType,
 } from "@/lib/os/referralCrm/store";
+import { hydrateFromSupabase, installSupabaseSync } from "@/lib/os/referralCrm/bridge";
+import { parseReferralsCsv, type ParsedCsv } from "@/lib/os/referrals/csv";
+import { importReferralRows, failedRowsToCsv } from "@/lib/os/referrals/importer";
 
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
