@@ -22,6 +22,7 @@ import {
   findDuplicateSavedV3, normalizeName, bulkInsertAssignmentsV3,
   type BcbaAssignmentV3,
 } from "@/lib/os/bcbaProductivityV3/store";
+import { inferAssignmentHistory, type OwnershipConflict } from "@/lib/os/bcbaProductivityV3/inferAssignments";
 
 /* ----- helpers ----- */
 const normH = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -61,6 +62,7 @@ interface BillingRow {
   clientName: string;
   rbt: string; // rendering provider for 97153 rows
   renderingProvider: string;
+  providerLabels: string;
   code: string;
   hours: number;
   date: string; // ISO
@@ -227,6 +229,7 @@ export default function BcbaProductivityReportV3() {
       const provNameH = findH(h, ["Provider", "Provider Name", "RenderingProvider", "Rendering Provider"]);
       const stateH = findH(h, ["ClientLocationStateProvince", "ServiceLocationStateProvince", "State"]);
       const payorH = findH(h, ["PayorNickname", "PayorName", "Payor Name", "Payor", "Payer", "Insurance"]);
+      const provLabelsH = findH(h, ["ProviderContactLabels", "Provider Contact Labels", "ProviderLabels", "Provider Labels"]);
 
       const miss: string[] = [];
       if (!clientNameH && !(cliFirstH || cliLastH)) miss.push("Client name");
@@ -272,6 +275,7 @@ export default function BcbaProductivityReportV3() {
           clientName,
           rbt: isRbt97153(code) ? renderingProvider : "",
           renderingProvider,
+          providerLabels: (provLabelsH ? String(r[provLabelsH] ?? "") : "").trim(),
           code,
           hours,
           date: dos,
@@ -326,18 +330,24 @@ export default function BcbaProductivityReportV3() {
   }
 
   /* ----- ownership-resolved rows ----- */
+  /* If no permanent Assignment History exists yet, infer one from the uploaded
+   * Billing Report so productivity is never left fully unassigned. */
+  const inferred = useMemo(() => inferAssignmentHistory(rows), [rows]);
+  const usingInferred = rows.length > 0 && assignments.length === 0 && inferred.assignments.length > 0;
+  const effectiveAssignments = usingInferred ? inferred.assignments : assignments;
+
   const ownedRows: OwnedRow[] = useMemo(() => {
     return rows.map(r => {
-      const owner = ownerForClientAtDateV3(assignments, r.clientId, r.clientName, r.date);
+      const owner = ownerForClientAtDateV3(effectiveAssignments, r.clientId, r.clientName, r.date);
       return { ...r, bcbaOwner: owner?.bcba ?? null, assignmentId: owner?.assignmentId ?? null, is97153: isRbt97153(r.code) };
     });
-  }, [rows, assignments]);
+  }, [rows, effectiveAssignments]);
 
-  const setupIncomplete = rows.length > 0 && assignments.length === 0;
+  const setupIncomplete = rows.length > 0 && effectiveAssignments.length === 0;
   const unassignedAudit: UnassignedAuditRow[] = useMemo(() => (
     ownedRows.filter(r => !r.bcbaOwner).map(r => ({ ...r, reason: "No assignment covering DOS" as const }))
   ), [ownedRows]);
-  const assignmentIssues = useMemo(() => deriveAssignmentIssues(assignments), [assignments]);
+  const assignmentIssues = useMemo(() => deriveAssignmentIssues(effectiveAssignments), [effectiveAssignments]);
   const validationCoverage = useMemo(() => {
     let assignedRows = 0, unassignedRows = 0, assignedHours = 0, unassignedHours = 0;
     const missing = new Map<string, { clientId: string; clientName: string; rows: number; hours: number }>();
@@ -349,12 +359,12 @@ export default function BcbaProductivityReportV3() {
       v.rows += 1; v.hours += r.hours; missing.set(key, v);
     }
     return {
-      assignmentRows: assignments.length,
+      assignmentRows: effectiveAssignments.length,
       assignedRows, assignedHours, unassignedRows, unassignedHours,
       missingClients: [...missing.values()].sort((a, b) => b.hours - a.hours),
       dateGaps: assignmentIssues.filter(i => i.type === "gap"),
     };
-  }, [ownedRows, assignments.length, assignmentIssues]);
+  }, [ownedRows, effectiveAssignments.length, assignmentIssues]);
 
   /* ----- filter options ----- */
   const bcbaOptions = useMemo(() => {
@@ -451,7 +461,7 @@ export default function BcbaProductivityReportV3() {
     return [...map.values()].sort((a, b) => b.totalHours - a.totalHours);
   }, [filtered]);
 
-  const transfers = useMemo(() => deriveTransfersV3(assignments), [assignments]);
+  const transfers = useMemo(() => deriveTransfersV3(effectiveAssignments), [effectiveAssignments]);
   const knownClientsWithId = useMemo(() => {
     const m = new Map<string, string>();
     for (const r of ownedRows) if (!m.has(r.clientName)) m.set(r.clientName, r.clientId);
@@ -573,6 +583,25 @@ export default function BcbaProductivityReportV3() {
     }
   }
 
+  async function handleSaveInferred() {
+    if (!inferred.assignments.length) return;
+    if (!confirm(`Save ${inferred.assignments.length} inferred BCBA assignments to Assignment History? You can edit them after.`)) return;
+    try {
+      const toInsert = inferred.assignments.map(a => ({
+        clientId: a.clientId,
+        clientName: a.clientName,
+        bcbaName: a.bcbaName,
+        startDate: a.startDate,
+        endDate: a.endDate,
+        note: a.note ?? "Inferred from Billing Report",
+      }));
+      setAssignments(await bulkInsertAssignmentsV3(toInsert));
+      toast.success(`Saved ${toInsert.length} inferred assignments`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to save inferred assignments");
+    }
+  }
+
   return (
     <OSShell>
       <div className="space-y-6 p-6">
@@ -621,7 +650,13 @@ export default function BcbaProductivityReportV3() {
               </div>
               <div className="text-xs text-muted-foreground">
                 {rows.length > 0
-                  ? `${rows.length.toLocaleString()} rows accepted · ${assignments.length ? "ownership resolved via Assignment History" : "Assignment History setup required"}`
+                  ? `${rows.length.toLocaleString()} rows accepted · ${
+                      assignments.length
+                        ? "ownership resolved via saved Assignment History"
+                        : usingInferred
+                          ? `ownership inferred from this billing report (${inferred.assignments.length} assignments, ${inferred.uniqueBcbas} BCBAs)`
+                          : "Assignment History setup required"
+                    }`
                   : "Drag a file here, or click choose."}
               </div>
               {missingCols.length > 0 && (
@@ -738,6 +773,30 @@ export default function BcbaProductivityReportV3() {
           <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning-foreground">
             <AlertTriangle className="mr-1.5 inline h-4 w-4" />
             BCBA Assignment History is required before productivity can be assigned. Upload or create assignment history first.
+          </div>
+        )}
+        {usingInferred && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <Database className="mr-1.5 inline h-4 w-4 text-primary" />
+                Ownership inferred from this Billing Report — {inferred.assignments.length} assignments derived for {inferred.clientsWithAnchors} clients across {inferred.uniqueBcbas} BCBAs.
+                {inferred.conflicts.length > 0 && (
+                  <span className="ml-2 text-warning-foreground">
+                    <AlertTriangle className="mr-1 inline h-3.5 w-3.5" />
+                    {inferred.conflicts.length} ownership conflicts flagged.
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setShowHistory(true)}>
+                  <History className="mr-1.5 h-3.5 w-3.5" /> Review inferred history
+                </Button>
+                <Button size="sm" onClick={handleSaveInferred}>
+                  <Save className="mr-1.5 h-3.5 w-3.5" /> Save inferred history
+                </Button>
+              </div>
+            </div>
           </div>
         )}
         {kpis.unassigned > 0 && (
@@ -923,6 +982,8 @@ export default function BcbaProductivityReportV3() {
               <TabsTrigger value="history">History ({assignments.length})</TabsTrigger>
               <TabsTrigger value="issues">Gaps & overlaps ({assignmentIssues.length})</TabsTrigger>
               <TabsTrigger value="unassigned">Unassigned ({unassignedAudit.length})</TabsTrigger>
+              <TabsTrigger value="inferred">Inferred ({inferred.assignments.length})</TabsTrigger>
+              <TabsTrigger value="conflicts">Conflicts ({inferred.conflicts.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="history" className="max-h-[64vh] overflow-auto">
               <AssignmentHistoryEditor
@@ -939,6 +1000,16 @@ export default function BcbaProductivityReportV3() {
             </TabsContent>
             <TabsContent value="unassigned" className="max-h-[64vh] overflow-auto">
               <UnassignedManagerTable rows={unassignedAudit} onCreate={startAssignmentForRow} onExport={exportUnassignedCsv} />
+            </TabsContent>
+            <TabsContent value="inferred" className="max-h-[64vh] overflow-auto">
+              <InferredAssignmentsTable
+                assignments={inferred.assignments}
+                onSave={handleSaveInferred}
+                usingInferred={usingInferred}
+              />
+            </TabsContent>
+            <TabsContent value="conflicts" className="max-h-[64vh] overflow-auto">
+              <OwnershipConflictsTable conflicts={inferred.conflicts} />
             </TabsContent>
           </Tabs>
         </DialogContent>
@@ -1273,6 +1344,88 @@ function AssignmentHistoryEditor({
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+function InferredAssignmentsTable({
+  assignments, onSave, usingInferred,
+}: { assignments: BcbaAssignmentV3[]; onSave: () => void; usingInferred: boolean }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <div className="text-xs text-muted-foreground">
+          {assignments.length === 0
+            ? "Upload a billing report to see inferred BCBA ownership."
+            : usingInferred
+              ? "These are being used right now because no saved Assignment History exists. Save them to make them editable."
+              : "Saved Assignment History is in use. These inferred records are shown for comparison only."}
+        </div>
+        <Button size="sm" onClick={onSave} disabled={!assignments.length}>
+          <Save className="mr-1.5 h-3.5 w-3.5" /> Save inferred ({assignments.length})
+        </Button>
+      </div>
+      <div className="rounded-lg border">
+        <table className="w-full min-w-[820px] text-sm">
+          <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2">Client</th>
+              <th className="px-3 py-2">Client ID</th>
+              <th className="px-3 py-2">BCBA</th>
+              <th className="px-3 py-2">Start</th>
+              <th className="px-3 py-2">End</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assignments.length === 0 && (
+              <tr><td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">No inferred assignments.</td></tr>
+            )}
+            {assignments.slice(0, 500).map(a => (
+              <tr key={a.id} className="border-t">
+                <td className="px-3 py-2 font-medium">{a.clientName}</td>
+                <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{a.clientId || "—"}</td>
+                <td className="px-3 py-2">{a.bcbaName}</td>
+                <td className="px-3 py-2 tabular-nums">{a.startDate}</td>
+                <td className="px-3 py-2 tabular-nums">{a.endDate ?? "—"}</td>
+              </tr>
+            ))}
+            {assignments.length > 500 && (
+              <tr><td colSpan={5} className="px-3 py-2 text-center text-xs text-muted-foreground">+{assignments.length - 500} more — save to view & edit all.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function OwnershipConflictsTable({ conflicts }: { conflicts: OwnershipConflict[] }) {
+  return (
+    <div className="rounded-lg border">
+      <table className="w-full min-w-[760px] text-sm">
+        <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th className="px-3 py-2">Client</th>
+            <th className="px-3 py-2">Date</th>
+            <th className="px-3 py-2">Candidates</th>
+            <th className="px-3 py-2">Chosen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {conflicts.length === 0 && (
+            <tr><td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">No ownership conflicts detected.</td></tr>
+          )}
+          {conflicts.slice(0, 500).map((c, i) => (
+            <tr key={`${c.clientId || c.clientName}-${c.date}-${i}`} className="border-t">
+              <td className="px-3 py-2 font-medium">{c.clientName}</td>
+              <td className="px-3 py-2 tabular-nums">{c.date}</td>
+              <td className="px-3 py-2 text-xs text-muted-foreground">
+                {c.candidates.map(x => `${x.bcba} (${x.hours.toFixed(2)}h)`).join(" · ")}
+              </td>
+              <td className="px-3 py-2">{c.chosen}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
