@@ -3778,7 +3778,7 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
                     <FileText className="size-3.5 text-muted-foreground" />
                     <span className="flex-1 truncate">{a.fileName}</span>
                     <span className="text-muted-foreground">{fmtDate(a.uploadedAt)}</span>
-                    <button onClick={() => crm.removeAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
+                    <button onClick={() => crm.archiveAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
                   </div>
                 ))}
             </div>
@@ -3865,7 +3865,7 @@ function CompanyDrawer({ id, onClose, onOpenContact }: { id: ID | null; onClose:
                     <FileText className="size-3.5 text-muted-foreground" />
                     <span className="flex-1 truncate">{a.fileName}</span>
                     <span className="text-muted-foreground">{fmtDate(a.uploadedAt)}</span>
-                    <button onClick={() => crm.removeAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
+                    <button onClick={() => crm.archiveAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
                   </div>
                 ))}
             </div>
