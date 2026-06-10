@@ -1194,37 +1194,308 @@ function NewTaskDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (b
 // ===========================================================
 function ListsModule() {
   const s = useCrm();
+  const [editingId, setEditingId] = useState<ID | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [staticListIdForAdd, setStaticListIdForAdd] = useState<ID | null>(null);
+
+  const editing = useMemo(() => s.lists.find((l) => l.id === editingId) ?? null, [s.lists, editingId]);
+  const staticList = useMemo(() => s.lists.find((l) => l.id === staticListIdForAdd) ?? null, [s.lists, staticListIdForAdd]);
+
   return (
-    <div className="grid lg:grid-cols-2 gap-4">
-      {s.lists.map((l) => {
-        const matches = evalList(s, l);
-        return (
-          <div key={l.id} className="rounded-2xl border bg-card p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold">{l.name}</h3>
-                  <Badge variant="secondary" className="text-[10px] uppercase">{l.kind}</Badge>
+    <div className="space-y-4">
+      <SectionHeader
+        title="Lists"
+        subtitle="Static lists hold a manual set of records. Active lists evaluate criteria live."
+        right={<Button size="sm" onClick={() => setCreating(true)}><Plus className="size-4 mr-1" />Create list</Button>}
+      />
+      <div className="grid lg:grid-cols-2 gap-4">
+        {s.lists.map((l) => {
+          const matches = evalList(s, l);
+          return (
+            <div key={l.id} className="rounded-2xl border bg-card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold truncate">{l.name}</h3>
+                    <Badge variant="secondary" className="text-[10px] uppercase">{l.kind}</Badge>
+                    <Badge variant="outline" className="text-[10px] uppercase">{l.object}</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {l.kind === "active"
+                      ? (l.criteriaRules ? describeCriteria(l.criteriaRules) : (l.criteria ?? "—"))
+                      : `Static list of ${l.staticIds?.length ?? 0} ${l.object}`}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {l.kind === "active" ? `Criteria: ${l.criteria}` : `Static list of ${l.staticIds?.length ?? 0} ${l.object}`}
-                </p>
+                <Badge className="bg-primary/10 text-primary tabular-nums shrink-0">{matches.length} matches</Badge>
               </div>
-              <Badge className="bg-primary/10 text-primary tabular-nums">{matches.length} matches</Badge>
-            </div>
-            <div className="mt-3 divide-y text-sm max-h-48 overflow-y-auto">
-              {matches.slice(0, 8).map((m) => (
-                <div key={m.id} className="py-1.5 flex justify-between">
-                  <span>{"firstName" in m ? fullName(m as Contact) : (m as Company).name}</span>
-                  <span className="text-xs text-muted-foreground">{(m as Contact).state || (m as Company).state}</span>
+              <div className="mt-3 divide-y text-sm max-h-48 overflow-y-auto">
+                {matches.slice(0, 10).map((m) => (
+                  <div key={m.id} className="py-1.5 flex justify-between gap-2">
+                    <span className="truncate">{"firstName" in m ? fullName(m as Contact) : (m as Company).name}</span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{(m as Contact).state || (m as Company).state}</span>
+                      {l.kind === "static" && (
+                        <button
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={() => { crm.removeRecordFromStaticList(l.id, m.id); toast({ title: "Removed" }); }}
+                          title="Remove from list"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {matches.length === 0 && <p className="text-muted-foreground py-4">No matches.</p>}
+              </div>
+              <div className="mt-3 flex items-center justify-between">
+                <p className="text-[11px] text-muted-foreground">
+                  {l.createdAt ? `Created ${fmtDate(l.createdAt)}` : ""}
+                </p>
+                <div className="flex gap-1">
+                  {l.kind === "static" && (
+                    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setStaticListIdForAdd(l.id)}>
+                      <Plus className="size-3 mr-1" />Add records
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setEditingId(l.id)}>
+                    <Pencil className="size-3 mr-1" />Edit
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive"
+                          onClick={() => {
+                            if (confirm(`Delete list "${l.name}"?`)) {
+                              crm.deleteList(l.id);
+                              toast({ title: "List deleted" });
+                            }
+                          }}>
+                    <Trash2 className="size-3" />
+                  </Button>
                 </div>
-              ))}
-              {matches.length === 0 && <p className="text-muted-foreground py-4">No matches.</p>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {(creating || editing) && (
+        <ListEditorDialog
+          list={editing ?? undefined}
+          onClose={() => { setCreating(false); setEditingId(null); }}
+        />
+      )}
+      {staticList && (
+        <StaticListAddDialog list={staticList} onClose={() => setStaticListIdForAdd(null)} />
+      )}
+    </div>
+  );
+}
+
+function describeCriteria(c: ListCriteria): string {
+  const parts: string[] = [];
+  if (c.state) parts.push(`state = ${c.state}`);
+  if (c.companyType) parts.push(`type = ${c.companyType}`);
+  if (c.referralSourceType) parts.push(`source = ${c.referralSourceType}`);
+  if (c.referralPartnerStatus) parts.push(`partner status = ${c.referralPartnerStatus}`);
+  if (c.relationshipTier) parts.push(`tier = ${c.relationshipTier}`);
+  if (typeof c.lastContactedOlderThanDays === "number") parts.push(`last contacted > ${c.lastContactedOlderThanDays}d ago`);
+  if (typeof c.referralCountGte === "number") parts.push(`referrals ≥ ${c.referralCountGte}`);
+  if (c.missingEmail) parts.push("missing email");
+  if (c.missingPhone) parts.push("missing phone");
+  if (c.nextFollowUpEmpty) parts.push("no next follow-up");
+  return parts.length ? parts.join(" AND ") : "no criteria";
+}
+
+function ListEditorDialog({ list, onClose }: { list?: ReturnType<typeof useCrm>["lists"][number]; onClose: () => void }) {
+  const isEdit = !!list;
+  const [name, setName] = useState(list?.name ?? "");
+  const [object, setObject] = useState<"contacts" | "companies">(list?.object ?? "contacts");
+  const [kind, setKind] = useState<"static" | "active">(list?.kind ?? "active");
+  const [criteria, setCriteria] = useState<ListCriteria>(list?.criteriaRules ?? {});
+
+  function save() {
+    if (!name.trim()) { toast({ title: "Name required", variant: "destructive" }); return; }
+    if (isEdit && list) {
+      crm.updateList(list.id, {
+        name: name.trim(), object, kind,
+        criteriaRules: kind === "active" ? criteria : undefined,
+        staticIds: kind === "static" ? (list.staticIds ?? []) : undefined,
+      });
+      toast({ title: "List updated" });
+    } else {
+      crm.addList({
+        name: name.trim(), object, kind,
+        criteriaRules: kind === "active" ? criteria : undefined,
+        staticIds: kind === "static" ? [] : undefined,
+      });
+      toast({ title: "List created" });
+    }
+    onClose();
+  }
+
+  const upd = <K extends keyof ListCriteria>(k: K, v: ListCriteria[K]) =>
+    setCriteria((c) => ({ ...c, [k]: v === "" || v === undefined ? undefined : v }));
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>{isEdit ? "Edit list" : "Create list"}</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-3">
+              <Label className="text-xs">Name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. NC Active Pediatricians" />
+            </div>
+            <div>
+              <Label className="text-xs">Object</Label>
+              <Select value={object} onValueChange={(v) => setObject(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="contacts">Contacts</SelectItem>
+                  <SelectItem value="companies">Companies</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Kind</Label>
+              <Select value={kind} onValueChange={(v) => setKind(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active (criteria)</SelectItem>
+                  <SelectItem value="static">Static (manual)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        );
-      })}
-    </div>
+
+          {kind === "active" && (
+            <div className="grid grid-cols-2 gap-3 rounded-lg border p-3 bg-muted/30">
+              <div>
+                <Label className="text-xs">State</Label>
+                <Select value={criteria.state ?? "any"} onValueChange={(v) => upd("state", v === "any" ? undefined : v)}>
+                  <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any</SelectItem>
+                    {STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Company type</Label>
+                <Input value={criteria.companyType ?? ""} placeholder="Pediatrician Office…"
+                       onChange={(e) => upd("companyType", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Referral source type</Label>
+                <Input value={criteria.referralSourceType ?? ""} placeholder="Pediatrician, School…"
+                       onChange={(e) => upd("referralSourceType", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Referral partner status</Label>
+                <Input value={criteria.referralPartnerStatus ?? ""} placeholder="Active Referral Partner…"
+                       onChange={(e) => upd("referralPartnerStatus", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Relationship tier (companies)</Label>
+                <Select value={criteria.relationshipTier ?? "any"} onValueChange={(v) => upd("relationshipTier", v === "any" ? undefined : v)}>
+                  <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any</SelectItem>
+                    <SelectItem value="Tier A">Tier A</SelectItem>
+                    <SelectItem value="Tier B">Tier B</SelectItem>
+                    <SelectItem value="Tier C">Tier C</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Last contacted older than (days)</Label>
+                <Input type="number" value={criteria.lastContactedOlderThanDays ?? ""}
+                       onChange={(e) => upd("lastContactedOlderThanDays", e.target.value === "" ? undefined : Number(e.target.value))} />
+              </div>
+              <div>
+                <Label className="text-xs">Referral count ≥</Label>
+                <Input type="number" value={criteria.referralCountGte ?? ""}
+                       onChange={(e) => upd("referralCountGte", e.target.value === "" ? undefined : Number(e.target.value))} />
+              </div>
+              <div className="flex items-center gap-4 col-span-2 pt-1">
+                <label className="flex items-center gap-2 text-xs">
+                  <Checkbox checked={!!criteria.missingEmail} onCheckedChange={(v) => upd("missingEmail", !!v)} />
+                  Missing email
+                </label>
+                <label className="flex items-center gap-2 text-xs">
+                  <Checkbox checked={!!criteria.missingPhone} onCheckedChange={(v) => upd("missingPhone", !!v)} />
+                  Missing phone
+                </label>
+                <label className="flex items-center gap-2 text-xs">
+                  <Checkbox checked={!!criteria.nextFollowUpEmpty} onCheckedChange={(v) => upd("nextFollowUpEmpty", !!v)} />
+                  Next follow-up empty
+                </label>
+              </div>
+            </div>
+          )}
+
+          {kind === "static" && (
+            <p className="text-xs text-muted-foreground rounded-lg border p-3 bg-muted/30">
+              Static lists hold a manual set of records. After creating, use “Add records” on the list card to add or remove contacts/companies.
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={save}>{isEdit ? "Save" : "Create"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function StaticListAddDialog({ list, onClose }: { list: ReturnType<typeof useCrm>["lists"][number]; onClose: () => void }) {
+  const s = useCrm();
+  const [q, setQ] = useState("");
+  const pool = list.object === "contacts" ? activeContacts(s) : activeCompanies(s);
+  const member = new Set(list.staticIds ?? []);
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return pool.filter((r) => {
+      const label = "firstName" in r ? fullName(r as Contact) : (r as Company).name;
+      return !needle || label.toLowerCase().includes(needle);
+    }).slice(0, 50);
+  }, [pool, q]);
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader><DialogTitle>Manage records — {list.name}</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${list.object}…`} />
+          <div className="max-h-80 overflow-y-auto divide-y border rounded-lg">
+            {filtered.map((r) => {
+              const isMember = member.has(r.id);
+              const label = "firstName" in r ? fullName(r as Contact) : (r as Company).name;
+              return (
+                <div key={r.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                  <span className="truncate">{label}</span>
+                  {isMember ? (
+                    <Button variant="outline" size="sm" className="h-7 text-xs"
+                            onClick={() => crm.removeRecordFromStaticList(list.id, r.id)}>
+                      <X className="size-3 mr-1" />Remove
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="h-7 text-xs"
+                            onClick={() => crm.addRecordToStaticList(list.id, r.id)}>
+                      <Plus className="size-3 mr-1" />Add
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+            {filtered.length === 0 && <p className="text-xs text-muted-foreground p-4">No matches.</p>}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={onClose}>Done</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1233,17 +1504,31 @@ function ListsModule() {
 // ===========================================================
 function WorkflowsModule() {
   const s = useCrm();
+  const [editingId, setEditingId] = useState<ID | null>(null);
+  const [creating, setCreating] = useState(false);
+  const editing = useMemo(() => s.workflows.find((w) => w.id === editingId) ?? null, [s.workflows, editingId]);
+
   return (
     <div className="space-y-3">
+      <SectionHeader
+        title="Workflows"
+        subtitle="Automations that respond to CRM events. Run any workflow on-demand to test it."
+        right={<Button size="sm" onClick={() => setCreating(true)}><Plus className="size-4 mr-1" />Create workflow</Button>}
+      />
       {s.workflows.map((w) => (
         <div key={w.id} className="rounded-2xl border bg-card p-5">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold">{w.name}</h3>
                 <Badge variant={w.enabled ? "default" : "secondary"} className={w.enabled ? "bg-emerald-500/15 text-emerald-700" : ""}>
                   {w.enabled ? "Enabled" : "Disabled"}
                 </Badge>
+                {w.triggerType && (
+                  <Badge variant="outline" className="text-[10px]">
+                    {WORKFLOW_TRIGGERS.find((t) => t.id === w.triggerType)?.label ?? w.triggerType}
+                  </Badge>
+                )}
               </div>
               <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-foreground">Trigger:</span> {w.trigger}</p>
               <ul className="mt-2 space-y-0.5">
@@ -1252,17 +1537,156 @@ function WorkflowsModule() {
                     <ChevronRight className="size-3" /> {a}
                   </li>
                 ))}
+                {w.actions.length === 0 && <li className="text-xs text-muted-foreground italic">No actions configured.</li>}
               </ul>
-              <p className="text-[11px] text-muted-foreground mt-3">{w.runs} runs · last {fmtDate(w.lastRun)}</p>
+              <p className="text-[11px] text-muted-foreground mt-3">
+                {w.runs} runs · last {fmtDate(w.lastRun)}
+                {w.lastRunResult ? <> · <span className="text-foreground">{w.lastRunResult}</span></> : null}
+              </p>
             </div>
-            <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-col items-end gap-2 shrink-0">
               <Switch checked={w.enabled} onCheckedChange={() => crm.toggleWorkflow(w.id)} />
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { crm.runWorkflow(w.id); toast({ title: `Ran ${w.name}` }); }}>Run now</Button>
+              <Button variant="outline" size="sm" className="h-7 text-xs"
+                      onClick={() => { const r = crm.runWorkflow(w.id); toast({ title: `Ran ${w.name}`, description: r }); }}>
+                Run now
+              </Button>
+              <div className="flex gap-1">
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditingId(w.id)}>
+                  <Pencil className="size-3 mr-1" />Edit
+                </Button>
+                <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive"
+                        onClick={() => {
+                          if (confirm(`Delete workflow "${w.name}"?`)) {
+                            crm.deleteWorkflow(w.id);
+                            toast({ title: "Workflow deleted" });
+                          }
+                        }}>
+                  <Trash2 className="size-3" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       ))}
+
+      {(creating || editing) && (
+        <WorkflowEditorDialog
+          workflow={editing ?? undefined}
+          onClose={() => { setCreating(false); setEditingId(null); }}
+        />
+      )}
     </div>
+  );
+}
+
+function WorkflowEditorDialog({
+  workflow, onClose,
+}: { workflow?: ReturnType<typeof useCrm>["workflows"][number]; onClose: () => void }) {
+  const isEdit = !!workflow;
+  const [name, setName] = useState(workflow?.name ?? "");
+  const [enabled, setEnabled] = useState(workflow?.enabled ?? true);
+  const [triggerType, setTriggerType] = useState<WorkflowTrigger | undefined>(workflow?.triggerType);
+  const [days, setDays] = useState<number | "">(workflow?.triggerConfig?.days ?? "");
+  const [count, setCount] = useState<number | "">(workflow?.triggerConfig?.count ?? "");
+  const [actions, setActions] = useState<string[]>(workflow?.actions ?? []);
+  const [newAction, setNewAction] = useState<string>(WORKFLOW_ACTIONS[0].label);
+  const [newActionDetail, setNewActionDetail] = useState("");
+
+  function save() {
+    if (!name.trim()) { toast({ title: "Name required", variant: "destructive" }); return; }
+    const triggerLabel = triggerType ? WORKFLOW_TRIGGERS.find((t) => t.id === triggerType)?.label ?? "Manual" : "Manual";
+    const cfg: { days?: number; count?: number } = {};
+    if (typeof days === "number") cfg.days = days;
+    if (typeof count === "number") cfg.count = count;
+    if (isEdit && workflow) {
+      crm.updateWorkflow(workflow.id, {
+        name: name.trim(), enabled, triggerType, trigger: triggerLabel,
+        triggerConfig: cfg, actions,
+      });
+      toast({ title: "Workflow updated" });
+    } else {
+      crm.addWorkflow({
+        name: name.trim(), enabled, triggerType, trigger: triggerLabel,
+        triggerConfig: cfg, actions,
+      });
+      toast({ title: "Workflow created" });
+    }
+    onClose();
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>{isEdit ? "Edit workflow" : "Create workflow"}</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs">Name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Re-engage stalled partners" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch checked={enabled} onCheckedChange={setEnabled} />
+            <span className="text-xs">{enabled ? "Enabled" : "Disabled"}</span>
+          </div>
+          <div>
+            <Label className="text-xs">Trigger</Label>
+            <Select value={triggerType ?? ""} onValueChange={(v) => setTriggerType(v as WorkflowTrigger)}>
+              <SelectTrigger><SelectValue placeholder="Select trigger" /></SelectTrigger>
+              <SelectContent>
+                {WORKFLOW_TRIGGERS.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {(triggerType === "no_activity_days") && (
+            <div>
+              <Label className="text-xs">Days without activity</Label>
+              <Input type="number" value={days} onChange={(e) => setDays(e.target.value === "" ? "" : Number(e.target.value))} placeholder="60" />
+            </div>
+          )}
+          {(triggerType === "referral_count_reaches") && (
+            <div>
+              <Label className="text-xs">Referral count threshold</Label>
+              <Input type="number" value={count} onChange={(e) => setCount(e.target.value === "" ? "" : Number(e.target.value))} placeholder="10" />
+            </div>
+          )}
+
+          <div className="rounded-lg border p-3 bg-muted/30 space-y-2">
+            <Label className="text-xs">Actions</Label>
+            <ul className="space-y-1">
+              {actions.map((a, i) => (
+                <li key={i} className="flex items-center justify-between text-xs bg-background rounded px-2 py-1">
+                  <span>{a}</span>
+                  <button className="text-muted-foreground hover:text-destructive" onClick={() => setActions((arr) => arr.filter((_, idx) => idx !== i))}>
+                    <X className="size-3" />
+                  </button>
+                </li>
+              ))}
+              {actions.length === 0 && <li className="text-xs text-muted-foreground italic">No actions yet.</li>}
+            </ul>
+            <div className="flex gap-2">
+              <Select value={newAction} onValueChange={setNewAction}>
+                <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {WORKFLOW_ACTIONS.map((a) => <SelectItem key={a.id} value={a.label}>{a.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Input className="flex-1" placeholder="Optional detail (e.g. tag name, owner, list)"
+                     value={newActionDetail} onChange={(e) => setNewActionDetail(e.target.value)} />
+              <Button size="sm" onClick={() => {
+                const label = newActionDetail ? `${newAction} — ${newActionDetail}` : newAction;
+                setActions((arr) => [...arr, label]);
+                setNewActionDetail("");
+              }}>
+                <Plus className="size-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={save}>{isEdit ? "Save" : "Create"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
