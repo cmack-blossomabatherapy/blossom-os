@@ -607,7 +607,7 @@ export default function BcbaProductivityReportV3() {
               </div>
               <div className="text-xs text-muted-foreground">
                 {rows.length > 0
-                  ? `${rows.length.toLocaleString()} rows accepted · ownership resolved via Assignment History`
+                  ? `${rows.length.toLocaleString()} rows accepted · ${assignments.length ? "ownership resolved via Assignment History" : "Assignment History setup required"}`
                   : "Drag a file here, or click choose."}
               </div>
               {missingCols.length > 0 && (
