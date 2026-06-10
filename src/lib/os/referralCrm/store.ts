@@ -135,6 +135,9 @@ export interface WorkflowDef {
   enabled: boolean;
   lastRun?: string;
   runs: number;
+  triggerType?: WorkflowTrigger;
+  triggerConfig?: { days?: number; count?: number; listId?: ID; property?: string };
+  lastRunResult?: string;
 }
 
 export interface ListDef {
@@ -145,7 +148,56 @@ export interface ListDef {
   criteria?: string;
   staticIds?: ID[];
   matcher?: (rows: (Contact | Company)[]) => (Contact | Company)[];
+  criteriaRules?: ListCriteria;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+export interface ListCriteria {
+  state?: string;
+  companyType?: string;
+  referralSourceType?: string;
+  referralPartnerStatus?: string;
+  relationshipTier?: string;
+  lastContactedOlderThanDays?: number;
+  referralCountGte?: number;
+  missingEmail?: boolean;
+  missingPhone?: boolean;
+  nextFollowUpEmpty?: boolean;
+}
+
+export type WorkflowTrigger =
+  | "contact_created" | "company_created" | "referral_created"
+  | "property_updated" | "task_completed" | "no_activity_days"
+  | "contact_added_to_list" | "company_added_to_list"
+  | "referral_status_changed" | "referral_count_reaches"
+  | "lunch_learn_needed";
+
+export const WORKFLOW_TRIGGERS: { id: WorkflowTrigger; label: string }[] = [
+  { id: "contact_created", label: "Contact created" },
+  { id: "company_created", label: "Company created" },
+  { id: "referral_created", label: "Referral created" },
+  { id: "property_updated", label: "Property updated" },
+  { id: "task_completed", label: "Task completed" },
+  { id: "no_activity_days", label: "No activity for X days" },
+  { id: "contact_added_to_list", label: "Contact added to list" },
+  { id: "company_added_to_list", label: "Company added to list" },
+  { id: "referral_status_changed", label: "Referral status changed" },
+  { id: "referral_count_reaches", label: "Referral count reaches number" },
+  { id: "lunch_learn_needed", label: "Lunch & Learn needed (active partner, no L&L)" },
+];
+
+export const WORKFLOW_ACTIONS: { id: string; label: string }[] = [
+  { id: "create_task", label: "Create task" },
+  { id: "update_property", label: "Update property" },
+  { id: "assign_owner", label: "Assign owner" },
+  { id: "add_to_list", label: "Add to list" },
+  { id: "remove_from_list", label: "Remove from list" },
+  { id: "add_tag", label: "Add tag" },
+  { id: "remove_tag", label: "Remove tag" },
+  { id: "notify_user", label: "Notify user" },
+  { id: "change_partner_status", label: "Change referral partner status" },
+];
 
 export interface Attachment {
   id: ID;
