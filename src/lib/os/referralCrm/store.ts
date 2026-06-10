@@ -361,6 +361,9 @@ export interface AuditLogEntry {
   objectId?: ID;
   objectLabel?: string;
   summary: string;
+  beforeData?: Record<string, unknown> | null;
+  afterData?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface CustomFieldDef {

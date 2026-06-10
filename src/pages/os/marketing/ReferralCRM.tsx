@@ -2754,7 +2754,7 @@ function FilesModule() {
                   <td className="px-3 py-2 text-muted-foreground">{a.uploadedByName || userName(s, a.uploadedByUserId)}</td>
                   <td className="px-3 py-2 text-muted-foreground">{fmtDate(a.uploadedAt)}</td>
                   <td className="px-3 py-2 text-right">
-                    <button onClick={() => { crm.removeAttachment(a.id); toast({ title: "File removed" }); }} className="text-muted-foreground hover:text-destructive">
+                    <button onClick={() => { crm.archiveAttachment(a.id); toast({ title: "File moved to Deleted" }); }} className="text-muted-foreground hover:text-destructive">
                       <Trash2 className="size-3.5" />
                     </button>
                   </td>
@@ -3231,21 +3231,51 @@ function LogActivityDialog({ open, onOpenChange, contactId, companyId, referralI
   { open: boolean; onOpenChange: (o: boolean) => void; contactId?: ID; companyId?: ID; referralId?: ID }) {
   const [type, setType] = useState<ActivityEvent["type"]>("note");
   const [message, setMessage] = useState("");
-  const [fileName, setFileName] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [fileCategory, setFileCategory] = useState<string>("");
+  const [fileNotes, setFileNotes] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDue, setTaskDue] = useState("");
 
-  const reset = () => { setMessage(""); setFileName(""); setTaskTitle(""); setTaskDue(""); setType("note"); };
+  const reset = () => { setMessage(""); setFile(null); setFileCategory(""); setFileNotes(""); setTaskTitle(""); setTaskDue(""); setType("note"); };
 
-  const submit = () => {
+  const submit = async () => {
     if (type === "task") {
       if (!taskTitle.trim()) { toast({ title: "Task title required" }); return; }
       crm.addTask({ title: taskTitle, type: "Other", contactId, companyId, referralId, dueDate: taskDue || undefined });
     } else if (type === "file_uploaded") {
-      if (!fileName.trim()) { toast({ title: "File name required" }); return; }
-      const objectType = contactId ? "contact" : companyId ? "company" : referralId ? "referral" : "contact";
-      const objectId = (contactId ?? companyId ?? referralId)!;
-      crm.addAttachment({ fileName, objectType, objectId, category: "Other" });
+      if (!file) { toast({ title: "Choose a file first", variant: "destructive" }); return; }
+      if (file.size > 20 * 1024 * 1024) { toast({ title: "File too large (max 20MB)", variant: "destructive" }); return; }
+      const objectType: Attachment["objectType"] = contactId ? "contact" : companyId ? "company" : referralId ? "referral" : "general";
+      const objectId = (contactId ?? companyId ?? referralId ?? "general");
+      setUploading(true);
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 120);
+      const path = `${objectType}/${objectId}/${Date.now()}-${safe}`;
+      const { error: upErr } = await supabase.storage
+        .from("referral-crm-files")
+        .upload(path, file, { contentType: file.type || undefined, upsert: false });
+      if (upErr) {
+        setUploading(false);
+        toast({ title: "Upload failed", description: upErr.message, variant: "destructive" });
+        return;
+      }
+      const { data: u } = await supabase.auth.getUser();
+      crm.addAttachment({
+        fileName: file.name,
+        fileType: file.type || undefined,
+        mimeType: file.type || undefined,
+        sizeBytes: file.size,
+        objectType,
+        objectId,
+        category: (fileCategory || "Other") as Attachment["category"],
+        notes: fileNotes || undefined,
+        storageBucket: "referral-crm-files",
+        storagePath: path,
+        uploadedByUserId: u.user?.id,
+        uploadedByName: u.user?.email ?? undefined,
+      });
+      setUploading(false);
     } else {
       if (!message.trim()) { toast({ title: "Add a message" }); return; }
       crm.logCustomActivity({ type, message, contactId, companyId, referralId });
@@ -3277,17 +3307,32 @@ function LogActivityDialog({ open, onOpenChange, contactId, companyId, referralI
             <div><Label className="text-xs">Due date</Label><Input type="date" value={taskDue} onChange={(e) => setTaskDue(e.target.value)} /></div>
           </div>
         ) : type === "file_uploaded" ? (
-          <div className="space-y-2 mt-2">
-            <Label className="text-xs">File name</Label>
-            <Input placeholder="e.g. Welcome packet.pdf" value={fileName} onChange={(e) => setFileName(e.target.value)} />
-            <p className="text-[11px] text-muted-foreground">Metadata only — no upload required.</p>
+          <div className="space-y-3 mt-2">
+            <div>
+              <Label className="text-xs">File (max 20MB)</Label>
+              <Input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            </div>
+            <div>
+              <Label className="text-xs">Category</Label>
+              <Select value={fileCategory} onValueChange={setFileCategory}>
+                <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                <SelectContent>
+                  {["Lunch & Learn", "Insurance", "Outreach", "Welcome Packet", "Other"].map((c) =>
+                    <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Notes (optional)</Label>
+              <Textarea rows={2} value={fileNotes} onChange={(e) => setFileNotes(e.target.value)} />
+            </div>
           </div>
         ) : (
           <Textarea placeholder={`Log a ${type}…`} rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
         )}
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit}>Log</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading}>Cancel</Button>
+          <Button onClick={submit} disabled={uploading}>{uploading ? "Uploading…" : "Log"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -3668,6 +3713,16 @@ function DeletedModule() {
   const co = s.companies.filter((x) => x.deletedAt);
   const r = s.referrals.filter((x) => x.deletedAt);
   const t = s.tasks.filter((x) => x.deletedAt);
+  const archivedFiles = s.attachments.filter((x) => x.archivedAt);
+
+  const fileLabel = (a: Attachment): string => {
+    if (a.objectType === "contact") {
+      const x = s.contacts.find((y) => y.id === a.objectId); return x ? `Contact: ${fullName(x)}` : `Contact: ${a.objectId}`;
+    }
+    if (a.objectType === "company") return `Company: ${s.companies.find((y) => y.id === a.objectId)?.name ?? a.objectId}`;
+    if (a.objectType === "referral") return `Referral: ${s.referrals.find((y) => y.id === a.objectId)?.name ?? a.objectId}`;
+    return a.objectType;
+  };
 
   const Section = ({ title, items, restore, hardDelete }: { title: string; items: { id: ID; label: string; deletedAt?: string }[]; restore: (id: ID) => void; hardDelete?: (id: ID) => void }) => (
     <div className="rounded-2xl border bg-card p-5">
@@ -3701,6 +3756,29 @@ function DeletedModule() {
         restore={crm.restoreReferral} />
       <Section title="Deleted Tasks" items={t.map((x) => ({ id: x.id, label: x.title, deletedAt: x.deletedAt }))}
         restore={crm.restoreTask} hardDelete={crm.hardDeleteTask} />
+      <div className="rounded-2xl border bg-card p-5">
+        <h3 className="font-semibold mb-3">Archived Files</h3>
+        {archivedFiles.length === 0 ? <p className="text-sm text-muted-foreground">Nothing here.</p> : (
+          <div className="divide-y text-sm">
+            {archivedFiles.map((a) => (
+              <div key={a.id} className="py-2 flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{a.fileName}</p>
+                  <p className="text-xs text-muted-foreground">{fileLabel(a)} · Archived {fmtDate(a.archivedAt)}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => { crm.restoreAttachment(a.id); toast({ title: "File restored" }); }}>
+                    <RotateCcw className="size-3 mr-1" /> Restore
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-destructive" onClick={() => { crm.removeAttachment(a.id); toast({ title: "File permanently deleted" }); }}>
+                    Delete forever
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -3778,7 +3856,7 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
                     <FileText className="size-3.5 text-muted-foreground" />
                     <span className="flex-1 truncate">{a.fileName}</span>
                     <span className="text-muted-foreground">{fmtDate(a.uploadedAt)}</span>
-                    <button onClick={() => crm.removeAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
+                    <button onClick={() => crm.archiveAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
                   </div>
                 ))}
             </div>
@@ -3865,7 +3943,7 @@ function CompanyDrawer({ id, onClose, onOpenContact }: { id: ID | null; onClose:
                     <FileText className="size-3.5 text-muted-foreground" />
                     <span className="flex-1 truncate">{a.fileName}</span>
                     <span className="text-muted-foreground">{fmtDate(a.uploadedAt)}</span>
-                    <button onClick={() => crm.removeAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
+                    <button onClick={() => crm.archiveAttachment(a.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3" /></button>
                   </div>
                 ))}
             </div>
