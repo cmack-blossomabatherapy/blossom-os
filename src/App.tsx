@@ -45,6 +45,7 @@ import HrEmployeeOnboardingCommandCenter from "./pages/os/reports/HrEmployeeOnbo
 import HrBcbaProductivityDashboard from "./pages/os/reports/HrBcbaProductivityDashboard";
 import BcbaProductivityReport from "./pages/os/reports/BcbaProductivityReport";
 import BcbaProductivityReportV2 from "./pages/os/reports/BcbaProductivityReportV2";
+import BcbaProductivityReportV3 from "./pages/os/reports/BcbaProductivityReportV3";
 import CancellationCommandCenter from "./pages/os/reports/CancellationCommandCenter";
 import OSComingSoon from "./pages/os/OSComingSoon";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
