@@ -506,7 +506,7 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
 
   const rows = useMemo(() => {
-    let r = activeCompanies(s);
+    let r = scopedCompanies(s);
     if (view === "active") r = r.filter((c) => c.activeReferralPartner);
     if (view === "tier-a") r = r.filter((c) => c.relationshipTier === "Tier A");
     if (view === "targets") r = r.filter((c) => c.referralPartnerStatus === "New Target");
