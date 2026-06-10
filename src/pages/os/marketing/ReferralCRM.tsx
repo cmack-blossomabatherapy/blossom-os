@@ -284,7 +284,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
   const [creating, setCreating] = useState(false);
 
   const rows = useMemo(() => {
-    let r = activeContacts(s);
+    let r = scopedContacts(s);
     if (view === "nc") r = r.filter((c) => c.state === "NC" && !!c.referralSourceType);
     if (view === "missing-email") r = r.filter((c) => !c.email);
     if (view === "active") r = r.filter((c) => c.referralPartnerStatus === "Active Referral Partner");
