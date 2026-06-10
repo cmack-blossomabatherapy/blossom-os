@@ -1038,6 +1038,53 @@ function DrillList({ title, items }: { title: string; items: [string, number][] 
   );
 }
 
+function AssignmentIssuesTable({ issues }: { issues: AssignmentIssue[] }) {
+  return (
+    <div className="rounded-lg border">
+      <table className="w-full min-w-[720px] text-sm">
+        <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+          <tr><th className="px-3 py-2">Client</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Details</th></tr>
+        </thead>
+        <tbody>
+          {issues.length === 0 && <tr><td colSpan={3} className="px-3 py-6 text-center text-muted-foreground">No date gaps or overlaps detected.</td></tr>}
+          {issues.map((i, idx) => (
+            <tr key={`${i.clientKey}-${idx}`} className="border-t">
+              <td className="px-3 py-2 font-medium">{i.clientName}</td>
+              <td className="px-3 py-2"><Badge variant="outline">{i.type}</Badge></td>
+              <td className="px-3 py-2 text-muted-foreground">{i.detail}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function UnassignedManagerTable({ rows, onCreate, onExport }: { rows: UnassignedAuditRow[]; onCreate: (row: UnassignedAuditRow) => void; onExport: () => void }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-end"><Button variant="outline" size="sm" onClick={onExport} disabled={!rows.length}><Download className="mr-1.5 h-3.5 w-3.5" /> Export unassigned</Button></div>
+      <div className="rounded-lg border">
+        <table className="w-full min-w-[900px] text-sm">
+          <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+            <tr><th className="px-3 py-2">Client</th><th className="px-3 py-2">Client ID</th><th className="px-3 py-2">DOS</th><th className="px-3 py-2">Code</th><th className="px-3 py-2">Provider</th><th className="px-3 py-2 text-right">Hours</th><th className="px-3 py-2"></th></tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">No unassigned rows.</td></tr>}
+            {rows.slice(0, 500).map((r, i) => (
+              <tr key={`${r.clientId}-${r.date}-${i}`} className="border-t">
+                <td className="px-3 py-2 font-medium">{r.clientName}</td><td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.clientId || "—"}</td>
+                <td className="px-3 py-2">{r.date}</td><td className="px-3 py-2">{r.code}</td><td className="px-3 py-2">{r.renderingProvider || "—"}</td><td className="px-3 py-2 text-right tabular-nums">{fmt1(r.hours)}</td>
+                <td className="px-3 py-2 text-right"><Button variant="outline" size="sm" onClick={() => onCreate(r)}><UserPlus className="mr-1.5 h-3.5 w-3.5" /> Create assignment</Button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function AssignmentHistoryEditor({
   assignments, knownClients, knownClientsWithId, onChange, editing, setEditing,
 }: {
