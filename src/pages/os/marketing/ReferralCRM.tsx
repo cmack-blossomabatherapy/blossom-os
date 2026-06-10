@@ -453,12 +453,21 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
 function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (b: boolean) => void }) {
   const s = useCrm();
   const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", state: "", companyId: "" });
+  const [newCo, setNewCo] = useState({ name: "", companyType: "", state: "" });
+  const creatingCo = f.companyId === "__create__";
   const submit = () => {
     if (!f.firstName || !f.lastName) { toast({ title: "First + last name required", variant: "destructive" as never }); return; }
-    crm.addContact({ ...f, companyId: f.companyId || undefined });
+    let companyId: string | undefined = f.companyId && f.companyId !== "__create__" ? f.companyId : undefined;
+    if (creatingCo) {
+      if (!newCo.name.trim()) { toast({ title: "New company name required", variant: "destructive" as never }); return; }
+      const co = crm.addCompany({ name: newCo.name.trim(), companyType: newCo.companyType || undefined, state: newCo.state || undefined });
+      companyId = co.id;
+    }
+    crm.addContact({ ...f, companyId });
     toast({ title: "Contact created" });
     onOpenChange(false);
     setF({ firstName: "", lastName: "", email: "", phone: "", state: "", companyId: "" });
+    setNewCo({ name: "", companyType: "", state: "" });
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -478,9 +487,27 @@ function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
           <div><Label className="text-xs">Company</Label>
             <Select value={f.companyId} onValueChange={(v) => setF({ ...f, companyId: v })}>
               <SelectTrigger><SelectValue placeholder="Pick company" /></SelectTrigger>
-              <SelectContent>{s.companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="__create__">+ Create new company…</SelectItem>
+                {s.companies.filter((c) => !c.deletedAt).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
+          {creatingCo ? (
+            <div className="col-span-2 rounded-md border border-border bg-muted/30 p-3 space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">New company</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2"><Label className="text-xs">Company name</Label><Input value={newCo.name} onChange={(e) => setNewCo({ ...newCo, name: e.target.value })} /></div>
+                <div><Label className="text-xs">Type</Label><Input value={newCo.companyType} onChange={(e) => setNewCo({ ...newCo, companyType: e.target.value })} placeholder="Pediatrician Office…" /></div>
+                <div><Label className="text-xs">State</Label>
+                  <Select value={newCo.state} onValueChange={(v) => setNewCo({ ...newCo, state: v })}>
+                    <SelectTrigger><SelectValue placeholder="Pick state" /></SelectTrigger>
+                    <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -682,12 +709,28 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
 
 function NewCompanyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (b: boolean) => void }) {
   const [f, setF] = useState({ name: "", companyType: "", state: "", city: "" });
+  const [addContact, setAddContact] = useState(false);
+  const [nc, setNc] = useState({ firstName: "", lastName: "", email: "", phone: "", jobTitle: "" });
   const submit = () => {
     if (!f.name) { toast({ title: "Company name required" }); return; }
-    crm.addCompany(f);
+    const co = crm.addCompany(f);
+    if (addContact) {
+      if (!nc.firstName.trim() || !nc.lastName.trim()) {
+        toast({ title: "Contact first + last name required", variant: "destructive" as never });
+        return;
+      }
+      crm.addContact({
+        firstName: nc.firstName.trim(), lastName: nc.lastName.trim(),
+        email: nc.email || undefined, phone: nc.phone || undefined,
+        jobTitle: nc.jobTitle || undefined,
+        companyId: co.id, state: f.state || undefined,
+      });
+    }
     toast({ title: "Company created" });
     onOpenChange(false);
     setF({ name: "", companyType: "", state: "", city: "" });
+    setAddContact(false);
+    setNc({ firstName: "", lastName: "", email: "", phone: "", jobTitle: "" });
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -703,6 +746,27 @@ function NewCompanyDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
             </Select>
           </div>
           <div className="col-span-2"><Label className="text-xs">City</Label><Input value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} /></div>
+          <div className="col-span-2 pt-1">
+            {!addContact ? (
+              <Button type="button" variant="outline" size="sm" onClick={() => setAddContact(true)}>
+                <Plus className="size-3.5 mr-1.5" /> Add primary contact
+              </Button>
+            ) : (
+              <div className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-medium text-muted-foreground">Primary contact</div>
+                  <button type="button" className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setAddContact(false)}>Remove</button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs">First name</Label><Input value={nc.firstName} onChange={(e) => setNc({ ...nc, firstName: e.target.value })} /></div>
+                  <div><Label className="text-xs">Last name</Label><Input value={nc.lastName} onChange={(e) => setNc({ ...nc, lastName: e.target.value })} /></div>
+                  <div><Label className="text-xs">Email</Label><Input value={nc.email} onChange={(e) => setNc({ ...nc, email: e.target.value })} /></div>
+                  <div><Label className="text-xs">Phone</Label><Input value={nc.phone} onChange={(e) => setNc({ ...nc, phone: e.target.value })} /></div>
+                  <div className="col-span-2"><Label className="text-xs">Job title</Label><Input value={nc.jobTitle} onChange={(e) => setNc({ ...nc, jobTitle: e.target.value })} /></div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
