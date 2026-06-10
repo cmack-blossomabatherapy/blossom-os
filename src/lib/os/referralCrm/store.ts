@@ -1036,12 +1036,36 @@ export const crm = {
     });
     logAudit({ action: "attachment_added", objectType: "attachment", objectId: a.id,
       objectLabel: a.fileName, summary: `Attached to ${a.objectType} ${a.objectId}` });
+    fire("onAttachmentCreate", a);
     return a;
+  },
+  updateAttachment(id: ID, patch: Partial<Attachment>) {
+    const before = state.attachments.find((x) => x.id === id);
+    if (!before) return;
+    const next = { ...before, ...patch };
+    set({ attachments: state.attachments.map((x) => (x.id === id ? next : x)) });
+    fire("onAttachmentUpdate", id, patch, next);
+  },
+  archiveAttachment(id: ID) {
+    const a = state.attachments.find((x) => x.id === id);
+    if (!a) return;
+    const archivedAt = now();
+    set({ attachments: state.attachments.map((x) => (x.id === id ? { ...x, archivedAt } : x)) });
+    logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment archived" });
+    fire("onAttachmentUpdate", id, { archivedAt }, { ...a, archivedAt });
+  },
+  restoreAttachment(id: ID) {
+    const a = state.attachments.find((x) => x.id === id);
+    if (!a) return;
+    set({ attachments: state.attachments.map((x) => (x.id === id ? { ...x, archivedAt: undefined } : x)) });
+    logAudit({ action: "restore", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment restored" });
+    fire("onAttachmentUpdate", id, { archivedAt: undefined }, { ...a, archivedAt: undefined });
   },
   removeAttachment(id: ID) {
     const a = state.attachments.find((x) => x.id === id);
     set({ attachments: state.attachments.filter((x) => x.id !== id) });
     if (a) logAudit({ action: "attachment_removed", objectType: "attachment", objectId: id, objectLabel: a.fileName, summary: "Attachment removed" });
+    fire("onAttachmentDelete", id, true, a);
   },
 
   // custom fields
