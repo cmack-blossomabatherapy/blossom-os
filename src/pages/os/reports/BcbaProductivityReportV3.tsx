@@ -594,6 +594,9 @@ export default function BcbaProductivityReportV3() {
             <Button variant="outline" size="sm" onClick={exportBcbaCsv} disabled={!bcbaTable.length}>
               <Download className="mr-2 h-4 w-4" /> Export CSV
             </Button>
+            <Button variant="outline" size="sm" onClick={handleResetUpload} disabled={!rows.length && !fileName && !validation}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Reset
+            </Button>
             <Button size="sm" onClick={handleSaveReport} disabled={!rows.length}>
               <Save className="mr-2 h-4 w-4" /> Save Report
             </Button>
