@@ -148,6 +148,85 @@ function batchFromRow(r: ReferralImportBatch): ImportBatch {
   };
 }
 
+/* ---- referrals + tasks mappers ---- */
+
+function normReferralStatus(s: string | null | undefined): Referral["referralStatus"] {
+  const allowed: Referral["referralStatus"][] = ["New","In Review","Intake Form Sent","Scheduled","Active","Closed","Lost"];
+  return (allowed as string[]).includes(s ?? "") ? (s as Referral["referralStatus"]) : "New";
+}
+
+function referralFromCrmRow(r: CrmReferralRow): Referral {
+  const fn = r.patient_first_name ?? "";
+  const li = r.patient_last_initial ?? "";
+  return {
+    id: r.id,
+    name: r.name ?? (fn || li ? `${fn} ${li}.`.trim() : "(Referral)"),
+    patientFirstName: fn,
+    patientLastInitial: li,
+    referralDate: r.referral_date ?? r.created_at ?? new Date().toISOString(),
+    contactId: r.contact_id ?? undefined,
+    companyId: r.company_id ?? undefined,
+    state: r.state ?? undefined,
+    serviceType: r.service_type ?? undefined,
+    sourceType: r.source_type ?? undefined,
+    referralStatus: normReferralStatus(r.referral_status),
+    intakeStatus: r.intake_status ?? undefined,
+    insuranceType: r.insurance_type ?? undefined,
+    assignedIntakeOwnerId: r.assigned_intake_owner_id ?? undefined,
+    attributionConfidence: r.attribution_confidence ?? undefined,
+    leadId: r.lead_id ?? undefined,
+    notes: r.notes ?? undefined,
+    createdAt: r.created_at ?? new Date().toISOString(),
+    updatedAt: r.updated_at ?? new Date().toISOString(),
+    deletedAt: r.archived_at ?? undefined,
+    isLegacyLeadLink: false,
+  };
+}
+
+function referralFromLeadLinkRow(r: LeadLinkRow): Referral {
+  return {
+    id: r.id,
+    name: "(Lead Link Referral)",
+    patientFirstName: "",
+    patientLastInitial: "",
+    referralDate: (r.referral_date as string | null) ?? r.created_at ?? new Date().toISOString(),
+    contactId: r.referral_contact_id ?? undefined,
+    companyId: r.referral_company_id ?? undefined,
+    serviceType: r.referral_source_type ?? undefined,
+    sourceType: r.referral_source_type ?? undefined,
+    referralStatus: "New",
+    attributionConfidence: r.attribution_confidence ?? undefined,
+    leadId: r.lead_id ?? undefined,
+    notes: r.notes ?? undefined,
+    createdAt: r.created_at ?? new Date().toISOString(),
+    updatedAt: r.updated_at ?? new Date().toISOString(),
+    isLegacyLeadLink: true,
+  };
+}
+
+function taskFromRow(r: CrmTaskRow): Task {
+  const t = (r.type ?? "Other") as Task["type"];
+  const p = (r.priority ?? "Medium") as Task["priority"];
+  const s = (r.status ?? "Open") as Task["status"];
+  return {
+    id: r.id,
+    title: r.title,
+    type: t,
+    priority: p,
+    status: s,
+    assignedUserId: r.assigned_user_id ?? undefined,
+    contactId: r.contact_id ?? undefined,
+    companyId: r.company_id ?? undefined,
+    referralId: r.referral_id ?? undefined,
+    dueDate: r.due_date ?? undefined,
+    notes: r.notes ?? undefined,
+    createdAt: r.created_at ?? new Date().toISOString(),
+    updatedAt: r.updated_at ?? new Date().toISOString(),
+    completedAt: r.completed_at ?? undefined,
+    deletedAt: r.archived_at ?? undefined,
+  };
+}
+
 /* ---------------- hydrate ---------------- */
 
 // Tracks IDs that originated in Supabase. Locally-generated IDs (random base36)
