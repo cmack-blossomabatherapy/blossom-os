@@ -1115,14 +1115,14 @@ function AssignmentHistoryEditor({
       startDate: new Date().toISOString().slice(0, 10), endDate: null });
   }
 
-  function submit() {
+  async function submit() {
     if (!draft.clientName || !draft.bcbaName || !draft.startDate) {
       toast.error("Client, BCBA and Start Date are required"); return;
     }
     // Auto-fill clientId from billing if known
     const inferredId = draft.clientId || knownClientsWithId.get(draft.clientName) || "";
-    if (editing) {
-      updateAssignmentV3(editing.id, { ...draft, clientId: inferredId });
+    if (editing && editing.id !== "__new__") {
+      await updateAssignmentV3(editing.id, { ...draft, clientId: inferredId });
       toast.success("Assignment updated");
     } else {
       // Auto-close prior open assignment for same client with a different BCBA
@@ -1133,12 +1133,12 @@ function AssignmentHistoryEditor({
       );
       for (const p of prior) {
         const end = new Date(draft.startDate); end.setDate(end.getDate() - 1);
-        updateAssignmentV3(p.id, { endDate: end.toISOString().slice(0, 10) });
+        await updateAssignmentV3(p.id, { endDate: end.toISOString().slice(0, 10) });
       }
-      addAssignmentV3({ ...draft, clientId: inferredId });
+      await addAssignmentV3({ ...draft, clientId: inferredId });
       toast.success("Assignment added");
     }
-    onChange();
+    await onChange();
     reset();
   }
 
