@@ -108,6 +108,8 @@ export default function BcbaProductivityReportV3() {
   const [missingCols, setMissingCols] = useState<string[]>([]);
 
   const [assignments, setAssignments] = useState<BcbaAssignmentV3[]>(() => readAssignmentsV3());
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
+  const [assignmentError, setAssignmentError] = useState("");
   const [savedList, setSavedList] = useState(() => readSavedReportsV3());
 
   // filters
@@ -123,6 +125,7 @@ export default function BcbaProductivityReportV3() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [showHistory, setShowHistory] = useState(false);
   const [editing, setEditing] = useState<BcbaAssignmentV3 | null>(null);
+  const [assignmentSearch, setAssignmentSearch] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const assignImportRef = useRef<HTMLInputElement>(null);
@@ -137,6 +140,21 @@ export default function BcbaProductivityReportV3() {
       window.removeEventListener("bcba-prod-v3-saved-changed", refreshSaved);
     };
   }, []);
+
+  async function refreshAssignments() {
+    setAssignmentLoading(true);
+    setAssignmentError("");
+    try {
+      setAssignments(await loadAssignmentsV3());
+    } catch (e: any) {
+      setAssignmentError(e?.message ?? "Assignment History could not be loaded");
+      toast.error("Assignment History could not be loaded from the database");
+    } finally {
+      setAssignmentLoading(false);
+    }
+  }
+
+  useEffect(() => { void refreshAssignments(); }, []);
 
   useEffect(() => {
     (async () => {
