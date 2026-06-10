@@ -829,10 +829,84 @@ export const crm = {
     logAudit({ action: "workflow_toggle", objectType: "workflow", objectId: id, objectLabel: w?.name,
       summary: w?.enabled ? "Workflow enabled" : "Workflow disabled" });
   },
-  runWorkflow(id: ID) {
-    set({ workflows: state.workflows.map((w) => w.id === id ? { ...w, runs: w.runs + 1, lastRun: now() } : w) });
+  runWorkflow(id: ID): string {
     const w = state.workflows.find((x) => x.id === id);
-    logAudit({ action: "workflow_run", objectType: "workflow", objectId: id, objectLabel: w?.name, summary: "Ran workflow" });
+    if (!w) return "Workflow not found";
+    const result = executeWorkflow(w);
+    set({
+      workflows: state.workflows.map((x) =>
+        x.id === id ? { ...x, runs: x.runs + 1, lastRun: now(), lastRunResult: result } : x,
+      ),
+    });
+    logAudit({ action: "workflow_run", objectType: "workflow", objectId: id, objectLabel: w.name, summary: `Ran workflow — ${result}` });
+    return result;
+  },
+
+  addWorkflow(input: Partial<WorkflowDef> & { name: string }) {
+    const w: WorkflowDef = {
+      id: newId(), name: input.name, trigger: input.trigger ?? "Manual",
+      actions: input.actions ?? [], enabled: input.enabled ?? true, runs: 0,
+      triggerType: input.triggerType, triggerConfig: input.triggerConfig,
+    };
+    set({ workflows: [w, ...state.workflows] });
+    logAudit({ action: "create", objectType: "workflow", objectId: w.id, objectLabel: w.name, summary: "Workflow created" });
+    return w;
+  },
+  updateWorkflow(id: ID, patch: Partial<WorkflowDef>) {
+    set({ workflows: state.workflows.map((w) => w.id === id ? { ...w, ...patch } : w) });
+    const w = state.workflows.find((x) => x.id === id);
+    logAudit({ action: "update", objectType: "workflow", objectId: id, objectLabel: w?.name,
+      summary: `Updated: ${Object.keys(patch).join(", ") || "—"}` });
+  },
+  deleteWorkflow(id: ID) {
+    const w = state.workflows.find((x) => x.id === id);
+    set({ workflows: state.workflows.filter((x) => x.id !== id) });
+    logAudit({ action: "delete", objectType: "workflow", objectId: id, objectLabel: w?.name, summary: "Workflow deleted" });
+  },
+
+  // lists
+  addList(input: Partial<ListDef> & { name: string; kind: "static" | "active"; object: "contacts" | "companies" }) {
+    const l: ListDef = {
+      id: newId(), name: input.name, kind: input.kind, object: input.object,
+      criteria: input.criteria, staticIds: input.staticIds ?? (input.kind === "static" ? [] : undefined),
+      criteriaRules: input.criteriaRules, createdAt: now(), updatedAt: now(),
+    };
+    set({ lists: [l, ...state.lists] });
+    logAudit({ action: "create", objectType: "system", objectId: l.id, objectLabel: l.name, summary: `List created (${l.kind} · ${l.object})` });
+    return l;
+  },
+  updateList(id: ID, patch: Partial<ListDef>) {
+    set({ lists: state.lists.map((l) => l.id === id ? { ...l, ...patch, updatedAt: now() } : l) });
+    const l = state.lists.find((x) => x.id === id);
+    logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: l?.name,
+      summary: `List updated: ${Object.keys(patch).join(", ") || "—"}` });
+  },
+  deleteList(id: ID) {
+    const l = state.lists.find((x) => x.id === id);
+    set({ lists: state.lists.filter((x) => x.id !== id) });
+    logAudit({ action: "delete", objectType: "system", objectId: id, objectLabel: l?.name, summary: "List deleted" });
+  },
+  addRecordToStaticList(listId: ID, recordId: ID) {
+    const l = state.lists.find((x) => x.id === listId);
+    if (!l || l.kind !== "static") return;
+    const ids = Array.from(new Set([...(l.staticIds ?? []), recordId]));
+    set({ lists: state.lists.map((x) => x.id === listId ? { ...x, staticIds: ids, updatedAt: now() } : x) });
+    logActivity({ type: "list_membership", message: `Added to list "${l.name}"`,
+      contactId: l.object === "contacts" ? recordId : undefined,
+      companyId: l.object === "companies" ? recordId : undefined });
+    logAudit({ action: "update", objectType: "system", objectId: listId, objectLabel: l.name,
+      summary: `Added ${l.object.slice(0, -1)} ${recordId} to static list` });
+  },
+  removeRecordFromStaticList(listId: ID, recordId: ID) {
+    const l = state.lists.find((x) => x.id === listId);
+    if (!l || l.kind !== "static") return;
+    const ids = (l.staticIds ?? []).filter((x) => x !== recordId);
+    set({ lists: state.lists.map((x) => x.id === listId ? { ...x, staticIds: ids, updatedAt: now() } : x) });
+    logActivity({ type: "list_membership", message: `Removed from list "${l.name}"`,
+      contactId: l.object === "contacts" ? recordId : undefined,
+      companyId: l.object === "companies" ? recordId : undefined });
+    logAudit({ action: "update", objectType: "system", objectId: listId, objectLabel: l.name,
+      summary: `Removed ${l.object.slice(0, -1)} ${recordId} from static list` });
   },
 };
 
