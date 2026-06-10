@@ -649,7 +649,7 @@ export default function BcbaProductivityReportV3() {
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
                 {Object.entries(validation.dropReasons).map(([k, v]) => (
                   <Badge key={k} variant="outline" className="font-normal">
-                    <AlertTriangle className="mr-1 h-3 w-3 text-amber-600" />
+                    <AlertTriangle className="mr-1 h-3 w-3 text-warning" />
                     {k}: {v.toLocaleString()}
                   </Badge>
                 ))}
@@ -930,7 +930,7 @@ export default function BcbaProductivityReportV3() {
 function KpiCard({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
   return (
     <div className={cn("rounded-xl border p-3",
-      tone === "warn" ? "border-amber-300 bg-amber-50" : "bg-card/60")}>
+      tone === "warn" ? "border-warning/40 bg-warning/10" : "bg-card/60")}>
       <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-1 text-xl font-semibold tracking-tight">{value}</div>
     </div>
@@ -984,7 +984,7 @@ function Row({ bcba, expanded, onToggle }: {
 }) {
   return (
     <>
-      <tr className={cn("border-t hover:bg-muted/30", bcba.isUnassigned && "bg-amber-50/60")}>
+      <tr className={cn("border-t hover:bg-muted/30", bcba.isUnassigned && "bg-warning/10")}>
         <td className="px-3 py-2">
           <button onClick={onToggle} className="text-muted-foreground hover:text-foreground">
             {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -992,7 +992,7 @@ function Row({ bcba, expanded, onToggle }: {
         </td>
         <td className="px-3 py-2 font-medium">
           {bcba.bcba}
-          {bcba.isUnassigned && <Badge variant="outline" className="ml-2 border-amber-400 text-amber-700">No assignment history</Badge>}
+          {bcba.isUnassigned && <Badge variant="outline" className="ml-2 border-warning/50 text-warning-foreground">No assignment history</Badge>}
         </td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.totalHours)}</td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.h97153)}</td>
