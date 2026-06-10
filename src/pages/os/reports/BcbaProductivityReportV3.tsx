@@ -775,6 +775,30 @@ export default function BcbaProductivityReportV3() {
             BCBA Assignment History is required before productivity can be assigned. Upload or create assignment history first.
           </div>
         )}
+        {usingInferred && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <Database className="mr-1.5 inline h-4 w-4 text-primary" />
+                Ownership inferred from this Billing Report — {inferred.assignments.length} assignments derived for {inferred.clientsWithAnchors} clients across {inferred.uniqueBcbas} BCBAs.
+                {inferred.conflicts.length > 0 && (
+                  <span className="ml-2 text-warning-foreground">
+                    <AlertTriangle className="mr-1 inline h-3.5 w-3.5" />
+                    {inferred.conflicts.length} ownership conflicts flagged.
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setShowHistory(true)}>
+                  <History className="mr-1.5 h-3.5 w-3.5" /> Review inferred history
+                </Button>
+                <Button size="sm" onClick={handleSaveInferred}>
+                  <Save className="mr-1.5 h-3.5 w-3.5" /> Save inferred history
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
         {kpis.unassigned > 0 && (
           <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
             <AlertTriangle className="mr-1.5 inline h-3.5 w-3.5" />
