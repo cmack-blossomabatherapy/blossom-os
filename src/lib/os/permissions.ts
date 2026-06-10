@@ -141,7 +141,7 @@ export const MODULE_ROUTES: Record<OSModule, string> = {
   campaigns: "/marketing/campaigns",
   lead_sources: "/marketing/lead-sources",
   seo_content: "/marketing/seo",
-  referrals: "/marketing/referrals",
+  referrals: "/marketing/referral-crm",
   recruiting_marketing: "/marketing/recruiting",
   state_growth: "/marketing/state-growth",
   reputation: "/marketing/reputation",
