@@ -241,13 +241,16 @@ function isPersisted(id: ID): boolean {
 }
 
 export async function hydrateFromSupabase(): Promise<{
-  contacts: number; companies: number; activities: number; importBatches: number;
+  contacts: number; companies: number; activities: number; importBatches: number; referrals: number; tasks: number;
 }> {
-  const [comp, cont, act, batches] = await Promise.all([
+  const [comp, cont, act, batches, crmRefs, leadLinks, crmTasks] = await Promise.all([
     supabase.from("referral_companies").select("*").order("company_name"),
     supabase.from("referral_contacts").select("*").order("updated_at", { ascending: false }),
     supabase.from("referral_activities").select("*").order("activity_date", { ascending: false }).limit(500),
     supabase.from("referral_import_batches").select("*").order("uploaded_at", { ascending: false }).limit(200),
+    supabase.from("referral_crm_referrals").select("*").order("referral_date", { ascending: false }).limit(1000),
+    supabase.from("referral_lead_links").select("*").order("referral_date", { ascending: false }).limit(1000),
+    supabase.from("referral_crm_tasks").select("*").order("created_at", { ascending: false }).limit(1000),
   ]);
   if (comp.error) throw comp.error;
   if (cont.error) throw cont.error;
@@ -256,15 +259,23 @@ export async function hydrateFromSupabase(): Promise<{
   const contacts = (cont.data ?? []).map(contactFromRow);
   const activities = act.error ? [] : (act.data ?? []).map(activityFromRow);
   const importBatches = batches.error ? [] : (batches.data ?? []).map(batchFromRow);
+  const crmReferrals = crmRefs.error ? [] : (crmRefs.data ?? []).map(referralFromCrmRow);
+  const legacyReferrals = leadLinks.error ? [] : (leadLinks.data ?? []).map(referralFromLeadLinkRow);
+  const referrals = [...crmReferrals, ...legacyReferrals];
+  const tasks = crmTasks.error ? [] : (crmTasks.data ?? []).map(taskFromRow);
   knownIds.clear();
   for (const r of companies) knownIds.add(r.id);
   for (const r of contacts) knownIds.add(r.id);
-  replaceCrmData({ companies, contacts, activity: activities, importBatches });
+  for (const r of crmReferrals) knownIds.add(r.id);
+  for (const r of tasks) knownIds.add(r.id);
+  replaceCrmData({ companies, contacts, activity: activities, importBatches, referrals, tasks });
   return {
     contacts: contacts.length,
     companies: companies.length,
     activities: activities.length,
     importBatches: importBatches.length,
+    referrals: referrals.length,
+    tasks: tasks.length,
   };
 }
 
