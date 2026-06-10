@@ -662,6 +662,7 @@ const App = () => (
                   <Route path="/reports/hr-bcba-productivity" element={<HrBcbaProductivityDashboard />} />
                  <Route path="/reports/bcba-productivity-report" element={<BcbaProductivityReport />} />
                  <Route path="/reports/bcba-productivity-report-v2" element={<BcbaProductivityReportV2 />} />
+                 <Route path="/reports/bcba-productivity-report-v3" element={<BcbaProductivityReportV3 />} />
                   <Route path="/reports/cancellation-command-center" element={<CancellationCommandCenter />} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
