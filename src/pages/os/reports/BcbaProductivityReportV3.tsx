@@ -18,7 +18,7 @@ import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/exc
 import {
   readAssignmentsV3, loadAssignmentsV3, addAssignmentV3, updateAssignmentV3, deleteAssignmentV3,
   ownerForClientAtDateV3, deriveTransfersV3, readSavedReportsV3, saveReportV3,
-  getSavedReportRowsV3, deleteSavedReportV3, saveLastBillingV3, loadLastBillingV3,
+  getSavedReportRowsV3, deleteSavedReportV3, clearLastBillingV3,
   findDuplicateSavedV3, normalizeName, bulkInsertAssignmentsV3,
   type BcbaAssignmentV3,
 } from "@/lib/os/bcbaProductivityV3/store";
@@ -199,8 +199,9 @@ export default function BcbaProductivityReportV3() {
           return;
         }
       }
-      const last = await loadLastBillingV3();
-      if (last) { setRows(last.rows); setFileName(last.fileName); }
+      // Unsaved billing data is intentionally not restored — users must re-upload
+      // or open a saved report so stale data never lingers between sessions.
+      await clearLastBillingV3();
     })();
   }, [savedParam]);
 
@@ -315,7 +316,6 @@ export default function BcbaProductivityReportV3() {
 
       setRows(parsedRows);
       setFileName(file.name);
-      await saveLastBillingV3(file.name, parsedRows);
 
       toast.success(`Parsed ${parsedRows.length.toLocaleString()} of ${first.rows.length.toLocaleString()} rows from ${file.name}`);
     } catch (e: any) {
