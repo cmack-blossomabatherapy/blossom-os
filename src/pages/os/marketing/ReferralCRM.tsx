@@ -2423,6 +2423,7 @@ function ImportsModule() {
 
   return (
     <div className="space-y-4">
+      <SupabaseQuickImport />
       <div className="rounded-2xl border bg-card p-5 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Label className="text-xs">Import into</Label>
