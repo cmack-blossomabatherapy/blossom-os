@@ -991,7 +991,7 @@ function TasksModule() {
 
   const groups = useMemo(() => {
     const map = new Map<string, Task[]>();
-    for (const t of s.tasks) {
+    for (const t of scopedTasks(s)) {
       let key = "Unassigned";
       if (groupBy === "owner") key = userName(s, t.assignedUserId);
       else if (groupBy === "state") {
@@ -1004,7 +1004,7 @@ function TasksModule() {
     return [...map.entries()];
   }, [s, groupBy]);
 
-  const visibleIds = s.tasks.map((t) => t.id);
+  const visibleIds = scopedTasks(s).map((t) => t.id);
   const allChecked = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(visibleIds));
   const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
