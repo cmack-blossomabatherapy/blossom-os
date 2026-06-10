@@ -978,6 +978,23 @@ export const crm = {
     logAudit({ action: "delete", objectType: "task", objectId: id, summary: "Task deleted" });
     fire("onTaskDelete", id, true);
   },
+  softDeleteTask(id: ID) {
+    set({ tasks: state.tasks.map((t) => t.id === id ? { ...t, deletedAt: now() } : t) });
+    const t = state.tasks.find((x) => x.id === id);
+    logAudit({ action: "delete", objectType: "task", objectId: id, objectLabel: t?.title, summary: "Task moved to deleted" });
+    fire("onTaskDelete", id, false);
+  },
+  restoreTask(id: ID) {
+    set({ tasks: state.tasks.map((t) => t.id === id ? { ...t, deletedAt: undefined } : t) });
+    const t = state.tasks.find((x) => x.id === id);
+    logAudit({ action: "restore", objectType: "task", objectId: id, objectLabel: t?.title, summary: "Task restored" });
+    fire("onTaskUpdate", id, { deletedAt: undefined } as Partial<Task>, t);
+  },
+  hardDeleteTask(id: ID) {
+    set({ tasks: state.tasks.filter((t) => t.id !== id) });
+    logAudit({ action: "delete", objectType: "task", objectId: id, summary: "Task permanently deleted" });
+    fire("onTaskDelete", id, true);
+  },
 
   // notes
   addNote(message: string, ref: { contactId?: ID; companyId?: ID; referralId?: ID }) {
@@ -1216,6 +1233,7 @@ export function fullName(c: Contact) { return `${c.firstName} ${c.lastName}`.tri
 export function activeContacts(s: State) { return s.contacts.filter((c) => !c.deletedAt); }
 export function activeCompanies(s: State) { return s.companies.filter((c) => !c.deletedAt); }
 export function activeReferrals(s: State) { return s.referrals.filter((r) => !r.deletedAt); }
+export function activeTasks(s: State) { return s.tasks.filter((t) => !t.deletedAt); }
 export function userName(s: State, id?: ID) { return s.users.find((u) => u.id === id)?.name ?? "—"; }
 export function companyName(s: State, id?: ID) { return s.companies.find((c) => c.id === id)?.name ?? "—"; }
 
@@ -1252,8 +1270,9 @@ export function scopedReferrals(s: State): Referral[] {
 }
 export function scopedTasks(s: State): Task[] {
   const scope = scopeStates(s);
-  if (!scope) return s.tasks;
-  return s.tasks.filter((t) => {
+  const base = activeTasks(s);
+  if (!scope) return base;
+  return base.filter((t) => {
     const co = t.companyId ? s.companies.find((c) => c.id === t.companyId) : undefined;
     const ct = t.contactId ? s.contacts.find((c) => c.id === t.contactId) : undefined;
     return inScope(s, co?.state ?? ct?.state);

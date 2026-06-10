@@ -775,6 +775,12 @@ function BulkCreateTaskDialog({
 // ===========================================================
 // Referrals
 // ===========================================================
+function partitionLegacy(rows: Referral[], selectedIds: ID[]): { nativeIds: ID[]; skipped: number } {
+  const legacySet = new Set(rows.filter((r) => r.isLegacyLeadLink).map((r) => r.id));
+  const nativeIds = selectedIds.filter((id) => !legacySet.has(id));
+  return { nativeIds, skipped: selectedIds.length - nativeIds.length };
+}
+
 function ReferralsModule() {
   const s = useCrm();
   const [creating, setCreating] = useState(false);
@@ -790,17 +796,23 @@ function ReferralsModule() {
   const ids = () => Array.from(selected);
   const clear = () => setSelected(new Set());
   const bulkStatus = (v: string) => {
-    ids().forEach((id) => crm.updateReferral(id, { referralStatus: v as Referral["referralStatus"] }));
-    toast({ title: `Updated status on ${selected.size}` }); clear();
+    const { nativeIds, skipped } = partitionLegacy(rows, ids());
+    nativeIds.forEach((id) => crm.updateReferral(id, { referralStatus: v as Referral["referralStatus"] }));
+    toast({ title: `Updated status on ${nativeIds.length}`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
+    clear();
   };
   const bulkIntakeStatus = () => {
     const v = window.prompt("New intake status:"); if (!v) return;
-    ids().forEach((id) => crm.updateReferral(id, { intakeStatus: v }));
-    toast({ title: `Updated intake status on ${selected.size}` }); clear();
+    const { nativeIds, skipped } = partitionLegacy(rows, ids());
+    nativeIds.forEach((id) => crm.updateReferral(id, { intakeStatus: v }));
+    toast({ title: `Updated intake status on ${nativeIds.length}`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
+    clear();
   };
   const bulkAssignIntake = (uid: ID) => {
-    ids().forEach((id) => crm.updateReferral(id, { assignedIntakeOwnerId: uid }));
-    toast({ title: `Assigned intake owner on ${selected.size}` }); clear();
+    const { nativeIds, skipped } = partitionLegacy(rows, ids());
+    nativeIds.forEach((id) => crm.updateReferral(id, { assignedIntakeOwnerId: uid }));
+    toast({ title: `Assigned intake owner on ${nativeIds.length}`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
+    clear();
   };
   const bulkExport = () => {
     const data = s.referrals.filter((r) => selected.has(r.id)).map((r) => ({
@@ -817,8 +829,10 @@ function ReferralsModule() {
     toast({ title: `Exported ${data.length} referral(s)` });
   };
   const bulkDelete = () => {
-    ids().forEach((id) => crm.softDeleteReferral(id));
-    toast({ title: `${selected.size} referral(s) deleted` }); clear();
+    const { nativeIds, skipped } = partitionLegacy(rows, ids());
+    nativeIds.forEach((id) => crm.softDeleteReferral(id));
+    toast({ title: `${nativeIds.length} referral(s) deleted`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
+    clear();
   };
 
   return (
@@ -879,7 +893,16 @@ function ReferralsModule() {
                 <tr key={r.id} className="border-t hover:bg-muted/30">
                   <td className="px-3 py-2"><Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleOne(r.id)} /></td>
                   <td className="px-3 py-2 font-medium">
-                    <button className="hover:text-primary" onClick={() => setEditingId(r.id)}>{r.name}</button>
+                    <div className="flex items-center gap-2">
+                      {r.isLegacyLeadLink ? (
+                        <span className="text-foreground">{r.name}</span>
+                      ) : (
+                        <button className="hover:text-primary" onClick={() => setEditingId(r.id)}>{r.name}</button>
+                      )}
+                      {r.isLegacyLeadLink && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">Read-only</Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-3 py-2">{companyName(s, r.companyId)}</td>
                   <td className="px-3 py-2">{r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "—"}</td>
@@ -895,9 +918,11 @@ function ReferralsModule() {
                         <button className="text-muted-foreground hover:text-primary" title="Log activity" onClick={() => setLogId(r.id)}>
                           <Activity className="size-3" />
                         </button>
-                        <button className="text-muted-foreground hover:text-primary" title="Edit" onClick={() => setEditingId(r.id)}>
-                          <Pencil className="size-3" />
-                        </button>
+                        {!r.isLegacyLeadLink && (
+                          <button className="text-muted-foreground hover:text-primary" title="Edit" onClick={() => setEditingId(r.id)}>
+                            <Pencil className="size-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -1031,7 +1056,7 @@ function TasksModule() {
     toast({ title: `Updated due date on ${selected.size}` }); clear();
   };
   const bulkDelete = () => {
-    ids().forEach((id) => crm.deleteTask(id));
+    ids().forEach((id) => crm.softDeleteTask(id));
     toast({ title: `${selected.size} task(s) deleted` }); clear();
   };
   const bulkExport = () => {
@@ -1124,7 +1149,7 @@ function TasksModule() {
                     <span className={cn("text-xs tabular-nums", overdue ? "text-destructive font-medium" : "text-muted-foreground")}>
                       {fmtDate(t.dueDate)}
                     </span>
-                    <button className="text-muted-foreground hover:text-destructive" onClick={() => crm.deleteTask(t.id)}>
+                    <button className="text-muted-foreground hover:text-destructive" onClick={() => crm.softDeleteTask(t.id)}>
                       <Trash2 className="size-3.5" />
                     </button>
                   </div>
@@ -3498,6 +3523,7 @@ function DeletedModule() {
   const c = s.contacts.filter((x) => x.deletedAt);
   const co = s.companies.filter((x) => x.deletedAt);
   const r = s.referrals.filter((x) => x.deletedAt);
+  const t = s.tasks.filter((x) => x.deletedAt);
 
   const Section = ({ title, items, restore, hardDelete }: { title: string; items: { id: ID; label: string; deletedAt?: string }[]; restore: (id: ID) => void; hardDelete?: (id: ID) => void }) => (
     <div className="rounded-2xl border bg-card p-5">
@@ -3529,6 +3555,8 @@ function DeletedModule() {
         restore={crm.restoreCompany} hardDelete={crm.hardDeleteCompany} />
       <Section title="Deleted Referrals" items={r.map((x) => ({ id: x.id, label: x.name, deletedAt: x.deletedAt }))}
         restore={crm.restoreReferral} />
+      <Section title="Deleted Tasks" items={t.map((x) => ({ id: x.id, label: x.title, deletedAt: x.deletedAt }))}
+        restore={crm.restoreTask} hardDelete={crm.hardDeleteTask} />
     </div>
   );
 }
@@ -3933,13 +3961,16 @@ export default function ReferralCRM() {
   const [module, setModule] = useState<ModuleId>("dashboard");
   const [contactId, setContactId] = useState<ID | null>(null);
   const [companyId, setCompanyId] = useState<ID | null>(null);
+  const [backendMissing, setBackendMissing] = useState<string[]>([]);
 
   // Bridge: hydrate Supabase referral data into the CRM store and install
   // write-through sync so creates/edits land in referral_contacts /
   // referral_companies / referral_activities. Runs once on mount.
   useEffect(() => {
     installSupabaseSync();
-    hydrateFromSupabase().catch((e) => {
+    hydrateFromSupabase().then((res) => {
+      setBackendMissing(res.missing ?? []);
+    }).catch((e) => {
       console.warn("[ReferralCRM] hydrate failed", e);
       toast({
         title: "Could not load referral data",
@@ -3989,6 +4020,11 @@ export default function ReferralCRM() {
       title="Blossom Referral CRM"
       subtitle="Track contacts, companies, referrals, and outreach for every state."
     >
+      {backendMissing.length > 0 && (
+        <div className="mb-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+          <span className="font-medium">Heads up:</span> the following backend tables are unavailable or blocked by access rules — {backendMissing.join(", ")}. Contacts, companies, and imports loaded normally, but those modules will show empty until access is restored.
+        </div>
+      )}
       {/* Impersonation switcher — lets admins preview the CRM as any role */}
       <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs">
         <span className="text-muted-foreground">Acting as:</span>

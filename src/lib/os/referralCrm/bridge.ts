@@ -242,6 +242,7 @@ function isPersisted(id: ID): boolean {
 
 export async function hydrateFromSupabase(): Promise<{
   contacts: number; companies: number; activities: number; importBatches: number; referrals: number; tasks: number;
+  missing: string[];
 }> {
   const [comp, cont, act, batches, crmRefs, leadLinks, crmTasks] = await Promise.all([
     supabase.from("referral_companies").select("*").order("company_name"),
@@ -263,10 +264,14 @@ export async function hydrateFromSupabase(): Promise<{
   const legacyReferrals = leadLinks.error ? [] : (leadLinks.data ?? []).map(referralFromLeadLinkRow);
   const referrals = [...crmReferrals, ...legacyReferrals];
   const tasks = crmTasks.error ? [] : (crmTasks.data ?? []).map(taskFromRow);
+  const missing: string[] = [];
+  if (crmRefs.error) { console.warn("[crm bridge] referral_crm_referrals unavailable", crmRefs.error); missing.push("referral_crm_referrals"); }
+  if (crmTasks.error) { console.warn("[crm bridge] referral_crm_tasks unavailable", crmTasks.error); missing.push("referral_crm_tasks"); }
   knownIds.clear();
   for (const r of companies) knownIds.add(r.id);
   for (const r of contacts) knownIds.add(r.id);
   for (const r of crmReferrals) knownIds.add(r.id);
+  for (const r of legacyReferrals) knownIds.add(r.id);
   for (const r of tasks) knownIds.add(r.id);
   replaceCrmData({ companies, contacts, activity: activities, importBatches, referrals, tasks });
   return {
@@ -276,6 +281,7 @@ export async function hydrateFromSupabase(): Promise<{
     importBatches: importBatches.length,
     referrals: referrals.length,
     tasks: tasks.length,
+    missing,
   };
 }
 
@@ -558,6 +564,7 @@ export function installSupabaseSync() {
       if (Object.keys(out).length === 0) return;
       const { error } = await supabase.from("referral_crm_referrals").update(out as never).eq("id", id);
       if (error) console.warn("[crm bridge] referral update failed", error);
+      scheduleRehydrate();
     },
     onReferralDelete: async (id, hard) => {
       if (!isPersisted(id)) return;
@@ -606,6 +613,7 @@ export function installSupabaseSync() {
       if (Object.keys(out).length === 0) return;
       const { error } = await supabase.from("referral_crm_tasks").update(out as never).eq("id", id);
       if (error) console.warn("[crm bridge] task update failed", error);
+      scheduleRehydrate();
     },
     onTaskDelete: async (id, hard) => {
       if (!isPersisted(id)) return;
