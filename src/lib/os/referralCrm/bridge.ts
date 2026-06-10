@@ -104,6 +104,17 @@ function activityFromRow(r: ReferralActivity): ActivityEvent {
 
 /* ---------------- hydrate ---------------- */
 
+// Tracks IDs that originated in Supabase. Locally-generated IDs (random base36)
+// will not match this set, so we know to insert vs update.
+const knownIds = new Set<string>();
+
+function isUuid(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+function isPersisted(id: ID): boolean {
+  return knownIds.has(id) || isUuid(id);
+}
+
 export async function hydrateFromSupabase(): Promise<{
   contacts: number; companies: number; activities: number;
 }> {
@@ -118,22 +129,14 @@ export async function hydrateFromSupabase(): Promise<{
   const companies = (comp.data ?? []).map(companyFromRow);
   const contacts = (cont.data ?? []).map(contactFromRow);
   const activities = act.error ? [] : (act.data ?? []).map(activityFromRow);
+  knownIds.clear();
+  for (const r of companies) knownIds.add(r.id);
+  for (const r of contacts) knownIds.add(r.id);
   replaceCrmData({ companies, contacts, activity: activities });
   return { contacts: contacts.length, companies: companies.length, activities: activities.length };
 }
 
 /* ---------------- sync (CRM → Supabase) ---------------- */
-
-// Tracks IDs that originated in Supabase. Locally-generated IDs (random base36)
-// will not match this set, so we know to insert vs update.
-const knownIds = new Set<string>();
-
-function isUuid(id: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-}
-function isPersisted(id: ID): boolean {
-  return knownIds.has(id) || isUuid(id);
-}
 
 function contactToRow(c: Contact) {
   return {
@@ -258,22 +261,4 @@ export function installSupabaseSync() {
       if (error) console.warn("[crm bridge] activity insert failed", error);
     },
   });
-}
-
-// Track persisted IDs as they arrive from hydration so updates target the
-// correct rows. Patch hydrateFromSupabase to mirror ids into the set.
-const _origHydrate = hydrateFromSupabase;
-export async function hydrateFromSupabaseTracked(): Promise<ReturnType<typeof hydrateFromSupabase>> {
-  const out = await _origHydrate();
-  // After replaceCrmData the store has the new rows; but we don't keep a
-  // pointer here. Pull ids again cheaply from the same tables — caps at small
-  // counts via select("id").
-  const [{ data: comp }, { data: cont }] = await Promise.all([
-    supabase.from("referral_companies").select("id"),
-    supabase.from("referral_contacts").select("id"),
-  ]);
-  knownIds.clear();
-  for (const r of comp ?? []) knownIds.add(r.id as string);
-  for (const r of cont ?? []) knownIds.add(r.id as string);
-  return out;
 }
