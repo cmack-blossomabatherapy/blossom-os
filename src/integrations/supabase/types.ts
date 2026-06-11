@@ -9229,6 +9229,93 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_crm_custom_fields: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          object: string
+          options: string[] | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          label: string
+          object: string
+          options?: string[] | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          object?: string
+          options?: string[] | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      referral_crm_lists: {
+        Row: {
+          created_at: string
+          criteria: string | null
+          criteria_rules: Json | null
+          id: string
+          kind: string
+          name: string
+          object: string
+          static_ids: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criteria?: string | null
+          criteria_rules?: Json | null
+          id: string
+          kind: string
+          name: string
+          object: string
+          static_ids?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criteria?: string | null
+          criteria_rules?: Json | null
+          id?: string
+          kind?: string
+          name?: string
+          object?: string
+          static_ids?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      referral_crm_permissions: {
+        Row: {
+          allowed: boolean
+          permission: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          allowed?: boolean
+          permission: string
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          allowed?: boolean
+          permission?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referral_crm_referrals: {
         Row: {
           archived_at: string | null
@@ -9381,6 +9468,135 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referral_crm_teams: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          lead_id: string | null
+          member_ids: string[]
+          name: string
+          states: string[]
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id: string
+          lead_id?: string | null
+          member_ids?: string[]
+          name: string
+          states?: string[]
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          member_ids?: string[]
+          name?: string
+          states?: string[]
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      referral_crm_users: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          mobile_phone: string | null
+          name: string
+          role: string
+          state: string | null
+          states: string[]
+          team_ids: string[]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          mobile_phone?: string | null
+          name: string
+          role: string
+          state?: string | null
+          states?: string[]
+          team_ids?: string[]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          mobile_phone?: string | null
+          name?: string
+          role?: string
+          state?: string | null
+          states?: string[]
+          team_ids?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      referral_crm_workflows: {
+        Row: {
+          actions: string[]
+          created_at: string
+          enabled: boolean
+          id: string
+          last_run: string | null
+          last_run_result: string | null
+          name: string
+          runs: number
+          trigger: string | null
+          trigger_config: Json | null
+          trigger_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          actions?: string[]
+          created_at?: string
+          enabled?: boolean
+          id: string
+          last_run?: string | null
+          last_run_result?: string | null
+          name: string
+          runs?: number
+          trigger?: string | null
+          trigger_config?: Json | null
+          trigger_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actions?: string[]
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_run?: string | null
+          last_run_result?: string | null
+          name?: string
+          runs?: number
+          trigger?: string | null
+          trigger_config?: Json | null
+          trigger_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       referral_import_batches: {
         Row: {
