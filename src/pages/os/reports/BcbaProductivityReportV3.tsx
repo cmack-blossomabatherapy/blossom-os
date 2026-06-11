@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   Upload, FileSpreadsheet, Download, Search, ChevronRight, ChevronDown,
   Stethoscope, Plus, Trash2, Save, History, ArrowLeftRight, X, Pencil, Database, AlertTriangle,
-  UserPlus, RefreshCw,
+  UserPlus, RefreshCw, HelpCircle,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   readAssignmentsV3, loadAssignmentsV3, addAssignmentV3, updateAssignmentV3, deleteAssignmentV3,
   ownerForClientAtDateV3, deriveTransfersV3, readSavedReportsV3, saveReportV3,
   getSavedReportRowsV3, deleteSavedReportV3, clearLastBillingV3,
+  saveLastBillingV3, loadLastBillingV3,
   findDuplicateSavedV3, normalizeName, bulkInsertAssignmentsV3,
   type BcbaAssignmentV3,
 } from "@/lib/os/bcbaProductivityV3/store";
