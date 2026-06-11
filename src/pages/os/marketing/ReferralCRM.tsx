@@ -499,7 +499,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
 
 function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (b: boolean) => void }) {
   const s = useCrm();
-  const [f, setF] = useState({ firstName: "", lastName: "", email: "", phone: "", state: "", companyId: "" });
+  const [f, setF] = useState({ firstName: "", lastName: "", jobTitle: "", email: "", phone: "", state: "", companyId: "" });
   const [newCo, setNewCo] = useState({ name: "", companyType: "", state: "" });
   const creatingCo = f.companyId === "__create__";
   const submit = () => {
@@ -513,7 +513,7 @@ function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
     crm.addContact({ ...f, companyId });
     toast({ title: "Contact created" });
     onOpenChange(false);
-    setF({ firstName: "", lastName: "", email: "", phone: "", state: "", companyId: "" });
+    setF({ firstName: "", lastName: "", jobTitle: "", email: "", phone: "", state: "", companyId: "" });
     setNewCo({ name: "", companyType: "", state: "" });
   };
   return (
@@ -523,6 +523,7 @@ function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
         <div className="grid grid-cols-2 gap-3">
           <div><Label className="text-xs">First name</Label><Input value={f.firstName} onChange={(e) => setF({ ...f, firstName: e.target.value })} /></div>
           <div><Label className="text-xs">Last name</Label><Input value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} /></div>
+          <div className="col-span-2"><Label className="text-xs">Title</Label><Input value={f.jobTitle} onChange={(e) => setF({ ...f, jobTitle: e.target.value })} placeholder="e.g. Pediatrician, Office Manager" /></div>
           <div><Label className="text-xs">Email</Label><Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
           <div><Label className="text-xs">Phone</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
           <div><Label className="text-xs">State</Label>
