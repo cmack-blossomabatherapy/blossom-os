@@ -293,6 +293,202 @@ function auditFromRow(r: CrmAuditRow): AuditLogEntry {
     metadata: (r.metadata as Record<string, unknown> | null) ?? null,
   };
 }
+
+/* ---- configuration table mappers ---- */
+type AnyRow = Record<string, unknown>;
+const s = (r: AnyRow, k: string): string | undefined => {
+  const v = r[k];
+  return typeof v === "string" && v.length ? v : undefined;
+};
+const arr = (r: AnyRow, k: string): string[] | undefined => {
+  const v = r[k];
+  return Array.isArray(v) ? (v as string[]) : undefined;
+};
+
+function listFromRow(r: AnyRow): ListDef {
+  const kind = (r.kind === "static" ? "static" : "active") as ListDef["kind"];
+  const object = (r.object === "companies" ? "companies" : "contacts") as ListDef["object"];
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ""),
+    kind,
+    object,
+    criteria: s(r, "criteria"),
+    staticIds: arr(r, "static_ids"),
+    criteriaRules: (r.criteria_rules as ListDef["criteriaRules"]) ?? undefined,
+    createdAt: s(r, "created_at"),
+    updatedAt: s(r, "updated_at"),
+  };
+}
+
+function workflowFromRow(r: AnyRow): WorkflowDef {
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ""),
+    trigger: String(r.trigger ?? ""),
+    actions: arr(r, "actions") ?? [],
+    enabled: r.enabled !== false,
+    lastRun: s(r, "last_run"),
+    runs: typeof r.runs === "number" ? (r.runs as number) : 0,
+    triggerType: (r.trigger_type as WorkflowDef["triggerType"]) ?? undefined,
+    triggerConfig: (r.trigger_config as WorkflowDef["triggerConfig"]) ?? undefined,
+    lastRunResult: s(r, "last_run_result"),
+  };
+}
+
+function userFromRow(r: AnyRow): CrmUser {
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ""),
+    email: String(r.email ?? ""),
+    role: String(r.role ?? "read_only") as CrmUser["role"],
+    firstName: s(r, "first_name"),
+    lastName: s(r, "last_name"),
+    mobilePhone: s(r, "mobile_phone"),
+    state: s(r, "state"),
+    states: arr(r, "states") ?? [],
+    teamIds: arr(r, "team_ids") ?? [],
+    active: r.active !== false,
+  };
+}
+
+function teamFromRow(r: AnyRow): CrmTeam {
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ""),
+    type: String(r.type ?? "Marketing") as CrmTeam["type"],
+    states: arr(r, "states") ?? [],
+    memberIds: arr(r, "member_ids") ?? [],
+    leadId: s(r, "lead_id"),
+    active: r.active !== false,
+    createdAt: s(r, "created_at") ?? new Date().toISOString(),
+    updatedAt: s(r, "updated_at") ?? new Date().toISOString(),
+  };
+}
+
+function fieldFromRow(r: AnyRow): CustomFieldDef {
+  return {
+    id: String(r.id),
+    object: (r.object as CustomFieldDef["object"]) ?? "contact",
+    label: String(r.label ?? ""),
+    type: (r.type as CustomFieldDef["type"]) ?? "text",
+    options: arr(r, "options"),
+    createdAt: s(r, "created_at") ?? new Date().toISOString(),
+  };
+}
+
+function permissionsFromRows(rows: AnyRow[]): PermissionMatrix {
+  // Start from defaults so any missing role/perm combos remain sensible.
+  const next: PermissionMatrix = JSON.parse(JSON.stringify(DEFAULT_PERMISSIONS));
+  for (const row of rows) {
+    const role = String(row.role) as CrmRole;
+    const perm = String(row.permission) as CrmPermission;
+    if (!next[role]) continue;
+    next[role][perm] = row.allowed === true;
+  }
+  return next;
+}
+
+/* ---- configuration table writers ---- */
+function listToRow(l: ListDef) {
+  return {
+    id: l.id,
+    name: l.name,
+    kind: l.kind,
+    object: l.object,
+    criteria: l.criteria ?? null,
+    static_ids: l.staticIds ?? null,
+    criteria_rules: (l.criteriaRules ?? null) as never,
+  };
+}
+function workflowToRow(w: WorkflowDef) {
+  return {
+    id: w.id,
+    name: w.name,
+    trigger: w.trigger ?? null,
+    actions: w.actions ?? [],
+    enabled: w.enabled,
+    last_run: w.lastRun ?? null,
+    runs: w.runs ?? 0,
+    trigger_type: w.triggerType ?? null,
+    trigger_config: (w.triggerConfig ?? null) as never,
+    last_run_result: w.lastRunResult ?? null,
+  };
+}
+function userToRow(u: CrmUser) {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    first_name: u.firstName ?? null,
+    last_name: u.lastName ?? null,
+    mobile_phone: u.mobilePhone ?? null,
+    state: u.state ?? null,
+    states: u.states ?? [],
+    team_ids: u.teamIds ?? [],
+    active: u.active !== false,
+  };
+}
+function teamToRow(t: CrmTeam) {
+  return {
+    id: t.id,
+    name: t.name,
+    type: t.type,
+    states: t.states ?? [],
+    member_ids: t.memberIds ?? [],
+    lead_id: t.leadId ?? null,
+    active: t.active !== false,
+  };
+}
+function fieldToRow(f: CustomFieldDef) {
+  return {
+    id: f.id,
+    object: f.object,
+    label: f.label,
+    type: f.type,
+    options: f.options ?? null,
+  };
+}
+
+async function seedDefaultsIfEmpty(flags: {
+  listsEmpty: boolean; workflowsEmpty: boolean; usersEmpty: boolean;
+  teamsEmpty: boolean; permsEmpty: boolean; fieldsEmpty: boolean;
+}) {
+  // Read current store defaults via dynamic import to avoid a circular type.
+  const { getCrmSnapshot } = await import("./store");
+  const snap = getCrmSnapshot();
+  const tasks: Array<Promise<unknown>> = [];
+  if (flags.listsEmpty && snap.lists.length) {
+    tasks.push(supabase.from("referral_crm_lists" as never).upsert(snap.lists.map(listToRow) as never));
+  }
+  if (flags.workflowsEmpty && snap.workflows.length) {
+    tasks.push(supabase.from("referral_crm_workflows" as never).upsert(snap.workflows.map(workflowToRow) as never));
+  }
+  if (flags.usersEmpty && snap.users.length) {
+    tasks.push(supabase.from("referral_crm_users" as never).upsert(snap.users.map(userToRow) as never));
+  }
+  if (flags.teamsEmpty && snap.teams.length) {
+    tasks.push(supabase.from("referral_crm_teams" as never).upsert(snap.teams.map(teamToRow) as never));
+  }
+  if (flags.fieldsEmpty && snap.customFields.length) {
+    tasks.push(supabase.from("referral_crm_custom_fields" as never).upsert(snap.customFields.map(fieldToRow) as never));
+  }
+  if (flags.permsEmpty) {
+    const rows: { role: string; permission: string; allowed: boolean }[] = [];
+    for (const r of CRM_ROLES) {
+      for (const p of CRM_PERMISSIONS) {
+        rows.push({ role: r.id, permission: p.id, allowed: !!snap.permissions[r.id]?.[p.id] });
+      }
+    }
+    tasks.push(supabase.from("referral_crm_permissions" as never).upsert(rows as never));
+  }
+  const results = await Promise.allSettled(tasks);
+  for (const r of results) {
+    if (r.status === "rejected") console.warn("[crm bridge] seed defaults failed", r.reason);
+  }
+}
+
 /* ---------------- hydrate ---------------- */
 
 // Tracks IDs that originated in Supabase. Locally-generated IDs (random base36)
