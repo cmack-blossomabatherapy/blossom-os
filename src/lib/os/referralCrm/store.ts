@@ -1194,12 +1194,14 @@ export const crm = {
     set({ customFields: [f, ...state.customFields] });
     logAudit({ action: "field_added", objectType: "field", objectId: f.id, objectLabel: f.label,
       summary: `Added ${f.type} field on ${f.object}` });
+    fire("onCustomFieldAdd", f);
     return f;
   },
   removeCustomField(id: ID) {
     const f = state.customFields.find((x) => x.id === id);
     set({ customFields: state.customFields.filter((x) => x.id !== id) });
     if (f) logAudit({ action: "field_removed", objectType: "field", objectId: id, objectLabel: f.label, summary: "Removed custom field" });
+    fire("onCustomFieldRemove", id);
   },
 
   // audit + import/export markers
