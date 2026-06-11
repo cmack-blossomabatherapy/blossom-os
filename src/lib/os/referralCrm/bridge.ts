@@ -668,7 +668,6 @@ function companyToRow(c: Company) {
     service_area: c.serviceArea ?? null,
     relationship_owner: c.relationshipOwner ?? null,
     import_batch_id: c.importBatchId ?? null,
-    normalized_name: c.normalizedName ?? null,
   };
 }
 
@@ -752,7 +751,6 @@ function companyPatchToRow(patch: Partial<Company>): Record<string, unknown> {
   set("relationshipOwner", "relationship_owner");
   set("importBatchId", "import_batch_id");
   set("source", "source");
-  set("normalizedName", "normalized_name");
   return out;
 }
 
