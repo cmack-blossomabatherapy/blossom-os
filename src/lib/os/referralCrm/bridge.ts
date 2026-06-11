@@ -458,7 +458,7 @@ async function seedDefaultsIfEmpty(flags: {
   // Read current store defaults via dynamic import to avoid a circular type.
   const { getCrmSnapshot } = await import("./store");
   const snap = getCrmSnapshot();
-  const tasks: Array<Promise<unknown>> = [];
+  const tasks: Array<PromiseLike<unknown>> = [];
   if (flags.listsEmpty && snap.lists.length) {
     tasks.push(supabase.from("referral_crm_lists" as never).upsert(snap.lists.map(listToRow) as never));
   }
