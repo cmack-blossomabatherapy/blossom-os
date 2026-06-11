@@ -15,8 +15,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import {
   replaceCrmData,
+  replaceCrmConfig,
   setCrmSideEffects,
   remapId,
+  DEFAULT_PERMISSIONS,
+  CRM_PERMISSIONS,
+  CRM_ROLES,
   type Contact,
   type Company,
   type ActivityEvent,
@@ -25,6 +29,14 @@ import {
   type Task,
   type Attachment,
   type AuditLogEntry,
+  type ListDef,
+  type WorkflowDef,
+  type CrmUser,
+  type CrmTeam,
+  type CustomFieldDef,
+  type CrmRole,
+  type CrmPermission,
+  type PermissionMatrix,
   type ID,
 } from "./store";
 import { toast } from "@/hooks/use-toast";
