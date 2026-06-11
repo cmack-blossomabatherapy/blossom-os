@@ -673,6 +673,7 @@ function set(next: Partial<State>) {
 
 const subscribe = (cb: () => void) => { listeners.add(cb); return () => { listeners.delete(cb); }; };
 const getSnapshot = () => state;
+export const getCrmSnapshot = () => state;
 
 export function useCrm() {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
