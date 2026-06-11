@@ -21,6 +21,9 @@ import {
   readCancellationSavedReports, deleteCancellationSavedReport,
   type CancellationSavedReport,
 } from "@/lib/os/cancellationSavedReports";
+import {
+  readSavedReportsV3, deleteSavedReportV3, type BcbaSavedReportV3,
+} from "@/lib/os/bcbaProductivityV3/store";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
@@ -55,20 +58,25 @@ export default function ReportsHome() {
 
   const [savedReports, setSavedReports] = useState<BcbaSavedReport[]>([]);
   const [cancelSaved, setCancelSaved] = useState<CancellationSavedReport[]>([]);
+  const [savedV3, setSavedV3] = useState<BcbaSavedReportV3[]>([]);
   useEffect(() => {
     setSavedReports(readSavedReports());
     setCancelSaved(readCancellationSavedReports());
+    setSavedV3(readSavedReportsV3());
     const refresh = () => {
       setSavedReports(readSavedReports());
       setCancelSaved(readCancellationSavedReports());
+      setSavedV3(readSavedReportsV3());
     };
     window.addEventListener("bcba-saved-reports-changed", refresh);
     window.addEventListener("cancellation-saved-reports-changed", refresh);
+    window.addEventListener("bcba-prod-v3-saved-changed", refresh);
     window.addEventListener("storage", refresh);
     window.addEventListener("focus", refresh);
     return () => {
       window.removeEventListener("bcba-saved-reports-changed", refresh);
       window.removeEventListener("cancellation-saved-reports-changed", refresh);
+      window.removeEventListener("bcba-prod-v3-saved-changed", refresh);
       window.removeEventListener("storage", refresh);
       window.removeEventListener("focus", refresh);
     };
@@ -78,6 +86,9 @@ export default function ReportsHome() {
   }
   function handleDeleteCancelSaved(id: string) {
     void deleteCancellationSavedReport(id).then(() => setCancelSaved(readCancellationSavedReports()));
+  }
+  function handleDeleteV3(id: string) {
+    void deleteSavedReportV3(id).then(() => setSavedV3(readSavedReportsV3()));
   }
 
   // Recently viewed = real recent IDs only (no padding with featured — keeps it honest).
@@ -189,7 +200,7 @@ export default function ReportsHome() {
             <div className="grid grid-cols-2 gap-2.5">
               <StatTile label="Reports for you" value={String(reports.length)} icon={FileSpreadsheet} />
               <StatTile label="Recently viewed" value={String(recent.length)} icon={History} />
-              <StatTile label="Saves" value={String(savedReports.length)} icon={Bookmark} />
+              <StatTile label="Saves" value={String(savedReports.length + savedV3.length + cancelSaved.length)} icon={Bookmark} />
               <StatTile label="Categories" value={String(categories.length)} icon={Brain} />
             </div>
           </div>
@@ -205,13 +216,49 @@ export default function ReportsHome() {
       </section>
 
       {/* ============== SAVED REPORTS ============== */}
-      {(savedReports.length > 0 || cancelSaved.length > 0) && (
+      {(savedReports.length > 0 || cancelSaved.length > 0 || savedV3.length > 0) && (
         <section className="mt-8">
           <SectionHeader
             title="Saved reports"
             subtitle="Pick up where you left off — your uploaded reports."
           />
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {savedV3.map(sr => (
+              <article
+                key={sr.id}
+                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-4 transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.35)] hover:shadow-[0_20px_40px_-25px_hsl(265_60%_50%/0.4)]"
+              >
+                <Link to={`/reports/bcba-productivity-report-v3?saved=${sr.id}`} className="block">
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full bg-[hsl(265_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)]"
+                  >
+                    BCBA Productivity V3
+                  </Badge>
+                  <h3 className="mt-2 line-clamp-1 text-[14.5px] font-semibold tracking-tight">{sr.name}</h3>
+                  <p className="mt-1 line-clamp-1 text-[11.5px] text-muted-foreground">
+                    {sr.rowCount.toLocaleString()} billing rows · {sr.fileName}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {new Date(sr.savedAt).toLocaleString()}
+                    </span>
+                    <span className="inline-flex items-center gap-1 font-medium text-[hsl(265_70%_55%)] transition group-hover:translate-x-0.5">
+                      Open <ArrowUpRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </Link>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) handleDeleteV3(sr.id); }}
+                  className="absolute right-2 top-2 rounded-full p-1.5 text-muted-foreground/60 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                  aria-label="Delete saved report"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </article>
+            ))}
             {savedReports.map(sr => (
               <article
                 key={sr.id}
