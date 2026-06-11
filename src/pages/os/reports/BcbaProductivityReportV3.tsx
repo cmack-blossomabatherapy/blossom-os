@@ -163,6 +163,7 @@ export default function BcbaProductivityReportV3() {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const assignImportRef = useRef<HTMLInputElement>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     const refreshAssign = () => setAssignments(readAssignmentsV3());
@@ -202,9 +203,13 @@ export default function BcbaProductivityReportV3() {
           return;
         }
       }
-      // Unsaved billing data is intentionally not restored — users must re-upload
-      // or open a saved report so stale data never lingers between sessions.
-      await clearLastBillingV3();
+      // Restore the last uploaded billing report so leaving/returning to the
+      // tab does not discard work. Data is only cleared on explicit Reset.
+      const last = await loadLastBillingV3();
+      if (last?.rows?.length) {
+        setRows(last.rows as BillingRow[]);
+        if (last.fileName) setFileName(last.fileName);
+      }
     })();
   }, [savedParam]);
 
