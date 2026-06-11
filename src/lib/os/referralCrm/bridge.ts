@@ -751,7 +751,6 @@ function companyPatchToRow(patch: Partial<Company>): Record<string, unknown> {
   set("relationshipOwner", "relationship_owner");
   set("importBatchId", "import_batch_id");
   set("source", "source");
-  set("normalizedName", "normalized_name");
   return out;
 }
 
