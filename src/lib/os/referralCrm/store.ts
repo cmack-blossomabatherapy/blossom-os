@@ -800,6 +800,25 @@ export function remapId(
   set(patch);
 }
 
+/** Replace configuration collections from Supabase if rows exist; otherwise keep defaults. */
+export function replaceCrmConfig(input: {
+  users?: CrmUser[] | null;
+  teams?: CrmTeam[] | null;
+  permissions?: PermissionMatrix | null;
+  workflows?: WorkflowDef[] | null;
+  lists?: ListDef[] | null;
+  customFields?: CustomFieldDef[] | null;
+}) {
+  const next: Partial<State> = {};
+  if (input.users && input.users.length) next.users = input.users;
+  if (input.teams && input.teams.length) next.teams = input.teams;
+  if (input.permissions) next.permissions = input.permissions;
+  if (input.workflows && input.workflows.length) next.workflows = input.workflows;
+  if (input.lists && input.lists.length) next.lists = input.lists;
+  if (input.customFields && input.customFields.length) next.customFields = input.customFields;
+  if (Object.keys(next).length) set(next);
+}
+
 const newId = () => Math.random().toString(36).slice(2, 10);
 const logActivity = (e: Omit<ActivityEvent, "id" | "createdAt"> & { createdAt?: string }) => {
   const row: ActivityEvent = { id: newId(), createdAt: now(), ...e };
