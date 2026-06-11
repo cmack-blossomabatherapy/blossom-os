@@ -15,8 +15,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import {
   replaceCrmData,
+  replaceCrmConfig,
   setCrmSideEffects,
   remapId,
+  DEFAULT_PERMISSIONS,
+  CRM_PERMISSIONS,
+  CRM_ROLES,
   type Contact,
   type Company,
   type ActivityEvent,
@@ -25,6 +29,14 @@ import {
   type Task,
   type Attachment,
   type AuditLogEntry,
+  type ListDef,
+  type WorkflowDef,
+  type CrmUser,
+  type CrmTeam,
+  type CustomFieldDef,
+  type CrmRole,
+  type CrmPermission,
+  type PermissionMatrix,
   type ID,
 } from "./store";
 import { toast } from "@/hooks/use-toast";
@@ -281,6 +293,202 @@ function auditFromRow(r: CrmAuditRow): AuditLogEntry {
     metadata: (r.metadata as Record<string, unknown> | null) ?? null,
   };
 }
+
+/* ---- configuration table mappers ---- */
+type AnyRow = Record<string, unknown>;
+const s = (r: AnyRow, k: string): string | undefined => {
+  const v = r[k];
+  return typeof v === "string" && v.length ? v : undefined;
+};
+const arr = (r: AnyRow, k: string): string[] | undefined => {
+  const v = r[k];
+  return Array.isArray(v) ? (v as string[]) : undefined;
+};
+
+function listFromRow(r: AnyRow): ListDef {
+  const kind = (r.kind === "static" ? "static" : "active") as ListDef["kind"];
+  const object = (r.object === "companies" ? "companies" : "contacts") as ListDef["object"];
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ""),
+    kind,
+    object,
+    criteria: s(r, "criteria"),
+    staticIds: arr(r, "static_ids"),
+    criteriaRules: (r.criteria_rules as ListDef["criteriaRules"]) ?? undefined,
+    createdAt: s(r, "created_at"),
+    updatedAt: s(r, "updated_at"),
+  };
+}
+
+function workflowFromRow(r: AnyRow): WorkflowDef {
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ""),
+    trigger: String(r.trigger ?? ""),
+    actions: arr(r, "actions") ?? [],
+    enabled: r.enabled !== false,
+    lastRun: s(r, "last_run"),
+    runs: typeof r.runs === "number" ? (r.runs as number) : 0,
+    triggerType: (r.trigger_type as WorkflowDef["triggerType"]) ?? undefined,
+    triggerConfig: (r.trigger_config as WorkflowDef["triggerConfig"]) ?? undefined,
+    lastRunResult: s(r, "last_run_result"),
+  };
+}
+
+function userFromRow(r: AnyRow): CrmUser {
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ""),
+    email: String(r.email ?? ""),
+    role: String(r.role ?? "read_only") as CrmUser["role"],
+    firstName: s(r, "first_name"),
+    lastName: s(r, "last_name"),
+    mobilePhone: s(r, "mobile_phone"),
+    state: s(r, "state"),
+    states: arr(r, "states") ?? [],
+    teamIds: arr(r, "team_ids") ?? [],
+    active: r.active !== false,
+  };
+}
+
+function teamFromRow(r: AnyRow): CrmTeam {
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ""),
+    type: String(r.type ?? "Marketing") as CrmTeam["type"],
+    states: arr(r, "states") ?? [],
+    memberIds: arr(r, "member_ids") ?? [],
+    leadId: s(r, "lead_id"),
+    active: r.active !== false,
+    createdAt: s(r, "created_at") ?? new Date().toISOString(),
+    updatedAt: s(r, "updated_at") ?? new Date().toISOString(),
+  };
+}
+
+function fieldFromRow(r: AnyRow): CustomFieldDef {
+  return {
+    id: String(r.id),
+    object: (r.object as CustomFieldDef["object"]) ?? "contact",
+    label: String(r.label ?? ""),
+    type: (r.type as CustomFieldDef["type"]) ?? "text",
+    options: arr(r, "options"),
+    createdAt: s(r, "created_at") ?? new Date().toISOString(),
+  };
+}
+
+function permissionsFromRows(rows: AnyRow[]): PermissionMatrix {
+  // Start from defaults so any missing role/perm combos remain sensible.
+  const next: PermissionMatrix = JSON.parse(JSON.stringify(DEFAULT_PERMISSIONS));
+  for (const row of rows) {
+    const role = String(row.role) as CrmRole;
+    const perm = String(row.permission) as CrmPermission;
+    if (!next[role]) continue;
+    next[role][perm] = row.allowed === true;
+  }
+  return next;
+}
+
+/* ---- configuration table writers ---- */
+function listToRow(l: ListDef) {
+  return {
+    id: l.id,
+    name: l.name,
+    kind: l.kind,
+    object: l.object,
+    criteria: l.criteria ?? null,
+    static_ids: l.staticIds ?? null,
+    criteria_rules: (l.criteriaRules ?? null) as never,
+  };
+}
+function workflowToRow(w: WorkflowDef) {
+  return {
+    id: w.id,
+    name: w.name,
+    trigger: w.trigger ?? null,
+    actions: w.actions ?? [],
+    enabled: w.enabled,
+    last_run: w.lastRun ?? null,
+    runs: w.runs ?? 0,
+    trigger_type: w.triggerType ?? null,
+    trigger_config: (w.triggerConfig ?? null) as never,
+    last_run_result: w.lastRunResult ?? null,
+  };
+}
+function userToRow(u: CrmUser) {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    first_name: u.firstName ?? null,
+    last_name: u.lastName ?? null,
+    mobile_phone: u.mobilePhone ?? null,
+    state: u.state ?? null,
+    states: u.states ?? [],
+    team_ids: u.teamIds ?? [],
+    active: u.active !== false,
+  };
+}
+function teamToRow(t: CrmTeam) {
+  return {
+    id: t.id,
+    name: t.name,
+    type: t.type,
+    states: t.states ?? [],
+    member_ids: t.memberIds ?? [],
+    lead_id: t.leadId ?? null,
+    active: t.active !== false,
+  };
+}
+function fieldToRow(f: CustomFieldDef) {
+  return {
+    id: f.id,
+    object: f.object,
+    label: f.label,
+    type: f.type,
+    options: f.options ?? null,
+  };
+}
+
+async function seedDefaultsIfEmpty(flags: {
+  listsEmpty: boolean; workflowsEmpty: boolean; usersEmpty: boolean;
+  teamsEmpty: boolean; permsEmpty: boolean; fieldsEmpty: boolean;
+}) {
+  // Read current store defaults via dynamic import to avoid a circular type.
+  const { getCrmSnapshot } = await import("./store");
+  const snap = getCrmSnapshot();
+  const tasks: Array<PromiseLike<unknown>> = [];
+  if (flags.listsEmpty && snap.lists.length) {
+    tasks.push(supabase.from("referral_crm_lists" as never).upsert(snap.lists.map(listToRow) as never));
+  }
+  if (flags.workflowsEmpty && snap.workflows.length) {
+    tasks.push(supabase.from("referral_crm_workflows" as never).upsert(snap.workflows.map(workflowToRow) as never));
+  }
+  if (flags.usersEmpty && snap.users.length) {
+    tasks.push(supabase.from("referral_crm_users" as never).upsert(snap.users.map(userToRow) as never));
+  }
+  if (flags.teamsEmpty && snap.teams.length) {
+    tasks.push(supabase.from("referral_crm_teams" as never).upsert(snap.teams.map(teamToRow) as never));
+  }
+  if (flags.fieldsEmpty && snap.customFields.length) {
+    tasks.push(supabase.from("referral_crm_custom_fields" as never).upsert(snap.customFields.map(fieldToRow) as never));
+  }
+  if (flags.permsEmpty) {
+    const rows: { role: string; permission: string; allowed: boolean }[] = [];
+    for (const r of CRM_ROLES) {
+      for (const p of CRM_PERMISSIONS) {
+        rows.push({ role: r.id, permission: p.id, allowed: !!snap.permissions[r.id]?.[p.id] });
+      }
+    }
+    tasks.push(supabase.from("referral_crm_permissions" as never).upsert(rows as never));
+  }
+  const results = await Promise.allSettled(tasks);
+  for (const r of results) {
+    if (r.status === "rejected") console.warn("[crm bridge] seed defaults failed", r.reason);
+  }
+}
+
 /* ---------------- hydrate ---------------- */
 
 // Tracks IDs that originated in Supabase. Locally-generated IDs (random base36)
@@ -299,7 +507,8 @@ export async function hydrateFromSupabase(): Promise<{
   attachments: number; auditEntries: number;
   missing: string[];
 }> {
-  const [comp, cont, act, batches, crmRefs, leadLinks, crmTasks, atts, auditRows] = await Promise.all([
+  const [comp, cont, act, batches, crmRefs, leadLinks, crmTasks, atts, auditRows,
+         lists, workflows, crmUsers, crmTeams, perms, fields] = await Promise.all([
     supabase.from("referral_companies").select("*").order("company_name"),
     supabase.from("referral_contacts").select("*").order("updated_at", { ascending: false }),
     supabase.from("referral_activities").select("*").order("activity_date", { ascending: false }).limit(500),
@@ -309,6 +518,12 @@ export async function hydrateFromSupabase(): Promise<{
     supabase.from("referral_crm_tasks").select("*").order("created_at", { ascending: false }).limit(1000),
     supabase.from("referral_crm_attachments").select("*").order("uploaded_at", { ascending: false }).limit(1000),
     supabase.from("referral_crm_audit_log").select("*").order("created_at", { ascending: false }).limit(500),
+    supabase.from("referral_crm_lists" as never).select("*"),
+    supabase.from("referral_crm_workflows" as never).select("*").order("created_at", { ascending: false }),
+    supabase.from("referral_crm_users" as never).select("*").order("created_at", { ascending: false }),
+    supabase.from("referral_crm_teams" as never).select("*").order("created_at", { ascending: false }),
+    supabase.from("referral_crm_permissions" as never).select("*"),
+    supabase.from("referral_crm_custom_fields" as never).select("*").order("created_at", { ascending: false }),
   ]);
   if (comp.error) throw comp.error;
   if (cont.error) throw cont.error;
@@ -328,6 +543,29 @@ export async function hydrateFromSupabase(): Promise<{
   if (crmTasks.error) { console.warn("[crm bridge] referral_crm_tasks unavailable", crmTasks.error); missing.push("referral_crm_tasks"); }
   if (atts.error) { console.warn("[crm bridge] referral_crm_attachments unavailable", atts.error); missing.push("referral_crm_attachments"); }
   if (auditRows.error) { console.warn("[crm bridge] referral_crm_audit_log unavailable", auditRows.error); missing.push("referral_crm_audit_log"); }
+
+  // ---- configuration tables ----
+  type Row = Record<string, unknown>;
+  const listRows = lists.error ? null : ((lists.data ?? []) as Row[]);
+  const workflowRows = workflows.error ? null : ((workflows.data ?? []) as Row[]);
+  const userRows = crmUsers.error ? null : ((crmUsers.data ?? []) as Row[]);
+  const teamRows = crmTeams.error ? null : ((crmTeams.data ?? []) as Row[]);
+  const permRows = perms.error ? null : ((perms.data ?? []) as Row[]);
+  const fieldRows = fields.error ? null : ((fields.data ?? []) as Row[]);
+  if (lists.error) { console.warn("[crm bridge] referral_crm_lists unavailable", lists.error); missing.push("referral_crm_lists"); }
+  if (workflows.error) { console.warn("[crm bridge] referral_crm_workflows unavailable", workflows.error); missing.push("referral_crm_workflows"); }
+  if (crmUsers.error) { console.warn("[crm bridge] referral_crm_users unavailable", crmUsers.error); missing.push("referral_crm_users"); }
+  if (crmTeams.error) { console.warn("[crm bridge] referral_crm_teams unavailable", crmTeams.error); missing.push("referral_crm_teams"); }
+  if (perms.error) { console.warn("[crm bridge] referral_crm_permissions unavailable", perms.error); missing.push("referral_crm_permissions"); }
+  if (fields.error) { console.warn("[crm bridge] referral_crm_custom_fields unavailable", fields.error); missing.push("referral_crm_custom_fields"); }
+
+  const hydratedLists = listRows ? listRows.map(listFromRow) : null;
+  const hydratedWorkflows = workflowRows ? workflowRows.map(workflowFromRow) : null;
+  const hydratedUsers = userRows ? userRows.map(userFromRow) : null;
+  const hydratedTeams = teamRows ? teamRows.map(teamFromRow) : null;
+  const hydratedPermissions = permRows ? permissionsFromRows(permRows) : null;
+  const hydratedFields = fieldRows ? fieldRows.map(fieldFromRow) : null;
+
   knownIds.clear();
   for (const r of companies) knownIds.add(r.id);
   for (const r of contacts) knownIds.add(r.id);
@@ -337,6 +575,23 @@ export async function hydrateFromSupabase(): Promise<{
   for (const r of attachments) knownIds.add(r.id);
   for (const r of auditLog) knownIds.add(r.id);
   replaceCrmData({ companies, contacts, activity: activities, importBatches, referrals, tasks, attachments, auditLog });
+  replaceCrmConfig({
+    lists: hydratedLists,
+    workflows: hydratedWorkflows,
+    users: hydratedUsers,
+    teams: hydratedTeams,
+    permissions: hydratedPermissions,
+    customFields: hydratedFields,
+  });
+  // Seed defaults to Supabase once if a config table is reachable but empty.
+  await seedDefaultsIfEmpty({
+    listsEmpty: !!listRows && listRows.length === 0,
+    workflowsEmpty: !!workflowRows && workflowRows.length === 0,
+    usersEmpty: !!userRows && userRows.length === 0,
+    teamsEmpty: !!teamRows && teamRows.length === 0,
+    permsEmpty: !!permRows && permRows.length === 0,
+    fieldsEmpty: !!fieldRows && fieldRows.length === 0,
+  });
   return {
     contacts: contacts.length,
     companies: companies.length,
@@ -797,6 +1052,76 @@ export function installSupabaseSync() {
       };
       const { error } = await supabase.from("referral_crm_audit_log").insert(payload as never);
       if (error) console.warn("[crm bridge] audit insert failed", error);
+    },
+    // ---- configuration tables ----
+    onListCreate: async (l) => {
+      const { error } = await supabase.from("referral_crm_lists" as never).upsert(listToRow(l) as never);
+      if (error) console.warn("[crm bridge] list upsert failed", error);
+    },
+    onListUpdate: async (id, _patch, full) => {
+      if (!full) return;
+      const { error } = await supabase.from("referral_crm_lists" as never).upsert(listToRow(full) as never);
+      if (error) console.warn("[crm bridge] list update failed", error);
+      void id;
+    },
+    onListDelete: async (id) => {
+      const { error } = await supabase.from("referral_crm_lists" as never).delete().eq("id", id);
+      if (error) console.warn("[crm bridge] list delete failed", error);
+    },
+    onWorkflowCreate: async (w) => {
+      const { error } = await supabase.from("referral_crm_workflows" as never).upsert(workflowToRow(w) as never);
+      if (error) console.warn("[crm bridge] workflow upsert failed", error);
+    },
+    onWorkflowUpdate: async (_id, _patch, full) => {
+      if (!full) return;
+      const { error } = await supabase.from("referral_crm_workflows" as never).upsert(workflowToRow(full) as never);
+      if (error) console.warn("[crm bridge] workflow update failed", error);
+    },
+    onWorkflowDelete: async (id) => {
+      const { error } = await supabase.from("referral_crm_workflows" as never).delete().eq("id", id);
+      if (error) console.warn("[crm bridge] workflow delete failed", error);
+    },
+    onUserCreate: async (u) => {
+      const { error } = await supabase.from("referral_crm_users" as never).upsert(userToRow(u) as never);
+      if (error) console.warn("[crm bridge] user upsert failed", error);
+    },
+    onUserUpdate: async (_id, _patch, full) => {
+      if (!full) return;
+      const { error } = await supabase.from("referral_crm_users" as never).upsert(userToRow(full) as never);
+      if (error) console.warn("[crm bridge] user update failed", error);
+    },
+    onTeamCreate: async (t) => {
+      const { error } = await supabase.from("referral_crm_teams" as never).upsert(teamToRow(t) as never);
+      if (error) console.warn("[crm bridge] team upsert failed", error);
+    },
+    onTeamUpdate: async (_id, _patch, full) => {
+      if (!full) return;
+      const { error } = await supabase.from("referral_crm_teams" as never).upsert(teamToRow(full) as never);
+      if (error) console.warn("[crm bridge] team update failed", error);
+    },
+    onPermissionSet: async (role, perm, value) => {
+      const { error } = await supabase
+        .from("referral_crm_permissions" as never)
+        .upsert({ role, permission: perm, allowed: value } as never);
+      if (error) console.warn("[crm bridge] permission upsert failed", error);
+    },
+    onPermissionsReset: async (matrix) => {
+      const rows: { role: string; permission: string; allowed: boolean }[] = [];
+      for (const r of CRM_ROLES) {
+        for (const p of CRM_PERMISSIONS) {
+          rows.push({ role: r.id, permission: p.id, allowed: !!matrix[r.id]?.[p.id] });
+        }
+      }
+      const { error } = await supabase.from("referral_crm_permissions" as never).upsert(rows as never);
+      if (error) console.warn("[crm bridge] permissions reset failed", error);
+    },
+    onCustomFieldAdd: async (f) => {
+      const { error } = await supabase.from("referral_crm_custom_fields" as never).upsert(fieldToRow(f) as never);
+      if (error) console.warn("[crm bridge] custom field upsert failed", error);
+    },
+    onCustomFieldRemove: async (id) => {
+      const { error } = await supabase.from("referral_crm_custom_fields" as never).delete().eq("id", id);
+      if (error) console.warn("[crm bridge] custom field delete failed", error);
     },
   });
 }
