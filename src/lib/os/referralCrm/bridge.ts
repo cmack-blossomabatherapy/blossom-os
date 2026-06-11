@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   replaceCrmData,
   setCrmSideEffects,
+  remapId,
   type Contact,
   type Company,
   type ActivityEvent,
@@ -26,6 +27,7 @@ import {
   type AuditLogEntry,
   type ID,
 } from "./store";
+import { toast } from "@/hooks/use-toast";
 import type {
   ReferralCompany,
   ReferralContact,
