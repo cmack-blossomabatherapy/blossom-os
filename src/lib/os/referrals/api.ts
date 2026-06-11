@@ -46,6 +46,12 @@ export async function findOrCreateCompany(input: {
   company_type?: string | null;
   website_url?: string | null;
   main_phone?: string | null;
+  main_email?: string | null;
+  city?: string | null;
+  address_line_1?: string | null;
+  zip_code?: string | null;
+  relationship_stage?: string | null;
+  notes?: string | null;
   full_address?: string | null;
   relationship_owner?: string[] | null;
   source?: string | null;
@@ -87,7 +93,13 @@ export async function findOrCreateCompany(input: {
       website_url: input.website_url ?? null,
       domain: input.domain ?? null,
       main_phone: input.main_phone ?? null,
+      main_email: input.main_email ?? null,
       state: input.state ?? null,
+      city: input.city ?? null,
+      address_line_1: input.address_line_1 ?? null,
+      zip_code: input.zip_code ?? null,
+      relationship_stage: (input.relationship_stage as never) ?? undefined,
+      notes: input.notes ?? null,
       full_address: input.full_address ?? null,
       relationship_owner: input.relationship_owner ?? null,
       source: input.source ?? "Manual",
