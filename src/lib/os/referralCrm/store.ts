@@ -1216,6 +1216,7 @@ export const crm = {
     const w = state.workflows.find((x) => x.id === id);
     logAudit({ action: "workflow_toggle", objectType: "workflow", objectId: id, objectLabel: w?.name,
       summary: w?.enabled ? "Workflow enabled" : "Workflow disabled", metadata: { enabled: w?.enabled } });
+    if (w) fire("onWorkflowUpdate", id, { enabled: w.enabled }, w);
   },
   runWorkflow(id: ID): string {
     const w = state.workflows.find((x) => x.id === id);
@@ -1227,6 +1228,8 @@ export const crm = {
       ),
     });
     logAudit({ action: "workflow_run", objectType: "workflow", objectId: id, objectLabel: w.name, summary: `Ran workflow — ${result}`, metadata: { result, trigger: w.trigger, runs: (w.runs ?? 0) + 1 } });
+    const updated = state.workflows.find((x) => x.id === id);
+    if (updated) fire("onWorkflowUpdate", id, { runs: updated.runs, lastRun: updated.lastRun, lastRunResult: updated.lastRunResult }, updated);
     return result;
   },
 
@@ -1238,6 +1241,7 @@ export const crm = {
     };
     set({ workflows: [w, ...state.workflows] });
     logAudit({ action: "create", objectType: "workflow", objectId: w.id, objectLabel: w.name, summary: "Workflow created" });
+    fire("onWorkflowCreate", w);
     return w;
   },
   updateWorkflow(id: ID, patch: Partial<WorkflowDef>) {
@@ -1245,11 +1249,13 @@ export const crm = {
     const w = state.workflows.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "workflow", objectId: id, objectLabel: w?.name,
       summary: `Updated: ${Object.keys(patch).join(", ") || "—"}` });
+    fire("onWorkflowUpdate", id, patch, w);
   },
   deleteWorkflow(id: ID) {
     const w = state.workflows.find((x) => x.id === id);
     set({ workflows: state.workflows.filter((x) => x.id !== id) });
     logAudit({ action: "delete", objectType: "workflow", objectId: id, objectLabel: w?.name, summary: "Workflow deleted" });
+    fire("onWorkflowDelete", id);
   },
 
   // lists
@@ -1261,6 +1267,7 @@ export const crm = {
     };
     set({ lists: [l, ...state.lists] });
     logAudit({ action: "create", objectType: "system", objectId: l.id, objectLabel: l.name, summary: `List created (${l.kind} · ${l.object})` });
+    fire("onListCreate", l);
     return l;
   },
   updateList(id: ID, patch: Partial<ListDef>) {
@@ -1268,11 +1275,13 @@ export const crm = {
     const l = state.lists.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: l?.name,
       summary: `List updated: ${Object.keys(patch).join(", ") || "—"}` });
+    fire("onListUpdate", id, patch, l);
   },
   deleteList(id: ID) {
     const l = state.lists.find((x) => x.id === id);
     set({ lists: state.lists.filter((x) => x.id !== id) });
     logAudit({ action: "delete", objectType: "system", objectId: id, objectLabel: l?.name, summary: "List deleted" });
+    fire("onListDelete", id);
   },
   addRecordToStaticList(listId: ID, recordId: ID) {
     const l = state.lists.find((x) => x.id === listId);
@@ -1284,6 +1293,8 @@ export const crm = {
       companyId: l.object === "companies" ? recordId : undefined });
     logAudit({ action: "update", objectType: "system", objectId: listId, objectLabel: l.name,
       summary: `Added ${l.object.slice(0, -1)} ${recordId} to static list` });
+    const after = state.lists.find((x) => x.id === listId);
+    if (after) fire("onListUpdate", listId, { staticIds: after.staticIds }, after);
   },
   removeRecordFromStaticList(listId: ID, recordId: ID) {
     const l = state.lists.find((x) => x.id === listId);
@@ -1295,6 +1306,8 @@ export const crm = {
       companyId: l.object === "companies" ? recordId : undefined });
     logAudit({ action: "update", objectType: "system", objectId: listId, objectLabel: l.name,
       summary: `Removed ${l.object.slice(0, -1)} ${recordId} from static list` });
+    const after = state.lists.find((x) => x.id === listId);
+    if (after) fire("onListUpdate", listId, { staticIds: after.staticIds }, after);
   },
 
   // ---- users ----
@@ -1319,6 +1332,7 @@ export const crm = {
     };
     set({ users: [u, ...state.users] });
     logAudit({ action: "create", objectType: "system", objectId: u.id, objectLabel: u.name, summary: `User created (${u.role})` });
+    fire("onUserCreate", u);
     return u;
   },
   updateUser(id: ID, patch: Partial<CrmUser>) {
@@ -1336,11 +1350,14 @@ export const crm = {
     } else {
       logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: prev?.name, summary: `User updated: ${Object.keys(patch).join(", ") || "—"}` });
     }
+    fire("onUserUpdate", id, patch, merged as CrmUser | undefined);
   },
   setUserActive(id: ID, active: boolean) {
     const u = state.users.find((x) => x.id === id);
     set({ users: state.users.map((x) => x.id === id ? { ...x, active } : x) });
     logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: u?.name, summary: active ? "User reactivated" : "User deactivated" });
+    const after = state.users.find((x) => x.id === id);
+    if (after) fire("onUserUpdate", id, { active }, after);
   },
 
   // ---- teams ----
@@ -1358,17 +1375,21 @@ export const crm = {
     };
     set({ teams: [t, ...state.teams] });
     logAudit({ action: "create", objectType: "system", objectId: t.id, objectLabel: t.name, summary: `Team created (${t.type})` });
+    fire("onTeamCreate", t);
     return t;
   },
   updateTeam(id: ID, patch: Partial<CrmTeam>) {
     set({ teams: state.teams.map((t) => t.id === id ? { ...t, ...patch, updatedAt: now() } : t) });
     const t = state.teams.find((x) => x.id === id);
     logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: t?.name, summary: `Team updated: ${Object.keys(patch).join(", ") || "—"}` });
+    fire("onTeamUpdate", id, patch, t);
   },
   setTeamActive(id: ID, active: boolean) {
     const t = state.teams.find((x) => x.id === id);
     set({ teams: state.teams.map((x) => x.id === id ? { ...x, active, updatedAt: now() } : x) });
     logAudit({ action: "update", objectType: "system", objectId: id, objectLabel: t?.name, summary: active ? "Team reactivated" : "Team deactivated" });
+    const after = state.teams.find((x) => x.id === id);
+    if (after) fire("onTeamUpdate", id, { active }, after);
   },
 
   // ---- permissions ----
@@ -1379,10 +1400,12 @@ export const crm = {
     };
     set({ permissions: next });
     logAudit({ action: "update", objectType: "system", objectLabel: role, summary: `Permission changed: ${role}.${perm} → ${value ? "allowed" : "denied"}` });
+    fire("onPermissionSet", role, perm, value);
   },
   resetPermissions() {
     set({ permissions: DEFAULT_PERMISSIONS });
     logAudit({ action: "update", objectType: "system", summary: "Permission matrix reset to defaults" });
+    fire("onPermissionsReset", DEFAULT_PERMISSIONS);
   },
 };
 
