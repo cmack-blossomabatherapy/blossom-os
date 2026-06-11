@@ -88,6 +88,12 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
           domain: extractDomain(newCompanyEmail || email, newCompanyWebsite),
           state: newCompanyState || null,
           main_phone: newCompanyPhone || null,
+          main_email: newCompanyEmail || null,
+          city: newCompanyCity || null,
+          address_line_1: newCompanyAddr1 || null,
+          zip_code: newCompanyZip || null,
+          relationship_stage: newCompanyStage || null,
+          notes: newCompanyNotes || null,
           relationship_owner: owners.length ? owners : null,
           source: "Manual",
         });
