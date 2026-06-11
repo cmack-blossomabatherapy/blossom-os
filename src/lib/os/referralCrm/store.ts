@@ -720,16 +720,69 @@ export function replaceCrmData(input: {
   attachments?: Attachment[];
   auditLog?: AuditLogEntry[];
 }) {
+  // Merge: preserve any local records (non-UUID ids) that haven't yet been
+  // persisted to Supabase, so that a rehydrate triggered by a sibling write
+  // (e.g. an attachment upload right after creating a contact) doesn't erase
+  // the new local record from the UI.
+  const isUuid = (id: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const mergeKeepLocal = <T extends { id: string }>(incoming: T[], current: T[]): T[] => {
+    const ids = new Set(incoming.map((x) => x.id));
+    const locals = current.filter((x) => !isUuid(x.id) && !ids.has(x.id));
+    return [...locals, ...incoming];
+  };
   set({
-    ...(input.contacts ? { contacts: input.contacts } : {}),
-    ...(input.companies ? { companies: input.companies } : {}),
-    ...(input.activity ? { activity: input.activity } : {}),
-    ...(input.importBatches ? { importBatches: input.importBatches } : {}),
-    ...(input.referrals ? { referrals: input.referrals } : {}),
-    ...(input.tasks ? { tasks: input.tasks } : {}),
-    ...(input.attachments ? { attachments: input.attachments } : {}),
+    ...(input.contacts ? { contacts: mergeKeepLocal(input.contacts, state.contacts) } : {}),
+    ...(input.companies ? { companies: mergeKeepLocal(input.companies, state.companies) } : {}),
+    ...(input.activity ? { activity: mergeKeepLocal(input.activity, state.activity) } : {}),
+    ...(input.importBatches ? { importBatches: mergeKeepLocal(input.importBatches, state.importBatches) } : {}),
+    ...(input.referrals ? { referrals: mergeKeepLocal(input.referrals, state.referrals) } : {}),
+    ...(input.tasks ? { tasks: mergeKeepLocal(input.tasks, state.tasks) } : {}),
+    ...(input.attachments ? { attachments: mergeKeepLocal(input.attachments, state.attachments) } : {}),
     ...(input.auditLog ? { auditLog: input.auditLog } : {}),
   });
+}
+
+/**
+ * Remap a locally-generated id to the real Supabase UUID after a successful
+ * insert. Also rewrites every reference (companyId, contactId, referralId,
+ * attachment.objectId, activity refs) so subsequent writes target the
+ * persisted row.
+ */
+export function remapId(
+  objectType: "contact" | "company" | "referral" | "task" | "attachment",
+  oldId: ID,
+  newId: ID,
+) {
+  if (!oldId || !newId || oldId === newId) return;
+  const patch: Partial<State> = {};
+  if (objectType === "contact") {
+    patch.contacts = state.contacts.map((c) => c.id === oldId ? { ...c, id: newId } : c);
+    patch.tasks = state.tasks.map((t) => t.contactId === oldId ? { ...t, contactId: newId } : t);
+    patch.referrals = state.referrals.map((r) => r.contactId === oldId ? { ...r, contactId: newId } : r);
+    patch.activity = state.activity.map((a) => a.contactId === oldId ? { ...a, contactId: newId } : a);
+    patch.attachments = state.attachments.map((a) =>
+      a.objectType === "contact" && a.objectId === oldId ? { ...a, objectId: newId } : a);
+  } else if (objectType === "company") {
+    patch.companies = state.companies.map((c) => c.id === oldId ? { ...c, id: newId } : c);
+    patch.contacts = state.contacts.map((c) => c.companyId === oldId ? { ...c, companyId: newId } : c);
+    patch.tasks = state.tasks.map((t) => t.companyId === oldId ? { ...t, companyId: newId } : t);
+    patch.referrals = state.referrals.map((r) => r.companyId === oldId ? { ...r, companyId: newId } : r);
+    patch.activity = state.activity.map((a) => a.companyId === oldId ? { ...a, companyId: newId } : a);
+    patch.attachments = state.attachments.map((a) =>
+      a.objectType === "company" && a.objectId === oldId ? { ...a, objectId: newId } : a);
+  } else if (objectType === "referral") {
+    patch.referrals = state.referrals.map((r) => r.id === oldId ? { ...r, id: newId } : r);
+    patch.tasks = state.tasks.map((t) => t.referralId === oldId ? { ...t, referralId: newId } : t);
+    patch.activity = state.activity.map((a) => a.referralId === oldId ? { ...a, referralId: newId } : a);
+    patch.attachments = state.attachments.map((a) =>
+      a.objectType === "referral" && a.objectId === oldId ? { ...a, objectId: newId } : a);
+  } else if (objectType === "task") {
+    patch.tasks = state.tasks.map((t) => t.id === oldId ? { ...t, id: newId } : t);
+  } else if (objectType === "attachment") {
+    patch.attachments = state.attachments.map((a) => a.id === oldId ? { ...a, id: newId } : a);
+  }
+  set(patch);
 }
 
 const newId = () => Math.random().toString(36).slice(2, 10);
