@@ -668,7 +668,6 @@ function companyToRow(c: Company) {
     service_area: c.serviceArea ?? null,
     relationship_owner: c.relationshipOwner ?? null,
     import_batch_id: c.importBatchId ?? null,
-    normalized_name: c.normalizedName ?? null,
   };
 }
 
