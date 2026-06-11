@@ -53,6 +53,13 @@ function addDaysIso(iso: string, days: number) {
   return d.toISOString().slice(0, 10);
 }
 
+function monthKey(iso: string) {
+  return iso.slice(0, 7); // YYYY-MM
+}
+function firstOfMonth(iso: string) {
+  return `${iso.slice(0, 7)}-01`;
+}
+
 export function inferAssignmentHistory(rows: InferBillingRow[]): InferredHistory {
   // Bucket rows per client
   const perClient = new Map<string, { name: string; id: string; rows: InferBillingRow[] }>();
@@ -130,6 +137,18 @@ export function inferAssignmentHistory(rows: InferBillingRow[]): InferredHistory
     let earliestClientDos = runs[0].firstDate;
     for (const r of bucket.rows) if (r.date && r.date < earliestClientDos) earliestClientDos = r.date;
     runs[0].firstDate = earliestClientDos;
+
+    // Month-aware ownership rule: when a different BCBA's first anchor falls in
+    // a NEW calendar month from the previous BCBA's last anchor, the new BCBA
+    // owns from the first day of that month (do NOT carry the prior BCBA into
+    // the new month). Same-month transfers keep their actual anchor date.
+    for (let i = 1; i < runs.length; i++) {
+      const prev = runs[i - 1];
+      const cur = runs[i];
+      if (monthKey(cur.firstDate) !== monthKey(prev.lastDate)) {
+        cur.firstDate = firstOfMonth(cur.firstDate);
+      }
+    }
 
     for (let i = 0; i < runs.length; i++) {
       const run = runs[i];
