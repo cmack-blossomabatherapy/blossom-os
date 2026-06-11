@@ -700,6 +700,21 @@ export interface CrmSideEffects {
   onAttachmentUpdate?: (id: ID, patch: Partial<Attachment>, full: Attachment | undefined) => void;
   onAttachmentDelete?: (id: ID, hard: boolean, full: Attachment | undefined) => void;
   onAuditCreate?: (e: AuditLogEntry) => void;
+  // ---- configuration tables ----
+  onListCreate?: (l: ListDef) => void;
+  onListUpdate?: (id: ID, patch: Partial<ListDef>, full: ListDef | undefined) => void;
+  onListDelete?: (id: ID) => void;
+  onWorkflowCreate?: (w: WorkflowDef) => void;
+  onWorkflowUpdate?: (id: ID, patch: Partial<WorkflowDef>, full: WorkflowDef | undefined) => void;
+  onWorkflowDelete?: (id: ID) => void;
+  onUserCreate?: (u: CrmUser) => void;
+  onUserUpdate?: (id: ID, patch: Partial<CrmUser>, full: CrmUser | undefined) => void;
+  onTeamCreate?: (t: CrmTeam) => void;
+  onTeamUpdate?: (id: ID, patch: Partial<CrmTeam>, full: CrmTeam | undefined) => void;
+  onPermissionSet?: (role: CrmRole, perm: CrmPermission, value: boolean) => void;
+  onPermissionsReset?: (matrix: PermissionMatrix) => void;
+  onCustomFieldAdd?: (f: CustomFieldDef) => void;
+  onCustomFieldRemove?: (id: ID) => void;
 }
 let sideEffects: CrmSideEffects = {};
 export function setCrmSideEffects(se: CrmSideEffects) { sideEffects = se ?? {}; }
