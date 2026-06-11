@@ -1030,6 +1030,148 @@ export default function BcbaProductivityReportV3() {
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showHelp} onOpenChange={setShowHelp}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <HelpCircle className="h-5 w-5" /> How the BCBA Productivity V3 report works
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] space-y-5 overflow-auto pr-2 text-sm leading-relaxed">
+            <section>
+              <h3 className="mb-1 text-sm font-semibold">1. What you upload</h3>
+              <p className="text-muted-foreground">
+                A single CentralReach <strong>Billing Report</strong> (CSV or XLSX). One row = one
+                billed service line. The parser auto-detects these columns (case/spacing insensitive):
+              </p>
+              <ul className="ml-5 mt-1 list-disc text-muted-foreground">
+                <li><code>ClientId</code> + <code>ClientFirstName</code> / <code>ClientLastName</code> (or <code>Client</code> / <code>Patient</code>)</li>
+                <li><code>DateOfService</code> (DOS)</li>
+                <li><code>ProcedureCode</code> (CPT)</li>
+                <li><code>TimeWorkedInHours</code> (or <code>Hours</code> / <code>BillableHours</code>)</li>
+                <li><code>ProviderFirstName</code> / <code>ProviderLastName</code> (rendering provider)</li>
+                <li><code>ProviderContactLabels</code> — used to detect BCBA vs RBT</li>
+                <li><code>ClientLocationStateProvince</code>, <code>PayorNickname</code> (optional filters)</li>
+              </ul>
+              <p className="mt-1 text-muted-foreground">
+                A row is <strong>dropped</strong> if it is missing a parseable DOS, client identity,
+                procedure code, or numeric hours &gt; 0. Drop counts appear in the validation panel.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="mb-1 text-sm font-semibold">2. BCBA vs RBT classification</h3>
+              <p className="text-muted-foreground">
+                Classification is <strong>by procedure code, not by job title</strong>:
+              </p>
+              <ul className="ml-5 mt-1 list-disc text-muted-foreground">
+                <li><strong>97153</strong> rows → counted as <em>RBT direct therapy</em> hours
+                  (column "97153 Hours"). The rendering provider on these rows is treated as the RBT.</li>
+                <li><strong>All other codes</strong> (97155, 97156, 97151, 97158, etc.) → counted as
+                  <em>Direct BCBA</em> hours.</li>
+              </ul>
+              <p className="mt-1 text-muted-foreground">
+                The <code>ProviderContactLabels</code> column is only used when <em>inferring</em> an
+                assignment history (see §4) — it identifies which rendering provider on a non-97153
+                line is a BCBA via a case-insensitive match on the word <code>BCBA</code>.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="mb-1 text-sm font-semibold">3. Who owns each row (the BCBA owner)</h3>
+              <p className="text-muted-foreground">
+                Every billing row — including 97153 RBT lines — is attributed to the BCBA who owned
+                that client on that DOS. Ownership is resolved against <strong>Assignment History</strong>
+                with this rule:
+              </p>
+              <ol className="ml-5 mt-1 list-decimal text-muted-foreground">
+                <li>Match the billing row to assignments where either <code>ClientId</code> matches
+                  exactly, or the normalized client name matches
+                  (lowercased, alphanumerics only).</li>
+                <li>Keep assignments where <code>startDate ≤ DOS ≤ endDate</code>
+                  (an empty <code>endDate</code> is treated as open / today).</li>
+                <li>If multiple match, pick the one with the <strong>latest startDate</strong> —
+                  that handles transfers cleanly.</li>
+              </ol>
+              <p className="mt-1 text-muted-foreground">
+                Rows with no matching assignment are surfaced in the <strong>Unassigned audit</strong>
+                so you can either add an assignment or fix the client name.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="mb-1 text-sm font-semibold">4. Inferred Assignment History (fallback)</h3>
+              <p className="text-muted-foreground">
+                If Assignment History is empty, the report infers ownership from the billing file
+                itself so you are never fully unassigned:
+              </p>
+              <ul className="ml-5 mt-1 list-disc text-muted-foreground">
+                <li>An <em>anchor row</em> is any row where <code>ProcedureCode ≠ 97153</code> AND
+                  <code>ProviderContactLabels</code> contains "BCBA".</li>
+                <li>For each client, anchor rows are grouped by date; if multiple BCBAs anchor on
+                  the same day, the one with the most hours wins (tiebreak: total direct hours on
+                  this client, then name).</li>
+                <li>Consecutive days with the same BCBA are compressed into a single assignment
+                  run. A new BCBA starting a run creates an inferred <strong>transfer</strong>.</li>
+                <li>The first inferred assignment is back-dated to the client's earliest DOS in
+                  the file so early 97153 hours still attach.</li>
+              </ul>
+              <p className="mt-1 text-muted-foreground">
+                Click <em>Save inferred</em> to promote these into permanent Assignment History, then
+                edit them as needed. Once any assignments exist in history, the inferred set is
+                ignored and history becomes the only source of truth.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="mb-1 text-sm font-semibold">5. KPIs and table math</h3>
+              <ul className="ml-5 list-disc text-muted-foreground">
+                <li><strong>Total Hours</strong> = sum of <code>hours</code> on filtered rows.</li>
+                <li><strong>97153 Hours</strong> = sum of hours where code starts with 97153.</li>
+                <li><strong>Direct BCBA Hours</strong> = Total − 97153.</li>
+                <li><strong>Active Clients</strong> = distinct <code>ClientId</code> (or normalized name).</li>
+                <li><strong>Active RBTs</strong> = distinct rendering providers on 97153 rows.</li>
+                <li><strong>Active BCBAs</strong> = distinct resolved BCBA owners.</li>
+                <li><strong>Unassigned hours</strong> = hours on rows with no owner — these are
+                  excluded from any per-BCBA rollup and shown under "— Unassigned —".</li>
+              </ul>
+            </section>
+
+            <section>
+              <h3 className="mb-1 text-sm font-semibold">6. Transfers</h3>
+              <p className="text-muted-foreground">
+                A transfer is emitted whenever, for the same client, a later assignment has a
+                different <code>bcbaName</code> than the prior one. The <strong>transfer date</strong>
+                is the start date of the new assignment.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="mb-1 text-sm font-semibold">7. Persistence</h3>
+              <ul className="ml-5 list-disc text-muted-foreground">
+                <li><strong>Assignment History</strong> lives in the database (<code>bcba_assignment_history</code>).</li>
+                <li><strong>Your last uploaded billing file</strong> is cached in this browser
+                  (IndexedDB) and reloaded automatically when you return to the page. It only
+                  clears when you click <em>Reset</em>.</li>
+                <li><strong>Saved Reports</strong> snapshot the parsed rows under a name; opening
+                  one regenerates the full report deterministically from the saved billing rows
+                  + current Assignment History.</li>
+              </ul>
+            </section>
+
+            <section>
+              <h3 className="mb-1 text-sm font-semibold">8. Common reasons numbers look "off"</h3>
+              <ul className="ml-5 list-disc text-muted-foreground">
+                <li>Client name spelled differently in billing vs. Assignment History → row falls into Unassigned.</li>
+                <li>Assignment <code>startDate</code> is later than some early DOS for that client → those early rows are Unassigned.</li>
+                <li>Overlapping or gap assignments (flagged in the validation panel) — only one BCBA can own a DOS, so the latest-start wins.</li>
+                <li>Provider listed as BCBA but billed a 97153 code → that line counts as 97153/RBT hours by design.</li>
+              </ul>
+            </section>
+          </div>
+        </DialogContent>
+      </Dialog>
     </OSShell>
   );
 }
