@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReferralCompanies } from "@/lib/os/referrals/hooks";
 import { createContact, findOrCreateCompany } from "@/lib/os/referrals/api";
-import { CONTACT_ROLE_TYPES, CONTACT_STAGES, CONTACT_STATUSES, COMPANY_TYPES, PREFERRED_CONTACT_METHODS } from "@/lib/os/referrals/types";
+import { CONTACT_ROLE_TYPES, CONTACT_STAGES, CONTACT_STATUSES, COMPANY_TYPES, COMPANY_STAGES, PREFERRED_CONTACT_METHODS } from "@/lib/os/referrals/types";
 import { extractDomain } from "@/lib/os/referrals/utils";
 import { toast } from "@/hooks/use-toast";
 import { OwnerCombobox } from "./OwnerCombobox";
@@ -24,6 +24,15 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
   const [roleType, setRoleType] = useState<string>("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [directPhone, setDirectPhone] = useState("");
+  const [mobilePhone, setMobilePhone] = useState("");
+  const [linkedin, setLinkedin] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [addr1, setAddr1] = useState("");
+  const [addr2, setAddr2] = useState("");
+  const [city, setCity] = useState("");
+  const [stateField, setStateField] = useState("");
+  const [zip, setZip] = useState("");
   const [preferred, setPreferred] = useState<string>("");
   const [stage, setStage] = useState<string>("New Contact");
   const [status, setStatus] = useState<string>("New");
@@ -39,6 +48,12 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
   const [newCompanyWebsite, setNewCompanyWebsite] = useState("");
   const [newCompanyState, setNewCompanyState] = useState("");
   const [newCompanyPhone, setNewCompanyPhone] = useState("");
+  const [newCompanyEmail, setNewCompanyEmail] = useState("");
+  const [newCompanyCity, setNewCompanyCity] = useState("");
+  const [newCompanyAddr1, setNewCompanyAddr1] = useState("");
+  const [newCompanyZip, setNewCompanyZip] = useState("");
+  const [newCompanyStage, setNewCompanyStage] = useState<string>("New");
+  const [newCompanyNotes, setNewCompanyNotes] = useState("");
 
   useEffect(() => { if (presetCompanyId) { setCompanyId(presetCompanyId); setCompanyMode("existing"); } }, [presetCompanyId]);
 
@@ -46,10 +61,14 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
 
   function reset() {
     setFirstName(""); setLastName(""); setTitle(""); setRoleType(""); setEmail(""); setPhone("");
+    setDirectPhone(""); setMobilePhone(""); setLinkedin(""); setWebsiteUrl("");
+    setAddr1(""); setAddr2(""); setCity(""); setStateField(""); setZip("");
     setPreferred(""); setStage("New Contact"); setStatus("New"); setNotes(""); setNextFollowUp("");
     setOwners([]);
     setCompanyMode("existing"); setCompanyId(""); setNewCompanyName(""); setNewCompanyType("");
     setNewCompanyWebsite(""); setNewCompanyState(""); setNewCompanyPhone("");
+    setNewCompanyEmail(""); setNewCompanyCity(""); setNewCompanyAddr1(""); setNewCompanyZip("");
+    setNewCompanyStage("New"); setNewCompanyNotes("");
   }
 
   async function handleSave() {
@@ -66,7 +85,7 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
           company_name: newCompanyName.trim(),
           company_type: newCompanyType || null,
           website_url: newCompanyWebsite || null,
-          domain: extractDomain(email, newCompanyWebsite),
+          domain: extractDomain(newCompanyEmail || email, newCompanyWebsite),
           state: newCompanyState || null,
           main_phone: newCompanyPhone || null,
           relationship_owner: owners.length ? owners : null,
@@ -81,6 +100,15 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
         role_type: roleType || null,
         email: email || null,
         phone: phone || null,
+        direct_phone: directPhone || null,
+        mobile_phone: mobilePhone || null,
+        linkedin_url: linkedin || null,
+        website_url: websiteUrl || null,
+        address_line_1: addr1 || null,
+        address_line_2: addr2 || null,
+        city: city || null,
+        state: stateField || null,
+        zip_code: zip || null,
         preferred_contact_method: (preferred || null) as never,
         relationship_stage: stage as never,
         status: status as never,
@@ -120,6 +148,10 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
               </div>
               <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
               <div><Label>Phone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+              <div><Label>Direct phone</Label><Input value={directPhone} onChange={(e) => setDirectPhone(e.target.value)} /></div>
+              <div><Label>Mobile phone</Label><Input value={mobilePhone} onChange={(e) => setMobilePhone(e.target.value)} /></div>
+              <div><Label>LinkedIn URL</Label><Input value={linkedin} onChange={(e) => setLinkedin(e.target.value)} /></div>
+              <div><Label>Website</Label><Input value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} /></div>
               <div>
                 <Label>Preferred contact</Label>
                 <Select value={preferred} onValueChange={setPreferred}>
@@ -128,6 +160,11 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
                 </Select>
               </div>
               <div><Label>Owner</Label><OwnerCombobox value={owners} onChange={setOwners} /></div>
+              <div className="col-span-2"><Label>Address line 1</Label><Input value={addr1} onChange={(e) => setAddr1(e.target.value)} /></div>
+              <div className="col-span-2"><Label>Address line 2</Label><Input value={addr2} onChange={(e) => setAddr2(e.target.value)} /></div>
+              <div><Label>City</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
+              <div><Label>State</Label><Input value={stateField} onChange={(e) => setStateField(e.target.value)} placeholder="e.g. NC" /></div>
+              <div><Label>Zip code</Label><Input value={zip} onChange={(e) => setZip(e.target.value)} /></div>
             </div>
           </section>
 
@@ -159,9 +196,21 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
                     <SelectContent>{COMPANY_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label>Stage</Label>
+                  <Select value={newCompanyStage} onValueChange={setNewCompanyStage}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{COMPANY_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
                 <div><Label>Website</Label><Input value={newCompanyWebsite} onChange={(e) => setNewCompanyWebsite(e.target.value)} /></div>
+                <div><Label>Main email</Label><Input type="email" value={newCompanyEmail} onChange={(e) => setNewCompanyEmail(e.target.value)} /></div>
+                <div><Label>Main phone</Label><Input value={newCompanyPhone} onChange={(e) => setNewCompanyPhone(e.target.value)} /></div>
+                <div className="col-span-2"><Label>Address line 1</Label><Input value={newCompanyAddr1} onChange={(e) => setNewCompanyAddr1(e.target.value)} /></div>
+                <div><Label>City</Label><Input value={newCompanyCity} onChange={(e) => setNewCompanyCity(e.target.value)} /></div>
                 <div><Label>State</Label><Input value={newCompanyState} onChange={(e) => setNewCompanyState(e.target.value)} placeholder="e.g. NC" /></div>
-                <div className="col-span-2"><Label>Main phone</Label><Input value={newCompanyPhone} onChange={(e) => setNewCompanyPhone(e.target.value)} /></div>
+                <div><Label>Zip code</Label><Input value={newCompanyZip} onChange={(e) => setNewCompanyZip(e.target.value)} /></div>
+                <div className="col-span-2"><Label>Notes</Label><Textarea value={newCompanyNotes} onChange={(e) => setNewCompanyNotes(e.target.value)} rows={2} /></div>
               </div>
             )}
           </section>
