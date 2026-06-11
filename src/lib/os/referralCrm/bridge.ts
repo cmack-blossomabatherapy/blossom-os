@@ -516,8 +516,17 @@ export function installSupabaseSync() {
     onContactCreate: async (c) => {
       const row = contactToRow(c);
       const { id: _omit, ...payload } = row;
-      const { error } = await supabase.from("referral_contacts").insert(payload as never);
-      if (error) { console.warn("[crm bridge] contact insert failed", error); return; }
+      const { data, error } = await supabase
+        .from("referral_contacts")
+        .insert(payload as never)
+        .select("id")
+        .single();
+      if (error || !data) {
+        console.warn("[crm bridge] contact insert failed", error);
+        toast({ title: "Failed to save contact", description: error?.message ?? "Unknown error", variant: "destructive" });
+        return;
+      }
+      remapId("contact", c.id, (data as { id: string }).id);
       scheduleRehydrate();
     },
     onContactUpdate: async (id, _patch, full) => {
@@ -541,8 +550,17 @@ export function installSupabaseSync() {
     },
     onCompanyCreate: async (c) => {
       const { id: _omit, ...payload } = companyToRow(c);
-      const { error } = await supabase.from("referral_companies").insert(payload as never);
-      if (error) { console.warn("[crm bridge] company insert failed", error); return; }
+      const { data, error } = await supabase
+        .from("referral_companies")
+        .insert(payload as never)
+        .select("id")
+        .single();
+      if (error || !data) {
+        console.warn("[crm bridge] company insert failed", error);
+        toast({ title: "Failed to save company", description: error?.message ?? "Unknown error", variant: "destructive" });
+        return;
+      }
+      remapId("company", c.id, (data as { id: string }).id);
       scheduleRehydrate();
     },
     onCompanyUpdate: async (id, _patch, full) => {
@@ -601,8 +619,17 @@ export function installSupabaseSync() {
         lead_id: r.leadId ?? null,
         notes: r.notes ?? null,
       };
-      const { error } = await supabase.from("referral_crm_referrals").insert(payload as never);
-      if (error) { console.warn("[crm bridge] referral insert failed", error); return; }
+      const { data, error } = await supabase
+        .from("referral_crm_referrals")
+        .insert(payload as never)
+        .select("id")
+        .single();
+      if (error || !data) {
+        console.warn("[crm bridge] referral insert failed", error);
+        toast({ title: "Failed to save referral", description: error?.message ?? "Unknown error", variant: "destructive" });
+        return;
+      }
+      remapId("referral", r.id, (data as { id: string }).id);
       scheduleRehydrate();
     },
     onReferralUpdate: async (id, patch, full) => {
@@ -656,8 +683,17 @@ export function installSupabaseSync() {
         referral_id: t.referralId && isPersisted(t.referralId) ? t.referralId : null,
         notes: t.notes ?? null,
       };
-      const { error } = await supabase.from("referral_crm_tasks").insert(payload as never);
-      if (error) { console.warn("[crm bridge] task insert failed", error); return; }
+      const { data, error } = await supabase
+        .from("referral_crm_tasks")
+        .insert(payload as never)
+        .select("id")
+        .single();
+      if (error || !data) {
+        console.warn("[crm bridge] task insert failed", error);
+        toast({ title: "Failed to save task", description: error?.message ?? "Unknown error", variant: "destructive" });
+        return;
+      }
+      remapId("task", t.id, (data as { id: string }).id);
       scheduleRehydrate();
     },
     onTaskUpdate: async (id, patch) => {
@@ -710,8 +746,17 @@ export function installSupabaseSync() {
         uploaded_at: a.uploadedAt,
         notes: a.notes ?? null,
       };
-      const { error } = await supabase.from("referral_crm_attachments").insert(payload as never);
-      if (error) { console.warn("[crm bridge] attachment insert failed", error); return; }
+      const { data, error } = await supabase
+        .from("referral_crm_attachments")
+        .insert(payload as never)
+        .select("id")
+        .single();
+      if (error || !data) {
+        console.warn("[crm bridge] attachment insert failed", error);
+        toast({ title: "Failed to save attachment", description: error?.message ?? "Unknown error", variant: "destructive" });
+        return;
+      }
+      remapId("attachment", a.id, (data as { id: string }).id);
       scheduleRehydrate();
     },
     onAttachmentUpdate: async (id, patch) => {
