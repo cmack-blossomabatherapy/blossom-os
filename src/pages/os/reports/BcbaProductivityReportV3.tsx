@@ -326,6 +326,8 @@ export default function BcbaProductivityReportV3() {
 
       setRows(parsedRows);
       setFileName(file.name);
+      // Persist so the upload survives tab navigation / refresh.
+      void saveLastBillingV3(file.name, parsedRows);
 
       toast.success(`Parsed ${parsedRows.length.toLocaleString()} of ${first.rows.length.toLocaleString()} rows from ${file.name}`);
     } catch (e: any) {
@@ -489,9 +491,14 @@ export default function BcbaProductivityReportV3() {
     if (dup && !confirm(`A similar report ("${dup.name}") was saved recently. Save anyway?`)) return;
     const name = prompt("Name this report", `${fileName || "Billing"} — ${new Date().toLocaleDateString()}`);
     if (!name) return;
-    await saveReportV3({ name, fileName, rows });
-    setSavedList(readSavedReportsV3());
-    toast.success("Report saved");
+    try {
+      await saveReportV3({ name, fileName, rows });
+      setSavedList(readSavedReportsV3());
+      toast.success("Report saved");
+    } catch (e: any) {
+      console.error("[bcba v3] save report failed", e);
+      toast.error(e?.message ?? "Failed to save report");
+    }
   }
   async function handleResetUpload() {
     if (rows.length && !confirm("Clear the current upload? Unsaved data will be lost.")) return;
