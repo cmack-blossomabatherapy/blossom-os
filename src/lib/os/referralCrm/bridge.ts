@@ -1053,5 +1053,75 @@ export function installSupabaseSync() {
       const { error } = await supabase.from("referral_crm_audit_log").insert(payload as never);
       if (error) console.warn("[crm bridge] audit insert failed", error);
     },
+    // ---- configuration tables ----
+    onListCreate: async (l) => {
+      const { error } = await supabase.from("referral_crm_lists" as never).upsert(listToRow(l) as never);
+      if (error) console.warn("[crm bridge] list upsert failed", error);
+    },
+    onListUpdate: async (id, _patch, full) => {
+      if (!full) return;
+      const { error } = await supabase.from("referral_crm_lists" as never).upsert(listToRow(full) as never);
+      if (error) console.warn("[crm bridge] list update failed", error);
+      void id;
+    },
+    onListDelete: async (id) => {
+      const { error } = await supabase.from("referral_crm_lists" as never).delete().eq("id", id);
+      if (error) console.warn("[crm bridge] list delete failed", error);
+    },
+    onWorkflowCreate: async (w) => {
+      const { error } = await supabase.from("referral_crm_workflows" as never).upsert(workflowToRow(w) as never);
+      if (error) console.warn("[crm bridge] workflow upsert failed", error);
+    },
+    onWorkflowUpdate: async (_id, _patch, full) => {
+      if (!full) return;
+      const { error } = await supabase.from("referral_crm_workflows" as never).upsert(workflowToRow(full) as never);
+      if (error) console.warn("[crm bridge] workflow update failed", error);
+    },
+    onWorkflowDelete: async (id) => {
+      const { error } = await supabase.from("referral_crm_workflows" as never).delete().eq("id", id);
+      if (error) console.warn("[crm bridge] workflow delete failed", error);
+    },
+    onUserCreate: async (u) => {
+      const { error } = await supabase.from("referral_crm_users" as never).upsert(userToRow(u) as never);
+      if (error) console.warn("[crm bridge] user upsert failed", error);
+    },
+    onUserUpdate: async (_id, _patch, full) => {
+      if (!full) return;
+      const { error } = await supabase.from("referral_crm_users" as never).upsert(userToRow(full) as never);
+      if (error) console.warn("[crm bridge] user update failed", error);
+    },
+    onTeamCreate: async (t) => {
+      const { error } = await supabase.from("referral_crm_teams" as never).upsert(teamToRow(t) as never);
+      if (error) console.warn("[crm bridge] team upsert failed", error);
+    },
+    onTeamUpdate: async (_id, _patch, full) => {
+      if (!full) return;
+      const { error } = await supabase.from("referral_crm_teams" as never).upsert(teamToRow(full) as never);
+      if (error) console.warn("[crm bridge] team update failed", error);
+    },
+    onPermissionSet: async (role, perm, value) => {
+      const { error } = await supabase
+        .from("referral_crm_permissions" as never)
+        .upsert({ role, permission: perm, allowed: value } as never);
+      if (error) console.warn("[crm bridge] permission upsert failed", error);
+    },
+    onPermissionsReset: async (matrix) => {
+      const rows: { role: string; permission: string; allowed: boolean }[] = [];
+      for (const r of CRM_ROLES) {
+        for (const p of CRM_PERMISSIONS) {
+          rows.push({ role: r.id, permission: p.id, allowed: !!matrix[r.id]?.[p.id] });
+        }
+      }
+      const { error } = await supabase.from("referral_crm_permissions" as never).upsert(rows as never);
+      if (error) console.warn("[crm bridge] permissions reset failed", error);
+    },
+    onCustomFieldAdd: async (f) => {
+      const { error } = await supabase.from("referral_crm_custom_fields" as never).upsert(fieldToRow(f) as never);
+      if (error) console.warn("[crm bridge] custom field upsert failed", error);
+    },
+    onCustomFieldRemove: async (id) => {
+      const { error } = await supabase.from("referral_crm_custom_fields" as never).delete().eq("id", id);
+      if (error) console.warn("[crm bridge] custom field delete failed", error);
+    },
   });
 }
