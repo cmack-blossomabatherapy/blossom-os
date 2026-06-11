@@ -630,6 +630,9 @@ export default function BcbaProductivityReportV3() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowHelp(true)} title="How this report works">
+              <HelpCircle className="mr-2 h-4 w-4" /> How this works
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setShowHistory(true)}>
               <History className="mr-2 h-4 w-4" /> Assignment History ({assignments.length})
             </Button>
