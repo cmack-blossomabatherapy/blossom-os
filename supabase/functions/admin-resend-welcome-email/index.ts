@@ -62,23 +62,12 @@ Deno.serve(async (req) => {
   // Ensure first sign-in forces a password reset.
   await admin.from("profiles").update({ must_change_password: true }).eq("user_id", userId);
 
-  // Generate a one-click magic link so clicking "Sign in to Blossom" signs the
-  // user in automatically and lands them on the force-password-change modal.
-  let signInUrl = `${siteUrl}/auth`;
-  try {
-    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: { redirectTo: `${siteUrl}/` },
-    });
-    if (linkErr) {
-      console.error("Failed to generate magic link for resend", linkErr.message);
-    } else if (linkData?.properties?.action_link) {
-      signInUrl = linkData.properties.action_link;
-    }
-  } catch (e) {
-    console.error("generateLink threw for resend", (e as Error).message);
-  }
+  // Send recipients straight to the sign-in page with their email pre-filled.
+  // They use the temporary password from this email to sign in, then are
+  // forced to create their own password. We avoid one-time magic links
+  // because Microsoft 365 / Outlook Safe Links scanners consume them before
+  // the recipient can click, causing "invalid or expired" errors.
+  const signInUrl = `${siteUrl}/auth?email=${encodeURIComponent(email)}&welcome=1`;
 
   const welcomeEmailResult = await sendBlossomWelcomeEmail({
     email,
