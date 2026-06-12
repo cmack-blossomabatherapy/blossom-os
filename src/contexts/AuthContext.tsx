@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Subscribe FIRST to avoid missing the initial event
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       // Defer Supabase calls outside the callback to avoid deadlocks
@@ -65,6 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           Promise.all([loadRolesAndAccess(s.user.id), loadProfileFlag(s.user.id)]).finally(() =>
             setLoading(false),
           );
+          if (event === "SIGNED_IN") {
+            void supabase.rpc("log_sign_in").then(() => undefined, () => undefined);
+          }
         }, 0);
       } else {
         setRoles([]);

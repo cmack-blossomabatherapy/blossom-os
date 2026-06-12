@@ -11297,6 +11297,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_sign_in: { Args: never; Returns: undefined }
       match_knowledge_chunks: {
         Args: {
           match_count?: number
