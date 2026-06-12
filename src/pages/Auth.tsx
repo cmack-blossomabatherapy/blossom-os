@@ -103,14 +103,20 @@ export default function Auth() {
         <div className="w-full max-w-[440px] rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60 animate-in fade-in slide-in-from-bottom-4 duration-700 sm:p-10">
           <header className="mb-8 text-center sm:text-left">
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Please enter your details
+              {isWelcome ? "Activate your account" : "Please enter your details"}
             </span>
             <h1
               className="mt-2 text-4xl font-semibold tracking-tight text-[#0c2340]"
               style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
             >
-              Welcome back
+              {isWelcome ? "Welcome to Blossom" : "Welcome back"}
             </h1>
+            {isWelcome && (
+              <p className="mt-3 rounded-xl bg-[#2d8a9e]/10 px-4 py-3 text-sm leading-relaxed text-[#0c2340]">
+                Sign in with the <strong>temporary password</strong> from your welcome email.
+                You'll be prompted to create your own password right after.
+              </p>
+            )}
           </header>
 
           <form onSubmit={handleSignIn} className="space-y-5">
