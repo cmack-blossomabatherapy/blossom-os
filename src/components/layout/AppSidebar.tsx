@@ -655,7 +655,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         intelligenceSection,
         ...(showAdmin ? adminSections : []),
       ]
-    : isBehavioralSupportOnly
+    : isBehavioralSupportOnly || isAuthorizationsOnly
     ? [
         {
           title: "Resources",
