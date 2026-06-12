@@ -390,6 +390,10 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const isBehavioralSupportOnly =
     osRole === "behavioral_support" ||
     (roles.includes("behavioral_support") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
+  // Authorizations gets the same minimal menu as Behavioral Support.
+  const isAuthorizationsOnly =
+    osRole === "authorization_coordinator" ||
+    (roles.includes("auth_team") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
