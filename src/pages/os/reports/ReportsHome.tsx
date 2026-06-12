@@ -92,13 +92,13 @@ export default function ReportsHome() {
       if (r && !seen.has(r.id)) { ordered.push(r); seen.add(r.id); }
     }
     return ordered;
-  }, [reports, savedReports]);
+  }, [reports]);
 
   // Blossom AI · Today — surface insights from reports generated today.
   const todaysGenerated = useMemo(() => {
     const start = new Date(); start.setHours(0, 0, 0, 0);
-    return savedReports.filter(s => s.savedAt >= start.getTime());
-  }, [savedReports]);
+    return savedV3.filter(s => s.savedAt >= start.getTime());
+  }, [savedV3]);
 
   return (
     <OSShell>
