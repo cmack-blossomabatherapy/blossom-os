@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate, useLocation } from "react-router-dom";
+import { Navigate, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,11 +22,14 @@ export default function Auth() {
   const { user, loading, signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const prefillEmail = searchParams.get("email") ?? "";
+  const isWelcome = searchParams.get("welcome") === "1";
   const fromState = (location.state as { from?: { pathname?: string; search?: string; hash?: string } } | null)?.from;
   const redirectTo = fromState?.pathname
     ? `${fromState.pathname}${fromState.search ?? ""}${fromState.hash ?? ""}`
     : "/";
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
