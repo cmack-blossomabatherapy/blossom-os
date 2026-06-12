@@ -1,23 +1,19 @@
 // Admin-only: ensure an auth user exists for an employee and email them a
-// magic link. On first sign-in the user is forced to set a password
-// (must_change_password=true is set when we create the user).
+// branded welcome with a temporary password. On first sign-in the user is
+// forced to set a password (must_change_password=true).
+//
+// NOTE: We intentionally do NOT use one-time magic links. Outlook / Microsoft
+// 365 Safe Links scanners pre-fetch the URL, consume the token, and leave the
+// recipient on the plain login page with no context. The temp-password +
+// /auth?email=…&welcome=1 flow survives link scanning.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendBlossomWelcomeEmail } from "../_shared/welcome-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
-const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
-const FROM_EMAIL = "Blossom ABA Therapy <welcome@blossom.abacommandcenter.com>";
-const LOGO_URL = "https://blossom-os.lovable.app/email-assets/blossom-logo.png";
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
 
 async function findAuthUserByEmail(admin: ReturnType<typeof createClient>, email: string) {
   for (let page = 1; page <= 10; page++) {
