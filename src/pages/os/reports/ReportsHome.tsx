@@ -196,7 +196,7 @@ export default function ReportsHome() {
       </section>
 
       {/* ============== SAVED REPORTS ============== */}
-      {(savedReports.length > 0 || cancelSaved.length > 0 || savedV3.length > 0) && (
+      {(cancelSaved.length > 0 || savedV3.length > 0) && (
         <section className="mt-8">
           <SectionHeader
             title="Saved reports"
@@ -232,42 +232,6 @@ export default function ReportsHome() {
                 <button
                   type="button"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) handleDeleteV3(sr.id); }}
-                  className="absolute right-2 top-2 rounded-full p-1.5 text-muted-foreground/60 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                  aria-label="Delete saved report"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </article>
-            ))}
-            {savedReports.map(sr => (
-              <article
-                key={sr.id}
-                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-4 transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.35)] hover:shadow-[0_20px_40px_-25px_hsl(265_60%_50%/0.4)]"
-              >
-                <Link to={`/os/reports/bcba-productivity-report?saved=${sr.id}`} className="block">
-                  <Badge
-                    variant="secondary"
-                    className="rounded-full bg-[hsl(265_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)]"
-                  >
-                    BCBA Productivity
-                  </Badge>
-                  <h3 className="mt-2 line-clamp-1 text-[14.5px] font-semibold tracking-tight">{sr.name}</h3>
-                  <p className="mt-1 line-clamp-1 text-[11.5px] text-muted-foreground">
-                    {sr.billingRaws.length.toLocaleString()} billing rows · {sr.authRecords.length.toLocaleString()} auth records
-                  </p>
-                  <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {new Date(sr.savedAt).toLocaleString()}
-                    </span>
-                    <span className="inline-flex items-center gap-1 font-medium text-[hsl(265_70%_55%)] transition group-hover:translate-x-0.5">
-                      Open <ArrowUpRight className="h-3 w-3" />
-                    </span>
-                  </div>
-                </Link>
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) handleDeleteSaved(sr.id); }}
                   className="absolute right-2 top-2 rounded-full p-1.5 text-muted-foreground/60 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                   aria-label="Delete saved report"
                 >
