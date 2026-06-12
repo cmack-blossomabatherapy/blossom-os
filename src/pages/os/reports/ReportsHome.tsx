@@ -55,34 +55,26 @@ export default function ReportsHome() {
 
   function onFav(id: string) { setFavs(toggleFavorite(id)); }
 
-  const [savedReports, setSavedReports] = useState<BcbaSavedReport[]>([]);
   const [cancelSaved, setCancelSaved] = useState<CancellationSavedReport[]>([]);
   const [savedV3, setSavedV3] = useState<BcbaSavedReportV3[]>([]);
   useEffect(() => {
-    setSavedReports(readSavedReports());
     setCancelSaved(readCancellationSavedReports());
     setSavedV3(readSavedReportsV3());
     const refresh = () => {
-      setSavedReports(readSavedReports());
       setCancelSaved(readCancellationSavedReports());
       setSavedV3(readSavedReportsV3());
     };
-    window.addEventListener("bcba-saved-reports-changed", refresh);
     window.addEventListener("cancellation-saved-reports-changed", refresh);
     window.addEventListener("bcba-prod-v3-saved-changed", refresh);
     window.addEventListener("storage", refresh);
     window.addEventListener("focus", refresh);
     return () => {
-      window.removeEventListener("bcba-saved-reports-changed", refresh);
       window.removeEventListener("cancellation-saved-reports-changed", refresh);
       window.removeEventListener("bcba-prod-v3-saved-changed", refresh);
       window.removeEventListener("storage", refresh);
       window.removeEventListener("focus", refresh);
     };
   }, []);
-  function handleDeleteSaved(id: string) {
-    void deleteSavedReport(id).then(() => setSavedReports(readSavedReports()));
-  }
   function handleDeleteCancelSaved(id: string) {
     void deleteCancellationSavedReport(id).then(() => setCancelSaved(readCancellationSavedReports()));
   }
