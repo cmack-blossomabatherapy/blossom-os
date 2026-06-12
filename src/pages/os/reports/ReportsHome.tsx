@@ -180,7 +180,7 @@ export default function ReportsHome() {
             <div className="grid grid-cols-2 gap-2.5">
               <StatTile label="Reports for you" value={String(reports.length)} icon={FileSpreadsheet} />
               <StatTile label="Recently viewed" value={String(recent.length)} icon={History} />
-              <StatTile label="Saves" value={String(savedReports.length + savedV3.length + cancelSaved.length)} icon={Bookmark} />
+              <StatTile label="Saves" value={String(savedV3.length + cancelSaved.length)} icon={Bookmark} />
               <StatTile label="Categories" value={String(categories.length)} icon={Brain} />
             </div>
           </div>
