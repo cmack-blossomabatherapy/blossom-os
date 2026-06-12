@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false),
           );
           if (event === "SIGNED_IN") {
-            void supabase.rpc("log_sign_in").catch(() => { /* non-blocking */ });
+            void supabase.rpc("log_sign_in").then(() => undefined, () => undefined);
           }
         }, 0);
       } else {
