@@ -12,7 +12,10 @@ Deno.serve(async (req) => {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  const r = await fetch("https://connector-gateway.lovable.dev/resend/domains", {
+  const url = new URL(req.url);
+  const id = url.searchParams.get("id");
+  const path = id ? `emails/${id}` : "domains";
+  const r = await fetch(`https://connector-gateway.lovable.dev/resend/${path}`, {
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "X-Connection-Api-Key": RESEND_API_KEY,
