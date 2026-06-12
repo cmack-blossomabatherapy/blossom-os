@@ -141,22 +141,11 @@ export default function ReportsHome() {
                   <div className="mt-3 grid gap-2">
                     {todaysGenerated.slice(0, 3).map(sr => (
                       <div key={sr.id} className="rounded-xl border border-[hsl(265_70%_55%/0.18)] bg-[hsl(265_100%_99%)] p-2.5">
-                        <Link to={`/os/reports/bcba-productivity-report?saved=${sr.id}`} className="flex items-center justify-between gap-2 text-[12px] font-semibold tracking-tight text-foreground hover:text-[hsl(265_70%_55%)]">
+                        <Link to={`/reports/bcba-productivity-report-v3?saved=${sr.id}`} className="flex items-center justify-between gap-2 text-[12px] font-semibold tracking-tight text-foreground hover:text-[hsl(265_70%_55%)]">
                           <span className="truncate">{sr.name}</span>
                           <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{new Date(sr.savedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                         </Link>
-                        {(sr.insights && sr.insights.length > 0) ? (
-                          <ul className="mt-1.5 space-y-1">
-                            {sr.insights.slice(0, 3).map((t, i) => (
-                              <li key={i} className="flex items-start gap-2 text-[11.5px] leading-snug text-[hsl(265_30%_30%)]">
-                                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[hsl(265_70%_55%)]" />
-                                <span>{t}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="mt-1 text-[11.5px] text-muted-foreground">Open the report to view insights.</p>
-                        )}
+                        <p className="mt-1 text-[11.5px] text-muted-foreground">Open the report to view insights.</p>
                       </div>
                     ))}
                   </div>
