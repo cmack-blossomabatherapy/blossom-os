@@ -9,11 +9,15 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, Mail } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, KeyRound, ShieldCheck, Sparkles, ArrowLeft } from "lucide-react";
 import logoWordmark from "@/assets/blossom-logo-wordmark.png";
+import logoMark from "@/assets/blossom-flower-mark.png";
+import logoWhite from "@/assets/blossom-logo-white.png";
 import { Checkbox } from "@/components/ui/checkbox";
 import { setRememberPreference, getRememberPreference } from "@/lib/rememberSession";
 import { RequestAccessDialog } from "@/components/auth/RequestAccessDialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const CANONICAL_LOGIN_HOST = "blossom.abacommandcenter.com";
 const LOVABLE_PUBLISHED_HOST = "blossom-os.lovable.app";
@@ -38,6 +42,48 @@ export default function Auth() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotBusy, setForgotBusy] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+  const [method, setMethod] = useState<"password" | "code">("password");
+  const [codeEmail, setCodeEmail] = useState(prefillEmail);
+  const [codeSent, setCodeSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [codeVerifying, setCodeVerifying] = useState(false);
+
+  const handleSendCode = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const trimmed = codeEmail.trim().toLowerCase();
+    if (!trimmed) return;
+    setCodeBusy(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: trimmed,
+      options: { shouldCreateUser: false },
+    });
+    setCodeBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setCodeSent(true);
+    toast.success("We just emailed you a 6-digit sign-in code");
+  };
+
+  const handleVerifyCode = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (code.length !== 6) return;
+    setCodeVerifying(true);
+    setRememberPreference(remember);
+    const { error } = await supabase.auth.verifyOtp({
+      email: codeEmail.trim().toLowerCase(),
+      token: code,
+      type: "email",
+    });
+    setCodeVerifying(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Welcome back");
+  };
 
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,19 +134,66 @@ export default function Auth() {
 
   return (
     <div
-      className="relative min-h-screen w-full overflow-hidden bg-[#f8fafc] selection:bg-[#2d8a9e]/20"
+      className="relative min-h-screen w-full overflow-hidden bg-[#f6f8fb] selection:bg-[#2d8a9e]/20"
       style={{ fontFamily: "'Figtree', system-ui, sans-serif" }}
     >
-      {/* Brand logo anchor — top left */}
-      <div className="absolute left-6 top-6 z-10 sm:left-10 sm:top-10">
-        <div className="rounded-2xl bg-white px-3.5 py-2 shadow-sm ring-1 ring-slate-200">
-          <img src={logoWordmark} alt="Blossom ABA Therapy" className="h-7 w-auto object-contain" />
-        </div>
-      </div>
+      <div className="relative grid min-h-screen w-full lg:grid-cols-[1.05fr_1fr]">
+        {/* Brand panel */}
+        <aside className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between bg-gradient-to-br from-[#0c2340] via-[#1a4a6e] to-[#2d8a9e] p-12 text-white">
+          {/* decorative blobs */}
+          <div aria-hidden className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
+          <div aria-hidden className="pointer-events-none absolute -right-24 bottom-0 h-[28rem] w-[28rem] rounded-full bg-[#f5b75e]/20 blur-3xl" />
+          <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
 
+          <div className="relative z-10 flex items-center gap-3">
+            <img src={logoWhite} alt="" className="h-9 w-auto object-contain" />
+          </div>
 
-      <div className="relative flex min-h-screen w-full items-center justify-center p-6">
-        <div className="w-full max-w-[440px] rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60 animate-in fade-in slide-in-from-bottom-4 duration-700 sm:p-10">
+          <div className="relative z-10 max-w-md">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/80 backdrop-blur">
+              <Sparkles className="h-3 w-3" /> Blossom Command Center
+            </span>
+            <h2 className="mt-5 text-[40px] font-semibold leading-[1.1] tracking-tight" style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}>
+              One calm place to run your ABA operations.
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-white/75">
+              Intake, scheduling, authorizations, training, and team intelligence — all in one branded workspace built for Blossom.
+            </p>
+
+            <ul className="mt-8 space-y-3 text-sm text-white/85">
+              {[
+                "Sign in with your password or a one-time email code",
+                "HIPAA-aware, role-based access for every team",
+                "Live operational intelligence across every state",
+              ].map((t) => (
+                <li key={t} className="flex items-start gap-2.5">
+                  <span className="mt-1 inline-flex h-5 w-5 flex-none items-center justify-center rounded-full bg-white/15">
+                    <ShieldCheck className="h-3 w-3" />
+                  </span>
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="relative z-10 text-xs text-white/60">
+            © {new Date().getFullYear()} Blossom ABA Therapy · Secure team sign-in
+          </div>
+        </aside>
+
+        {/* Form panel */}
+        <main className="relative flex min-h-screen w-full items-center justify-center p-6 sm:p-10">
+          {/* mobile brand bar */}
+          <div className="absolute left-6 top-6 z-10 lg:hidden">
+            <div className="rounded-2xl bg-white px-3.5 py-2 shadow-sm ring-1 ring-slate-200">
+              <img src={logoWordmark} alt="Blossom ABA Therapy" className="h-7 w-auto object-contain" />
+            </div>
+          </div>
+
+          <div className="w-full max-w-[460px] rounded-3xl border border-slate-200/80 bg-white p-8 shadow-2xl shadow-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700 sm:p-10">
+            <div className="mb-6 flex items-center gap-3 lg:hidden">
+              <img src={logoMark} alt="" className="h-9 w-auto" />
+            </div>
           <header className="mb-8 text-center sm:text-left">
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
               {isWelcome ? "Activate your account" : "Please enter your details"}
@@ -119,7 +212,18 @@ export default function Auth() {
             )}
           </header>
 
-          <form onSubmit={handleSignIn} className="space-y-5">
+          <Tabs value={method} onValueChange={(v) => setMethod(v as "password" | "code")} className="w-full">
+            <TabsList className="mb-6 grid w-full grid-cols-2 rounded-xl bg-slate-100 p-1">
+              <TabsTrigger value="password" className="rounded-lg gap-1.5 data-[state=active]:bg-white data-[state=active]:text-[#0c2340] data-[state=active]:shadow-sm">
+                <KeyRound className="h-3.5 w-3.5" /> Password
+              </TabsTrigger>
+              <TabsTrigger value="code" className="rounded-lg gap-1.5 data-[state=active]:bg-white data-[state=active]:text-[#0c2340] data-[state=active]:shadow-sm">
+                <Mail className="h-3.5 w-3.5" /> Email code
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="password" className="mt-0">
+              <form onSubmit={handleSignIn} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="signin-email" className="ml-1 text-sm font-medium text-slate-700">
                 Email address
@@ -241,7 +345,87 @@ export default function Auth() {
                 Sign in
               </Button>
             </div>
-          </form>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="code" className="mt-0">
+              {!codeSent ? (
+                <form onSubmit={handleSendCode} className="space-y-5">
+                  <div className="rounded-xl bg-[#2d8a9e]/8 border border-[#2d8a9e]/15 px-4 py-3 text-xs leading-relaxed text-[#0c2340]">
+                    No password needed. Enter your work email and we'll send you a 6-digit sign-in code.
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="otp-email" className="ml-1 text-sm font-medium text-slate-700">
+                      Email address
+                    </Label>
+                    <Input
+                      id="otp-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      placeholder="name@blossomabatherapy.com"
+                      value={codeEmail}
+                      onChange={(e) => setCodeEmail(e.target.value)}
+                      className="h-[52px] rounded-xl border-slate-200 bg-slate-50 px-4 text-[#0c2340] placeholder:text-slate-400 focus-visible:border-[#2d8a9e] focus-visible:ring-2 focus-visible:ring-[#2d8a9e]/20 focus-visible:ring-offset-0"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={codeBusy}
+                    className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98]"
+                    style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
+                  >
+                    {codeBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Email me a sign-in code
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyCode} className="space-y-5">
+                  <div className="rounded-xl bg-[#2d8a9e]/8 border border-[#2d8a9e]/15 px-4 py-3 text-xs leading-relaxed text-[#0c2340]">
+                    We sent a 6-digit code to <strong>{codeEmail}</strong>. It expires in 10 minutes.
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="ml-1 text-sm font-medium text-slate-700">Enter the code</Label>
+                    <div className="flex justify-center py-2">
+                      <InputOTP maxLength={6} value={code} onChange={setCode}>
+                        <InputOTPGroup>
+                          {[0,1,2,3,4,5].map((i) => (
+                            <InputOTPSlot key={i} index={i} className="h-12 w-11 text-lg border-slate-200" />
+                          ))}
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={codeVerifying || code.length !== 6}
+                    className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0"
+                    style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
+                  >
+                    {codeVerifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Verify & sign in
+                  </Button>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <button
+                      type="button"
+                      onClick={() => { setCodeSent(false); setCode(""); }}
+                      className="inline-flex items-center gap-1 font-medium text-slate-600 hover:text-[#0c2340]"
+                    >
+                      <ArrowLeft className="h-3 w-3" /> Use a different email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendCode()}
+                      disabled={codeBusy}
+                      className="font-medium text-[#2d8a9e] hover:text-[#1a4a6e] disabled:opacity-60"
+                    >
+                      {codeBusy ? "Resending…" : "Resend code"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </TabsContent>
+          </Tabs>
 
           <footer className="mt-10 border-t border-slate-100 pt-8 text-center text-xs leading-relaxed text-slate-500">
             Team accounts are created by your administrator.{" "}
@@ -254,10 +438,11 @@ export default function Auth() {
               hr@blossomabatherapy.com
             </a>
           </footer>
-        </div>
+          </div>
+        </main>
       </div>
 
-      <div className="pointer-events-none absolute bottom-4 left-0 right-0 text-center text-[11px] text-slate-400">
+      <div className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] text-slate-400 lg:hidden">
         © {new Date().getFullYear()} Blossom ABA Therapy
       </div>
     </div>
