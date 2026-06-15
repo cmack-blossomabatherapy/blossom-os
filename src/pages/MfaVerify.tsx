@@ -47,16 +47,20 @@ export default function MfaVerify() {
           .select("email")
           .eq("user_id", user.id)
           .maybeSingle();
-        if (!cancelled && emailRow) {
+        if (!cancelled) {
+          // Always allow email-code fallback. Prefer the enrolled email, otherwise
+          // fall back to the user's account email so admins who can't access their
+          // authenticator app can still get in.
           setEmailMfaEnrolled(true);
-          setEmailMfaTarget(emailRow.email);
+          setEmailMfaTarget(emailRow?.email ?? user.email ?? null);
         }
         if (!verified) {
           if (emailRow) {
             if (!cancelled) setMethod("email");
             return;
           }
-          if (!cancelled) navigate("/mfa/setup", { replace: true });
+          // No TOTP and no email enrollment — let them use email-to-account-email.
+          if (!cancelled) setMethod("email");
           return;
         }
         setFactorId(verified.id);
