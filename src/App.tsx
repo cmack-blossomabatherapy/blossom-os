@@ -40,7 +40,7 @@ import LeadTrap from "./pages/os/growth/LeadTrap";
 import FacebookAds from "./pages/os/growth/FacebookAds";
 import GoogleAds from "./pages/os/growth/GoogleAds";
 import PatientLifetimeJourney from "./pages/os/growth/PatientLifetimeJourney";
-import IntakeDashboardPage from "./pages/os/intake/IntakeDashboard";
+import IntakeDashboardModule from "./pages/os/intake/IntakeDashboard";
 import LeadToActivePipeline from "./pages/os/intake/LeadToActivePipeline";
 import ReferralQueue from "./pages/os/intake/ReferralQueue";
 import IntakeTasks from "./pages/os/intake/IntakeTasks";
@@ -368,7 +368,7 @@ import {
 import {
   StateOperationsPage, AuthorizationsPhase6Page, ApprovedAuthorizationsPage,
   DenialsPage, SchedulingPhase6Page, StaffingPhase6Page, NoOONBenefitsPage,
-  CaseManagementPhase6Page, QADashboardPhase6Page, FamilyStaffingPreferencesPage,
+  CaseManagementPhase6Page, QAPhase6OpsPage, FamilyStaffingPreferencesPage,
   StateEscalationsPage, OperationalTasksPage,
 } from "./pages/os/operations-phase6/OperationsPages";
 import {
@@ -769,7 +769,7 @@ const App = () => (
                   <Route path="/ops/staffing" element={<AdminRoute><StaffingPhase6Page /></AdminRoute>} />
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
                   <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
-                  <Route path="/ops/qa" element={<AdminRoute><QADashboardPhase6Page /></AdminRoute>} />
+                  <Route path="/ops/qa" element={<AdminRoute><QAPhase6OpsPage /></AdminRoute>} />
                   <Route path="/ops/family-staffing-preferences" element={<AdminRoute><FamilyStaffingPreferencesPage /></AdminRoute>} />
                   <Route path="/ops/state-escalations" element={<AdminRoute><StateEscalationsPage /></AdminRoute>} />
                   <Route path="/ops/tasks" element={<AdminRoute><OperationalTasksPage /></AdminRoute>} />
@@ -823,7 +823,7 @@ const App = () => (
                   <Route path="/marketing/facebook-ads" element={<FacebookAds />} />
                   <Route path="/marketing/google-ads" element={<GoogleAds />} />
                   <Route path="/patient-journey" element={<PatientLifetimeJourney />} />
-                  <Route path="/intake/dashboard" element={<IntakeDashboardPage />} />
+                  <Route path="/intake/dashboard" element={<IntakeDashboardModule />} />
                   <Route path="/intake/lead-to-active" element={<LeadToActivePipeline />} />
                   <Route path="/intake/referral-queue" element={<ReferralQueue />} />
                   <Route path="/intake/tasks" element={<IntakeTasks />} />
