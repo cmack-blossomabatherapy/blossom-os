@@ -3,48 +3,20 @@ import { Link } from "react-router-dom";
 import {
   PlayCircle, CheckCircle2, Lock, Clock, ChevronRight, Sparkles,
   BookOpen, LifeBuoy, MessageSquare, FileText, ListChecks, Video,
-  GraduationCap, ArrowRight,
+  GraduationCap, ArrowRight, ShieldCheck, UserCircle2, ClipboardCheck,
+  AlertCircle, Compass, Award,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import {
+  RBT_PATHS, RBT_OWNERSHIP, RBT_RESOURCES, pathStats,
+  type RBTPath, type RBTPathId, type RBTModule, type ModuleType, type SignoffItem,
+} from "@/lib/training/rbtAcademy";
 
-// RBT Training Academy — calm, guided, mobile-first.
-// Module structure mirrors the existing RBT journey logic; this is a UX redesign.
+// RBT Training Academy — experience-based, guided journey. Calm, mobile-first.
 
-type ModuleStatus = "completed" | "in_progress" | "not_started" | "locked";
-type ModuleType = "SOP" | "Video" | "Walkthrough" | "Checklist" | "Overview";
-
-type Module = {
-  id: string;
-  title: string;
-  summary: string;
-  minutes: number;
-  type: ModuleType;
-  status: ModuleStatus;
-  progress?: number; // 0–100
-  required?: boolean;
-};
-
-const MODULES: Module[] = [
-  { id: "m1", title: "Welcome to Blossom",            summary: "Mission, values, and how we support families.",                minutes: 6,  type: "Overview",    status: "completed",   progress: 100, required: true },
-  { id: "m2", title: "RBT Role Foundations",          summary: "Scope of practice, ethics, and how RBTs fit the team.",        minutes: 12, type: "SOP",         status: "completed",   progress: 100, required: true },
-  { id: "m3", title: "Working With Clients",          summary: "Rapport, reinforcement, and respectful first impressions.",    minutes: 10, type: "Video",       status: "in_progress", progress: 60,  required: true },
-  { id: "m4", title: "Session Expectations",          summary: "Arrival, structure, transitions, and clean wrap-ups.",         minutes: 7,  type: "Walkthrough", status: "not_started", required: true },
-  { id: "m5", title: "Communication Standards",       summary: "Parent comms, professional tone, what to escalate.",            minutes: 8,  type: "SOP",         status: "not_started", required: true },
-  { id: "m6", title: "Supervision & BCBA Support",    summary: "How supervision works and how to make the most of it.",         minutes: 9,  type: "Overview",    status: "not_started" },
-  { id: "m7", title: "Using Blossom OS",              summary: "My Day, schedule changes, resources, and quick help.",          minutes: 5,  type: "Walkthrough", status: "not_started" },
-  { id: "m8", title: "Safety & Escalations",          summary: "Recognizing risk and following the escalation path.",           minutes: 11, type: "SOP",         status: "locked",      required: true },
-  { id: "m9", title: "Documentation Expectations",    summary: "Session notes, timeliness, and data integrity.",                 minutes: 8,  type: "Checklist",   status: "locked" },
-  { id: "m10", title: "Professionalism & Field Standards", summary: "Reliability, appearance, boundaries, and conduct.",        minutes: 7,  type: "SOP",         status: "locked" },
-];
-
-const RESOURCES = [
-  { id: "r1", title: "Session-ready checklist",     type: "Checklist", icon: ListChecks },
-  { id: "r2", title: "Parent communication script", type: "SOP",       icon: FileText },
-  { id: "r3", title: "Safety & escalation flow",    type: "SOP",       icon: FileText },
-  { id: "r4", title: "Blossom OS quick tour",       type: "Video",     icon: Video },
-];
+type TabKey = "journey" | "resources" | "signoffs" | "support";
 
 function firstName(n?: string | null) { return n ? n.trim().split(/\s+/)[0] : "there"; }
 function greeting() {
@@ -55,156 +27,166 @@ function greeting() {
 export default function OSRBTTrainingAcademy() {
   const { user } = useAuth();
   const name = firstName((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0]);
-  const [filter, setFilter] = useState<"all" | "required" | "in_progress">("all");
 
-  const stats = useMemo(() => {
-    const total = MODULES.length;
-    const completed = MODULES.filter((m) => m.status === "completed").length;
-    const required = MODULES.filter((m) => m.required).length;
-    const requiredDone = MODULES.filter((m) => m.required && m.status === "completed").length;
-    const pct = Math.round((completed / total) * 100);
-    return { total, completed, pct, required, requiredDone };
-  }, []);
+  const [assignedId, setAssignedId] = useState<RBTPathId>("certified_no_experience");
+  const [tab, setTab] = useState<TabKey>("journey");
 
-  const current = MODULES.find((m) => m.status === "in_progress")
-    ?? MODULES.find((m) => m.status === "not_started");
-
-  const filtered = MODULES.filter((m) =>
-    filter === "required" ? m.required :
-    filter === "in_progress" ? (m.status === "in_progress" || m.status === "not_started") :
-    true
+  const path = useMemo(
+    () => RBT_PATHS.find((p) => p.id === assignedId) ?? RBT_PATHS[0],
+    [assignedId],
   );
+  const stats = useMemo(() => pathStats(path), [path]);
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-32 pt-5 md:px-6 md:pt-8">
-        {/* Breadcrumb */}
+      <div className="mx-auto w-full max-w-4xl space-y-6 px-4 pb-24 pt-5 md:px-6 md:pt-8">
         <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
           <Link to="/rbt" className="hover:text-foreground transition-colors">RBT</Link>
           <ChevronRight className="size-3" />
           <span>Training Academy</span>
         </div>
-        {/* 1. Academy Welcome Header */}
+
         <header className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/5 via-card to-card p-6 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">RBT Training Academy</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
             {greeting()}, {name}.
           </h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            You're {stats.pct}% through your RBT journey. {stats.required - stats.requiredDone > 0
-              ? `${stats.required - stats.requiredDone} required module${stats.required - stats.requiredDone === 1 ? "" : "s"} left.`
-              : "All required modules complete — nice work."}
+          <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
+            A guided, experience-based journey. Pick the path that matches you — every path starts
+            with <span className="text-foreground font-medium">Welcome to Blossom for RBTs</span>.
           </p>
 
           <div className="mt-5">
-            <ProgressBar value={stats.pct} />
-            <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-              <span>{stats.completed} of {stats.total} modules</span>
-              <span>{stats.pct}%</span>
-            </div>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Your path</p>
+            <TrackSelector value={assignedId} onChange={setAssignedId} />
           </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-4">
+            <Stat label="Assigned path" value={path.label} />
+            <Stat label="Readiness" value={`${stats.readiness}%`} tone={stats.fieldReady ? "good" : stats.readiness >= 60 ? "warn" : "neutral"} />
+            <Stat label="Modules" value={`${stats.completed}/${stats.total}`} />
+            <Stat label="Signoffs" value={`${stats.signedCount}/${stats.signoffTotal}`} />
+          </div>
+
+          <div className="mt-4">
+            <ProgressBar value={stats.readiness} />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Required progress · {stats.requiredDone} of {stats.requiredTotal} required modules complete.
+            </p>
+          </div>
+
+          <ReadinessBanner ready={stats.fieldReady} />
         </header>
 
-        {/* 2. Continue Learning */}
-        {current && <ContinueCard module={current} />}
+        {stats.nextModule && <NextActionCard module={stats.nextModule} />}
 
-        {/* 3 + 4. RBT Journey Path with module cards */}
-        <section className="space-y-3">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold tracking-tight text-foreground">Your RBT journey</h2>
-              <p className="text-xs text-muted-foreground">Sequential path — complete to unlock the next.</p>
-            </div>
-            <FilterPills value={filter} onChange={setFilter} />
-          </div>
+        <Ownership />
 
-          <ol className="relative space-y-3">
-            <span aria-hidden className="absolute left-[19px] top-2 bottom-2 w-px bg-border/70" />
-            {filtered.map((m, i) => (
-              <ModuleRow key={m.id} module={m} index={i + 1} />
-            ))}
-          </ol>
-        </section>
+        <Tabs value={tab} onChange={setTab} />
 
-        {/* 6. Recommended Resources */}
-        <section className="space-y-2">
-          <div className="flex items-end justify-between">
-            <h2 className="text-base font-semibold tracking-tight text-foreground">Recommended for you</h2>
-            <Link to="/rbt/resources" className="text-sm text-primary hover:opacity-80">View library</Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {RESOURCES.map((r) => {
-              const Icon = r.icon;
-              return (
-                <Link
-                  key={r.id}
-                  to="/rbt/resources"
-                  className="group flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4 transition hover:-translate-y-0.5 hover:border-border"
-                >
-                  <div className="grid size-10 place-items-center rounded-xl bg-muted text-foreground">
-                    <Icon className="size-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">{r.title}</p>
-                    <p className="text-xs text-muted-foreground">{r.type}</p>
-                  </div>
-                  <ChevronRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5" />
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* 7. Support & Help */}
-        <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
-          <div className="flex items-center gap-2">
-            <Sparkles className="size-4 text-muted-foreground" />
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Support</p>
-          </div>
-          <p className="mt-2 text-sm text-foreground">Stuck on something? We're here.</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <SupportLink to="/ai/assistant" icon={Sparkles} label="Ask Blossom AI" />
-            <SupportLink to="/rbt/help" icon={LifeBuoy} label="Get help" />
-            <SupportLink to="/rbt/messages?focus=training" icon={MessageSquare} label="Contact training" />
-          </div>
-        </section>
+        {tab === "journey" && <JourneyTab path={path} />}
+        {tab === "resources" && <ResourcesTab />}
+        {tab === "signoffs" && <SignoffsTab signoffs={path.signoffs} />}
+        {tab === "support" && <SupportTab />}
       </div>
     </OSShell>
   );
 }
 
-// --- Subcomponents ---
-
-function ContinueCard({ module: m }: { module: Module }) {
-  const isResume = m.status === "in_progress";
+function TrackSelector({ value, onChange }: { value: RBTPathId; onChange: (v: RBTPathId) => void }) {
   return (
-    <section className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/8 via-card to-card p-6 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_12px_32px_-16px_oklch(0.2_0.02_260/0.12)]">
-      <div className="flex items-center justify-between">
+    <div className="grid gap-2 sm:grid-cols-2">
+      {RBT_PATHS.map((p) => {
+        const active = p.id === value;
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => onChange(p.id)}
+            className={cn(
+              "group flex flex-col items-start gap-1 rounded-2xl border p-3.5 text-left transition",
+              active
+                ? "border-primary/40 bg-primary/5 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.12)]"
+                : "border-border/70 bg-card hover:border-border hover:-translate-y-0.5",
+            )}
+          >
+            <div className="flex w-full items-center justify-between">
+              <span className="text-sm font-medium text-foreground">{p.label}</span>
+              {active && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                  <CheckCircle2 className="size-3" /> Assigned
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">{p.tagline}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Est. {p.estWeeks}</p>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Stat({ label, value, tone = "neutral" }: { label: string; value: string; tone?: "good" | "warn" | "neutral" }) {
+  const toneCls =
+    tone === "good" ? "text-emerald-600 dark:text-emerald-400" :
+    tone === "warn" ? "text-amber-600 dark:text-amber-400" :
+    "text-foreground";
+  return (
+    <div className="rounded-xl border border-border/70 bg-card/60 p-3">
+      <p className="text-[10.5px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className={cn("mt-1 truncate text-sm font-semibold tabular-nums", toneCls)}>{value}</p>
+    </div>
+  );
+}
+
+function ReadinessBanner({ ready }: { ready: boolean }) {
+  return (
+    <div
+      className={cn(
+        "mt-5 flex items-start gap-3 rounded-xl border p-3.5",
+        ready
+          ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300"
+          : "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300",
+      )}
+    >
+      {ready ? <ShieldCheck className="size-4 mt-0.5 shrink-0" /> : <AlertCircle className="size-4 mt-0.5 shrink-0" />}
+      <p className="text-xs leading-relaxed">
+        {ready ? (
+          <>You are <span className="font-semibold">field-ready for independent assignment</span>. Your Lead RBT Trainer has signed off.</>
+        ) : (
+          <>RBTs are <span className="font-semibold">not eligible for independent client assignment</span> until all required modules are complete and a Lead RBT Trainer + BCBA signoff is recorded.</>
+        )}
+      </p>
+    </div>
+  );
+}
+
+function NextActionCard({ module: m }: { module: RBTModule }) {
+  const resume = m.status === "in_progress";
+  return (
+    <section className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/[0.08] via-card to-card p-5 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_12px_32px_-16px_oklch(0.2_0.02_260/0.12)]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary">
-          <PlayCircle className="size-3.5" /> {isResume ? "Continue learning" : "Start next module"}
+          <PlayCircle className="size-3.5" /> Next required action
         </span>
-        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Clock className="size-3.5" /> {isResume && m.progress ? `${Math.max(1, Math.round(m.minutes * (1 - m.progress / 100)))} min left` : `${m.minutes} min`}
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <Clock className="size-3" /> {resume && m.progress ? `${Math.max(1, Math.round(m.minutes * (1 - m.progress / 100)))} min left` : `${m.minutes} min`}
         </span>
       </div>
-
-      <h2 className="mt-3 text-xl font-semibold tracking-tight text-foreground">{m.title}</h2>
+      <h2 className="mt-2 text-lg font-semibold tracking-tight text-foreground">{m.title}</h2>
       <p className="mt-1 text-sm text-muted-foreground">{m.summary}</p>
-
-      {isResume && typeof m.progress === "number" && (
-        <div className="mt-4">
-          <ProgressBar value={m.progress} />
-        </div>
+      {resume && typeof m.progress === "number" && (
+        <div className="mt-3"><ProgressBar value={m.progress} /></div>
       )}
-
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
-          className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+          className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90"
         >
-          {isResume ? "Resume" : "Start"} <ArrowRight className="size-4" />
+          {resume ? "Resume" : "Start"} <ArrowRight className="size-4" />
         </button>
-        <span className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-border/70 bg-secondary px-4 text-xs font-medium text-secondary-foreground">
+        <span className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border/70 bg-secondary px-3 text-xs font-medium text-secondary-foreground">
           <TypeIcon type={m.type} className="size-3.5" /> {m.type}
         </span>
       </div>
@@ -212,34 +194,117 @@ function ContinueCard({ module: m }: { module: Module }) {
   );
 }
 
-function ModuleRow({ module: m, index }: { module: Module; index: number }) {
+function Ownership() {
+  return (
+    <section className="grid gap-3 sm:grid-cols-2">
+      <OwnerCard icon={Compass} role={RBT_OWNERSHIP.leadTrainer.name} name={RBT_OWNERSHIP.leadTrainer.placeholder} note={RBT_OWNERSHIP.leadTrainer.role} />
+      <OwnerCard icon={UserCircle2} role={RBT_OWNERSHIP.bcba.name} name={RBT_OWNERSHIP.bcba.placeholder} note={RBT_OWNERSHIP.bcba.role} />
+    </section>
+  );
+}
+
+function OwnerCard({ icon: Icon, role, name, note }: { icon: React.ComponentType<{ className?: string }>; role: string; name: string; note: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card p-4">
+      <div className="grid size-10 place-items-center rounded-xl bg-muted text-foreground">
+        <Icon className="size-4" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{role}</p>
+        <p className="mt-0.5 truncate text-sm font-medium text-foreground">{name}</p>
+        <p className="text-xs text-muted-foreground">{note}</p>
+      </div>
+    </div>
+  );
+}
+
+function Tabs({ value, onChange }: { value: TabKey; onChange: (v: TabKey) => void }) {
+  const tabs: { v: TabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { v: "journey",   label: "Journey",   icon: GraduationCap },
+    { v: "resources", label: "Resources", icon: BookOpen },
+    { v: "signoffs",  label: "Signoffs",  icon: ClipboardCheck },
+    { v: "support",   label: "Support",   icon: LifeBuoy },
+  ];
+  return (
+    <div className="sticky top-0 z-10 -mx-1 overflow-x-auto rounded-2xl border border-border/70 bg-card/80 p-1 backdrop-blur">
+      <div className="flex gap-1">
+        {tabs.map((t) => {
+          const active = value === t.v;
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.v}
+              type="button"
+              onClick={() => onChange(t.v)}
+              className={cn(
+                "inline-flex flex-1 min-w-[110px] items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition",
+                active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted",
+              )}
+            >
+              <Icon className="size-3.5" /> {t.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function JourneyTab({ path }: { path: RBTPath }) {
+  return (
+    <section className="space-y-5">
+      {path.phases.map((phase, idx) => {
+        const completed = phase.modules.filter((m) => m.status === "completed").length;
+        const pct = phase.modules.length === 0 ? 0 : Math.round((completed / phase.modules.length) * 100);
+        return (
+          <div key={phase.id} className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_4px_16px_-12px_oklch(0.2_0.02_260/0.06)]">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">Phase {idx}</p>
+                <h3 className="mt-0.5 text-base font-semibold tracking-tight text-foreground">{phase.title.replace(/^Phase \d+ · /, "")}</h3>
+                <p className="mt-1 max-w-2xl text-xs text-muted-foreground">{phase.description}</p>
+              </div>
+              <span className="rounded-full border border-border/70 bg-muted/50 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground tabular-nums">
+                {completed}/{phase.modules.length} · {pct}%
+              </span>
+            </div>
+
+            <ol className="relative mt-4 space-y-2">
+              <span aria-hidden className="absolute left-[19px] top-2 bottom-2 w-px bg-border/70" />
+              {phase.modules.map((m, i) => (
+                <ModuleRow key={m.id} module={m} index={i + 1} />
+              ))}
+            </ol>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+function ModuleRow({ module: m, index }: { module: RBTModule; index: number }) {
   const dotCls =
     m.status === "completed" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
     : m.status === "in_progress" ? "border-primary/40 bg-primary/10 text-primary"
     : m.status === "locked" ? "border-border/70 bg-muted text-muted-foreground"
     : "border-border/70 bg-card text-muted-foreground";
-
   const statusLabel =
     m.status === "completed" ? "Completed"
     : m.status === "in_progress" ? `${m.progress ?? 0}% in progress`
     : m.status === "locked" ? "Locked"
     : "Not started";
-
   const isLocked = m.status === "locked";
-
   return (
     <li className="relative pl-10">
-      <span className={cn("absolute left-2 top-4 grid size-6 place-items-center rounded-full border bg-card", dotCls)}>
+      <span className={cn("absolute left-2 top-3 grid size-6 place-items-center rounded-full border bg-card", dotCls)}>
         {m.status === "completed" ? <CheckCircle2 className="size-3.5" />
           : m.status === "locked" ? <Lock className="size-3" />
           : <span className="text-[10px] font-semibold tabular-nums">{index}</span>}
       </span>
-
       <div
         className={cn(
-          "rounded-2xl border border-border/70 bg-card p-4 transition",
-          "shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_4px_16px_-12px_oklch(0.2_0.02_260/0.06)]",
-          isLocked ? "opacity-60" : "hover:-translate-y-0.5 hover:border-border",
+          "rounded-xl border border-border/70 bg-card/60 p-3 transition",
+          isLocked ? "opacity-60" : "hover:border-border",
         )}
       >
         <div className="flex items-start gap-3">
@@ -248,41 +313,133 @@ function ModuleRow({ module: m, index }: { module: Module; index: number }) {
               <p className="text-sm font-medium text-foreground">{m.title}</p>
               {m.required && <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">Required</span>}
             </div>
-            <p className="mt-0.5 text-sm text-muted-foreground">{m.summary}</p>
-            <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground">{m.summary}</p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1"><Clock className="size-3" /> {m.minutes} min</span>
               <span className="inline-flex items-center gap-1"><TypeIcon type={m.type} className="size-3" /> {m.type}</span>
               <span>·</span>
               <span>{statusLabel}</span>
             </div>
-
             {m.status === "in_progress" && typeof m.progress === "number" && (
-              <div className="mt-3"><ProgressBar value={m.progress} /></div>
+              <div className="mt-2"><ProgressBar value={m.progress} /></div>
             )}
           </div>
-
           {!isLocked && (
             <button
               type="button"
-              className="hidden shrink-0 items-center gap-1 rounded-xl border border-border/70 bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground transition hover:bg-muted sm:inline-flex"
+              className="hidden shrink-0 items-center gap-1 rounded-lg border border-border/70 bg-secondary px-2.5 py-1.5 text-xs font-medium text-secondary-foreground transition hover:bg-muted sm:inline-flex"
             >
               {m.status === "completed" ? "Review" : m.status === "in_progress" ? "Resume" : "Start"}
-              <ChevronRight className="size-3.5" />
+              <ChevronRight className="size-3" />
             </button>
           )}
         </div>
-
-        {!isLocked && (
-          <button
-            type="button"
-            className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-primary px-3 py-2.5 text-xs font-medium text-primary-foreground transition hover:opacity-90 sm:hidden"
-          >
-            {m.status === "completed" ? "Review" : m.status === "in_progress" ? "Resume" : "Start"}
-            <ChevronRight className="size-3.5" />
-          </button>
-        )}
       </div>
     </li>
+  );
+}
+
+function ResourcesTab() {
+  return (
+    <section className="grid gap-3 sm:grid-cols-2">
+      {RBT_RESOURCES.map((r) => (
+        <Link
+          key={r.id}
+          to="/rbt/resources"
+          className="group flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4 transition hover:-translate-y-0.5 hover:border-border"
+        >
+          <div className="grid size-10 place-items-center rounded-xl bg-muted text-foreground">
+            <FileText className="size-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-foreground">{r.title}</p>
+            <p className="text-xs text-muted-foreground">{r.type}</p>
+          </div>
+          <ChevronRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5" />
+        </Link>
+      ))}
+    </section>
+  );
+}
+
+function SignoffsTab({ signoffs }: { signoffs: SignoffItem[] }) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card p-4">
+        <Award className="size-4 mt-0.5 text-muted-foreground" />
+        <p className="text-xs text-muted-foreground">
+          Signoffs are recorded by your Lead RBT Trainer and BCBA. All required signoffs must be
+          complete before you can be assigned to clients independently.
+        </p>
+      </div>
+      <ul className="space-y-2">
+        {signoffs.map((s) => (
+          <li key={s.id} className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card p-4">
+            <SignoffDot status={s.status} />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <p className="text-sm font-medium text-foreground">{s.label}</p>
+                {s.required && <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">Required</span>}
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">Owner · {s.owner}</p>
+              {s.signedBy && s.signedOn && (
+                <p className="mt-0.5 text-xs text-muted-foreground">Signed by {s.signedBy} · {s.signedOn}</p>
+              )}
+            </div>
+            <SignoffBadge status={s.status} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function SignoffDot({ status }: { status: SignoffItem["status"] }) {
+  const cls =
+    status === "signed" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
+    status === "scheduled" ? "border-primary/40 bg-primary/10 text-primary" :
+    "border-border/70 bg-muted text-muted-foreground";
+  return (
+    <span className={cn("grid size-6 shrink-0 place-items-center rounded-full border", cls)}>
+      {status === "signed" ? <CheckCircle2 className="size-3.5" /> : <Clock className="size-3" />}
+    </span>
+  );
+}
+
+function SignoffBadge({ status }: { status: SignoffItem["status"] }) {
+  const map = {
+    signed:    { label: "Signed",    cls: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" },
+    scheduled: { label: "Scheduled", cls: "bg-primary/10 text-primary" },
+    pending:   { label: "Pending",   cls: "bg-muted text-muted-foreground" },
+  } as const;
+  const m = map[status];
+  return <span className={cn("rounded-full px-2 py-0.5 text-[10.5px] font-medium", m.cls)}>{m.label}</span>;
+}
+
+function SupportTab() {
+  return (
+    <section className="space-y-3">
+      <div className="rounded-2xl border border-border/70 bg-card p-5">
+        <div className="flex items-center gap-2">
+          <Sparkles className="size-4 text-muted-foreground" />
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Stuck on something?</p>
+        </div>
+        <p className="mt-2 text-sm text-foreground">You are never on your own. Reach out — that's why we're here.</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <SupportLink to="/ai/assistant" icon={Sparkles} label="Ask Blossom AI" />
+          <SupportLink to="/rbt/help" icon={LifeBuoy} label="Get help" />
+          <SupportLink to="/rbt/messages?focus=training" icon={MessageSquare} label="Contact training" />
+        </div>
+      </div>
+      <div className="rounded-2xl border border-border/70 bg-card p-5">
+        <p className="text-sm font-medium text-foreground">Common questions</p>
+        <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+          <li>• How do I switch my assigned path? — Talk to your Lead RBT Trainer.</li>
+          <li>• Who signs off field readiness? — Your Lead RBT Trainer, after BCBA observation.</li>
+          <li>• When can I take clients independently? — After 100% required progress + all signoffs.</li>
+        </ul>
+      </div>
+    </section>
   );
 }
 
@@ -297,44 +454,16 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
-function FilterPills({
-  value, onChange,
-}: { value: "all" | "required" | "in_progress"; onChange: (v: "all" | "required" | "in_progress") => void }) {
-  const opts: { v: typeof value; label: string }[] = [
-    { v: "all",         label: "All" },
-    { v: "required",    label: "Required" },
-    { v: "in_progress", label: "To do" },
-  ];
-  return (
-    <div className="inline-flex rounded-full border border-border/70 bg-muted/50 p-1">
-      {opts.map((o) => (
-        <button
-          key={o.v}
-          type="button"
-          onClick={() => onChange(o.v)}
-          className={cn(
-            "rounded-full px-3 py-1 text-xs font-medium transition",
-            value === o.v ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function TypeIcon({ type, className }: { type: ModuleType; className?: string }) {
   const map: Record<ModuleType, React.ComponentType<{ className?: string }>> = {
-    SOP: FileText, Video: Video, Walkthrough: PlayCircle, Checklist: ListChecks, Overview: GraduationCap,
+    SOP: FileText, Video: Video, Walkthrough: PlayCircle, Checklist: ListChecks,
+    Overview: GraduationCap, Shadowing: Compass, Assessment: ClipboardCheck,
   };
   const Icon = map[type] ?? BookOpen;
   return <Icon className={className} />;
 }
 
-function SupportLink({
-  to, icon: Icon, label,
-}: { to: string; icon: React.ComponentType<{ className?: string }>; label: string }) {
+function SupportLink({ to, icon: Icon, label }: { to: string; icon: React.ComponentType<{ className?: string }>; label: string }) {
   return (
     <Link
       to={to}
