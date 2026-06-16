@@ -480,7 +480,10 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     ai: [{ id: "sai1", text: "Which RBTs have spare capacity in GA?" }],
     reports: [{ label: "Coverage & Capacity", path: "/reports?view=coverage" }],
     resources: [{ label: "Scheduling SOPs", path: "/resources?cat=scheduling" }],
-    related: [{ label: "Recruiting", path: "/ws/recruiting" }],
+    related: [
+      { label: "RBT Readiness Board", path: "/training/rbt-readiness" },
+      { label: "Recruiting", path: "/ws/recruiting" },
+    ],
   },
 
   // ---------- RECRUITING ----------
