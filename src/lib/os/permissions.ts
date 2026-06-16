@@ -27,15 +27,68 @@ export type OSRole =
   | "rbt"
   | "marketing_team"
   | "case_manager"
-  | "behavioral_support";
+  | "behavioral_support"
+  // ---- 2026 canonical org roles ----
+  | "systems_admin"
+  | "executive"
+  | "coo"
+  | "director_of_operations"
+  | "operations_manager"
+  | "marketing_growth_lead"
+  | "intake_lead"
+  | "finance_benefits_lead"
+  | "finance_benefits_team"
+  | "authorization_manager"
+  | "qa_director"
+  | "qa_specialist"
+  | "clinical_lead"
+  | "scheduling_lead"
+  | "scheduling_coordinator"
+  | "staffing_lead"
+  | "staffing_coordinator"
+  | "recruiting_lead"
+  | "recruiting_coordinator"
+  | "hr_lead"
+  | "payroll_lead"
+  | "billing_lead"
+  | "credentialing_lead"
+  | "rcm_team"
+  | "assistant_state_director"
+  | "viewer";
 
 export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadership" | "operations" | "field" }[] = [
   { id: "super_admin", label: "Super Admin", tier: "platform" },
+  { id: "systems_admin", label: "Systems Admin", tier: "platform" },
+  { id: "executive", label: "Executive", tier: "leadership" },
+  { id: "coo", label: "COO", tier: "leadership" },
+  { id: "director_of_operations", label: "Director of Operations", tier: "leadership" },
+  { id: "operations_manager", label: "Operations Manager", tier: "leadership" },
   { id: "executive_leadership", label: "Executive Leadership", tier: "leadership" },
   { id: "operations_leadership", label: "Operations Leadership", tier: "leadership" },
   { id: "state_director", label: "State Director", tier: "leadership" },
+  { id: "assistant_state_director", label: "Assistant State Director", tier: "leadership" },
+  { id: "marketing_growth_lead", label: "Marketing & Growth Lead", tier: "operations" },
+  { id: "marketing_team", label: "Marketing Team", tier: "operations" },
+  { id: "intake_lead", label: "Intake Lead", tier: "operations" },
   { id: "intake_coordinator", label: "Intake Coordinator", tier: "operations" },
+  { id: "finance_benefits_lead", label: "Finance / Benefits Lead", tier: "operations" },
+  { id: "finance_benefits_team", label: "Finance / Benefits Team", tier: "operations" },
+  { id: "authorization_manager", label: "Authorization Manager", tier: "operations" },
   { id: "authorization_coordinator", label: "Authorization Coordinator", tier: "operations" },
+  { id: "qa_director", label: "QA Director", tier: "operations" },
+  { id: "qa_specialist", label: "QA Specialist", tier: "operations" },
+  { id: "clinical_lead", label: "Clinical Lead", tier: "operations" },
+  { id: "scheduling_lead", label: "Scheduling Lead", tier: "operations" },
+  { id: "scheduling_coordinator", label: "Scheduling Coordinator", tier: "operations" },
+  { id: "staffing_lead", label: "Staffing Lead", tier: "operations" },
+  { id: "staffing_coordinator", label: "Staffing Coordinator", tier: "operations" },
+  { id: "recruiting_lead", label: "Recruiting Lead", tier: "operations" },
+  { id: "recruiting_coordinator", label: "Recruiting Coordinator", tier: "operations" },
+  { id: "hr_lead", label: "HR Lead", tier: "operations" },
+  { id: "payroll_lead", label: "Payroll Lead", tier: "operations" },
+  { id: "billing_lead", label: "Billing Lead", tier: "operations" },
+  { id: "credentialing_lead", label: "Credentialing Lead", tier: "operations" },
+  { id: "rcm_team", label: "RCM Team", tier: "operations" },
   { id: "scheduling_team", label: "Scheduling Team", tier: "operations" },
   { id: "recruiting_team", label: "Recruiting Team", tier: "operations" },
   { id: "hr_team", label: "HR Team", tier: "operations" },
@@ -44,9 +97,9 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "payroll_coordinator", label: "Payroll Coordinator", tier: "operations" },
   { id: "bcba", label: "BCBA", tier: "field" },
   { id: "rbt", label: "RBT", tier: "field" },
-  { id: "marketing_team", label: "Marketing Team", tier: "operations" },
   { id: "case_manager", label: "Case Manager", tier: "operations" },
   { id: "behavioral_support", label: "Behavioral Support", tier: "field" },
+  { id: "viewer", label: "Viewer", tier: "field" },
 ];
 
 export type OSAction = "view" | "create" | "edit" | "delete" | "approve" | "export" | "assign";
