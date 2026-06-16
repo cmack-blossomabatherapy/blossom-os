@@ -359,7 +359,7 @@ function AIRail({ suggestions }: { suggestions: AISuggestion[] }) {
       <div className="flex items-center justify-between border-b border-primary/15 px-4 py-2.5">
         <div className="flex items-center gap-2">
           <Bot className="h-3.5 w-3.5 text-primary" />
-          <h3 className="text-[12.5px] font-medium uppercase tracking-wider text-primary">Ask Blossom</h3>
+          <h3 className="text-[12.5px] font-medium uppercase tracking-wider text-primary">Suggestions</h3>
         </div>
       </div>
       <div className="space-y-1.5 p-3">
@@ -372,7 +372,7 @@ function AIRail({ suggestions }: { suggestions: AISuggestion[] }) {
             {s.text}
           </button>
         )) : (
-          <p className="px-2 py-3 text-center text-[12.5px] text-muted-foreground">No AI suggestions yet.</p>
+          <p className="px-2 py-3 text-center text-[12.5px] text-muted-foreground">No suggestions yet.</p>
         )}
       </div>
     </div>
