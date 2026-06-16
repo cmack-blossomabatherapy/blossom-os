@@ -491,7 +491,7 @@ export function CaseManagementPhase6Page() {
 /* 9. QA Dashboard (Phase 6)                                                  */
 /* -------------------------------------------------------------------------- */
 
-export function QADashboardPhase6Page() {
+export function QAPhase6OpsPage() {
   return (
     <Shell>
       <PageHeader

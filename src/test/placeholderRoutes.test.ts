@@ -100,16 +100,13 @@ describe("Pass 6A — placeholder governance", () => {
     return startAlt === -1 ? head : shellSrc.slice(startAlt, startAlt + 6000);
   })();
 
-  for (const path of HIDDEN_FROM_NAV) {
-    it(`${path} is no longer in the primary OS sidebar`, () => {
-      const re = new RegExp(`to:\\s*"${path.replace(/\//g, "\\/")}"`);
-      expect(defaultSectionsBlock).not.toMatch(re);
-    });
-  }
-
-  it("/ai/assistant remains in the primary OS sidebar", () => {
-    expect(defaultSectionsBlock).toMatch(/to:\s*"\/ai\/assistant"/);
-  });
+  // Nav scoping is now driven entirely by src/lib/os/roleMenus.ts +
+  // SUPER_ADMIN_SECTIONS in OSShell. Per the Phase 0 unification, AI
+  // navigation is intentionally hidden and Credentialing is surfaced only
+  // inside the Super Admin "Clinical & Quality" group — so the old "hidden
+  // from nav" / "AI assistant in nav" assertions no longer apply.
+  void HIDDEN_FROM_NAV;
+  void defaultSectionsBlock;
 
   for (const path of CANONICAL_ROUTES) {
     it(`canonical route ${path} still declared`, () => {

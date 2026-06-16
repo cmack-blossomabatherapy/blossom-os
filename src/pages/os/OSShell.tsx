@@ -1,165 +1,208 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
-import { OSNotificationsBell } from "@/components/os/OSNotificationsBell";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard, Users, Heart, UserCog, CalendarDays, ClipboardList,
-  FolderKanban, DollarSign, BarChart3, GraduationCap, Building2, Settings,
-  Search, Bell, Sparkles, ChevronLeft, History, ChevronRight, ChevronDown,
-  Menu, X, ShieldCheck, Home, Radio, BellRing, FileCheck2, Users2, BadgeCheck,
-  Briefcase, ClipboardCheck, Wallet, TrendingUp, ShieldAlert, Activity, Target,
-  Workflow, BookOpen, Megaphone, PieChart, LifeBuoy, Inbox, AlertTriangle,
-  KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
-  HeartHandshake, Globe, Hash, Star,
-  LineChart, PhoneCall, Gauge, Database, Moon,
-  Plug, Network, MonitorSmartphone,
+  FolderKanban, BarChart3, GraduationCap, Building2, Settings,
+  Search, Bell, ChevronLeft, ChevronRight, ChevronDown,
+  Menu, X, ShieldCheck, Radio, FileCheck2, Users2,
+  Briefcase, ClipboardCheck, Wallet, TrendingUp, Workflow,
+  BookOpen, Megaphone, Inbox, AlertTriangle,
+  HeartHandshake, MapPin, UserPlus, Headphones, KeyRound, IdCard, Smartphone,
+  Stethoscope, PhoneCall, BookUser, Activity, Bug, UserCheck,
+  History, Plug, MonitorSmartphone, XCircle, CheckCircle2, ListTodo,
+  Phone, FileText, LogOut,
+  type LucideIcon,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
+import { OSNotificationsBell } from "@/components/os/OSNotificationsBell";
 import { RoleSwitcher } from "@/components/os/RoleSwitcher";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
+  CommandDialog, CommandEmpty, CommandGroup, CommandInput,
+  CommandItem, CommandList, CommandSeparator,
 } from "@/components/ui/command";
-import { LogOut } from "lucide-react";
-import type { OSModule } from "@/lib/os/permissions";
-import { ROLE_HOME, ALL_ROLE_DASHBOARDS } from "@/lib/os/roleHome";
+import { ROLE_HOME } from "@/lib/os/roleHome";
+import { ROLE_MENUS, DEFAULT_ROLE_MENU } from "@/lib/os/roleMenus";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import blossomMark from "@/assets/blossom-flower-mark.png";
 
-type NavEntry = { to: string; label: string; icon: typeof LayoutDashboard; module: OSModule; end?: boolean; disabled?: boolean };
+/* ------------------------------------------------------------------ */
+/* Section / item types                                               */
+/* ------------------------------------------------------------------ */
 
-const PHONE_SYSTEM_SECTION: NavSection = {
-  id: "phone_system",
-  label: "Phone System",
-  items: [
-    { to: "/phone", label: "Phone Dashboard", icon: PhoneCall, module: "phone_system", end: true },
-    { to: "/phone/lookup", label: "Extension Lookup", icon: Search, module: "phone_system" },
-    { to: "/phone/directory", label: "Routing Directory", icon: Headphones, module: "phone_system" },
-    { to: "/phone/requests", label: "Change Requests", icon: ClipboardList, module: "phone_system" },
-    { to: "/phone/ai-calls", label: "After-Hours Calls", icon: Moon, module: "phone_system", end: true },
-    { to: "/phone/ai-calls/audit", label: "Call Email Audit", icon: ShieldCheck, module: "phone_system" },
-  ],
-};
-type NavSection = { id: string; label: string; items: NavEntry[] };
-
-const HOME_EXTRAS: NavEntry[] = [
-  { to: "/command-center", label: "Command Center", icon: Radio, module: "command_center" },
-  { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
-];
-
-const INTAKE_WORKSPACE_ITEM: NavEntry = {
-  to: "/intake", label: "Intake Workspace", icon: ClipboardList, module: "intake",
+type NavEntry = {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  end?: boolean;
+  disabled?: boolean;
 };
 
-const NAV_SECTIONS: NavSection[] = [
+type NavSection = {
+  id: string;
+  label: string;
+  items: NavEntry[];
+  defaultCollapsed?: boolean;
+};
+
+/* ------------------------------------------------------------------ */
+/* Super Admin — canonical grouped menu (matches AppSidebar)          */
+/* ------------------------------------------------------------------ */
+
+const SUPER_ADMIN_SECTIONS: NavSection[] = [
   {
-    id: "intake_clients", label: "Intake & Clients", items: [
-      { to: "/leads", label: "Leads", icon: Users, module: "leads" },
-      { to: "/vob-decision-center", label: "VOB Decision Center", icon: ShieldCheck, module: "vob" },
-      { to: "/clients", label: "Clients", icon: Heart, module: "clients" },
-      { to: "/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations" },
-      { to: "/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
-      { to: "/cases", label: "Case Management", icon: FolderKanban, module: "cases" },
+    id: "command_center", label: "Command Center", items: [
+      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+      { to: "/command-center", label: "Command Center", icon: Workflow },
+      { to: "/reports", label: "Reports", icon: BarChart3 },
     ],
   },
   {
-    id: "staffing", label: "Clinical Staff", items: [
-      { to: "/staff", label: "BCBA / RBT", icon: UserCog, module: "staff" },
-      { to: "/recruiting/workspace", label: "Recruiting", icon: UserPlus, module: "recruiting" },
-      { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
+    id: "people_access", label: "People & Access", items: [
+      { to: "/user-management", label: "User Management", icon: Users2 },
+      { to: "/role-management", label: "Role Management", icon: ShieldCheck },
+      { to: "/employee-directory", label: "Employee Directory", icon: UserCheck },
+      { to: "/permissions", label: "Permissions", icon: ShieldCheck },
+      { to: "/user-logins-vault", label: "User Logins Vault", icon: KeyRound },
+      { to: "/nfc-badges", label: "NFC Badge Management", icon: IdCard },
+      { to: "/device-inventory", label: "Device Inventory", icon: Smartphone },
+      { to: "/device-requests", label: "Device Requests", icon: Smartphone },
+    ],
+    defaultCollapsed: true,
+  },
+  {
+    id: "training_resources", label: "Training & Resources", items: [
+      { to: "/academy", label: "Training Academy", icon: GraduationCap },
+      { to: "/hr/training-center", label: "Training Management", icon: GraduationCap },
+      { to: "/resource-library", label: "Resource Library", icon: BookOpen },
     ],
   },
   {
-    id: "operations", label: "Operations & Intelligence", items: [
-      { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-      { to: "/kpi", label: "KPI Tracking", icon: Target, module: "kpi" },
-      { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop" },
-      { to: "/marketing", label: "Marketing Ops", icon: Megaphone, module: "marketing" },
+    id: "growth_admissions", label: "Growth & Admissions", items: [
+      { to: "/marketing", label: "Marketing Dashboard", icon: Megaphone },
+      { to: "/business-development", label: "Business Development", icon: HeartHandshake },
+      { to: "/marketing/referral-crm", label: "Referral CRM", icon: HeartHandshake },
+      { to: "/marketing/lead-sources", label: "Lead Sources", icon: TrendingUp },
+      { to: "/marketing/campaigns", label: "Campaigns", icon: Megaphone },
+      { to: "/marketing/call-tracking", label: "CTM / Call Tracking", icon: Phone },
+      { to: "/marketing/leadtrap", label: "LeadTrap", icon: TrendingUp },
+      { to: "/marketing/facebook-ads", label: "Facebook Ads", icon: Megaphone },
+      { to: "/marketing/google-ads", label: "Google Ads", icon: TrendingUp },
+      { to: "/patient-journey", label: "Patient Lifetime Journey", icon: Workflow },
+      { to: "/intake/dashboard", label: "Intake Dashboard", icon: Briefcase },
+      { to: "/intake/lead-to-active", label: "Lead To Active Pipeline", icon: TrendingUp },
+      { to: "/intake/referral-queue", label: "Referral Queue", icon: ClipboardCheck },
+      { to: "/intake/tasks", label: "Intake Tasks", icon: ListTodo },
+      { to: "/intake/benefits-cheat-sheets", label: "Lead Benefits Cheat Sheets", icon: ShieldCheck },
     ],
+    defaultCollapsed: true,
   },
   {
-    id: "growth", label: "Growth & Marketing", items: [
-      { to: "/marketing/campaigns", label: "Campaigns", icon: Megaphone, module: "campaigns" },
-      { to: "/marketing/lead-sources", label: "Lead Sources", icon: TrendingUp, module: "lead_sources" },
-      { to: "/marketing/seo", label: "SEO & Content", icon: Globe, module: "seo_content" },
-      { to: "/marketing/web-analytics", label: "Web Analytics", icon: LineChart, module: "web_analytics" },
-      { to: "/marketing/call-tracking", label: "Call Tracking", icon: PhoneCall, module: "call_tracking" },
+    id: "clinical_quality", label: "Clinical & Quality", items: [
+      { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck },
+      { to: "/qa", label: "QA Dashboard", icon: ClipboardCheck },
+      { to: "/credentialing/bcba", label: "BCBA Credentials", icon: IdCard },
+      { to: "/credentialing/uncredentialed-bcbas", label: "Uncredentialed BCBAs", icon: AlertTriangle },
+      { to: "/credentialing", label: "Credentialing Dashboard", icon: Stethoscope },
+      { to: "/credentialing/providers", label: "Provider Credentialing", icon: Stethoscope },
+      { to: "/credentialing/insurance", label: "Insurance Credentialing", icon: Building2 },
+      { to: "/credentialing/expiring", label: "Expiring Credentials", icon: CalendarDays },
     ],
+    defaultCollapsed: true,
   },
   {
-    id: "relationships", label: "Relationships", items: [
-      { to: "/marketing/referral-crm", label: "Referral CRM", icon: HeartHandshake, module: "referrals" },
-      { to: "/marketing/recruiting", label: "Recruiting Marketing", icon: UserPlus, module: "recruiting_marketing" },
-      { to: "/marketing/outreach", label: "Community Outreach", icon: Users2, module: "community_outreach" },
-      { to: "/marketing/reputation", label: "Reputation", icon: Star, module: "reputation" },
+    id: "operations", label: "Operations", items: [
+      { to: "/state-operations", label: "State Operations", icon: MapPin },
+      { to: "/ops/authorizations", label: "Authorizations", icon: ShieldCheck },
+      { to: "/ops/approved-authorizations", label: "Approved Authorizations", icon: CheckCircle2 },
+      { to: "/ops/denials", label: "Denials", icon: XCircle },
+      { to: "/ops/scheduling", label: "Scheduling", icon: CalendarDays },
+      { to: "/ops/staffing", label: "Staffing", icon: Users },
+      { to: "/ops/case-management", label: "Case Management", icon: HeartHandshake },
+      { to: "/ops/no-oon-benefits", label: "No OON Benefits", icon: ShieldCheck },
+      { to: "/ops/family-staffing-preferences", label: "Family Staffing Preferences", icon: HeartHandshake },
+      { to: "/ops/state-escalations", label: "State Escalations", icon: AlertTriangle },
+      { to: "/ops/tasks", label: "Operational Tasks", icon: ListTodo },
     ],
+    defaultCollapsed: true,
   },
   {
-    id: "intelligence", label: "Intelligence & ROI", items: [
-      { to: "/marketing/attribution", label: "Attribution & ROI", icon: Gauge, module: "attribution_roi" },
-      { to: "/marketing/state-growth", label: "State Growth", icon: MapPin, module: "state_growth" },
-      { to: "/marketing/reports", label: "Marketing Reports", icon: BarChart3, module: "marketing_reports" },
+    id: "communications", label: "Communications", items: [
+      { to: "/phone", label: "Phone System", icon: Phone, end: true },
+      { to: "/communications/call-logs", label: "Call Logs", icon: PhoneCall },
+      { to: "/phone/shared", label: "Shared Lines", icon: Phone },
+      { to: "/communications/phone-requests", label: "Phone Requests", icon: ClipboardList },
+      { to: "/communications/directory", label: "Directory", icon: BookUser },
+      { to: "/phone/ai-calls", label: "After-Hours Calls", icon: PhoneCall, end: true },
+      { to: "/phone/ai-calls/audit", label: "Call Email Audit", icon: FileText },
+      { to: "/communications/user-activity", label: "User Activity Log", icon: Activity },
+      { to: "/communications/patient-activity", label: "Patient Activity Log", icon: HeartHandshake },
     ],
+    defaultCollapsed: true,
   },
   {
-    id: "financial", label: "Financial Operations", items: [
-      { to: "/payroll/workspace", label: "Payroll", icon: Wallet, module: "payroll" },
+    id: "system_tools", label: "System Tools", items: [
+      { to: "/admin/integrations", label: "Integrations", icon: Plug },
+      { to: "/system/workflow-inventory", label: "Workflow Inventory", icon: Workflow },
+      { to: "/system/request-intake", label: "Request Intake", icon: Inbox },
+      { to: "/settings", label: "System Settings", icon: Settings },
+      { to: "/system/issue-tracker", label: "Issue Tracker", icon: Bug },
     ],
-  },
-  {
-    id: "internal", label: "Internal Operations", items: [
-    ],
-  },
-  {
-    id: "ai", label: "AI & Automations", items: [
-      { to: "/ai/assistant", label: "Operational Insights", icon: Bot, module: "ai_assistant" },
-      { to: "/ai/insights", label: "AI Insights", icon: Brain, module: "ai_insights" },
-    ],
-  },
-  {
-    id: "hr_operations",
-    label: "HR Operations",
-    items: [
-      { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
-      { to: "/admin/device-inventory", label: "Device Inventory", icon: MonitorSmartphone, module: "user_management" },
-      { to: "/hr", label: "HR Suite", icon: Building2, module: "hr", end: true },
-    ],
-  },
-  {
-    id: "training", label: "Training", items: [
-      { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
-      { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "training" },
-      { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop" },
-    ],
-  },
-  {
-    id: "phone_system", label: "Phone System", items: PHONE_SYSTEM_SECTION.items,
-  },
-  {
-    id: "system", label: "System", items: [
-      { to: "/settings", label: "Settings", icon: Settings, module: "settings" },
-      { to: "/permissions", label: "Permissions", icon: ShieldCheck, module: "permissions" },
-      { to: "/integrations", label: "Integrations", icon: Plug, module: "integrations" },
-    ],
+    defaultCollapsed: true,
   },
 ];
+
+/* ------------------------------------------------------------------ */
+/* Section builder                                                    */
+/* ------------------------------------------------------------------ */
+
+function buildSectionsForRole(role: string): NavSection[] {
+  if (role === "super_admin") return SUPER_ADMIN_SECTIONS;
+
+  const menu =
+    (ROLE_MENUS as Record<string, typeof DEFAULT_ROLE_MENU>)[role] ??
+    DEFAULT_ROLE_MENU;
+
+  const sections: NavSection[] = [
+    {
+      id: "available_now",
+      label: "Available Now",
+      items: menu.active.map((i) => ({
+        to: i.path,
+        label: i.label,
+        icon: i.icon,
+        end: i.path === "/dashboard" || i.path === "/",
+      })),
+    },
+  ];
+
+  if (menu.comingSoon.length) {
+    sections.push({
+      id: "coming_soon",
+      label: "Coming Soon",
+      items: menu.comingSoon.map((i) => ({
+        to: i.path,
+        label: i.label,
+        icon: i.icon,
+        disabled: true,
+      })),
+      defaultCollapsed: true,
+    });
+  }
+
+  return sections;
+}
+
+/* ------------------------------------------------------------------ */
+/* OSShell                                                            */
+/* ------------------------------------------------------------------ */
 
 export function OSShell({ children, rightRail }: { children: ReactNode; rightRail?: ReactNode }) {
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -169,12 +212,14 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   useEffect(() => {
     try { window.localStorage.setItem("os.sidebar.collapsed", collapsed ? "1" : "0"); } catch { /* ignore */ }
   }, [collapsed]);
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [headerSearch, setHeaderSearch] = useState("");
   const [headerSearchOpen, setHeaderSearchOpen] = useState(false);
   const headerSearchRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       if (!headerSearchRef.current) return;
@@ -183,11 +228,13 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
-  const { user, signOut, avatarUrl, displayName } = useAuth();
-  const { canSee, role, platform } = useOSRole();
+
+  const { signOut, avatarUrl, displayName } = useAuth();
+  const { role, platform } = useOSRole();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  // Right rail visibility — remembered per page. URL (?panel=hidden|open) overrides per-page memory.
+
+  // Right rail toggle persistence per page.
   const [searchParams, setSearchParams] = useSearchParams();
   const PANEL_MAP_KEY = "os.rightRail.byPath";
   const readPanelMap = (): Record<string, boolean> => {
@@ -209,10 +256,10 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     params.set("panel", value ? "hidden" : "open");
     setSearchParams(params, { replace: true });
   };
-  
+
   const showOldVersion = platform("accessOldVersion");
 
-  // Global ⌘K / Ctrl+K search shortcut
+  // ⌘K palette
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
@@ -224,334 +271,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // Build the Home section dynamically based on the current role.
-  const homeSection: NavSection = (() => {
-    const items: NavEntry[] = [];
-    if (role === "super_admin") {
-      // Super admins see the generic dashboard plus quick access to every role dashboard.
-      items.push({ to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true });
-      ALL_ROLE_DASHBOARDS.forEach((d) => {
-        items.push({ to: d.to, label: d.label, icon: Target, module: "dashboard" });
-      });
-    }
-    // For non super_admin roles we intentionally omit a synthetic "Dashboard"
-    // entry — their landing page already lives elsewhere in the sidebar (e.g.
-    // Training Academy, Evaluations) and a duplicate route would cause two
-    // items to highlight at once.
-    // Intake Workspace lives in Home for everyone who can see intake.
-    items.push(INTAKE_WORKSPACE_ITEM);
-    HOME_EXTRAS.forEach((e) => {
-      items.push(e);
-    });
-    return { id: "home", label: "Home", items };
-  })();
-
-  // Scheduling Team gets a curated, focused operational menu.
-  const SCHEDULING_TEAM_SECTIONS: NavSection[] = [
-    {
-      id: "home", label: "Home", items: [
-        { to: "/scheduling-team", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
-        { to: "/scheduling-workspace", label: "Scheduling Workspace", icon: Workflow, module: "scheduling" },
-        { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
-      ],
-    },
-    {
-      id: "staffing_scheduling", label: "Staffing & Scheduling", items: [
-        { to: "/staffing", label: "Staffing Queue", icon: UserPlus, module: "scheduling" },
-        { to: "/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
-        { to: "/clients", label: "Clients", icon: Heart, module: "clients" },
-        { to: "/staff", label: "BCBA / RBT", icon: UserCog, module: "staff" },
-        { to: "/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations" },
-      ],
-    },
-    {
-      id: "resources", label: "Resources", items: [
-        { to: "/scheduling/resources", label: "Resource Library", icon: BookOpen, module: "sop" },
-      ],
-    },
-    {
-      id: "performance", label: "Operations & Intelligence", items: [
-        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard" },
-      ],
-    },
-    {
-      id: "ai", label: "AI", items: [
-        { to: "/ai/assistant", label: "Operational Insights", icon: Bot, module: "ai_assistant" },
-      ],
-    },
-  ];
-
-  // BCBA gets a curated clinical menu focused on their caseload.
-  const BCBA_SECTIONS: NavSection[] = [
-    {
-      id: "home", label: "Home", items: [
-        { to: "/bcba", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
-        { to: "/bcba/workspace", label: "BCBA Workspace", icon: Workflow, module: "dashboard" },
-        { to: "/bcba/training-academy", label: "Training Academy", icon: GraduationCap, module: "training" },
-      ],
-    },
-    {
-      id: "clients_clinical", label: "Clients & Clinical", items: [
-        { to: "/bcba/clients", label: "Clients", icon: Heart, module: "clients" },
-        { to: "/bcba/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations" },
-        { to: "/bcba/supervision", label: "Supervision", icon: ClipboardCheck, module: "evaluations" },
-        { to: "/bcba/parent-training", label: "Parent Training", icon: HeartHandshake, module: "clients" },
-        { to: "/bcba/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
-      ],
-    },
-    {
-      id: "resources", label: "Resources", items: [
-        { to: "/bcba/resources", label: "Resource Library", icon: BookOpen, module: "sop" },
-      ],
-    },
-    {
-      id: "performance", label: "Operations & Intelligence", items: [
-        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard" },
-      ],
-    },
-    {
-      id: "ai", label: "AI", items: [
-        { to: "/ai/assistant", label: "Operational Insights", icon: Bot, module: "ai_assistant" },
-      ],
-    },
-  ];
-
-  // RBT gets a focused daily-support menu — assignment-scoped, mobile-first.
-  const RBT_SECTIONS: NavSection[] = [
-    {
-      id: "home", label: "Home", items: [
-        { to: "/rbt", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
-        { to: "/rbt/my-day", label: "My Day", icon: Radio, module: "dashboard" },
-        { to: "/rbt/training-academy", label: "Training Academy", icon: GraduationCap, module: "training" },
-      ],
-    },
-    {
-      id: "clients_sessions", label: "Clients & Sessions", items: [
-        { to: "/rbt/clients", label: "My Clients", icon: Heart, module: "clients" },
-        { to: "/rbt/schedule", label: "My Schedule", icon: CalendarDays, module: "scheduling" },
-        { to: "/rbt/session-support", label: "Session Support", icon: LifeBuoy, module: "sop" },
-        { to: "/rbt/supervision", label: "Supervision", icon: ClipboardCheck, module: "evaluations" },
-      ],
-    },
-    {
-      id: "communication", label: "Communication", items: [
-        { to: "/rbt/messages", label: "Messages & Updates", icon: BellRing, module: "dashboard" },
-        { to: "/rbt/help", label: "Need Help / Escalations", icon: AlertTriangle, module: "dashboard" },
-      ],
-    },
-    {
-      id: "resources", label: "Resources", items: [
-        { to: "/rbt/resources", label: "Resource Library", icon: BookOpen, module: "sop" },
-      ],
-    },
-    {
-      id: "performance", label: "Operations & Intelligence", items: [
-        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard" },
-      ],
-    },
-    {
-      id: "ai", label: "AI", items: [
-        { to: "/ai/assistant", label: "Operational Insights", icon: Bot, module: "ai_assistant" },
-      ],
-    },
-  ];
-
-  // Payroll Coordinator gets a focused payroll operations menu.
-  const PAYROLL_SECTIONS: NavSection[] = [
-    {
-      id: "resources", label: "Resources", items: [
-        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
-      ],
-    },
-  ];
-
-  // Operations Leadership — focused menu: Workforce (Evaluations) + Resources.
-  const OPS_LEADERSHIP_SECTIONS: NavSection[] = [
-    {
-      id: "workforce", label: "Workforce", items: [
-        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
-      ],
-    },
-    {
-      id: "resources", label: "Resources", items: [
-        { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
-        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop" },
-      ],
-    },
-  ];
-
-  // Executive Leadership — focused menu: Workforce (Evaluations) + Resources.
-  const EXEC_LEADERSHIP_SECTIONS: NavSection[] = [
-    {
-      id: "workforce", label: "Workforce", items: [
-        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
-      ],
-    },
-    PHONE_SYSTEM_SECTION,
-    {
-      id: "resources", label: "Resources", items: [
-        { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
-        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop" },
-      ],
-    },
-  ];
-
-  const MARKETING_TEAM_SECTIONS: NavSection[] = [
-    {
-      id: "home", label: "Home", items: [
-        { to: "/marketing", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true, disabled: true },
-        { to: "/marketing/training", label: "Training Academy", icon: GraduationCap, module: "training" },
-      ],
-    },
-    {
-      id: "growth", label: "Growth & Marketing", items: [
-        { to: "/marketing/campaigns", label: "Campaigns", icon: Megaphone, module: "dashboard", disabled: true },
-        { to: "/marketing/lead-sources", label: "Lead Sources", icon: TrendingUp, module: "dashboard", disabled: true },
-        { to: "/marketing/seo", label: "SEO & Content", icon: Globe, module: "dashboard", disabled: true },
-        { to: "/marketing/web-analytics", label: "Web Analytics", icon: LineChart, module: "dashboard", disabled: true },
-        { to: "/marketing/call-tracking", label: "Call Tracking", icon: PhoneCall, module: "dashboard", disabled: true },
-      ],
-    },
-    {
-      id: "relationships", label: "Relationships", items: [
-        { to: "/marketing/referral-crm", label: "Referral CRM", icon: HeartHandshake, module: "dashboard" },
-        { to: "/marketing/recruiting", label: "Recruiting Marketing", icon: UserPlus, module: "dashboard", disabled: true },
-        { to: "/marketing/outreach", label: "Community Outreach", icon: Users2, module: "dashboard", disabled: true },
-        { to: "/marketing/reputation", label: "Reputation", icon: Star, module: "dashboard", disabled: true },
-      ],
-    },
-    {
-      id: "intelligence", label: "Intelligence & ROI", items: [
-        { to: "/marketing/attribution", label: "Attribution & ROI", icon: Gauge, module: "dashboard", disabled: true },
-        { to: "/marketing/state-growth", label: "State Growth", icon: MapPin, module: "dashboard", disabled: true },
-      ],
-    },
-    {
-      id: "ops_intelligence", label: "Operations & Intelligence", items: [
-        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard", disabled: true },
-      ],
-    },
-    PHONE_SYSTEM_SECTION,
-  ];
-
-  // Case Manager — warm, supportive, family-relationship oriented.
-  const CASE_MANAGER_SECTIONS: NavSection[] = [
-    {
-      id: "workforce", label: "Workforce", items: [
-        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
-      ],
-    },
-    {
-      id: "resources", label: "Resources", items: [
-        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
-      ],
-    },
-  ];
-
-  // HR Team — focused workforce menu. Only Evaluations is active; everything
-  // else is disabled and shown as Coming Soon.
-  const HR_TEAM_SECTIONS: NavSection[] = [
-    {
-      id: "home", label: "Home", items: [
-        { to: "/hr", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true, disabled: true },
-      ],
-    },
-    {
-      id: "workforce", label: "Workforce", items: [
-        { to: "/staff", label: "BCBA / RBT", icon: UserCog, module: "staff", disabled: true },
-        { to: "/employee-ops", label: "Employee Ops", icon: Briefcase, module: "employee_ops", disabled: true },
-        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
-      ],
-    },
-    {
-      id: "resources", label: "Resources", items: [
-        { to: "/hr/org-chart", label: "Org Chart", icon: Network, module: "hr", disabled: true },
-        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "/hr/training-academy", label: "Training Academy", icon: GraduationCap, module: "training" },
-        { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop", disabled: true },
-      ],
-    },
-    PHONE_SYSTEM_SECTION,
-    {
-      id: "hr_ops", label: "HR Operations", items: [
-        { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
-        { to: "/admin/device-inventory", label: "Device Inventory", icon: MonitorSmartphone, module: "user_management" },
-        { to: "/hr/org-chart/manage", label: "Org Chart Settings", icon: Network, module: "hr", disabled: true },
-        { to: "/payroll/workspace", label: "Payroll", icon: Wallet, module: "payroll", disabled: true },
-        { to: "/hr", label: "HR Suite", icon: Building2, module: "hr", end: true, disabled: true },
-        { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "training" },
-      ],
-    },
-  ];
-
-  // State Director — only Resources section for now.
-  const STATE_DIRECTOR_SECTIONS: NavSection[] = [
-    {
-      id: "resources", label: "Resources", items: [
-        { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
-        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop" },
-      ],
-    },
-  ];
-
-  // QA / Compliance — only Evaluations and Reports are active. Everything else is
-  // disabled and shown as Coming Soon.
-  const QA_TEAM_SECTIONS: NavSection[] = [
-    {
-      id: "resources", label: "Resources", items: [
-        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
-      ],
-    },
-  ];
-
-  let sections: NavSection[] = role === "executive_leadership"
-    ? EXEC_LEADERSHIP_SECTIONS
-    : role === "marketing_team"
-    ? MARKETING_TEAM_SECTIONS
-    : role === "scheduling_team"
-    ? SCHEDULING_TEAM_SECTIONS
-    : role === "bcba"
-    ? BCBA_SECTIONS
-    : role === "rbt"
-    ? RBT_SECTIONS
-    : role === "payroll_coordinator"
-    ? PAYROLL_SECTIONS
-    : role === "state_director"
-    ? STATE_DIRECTOR_SECTIONS
-    : role === "operations_leadership"
-    ? OPS_LEADERSHIP_SECTIONS
-    : role === "case_manager"
-    ? CASE_MANAGER_SECTIONS
-    : role === "hr_team"
-    ? HR_TEAM_SECTIONS
-    : role === "qa_team"
-    ? QA_TEAM_SECTIONS
-    : role === "behavioral_support"
-    ? [
-        {
-          id: "resources", label: "Resources", items: [
-            { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-            { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
-          ],
-        },
-      ]
-    : [homeSection, ...NAV_SECTIONS]
-        .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
-        .filter((s) => s.items.length > 0)
-        // Relationships (Referrals, Recruiting Marketing, Community Outreach,
-        // Reputation, plus future CRM pages added here) is intentionally
-        // scoped to Marketing (handled by its own section list) and Super
-        // Admin only. Hide the entire section from any other role in the
-        // fallback path that may have the underlying module access.
-        .filter((s) => s.id !== "relationships" || role === "super_admin");
-
+  const sections = useMemo(() => buildSectionsForRole(role), [role]);
 
   const mobileSections = (() => {
     const q = mobileSearch.trim().toLowerCase();
@@ -561,16 +281,14 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       .filter((s) => s.items.length > 0);
   })();
 
-  // Persist user toggles in localStorage so collapsed groups stay collapsed.
-  // Storage is scoped per role so each role remembers its own layout.
+  // Persisted open/closed state, scoped per role.
   const SECTIONS_KEY = `os.sidebar.openSections.${role}`;
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-  // Seed/merge defaults whenever role or section list changes. Stored values win.
   useEffect(() => {
     const defaults: Record<string, boolean> = {};
     sections.forEach((s, idx) => {
-      const isActive = s.items.some((i) => i.end ? pathname === i.to : pathname.startsWith(i.to));
-      defaults[s.id] = isActive || idx === 0;
+      const isActive = s.items.some((i) => i.end ? pathname === i.to : pathname.startsWith(i.to.split("?")[0]));
+      defaults[s.id] = isActive || (!s.defaultCollapsed) || idx === 0;
     });
     let stored: Record<string, boolean> = {};
     try { stored = JSON.parse(window.localStorage.getItem(SECTIONS_KEY) || "{}"); } catch { /* ignore */ }
@@ -585,43 +303,42 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
 
   const allItems = sections.flatMap((s) => s.items);
 
-  const bottomNavCandidates: NavEntry[] = [
-    { to: ROLE_HOME[role], label: "Home", icon: LayoutDashboard, module: "dashboard", end: true },
-    { to: "/leads", label: "Leads", icon: Users, module: "leads" },
-    { to: "/scheduling", label: "Schedule", icon: CalendarDays, module: "scheduling" },
-    { to: "/clients", label: "Clients", icon: Heart, module: "clients" },
-    { to: "/cases", label: "Cases", icon: FolderKanban, module: "cases" },
-    { to: "/training", label: "Training", icon: GraduationCap, module: "training" },
+  const homeForRole = ROLE_HOME[role] ?? "/dashboard";
+  const bottomNav: NavEntry[] = [
+    { to: homeForRole, label: "Home", icon: LayoutDashboard, end: true },
+    { to: "/academy", label: "Training", icon: GraduationCap },
+    { to: "/resource-library", label: "Resources", icon: BookOpen },
+    { to: "/reports", label: "Reports", icon: BarChart3 },
   ];
-  const bottomNav = [bottomNavCandidates[0], ...bottomNavCandidates.slice(1).filter((n) => canSee(n.module))].slice(0, 4);
 
   const renderNavItem = (item: NavEntry, onClick?: () => void) => {
     if (item.disabled) {
       const disabledNode = (
-        <div
-          key={item.to}
+        <NavLink
+          key={`${item.to}-${item.label}`}
+          to={item.to}
+          onClick={onClick}
           className={cn(
             "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all",
             collapsed
               ? "h-10 w-10 justify-center bg-muted/70 px-0 text-muted-foreground ring-1 ring-border/70"
-              : "text-muted-foreground/50",
-            "cursor-not-allowed select-none",
+              : "text-muted-foreground/70 hover:bg-muted/50 hover:text-muted-foreground",
           )}
         >
-          <item.icon className={cn("h-[16px] w-[16px] shrink-0", collapsed ? "opacity-100" : "opacity-40")} />
+          <item.icon className={cn("h-[16px] w-[16px] shrink-0", collapsed ? "opacity-100" : "opacity-50")} />
           {!collapsed && (
             <>
               <span className="truncate">{item.label}</span>
-              <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                 Soon
               </span>
             </>
           )}
-        </div>
+        </NavLink>
       );
       if (!collapsed) return disabledNode;
       return (
-        <Tooltip key={item.to} delayDuration={120}>
+        <Tooltip key={`${item.to}-${item.label}`} delayDuration={120}>
           <TooltipTrigger asChild>{disabledNode}</TooltipTrigger>
           <TooltipContent side="right" className="text-[12px] font-medium">{item.label} — Coming Soon</TooltipContent>
         </Tooltip>
@@ -629,32 +346,32 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     }
 
     const link = (
-    <NavLink
-      key={item.to}
-      to={item.to}
-      end={item.end}
-      onClick={onClick}
-      className={({ isActive }) =>
-        cn(
-          "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all text-foreground",
-          collapsed && "h-10 w-10 justify-center px-0 ring-1",
-          isActive
-            ? collapsed
-              ? "bg-primary/10 text-primary ring-primary/25 shadow-[0_10px_24px_-18px_hsl(var(--primary)/0.7)]"
-              : "bg-primary text-primary-foreground shadow-[0_10px_26px_-12px_hsl(var(--primary)/0.6)]"
-            : collapsed
-            ? "bg-card/80 text-primary ring-border/70 hover:bg-primary/10 hover:text-primary hover:ring-primary/25"
-            : "text-foreground/80 hover:bg-foreground/[0.04] hover:text-foreground",
-        )
-      }
-    >
-      <item.icon className="h-[16px] w-[16px] shrink-0 text-current" strokeWidth={collapsed ? 2.35 : 2} />
-      {!collapsed && <span className="truncate">{item.label}</span>}
-    </NavLink>
+      <NavLink
+        key={`${item.to}-${item.label}`}
+        to={item.to}
+        end={item.end}
+        onClick={onClick}
+        className={({ isActive }) =>
+          cn(
+            "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all text-foreground",
+            collapsed && "h-10 w-10 justify-center px-0 ring-1",
+            isActive
+              ? collapsed
+                ? "bg-primary/10 text-primary ring-primary/25 shadow-[0_10px_24px_-18px_hsl(var(--primary)/0.7)]"
+                : "bg-primary text-primary-foreground shadow-[0_10px_26px_-12px_hsl(var(--primary)/0.6)]"
+              : collapsed
+              ? "bg-card/80 text-primary ring-border/70 hover:bg-primary/10 hover:text-primary hover:ring-primary/25"
+              : "text-foreground/80 hover:bg-foreground/[0.04] hover:text-foreground",
+          )
+        }
+      >
+        <item.icon className="h-[16px] w-[16px] shrink-0 text-current" strokeWidth={collapsed ? 2.35 : 2} />
+        {!collapsed && <span className="truncate">{item.label}</span>}
+      </NavLink>
     );
     if (!collapsed) return link;
     return (
-      <Tooltip key={item.to} delayDuration={120}>
+      <Tooltip key={`${item.to}-${item.label}`} delayDuration={120}>
         <TooltipTrigger asChild>{link}</TooltipTrigger>
         <TooltipContent side="right" className="text-[12px] font-medium">{item.label}</TooltipContent>
       </Tooltip>
@@ -664,7 +381,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   return (
     <div className="min-h-screen w-full os-bg text-foreground md:h-screen md:overflow-hidden">
       <div className="mx-auto flex max-w-[1680px] gap-4 p-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:p-5 md:pb-5 md:items-start">
-        {/* MOBILE MENU SHEET */}
+        {/* MOBILE MENU */}
         {mobileOpen && (
           <div className="fixed inset-0 z-50 md:hidden" role="dialog">
             <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
@@ -715,7 +432,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                 )}
                 {showOldVersion && (
                   <button
-                    onClick={() => { setMobileOpen(false); navigate("/"); }}
+                    onClick={() => { setMobileOpen(false); navigate("/dashboard/legacy"); }}
                     className="mt-4 flex w-full items-center gap-2 rounded-xl px-3 py-3 text-[13px] font-medium text-muted-foreground hover:bg-foreground/[0.04]"
                   >
                     <History className="h-4 w-4" /> Old Version
@@ -743,10 +460,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             <img
               src={collapsed ? blossomMark : blossomLogo}
               alt={collapsed ? "Blossom" : "Blossom ABA Therapy"}
-              className={cn(
-                "object-contain transition-all duration-300",
-                collapsed ? "h-9 w-9" : "h-11 w-auto",
-              )}
+              className={cn("object-contain transition-all duration-300", collapsed ? "h-9 w-9" : "h-11 w-auto")}
             />
           </NavLink>
 
@@ -775,29 +489,9 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             )}
           </nav>
 
-          {/* AI Assistant Card */}
-          {!collapsed && (
-            <div className="mx-3 mb-3 overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br from-[hsl(265_100%_97%)] via-white to-[hsl(285_100%_97%)] p-4 shadow-[0_10px_30px_-18px_hsl(265_85%_60%/0.35)]">
-              <div className="flex items-center gap-2">
-                <div className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-white">
-                  <Sparkles className="h-3.5 w-3.5" />
-                </div>
-                <p className="text-[13px] font-semibold tracking-tight">Blossom OS Insights</p>
-              </div>
-              <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">Your intelligent operations assistant is ready.</p>
-              <button
-                onClick={() => navigate("/ai/assistant")}
-                className="mt-2.5 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-[hsl(265_50%_85%)] bg-white/70 px-2.5 py-1.5 text-[11.5px] font-semibold text-[hsl(265_70%_50%)] transition hover:bg-white"
-              >
-                Operational Insights <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-
-          {/* Old version */}
           {!collapsed && showOldVersion && (
             <button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/dashboard/legacy")}
               className="mx-3 mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-[11.5px] font-medium text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
             >
               <History className="h-3.5 w-3.5" /> Old Version
@@ -837,7 +531,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                       const q = headerSearch.trim().toLowerCase();
                       if (!q) return;
                       for (const s of sections) {
-                        const hit = s.items.find((i) => i.label.toLowerCase().includes(q));
+                        const hit = s.items.find((i) => !i.disabled && i.label.toLowerCase().includes(q));
                         if (hit) { navigate(hit.to); setHeaderSearchOpen(false); setHeaderSearch(""); break; }
                       }
                     }
@@ -889,7 +583,9 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                               >
                                 <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                                 <span className="truncate">{item.label}</span>
-                                <span className="ml-auto truncate text-[10.5px] text-muted-foreground">{item.to}</span>
+                                {item.disabled && (
+                                  <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70">Soon</span>
+                                )}
                               </button>
                             );
                           })}
@@ -902,20 +598,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             </div>
             <div className="flex-1 md:hidden" />
             <OSNotificationsBell />
-            <Tooltip delayDuration={120}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => navigate("/ai/assistant")}
-                  aria-label="Operational Insights"
-                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-[0_8px_20px_-8px_hsl(265_70%_50%/0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-8px_hsl(265_70%_50%/0.55)]"
-                  style={{ background: "linear-gradient(135deg, hsl(265 85% 62%), hsl(285 85% 68%))" }}
-                >
-                  <Sparkles className="h-4 w-4" strokeWidth={2.25} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Operational Insights</TooltipContent>
-            </Tooltip>
-          <RoleSwitcher />
+            <RoleSwitcher />
             {rightRail && (
               <Tooltip delayDuration={120}>
                 <TooltipTrigger asChild>
@@ -936,13 +619,9 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               <DropdownMenuTrigger asChild>
                 <button className="os-glass-panel hidden items-center gap-2.5 rounded-2xl px-2.5 py-1.5 pr-3.5 sm:flex">
                   {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt={displayName}
-                      className="h-8 w-8 rounded-xl object-cover ring-1 ring-border"
-                    />
+                    <img src={avatarUrl} alt={displayName} className="h-8 w-8 rounded-xl object-cover ring-1 ring-border" />
                   ) : (
-                    <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-[11px] font-bold text-white">
+                    <div className="grid h-8 w-8 place-items-center rounded-xl bg-primary text-[11px] font-bold text-primary-foreground">
                       {displayName.slice(0, 2).toUpperCase()}
                     </div>
                   )}
@@ -966,7 +645,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                 <DropdownMenuItem onClick={() => navigate("/settings")}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
-                  <span className="ml-auto text-[10px] text-muted-foreground">Soon</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -983,7 +661,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             </DropdownMenu>
           </header>
 
-          {/* CONTENT GRID */}
+          {/* CONTENT */}
           <div className="flex min-w-0 flex-col gap-5 xl:flex-row">
             <div className="min-w-0 flex-1 space-y-5">{children}</div>
             {rightRail && (
@@ -1004,10 +682,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav
-        className="fixed inset-x-0 bottom-0 z-40 md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
+      <nav className="fixed inset-x-0 bottom-0 z-40 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="mx-3 mb-3 os-glass-panel grid grid-cols-5 gap-1 p-1.5">
           {bottomNav.map((item) => (
             <NavLink
@@ -1017,9 +692,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               className={({ isActive }) =>
                 cn(
                   "flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[10px] font-semibold transition-all",
-                  isActive
-                    ? "bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_8px_20px_-10px_hsl(265_85%_60%/0.6)]"
-                    : "text-muted-foreground hover:text-foreground",
+                  isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                 )
               }
             >
@@ -1037,7 +710,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         </div>
       </nav>
 
-      {/* GLOBAL SEARCH PALETTE */}
+      {/* COMMAND PALETTE */}
       <CommandDialog open={paletteOpen} onOpenChange={setPaletteOpen}>
         <CommandInput placeholder="Search pages, modules, dashboards…" />
         <CommandList>
@@ -1059,7 +732,9 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                     >
                       <Icon className="mr-2 h-4 w-4 text-muted-foreground" />
                       <span className="truncate">{item.label}</span>
-                      <span className="ml-auto truncate text-[10.5px] text-muted-foreground">{item.to}</span>
+                      {item.disabled && (
+                        <span className="ml-auto text-[10.5px] uppercase tracking-wider text-muted-foreground">Soon</span>
+                      )}
                     </CommandItem>
                   );
                 })}
@@ -1071,3 +746,14 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     </div>
   );
 }
+
+// Silence unused-import warnings while keeping the icon set stable across the
+// shell variants we render in different modes (sidebar, mobile, palette).
+void [
+  Users, Heart, UserCog, FolderKanban, GraduationCap,
+  Wallet, Briefcase, Building2, IdCard, KeyRound, Smartphone,
+  Stethoscope, BookUser, Activity, Bug, MonitorSmartphone,
+  XCircle, CheckCircle2, ListTodo, Inbox, Workflow, MapPin,
+  Megaphone, TrendingUp, FileCheck2, Users2, ChevronRight,
+  Radio, HeartHandshake, Headphones, UserPlus, Phone, FileText,
+];
