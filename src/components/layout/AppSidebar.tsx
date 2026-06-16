@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  ChevronDown, X, Search, LogOut, Lock,
+  ChevronDown, X, Search, LogOut, Lock, Eye, ArrowLeft,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,6 @@ import { ROLE_HOME } from "@/lib/os/roleHome";
 import { type OSRole } from "@/lib/os/permissions";
 import {
   WORKSPACES,
-  LEGACY_GROUPS,
   workspacesForRoles,
   type Workspace,
 } from "@/lib/os/workspaces";
@@ -91,14 +90,6 @@ const roleLabels: Record<string, string> = {
   viewer: "Viewer",
 };
 
-// Generic icon for legacy entries — neutral so we don't overload the sidebar.
-const PlainDot: LucideIcon = ((props) => (
-  // simple visual marker
-  <svg viewBox="0 0 24 24" width={16} height={16} fill="currentColor" {...props}>
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-)) as LucideIcon;
-
 function buildSections(args: {
   roles: string[];
   isAdmin: boolean;
@@ -121,6 +112,15 @@ function buildSections(args: {
 
   const sections: NavSection[] = [];
 
+  // Super Admin (not impersonating): show ONLY the Admin workspace.
+  // The role preview switcher and legacy access are rendered separately by the
+  // sidebar component so the menu stays clean.
+  if (effectiveIsAdmin) {
+    const adminItems = groupFor("system");
+    if (adminItems.length) sections.push({ title: "Admin", items: adminItems });
+    return sections;
+  }
+
   const workspaces = groupFor("workspaces");
   if (workspaces.length) sections.push({ title: "Workspaces", items: workspaces });
 
@@ -130,21 +130,25 @@ function buildSections(args: {
   const system = groupFor("system");
   if (system.length) sections.push({ title: "System", items: system });
 
-  // Legacy group — super admin only, collapsed by default.
-  if (effectiveIsAdmin) {
-    const legacyItems: NavItem[] = LEGACY_GROUPS.flatMap((g) =>
-      g.items.map((i) => ({ label: `${g.title.replace(/ \(Legacy\)| Tools| Dashboards/g, "")}: ${i.label}`, icon: PlainDot, path: i.path })),
-    );
-    // Keep label simpler — just flat list with a heading.
-    const flat: NavItem[] = LEGACY_GROUPS.flatMap((g) =>
-      g.items.map((i) => ({ label: i.label, icon: PlainDot, path: i.path })),
-    );
-    void legacyItems;
-    sections.push({ title: "Legacy & Tools", items: flat, defaultCollapsed: true });
-  }
-
   return sections;
 }
+
+/** Role preview list surfaced to Super Admins so they can preview any role's menu. */
+const ROLE_PREVIEW: { label: string; role: OSRole }[] = [
+  { label: "Executive",       role: "executive_leadership" },
+  { label: "Operations",      role: "operations_leadership" },
+  { label: "Marketing",       role: "marketing_team" },
+  { label: "Intake",          role: "intake_coordinator" },
+  { label: "Auth",            role: "authorization_coordinator" },
+  { label: "QA",              role: "qa_team" },
+  { label: "Scheduling",      role: "scheduling_team" },
+  { label: "Recruiting",      role: "recruiting_team" },
+  { label: "HR / Payroll",    role: "hr_team" },
+  { label: "Billing",         role: "billing_finance" },
+  { label: "State Director",  role: "state_director" },
+  { label: "BCBA",            role: "bcba" },
+  { label: "RBT",             role: "rbt" },
+];
 
 export function AppSidebar({
   mobileOpen = false,
@@ -455,6 +459,43 @@ export function AppSidebar({
                 No menu matches.
               </p>
             )}
+            {isAdmin && (
+              <div className="mt-4 px-1">
+                {impersonating ? (
+                  <button
+                    type="button"
+                    onClick={() => { osCtx?.setRole("super_admin"); }}
+                    className="flex w-full items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-sm font-medium text-foreground"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Stop previewing
+                  </button>
+                ) : (
+                  <div>
+                    <p className="mb-1.5 flex items-center gap-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      <Eye className="h-3 w-3" /> Preview as Role
+                    </p>
+                    <div className="space-y-0.5">
+                      {ROLE_PREVIEW.map((r) => (
+                        <button
+                          key={r.role}
+                          type="button"
+                          onClick={() => {
+                            osCtx?.setRole(r.role);
+                            navigate(ROLE_HOME[r.role] ?? "/");
+                            onMobileOpenChange?.(false);
+                          }}
+                          className="mobile-menu-item w-full text-left"
+                        >
+                          <span className="mobile-menu-icon"><Eye className="h-4 w-4" /></span>
+                          <span className="min-w-0 flex-1"><span className="block truncate">{r.label}</span></span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
           <div className="shrink-0 border-t border-border/60 bg-card/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur-xl">
             <div className="flex items-center gap-3 rounded-xl px-2 py-2">
@@ -587,6 +628,43 @@ export function AppSidebar({
             <p className="rounded-md border border-sidebar-border bg-sidebar-accent/40 px-3 py-2 text-[11px] text-sidebar-muted">
               No menu matches.
             </p>
+          )}
+
+          {isAdmin && (
+            <div className="pt-2">
+              {impersonating ? (
+                <button
+                  type="button"
+                  onClick={() => osCtx?.setRole("super_admin")}
+                  className="flex w-full items-center gap-2 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/40 px-3 py-2 text-[12px] font-medium text-sidebar-foreground hover:bg-sidebar-accent/60"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Stop previewing
+                </button>
+              ) : (
+                <div>
+                  <p className="mb-1.5 flex items-center gap-1.5 px-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/80">
+                    <Eye className="h-3 w-3" /> Preview as Role
+                  </p>
+                  <div className="space-y-0.5 md:pl-1">
+                    {ROLE_PREVIEW.map((r) => (
+                      <button
+                        key={r.role}
+                        type="button"
+                        onClick={() => {
+                          osCtx?.setRole(r.role);
+                          navigate(ROLE_HOME[r.role] ?? "/");
+                        }}
+                        className="nav-item nav-item-inactive w-full text-left"
+                      >
+                        <Eye className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                        <span className="truncate">{r.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </nav>
       </aside>
