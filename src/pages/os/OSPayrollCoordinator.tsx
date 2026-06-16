@@ -138,7 +138,7 @@ export default function OSPayrollCoordinator() {
           <div className="flex flex-wrap items-center gap-2">
             <HeaderBtn icon={KanbanSquare} to="/payroll/workspace">Open workspace</HeaderBtn>
             <HeaderBtn icon={BellRing} to="/payroll/messages">Send reminder</HeaderBtn>
-            <HeaderBtn icon={Sparkles} to="/ai/assistant?q=Summarize%20payroll%20blockers%20this%20week" primary>Ask Blossom AI</HeaderBtn>
+            <HeaderBtn icon={Sparkles} to="/ai/assistant?q=Summarize%20payroll%20blockers%20this%20week" primary>Operational Insights</HeaderBtn>
           </div>
         </header>
 
@@ -429,7 +429,7 @@ export default function OSPayrollCoordinator() {
             <Card className="p-5 bg-muted/40">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Ask Blossom AI — payroll insights</h3>
+                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Operational Insights — payroll insights</h3>
               </div>
               <div className="space-y-1.5">
                 {[

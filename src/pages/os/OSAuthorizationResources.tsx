@@ -182,7 +182,7 @@ export default function OSAuthorizationResources() {
               <Bookmark className="mr-1.5 h-3.5 w-3.5" /> Saved ({saved.size})
             </Button>
             <Button asChild size="sm" className="rounded-full">
-              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Ask Blossom AI</Link>
+              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Operational Insights</Link>
             </Button>
           </div>
         </header>
@@ -297,8 +297,8 @@ export default function OSAuthorizationResources() {
               </div>
             </Section>
 
-            {/* 5 — Ask Blossom AI */}
-            <Section title="Ask Blossom AI" subtitle="Need help finding workflows, SOPs, payer guidance, or escalation instructions?">
+            {/* 5 — Operational Insights */}
+            <Section title="Operational Insights" subtitle="Need help finding workflows, SOPs, payer guidance, or escalation instructions?">
               <div className="rounded-2xl border border-border/70 bg-card p-5">
                 <div className="flex flex-wrap gap-2">
                   {aiPrompts.map((p, i) => (

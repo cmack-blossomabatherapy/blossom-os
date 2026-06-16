@@ -499,7 +499,7 @@ export default function WebAnalytics() {
                 <Brain className="size-4 text-primary" />
               </div>
               <div>
-                <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Ask Blossom AI</div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Operational Insights</div>
                 <div className="text-[14px] font-semibold text-foreground">Web intelligence summary</div>
               </div>
             </div>

@@ -441,7 +441,7 @@ export default function CMFamilySupportPage() {
 
         {/* 9. ASK BLOSSOM AI */}
         <section className="space-y-3">
-          <SectionHeader title="Ask Blossom AI" hint="A quiet assistant for family support work." />
+          <SectionHeader title="Operational Insights" hint="A quiet assistant for family support work." />
           <div className="relative overflow-hidden rounded-3xl border border-[hsl(265_60%_90%)] bg-gradient-to-br from-[hsl(265_100%_98%)] via-white/70 to-[hsl(330_100%_98%)] p-5 backdrop-blur-xl md:p-7">
             <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-[hsl(265_100%_92%)] opacity-60 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-12 -left-12 h-56 w-56 rounded-full bg-[hsl(330_100%_94%)] opacity-50 blur-3xl" />

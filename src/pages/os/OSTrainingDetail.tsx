@@ -359,7 +359,7 @@ export default function OSTrainingDetail() {
           <div className="os-glass-panel rounded-2xl p-5">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[13px] font-semibold">Ask Blossom AI</h3>
+              <h3 className="text-[13px] font-semibold">Operational Insights</h3>
             </div>
             <p className="mt-1 text-[12px] text-muted-foreground">Get help with this training.</p>
             <div className="mt-3 space-y-2">

@@ -500,7 +500,7 @@ export const LEGACY_GROUPS: { title: string; items: LegacyLink[] }[] = [
       { label: "User Management", path: "/team" },
       { label: "Role Audit Log", path: "/admin/role-audit" },
       { label: "Integrations", path: "/admin/integrations" },
-      { label: "Blossom OS AI", path: "/admin/ai" },
+      { label: "Blossom OS Insights", path: "/admin/ai" },
     ],
   },
 ];

@@ -361,7 +361,7 @@ const CATEGORIES: Category[] = [
     icon: Bot,
     blurb: "Standards for AI usage, automation governance, and oversight.",
     resources: titles([
-      "Ask Blossom AI Usage SOP",
+      "Operational Insights Usage SOP",
       "AI Operational Standards SOP",
       "AI Escalation Review SOP",
       "AI Reporting SOP",

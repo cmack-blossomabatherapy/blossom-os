@@ -955,7 +955,7 @@ function AskBlossomRail({
       <div className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/[0.06] to-transparent p-4">
         <div className="flex items-center gap-2 mb-1.5">
           <Sparkles className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-medium">Ask Blossom AI</h3>
+          <h3 className="text-sm font-medium">Operational Insights</h3>
         </div>
         <p className="text-xs text-muted-foreground">Operational intake handoff assistant.</p>
       </div>

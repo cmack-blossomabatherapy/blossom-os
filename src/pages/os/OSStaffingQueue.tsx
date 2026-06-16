@@ -917,7 +917,7 @@ function AskBlossomPanel({ client }: { client: Client }) {
   ];
   return (
     <SectionCard
-      title="Ask Blossom AI"
+      title="Operational Insights"
       icon={Sparkles}
       action={<Link to="/ai/assistant" className="text-[11px] text-primary hover:underline inline-flex items-center gap-1">Open assistant <ArrowUpRight className="size-3" /></Link>}
     >

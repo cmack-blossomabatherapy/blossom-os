@@ -134,7 +134,7 @@ export default function OSPayrollWorkspace() {
           <div className="flex flex-wrap items-center gap-2">
             <HeaderBtn icon={Plus} to="/payroll/issues">Log issue</HeaderBtn>
             <HeaderBtn icon={BellRing} to="/payroll/messages">Send reminder</HeaderBtn>
-            <HeaderBtn icon={Sparkles} to="/ai/assistant?q=What%20payroll%20items%20need%20attention" primary>Ask Blossom AI</HeaderBtn>
+            <HeaderBtn icon={Sparkles} to="/ai/assistant?q=What%20payroll%20items%20need%20attention" primary>Operational Insights</HeaderBtn>
           </div>
         </header>
 
@@ -278,11 +278,11 @@ export default function OSPayrollWorkspace() {
               </ul>
             </Card>
 
-            {/* Ask Blossom AI */}
+            {/* Operational Insights */}
             <Card className="p-5 bg-muted/40">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Ask Blossom AI — Payroll Operations</h3>
+                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Operational Insights — Payroll Operations</h3>
               </div>
               <div className="space-y-1.5">
                 {[

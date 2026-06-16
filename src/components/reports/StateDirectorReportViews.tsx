@@ -50,7 +50,7 @@ function AiInsightsCard({ insights }: { insights: SdAiInsight[] }) {
         <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] text-white">
           <Sparkles className="h-3 w-3" />
         </span>
-        <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)]">AI Insights</p>
+        <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)]">Operational Insights</p>
       </div>
       <ul className="mt-3 space-y-2">
         {insights.map((i, idx) => {

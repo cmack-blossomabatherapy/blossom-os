@@ -410,7 +410,7 @@ export default function OSAuthRiskCenter() {
               <Download className="mr-1.5 h-4 w-4" /> Export
             </Button>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-4 w-4" /> Ask Blossom AI</Link>
+              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-4 w-4" /> Operational Insights</Link>
             </Button>
             <Button size="sm" asChild>
               <Link to="/auth-workspace"><Workflow className="mr-1.5 h-4 w-4" /> Open Workspace</Link>
@@ -841,8 +841,8 @@ function RiskDrawer({ riskId, all, onClose }: { riskId: string; all: RiskItem[];
             </div>
           </DrawerSection>
 
-          {/* 7 — Ask Blossom AI */}
-          <DrawerSection title="Ask Blossom AI" icon={Sparkles}>
+          {/* 7 — Operational Insights */}
+          <DrawerSection title="Operational Insights" icon={Sparkles}>
             <AskBlossomRiskPanel r={r} missingDocs={missingDocs} bcba={bcba} sd={sd} />
           </DrawerSection>
         </div>
@@ -1052,7 +1052,7 @@ function RiskRail({ risks, onOpen }: { risks: RiskItem[]; onOpen: (id: string) =
           <Sparkles className="h-4 w-4" />
         </div>
         <div>
-          <p className="text-sm font-medium">Ask Blossom</p>
+          <p className="text-sm font-medium">Insights</p>
           <p className="text-[11px] text-muted-foreground">Auth risk intelligence</p>
         </div>
       </div>

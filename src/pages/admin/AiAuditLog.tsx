@@ -70,7 +70,7 @@ export default function AiAuditLog() {
           </span>
           <div>
             <h1 className="text-xl font-semibold tracking-tight">AI Audit Log</h1>
-            <p className="text-sm text-muted-foreground">Every Ask Blossom AI query — HIPAA-aware oversight for Super Admins.</p>
+            <p className="text-sm text-muted-foreground">Every Operational Insights query — HIPAA-aware oversight for Super Admins.</p>
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>

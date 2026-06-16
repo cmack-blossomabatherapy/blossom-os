@@ -50,7 +50,7 @@ export default function AiDashboard() {
   return (
     <AiAdminShell>
       <div className="space-y-6">
-        <p className="text-sm text-muted-foreground">Mission control for Blossom OS AI — usage, health, and what employees are asking right now.</p>
+        <p className="text-sm text-muted-foreground">Mission control for Blossom OS Insights — usage, health, and what employees are asking right now.</p>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Kpi label="Queries · 24h" value={stats.queriesToday} icon={Activity} />

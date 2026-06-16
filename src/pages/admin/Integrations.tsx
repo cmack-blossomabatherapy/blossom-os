@@ -447,7 +447,7 @@ const INTEGRATIONS: Integration[] = [
     id: "openai",
     name: "OpenAI",
     category: "ai",
-    description: "Powers Ask Blossom AI and operational copilots.",
+    description: "Powers Operational Insights and operational copilots.",
     purpose: ["Chat", "Reasoning"],
     status: "connected",
     account: "blossom-prod",

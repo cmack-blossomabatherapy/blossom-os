@@ -37,5 +37,5 @@ export const RBT_RETENTION_CONTACTS = [
   { label: "Lead RBT Trainer",  detail: "Day-to-day support, coaching, signoffs." },
   { label: "Scheduling team",   detail: "Schedule changes, coverage, time-off coordination." },
   { label: "Payroll & HR",      detail: "Paychecks, mileage, PTO, benefits." },
-  { label: "Ask Blossom AI",    detail: "Quick answers to policy and how-to questions, 24/7." },
+  { label: "Operational Insights",    detail: "Quick answers to policy and how-to questions, 24/7." },
 ];

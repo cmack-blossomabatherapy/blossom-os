@@ -68,7 +68,7 @@ export function HRShellPage({ title, subtitle, icon: Icon, intent, kpis, section
               <div className="rounded-2xl border border-border/70 bg-muted/40 p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.75} />
-                  <h3 className="text-sm font-medium">Ask Blossom AI</h3>
+                  <h3 className="text-sm font-medium">Operational Insights</h3>
                 </div>
                 {aside}
               </div>

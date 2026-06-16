@@ -197,7 +197,7 @@ const QUICK_ACTIONS = [
   { icon: Users,       label: "Open assigned families" },
   { icon: AlertTriangle, label: "Review service issues" },
   { icon: UserCog,     label: "View staffing visibility" },
-  { icon: Bot,         label: "Ask Blossom AI" },
+  { icon: Bot,         label: "Operational Insights" },
 ];
 
 const AI_SUGGESTIONS = [
@@ -468,7 +468,7 @@ export default function CMEscalationsPage() {
           <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="max-w-lg">
               <div className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(265_60%_90%)] bg-white/70 px-2.5 py-1 text-[11px] font-medium text-[hsl(265_60%_50%)]">
-                <Sparkles className="h-3 w-3" /> Ask Blossom AI
+                <Sparkles className="h-3 w-3" /> Operational Insights
               </div>
               <h2 className="mt-3 text-[18px] font-semibold tracking-tight text-foreground md:text-[22px]">
                 Escalation awareness assistant

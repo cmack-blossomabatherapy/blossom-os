@@ -190,11 +190,11 @@ const JOURNEYS: Journey[] = [
     id: "ai",
     number: "08",
     title: "AI & Operational Marketing Intelligence",
-    purpose: "How Ask Blossom AI supports growth intelligence — practical, modern, AI-native marketing.",
+    purpose: "How Operational Insights supports growth intelligence — practical, modern, AI-native marketing.",
     icon: Bot,
     minutes: 25,
     modules: [
-      "Using Ask Blossom AI",
+      "Using Operational Insights",
       "AI-assisted growth analysis",
       "AI for SEO visibility",
       "AI for outreach planning",
@@ -364,7 +364,7 @@ export default function MarketingTraining() {
           <p className="text-[13px] leading-relaxed text-muted-foreground">
             The full marketing SOP library, brand voice guide, campaign playbooks, outreach standards,
             review-response templates, and state growth playbooks live in the Resource Library.
-            Ask Blossom AI can pull any specific SOP on demand.
+            Operational Insights can pull any specific SOP on demand.
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
             <Link to="/training" className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-card px-3 py-1 text-[12px] text-foreground hover:bg-muted">

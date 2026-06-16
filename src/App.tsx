@@ -722,7 +722,7 @@ const App = () => (
                   <Route path="/internal-requests" element={<OSPlaceholder title="Internal Requests" description="Operational and internal forms and approvals." icon={Inbox} />} />
                   <Route path="/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
                   <Route path="/projects" element={<OSPlaceholder title="Project Tracking" description="Internal projects and initiatives." icon={KanbanSquare} />} />
-                  <Route path="/ai/assistant" element={<OSComingSoon title="Ask Blossom AI" description="Your operational AI copilot is on the way. Soon you'll be able to ask Blossom anything about your workflows, reports, and operations." icon={Sparkles} />} />
+                  <Route path="/ai/assistant" element={<OSComingSoon title="Operational Insights" description="Your operational AI copilot is on the way. Soon you'll be able to ask Blossom anything about your workflows, reports, and operations." icon={Sparkles} />} />
                   <Route path="/ask-blossom" element={<Navigate to="/ai/assistant" replace />} />
                   <Route path="/ai/insights" element={<OSAiInsights />} />
                   <Route path="/ai/automations" element={<Navigate to="/automations" replace />} />

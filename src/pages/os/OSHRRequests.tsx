@@ -341,7 +341,7 @@ export default function OSHRRequests() {
             <HeaderBtn icon={Plus} to="/hr/employee-support">Open employee support</HeaderBtn>
             <HeaderBtn icon={Send} to="/hr/messages">Message employee</HeaderBtn>
             <HeaderBtn icon={ListChecks} to="/hr/new-hires">New hire pipeline</HeaderBtn>
-            <HeaderBtn icon={Sparkles} primary to="/ai/assistant">Ask Blossom AI</HeaderBtn>
+            <HeaderBtn icon={Sparkles} primary to="/ai/assistant">Operational Insights</HeaderBtn>
           </div>
         </header>
 
@@ -573,7 +573,7 @@ export default function OSHRRequests() {
                 <div className="h-7 w-7 rounded-xl bg-primary/10 grid place-items-center">
                   <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
                 </div>
-                <p className="text-[13px] font-medium tracking-tight">Ask Blossom AI</p>
+                <p className="text-[13px] font-medium tracking-tight">Operational Insights</p>
               </div>
               <p className="text-[12px] text-muted-foreground mb-4">Operational support for HR workflows.</p>
               <div className="space-y-1.5">

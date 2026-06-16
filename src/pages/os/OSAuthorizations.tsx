@@ -273,7 +273,7 @@ export default function OSAuthorizations() {
               <Download className="mr-1.5 h-4 w-4" /> Export
             </Button>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-4 w-4" /> Ask Blossom AI</Link>
+              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-4 w-4" /> Operational Insights</Link>
             </Button>
             <Button size="sm" onClick={() => toast("New authorization — coming soon")}>
               <Plus className="mr-1.5 h-4 w-4" /> New Authorization
@@ -704,8 +704,8 @@ function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; l
             </ul>
           </DrawerSection>
 
-          {/* 7 — Ask Blossom AI */}
-          <DrawerSection title="Ask Blossom AI" icon={Sparkles}>
+          {/* 7 — Operational Insights */}
+          <DrawerSection title="Operational Insights" icon={Sparkles}>
             <AskBlossomAuthPanel a={e} />
           </DrawerSection>
         </div>
@@ -794,7 +794,7 @@ function KV({ label, value }: { label: string; value: string }) {
   );
 }
 
-/* ------------------------------ Ask Blossom — drawer panel ------------------------------ */
+/* ------------------------------ Insights — drawer panel ------------------------------ */
 type PromptKey = "blockers" | "next" | "missing" | "summary";
 
 const PROMPT_CATALOG: { key: PromptKey; label: string; icon: any }[] = [
@@ -1009,7 +1009,7 @@ function AskBlossomAuthRail({ auths, onOpen }: { auths: EnrichedAuth[]; onOpen: 
           <Sparkles className="h-4 w-4" />
         </div>
         <div>
-          <p className="text-sm font-medium">Ask Blossom</p>
+          <p className="text-sm font-medium">Insights</p>
           <p className="text-[11px] text-muted-foreground">Authorization records assistant</p>
         </div>
       </div>

@@ -510,7 +510,7 @@ export default function OSBCBAWorkspace() {
               <Quick to="/scheduling" icon={CalendarDays} label="Scheduling" />
               <Quick to="/clients" icon={ClipboardCheck} label="Clients" />
               <Quick to="/authorizations" icon={NotebookPen} label="Authorizations" />
-              <Quick to="/ai/assistant" icon={Sparkles} label="Ask Blossom AI" />
+              <Quick to="/ai/assistant" icon={Sparkles} label="Operational Insights" />
             </div>
           </Card>
 
@@ -520,7 +520,7 @@ export default function OSBCBAWorkspace() {
                 <Sparkles className="size-4" />
               </div>
               <div>
-                <div className="text-sm font-medium text-foreground">Ask Blossom</div>
+                <div className="text-sm font-medium text-foreground">Insights</div>
                 <div className="text-xs text-muted-foreground">Scoped to your caseload</div>
               </div>
             </div>

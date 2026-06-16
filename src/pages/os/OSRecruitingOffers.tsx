@@ -411,7 +411,7 @@ export default function OSRecruitingOffers() {
                   <Sparkles className="size-4 text-primary" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold tracking-tight">Ask Blossom AI</div>
+                  <div className="text-sm font-semibold tracking-tight">Operational Insights</div>
                   <div className="text-[11px] text-muted-foreground">Hiring-aware copilot</div>
                 </div>
               </div>

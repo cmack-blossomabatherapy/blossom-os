@@ -702,7 +702,7 @@ export default function Reputation() {
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-5 md:p-6">
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           <Brain className="size-3.5" />
-          Ask Blossom AI · Reputation
+          Operational Insights · Reputation
         </div>
         <h3 className="mt-2 text-[17px] font-semibold tracking-tight text-foreground">
           Trust intelligence summary

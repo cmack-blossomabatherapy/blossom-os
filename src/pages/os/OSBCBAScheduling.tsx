@@ -522,8 +522,8 @@ export default function OSBCBAScheduling() {
           </div>
         </Section>
 
-        {/* Ask Blossom AI */}
-        <Section title="Ask Blossom AI">
+        {/* Operational Insights */}
+        <Section title="Operational Insights">
           <Card className="bg-gradient-to-br from-primary/5 via-card to-card">
             <div className="flex items-start gap-3">
               <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary"><Sparkles className="size-5" /></div>
@@ -557,7 +557,7 @@ export default function OSBCBAScheduling() {
             <QuickAction to="/scheduling"            icon={MessageSquare}  label="Contact scheduling" />
             <QuickAction to="/bcba/parent-training"  icon={CalendarClock}  label="Parent training" />
             <QuickAction to="/bcba/supervision"      icon={Users}          label="Supervision" />
-            <QuickAction to="/ai"                    icon={Sparkles}       label="Ask Blossom AI" />
+            <QuickAction to="/ai"                    icon={Sparkles}       label="Operational Insights" />
           </div>
         </section>
       </div>
@@ -622,7 +622,7 @@ export default function OSBCBAScheduling() {
                     <PanelLink to="/bcba/parent-training" icon={CalendarClock}>Parent training</PanelLink>
                     <PanelLink to="/bcba/supervision" icon={Users}>Supervision</PanelLink>
                     <PanelLink to="/scheduling" icon={Calendar}>View schedule</PanelLink>
-                    <PanelLink to={`/ai?q=${encodeURIComponent(`Tell me about scheduling for ${activeRow.client.clientName}`)}`} icon={Sparkles}>Ask Blossom AI</PanelLink>
+                    <PanelLink to={`/ai?q=${encodeURIComponent(`Tell me about scheduling for ${activeRow.client.clientName}`)}`} icon={Sparkles}>Operational Insights</PanelLink>
                   </div>
                 </PanelSection>
 

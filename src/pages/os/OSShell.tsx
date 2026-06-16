@@ -129,7 +129,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: "ai", label: "AI & Automations", items: [
-      { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+      { to: "/ai/assistant", label: "Operational Insights", icon: Bot, module: "ai_assistant" },
       { to: "/ai/insights", label: "AI Insights", icon: Brain, module: "ai_insights" },
     ],
   },
@@ -276,7 +276,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
     {
       id: "ai", label: "AI", items: [
-        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+        { to: "/ai/assistant", label: "Operational Insights", icon: Bot, module: "ai_assistant" },
       ],
     },
   ];
@@ -311,7 +311,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
     {
       id: "ai", label: "AI", items: [
-        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+        { to: "/ai/assistant", label: "Operational Insights", icon: Bot, module: "ai_assistant" },
       ],
     },
   ];
@@ -351,7 +351,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
     {
       id: "ai", label: "AI", items: [
-        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+        { to: "/ai/assistant", label: "Operational Insights", icon: Bot, module: "ai_assistant" },
       ],
     },
   ];
@@ -782,14 +782,14 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                 <div className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-white">
                   <Sparkles className="h-3.5 w-3.5" />
                 </div>
-                <p className="text-[13px] font-semibold tracking-tight">Blossom OS AI</p>
+                <p className="text-[13px] font-semibold tracking-tight">Blossom OS Insights</p>
               </div>
               <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">Your intelligent operations assistant is ready.</p>
               <button
                 onClick={() => navigate("/ai/assistant")}
                 className="mt-2.5 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-[hsl(265_50%_85%)] bg-white/70 px-2.5 py-1.5 text-[11.5px] font-semibold text-[hsl(265_70%_50%)] transition hover:bg-white"
               >
-                Ask Blossom AI <ChevronRight className="h-3 w-3" />
+                Operational Insights <ChevronRight className="h-3 w-3" />
               </button>
             </div>
           )}
@@ -906,14 +906,14 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               <TooltipTrigger asChild>
                 <button
                   onClick={() => navigate("/ai/assistant")}
-                  aria-label="Ask Blossom AI"
+                  aria-label="Operational Insights"
                   className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-[0_8px_20px_-8px_hsl(265_70%_50%/0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-8px_hsl(265_70%_50%/0.55)]"
                   style={{ background: "linear-gradient(135deg, hsl(265 85% 62%), hsl(285 85% 68%))" }}
                 >
                   <Sparkles className="h-4 w-4" strokeWidth={2.25} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Ask Blossom AI</TooltipContent>
+              <TooltipContent side="bottom">Operational Insights</TooltipContent>
             </Tooltip>
           <RoleSwitcher />
             {rightRail && (

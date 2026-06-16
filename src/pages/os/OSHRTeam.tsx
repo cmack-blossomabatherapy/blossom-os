@@ -315,7 +315,7 @@ export default function OSHRTeam() {
           <Link to="/hr/orientation-queue"     className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><CalendarClock className="h-4 w-4" strokeWidth={1.75} /> Review orientation queue</Link>
           <Link to="/hr/training-certifications" className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><GraduationCap className="h-4 w-4" strokeWidth={1.75} /> Assign training</Link>
           <Link to="/hr/requests"              className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><Inbox className="h-4 w-4" strokeWidth={1.75} /> Open HR requests</Link>
-          <Link to="/ai/assistant"             className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><Sparkles className="h-4 w-4" strokeWidth={1.75} /> Ask Blossom AI</Link>
+          <Link to="/ai/assistant"             className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><Sparkles className="h-4 w-4" strokeWidth={1.75} /> Operational Insights</Link>
         </div>
 
         {/* SNAPSHOT */}
@@ -478,7 +478,7 @@ export default function OSHRTeam() {
           </div>
 
           <div>
-            <SectionHeader icon={Sparkles} title="Ask Blossom AI" subtitle="Operational copilot" />
+            <SectionHeader icon={Sparkles} title="Operational Insights" subtitle="Operational copilot" />
             <Card className="p-5 space-y-3">
               <p className="text-sm text-muted-foreground">Try one of these:</p>
               <ul className="space-y-2">

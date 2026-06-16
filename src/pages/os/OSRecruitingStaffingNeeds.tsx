@@ -404,7 +404,7 @@ export default function OSRecruitingStaffingNeeds() {
                   <Sparkles className="size-4 text-primary" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold tracking-tight">Ask Blossom AI</div>
+                  <div className="text-sm font-semibold tracking-tight">Operational Insights</div>
                   <div className="text-[11px] text-muted-foreground">Staffing demand copilot</div>
                 </div>
               </div>

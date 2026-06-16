@@ -222,7 +222,7 @@ export default function HRAssistant() {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask Blossom anything — training, HR, coworkers, policies…"
+                placeholder="Insights anything — training, HR, coworkers, policies…"
                 disabled={busy}
                 className="flex-1 bg-card"
               />

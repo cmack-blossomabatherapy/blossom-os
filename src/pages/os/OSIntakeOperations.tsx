@@ -824,7 +824,7 @@ function RecentActivityFeed({ leads, onOpen }: { leads: Lead[]; onOpen: (id: str
   );
 }
 
-/* ─────────────────────── Ask Blossom Rail ─────────────────────── */
+/* ─────────────────────── Insights Rail ─────────────────────── */
 
 function AskBlossomIntakeRail({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
   const priorities = useMemo(() => {
@@ -855,7 +855,7 @@ function AskBlossomIntakeRail({ leads, onOpen }: { leads: Lead[]; onOpen: (id: s
           <Sparkles className="h-4 w-4" />
         </div>
         <div>
-          <p className="text-sm font-medium">Ask Blossom</p>
+          <p className="text-sm font-medium">Insights</p>
           <p className="text-[11px] text-muted-foreground">Intake operations assistant</p>
         </div>
       </div>

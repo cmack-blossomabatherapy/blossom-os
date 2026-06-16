@@ -575,7 +575,7 @@ function AskBlossomPanel({
   return (
     <div className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/5 to-transparent backdrop-blur-sm p-5">
       <h3 className="text-sm font-semibold tracking-tight text-foreground inline-flex items-center gap-2">
-        <Sparkles className="size-4 text-primary" /> Ask Blossom AI
+        <Sparkles className="size-4 text-primary" /> Operational Insights
       </h3>
       <p className="mt-1 text-[11px] text-muted-foreground">Scoped to Scheduling · live operational data.</p>
       <div className="mt-3 space-y-1.5">

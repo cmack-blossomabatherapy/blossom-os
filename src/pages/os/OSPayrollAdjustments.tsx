@@ -218,7 +218,7 @@ export default function OSPayrollAdjustments() {
       <div className="px-6 md:px-10 py-8 max-w-[1400px] mx-auto">
         <PageHeader icon={Wallet} title="Payroll Adjustments"
           subtitle="Manage payroll corrections, reimbursements, deductions, and payroll change workflows.">
-          <HeaderBtn icon={Sparkles} to="/ai/assistant?q=What payroll adjustments are overdue?">Ask Blossom AI</HeaderBtn>
+          <HeaderBtn icon={Sparkles} to="/ai/assistant?q=What payroll adjustments are overdue?">Operational Insights</HeaderBtn>
           <HeaderBtn icon={Plus} primary to="/payroll/adjustments?new=1">New adjustment</HeaderBtn>
         </PageHeader>
 
@@ -442,7 +442,7 @@ export default function OSPayrollAdjustments() {
             <Card className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <h3 className="text-[13px] font-medium tracking-tight">Ask Blossom AI</h3>
+                <h3 className="text-[13px] font-medium tracking-tight">Operational Insights</h3>
               </div>
               <div className="space-y-1.5">
                 {[

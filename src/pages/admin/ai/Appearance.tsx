@@ -56,7 +56,7 @@ export default function Appearance() {
     <div className="space-y-5 max-w-2xl">
       <div>
         <h2 className="text-lg font-semibold tracking-tight">AI Appearance</h2>
-        <p className="text-sm text-muted-foreground">How Ask Blossom presents itself to employees.</p>
+        <p className="text-sm text-muted-foreground">How Insights presents itself to employees.</p>
       </div>
 
       <Card className="p-5 space-y-4">

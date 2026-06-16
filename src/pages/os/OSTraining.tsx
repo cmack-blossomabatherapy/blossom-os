@@ -706,7 +706,7 @@ export default function OSTraining() {
               <div className="mt-3 space-y-0.5 text-[12.5px]">
                 {[
                   { label: "Resource Library", icon: BookMarked, to: "/resource-library" },
-                  { label: "Ask Blossom AI", icon: Sparkles, to: "/ai/assistant" },
+                  { label: "Operational Insights", icon: Sparkles, to: "/ai/assistant" },
                 ].map(({ label, icon: Icon, to }) => (
                   <Link
                     key={label}

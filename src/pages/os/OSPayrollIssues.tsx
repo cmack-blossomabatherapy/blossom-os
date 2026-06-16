@@ -199,7 +199,7 @@ export default function OSPayrollIssues() {
           title="Payroll Issues"
           subtitle="Log, track, and resolve every payroll problem with full documentation."
         >
-          <HeaderBtn icon={Sparkles} to="/ai/assistant?q=Summarize open payroll issues and risk">Ask Blossom AI</HeaderBtn>
+          <HeaderBtn icon={Sparkles} to="/ai/assistant?q=Summarize open payroll issues and risk">Operational Insights</HeaderBtn>
           <HeaderBtn icon={Plus} primary onClick={() => setCreateOpen(true)}>Log issue</HeaderBtn>
         </PageHeader>
 

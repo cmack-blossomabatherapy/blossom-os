@@ -449,7 +449,7 @@ export default function Campaigns() {
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card to-primary/[0.04] p-5 md:p-6">
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           <Sparkles className="size-3.5 text-primary" />
-          Ask Blossom AI
+          Operational Insights
         </div>
         <h3 className="mt-2 text-[16px] font-semibold tracking-tight text-foreground">
           Campaign intelligence

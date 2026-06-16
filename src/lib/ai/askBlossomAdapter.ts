@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { KBCategory } from "./types";
 
 /**
- * Mock Ask Blossom AI adapter. Intent-routes the prompt to a canned operational
+ * Mock Operational Insights adapter. Intent-routes the prompt to a canned operational
  * answer, role-scopes the response, and returns sources + suggested actions in
  * the same shape the real model adapter will use later.
  */
@@ -216,7 +216,7 @@ export function mockInsightsFor(role: OSRole, state: string) {
 }
 
 /* ============================================================================
- * Live Ask Blossom adapter — wires the UI to the `chat` edge function
+ * Live Insights adapter — wires the UI to the `chat` edge function
  * (Lovable AI Gateway with role-aware tool calling).
  * ========================================================================== */
 

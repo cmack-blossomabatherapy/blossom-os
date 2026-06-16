@@ -131,7 +131,7 @@ export function EmptyRow({ children }: { children: ReactNode }) {
 }
 
 /**
- * AIPrompt — pill button that deep-links into Ask Blossom AI with a prefilled prompt.
+ * AIPrompt — pill button that deep-links into Operational Insights with a prefilled prompt.
  * Use anywhere we surface "AI suggestions" on Ops Leadership pages.
  */
 export function AIPrompt({

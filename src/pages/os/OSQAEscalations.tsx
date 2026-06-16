@@ -651,7 +651,7 @@ export default function OSQAEscalations() {
             </div>
 
             <div className="rounded-2xl bg-card border border-border/70 p-5">
-              <h3 className="text-sm font-medium tracking-tight inline-flex items-center gap-2 mb-3"><Brain className="size-4 text-primary" /> Ask Blossom AI</h3>
+              <h3 className="text-sm font-medium tracking-tight inline-flex items-center gap-2 mb-3"><Brain className="size-4 text-primary" /> Operational Insights</h3>
               <div className="space-y-2">
                 {[
                   "Which escalations are highest priority?",

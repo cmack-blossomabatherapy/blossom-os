@@ -146,7 +146,7 @@ export default function OSRecruitingInterviews() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { getArray: getChecks, toggleStep } = useInterviewChecklist(OUTCOME_STEPS);
 
-  // Ask Blossom AI panel state
+  // Operational Insights panel state
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -186,7 +186,7 @@ export default function OSRecruitingInterviews() {
       if ((data as any)?.error) throw new Error((data as any).error);
       setAiAnswer((data as any)?.answer ?? "No response.");
     } catch (e: any) {
-      const msg = e?.message ?? "Failed to reach Ask Blossom AI.";
+      const msg = e?.message ?? "Failed to reach Operational Insights.";
       toast.error(msg);
       setAiAnswer(`**Error:** ${msg}`);
     } finally {
@@ -442,7 +442,7 @@ export default function OSRecruitingInterviews() {
                   <Sparkles className="size-4 text-primary" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold tracking-tight">Ask Blossom AI</div>
+                  <div className="text-sm font-semibold tracking-tight">Operational Insights</div>
                   <div className="text-[11px] text-muted-foreground">Interview-aware copilot</div>
                 </div>
               </div>

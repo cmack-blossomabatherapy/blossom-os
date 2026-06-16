@@ -178,7 +178,7 @@ export function AssistantWidget() {
         aria-label="Open Blossom Assistant"
       >
         <Sparkles className="h-5 w-5" />
-        <span className="hidden text-sm font-semibold md:inline">Ask Blossom</span>
+        <span className="hidden text-sm font-semibold md:inline">Insights</span>
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>
@@ -312,7 +312,7 @@ export function AssistantWidget() {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask Blossom anything…"
+                placeholder="Insights anything…"
                 disabled={streaming}
                 className="flex-1 bg-card"
               />

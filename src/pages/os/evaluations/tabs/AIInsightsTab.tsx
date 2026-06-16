@@ -53,7 +53,7 @@ export default function AIInsightsTab({ data }: { data: EvaluationsData }) {
           <Sparkles className="h-5 w-5" />
         </div>
         <div className="flex-1">
-          <h3 className="text-sm font-semibold">Ask Blossom — Evaluation Insights</h3>
+          <h3 className="text-sm font-semibold">Insights — Evaluation Insights</h3>
           <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
             AI analyzes evaluation completion, performance scores, open risk flags, goals, and coaching plans
             to surface trends and risks. Insights are operational only — never used for employment decisions.

@@ -283,7 +283,7 @@ export default function OSAuthCoordinator() {
                 <Brain className="h-3.5 w-3.5" />
               </div>
               <div>
-                <h3 className="text-[14px] font-semibold tracking-tight">Ask Blossom AI</h3>
+                <h3 className="text-[14px] font-semibold tracking-tight">Operational Insights</h3>
                 <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Authorization Operations</p>
               </div>
             </header>
@@ -348,7 +348,7 @@ export default function OSAuthCoordinator() {
             className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-white/80 bg-white/70 px-4 py-2.5 text-[12.5px] font-semibold text-foreground/85 shadow-[0_10px_24px_-14px_hsl(265_60%_50%/0.25)] backdrop-blur transition hover:-translate-y-0.5 hover:text-foreground"
           >
             <Sparkles className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            Ask Blossom AI
+            Operational Insights
           </Link>
         </div>
       </header>

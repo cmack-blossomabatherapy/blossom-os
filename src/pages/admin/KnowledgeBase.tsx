@@ -234,10 +234,10 @@ export default function KnowledgeBase() {
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-            <Sparkles className="h-4 w-4" /> Ask Blossom AI · Admin
+            <Sparkles className="h-4 w-4" /> Operational Insights · Admin
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">Knowledge Base</h1>
-          <p className="text-muted-foreground mt-1">Upload SOPs, policies, and reference documents that power Ask Blossom AI's answers.</p>
+          <p className="text-muted-foreground mt-1">Upload SOPs, policies, and reference documents that power Operational Insights's answers.</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
           <DialogTrigger asChild>
@@ -325,7 +325,7 @@ export default function KnowledgeBase() {
             <div className="p-12 text-center">
               <BookOpen className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
               <p className="font-medium">No documents yet</p>
-              <p className="text-sm text-muted-foreground mt-1">Upload SOPs and policies so Ask Blossom AI can cite them.</p>
+              <p className="text-sm text-muted-foreground mt-1">Upload SOPs and policies so Operational Insights can cite them.</p>
             </div>
           ) : (
             <Table>

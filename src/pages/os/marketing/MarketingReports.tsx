@@ -430,7 +430,7 @@ export default function MarketingReports() {
       {/* AI insights */}
       <MktgCard title="AI report insights">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <p className="text-[12.5px] text-muted-foreground">Ask Blossom for an executive read on this report.</p>
+          <p className="text-[12.5px] text-muted-foreground">Insights for an executive read on this report.</p>
           <Sparkles className="h-4 w-4 text-primary/70" />
         </div>
         <div className="flex flex-wrap gap-2">

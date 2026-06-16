@@ -152,7 +152,7 @@ const resources: Resource[] = [
   { id: "sy7", title: "Using Staffing Boards", description: "Operating the staffing-needs board.", category: "Systems & Platforms", type: "Guide", minutes: 5, updated: "2026-05-06", href: "/recruiting/staffing-needs", system: "Blossom OS", owner: "Operations" },
   { id: "sy8", title: "Recruiter Dashboard Guide", description: "Reading the recruiting team dashboard.", category: "Systems & Platforms", type: "Guide", minutes: 4, updated: "2026-05-04", href: "/recruiting-team", system: "Blossom OS", owner: "Operations" },
   { id: "sy9", title: "Recruiting Workspace Guide", description: "Working inside the recruiting workspace.", category: "Systems & Platforms", type: "Guide", minutes: 5, updated: "2026-05-02", href: "/recruiting/workspace", system: "Blossom OS", owner: "Operations" },
-  { id: "sy10", title: "Ask Blossom AI Guide", description: "Using AI for recruiting operational questions.", category: "Systems & Platforms", type: "Guide", minutes: 4, updated: "2026-04-30", href: "/ai/assistant", system: "Blossom OS", owner: "Operations" },
+  { id: "sy10", title: "Operational Insights Guide", description: "Using AI for recruiting operational questions.", category: "Systems & Platforms", type: "Guide", minutes: 4, updated: "2026-04-30", href: "/ai/assistant", system: "Blossom OS", owner: "Operations" },
 
   // 9 — Recruiting Standards & Policies
   { id: "st1", title: "Recruiting Communication Standards", description: "Tone, cadence, and channel standards.", category: "Recruiting Standards & Policies", type: "Guide", minutes: 5, updated: "2026-05-17", workflows: ["communication"], owner: "Recruiting" },
@@ -317,7 +317,7 @@ export default function OSRecruitingResources() {
               <Bookmark className="mr-1.5 h-3.5 w-3.5" /> Saved ({saved.size})
             </Button>
             <Button asChild size="sm" className="rounded-full">
-              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Ask Blossom AI</Link>
+              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Operational Insights</Link>
             </Button>
           </div>
         </header>
@@ -434,7 +434,7 @@ export default function OSRecruitingResources() {
               </div>
             </Section>
 
-            <Section title="Ask Blossom AI" subtitle="Find SOPs, workflows, templates, or escalation guidance.">
+            <Section title="Operational Insights" subtitle="Find SOPs, workflows, templates, or escalation guidance.">
               <div className="rounded-2xl border border-border/70 bg-card p-5">
                 <div className="flex flex-wrap gap-2">
                   {aiPrompts.map((p, i) => (
@@ -614,7 +614,7 @@ function ResourceRail({ saved, recent, onClearFilters }: { saved: number; recent
           <RailLink to="/recruiting/pipeline" label="Candidate pipeline" icon={Users} />
           <RailLink to="/recruiting/orientation" label="Orientation board" icon={GraduationCap} />
           <RailLink to="/recruiting/staffing-needs" label="Staffing needs" icon={Layers} />
-          <RailLink to="/ai/assistant" label="Ask Blossom AI" icon={Bot} />
+          <RailLink to="/ai/assistant" label="Operational Insights" icon={Bot} />
         </div>
       </div>
     </div>

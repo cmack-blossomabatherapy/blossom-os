@@ -31,7 +31,7 @@ function Restricted() {
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">Restricted</h1>
         <p className="text-sm text-muted-foreground">
-          The Blossom OS AI control center is only available to Super Admins.
+          The Blossom OS Insights control center is only available to Super Admins.
           This access attempt has been recorded.
         </p>
         <Button variant="outline" onClick={() => nav("/")}>Go Home</Button>
@@ -70,7 +70,7 @@ export function AiAdminShell({ children }: { children?: ReactNode }) {
             <Sparkles className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">Blossom OS AI</div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground">Blossom OS Insights</div>
             <h1 className="text-xl font-semibold tracking-tight truncate">{active?.label ?? "Control Center"}</h1>
           </div>
           <div className="ml-auto flex items-center gap-2">

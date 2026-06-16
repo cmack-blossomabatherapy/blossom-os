@@ -679,7 +679,7 @@ export default function HrBcbaProductivityDashboard() {
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] text-white">
                   <Brain className="h-3.5 w-3.5" />
                 </span>
-                <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)]">AI Insights</p>
+                <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)]">Operational Insights</p>
               </div>
               <ul className="mt-3 space-y-1.5 text-[12.5px] leading-snug">
                 {insights.length === 0 && <li className="text-muted-foreground">No insights yet — generate the dashboard to see automated findings.</li>}

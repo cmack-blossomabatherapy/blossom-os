@@ -51,7 +51,7 @@ export default function Analytics() {
     <div className="space-y-5">
       <div>
         <h2 className="text-lg font-semibold tracking-tight">AI Analytics</h2>
-        <p className="text-sm text-muted-foreground">How Ask Blossom is being used across the company.</p>
+        <p className="text-sm text-muted-foreground">How Insights is being used across the company.</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

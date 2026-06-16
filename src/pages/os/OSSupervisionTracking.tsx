@@ -279,7 +279,7 @@ export default function OSSupervisionTracking() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button className="inline-flex h-9 items-center gap-1.5 rounded-full bg-foreground px-3.5 text-xs font-medium text-background hover:bg-foreground/90">
-              <Sparkles className="h-3.5 w-3.5" /> Ask Blossom AI
+              <Sparkles className="h-3.5 w-3.5" /> Operational Insights
             </button>
             <button className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-xs font-medium text-foreground/70 hover:bg-muted/40">
               <Download className="h-3.5 w-3.5" /> Export
@@ -631,8 +631,8 @@ function DetailDrawer({ item, onClose }: { item: SupItem; onClose: () => void })
           </ul>
         </DrawerSection>
 
-        {/* 7 — Ask Blossom AI */}
-        <DrawerSection icon={Brain} title="Ask Blossom AI">
+        {/* 7 — Operational Insights */}
+        <DrawerSection icon={Brain} title="Operational Insights">
           <div className="flex flex-wrap gap-1.5">
             {[
               "What is blocking this PR?",
@@ -716,7 +716,7 @@ function SupervisionRail({ items }: { items: SupItem[] }) {
       <div className="rounded-2xl border border-border/70 bg-card p-4">
         <div className="mb-2 flex items-center gap-2">
           <Brain className="h-3.5 w-3.5 text-foreground/55" />
-          <h3 className="text-[11.5px] font-semibold uppercase tracking-wider text-foreground/65">Ask Blossom AI</h3>
+          <h3 className="text-[11.5px] font-semibold uppercase tracking-wider text-foreground/65">Operational Insights</h3>
         </div>
         <p className="text-[12px] text-foreground/65">Permission-aware insights across your supervision queue.</p>
         <div className="mt-3 space-y-1.5">

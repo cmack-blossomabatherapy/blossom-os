@@ -432,7 +432,7 @@ export default function OSRecruitingWorkspace() {
 
             <Card className="p-4">
               <h3 className="text-sm font-semibold text-foreground mb-3 inline-flex items-center gap-1.5">
-                <Brain className="h-3.5 w-3.5 text-primary" /> Ask Blossom AI
+                <Brain className="h-3.5 w-3.5 text-primary" /> Operational Insights
               </h3>
               <div className="space-y-1.5">
                 {[
