@@ -5,7 +5,8 @@ import {
   Phone, Users as UsersIcon, LayoutDashboard, Workflow, GraduationCap,
   BookOpen, FileText, HeartHandshake, ShieldCheck, ClipboardCheck,
   Calendar, UserCheck, Megaphone, TrendingUp, Wallet, Settings as SettingsIcon,
-  Plug, Briefcase, Building2, IdCard,
+  Plug, Briefcase, Building2, IdCard, KeyRound, Smartphone, Stethoscope,
+  AlertTriangle, BarChart3, ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -125,10 +126,14 @@ function buildSections(args: {
       {
         title: "People & Access",
         items: [
-          { label: "User Management", path: "/user-management",   icon: UsersIcon },
-          { label: "HR",              path: "/hr-team",           icon: HeartHandshake },
-          { label: "Team",            path: "/team",              icon: UserCheck },
-          { label: "Permissions",     path: "/admin/permissions", icon: ShieldCheck },
+          { label: "User Management",     path: "/user-management",     icon: UsersIcon },
+          { label: "Role Management",     path: "/role-management",     icon: ShieldCheck },
+          { label: "Employee Directory",  path: "/employee-directory",  icon: UserCheck },
+          { label: "Permissions",         path: "/permissions",         icon: ShieldCheck },
+          { label: "User Logins Vault",   path: "/user-logins-vault",   icon: KeyRound },
+          { label: "NFC Badge Management",path: "/nfc-badges",          icon: IdCard },
+          { label: "Device Inventory",    path: "/device-inventory",    icon: Smartphone },
+          { label: "Device Requests",     path: "/device-requests",     icon: Smartphone },
         ],
       },
       {
@@ -170,6 +175,33 @@ function buildSections(args: {
           { label: "Payroll",  path: "/payroll/workspace",  icon: Wallet },
           { label: "Revenue",  path: "/revenue",            icon: TrendingUp },
         ],
+      },
+      {
+        title: "HR",
+        items: [
+          { label: "HR Dashboard",      path: "/hr/dashboard",         icon: HeartHandshake },
+          { label: "Employee Records",  path: "/hr/employee-records",  icon: UsersIcon },
+          { label: "HR Requests",       path: "/hr/requests",          icon: ClipboardList },
+          { label: "Compliance Items",  path: "/hr/compliance-items",  icon: ShieldCheck },
+          { label: "Device Requests",   path: "/device-requests",      icon: Smartphone },
+          { label: "Device Inventory",  path: "/device-inventory",     icon: Smartphone },
+          { label: "NFC Badge Support", path: "/hr/nfc-badge-support", icon: IdCard },
+          { label: "HR Reports",        path: "/hr/reports",           icon: BarChart3 },
+        ],
+        defaultCollapsed: true,
+      },
+      {
+        title: "Credentialing",
+        items: [
+          { label: "Credentialing Dashboard", path: "/credentialing",                       icon: Stethoscope },
+          { label: "Provider Credentialing",  path: "/credentialing/providers",             icon: Stethoscope },
+          { label: "Insurance Credentialing", path: "/credentialing/insurance",             icon: Building2 },
+          { label: "BCBA Credentials",        path: "/credentialing/bcba",                  icon: IdCard },
+          { label: "Uncredentialed BCBAs",    path: "/credentialing/uncredentialed-bcbas",  icon: AlertTriangle },
+          { label: "Expiring Credentials",    path: "/credentialing/expiring",              icon: Calendar },
+          { label: "Credentialing Reports",   path: "/credentialing/reports",               icon: BarChart3 },
+        ],
+        defaultCollapsed: true,
       },
       {
         title: "Communications",

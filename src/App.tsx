@@ -357,6 +357,14 @@ import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
 import IdentityDashboard from "./pages/admin/IdentityDashboard";
 import { AdminRoute } from "./components/auth/AdminRoute";
+import {
+  RoleManagementPage, EmployeeDirectoryPage, UserLoginsVaultPage,
+  NFCBadgeManagementPage, DeviceRequestsPage,
+  HRDashboardPage, HREmployeeRecordsPage, HRRequestsPage, HRComplianceItemsPage,
+  HRNFCBadgeSupportPage, HRReportsPage,
+  CredentialingDashboardPage, ProviderCredentialingPage, InsuranceCredentialingPage,
+  BCBACredentialsPage, UncredentialedBCBAsPage, ExpiringCredentialsPage, CredentialingReportsPage,
+} from "./pages/os/people/PeoplePages";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
 import OSAskBlossom from "./pages/os/OSAskBlossom";
 import OSResourceLibrary from "./pages/os/OSResourceLibrary";
@@ -715,6 +723,28 @@ const App = () => (
                   <Route path="/user-management/admin" element={<OSUserManagement />} />
                   <Route path="/user-management/:employeeId" element={<EmployeeProfilePage />} />
                   <Route path="/admin/device-inventory" element={<AdminRoute><DeviceInventory /></AdminRoute>} />
+                  {/* Phase 5 — People & Access */}
+                  <Route path="/role-management" element={<AdminRoute><RoleManagementPage /></AdminRoute>} />
+                  <Route path="/employee-directory" element={<AdminRoute><EmployeeDirectoryPage /></AdminRoute>} />
+                  <Route path="/user-logins-vault" element={<AdminRoute><UserLoginsVaultPage /></AdminRoute>} />
+                  <Route path="/nfc-badges" element={<AdminRoute><NFCBadgeManagementPage /></AdminRoute>} />
+                  <Route path="/device-inventory" element={<AdminRoute><DeviceInventory /></AdminRoute>} />
+                  <Route path="/device-requests" element={<AdminRoute><DeviceRequestsPage /></AdminRoute>} />
+                  {/* Phase 5 — HR */}
+                  <Route path="/hr/dashboard" element={<AdminRoute><HRDashboardPage /></AdminRoute>} />
+                  <Route path="/hr/employee-records" element={<AdminRoute><HREmployeeRecordsPage /></AdminRoute>} />
+                  <Route path="/hr/requests" element={<AdminRoute><HRRequestsPage /></AdminRoute>} />
+                  <Route path="/hr/compliance-items" element={<AdminRoute><HRComplianceItemsPage /></AdminRoute>} />
+                  <Route path="/hr/nfc-badge-support" element={<AdminRoute><HRNFCBadgeSupportPage /></AdminRoute>} />
+                  <Route path="/hr/reports" element={<AdminRoute><HRReportsPage /></AdminRoute>} />
+                  {/* Phase 5 — Credentialing */}
+                  <Route path="/credentialing" element={<AdminRoute><CredentialingDashboardPage /></AdminRoute>} />
+                  <Route path="/credentialing/providers" element={<AdminRoute><ProviderCredentialingPage /></AdminRoute>} />
+                  <Route path="/credentialing/insurance" element={<AdminRoute><InsuranceCredentialingPage /></AdminRoute>} />
+                  <Route path="/credentialing/bcba" element={<AdminRoute><BCBACredentialsPage /></AdminRoute>} />
+                  <Route path="/credentialing/uncredentialed-bcbas" element={<AdminRoute><UncredentialedBCBAsPage /></AdminRoute>} />
+                  <Route path="/credentialing/expiring" element={<AdminRoute><ExpiringCredentialsPage /></AdminRoute>} />
+                  <Route path="/credentialing/reports" element={<AdminRoute><CredentialingReportsPage /></AdminRoute>} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
