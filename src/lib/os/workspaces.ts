@@ -346,6 +346,22 @@ export interface LegacyLink {
 
 export const LEGACY_GROUPS: { title: string; items: LegacyLink[] }[] = [
   {
+    title: "Legacy Workspace Pages",
+    items: [
+      { label: "Executive (legacy)",        path: "/executive" },
+      { label: "Operations (legacy)",       path: "/operations" },
+      { label: "Marketing (legacy)",        path: "/marketing" },
+      { label: "Intake (legacy)",           path: "/intake-coordinator" },
+      { label: "Authorizations (legacy)",   path: "/auth-workspace" },
+      { label: "QA (legacy)",               path: "/qa-team" },
+      { label: "Scheduling (legacy)",       path: "/scheduling-workspace" },
+      { label: "Recruiting (legacy)",       path: "/recruiting/workspace" },
+      { label: "HR (legacy)",               path: "/hr-team" },
+      { label: "Billing/Finance (legacy)",  path: "/billing-finance" },
+      { label: "State Director (legacy)",   path: "/state-director" },
+    ],
+  },
+  {
     title: "Legacy Dashboards",
     items: [
       { label: "CEO & Leadership", path: "/leadership-dashboard" },
