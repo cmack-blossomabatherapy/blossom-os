@@ -6,6 +6,7 @@ import {
   GraduationCap, ArrowRight, ShieldCheck, UserCircle2, ClipboardCheck,
   AlertCircle, Compass, Award, Plus, Pencil, Trash2, ExternalLink,
   Youtube, FileSpreadsheet, StickyNote, X, Search, BookMarked, FileBadge,
+  Bookmark, BookmarkCheck, Check, RotateCcw, Download, EyeOff, Layers,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,8 +19,12 @@ import {
   useRBTResources, getResourcesForModule, addResource, updateResource,
   removeResource, RBT_RESOURCE_TYPES,
   RBT_RESOURCE_CATEGORIES, TRACK_LABELS,
+  useHiddenSeedIds, getSeededResourceById, restoreSeededResource,
   type RBTResource, type RBTResourceType, type RBTResourceCategoryId,
 } from "@/lib/training/rbtResources";
+import {
+  useResourcePrefs, toggleBookmark, toggleComplete, markViewed,
+} from "@/lib/training/rbtResourcePrefs";
 import { TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
 
 // RBT Training Academy — experience-based, guided journey. Calm, mobile-first.
