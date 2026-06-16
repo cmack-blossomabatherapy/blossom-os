@@ -32,8 +32,9 @@ function greeting() {
 }
 
 export default function OSRBTTrainingAcademy() {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
   const name = firstName((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0]);
+  const isAdmin = roles.some((r) => TRAINING_ADMIN_ROLES.includes(r as never));
 
   const [assignedId, setAssignedId] = useState<RBTPathId>("certified_no_experience");
   const [tab, setTab] = useState<TabKey>("journey");
@@ -92,7 +93,7 @@ export default function OSRBTTrainingAcademy() {
         <Tabs value={tab} onChange={setTab} />
 
         {tab === "journey" && <JourneyTab path={path} />}
-        {tab === "resources" && <ResourcesTab />}
+        {tab === "resources" && <ResourcesTab isAdmin={isAdmin} path={path} />}
         {tab === "signoffs" && <SignoffsTab signoffs={path.signoffs} />}
         {tab === "support" && <SupportTab />}
       </div>
