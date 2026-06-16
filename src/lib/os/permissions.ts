@@ -253,7 +253,7 @@ const VIEW: OSAction[] = ["view"];
 const VIEW_EDIT: OSAction[] = ["view", "create", "edit"];
 const FULL: OSAction[] = ["view", "create", "edit", "delete", "approve", "export", "assign"];
 
-export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
+const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
   super_admin: {
     modules: ALL_MODULES,
     scope: "company",
