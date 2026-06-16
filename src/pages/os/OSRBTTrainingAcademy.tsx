@@ -612,14 +612,29 @@ function ResourceCard({
           <div className="flex items-center gap-1.5">
             <p className="truncate text-sm font-medium text-foreground">{resource.title}</p>
             {isExternal && <ExternalLink className="size-3 text-muted-foreground" />}
+            {resource.required && (
+              <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                Required
+              </span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground">
             {resource.type}
             {typeof resource.minutes === "number" && ` · ${resource.minutes} min`}
             {resource.moduleIds.length > 0 && ` · ${resource.moduleIds.length} module${resource.moduleIds.length === 1 ? "" : "s"}`}
+            {resource.tracks && resource.tracks.length > 0 && ` · ${resource.tracks.length === 1 ? TRACK_LABELS[resource.tracks[0]] : `${resource.tracks.length} tracks`}`}
           </p>
           {resource.description && (
             <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{resource.description}</p>
+          )}
+          {resource.tags && resource.tags.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {resource.tags.slice(0, 5).map((t) => (
+                <span key={t} className="rounded-full bg-secondary/70 px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+                  #{t}
+                </span>
+              ))}
+            </div>
           )}
         </div>
       </Wrapper>
