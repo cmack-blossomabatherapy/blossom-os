@@ -236,8 +236,8 @@ export function AppSidebar({
   }, [impersonating, osRole]);
 
   const baseSections = useMemo(
-    () => buildSections({ roles, isAdmin, impersonatedRoles }),
-    [roles, isAdmin, impersonatedRoles],
+    () => buildSections({ roles, isAdmin, impersonatedRoles, effectiveOSRole: osRole }),
+    [roles, isAdmin, impersonatedRoles, osRole],
   );
 
   // Persisted collapse state.
