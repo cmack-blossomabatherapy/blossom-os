@@ -54,6 +54,10 @@ export type OSRole =
   | "credentialing_lead"
   | "rcm_team"
   | "assistant_state_director"
+  | "business_development"
+  | "staffing_team"
+  | "credentialing_team"
+  | "clinical_director"
   | "viewer";
 
 export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadership" | "operations" | "field" }[] = [
@@ -92,6 +96,10 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "scheduling_team", label: "Scheduling Team", tier: "operations" },
   { id: "recruiting_team", label: "Recruiting Team", tier: "operations" },
   { id: "hr_team", label: "HR Team", tier: "operations" },
+  { id: "business_development", label: "Business Development", tier: "operations" },
+  { id: "staffing_team", label: "Staffing Team", tier: "operations" },
+  { id: "credentialing_team", label: "Credentialing Team", tier: "operations" },
+  { id: "clinical_director", label: "Clinical Director", tier: "leadership" },
   { id: "billing_finance", label: "Billing / Finance", tier: "operations" },
   { id: "qa_team", label: "QA / Compliance", tier: "operations" },
   { id: "payroll_coordinator", label: "Payroll Coordinator", tier: "operations" },
@@ -454,6 +462,10 @@ const ROLE_ALIASES: Record<
   credentialing_lead: "billing_finance",
   rcm_team: "billing_finance",
   assistant_state_director: "state_director",
+  business_development: "marketing_team",
+  staffing_team: "scheduling_team",
+  credentialing_team: "hr_team",
+  clinical_director: "operations_leadership",
   viewer: "behavioral_support",
 };
 
