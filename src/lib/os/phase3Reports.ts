@@ -49,10 +49,6 @@ const ROLES = {
   exec: ["super_admin", "executive_leadership", "executive", "coo", "operations_leadership"] as OSRole[],
 };
 
-function roadmap(name: string) {
-  return `/coming-soon?module=${encodeURIComponent(name + " Report")}`;
-}
-
 export const PHASE3_REPORTS: Phase3Report[] = [
   // ───────── Training Reports (universal) ─────────
   { id: "training-completion", name: "Training Completion", description: "Required and optional training progress for your role and team.", department: "Training Academy", lastUpdated: "Live", status: "live", section: "training", visibleTo: ALL_ROLES, route: "/academy" },
