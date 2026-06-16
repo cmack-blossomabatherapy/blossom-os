@@ -34,6 +34,7 @@ import Documents from "./pages/Documents";
 import Tasks from "./pages/Tasks";
 import Reports from "./pages/Reports";
 import ReportsHome from "./pages/os/reports/ReportsHome";
+import ReportsLanding from "./pages/os/reports/ReportsLanding";
 import ReportDetail from "./pages/os/reports/ReportDetail";
 import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboard";
 import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDashboard";
@@ -658,7 +659,8 @@ const App = () => (
                   <Route path="/payroll" element={<Navigate to="/payroll/workspace" replace />} />
                   <Route path="/revenue" element={<Navigate to="/billing-finance" replace />} />
                   <Route path="/insurance" element={<Navigate to="/authorizations" replace />} />
-                  <Route path="/reports" element={<ReportsHome />} />
+                  <Route path="/reports" element={<ReportsLanding />} />
+                  <Route path="/reports/catalog" element={<ReportsHome />} />
                   <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
                   <Route path="/reports/qa-supervision-pt" element={<QaSupervisionPtDashboard />} />
                   <Route path="/reports/qa-auth-utilization" element={<QaAuthUtilizationDashboard />} />
