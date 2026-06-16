@@ -5,6 +5,9 @@ import {
   Stethoscope, Plus, Trash2, Save, History, ArrowLeftRight, X, Pencil, Database, AlertTriangle,
   UserPlus, RefreshCw, HelpCircle,
 } from "lucide-react";
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell,
+} from "recharts";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,8 +40,18 @@ const num = (v: any) => {
   const n = parseFloat(String(v).replace(/[$,%]/g, ""));
   return isFinite(n) ? n : NaN;
 };
-const fmt1 = (n: number) => (isFinite(n) ? n.toFixed(1) : "—");
+const fmt1 = (n: number) =>
+  isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "—";
 const fmt0 = (n: number) => (isFinite(n) ? Math.round(n).toLocaleString() : "—");
+const fmtPct = (num: number, denom: number) =>
+  denom > 0 && isFinite(num) ? `${((num / denom) * 100).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : "—";
+const supervisionPctValue = (sup: number, h97153: number) => (h97153 > 0 ? (sup / h97153) * 100 : null);
+function supervisionTone(pct: number | null): "danger" | "warn" | "ok" | undefined {
+  if (pct === null) return undefined;
+  if (pct < 5) return "danger";
+  if (pct < 10) return "warn";
+  return "ok";
+}
 function isoDate(d: string) {
   if (!d) return "";
   const t = new Date(d).getTime();
@@ -99,6 +112,7 @@ interface AssignmentIssue {
 }
 
 const isRbt97153 = (code: string) => /^97153\b/.test(code.trim()) || code.trim().startsWith("97153");
+const isSupervision = (code: string) => /^97155\b/.test(code.trim()) || code.trim().startsWith("97155");
 
 function addDaysIso(date: string, days: number) {
   const d = new Date(`${date}T00:00:00`);
