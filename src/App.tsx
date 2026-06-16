@@ -40,7 +40,7 @@ import LeadTrap from "./pages/os/growth/LeadTrap";
 import FacebookAds from "./pages/os/growth/FacebookAds";
 import GoogleAds from "./pages/os/growth/GoogleAds";
 import PatientLifetimeJourney from "./pages/os/growth/PatientLifetimeJourney";
-import IntakeDashboard from "./pages/os/intake/IntakeDashboard";
+import IntakeDashboardPage from "./pages/os/intake/IntakeDashboard";
 import LeadToActivePipeline from "./pages/os/intake/LeadToActivePipeline";
 import ReferralQueue from "./pages/os/intake/ReferralQueue";
 import IntakeTasks from "./pages/os/intake/IntakeTasks";
@@ -679,7 +679,7 @@ const App = () => (
                   <Route path="/cases" element={<OSCaseManagement />} />
                   <Route path="/staff" element={<OSWorkforce />} />
                   <Route path="/recruiting" element={<Navigate to="/recruiting/workspace" replace />} />
-                  <Route path="/credentialing" element={<OSPlaceholder title="Credentialing" description="Insurance + provider credentialing status and renewals." icon={BadgeCheck} />} />
+                  {/* Canonical Credentialing route is defined further down (Super Admin / Credentialing Team). */}
                   <Route path="/employee-ops" element={<OSPlaceholder title="Employee Operations" description="Employee onboarding and operational workflows." icon={Briefcase} />} />
                   <Route path="/evaluations" element={<OSEvaluations />} />
                   <Route path="/training" element={<OSTraining />} />
@@ -823,7 +823,7 @@ const App = () => (
                   <Route path="/marketing/facebook-ads" element={<FacebookAds />} />
                   <Route path="/marketing/google-ads" element={<GoogleAds />} />
                   <Route path="/patient-journey" element={<PatientLifetimeJourney />} />
-                  <Route path="/intake/dashboard" element={<IntakeDashboard />} />
+                  <Route path="/intake/dashboard" element={<IntakeDashboardPage />} />
                   <Route path="/intake/lead-to-active" element={<LeadToActivePipeline />} />
                   <Route path="/intake/referral-queue" element={<ReferralQueue />} />
                   <Route path="/intake/tasks" element={<IntakeTasks />} />
