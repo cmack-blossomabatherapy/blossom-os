@@ -369,8 +369,7 @@ export function getTrainees(): RBTTrainee[] { return mergedTrainees(); }
 export const RBT_TRAINEES: RBTTrainee[] = new Proxy([] as RBTTrainee[], {
   get(_t, prop) {
     const list = mergedTrainees();
-    // @ts-expect-error proxy access
-    return list[prop];
+    return (list as unknown as Record<PropertyKey, unknown>)[prop];
   },
 }) as RBTTrainee[];
 
