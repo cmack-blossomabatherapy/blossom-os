@@ -40,7 +40,7 @@ import LeadTrap from "./pages/os/growth/LeadTrap";
 import FacebookAds from "./pages/os/growth/FacebookAds";
 import GoogleAds from "./pages/os/growth/GoogleAds";
 import PatientLifetimeJourney from "./pages/os/growth/PatientLifetimeJourney";
-import IntakeDashboardModule from "./pages/os/intake/IntakeDashboard";
+import IntakeWorkspaceLanding from "./pages/os/intake/IntakeDashboard";
 import LeadToActivePipeline from "./pages/os/intake/LeadToActivePipeline";
 import ReferralQueue from "./pages/os/intake/ReferralQueue";
 import IntakeTasks from "./pages/os/intake/IntakeTasks";
@@ -823,7 +823,7 @@ const App = () => (
                   <Route path="/marketing/facebook-ads" element={<FacebookAds />} />
                   <Route path="/marketing/google-ads" element={<GoogleAds />} />
                   <Route path="/patient-journey" element={<PatientLifetimeJourney />} />
-                  <Route path="/intake/dashboard" element={<IntakeDashboardModule />} />
+                  <Route path="/intake/dashboard" element={<IntakeWorkspaceLanding />} />
                   <Route path="/intake/lead-to-active" element={<LeadToActivePipeline />} />
                   <Route path="/intake/referral-queue" element={<ReferralQueue />} />
                   <Route path="/intake/tasks" element={<IntakeTasks />} />
