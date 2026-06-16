@@ -130,6 +130,8 @@ import CeoDashboardV2RevenueLeaks from "./pages/CeoDashboardV2RevenueLeaks";
 import ClinicDashboard from "./pages/ClinicDashboard";
 import OSAuthorizations from "./pages/os/OSAuthorizations";
 import OperationsAcademy from "./pages/blossom/OperationsAcademy";
+import TrainingAcademyHome from "./pages/academy/TrainingAcademyHome";
+import TrainingPathDetail from "./pages/academy/TrainingPathDetail";
 import TrackDetail from "./pages/blossom/TrackDetail";
 import Departments from "./pages/blossom/Departments";
 import DepartmentDetail from "./pages/blossom/DepartmentDetail";
@@ -742,7 +744,9 @@ const App = () => (
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/home-redirect" element={<Navigate to="/" replace />} />
                   <Route path="/welcome" element={<WelcomeHome />} />
-                  <Route path="/academy" element={<OperationsAcademy />} />
+                  <Route path="/academy" element={<TrainingAcademyHome />} />
+                  <Route path="/academy/path/:slug" element={<TrainingPathDetail />} />
+                  <Route path="/academy/legacy" element={<OperationsAcademy />} />
                   <Route path="/my-learning" element={<MyLearning />} />
                   <Route path="/catalog" element={<TrainingCatalog />} />
                   <Route path="/announcements" element={<AnnouncementsFeed />} />
