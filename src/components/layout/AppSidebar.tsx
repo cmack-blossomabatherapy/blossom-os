@@ -410,17 +410,38 @@ export function AppSidebar({
                           );
                         }
                         return (
-                          <NavLink
-                            key={item.path}
-                            to={item.path}
-                            end={item.path === "/"}
-                            onClick={() => onMobileOpenChange?.(false)}
-                            className={cn("mobile-menu-item", active && "mobile-menu-item-active")}
-                          >
-                            <span className="mobile-menu-icon"><item.icon className="h-4 w-4" /></span>
-                            <span className="min-w-0 flex-1"><span className="block truncate">{item.label}</span></span>
-                            {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />}
-                          </NavLink>
+                          <div key={item.path}>
+                            <NavLink
+                              to={item.path}
+                              end={item.path === "/"}
+                              onClick={() => onMobileOpenChange?.(false)}
+                              className={cn("mobile-menu-item", (active || item.children?.some((c) => isItemActive(c.path))) && "mobile-menu-item-active")}
+                            >
+                              <span className="mobile-menu-icon"><item.icon className="h-4 w-4" /></span>
+                              <span className="min-w-0 flex-1"><span className="block truncate">{item.label}</span></span>
+                              {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />}
+                            </NavLink>
+                            {item.children?.length ? (
+                              <div className="ml-9 mt-0.5 mb-1 space-y-0.5 border-l border-border/50 pl-2">
+                                {item.children.map((child) => {
+                                  const cActive = isItemActive(child.path);
+                                  return (
+                                    <NavLink
+                                      key={child.path}
+                                      to={child.path}
+                                      onClick={() => onMobileOpenChange?.(false)}
+                                      className={cn(
+                                        "block rounded-md px-2.5 py-1.5 text-[12.5px]",
+                                        cActive ? "bg-secondary text-foreground font-medium" : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground",
+                                      )}
+                                    >
+                                      {child.label}
+                                    </NavLink>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                          </div>
                         );
                       })}
                     </div>
