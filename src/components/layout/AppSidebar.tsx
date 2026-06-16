@@ -467,13 +467,19 @@ export function AppSidebar({
                       {section.items.map((item) => {
                         const active = isItemActive(item.path);
                         if (item.disabled) {
+                          if (item.comingSoon) {
+                            return (
+                              <NavLink key={item.path} to={item.path} onClick={() => onMobileOpenChange?.(false)} className="mobile-menu-item w-full opacity-80">
+                                <span className="mobile-menu-icon"><Lock className="h-4 w-4" /></span>
+                                <span className="min-w-0 flex-1"><span className="block truncate">{item.label}</span></span>
+                                <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Soon</span>
+                              </NavLink>
+                            );
+                          }
                           return (
                             <button key={item.path} type="button" aria-disabled="true" className="mobile-menu-item w-full cursor-not-allowed opacity-50">
                               <span className="mobile-menu-icon"><Lock className="h-4 w-4" /></span>
                               <span className="min-w-0 flex-1"><span className="block truncate">{item.label}</span></span>
-                              {item.comingSoon && (
-                                <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Soon</span>
-                              )}
                             </button>
                           );
                         }
