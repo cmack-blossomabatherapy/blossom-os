@@ -21,9 +21,9 @@ export interface Workspace {
 
 // "*" = visible to every signed-in user.
 const EVERYONE = ["*"];
-const ADMIN_ONLY = ["admin"];
-const EXEC = ["admin", "exec"];
-const OPS = ["admin", "exec", "ops_manager"];
+const ADMIN_ONLY = ["admin", "super_admin", "systems_admin"];
+const EXEC = [...ADMIN_ONLY, "exec", "executive", "coo"];
+const OPS = [...EXEC, "ops_manager", "operations_manager", "director_of_operations"];
 
 /**
  * Single source of truth for Blossom OS top-level navigation.
@@ -57,7 +57,7 @@ export const WORKSPACES: Workspace[] = [
     icon: Megaphone,
     path: "/marketing",
     group: "workspaces",
-    roles: [...EXEC, "marketing"],
+    roles: [...EXEC, "marketing", "marketing_team", "marketing_growth_lead"],
   },
   {
     id: "intake",
@@ -66,7 +66,7 @@ export const WORKSPACES: Workspace[] = [
     icon: Users,
     path: "/intake-coordinator",
     group: "workspaces",
-    roles: [...OPS, "intake"],
+    roles: [...OPS, "intake", "intake_lead", "intake_coordinator"],
   },
   {
     id: "finance",
@@ -75,7 +75,7 @@ export const WORKSPACES: Workspace[] = [
     icon: Wallet,
     path: "/billing-finance",
     group: "workspaces",
-    roles: [...EXEC, "finance", "payroll_admin"],
+    roles: [...EXEC, "finance", "payroll_admin", "finance_benefits_lead", "finance_benefits_team", "payroll_lead"],
   },
   {
     id: "authorizations",
@@ -84,7 +84,7 @@ export const WORKSPACES: Workspace[] = [
     icon: ShieldCheck,
     path: "/auth-workspace",
     group: "workspaces",
-    roles: [...OPS, "auth_team", "qa"],
+    roles: [...OPS, "auth_team", "qa", "authorization_manager", "authorization_coordinator"],
   },
   {
     id: "qa",
@@ -93,7 +93,7 @@ export const WORKSPACES: Workspace[] = [
     icon: ClipboardCheck,
     path: "/qa-team",
     group: "workspaces",
-    roles: [...OPS, "qa"],
+    roles: [...OPS, "qa", "qa_director", "qa_specialist", "clinical_lead"],
   },
   {
     id: "scheduling",
@@ -102,7 +102,7 @@ export const WORKSPACES: Workspace[] = [
     icon: Calendar,
     path: "/scheduling-workspace",
     group: "workspaces",
-    roles: [...OPS, "scheduling", "staffing"],
+    roles: [...OPS, "scheduling", "staffing", "scheduling_lead", "scheduling_coordinator", "staffing_lead", "staffing_coordinator"],
   },
   {
     id: "recruiting",
@@ -111,7 +111,7 @@ export const WORKSPACES: Workspace[] = [
     icon: Briefcase,
     path: "/recruiting/workspace",
     group: "workspaces",
-    roles: [...OPS, "recruiting_assistant", "hr", "hr_admin", "hr_manager"],
+    roles: [...OPS, "recruiting_assistant", "hr", "hr_admin", "hr_manager", "recruiting_lead", "recruiting_coordinator", "hr_lead"],
   },
   {
     id: "hr",
@@ -120,7 +120,7 @@ export const WORKSPACES: Workspace[] = [
     icon: HeartHandshake,
     path: "/hr-team",
     group: "workspaces",
-    roles: [...OPS, "hr", "hr_admin", "hr_manager", "payroll_admin"],
+    roles: [...OPS, "hr", "hr_admin", "hr_manager", "payroll_admin", "hr_lead", "payroll_lead"],
   },
   {
     id: "billing-credentialing",
@@ -129,7 +129,7 @@ export const WORKSPACES: Workspace[] = [
     icon: IdCard,
     path: "/billing-finance?tab=credentialing",
     group: "workspaces",
-    roles: [...EXEC, "finance"],
+    roles: [...EXEC, "finance", "billing_lead", "credentialing_lead", "rcm_team", "finance_benefits_lead"],
   },
   {
     id: "state-command",
@@ -138,7 +138,7 @@ export const WORKSPACES: Workspace[] = [
     icon: MapPin,
     path: "/state-director",
     group: "workspaces",
-    roles: [...EXEC, "state_director"],
+    roles: [...EXEC, "state_director", "assistant_state_director"],
   },
 
   // ---------- Knowledge ----------
