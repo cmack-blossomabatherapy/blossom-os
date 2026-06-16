@@ -409,6 +409,17 @@ export const WORKSPACES: Workspace[] = [
     path: "/admin",
     group: "system",
     roles: ADMIN_ONLY,
+    tabs: [
+      { label: "Users & Roles",       path: "/team" },
+      { label: "Departments",         path: "/blossom/departments" },
+      { label: "Permissions",         path: "/admin/permissions" },
+      { label: "Integrations",        path: "/admin/integrations" },
+      { label: "Automations",         path: "/automations" },
+      { label: "Data Health",         path: tab("/admin", "data-health") },
+      { label: "Audit Log",           path: "/admin/role-audit" },
+      { label: "System Settings",     path: "/settings" },
+      { label: "Blossom OS Roadmap",  path: tab("/coo", "roadmap") },
+    ],
   },
 ];
 
