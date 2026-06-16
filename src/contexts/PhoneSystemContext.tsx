@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AdminSettings, CallQueue, ChangeRequest, CoverageTemplate, DEFAULT_SETTINGS,
   Employee, HolidayProfile, RetellCall, SharedRouting,
@@ -57,7 +58,38 @@ type PhoneSystemState = {
 };
 
 const Ctx = createContext<PhoneSystemState | null>(null);
-const KEY = "blossom.phone-system.v2";
+const LEGACY_KEY = "blossom.phone-system.v2";
+const TABLE = "phone_system_state";
+
+type StateKey =
+  | "queues"
+  | "employees"
+  | "shared"
+  | "requests"
+  | "retellCalls"
+  | "settings"
+  | "coverageTemplates"
+  | "holidayProfiles"
+  | "stateDirectory"
+  | "corporateMenu"
+  | "stateIntakeRouting"
+  | "directoryLabels";
+
+async function loadAllFromDb(): Promise<Partial<Record<StateKey, unknown>>> {
+  const { data, error } = await supabase.from(TABLE).select("key, value");
+  if (error) {
+    console.warn("[phone-system] load failed", error);
+    return {};
+  }
+  const out: Record<string, unknown> = {};
+  for (const row of data ?? []) out[(row as { key: string }).key] = (row as { value: unknown }).value;
+  return out as Partial<Record<StateKey, unknown>>;
+}
+
+async function saveToDb(key: StateKey, value: unknown) {
+  const { error } = await supabase.from(TABLE).upsert({ key, value: value as never });
+  if (error) console.warn(`[phone-system] save ${key} failed`, error);
+}
 
 const normalize = (value?: string | null) => value?.trim().toLowerCase() ?? "";
 
@@ -124,50 +156,135 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
   const [directoryLabels, setDirectoryLabels] = useState<DirectoryLabels>(DEFAULT_DIRECTORY_LABELS);
   const [hydrated, setHydrated] = useState(false);
 
+  // Initial load from DB. On first run, seed any missing keys with the SEED_*
+  // defaults (or rescue values from old localStorage cache) so we never wipe
+  // the page.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) {
-        const data = JSON.parse(raw);
-        if (data.queues) setQueues(data.queues);
-        if (data.employees) setEmployees(data.employees);
-        if (data.shared) setShared(data.shared);
-        if (data.requests) setRequests(data.requests);
-        if (data.retellCalls) setRetellCalls(data.retellCalls);
-        if (data.settings) setSettings({ ...DEFAULT_SETTINGS, ...data.settings });
-        if (data.coverageTemplates) setCoverageTemplates(data.coverageTemplates);
-        if (data.holidayProfiles) setHolidayProfiles(data.holidayProfiles);
-        if (data.stateDirectory) setStateDirectory(data.stateDirectory);
-        if (data.corporateMenu) setCorporateMenu(data.corporateMenu);
-        if (data.stateIntakeRouting) setStateIntakeRouting(data.stateIntakeRouting);
-        if (data.directoryLabels) setDirectoryLabels({ ...DEFAULT_DIRECTORY_LABELS, ...data.directoryLabels });
-      }
-    } catch { /* ignore */ }
-    setHydrated(true);
+    let cancelled = false;
+    (async () => {
+      const remote = await loadAllFromDb();
+      let legacy: Record<string, unknown> = {};
+      try {
+        const raw = localStorage.getItem(LEGACY_KEY);
+        if (raw) legacy = JSON.parse(raw);
+      } catch { /* ignore */ }
+
+      const pick = <T,>(key: StateKey, seed: T): T => {
+        if (remote[key] !== undefined) return remote[key] as T;
+        if (legacy[key] !== undefined) return legacy[key] as T;
+        return seed;
+      };
+
+      const nextQueues          = pick<CallQueue[]>("queues", SEED_QUEUES);
+      const nextEmployees       = pick<Employee[]>("employees", SEED_EMPLOYEES);
+      const nextShared          = pick<SharedRouting[]>("shared", SEED_SHARED);
+      const nextRequests        = pick<ChangeRequest[]>("requests", []);
+      const nextRetell          = pick<RetellCall[]>("retellCalls", SEED_RETELL_CALLS);
+      const nextSettings        = { ...DEFAULT_SETTINGS, ...(pick<Partial<AdminSettings>>("settings", DEFAULT_SETTINGS)) } as AdminSettings;
+      const nextCoverage        = pick<CoverageTemplate[]>("coverageTemplates", SEED_COVERAGE_TEMPLATES);
+      const nextHolidays        = pick<HolidayProfile[]>("holidayProfiles", SEED_HOLIDAY_PROFILES);
+      const nextStateDir        = pick<StateDirectoryEntry[]>("stateDirectory", STATE_DIRECTORY);
+      const nextMenu            = pick<CorporateMenuOption[]>("corporateMenu", CORPORATE_MENU);
+      const nextIntake          = pick<StateIntakeRouting[]>("stateIntakeRouting", STATE_INTAKE_ROUTING);
+      const nextLabels          = { ...DEFAULT_DIRECTORY_LABELS, ...(pick<Partial<DirectoryLabels>>("directoryLabels", DEFAULT_DIRECTORY_LABELS)) } as DirectoryLabels;
+
+      if (cancelled) return;
+      setQueues(nextQueues);
+      setEmployees(nextEmployees);
+      setShared(nextShared);
+      setRequests(nextRequests);
+      setRetellCalls(nextRetell);
+      setSettings(nextSettings);
+      setCoverageTemplates(nextCoverage);
+      setHolidayProfiles(nextHolidays);
+      setStateDirectory(nextStateDir);
+      setCorporateMenu(nextMenu);
+      setStateIntakeRouting(nextIntake);
+      setDirectoryLabels(nextLabels);
+      setHydrated(true);
+
+      // Seed/rescue: write any keys that were missing from the DB.
+      const toSeed: Array<[StateKey, unknown]> = [];
+      if (remote.queues === undefined) toSeed.push(["queues", nextQueues]);
+      if (remote.employees === undefined) toSeed.push(["employees", nextEmployees]);
+      if (remote.shared === undefined) toSeed.push(["shared", nextShared]);
+      if (remote.requests === undefined) toSeed.push(["requests", nextRequests]);
+      if (remote.retellCalls === undefined) toSeed.push(["retellCalls", nextRetell]);
+      if (remote.settings === undefined) toSeed.push(["settings", nextSettings]);
+      if (remote.coverageTemplates === undefined) toSeed.push(["coverageTemplates", nextCoverage]);
+      if (remote.holidayProfiles === undefined) toSeed.push(["holidayProfiles", nextHolidays]);
+      if (remote.stateDirectory === undefined) toSeed.push(["stateDirectory", nextStateDir]);
+      if (remote.corporateMenu === undefined) toSeed.push(["corporateMenu", nextMenu]);
+      if (remote.stateIntakeRouting === undefined) toSeed.push(["stateIntakeRouting", nextIntake]);
+      if (remote.directoryLabels === undefined) toSeed.push(["directoryLabels", nextLabels]);
+      await Promise.all(toSeed.map(([k, v]) => saveToDb(k, v)));
+    })();
+    return () => { cancelled = true; };
   }, []);
 
+  // Sync extensions with directory data once we're hydrated.
   useEffect(() => {
     if (!hydrated || directoryLoading || directoryMembers.length === 0) return;
-    setEmployees((current) => syncDirectoryEmployees(current, directoryMembers));
+    setEmployees((current) => {
+      const merged = syncDirectoryEmployees(current, directoryMembers);
+      saveToDb("employees", merged);
+      return merged;
+    });
   }, [directoryMembers, directoryLoading, hydrated]);
 
+  // Realtime: when another user updates a key, pull it in.
   useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(KEY, JSON.stringify({
-        queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles,
-        stateDirectory, corporateMenu, stateIntakeRouting, directoryLabels,
-      }));
-    } catch { /* ignore */ }
-  }, [queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles, stateDirectory, corporateMenu, stateIntakeRouting, directoryLabels, hydrated]);
+    const channel = supabase
+      .channel("phone_system_state_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: TABLE },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { key?: string; value?: unknown } | null;
+          if (!row?.key) return;
+          const v = row.value;
+          switch (row.key as StateKey) {
+            case "queues": setQueues(v as CallQueue[]); break;
+            case "employees": setEmployees(v as Employee[]); break;
+            case "shared": setShared(v as SharedRouting[]); break;
+            case "requests": setRequests(v as ChangeRequest[]); break;
+            case "retellCalls": setRetellCalls(v as RetellCall[]); break;
+            case "settings": setSettings({ ...DEFAULT_SETTINGS, ...(v as Partial<AdminSettings>) }); break;
+            case "coverageTemplates": setCoverageTemplates(v as CoverageTemplate[]); break;
+            case "holidayProfiles": setHolidayProfiles(v as HolidayProfile[]); break;
+            case "stateDirectory": setStateDirectory(v as StateDirectoryEntry[]); break;
+            case "corporateMenu": setCorporateMenu(v as CorporateMenuOption[]); break;
+            case "stateIntakeRouting": setStateIntakeRouting(v as StateIntakeRouting[]); break;
+            case "directoryLabels": setDirectoryLabels({ ...DEFAULT_DIRECTORY_LABELS, ...(v as Partial<DirectoryLabels>) }); break;
+          }
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Helper: update local state AND persist to DB.
+  const persist = <T,>(key: StateKey, setter: (v: T) => void) => (v: T) => {
+    setter(v);
+    void saveToDb(key, v);
+  };
 
   const value: PhoneSystemState = {
     queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles,
     stateDirectory, corporateMenu, stateIntakeRouting, directoryLabels,
-    setQueues, setEmployees, setShared, setSettings, setCoverageTemplates, setHolidayProfiles,
-    setStateDirectory, setCorporateMenu, setStateIntakeRouting, setDirectoryLabels,
+    setQueues: persist("queues", setQueues),
+    setEmployees: persist("employees", setEmployees),
+    setShared: persist("shared", setShared),
+    setSettings: persist("settings", setSettings),
+    setCoverageTemplates: persist("coverageTemplates", setCoverageTemplates),
+    setHolidayProfiles: persist("holidayProfiles", setHolidayProfiles),
+    setStateDirectory: persist("stateDirectory", setStateDirectory),
+    setCorporateMenu: persist("corporateMenu", setCorporateMenu),
+    setStateIntakeRouting: persist("stateIntakeRouting", setStateIntakeRouting),
+    setDirectoryLabels: persist("directoryLabels", setDirectoryLabels),
     saveEmployeeExtension: (previousExtension, employee) => {
       const nextExtension = employee.extension.trim();
+      let nextEmployeesSnapshot: Employee[] = [];
       setEmployees((prev) => {
         const match = (row: Employee) =>
           (previousExtension && row.extension === previousExtension) ||
@@ -175,32 +292,45 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
           (employee.email && normalize(row.email) === normalize(employee.email));
         const exists = prev.some(match);
         const next = exists ? prev.map((row) => (match(row) ? { ...row, ...employee, extension: nextExtension } : row)) : [{ ...employee, extension: nextExtension }, ...prev];
-        return next.filter((row, index, all) => all.findIndex((other) => other.extension && other.extension === row.extension) === index || !row.extension);
+        const deduped = next.filter((row, index, all) => all.findIndex((other) => other.extension && other.extension === row.extension) === index || !row.extension);
+        nextEmployeesSnapshot = deduped;
+        return deduped;
       });
+      void saveToDb("employees", nextEmployeesSnapshot);
       if (previousExtension && previousExtension !== nextExtension) {
-        setQueues((prev) => prev.map((queue) => ({ ...queue, agents: queue.agents.map((agent) => agent === previousExtension ? nextExtension : agent) })));
-        setShared((prev) => prev.map((route) => ({
-          ...route,
-          agents: route.agents.map((agent) => agent === previousExtension ? nextExtension : agent),
-          businessHoursRouting: route.businessHoursRouting === previousExtension ? nextExtension : route.businessHoursRouting,
-        })));
+        setQueues((prev) => {
+          const next = prev.map((queue) => ({ ...queue, agents: queue.agents.map((agent) => agent === previousExtension ? nextExtension : agent) }));
+          void saveToDb("queues", next);
+          return next;
+        });
+        setShared((prev) => {
+          const next = prev.map((route) => ({
+            ...route,
+            agents: route.agents.map((agent) => agent === previousExtension ? nextExtension : agent),
+            businessHoursRouting: route.businessHoursRouting === previousExtension ? nextExtension : route.businessHoursRouting,
+          }));
+          void saveToDb("shared", next);
+          return next;
+        });
       }
     },
     upsertRequest: (r) =>
       setRequests((prev) => {
         const idx = prev.findIndex((p) => p.id === r.id);
-        if (idx === -1) return [r, ...prev];
-        const next = [...prev];
-        next[idx] = r;
+        const next = idx === -1 ? [r, ...prev] : prev.map((p, i) => (i === idx ? r : p));
+        void saveToDb("requests", next);
         return next;
       }),
-    deleteRequest: (id) => setRequests((prev) => prev.filter((p) => p.id !== id)),
+    deleteRequest: (id) => setRequests((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      void saveToDb("requests", next);
+      return next;
+    }),
     upsertRetellCall: (c) =>
       setRetellCalls((prev) => {
         const idx = prev.findIndex((p) => p.id === c.id);
-        if (idx === -1) return [c, ...prev];
-        const next = [...prev];
-        next[idx] = c;
+        const next = idx === -1 ? [c, ...prev] : prev.map((p, i) => (i === idx ? c : p));
+        void saveToDb("retellCalls", next);
         return next;
       }),
   };
