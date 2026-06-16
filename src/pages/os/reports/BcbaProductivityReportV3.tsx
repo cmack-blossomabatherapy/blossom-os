@@ -672,143 +672,7 @@ export default function BcbaProductivityReportV3() {
           </div>
         </div>
 
-        {/* Upload zone */}
-        <div
-          className={cn(
-            "rounded-2xl border-2 border-dashed p-6 transition",
-            dragOver ? "border-primary bg-primary/5" : "border-border bg-card/40",
-          )}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-        >
-          <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
-            <div className="rounded-xl bg-primary/10 p-3 text-primary"><Upload className="h-6 w-6" /></div>
-            <div className="flex-1">
-              <div className="font-medium">
-                {fileName ? `Loaded: ${fileName}` : "Upload a single Billing Report (CSV or XLSX)"}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {rows.length > 0
-                  ? `${rows.length.toLocaleString()} rows accepted · ${
-                      assignments.length
-                        ? "ownership resolved via saved Assignment History"
-                        : usingInferred
-                          ? `ownership inferred from this billing report (${inferred.assignments.length} assignments, ${inferred.uniqueBcbas} BCBAs)`
-                          : "Assignment History setup required"
-                    }`
-                  : "Drag a file here, or click choose."}
-              </div>
-              {missingCols.length > 0 && (
-                <div className="mt-2 text-xs text-destructive">Missing columns: {missingCols.join(", ")}</div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <input
-                ref={inputRef} type="file" hidden accept={SUPPORTED_EXTENSIONS}
-                onChange={(e) => handleFiles(e.target.files)}
-              />
-              <Button size="sm" onClick={() => inputRef.current?.click()} disabled={loading}>
-                <FileSpreadsheet className="mr-2 h-4 w-4" /> {loading ? "Parsing…" : "Choose file"}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Upload validation panel */}
-        {validation && (
-          <div className="rounded-xl border bg-card/60 p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Upload Validation
-              </div>
-              <div className="text-xs text-muted-foreground">{validation.fileName}</div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
-              <ValPill label="Raw rows" value={fmt0(validation.rawRowCount)} />
-              <ValPill label="Accepted" value={fmt0(validation.acceptedRowCount)} />
-              <ValPill label="Dropped" value={fmt0(validation.droppedRowCount)} tone={validation.droppedRowCount ? "warn" : undefined} />
-              <ValPill label="Total hours" value={fmt1(validation.totalHours)} />
-              <ValPill label="Date range" value={validation.dateMin && validation.dateMax ? `${validation.dateMin} → ${validation.dateMax}` : "—"} />
-              <ValPill label="Unique clients" value={fmt0(validation.uniqueClients)} />
-              <ValPill label="Unique providers" value={fmt0(validation.uniqueProviders)} />
-              <ValPill label="Assignment rows" value={fmt0(validationCoverage.assignmentRows)} tone={!validationCoverage.assignmentRows ? "warn" : undefined} />
-              <ValPill label="Assigned rows" value={fmt0(validationCoverage.assignedRows)} />
-              <ValPill label="Assigned hours" value={fmt1(validationCoverage.assignedHours)} />
-              <ValPill label="Unassigned rows" value={fmt0(validationCoverage.unassignedRows)} tone={validationCoverage.unassignedRows ? "warn" : undefined} />
-              <ValPill label="Unassigned hours" value={fmt1(validationCoverage.unassignedHours)} tone={validationCoverage.unassignedHours ? "warn" : undefined} />
-            </div>
-            {Object.keys(validation.dropReasons).length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                {Object.entries(validation.dropReasons).map(([k, v]) => (
-                  <Badge key={k} variant="outline" className="font-normal">
-                    <AlertTriangle className="mr-1 h-3 w-3 text-warning" />
-                    {k}: {v.toLocaleString()}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {validation.topCodes.length > 0 && (
-              <div className="mt-3">
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Top codes</div>
-                <div className="flex flex-wrap gap-1.5 text-xs">
-                  {validation.topCodes.map(c => (
-                    <span key={c.code} className="rounded-md border bg-background px-2 py-0.5">
-                      <span className="font-medium">{c.code}</span>
-                      <span className="ml-1 text-muted-foreground">{fmt0(c.rows)} rows · {fmt1(c.hours)} hrs</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {(validationCoverage.missingClients.length > 0 || validationCoverage.dateGaps.length > 0) && (
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <MiniAuditList
-                  title="Clients missing assignment history"
-                  rows={validationCoverage.missingClients.slice(0, 10).map(c => [`${c.clientName || c.clientId}`, `${fmt1(c.hours)} hrs · ${fmt0(c.rows)} rows`])}
-                />
-                <MiniAuditList
-                  title="Clients with assignment date gaps"
-                  rows={validationCoverage.dateGaps.slice(0, 10).map(g => [g.clientName, g.detail])}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Saved reports */}
-        {savedList.length > 0 && (
-          <div className="rounded-xl border bg-card/60 p-4">
-            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Database className="h-3.5 w-3.5" /> Saved Reports
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {savedList.map(r => (
-                <div key={r.id} className="group flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-xs">
-                  <button className="font-medium hover:underline" onClick={() => handleRegenerate(r.id)}>{r.name}</button>
-                  <span className="text-muted-foreground">{r.rowCount.toLocaleString()} rows</span>
-                  <button
-                    className="opacity-60 hover:opacity-100"
-                    onClick={async () => { await deleteSavedReportV3(r.id); setSavedList(readSavedReportsV3()); }}
-                    title="Delete"
-                  ><Trash2 className="h-3 w-3" /></button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* KPIs */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
-          <KpiCard label="Total Hours" value={fmt1(kpis.totalHours)} />
-          <KpiCard label="97153 Hours" value={fmt1(kpis.h97153)} />
-          <KpiCard label="Direct BCBA Hours" value={fmt1(kpis.directHours)} />
-          <KpiCard label="Active Clients" value={fmt0(kpis.clients)} />
-          <KpiCard label="Active RBTs" value={fmt0(kpis.rbts)} />
-          <KpiCard label="Active BCBAs" value={fmt0(kpis.bcbas)} />
-          <KpiCard label="Unassigned Hours" value={fmt1(kpis.unassigned)} tone={kpis.unassigned > 0 ? "warn" : undefined} />
-          <KpiCard label="Dropped Rows" value={fmt0(validation?.droppedRowCount ?? 0)} tone={(validation?.droppedRowCount ?? 0) > 0 ? "warn" : undefined} />
-        </div>
+        {/* Setup / inferred banners stay above tabs */}
         {setupIncomplete && (
           <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning-foreground">
             <AlertTriangle className="mr-1.5 inline h-4 w-4" />
@@ -876,119 +740,253 @@ export default function BcbaProductivityReportV3() {
           </div>
         </div>
 
-        {/* Main BCBA table */}
-        <div className="overflow-hidden rounded-xl border">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="w-8 px-3 py-2"></th>
-                  <th className="px-3 py-2">BCBA</th>
-                  <th className="px-3 py-2 text-right">Total Hours</th>
-                  <th className="px-3 py-2 text-right">97153 Hours</th>
-                  <th className="px-3 py-2 text-right">Direct Hours</th>
-                  <th className="px-3 py-2 text-right">Clients</th>
-                  <th className="px-3 py-2 text-right">RBTs</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bcbaTable.length === 0 && (
-                  <tr><td colSpan={7} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                    Upload a billing report to populate productivity.
-                  </td></tr>
-                )}
-                {bcbaTable.map(b => {
-                  const open = !!expanded[b.bcba];
-                  return (
-                    <Row key={b.bcba} expanded={open} onToggle={() => setExpanded(s => ({ ...s, [b.bcba]: !open }))} bcba={b} />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* Main tabbed report */}
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="bcba">BCBA Summary</TabsTrigger>
+            <TabsTrigger value="supervision">Supervision</TabsTrigger>
+            <TabsTrigger value="clients">Clients &amp; RBTs</TabsTrigger>
+            <TabsTrigger value="upload">Upload Details</TabsTrigger>
+          </TabsList>
 
-        {/* Unassigned audit */}
-        {unassignedAudit.length > 0 && (
-          <div className="overflow-hidden rounded-xl border">
-            <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <AlertTriangle className="h-3.5 w-3.5" /> Unassigned Audit
+          <TabsContent value="overview" className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
+              <KpiCard label="Total Hours" value={fmt1(kpis.totalHours)} />
+              <KpiCard label="97153 Hours" value={fmt1(kpis.h97153)} />
+              <KpiCard label="Direct BCBA Hours" value={fmt1(kpis.directHours)} />
+              <KpiCard label="Supervision Hours" value={fmt1(kpis.supervisionHours)} />
+              <KpiCard label="Supervision %" value={fmtPct(kpis.supervisionHours, kpis.h97153)}
+                tone={supervisionTone(supervisionPctValue(kpis.supervisionHours, kpis.h97153)) === "danger" ? "warn" : undefined} />
+              <KpiCard label="Active BCBAs" value={fmt0(kpis.bcbas)} />
+              <KpiCard label="Active Clients" value={fmt0(kpis.clients)} />
+              <KpiCard label="Active RBTs" value={fmt0(kpis.rbts)} />
+            </div>
+            <OverviewCharts bcbaTable={bcbaTable} />
+          </TabsContent>
+
+          <TabsContent value="bcba" className="space-y-3">
+            <BcbaSummaryTable
+              bcbaTable={bcbaTable}
+              expanded={expanded}
+              setExpanded={setExpanded}
+            />
+          </TabsContent>
+
+          <TabsContent value="supervision" className="space-y-4">
+            <SupervisionTab bcbaTable={bcbaTable} />
+          </TabsContent>
+
+          <TabsContent value="clients" className="space-y-4">
+            <ClientsRbtsTab filtered={filtered} bcbaTable={bcbaTable} />
+          </TabsContent>
+
+          <TabsContent value="upload" className="space-y-4">
+            {/* Upload zone */}
+            <div
+              className={cn(
+                "rounded-2xl border-2 border-dashed p-6 transition",
+                dragOver ? "border-primary bg-primary/5" : "border-border bg-card/40",
+              )}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+            >
+              <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
+                <div className="rounded-xl bg-primary/10 p-3 text-primary"><Upload className="h-6 w-6" /></div>
+                <div className="flex-1">
+                  <div className="font-medium">
+                    {fileName ? `Loaded: ${fileName}` : "Upload a single Billing Report (CSV or XLSX)"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {rows.length > 0
+                      ? `${rows.length.toLocaleString()} rows accepted · ${
+                          assignments.length
+                            ? "ownership resolved via saved Assignment History"
+                            : usingInferred
+                              ? `ownership inferred from this billing report (${inferred.assignments.length} assignments, ${inferred.uniqueBcbas} BCBAs)`
+                              : "Assignment History setup required"
+                        }`
+                      : "Drag a file here, or click choose."}
+                  </div>
+                  {missingCols.length > 0 && (
+                    <div className="mt-2 text-xs text-destructive">Missing columns: {missingCols.join(", ")}</div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    ref={inputRef} type="file" hidden accept={SUPPORTED_EXTENSIONS}
+                    onChange={(e) => handleFiles(e.target.files)}
+                  />
+                  <Button size="sm" onClick={() => inputRef.current?.click()} disabled={loading}>
+                    <FileSpreadsheet className="mr-2 h-4 w-4" /> {loading ? "Parsing…" : "Choose file"}
+                  </Button>
+                </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={exportUnassignedCsv}>
-                <Download className="mr-1.5 h-3.5 w-3.5" /> Export
-              </Button>
             </div>
-            <div className="max-h-80 overflow-auto">
-              <table className="w-full min-w-[980px] text-sm">
-                <thead className="sticky top-0 bg-background text-left text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2">Client</th><th className="px-3 py-2">Client ID</th><th className="px-3 py-2">DOS</th>
-                    <th className="px-3 py-2">Code</th><th className="px-3 py-2">Rendering Provider</th><th className="px-3 py-2 text-right">Hours</th>
-                    <th className="px-3 py-2">State</th><th className="px-3 py-2">Payor</th><th className="px-3 py-2">Reason</th><th className="px-3 py-2"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {unassignedAudit.slice(0, 250).map((r, i) => (
-                    <tr key={`${r.clientId}-${r.clientName}-${r.date}-${i}`} className="border-t">
-                      <td className="px-3 py-2 font-medium">{r.clientName}</td><td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.clientId || "—"}</td>
-                      <td className="px-3 py-2">{r.date}</td><td className="px-3 py-2">{r.code}</td><td className="px-3 py-2">{r.renderingProvider || "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.hours)}</td><td className="px-3 py-2">{r.state || "—"}</td><td className="px-3 py-2">{r.payor || "—"}</td>
-                      <td className="px-3 py-2">{r.reason}</td>
-                      <td className="px-3 py-2 text-right">
-                        <Button variant="ghost" size="sm" onClick={() => openClientHistory(r)}>
-                          <History className="mr-1.5 h-3.5 w-3.5" /> Open history
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => startAssignmentForRow(r)}>
-                          <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Create assignment
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
-        {/* Transfer audit */}
-        <div className="overflow-hidden rounded-xl border">
-          <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <ArrowLeftRight className="h-3.5 w-3.5" /> Transfer Audit
-            </div>
-            <Button variant="ghost" size="sm" onClick={exportTransfersCsv} disabled={!transfers.length}>
-              <Download className="mr-1.5 h-3.5 w-3.5" /> Export
-            </Button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
-              <thead className="bg-background text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2">Client</th>
-                  <th className="px-3 py-2">Previous BCBA</th>
-                  <th className="px-3 py-2">New BCBA</th>
-                  <th className="px-3 py-2">Transfer Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transfers.length === 0 && (
-                  <tr><td colSpan={4} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                    No transfers yet. Add a new assignment for a client to create a transfer event.
-                  </td></tr>
+            {validation && (
+              <div className="rounded-xl border bg-card/60 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Upload Validation
+                  </div>
+                  <div className="text-xs text-muted-foreground">{validation.fileName}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
+                  <ValPill label="Raw rows" value={fmt0(validation.rawRowCount)} />
+                  <ValPill label="Accepted" value={fmt0(validation.acceptedRowCount)} />
+                  <ValPill label="Dropped" value={fmt0(validation.droppedRowCount)} tone={validation.droppedRowCount ? "warn" : undefined} />
+                  <ValPill label="Total hours" value={fmt1(validation.totalHours)} />
+                  <ValPill label="Date range" value={validation.dateMin && validation.dateMax ? `${validation.dateMin} → ${validation.dateMax}` : "—"} />
+                  <ValPill label="Unique clients" value={fmt0(validation.uniqueClients)} />
+                  <ValPill label="Unique providers" value={fmt0(validation.uniqueProviders)} />
+                  <ValPill label="Assignment rows" value={fmt0(validationCoverage.assignmentRows)} tone={!validationCoverage.assignmentRows ? "warn" : undefined} />
+                  <ValPill label="Assigned rows" value={fmt0(validationCoverage.assignedRows)} />
+                  <ValPill label="Assigned hours" value={fmt1(validationCoverage.assignedHours)} />
+                  <ValPill label="Unassigned rows" value={fmt0(validationCoverage.unassignedRows)} tone={validationCoverage.unassignedRows ? "warn" : undefined} />
+                  <ValPill label="Unassigned hours" value={fmt1(validationCoverage.unassignedHours)} tone={validationCoverage.unassignedHours ? "warn" : undefined} />
+                </div>
+                {Object.keys(validation.dropReasons).length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    {Object.entries(validation.dropReasons).map(([k, v]) => (
+                      <Badge key={k} variant="outline" className="font-normal">
+                        <AlertTriangle className="mr-1 h-3 w-3 text-warning" />
+                        {k}: {v.toLocaleString()}
+                      </Badge>
+                    ))}
+                  </div>
                 )}
-                {transfers.map((t, i) => (
-                  <tr key={i} className="border-t">
-                    <td className="px-3 py-2">{t.clientName}</td>
-                    <td className="px-3 py-2">{t.previousBcba}</td>
-                    <td className="px-3 py-2">{t.newBcba}</td>
-                    <td className="px-3 py-2">{t.transferDate}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                {validation.topCodes.length > 0 && (
+                  <div className="mt-3">
+                    <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Top codes</div>
+                    <div className="flex flex-wrap gap-1.5 text-xs">
+                      {validation.topCodes.map(c => (
+                        <span key={c.code} className="rounded-md border bg-background px-2 py-0.5">
+                          <span className="font-medium">{c.code}</span>
+                          <span className="ml-1 text-muted-foreground">{fmt0(c.rows)} rows · {fmt1(c.hours)} hrs</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(validationCoverage.missingClients.length > 0 || validationCoverage.dateGaps.length > 0) && (
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <MiniAuditList
+                      title="Clients missing assignment history"
+                      rows={validationCoverage.missingClients.slice(0, 10).map(c => [`${c.clientName || c.clientId}`, `${fmt1(c.hours)} hrs · ${fmt0(c.rows)} rows`])}
+                    />
+                    <MiniAuditList
+                      title="Clients with assignment date gaps"
+                      rows={validationCoverage.dateGaps.slice(0, 10).map(g => [g.clientName, g.detail])}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {savedList.length > 0 && (
+              <div className="rounded-xl border bg-card/60 p-4">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Database className="h-3.5 w-3.5" /> Saved Reports
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {savedList.map(r => (
+                    <div key={r.id} className="group flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-xs">
+                      <button className="font-medium hover:underline" onClick={() => handleRegenerate(r.id)}>{r.name}</button>
+                      <span className="text-muted-foreground">{r.rowCount.toLocaleString()} rows</span>
+                      <button
+                        className="opacity-60 hover:opacity-100"
+                        onClick={async () => { await deleteSavedReportV3(r.id); setSavedList(readSavedReportsV3()); }}
+                        title="Delete"
+                      ><Trash2 className="h-3 w-3" /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {unassignedAudit.length > 0 && (
+              <div className="overflow-hidden rounded-xl border">
+                <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <AlertTriangle className="h-3.5 w-3.5" /> Unassigned Audit
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={exportUnassignedCsv}>
+                    <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+                  </Button>
+                </div>
+                <div className="max-h-80 overflow-auto">
+                  <table className="w-full min-w-[980px] text-sm">
+                    <thead className="sticky top-0 bg-background text-left text-xs uppercase tracking-wider text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2">Client</th><th className="px-3 py-2">Client ID</th><th className="px-3 py-2">DOS</th>
+                        <th className="px-3 py-2">Code</th><th className="px-3 py-2">Rendering Provider</th><th className="px-3 py-2 text-right">Hours</th>
+                        <th className="px-3 py-2">State</th><th className="px-3 py-2">Payor</th><th className="px-3 py-2">Reason</th><th className="px-3 py-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {unassignedAudit.slice(0, 250).map((r, i) => (
+                        <tr key={`${r.clientId}-${r.clientName}-${r.date}-${i}`} className="border-t">
+                          <td className="px-3 py-2 font-medium">{r.clientName}</td><td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.clientId || "—"}</td>
+                          <td className="px-3 py-2">{r.date}</td><td className="px-3 py-2">{r.code}</td><td className="px-3 py-2">{r.renderingProvider || "—"}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.hours)}</td><td className="px-3 py-2">{r.state || "—"}</td><td className="px-3 py-2">{r.payor || "—"}</td>
+                          <td className="px-3 py-2">{r.reason}</td>
+                          <td className="px-3 py-2 text-right">
+                            <Button variant="ghost" size="sm" onClick={() => openClientHistory(r)}>
+                              <History className="mr-1.5 h-3.5 w-3.5" /> Open history
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => startAssignmentForRow(r)}>
+                              <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Create assignment
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-hidden rounded-xl border">
+              <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <ArrowLeftRight className="h-3.5 w-3.5" /> Transfer Audit
+                </div>
+                <Button variant="ghost" size="sm" onClick={exportTransfersCsv} disabled={!transfers.length}>
+                  <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+                </Button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-sm">
+                  <thead className="bg-background text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2">Client</th>
+                      <th className="px-3 py-2">Previous BCBA</th>
+                      <th className="px-3 py-2">New BCBA</th>
+                      <th className="px-3 py-2">Transfer Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transfers.length === 0 && (
+                      <tr><td colSpan={4} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                        No transfers yet. Add a new assignment for a client to create a transfer event.
+                      </td></tr>
+                    )}
+                    {transfers.map((t, i) => (
+                      <tr key={i} className="border-t">
+                        <td className="px-3 py-2">{t.clientName}</td>
+                        <td className="px-3 py-2">{t.previousBcba}</td>
+                        <td className="px-3 py-2">{t.newBcba}</td>
+                        <td className="px-3 py-2">{t.transferDate}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Assignment history drawer */}
