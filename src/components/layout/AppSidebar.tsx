@@ -459,6 +459,43 @@ export function AppSidebar({
                 No menu matches.
               </p>
             )}
+            {isAdmin && (
+              <div className="mt-4 px-1">
+                {impersonating ? (
+                  <button
+                    type="button"
+                    onClick={() => { osCtx?.setRole("super_admin"); }}
+                    className="flex w-full items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-sm font-medium text-foreground"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Stop previewing
+                  </button>
+                ) : (
+                  <div>
+                    <p className="mb-1.5 flex items-center gap-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      <Eye className="h-3 w-3" /> Preview as Role
+                    </p>
+                    <div className="space-y-0.5">
+                      {ROLE_PREVIEW.map((r) => (
+                        <button
+                          key={r.role}
+                          type="button"
+                          onClick={() => {
+                            osCtx?.setRole(r.role);
+                            navigate(ROLE_HOME[r.role] ?? "/");
+                            onMobileOpenChange?.(false);
+                          }}
+                          className="mobile-menu-item w-full text-left"
+                        >
+                          <span className="mobile-menu-icon"><Eye className="h-4 w-4" /></span>
+                          <span className="min-w-0 flex-1"><span className="block truncate">{r.label}</span></span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
           <div className="shrink-0 border-t border-border/60 bg-card/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur-xl">
             <div className="flex items-center gap-3 rounded-xl px-2 py-2">
