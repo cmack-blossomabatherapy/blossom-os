@@ -458,6 +458,7 @@ function TypeIcon({ type, className }: { type: ModuleType; className?: string })
   const map: Record<ModuleType, React.ComponentType<{ className?: string }>> = {
     SOP: FileText, Video: Video, Walkthrough: PlayCircle, Checklist: ListChecks,
     Overview: GraduationCap, Shadowing: Compass, Assessment: ClipboardCheck,
+    "Role Play": Compass, Evaluation: ClipboardCheck, Signoff: ClipboardCheck,
   };
   const Icon = map[type] ?? BookOpen;
   return <Icon className={className} />;
