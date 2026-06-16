@@ -26,6 +26,7 @@ import {
   useResourcePrefs, toggleBookmark, toggleComplete, markViewed,
 } from "@/lib/training/rbtResourcePrefs";
 import { TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
+import { RBTRetentionSection } from "@/components/training/RBTRetentionSection";
 
 // RBT Training Academy — experience-based, guided journey. Calm, mobile-first.
 
@@ -503,6 +504,9 @@ function ResourcesTab({
 
   return (
     <section className="space-y-5">
+      {/* Warm, retention-focused support surface — always visible at the top. */}
+      <RBTRetentionSection />
+
       {/* Search + admin button */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative min-w-[240px] flex-1">
@@ -1140,6 +1144,7 @@ function SignoffBadge({ status }: { status: SignoffItem["status"] }) {
 function SupportTab() {
   return (
     <section className="space-y-3">
+      <RBTRetentionSection />
       <div className="rounded-2xl border border-border/70 bg-card p-5">
         <div className="flex items-center gap-2">
           <Sparkles className="size-4 text-muted-foreground" />
