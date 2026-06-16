@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import {
   LifeBuoy,
-  Sparkles,
   Mail,
   MessageCircle,
   BookOpen,
@@ -86,34 +85,9 @@ export default function Help() {
               We've got your back.
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-              Stuck on something? The fastest answer is almost always the Blossom Assistant — it knows your training,
-              your profile, the handbook, and our policies. For anything human, our HR and Systems teams are one click away.
+              Need a hand? Browse quick help below, or reach out to HR or Systems — they're one click away.
             </p>
           </div>
-
-          {/* Hero CTA: Ask Blossom */}
-          <Link
-            to="/hr/assistant"
-            className="group mt-2 flex flex-col gap-3 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary to-primary/80 p-5 text-primary-foreground shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl sm:flex-row sm:items-center sm:justify-between sm:p-6"
-          >
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-foreground/15 backdrop-blur">
-                <Sparkles className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/80">
-                  Recommended · 24/7
-                </p>
-                <p className="text-lg font-semibold">Ask Blossom Assistant</p>
-                <p className="text-sm text-primary-foreground/85">
-                  Training questions, HR policies, finding coworkers, handbook lookups — it's instant.
-                </p>
-              </div>
-            </div>
-            <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-primary-foreground/15 px-4 py-2 text-sm font-medium backdrop-blur transition-all group-hover:bg-primary-foreground/25 sm:self-auto">
-              Open Assistant <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </Link>
         </div>
       </header>
 

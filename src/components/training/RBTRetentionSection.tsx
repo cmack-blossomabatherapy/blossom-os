@@ -114,12 +114,6 @@ export function RBTRetentionSection({ compact = false }: { compact?: boolean }) 
           >
             <MessageSquare className="size-3.5" /> Message my team
           </Link>
-          <Link
-            to="/ai/assistant"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Sparkles className="size-3.5" /> Ask Blossom AI
-          </Link>
         </div>
       </div>
     </section>
