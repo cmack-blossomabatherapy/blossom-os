@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, Mail, KeyRound, ShieldCheck, Sparkles, ArrowLeft } from "lucide-react";
-import logoWhiteAsset from "@/assets/blossom-logo-white.png.asset.json";
-import logoWordmark from "@/assets/blossom-logo-wordmark.png";
+import logoWhite from "@/assets/blossom-logo-light.webp";
+import logoColor from "@/assets/blossom-logo-color.png";
+import flowerMark from "@/assets/blossom-flower-mark.png";
 import { Checkbox } from "@/components/ui/checkbox";
 import { setRememberPreference, getRememberPreference } from "@/lib/rememberSession";
 import { RequestAccessDialog } from "@/components/auth/RequestAccessDialog";
@@ -138,14 +139,24 @@ export default function Auth() {
     >
       <div className="relative grid min-h-screen w-full lg:grid-cols-[1.05fr_1fr]">
         {/* Brand panel */}
-        <aside className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between bg-gradient-to-br from-[#0c2340] via-[#1a4a6e] to-[#2d8a9e] p-12 text-white">
+        <aside className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between bg-gradient-to-br from-[#0c2340] via-[#143a5c] to-[#1a4a6e] p-12 text-white">
           {/* decorative blobs */}
           <div aria-hidden className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-          <div aria-hidden className="pointer-events-none absolute -right-24 bottom-0 h-[28rem] w-[28rem] rounded-full bg-[#f5b75e]/20 blur-3xl" />
-          <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
+          <div aria-hidden className="pointer-events-none absolute -right-24 bottom-0 h-[28rem] w-[28rem] rounded-full bg-[#2d8a9e]/25 blur-3xl" />
+          <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
+          <img
+            aria-hidden
+            src={flowerMark}
+            alt=""
+            className="pointer-events-none absolute -right-20 -bottom-16 h-[420px] w-[420px] opacity-[0.08] select-none"
+          />
 
-          <div className="relative z-10 flex items-center gap-3">
-            <img src={logoWhiteAsset.url} alt="" className="h-10 w-auto object-contain" />
+          <div className="relative z-10 flex items-center">
+            <img
+              src={logoWhite}
+              alt="Blossom ABA Therapy"
+              className="h-14 w-auto object-contain drop-shadow-[0_4px_16px_rgba(0,0,0,0.25)]"
+            />
           </div>
 
           <div className="relative z-10 max-w-md">
@@ -184,11 +195,11 @@ export default function Auth() {
         <main className="relative flex min-h-screen w-full items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-[460px] rounded-3xl border border-slate-200/80 bg-white p-8 shadow-2xl shadow-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700 sm:p-10">
             {/* mobile logo inside card */}
-            <div className="mb-6 flex justify-center lg:hidden">
+            <div className="mb-8 flex justify-center lg:hidden">
               <img
-                src={logoWordmark}
+                src={logoColor}
                 alt="Blossom ABA Therapy"
-                className="h-10 w-auto object-contain"
+                className="h-12 w-auto object-contain"
               />
             </div>
           <header className="mb-8 text-center sm:text-left">
