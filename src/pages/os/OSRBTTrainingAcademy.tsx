@@ -26,6 +26,7 @@ import {
   useResourcePrefs, toggleBookmark, toggleComplete, markViewed,
 } from "@/lib/training/rbtResourcePrefs";
 import { TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
+import { RBTRetentionSection } from "@/components/training/RBTRetentionSection";
 
 // RBT Training Academy — experience-based, guided journey. Calm, mobile-first.
 
