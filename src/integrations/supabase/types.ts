@@ -2557,6 +2557,165 @@ export type Database = {
         }
         Relationships: []
       }
+      department_kpis: {
+        Row: {
+          created_at: string
+          current_value: string | null
+          department_id: string
+          id: string
+          label: string
+          sort_order: number
+          target_value: string | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: string | null
+          department_id: string
+          id?: string
+          label: string
+          sort_order?: number
+          target_value?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: string | null
+          department_id?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          target_value?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_kpis_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      department_members: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_members_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      department_resources: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          kind: string
+          label: string
+          path: string | null
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          kind: string
+          label: string
+          path?: string | null
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          kind?: string
+          label?: string
+          path?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_resources_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          backup_user_id: string | null
+          created_at: string
+          description: string | null
+          escalation_rules: Json
+          head_user_id: string | null
+          id: string
+          name: string
+          primary_queue_path: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          backup_user_id?: string | null
+          created_at?: string
+          description?: string | null
+          escalation_rules?: Json
+          head_user_id?: string | null
+          id?: string
+          name: string
+          primary_queue_path?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          backup_user_id?: string | null
+          created_at?: string
+          description?: string | null
+          escalation_rules?: Json
+          head_user_id?: string | null
+          id?: string
+          name?: string
+          primary_queue_path?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       device_inventory: {
         Row: {
           created_at: string
