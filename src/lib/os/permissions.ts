@@ -420,6 +420,52 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
   },
 };
 
+/**
+ * Aliases for the 2026 canonical org roles.
+ * Each new role inherits a sensible existing profile until detailed
+ * department permissions are designed. Update individually as needed.
+ */
+const ROLE_ALIASES: Record<
+  Exclude<OSRole, keyof typeof BASE_ROLE_PROFILES>,
+  OSRole
+> = {
+  systems_admin: "super_admin",
+  executive: "executive_leadership",
+  coo: "executive_leadership",
+  director_of_operations: "operations_leadership",
+  operations_manager: "operations_leadership",
+  marketing_growth_lead: "marketing_team",
+  intake_lead: "intake_coordinator",
+  finance_benefits_lead: "billing_finance",
+  finance_benefits_team: "billing_finance",
+  authorization_manager: "authorization_coordinator",
+  qa_director: "qa_team",
+  qa_specialist: "qa_team",
+  clinical_lead: "bcba",
+  scheduling_lead: "scheduling_team",
+  scheduling_coordinator: "scheduling_team",
+  staffing_lead: "scheduling_team",
+  staffing_coordinator: "scheduling_team",
+  recruiting_lead: "recruiting_team",
+  recruiting_coordinator: "recruiting_team",
+  hr_lead: "hr_team",
+  payroll_lead: "payroll_coordinator",
+  billing_lead: "billing_finance",
+  credentialing_lead: "billing_finance",
+  rcm_team: "billing_finance",
+  assistant_state_director: "state_director",
+  viewer: "behavioral_support",
+};
+
+export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
+  ...(BASE_ROLE_PROFILES as Record<OSRole, RoleProfile>),
+  ...(Object.fromEntries(
+    (Object.entries(ROLE_ALIASES) as [OSRole, OSRole][]).map(
+      ([aliasRole, sourceRole]) => [aliasRole, BASE_ROLE_PROFILES[sourceRole] as RoleProfile],
+    ),
+  ) as Record<OSRole, RoleProfile>),
+};
+
 export function canSeeModule(role: OSRole, module: OSModule): boolean {
   return ROLE_PROFILES[role].modules.includes(module);
 }
