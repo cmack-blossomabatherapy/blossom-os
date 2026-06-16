@@ -821,12 +821,18 @@ function resourceIcon(type: RBTResourceType): React.ComponentType<{ className?: 
   switch (type) {
     case "YouTube Video":  return Youtube;
     case "Internal Video": return Video;
+    case "Meeting Recording": return Video;
     case "SOP":            return FileText;
+    case "Policy":         return ShieldCheck;
+    case "How-To":         return BookOpen;
     case "Checklist":      return ListChecks;
     case "Template":       return FileSpreadsheet;
+    case "Worksheet":      return FileSpreadsheet;
     case "Quiz":           return ClipboardCheck;
     case "Mock Form":      return FileSpreadsheet;
     case "Trainer Note":   return StickyNote;
+    case "PDF":            return FileBadge;
+    case "Research Article": return BookMarked;
   }
 }
 
