@@ -121,6 +121,7 @@ export const STARTER_RBT_RESOURCES: RBTResource[] = [
     description: "Plain-language intro to ABA concepts for new RBTs.",
     moduleIds: ["nc-c2", "ne-a1", "u2-g2"],
     minutes: 35,
+    category: "aba_skills",
     seeded: true,
   },
   {
@@ -131,6 +132,7 @@ export const STARTER_RBT_RESOURCES: RBTResource[] = [
     description: "Frequency, duration, ABC, and trial-by-trial — the fast version.",
     moduleIds: ["nc-k1", "ne-d1"],
     minutes: 6,
+    category: "documentation",
     seeded: true,
   },
   {
@@ -141,6 +143,7 @@ export const STARTER_RBT_RESOURCES: RBTResource[] = [
     description: "Writing complete, billable, audit-ready session notes.",
     moduleIds: ["nc-k2", "ne-d1", "ex-d1"],
     minutes: 12,
+    category: "documentation",
     seeded: true,
   },
   {
@@ -151,6 +154,7 @@ export const STARTER_RBT_RESOURCES: RBTResource[] = [
     description: "Practice form — submit for Documentation Reviewer feedback.",
     moduleIds: ["nc-s2"],
     minutes: 20,
+    category: "documentation",
     seeded: true,
   },
   {
@@ -162,6 +166,7 @@ export const STARTER_RBT_RESOURCES: RBTResource[] = [
     // Attached to competency, mid-track assistance/observation, and BCBA supervision checkpoints.
     moduleIds: ["nc-cp1", "nc-cp2", "nc-k3", "ne-b1", "u2-b1"],
     minutes: 10,
+    category: "credentialing",
     seeded: true,
   },
   {
@@ -172,6 +177,7 @@ export const STARTER_RBT_RESOURCES: RBTResource[] = [
     description: "De-escalation, incident reporting, and who to call.",
     moduleIds: ["ex-s1"],
     minutes: 8,
+    category: "policies",
     seeded: true,
   },
   {
@@ -182,6 +188,7 @@ export const STARTER_RBT_RESOURCES: RBTResource[] = [
     description: "Tone, what to share, what to escalate.",
     moduleIds: ["ex-p1"],
     minutes: 8,
+    category: "policies",
     seeded: true,
   },
   {
@@ -192,6 +199,7 @@ export const STARTER_RBT_RESOURCES: RBTResource[] = [
     description: "How Blossom RBTs show up — dress, punctuality, boundaries.",
     moduleIds: ["ne-p1"],
     minutes: 5,
+    category: "policies",
     seeded: true,
   },
   {
@@ -202,6 +210,7 @@ export const STARTER_RBT_RESOURCES: RBTResource[] = [
     description: "My Day, schedule, messages, and where everything lives.",
     moduleIds: ["welcome-3"],
     minutes: 6,
+    category: "welcome",
     seeded: true,
   },
   // ---------- Library: Welcome & Blossom Orientation ----------
