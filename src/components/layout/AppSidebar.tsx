@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  ChevronDown, X, Search, LogOut, Lock, Eye, ArrowLeft, Phone, Users as UsersIcon,
+  ChevronDown, X, Search, LogOut, Lock, Eye, ArrowLeft,
+  Phone, Users as UsersIcon, LayoutDashboard, Workflow, GraduationCap,
+  BookOpen, FileText, HeartHandshake, ShieldCheck, ClipboardCheck,
+  Calendar, UserCheck, Megaphone, TrendingUp, Wallet, Settings as SettingsIcon,
+  Plug, Briefcase, Building2, IdCard,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -12,11 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 import { ROLE_HOME } from "@/lib/os/roleHome";
 import { type OSRole } from "@/lib/os/permissions";
-import {
-  WORKSPACES,
-  workspacesForRoles,
-  type Workspace,
-} from "@/lib/os/workspaces";
+import { workspacesForRoles } from "@/lib/os/workspaces";
 import { ROLE_MENUS, DEFAULT_ROLE_MENU, ROLE_PREVIEW_LIST } from "@/lib/os/roleMenus";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -106,34 +106,74 @@ function buildSections(args: {
 
   // ---- Super Admin (not impersonating): full access ----
   if (effectiveIsAdmin) {
-    const visible: Workspace[] = WORKSPACES;
-    const groupFor = (g: Workspace["group"]) =>
-      visible.filter((w) => w.group === g).map<NavItem>((w) => ({
-        label: w.label,
-        icon: w.icon,
-        path: w.path,
-        children: w.tabs,
-      }));
-    const sections: NavSection[] = [];
-    const workspaces = groupFor("workspaces");
-    if (workspaces.length) sections.push({ title: "Workspaces", items: workspaces });
-
-    const knowledge = groupFor("knowledge");
-    if (knowledge.length) sections.push({ title: "Knowledge", items: knowledge });
-
-    // Always-on operational tools for Super Admin.
-    sections.push({
-      title: "Operational Tools",
-      items: [
-        { label: "Phone System",     path: "/phone", icon: Phone },
-        { label: "User Management",  path: "/team",  icon: UsersIcon },
-      ],
-    });
-
-    const system = groupFor("system");
-    if (system.length) sections.push({ title: "System", items: system });
-
-    return sections;
+    return [
+      {
+        title: "Core",
+        items: [
+          { label: "Dashboard",       path: "/",                icon: LayoutDashboard },
+          { label: "Command Center",  path: "/command-center",  icon: Workflow },
+        ],
+      },
+      {
+        title: "Live Now",
+        items: [
+          { label: "Training Academy", path: "/academy",   icon: GraduationCap },
+          { label: "Resource Library", path: "/resources", icon: BookOpen },
+          { label: "Reports",          path: "/reports",   icon: FileText },
+        ],
+      },
+      {
+        title: "People & Access",
+        items: [
+          { label: "User Management", path: "/user-management",   icon: UsersIcon },
+          { label: "HR",              path: "/hr-team",           icon: HeartHandshake },
+          { label: "Team",            path: "/team",              icon: UserCheck },
+          { label: "Permissions",     path: "/admin/permissions", icon: ShieldCheck },
+        ],
+      },
+      {
+        title: "Operations",
+        items: [
+          { label: "Intake",          path: "/intake",          icon: Briefcase },
+          { label: "Clients",         path: "/clients",         icon: UsersIcon },
+          { label: "Authorizations",  path: "/authorizations",  icon: ShieldCheck },
+          { label: "Scheduling",      path: "/scheduling",      icon: Calendar },
+          { label: "Staffing",        path: "/staffing",        icon: UserCheck },
+          { label: "QA",              path: "/qa",              icon: ClipboardCheck },
+          { label: "Evaluations",     path: "/evaluations",     icon: ClipboardCheck },
+        ],
+      },
+      {
+        title: "Growth",
+        items: [
+          { label: "Marketing",     path: "/marketing",                icon: Megaphone },
+          { label: "Referral CRM",  path: "/marketing/referral-crm",   icon: HeartHandshake },
+          { label: "Campaigns",     path: "/marketing/campaigns",      icon: Megaphone },
+          { label: "Lead Sources",  path: "/marketing/lead-sources",   icon: TrendingUp },
+        ],
+      },
+      {
+        title: "Finance",
+        items: [
+          { label: "Billing",  path: "/billing-finance",    icon: IdCard },
+          { label: "Payroll",  path: "/payroll/workspace",  icon: Wallet },
+          { label: "Revenue",  path: "/revenue",            icon: TrendingUp },
+        ],
+      },
+      {
+        title: "Communications",
+        items: [
+          { label: "Phone System", path: "/phone", icon: Phone },
+        ],
+      },
+      {
+        title: "Systems",
+        items: [
+          { label: "Settings",     path: "/settings",            icon: SettingsIcon },
+          { label: "Integrations", path: "/admin/integrations",  icon: Plug },
+        ],
+      },
+    ];
   }
 
   // ---- Non-admin (and impersonated views): role-scoped simple menu ----
