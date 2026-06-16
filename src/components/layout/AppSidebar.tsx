@@ -28,6 +28,7 @@ interface NavItem {
   icon: LucideIcon;
   path: string;
   disabled?: boolean;
+  children?: { label: string; path: string }[];
 }
 
 interface NavSection {
@@ -115,6 +116,7 @@ function buildSections(args: {
       label: w.label,
       icon: w.icon,
       path: w.path,
+      children: w.tabs,
     }));
 
   const sections: NavSection[] = [];
@@ -245,6 +247,12 @@ export function AppSidebar({
   }, [defaultOpen]);
 
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
+  const [openItems, setOpenItems] = useState<Set<string>>(new Set());
+  const toggleItem = (path: string) => setOpenItems((cur) => {
+    const next = new Set(cur);
+    if (next.has(path)) next.delete(path); else next.add(path);
+    return next;
+  });
   const [navQuery, setNavQuery] = useState("");
   const [mobileNavQuery, setMobileNavQuery] = useState("");
 
@@ -257,7 +265,8 @@ export function AppSidebar({
         items: section.items.filter(
           (item) =>
             item.label.toLowerCase().includes(trimmed) ||
-            section.title.toLowerCase().includes(trimmed),
+            section.title.toLowerCase().includes(trimmed) ||
+            (item.children?.some((c) => c.label.toLowerCase().includes(trimmed)) ?? false),
         ),
       }))
       .filter((s) => s.items.length > 0);
@@ -305,8 +314,23 @@ export function AppSidebar({
   });
 
   const activeSectionTitles = new Set(
-    baseSections.filter((s) => s.items.some((i) => isItemActive(i.path))).map((s) => s.title),
+    baseSections.filter((s) => s.items.some((i) =>
+      isItemActive(i.path) || (i.children?.some((c) => isItemActive(c.path)) ?? false),
+    )).map((s) => s.title),
   );
+  // Auto-expand any workspace whose tab is the active route.
+  useEffect(() => {
+    setOpenItems((cur) => {
+      const next = new Set(cur);
+      for (const section of baseSections) {
+        for (const item of section.items) {
+          if (item.children?.some((c) => isItemActive(c.path))) next.add(item.path);
+        }
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.search, baseSections]);
   useEffect(() => {
     if (mobileOpen) setMobileOpenSections(activeSectionTitles);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -387,17 +411,38 @@ export function AppSidebar({
                           );
                         }
                         return (
-                          <NavLink
-                            key={item.path}
-                            to={item.path}
-                            end={item.path === "/"}
-                            onClick={() => onMobileOpenChange?.(false)}
-                            className={cn("mobile-menu-item", active && "mobile-menu-item-active")}
-                          >
-                            <span className="mobile-menu-icon"><item.icon className="h-4 w-4" /></span>
-                            <span className="min-w-0 flex-1"><span className="block truncate">{item.label}</span></span>
-                            {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />}
-                          </NavLink>
+                          <div key={item.path}>
+                            <NavLink
+                              to={item.path}
+                              end={item.path === "/"}
+                              onClick={() => onMobileOpenChange?.(false)}
+                              className={cn("mobile-menu-item", (active || item.children?.some((c) => isItemActive(c.path))) && "mobile-menu-item-active")}
+                            >
+                              <span className="mobile-menu-icon"><item.icon className="h-4 w-4" /></span>
+                              <span className="min-w-0 flex-1"><span className="block truncate">{item.label}</span></span>
+                              {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />}
+                            </NavLink>
+                            {item.children?.length ? (
+                              <div className="ml-9 mt-0.5 mb-1 space-y-0.5 border-l border-border/50 pl-2">
+                                {item.children.map((child) => {
+                                  const cActive = isItemActive(child.path);
+                                  return (
+                                    <NavLink
+                                      key={child.path}
+                                      to={child.path}
+                                      onClick={() => onMobileOpenChange?.(false)}
+                                      className={cn(
+                                        "block rounded-md px-2.5 py-1.5 text-[12.5px]",
+                                        cActive ? "bg-secondary text-foreground font-medium" : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground",
+                                      )}
+                                    >
+                                      {child.label}
+                                    </NavLink>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                          </div>
                         );
                       })}
                     </div>
@@ -481,19 +526,56 @@ export function AppSidebar({
                           </Tooltip>
                         );
                       }
+                      const hasChildren = !!item.children?.length;
+                      const itemOpen = openItems.has(item.path);
+                      const selfActive = isItemActive(item.path);
+                      const childActive = item.children?.some((c) => isItemActive(c.path)) ?? false;
+                      const anyActive = selfActive || childActive;
                       return (
-                        <NavLink
-                          key={item.path}
-                          to={item.path}
-                          end={item.path === "/"}
-                          className={({ isActive }) => {
-                            const active = item.path.includes("?") ? isItemActive(item.path) : isActive || isItemActive(item.path);
-                            return cn("nav-item", active ? "nav-item-active" : "nav-item-inactive");
-                          }}
-                        >
-                          <item.icon className="h-4 w-4 shrink-0" />
-                          <span>{item.label}</span>
-                        </NavLink>
+                        <div key={item.path}>
+                          <div className="flex items-stretch gap-0.5">
+                            <NavLink
+                              to={item.path}
+                              end={item.path === "/"}
+                              className={cn("nav-item flex-1", anyActive ? "nav-item-active" : "nav-item-inactive")}
+                            >
+                              <item.icon className="h-4 w-4 shrink-0" />
+                              <span className="truncate">{item.label}</span>
+                            </NavLink>
+                            {hasChildren && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); toggleItem(item.path); }}
+                                aria-label={itemOpen ? "Collapse" : "Expand"}
+                                aria-expanded={itemOpen}
+                                className="grid w-6 place-items-center rounded-md text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground"
+                              >
+                                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !itemOpen && "-rotate-90")} />
+                              </button>
+                            )}
+                          </div>
+                          {hasChildren && itemOpen && (
+                            <div className="mt-0.5 ml-5 space-y-0.5 border-l border-sidebar-border/40 pl-2">
+                              {item.children!.map((child) => {
+                                const cActive = isItemActive(child.path);
+                                return (
+                                  <NavLink
+                                    key={child.path}
+                                    to={child.path}
+                                    className={cn(
+                                      "block rounded-md px-2.5 py-1 text-[12.5px] leading-tight transition-colors",
+                                      cActive
+                                        ? "bg-sidebar-accent/60 text-sidebar-accent-foreground font-medium"
+                                        : "text-sidebar-foreground/75 hover:bg-sidebar-accent/30 hover:text-sidebar-accent-foreground",
+                                    )}
+                                  >
+                                    {child.label}
+                                  </NavLink>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
