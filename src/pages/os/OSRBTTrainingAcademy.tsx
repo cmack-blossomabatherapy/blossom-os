@@ -99,7 +99,9 @@ export default function OSRBTTrainingAcademy() {
         <Tabs value={tab} onChange={setTab} />
 
         {tab === "journey" && <JourneyTab path={path} />}
-        {tab === "resources" && <ResourcesTab isAdmin={isAdmin} path={path} />}
+        {tab === "resources" && (
+          <ResourcesTab isAdmin={isAdmin} path={path} currentModule={stats.nextModule ?? null} />
+        )}
         {tab === "signoffs" && <SignoffsTab signoffs={path.signoffs} />}
         {tab === "support" && <SupportTab />}
       </div>
