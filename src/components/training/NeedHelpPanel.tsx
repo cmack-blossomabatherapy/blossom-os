@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import {
-  BookMarked, ChevronRight, Heart, Sparkles, Users as UsersIcon, Mail,
+  BookMarked, ChevronRight, Heart, Users as UsersIcon, Mail,
 } from "lucide-react";
 import type { LearnerHome } from "@/lib/academy/learnerHome";
 
@@ -78,7 +78,6 @@ export function NeedHelpPanel({ learnerHome, learnerName }: NeedHelpPanelProps) 
       hint: HR_EMAIL,
     },
     { label: "Resource Library", icon: BookMarked, to: "/resource-library" },
-    { label: "Ask Blossom AI", icon: Sparkles, to: "/ai/assistant" },
   ];
 
   return (
