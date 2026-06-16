@@ -236,6 +236,7 @@ export default function OSRBTResources() {
       </header>
 
       <main className="mx-auto max-w-6xl px-5 md:px-10 pt-8 md:pt-10 space-y-10">
+        <RBTRetentionSection />
         <div className="grid md:grid-cols-[240px_1fr] gap-8 md:gap-10">
           {/* SIDEBAR — section nav */}
           <aside className="md:sticky md:top-6 md:self-start space-y-1">
