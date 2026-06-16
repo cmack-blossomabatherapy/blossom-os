@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  ChevronDown, X, Search, LogOut, Lock,
+  ChevronDown, X, Search, LogOut, Lock, Eye, ArrowLeft,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -121,6 +121,15 @@ function buildSections(args: {
 
   const sections: NavSection[] = [];
 
+  // Super Admin (not impersonating): show ONLY the Admin workspace.
+  // The role preview switcher and legacy access are rendered separately by the
+  // sidebar component so the menu stays clean.
+  if (effectiveIsAdmin) {
+    const adminItems = groupFor("system");
+    if (adminItems.length) sections.push({ title: "Admin", items: adminItems });
+    return sections;
+  }
+
   const workspaces = groupFor("workspaces");
   if (workspaces.length) sections.push({ title: "Workspaces", items: workspaces });
 
@@ -130,21 +139,25 @@ function buildSections(args: {
   const system = groupFor("system");
   if (system.length) sections.push({ title: "System", items: system });
 
-  // Legacy group — super admin only, collapsed by default.
-  if (effectiveIsAdmin) {
-    const legacyItems: NavItem[] = LEGACY_GROUPS.flatMap((g) =>
-      g.items.map((i) => ({ label: `${g.title.replace(/ \(Legacy\)| Tools| Dashboards/g, "")}: ${i.label}`, icon: PlainDot, path: i.path })),
-    );
-    // Keep label simpler — just flat list with a heading.
-    const flat: NavItem[] = LEGACY_GROUPS.flatMap((g) =>
-      g.items.map((i) => ({ label: i.label, icon: PlainDot, path: i.path })),
-    );
-    void legacyItems;
-    sections.push({ title: "Legacy & Tools", items: flat, defaultCollapsed: true });
-  }
-
   return sections;
 }
+
+/** Role preview list surfaced to Super Admins so they can preview any role's menu. */
+const ROLE_PREVIEW: { label: string; role: OSRole }[] = [
+  { label: "Executive",       role: "executive_leadership" },
+  { label: "Operations",      role: "operations_leadership" },
+  { label: "Marketing",       role: "marketing_team" },
+  { label: "Intake",          role: "intake_coordinator" },
+  { label: "Auth",            role: "authorization_coordinator" },
+  { label: "QA",              role: "qa_team" },
+  { label: "Scheduling",      role: "scheduling_team" },
+  { label: "Recruiting",      role: "recruiting_team" },
+  { label: "HR / Payroll",    role: "hr_team" },
+  { label: "Billing",         role: "billing_finance" },
+  { label: "State Director",  role: "state_director" },
+  { label: "BCBA",            role: "bcba" },
+  { label: "RBT",             role: "rbt" },
+];
 
 export function AppSidebar({
   mobileOpen = false,
