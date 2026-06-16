@@ -50,6 +50,21 @@ const ROLES = {
 };
 
 export const PHASE3_REPORTS: Phase3Report[] = [
+  // ───────── BCBA Productivity (live, universal) ─────────
+  {
+    id: "bcba-productivity-report-v3",
+    name: "BCBA Productivity Report",
+    description:
+      "Upload billing data and review BCBA productivity, assigned ownership, supervision patterns, delivered hours, unassigned hours, validation issues, and export-ready productivity results.",
+    department: "Clinical / Operations",
+    lastUpdated: "Live",
+    status: "live",
+    section: "clinical",
+    visibleTo: ALL_ROLES,
+    route: "/reports/bcba-productivity-report-v3",
+    canExport: true,
+  },
+
   // ───────── Training Reports (universal) ─────────
   { id: "training-completion", name: "Training Completion", description: "Required and optional training progress for your role and team.", department: "Training Academy", lastUpdated: "Live", status: "live", section: "training", visibleTo: ALL_ROLES, route: "/academy" },
   { id: "role-readiness", name: "Role Readiness", description: "Are people fully trained and ready for their role responsibilities?", department: "Training Academy", lastUpdated: "Updated daily", status: "coming_soon", section: "training", visibleTo: ALL_ROLES },
