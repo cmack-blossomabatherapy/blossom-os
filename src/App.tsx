@@ -371,6 +371,14 @@ import {
   CaseManagementPhase6Page, QADashboardPhase6Page, FamilyStaffingPreferencesPage,
   StateEscalationsPage, OperationalTasksPage,
 } from "./pages/os/operations-phase6/OperationsPages";
+import {
+  CallLogsPage, PhoneRequestsTopPage, DirectoryTopPage,
+  UserActivityLogPage, PatientActivityLogPage,
+} from "./pages/os/communications/CommunicationsPages";
+import {
+  WorkflowInventoryPage, RequestIntakePage, IssueTrackerPage,
+} from "./pages/os/system-tools/SystemToolsPages";
+import BlossomOSHome from "./pages/os/home/BlossomOSHome";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
 import OSAskBlossom from "./pages/os/OSAskBlossom";
 import OSResourceLibrary from "./pages/os/OSResourceLibrary";
@@ -522,7 +530,8 @@ const App = () => (
                 <Routes>
                 {PublicRoutes}
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
-                  <Route path="/" element={<OSDashboard />} />
+                  <Route path="/" element={<BlossomOSHome />} />
+                  <Route path="/dashboard/legacy" element={<OSDashboard />} />
                   <Route path="/ws/:id" element={<WorkspacePage />} />
                   <Route path="/executive" element={<ExecutiveOverview />} />
                   <Route path="/executive/overview" element={<Navigate to="/executive" replace />} />
@@ -764,6 +773,16 @@ const App = () => (
                   <Route path="/ops/family-staffing-preferences" element={<AdminRoute><FamilyStaffingPreferencesPage /></AdminRoute>} />
                   <Route path="/ops/state-escalations" element={<AdminRoute><StateEscalationsPage /></AdminRoute>} />
                   <Route path="/ops/tasks" element={<AdminRoute><OperationalTasksPage /></AdminRoute>} />
+                  {/* Phase 7 — Communications */}
+                  <Route path="/communications/call-logs" element={<AdminRoute><CallLogsPage /></AdminRoute>} />
+                  <Route path="/communications/phone-requests" element={<AdminRoute><PhoneRequestsTopPage /></AdminRoute>} />
+                  <Route path="/communications/directory" element={<AdminRoute><DirectoryTopPage /></AdminRoute>} />
+                  <Route path="/communications/user-activity" element={<AdminRoute><UserActivityLogPage /></AdminRoute>} />
+                  <Route path="/communications/patient-activity" element={<AdminRoute><PatientActivityLogPage /></AdminRoute>} />
+                  {/* Phase 7 — System Tools */}
+                  <Route path="/system/workflow-inventory" element={<AdminRoute><WorkflowInventoryPage /></AdminRoute>} />
+                  <Route path="/system/request-intake" element={<AdminRoute><RequestIntakePage /></AdminRoute>} />
+                  <Route path="/system/issue-tracker" element={<AdminRoute><IssueTrackerPage /></AdminRoute>} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
