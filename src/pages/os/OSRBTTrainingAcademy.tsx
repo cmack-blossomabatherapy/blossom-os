@@ -1144,6 +1144,7 @@ function SignoffBadge({ status }: { status: SignoffItem["status"] }) {
 function SupportTab() {
   return (
     <section className="space-y-3">
+      <RBTRetentionSection />
       <div className="rounded-2xl border border-border/70 bg-card p-5">
         <div className="flex items-center gap-2">
           <Sparkles className="size-4 text-muted-foreground" />
