@@ -95,13 +95,10 @@ describe("Training Management Center — wide Control Room layout", () => {
   });
 });
 
-describe("OSShell — Training Management nav highlight", () => {
-  it("HR Suite nav item uses end:true so /hr/training-center does not highlight HR Suite", () => {
-    // Both HR Suite definitions should be end:true now.
-    const occurrences = SHELL.match(/label: "HR Suite",[^}]*end: true/g) ?? [];
-    expect(occurrences.length).toBeGreaterThanOrEqual(1);
-  });
-});
+// OSShell — Training Management nav highlight: removed. The HR Suite section
+// no longer exists in the unified Blossom OS shell; Training Management lives
+// under the Super Admin "Training & Resources" group sourced from
+// src/lib/os/roleMenus.ts / SUPER_ADMIN_SECTIONS instead.
 
 describe("Resource Upload Center — filters, summary, SD match column", () => {
   it("includes filter tabs, status summary, and SD match labels", () => {
