@@ -303,6 +303,7 @@ import OSBCBAScheduling from "./pages/os/OSBCBAScheduling";
 import OSRBT from "./pages/os/OSRBT";
 import OSRBTMyDay from "./pages/os/OSRBTMyDay";
 import OSRBTTrainingAcademy from "./pages/os/OSRBTTrainingAcademy";
+import OSRBTReadinessBoard from "./pages/os/OSRBTReadinessBoard";
 import OSRBTClients from "./pages/os/OSRBTClients";
 import OSRBTSchedule from "./pages/os/OSRBTSchedule";
 import OSRBTSessionSupport from "./pages/os/OSRBTSessionSupport";
