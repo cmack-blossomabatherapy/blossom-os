@@ -538,8 +538,15 @@ export default function BcbaProductivityReportV3() {
 
   function exportBcbaCsv() {
     downloadCsv(`bcba-productivity-v3-${Date.now()}.csv`,
-      ["BCBA", "Total Hours", "97153 Hours", "Direct Hours", "Client Count", "RBT Count"],
-      bcbaTable.map(b => [b.bcba, b.totalHours.toFixed(2), b.h97153.toFixed(2), b.directHours.toFixed(2), b.clients.size, b.rbts.size])
+      ["BCBA", "Total Hours", "97153 Hours", "Direct Hours", "Supervision Hours", "Supervision %", "Client Count", "RBT Count"],
+      bcbaTable.map(b => {
+        const pct = supervisionPctValue(b.supervisionHours, b.h97153);
+        return [
+          b.bcba, b.totalHours.toFixed(2), b.h97153.toFixed(2), b.directHours.toFixed(2),
+          b.supervisionHours.toFixed(2), pct === null ? "" : pct.toFixed(1),
+          b.clients.size, b.rbts.size,
+        ];
+      })
     );
   }
   function exportTransfersCsv() {
