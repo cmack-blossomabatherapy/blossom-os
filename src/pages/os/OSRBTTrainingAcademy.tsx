@@ -5,7 +5,7 @@ import {
   BookOpen, LifeBuoy, MessageSquare, FileText, ListChecks, Video,
   GraduationCap, ArrowRight, ShieldCheck, UserCircle2, ClipboardCheck,
   AlertCircle, Compass, Award, Plus, Pencil, Trash2, ExternalLink,
-  Youtube, FileSpreadsheet, StickyNote, X,
+  Youtube, FileSpreadsheet, StickyNote, X, Search, BookMarked, FileBadge,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,7 +17,8 @@ import {
 import {
   useRBTResources, getResourcesForModule, addResource, updateResource,
   removeResource, RBT_RESOURCE_TYPES,
-  type RBTResource, type RBTResourceType,
+  RBT_RESOURCE_CATEGORIES, TRACK_LABELS,
+  type RBTResource, type RBTResourceType, type RBTResourceCategoryId,
 } from "@/lib/training/rbtResources";
 import { TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
 
