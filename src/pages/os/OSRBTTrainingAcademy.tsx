@@ -397,33 +397,48 @@ function ResourceChip({ resource }: { resource: RBTResource }) {
   return <Link className={cls} to={resource.url} title={resource.description}>{content}</Link>;
 }
 
-function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
+type QuickFilter = "none" | "required" | "optional" | "worksheets" | "research" | "policies";
+
+function ResourcesTab({
+  isAdmin, path, currentModule,
+}: { isAdmin: boolean; path: RBTPath; currentModule: RBTModule | null }) {
   const all = useRBTResources();
+  const prefs = useResourcePrefs();
+  const hiddenIds = useHiddenSeedIds();
   const [category, setCategory] = useState<"all" | RBTResourceCategoryId>("all");
-  const [trackFilter, setTrackFilter] = useState<"all" | "this" | RBTPathId>("all");
+  const [trackFilter, setTrackFilter] = useState<"all" | "this" | RBTPathId>("this");
   const [typeFilter, setTypeFilter] = useState<"all" | RBTResourceType>("all");
-  const [requiredOnly, setRequiredOnly] = useState(false);
+  const [quick, setQuick] = useState<QuickFilter>("none");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<RBTResource | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
 
-  const pathModuleIds = useMemo(
-    () => new Set(path.phases.flatMap((p) => p.modules.map((m) => m.id))),
+  const allModules = useMemo(
+    () => path.phases.flatMap((p) => p.modules.map((m) => ({ id: m.id, title: m.title }))),
     [path],
   );
+  const moduleTitleById = useMemo(() => {
+    const m = new Map<string, string>();
+    allModules.forEach((x) => m.set(x.id, x.title));
+    return m;
+  }, [allModules]);
+  const pathModuleIds = useMemo(() => new Set(allModules.map((m) => m.id)), [allModules]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return all.filter((r) => {
       if (category !== "all" && r.category !== category) return false;
       if (typeFilter !== "all" && r.type !== typeFilter) return false;
-      if (requiredOnly && !r.required) return false;
+      if (quick === "required" && !(r.required && r.moduleIds.some((id) => pathModuleIds.has(id)))) return false;
+      if (quick === "optional" && r.required) return false;
+      if (quick === "worksheets" && r.type !== "Worksheet") return false;
+      if (quick === "research" && r.type !== "Research Article") return false;
+      if (quick === "policies" && r.type !== "Policy") return false;
       if (trackFilter !== "all") {
         const tracks = r.tracks && r.tracks.length > 0 ? r.tracks : null;
         if (trackFilter === "this") {
-          // Show if academy-wide, attached to this path's modules, or explicitly visible to this track.
-          const targetTrack = path.id;
-          const trackOk = !tracks || tracks.includes(targetTrack);
+          const trackOk = !tracks || tracks.includes(path.id);
           const moduleOk = r.moduleIds.length === 0 || r.moduleIds.some((id) => pathModuleIds.has(id));
           if (!trackOk && !moduleOk) return false;
         } else if (tracks && !tracks.includes(trackFilter)) {
@@ -436,9 +451,23 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
       }
       return true;
     });
-  }, [all, category, typeFilter, requiredOnly, trackFilter, query, pathModuleIds, path.id]);
+  }, [all, category, typeFilter, quick, trackFilter, query, pathModuleIds, path.id]);
 
-  // Group by category for cleaner browsing when no specific category selected.
+  const currentModuleResources = useMemo(
+    () => currentModule ? all.filter((r) => r.moduleIds.includes(currentModule.id)) : [],
+    [all, currentModule],
+  );
+  const byId = useMemo(() => new Map(all.map((r) => [r.id, r])), [all]);
+  const bookmarked = useMemo(
+    () => prefs.bookmarked.map((id) => byId.get(id)).filter((r): r is RBTResource => !!r),
+    [prefs.bookmarked, byId],
+  );
+  const recent = useMemo(
+    () => prefs.recent.map((id) => byId.get(id)).filter((r): r is RBTResource => !!r).slice(0, 6),
+    [prefs.recent, byId],
+  );
+
+  // Group filtered by category for browsing.
   const grouped = useMemo(() => {
     if (category !== "all") return null;
     const map = new Map<RBTResourceCategoryId | "_uncat", RBTResource[]>();
@@ -449,17 +478,31 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
       map.set(k, arr);
     }
     return RBT_RESOURCE_CATEGORIES
-      .map((c) => ({ id: c.id, label: c.label, description: c.description, items: map.get(c.id) ?? [] }))
+      .map((c) => ({ id: c.id, label: c.label, items: map.get(c.id) ?? [] }))
       .filter((g) => g.items.length > 0)
       .concat(
         map.has("_uncat")
-          ? [{ id: "_uncat" as never, label: "Other", description: "Uncategorized", items: map.get("_uncat") ?? [] }]
+          ? [{ id: "_uncat" as never, label: "Other", items: map.get("_uncat") ?? [] }]
           : [],
       );
   }, [filtered, category]);
 
+  const cardProps = (r: RBTResource) => ({
+    resource: r,
+    isAdmin,
+    bookmarked: prefs.bookmarked.includes(r.id),
+    completed: prefs.completed.includes(r.id),
+    moduleTitleById,
+    onEdit: () => setEditing(r),
+    onRemove: () => {
+      if (confirm(`Remove "${r.title}"?${r.seeded ? " (Seeded resources are hidden — they can be restored later.)" : ""}`)) {
+        removeResource(r.id);
+      }
+    },
+  });
+
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       {/* Search + admin button */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative min-w-[240px] flex-1">
@@ -477,10 +520,66 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
             onClick={() => setCreating(true)}
             className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:opacity-90"
           >
-            <Plus className="size-3.5" /> Add resource
+            <Plus className="size-3.5" /> Upload resource
           </button>
         )}
       </div>
+
+      {/* Quick filter pills */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {([
+          ["none", "All"],
+          ["required", "Required for my path"],
+          ["optional", "Optional enrichment"],
+          ["worksheets", "Worksheets"],
+          ["research", "Research articles"],
+          ["policies", "Policies"],
+        ] as [QuickFilter, string][]).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setQuick(key)}
+            className={cn(
+              "rounded-full px-3 py-1 text-[11px] font-medium transition border",
+              quick === key
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border/70 bg-card text-muted-foreground hover:text-foreground",
+            )}
+          >{label}</button>
+        ))}
+      </div>
+
+      {/* Current module resources */}
+      {currentModule && currentModuleResources.length > 0 && (
+        <SectionBlock
+          icon={PlayCircle}
+          title="For your current module"
+          subtitle={currentModule.title}
+          count={currentModuleResources.length}
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            {currentModuleResources.map((r) => <ResourceCard key={r.id} {...cardProps(r)} />)}
+          </div>
+        </SectionBlock>
+      )}
+
+      {/* Bookmarked */}
+      {bookmarked.length > 0 && (
+        <SectionBlock icon={BookmarkCheck} title="Saved" count={bookmarked.length}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {bookmarked.map((r) => <ResourceCard key={r.id} {...cardProps(r)} />)}
+          </div>
+        </SectionBlock>
+      )}
+
+      {/* Recently viewed */}
+      {recent.length > 0 && (
+        <SectionBlock icon={Clock} title="Recently viewed" count={recent.length}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {recent.map((r) => <ResourceCard key={r.id} {...cardProps(r)} />)}
+          </div>
+        </SectionBlock>
+      )}
 
       {/* Category chips */}
       <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/70 bg-card p-1">
@@ -506,15 +605,15 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
         ))}
       </div>
 
-      {/* Secondary filters: track + type + required */}
+      {/* Secondary filters: track + type */}
       <div className="flex flex-wrap items-center gap-2">
         <select
           value={trackFilter}
           onChange={(e) => setTrackFilter(e.target.value as typeof trackFilter)}
           className="h-8 rounded-lg border border-border/70 bg-card px-2 text-[11px] outline-none"
         >
-          <option value="all">All tracks</option>
           <option value="this">This track ({TRACK_LABELS[path.id]})</option>
+          <option value="all">All tracks</option>
           {(Object.keys(TRACK_LABELS) as RBTPathId[]).map((id) => (
             <option key={id} value={id}>{TRACK_LABELS[id]}</option>
           ))}
@@ -527,10 +626,6 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
           <option value="all">All types</option>
           {RBT_RESOURCE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
-        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border/70 bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground">
-          <input type="checkbox" checked={requiredOnly} onChange={(e) => setRequiredOnly(e.target.checked)} />
-          Required only
-        </label>
         <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
           {filtered.length} {filtered.length === 1 ? "resource" : "resources"}
         </span>
@@ -549,38 +644,55 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
                 <span className="text-[11px] text-muted-foreground tabular-nums">{g.items.length}</span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                {g.items.map((r) => (
-                  <ResourceCard
-                    key={r.id}
-                    resource={r}
-                    isAdmin={isAdmin}
-                    onEdit={() => setEditing(r)}
-                    onRemove={() => {
-                      if (confirm(`Remove "${r.title}"?${r.seeded ? " (Seeded resources are hidden — they can be restored later.)" : ""}`)) {
-                        removeResource(r.id);
-                      }
-                    }}
-                  />
-                ))}
+                {g.items.map((r) => <ResourceCard key={r.id} {...cardProps(r)} />)}
               </div>
             </div>
           ))}
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {filtered.map((r) => (
-            <ResourceCard
-              key={r.id}
-              resource={r}
-              isAdmin={isAdmin}
-              onEdit={() => setEditing(r)}
-              onRemove={() => {
-                if (confirm(`Remove "${r.title}"?${r.seeded ? " (Seeded resources are hidden — they can be restored later.)" : ""}`)) {
-                  removeResource(r.id);
-                }
-              }}
-            />
-          ))}
+          {filtered.map((r) => <ResourceCard key={r.id} {...cardProps(r)} />)}
+        </div>
+      )}
+
+      {/* Admin: hidden resources restore */}
+      {isAdmin && hiddenIds.length > 0 && (
+        <div className="rounded-2xl border border-border/70 bg-card p-4">
+          <button
+            type="button"
+            onClick={() => setShowHidden((v) => !v)}
+            className="flex w-full items-center justify-between gap-2 text-left"
+          >
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+              <EyeOff className="size-4 text-muted-foreground" />
+              Hidden seeded resources
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{hiddenIds.length}</span>
+            </span>
+            <ChevronRight className={cn("size-4 text-muted-foreground transition", showHidden && "rotate-90")} />
+          </button>
+          {showHidden && (
+            <ul className="mt-3 space-y-1.5">
+              {hiddenIds.map((id) => {
+                const r = getSeededResourceById(id);
+                if (!r) return null;
+                return (
+                  <li key={id} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-secondary/40 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-foreground">{r.title}</p>
+                      <p className="truncate text-[10.5px] text-muted-foreground">{r.type}{r.category ? ` · ${labelForCategory(r.category)}` : ""}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => restoreSeededResource(id)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      <RotateCcw className="size-3" /> Restore
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       )}
 
@@ -592,6 +704,31 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
         />
       )}
     </section>
+  );
+}
+
+function labelForCategory(id: RBTResourceCategoryId): string {
+  return RBT_RESOURCE_CATEGORIES.find((c) => c.id === id)?.label ?? "—";
+}
+
+function SectionBlock({
+  icon: Icon, title, subtitle, count, children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string; subtitle?: string; count: number; children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Icon className="size-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          {subtitle && <span className="truncate text-[11px] text-muted-foreground">· {subtitle}</span>}
+        </div>
+        <span className="text-[11px] text-muted-foreground tabular-nums">{count}</span>
+      </div>
+      {children}
+    </div>
   );
 }
 
