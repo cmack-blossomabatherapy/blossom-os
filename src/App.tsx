@@ -614,6 +614,8 @@ const App = () => (
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/rbt/my-day" element={<OSRBTMyDay />} />
                   <Route path="/rbt/training-academy" element={<OSRBTTrainingAcademy />} />
+                  <Route path="/rbt/readiness" element={<OSRBTReadinessBoard />} />
+                  <Route path="/training/rbt-readiness" element={<OSRBTReadinessBoard />} />
                   <Route path="/rbt/clients" element={<OSRBTClients />} />
                   <Route path="/rbt/schedule" element={<OSRBTSchedule />} />
                   <Route path="/rbt/session-support" element={<OSRBTSessionSupport />} />
