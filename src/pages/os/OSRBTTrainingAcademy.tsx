@@ -733,44 +733,106 @@ function SectionBlock({
 }
 
 function ResourceCard({
-  resource, isAdmin, onEdit, onRemove,
-}: { resource: RBTResource; isAdmin: boolean; onEdit: () => void; onRemove: () => void }) {
+  resource, isAdmin, bookmarked, completed, moduleTitleById, onEdit, onRemove,
+}: {
+  resource: RBTResource;
+  isAdmin: boolean;
+  bookmarked: boolean;
+  completed: boolean;
+  moduleTitleById: Map<string, string>;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
   const Icon = resourceIcon(resource.type);
   const isExternal = !!resource.url && /^https?:\/\//.test(resource.url);
-  const Wrapper: React.ElementType = resource.url ? (isExternal ? "a" : Link) : "div";
-  const wrapperProps = resource.url
-    ? isExternal
-      ? { href: resource.url, target: "_blank", rel: "noreferrer" }
-      : { to: resource.url }
-    : {};
+  const [showModules, setShowModules] = useState(false);
+  const moduleCount = resource.moduleIds.length;
+  const catLabel = resource.category ? labelForCategory(resource.category) : null;
+
+  function open() {
+    if (!resource.url) return;
+    markViewed(resource.id);
+    if (isExternal) {
+      window.open(resource.url, "_blank", "noreferrer");
+    } else {
+      // Internal route — navigate in-place.
+      window.location.assign(resource.url);
+    }
+  }
+
   return (
-    <div className="group relative rounded-2xl border border-border/70 bg-card p-4 transition hover:border-border">
-      <Wrapper
-        {...(wrapperProps as Record<string, unknown>)}
-        className="flex items-start gap-3"
-      >
-        <div className="grid size-10 place-items-center rounded-xl bg-muted text-foreground">
+    <div className={cn(
+      "group relative rounded-2xl border bg-card p-4 transition",
+      completed ? "border-emerald-500/30" : "border-border/70 hover:border-border",
+    )}>
+      <div className="flex items-start gap-3">
+        <div className={cn(
+          "grid size-10 place-items-center rounded-xl text-foreground",
+          completed ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-muted",
+        )}>
           <Icon className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <p className="truncate text-sm font-medium text-foreground">{resource.title}</p>
-            {isExternal && <ExternalLink className="size-3 text-muted-foreground" />}
-            {resource.required && (
+            {resource.required ? (
               <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
                 Required
               </span>
+            ) : (
+              <span className="rounded-full bg-secondary/70 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Optional
+              </span>
+            )}
+            {completed && (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                <Check className="size-2.5" /> Done
+              </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {resource.type}
-            {typeof resource.minutes === "number" && ` · ${resource.minutes} min`}
-            {resource.moduleIds.length > 0 && ` · ${resource.moduleIds.length} module${resource.moduleIds.length === 1 ? "" : "s"}`}
-            {resource.tracks && resource.tracks.length > 0 && ` · ${resource.tracks.length === 1 ? TRACK_LABELS[resource.tracks[0]] : `${resource.tracks.length} tracks`}`}
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            <span className="font-medium text-foreground/80">{resource.type}</span>
+            {catLabel && <> · {catLabel}</>}
+            {typeof resource.minutes === "number" && <> · {resource.minutes} min</>}
           </p>
           {resource.description && (
-            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{resource.description}</p>
+            <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{resource.description}</p>
           )}
+
+          {/* Meta row: modules + tracks */}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10.5px] text-muted-foreground">
+            {moduleCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowModules((v) => !v)}
+                className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-secondary/40 px-1.5 py-0.5 font-medium hover:text-foreground"
+                title="Show modules using this resource"
+              >
+                <Layers className="size-2.5" /> {moduleCount} module{moduleCount === 1 ? "" : "s"}
+              </button>
+            ) : (
+              <span className="rounded-full bg-secondary/40 px-1.5 py-0.5">Academy-wide</span>
+            )}
+            {resource.tracks && resource.tracks.length > 0 && (
+              <span className="rounded-full bg-secondary/40 px-1.5 py-0.5">
+                {resource.tracks.length === 1 ? TRACK_LABELS[resource.tracks[0]] : `${resource.tracks.length} tracks`}
+              </span>
+            )}
+            {(!resource.tracks || resource.tracks.length === 0) && (
+              <span className="rounded-full bg-secondary/40 px-1.5 py-0.5">All tracks</span>
+            )}
+          </div>
+
+          {showModules && moduleCount > 0 && (
+            <ul className="mt-2 space-y-0.5 rounded-lg border border-border/60 bg-secondary/30 px-2 py-1.5 text-[11px]">
+              {resource.moduleIds.map((id) => (
+                <li key={id} className="truncate text-muted-foreground">
+                  · {moduleTitleById.get(id) ?? id}
+                </li>
+              ))}
+            </ul>
+          )}
+
           {resource.tags && resource.tags.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
               {resource.tags.slice(0, 5).map((t) => (
@@ -780,8 +842,48 @@ function ResourceCard({
               ))}
             </div>
           )}
+
+          {/* Learner actions */}
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            {resource.url && (
+              <button
+                type="button"
+                onClick={open}
+                className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground transition hover:opacity-90"
+              >
+                {isExternal ? <ExternalLink className="size-3" /> : <Download className="size-3" />}
+                {isExternal ? "Open" : "Open / download"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => toggleComplete(resource.id)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition",
+                completed
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  : "border-border/70 bg-card text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Check className="size-3" /> {completed ? "Completed" : "Mark complete"}
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleBookmark(resource.id)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition",
+                bookmarked
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border/70 bg-card text-muted-foreground hover:text-foreground",
+              )}
+              aria-label={bookmarked ? "Unsave" : "Save"}
+            >
+              {bookmarked ? <BookmarkCheck className="size-3" /> : <Bookmark className="size-3" />}
+              {bookmarked ? "Saved" : "Save"}
+            </button>
+          </div>
         </div>
-      </Wrapper>
+      </div>
       {isAdmin && (
         <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
           <button
@@ -796,9 +898,10 @@ function ResourceCard({
             type="button"
             onClick={onRemove}
             className="grid size-7 place-items-center rounded-lg border border-border/70 bg-card text-muted-foreground hover:text-destructive"
-            aria-label="Remove"
+            aria-label={resource.seeded ? "Hide" : "Remove"}
+            title={resource.seeded ? "Hide" : "Remove"}
           >
-            <Trash2 className="size-3.5" />
+            {resource.seeded ? <EyeOff className="size-3.5" /> : <Trash2 className="size-3.5" />}
           </button>
         </div>
       )}
