@@ -705,7 +705,9 @@ function contactPatchToRow(patch: Partial<Contact>): Record<string, unknown> {
   if ("leadStatus" in patch || "deletedAt" in patch) {
     out.status = patch.deletedAt ? "Archived" : (patch.leadStatus ?? "New");
   }
-  set("referralPartnerStatus", "relationship_stage");
+  if ("referralPartnerStatus" in patch && patch.referralPartnerStatus) {
+    out.relationship_stage = patch.referralPartnerStatus;
+  }
   set("referralSourceType", "role_type");
   set("lastContactedDate", "last_contacted_at");
   set("nextFollowUpDate", "next_follow_up_at");
@@ -744,7 +746,9 @@ function companyPatchToRow(patch: Partial<Company>): Record<string, unknown> {
   }
   set("state", "state");
   set("companyType", "company_type");
-  set("referralPartnerStatus", "relationship_stage");
+  if ("referralPartnerStatus" in patch && patch.referralPartnerStatus) {
+    out.relationship_stage = patch.referralPartnerStatus;
+  }
   if ("referralCount" in patch) out.referral_count = patch.referralCount ?? 0;
   set("lastReferralDate", "last_referral_date");
   set("lastContactedDate", "last_contacted_at");
