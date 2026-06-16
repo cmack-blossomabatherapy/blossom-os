@@ -4,15 +4,22 @@ import {
   PlayCircle, CheckCircle2, Lock, Clock, ChevronRight, Sparkles,
   BookOpen, LifeBuoy, MessageSquare, FileText, ListChecks, Video,
   GraduationCap, ArrowRight, ShieldCheck, UserCircle2, ClipboardCheck,
-  AlertCircle, Compass, Award,
+  AlertCircle, Compass, Award, Plus, Pencil, Trash2, ExternalLink,
+  Youtube, FileSpreadsheet, StickyNote, X,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
-  RBT_PATHS, RBT_OWNERSHIP, RBT_RESOURCES, pathStats,
+  RBT_PATHS, RBT_OWNERSHIP, pathStats,
   type RBTPath, type RBTPathId, type RBTModule, type ModuleType, type SignoffItem,
 } from "@/lib/training/rbtAcademy";
+import {
+  useRBTResources, getResourcesForModule, addResource, updateResource,
+  removeResource, RBT_RESOURCE_TYPES,
+  type RBTResource, type RBTResourceType,
+} from "@/lib/training/rbtResources";
+import { TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
 
 // RBT Training Academy — experience-based, guided journey. Calm, mobile-first.
 
@@ -25,8 +32,9 @@ function greeting() {
 }
 
 export default function OSRBTTrainingAcademy() {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
   const name = firstName((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0]);
+  const isAdmin = roles.some((r) => TRAINING_ADMIN_ROLES.includes(r as never));
 
   const [assignedId, setAssignedId] = useState<RBTPathId>("certified_no_experience");
   const [tab, setTab] = useState<TabKey>("journey");
@@ -85,7 +93,7 @@ export default function OSRBTTrainingAcademy() {
         <Tabs value={tab} onChange={setTab} />
 
         {tab === "journey" && <JourneyTab path={path} />}
-        {tab === "resources" && <ResourcesTab />}
+        {tab === "resources" && <ResourcesTab isAdmin={isAdmin} path={path} />}
         {tab === "signoffs" && <SignoffsTab signoffs={path.signoffs} />}
         {tab === "support" && <SupportTab />}
       </div>
@@ -335,6 +343,7 @@ function ModuleRow({ module: m, index }: { module: RBTModule; index: number }) {
             {m.status === "in_progress" && typeof m.progress === "number" && (
               <div className="mt-2"><ProgressBar value={m.progress} /></div>
             )}
+            <ModuleResources moduleId={m.id} />
           </div>
           {!isLocked && (
             <button
@@ -351,27 +360,303 @@ function ModuleRow({ module: m, index }: { module: RBTModule; index: number }) {
   );
 }
 
-function ResourcesTab() {
+function ModuleResources({ moduleId }: { moduleId: string }) {
+  const all = useRBTResources();
+  const attached = useMemo(() => getResourcesForModule(all, moduleId), [all, moduleId]);
+  if (attached.length === 0) return null;
   return (
-    <section className="grid gap-3 sm:grid-cols-2">
-      {RBT_RESOURCES.map((r) => (
-        <Link
-          key={r.id}
-          to="/rbt/resources"
-          className="group flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4 transition hover:-translate-y-0.5 hover:border-border"
-        >
-          <div className="grid size-10 place-items-center rounded-xl bg-muted text-foreground">
-            <FileText className="size-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-foreground">{r.title}</p>
-            <p className="text-xs text-muted-foreground">{r.type}</p>
-          </div>
-          <ChevronRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5" />
-        </Link>
+    <div className="mt-2.5 flex flex-wrap gap-1.5">
+      {attached.map((r) => (
+        <ResourceChip key={r.id} resource={r} />
       ))}
+    </div>
+  );
+}
+
+function ResourceChip({ resource }: { resource: RBTResource }) {
+  const Icon = resourceIcon(resource.type);
+  const isExternal = !!resource.url && /^https?:\/\//.test(resource.url);
+  const content = (
+    <>
+      <Icon className="size-3" />
+      <span className="truncate max-w-[180px]">{resource.title}</span>
+      {isExternal && <ExternalLink className="size-3 opacity-60" />}
+    </>
+  );
+  const cls = "inline-flex items-center gap-1 rounded-full border border-border/70 bg-secondary/60 px-2 py-0.5 text-[11px] font-medium text-foreground transition hover:bg-muted";
+  if (!resource.url) return <span className={cls} title={resource.description}>{content}</span>;
+  if (isExternal) return <a className={cls} href={resource.url} target="_blank" rel="noreferrer" title={resource.description}>{content}</a>;
+  return <Link className={cls} to={resource.url} title={resource.description}>{content}</Link>;
+}
+
+function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
+  const all = useRBTResources();
+  const [filter, setFilter] = useState<"all" | "path" | RBTResourceType>("all");
+  const [editing, setEditing] = useState<RBTResource | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const pathModuleIds = useMemo(
+    () => new Set(path.phases.flatMap((p) => p.modules.map((m) => m.id))),
+    [path],
+  );
+
+  const filtered = useMemo(() => {
+    if (filter === "all") return all;
+    if (filter === "path") {
+      return all.filter(
+        (r) => r.moduleIds.length === 0 || r.moduleIds.some((id) => pathModuleIds.has(id)),
+      );
+    }
+    return all.filter((r) => r.type === filter);
+  }, [all, filter, pathModuleIds]);
+
+  return (
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/70 bg-card p-1">
+          {(["all", "path", ...RBT_RESOURCE_TYPES] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              className={cn(
+                "rounded-lg px-2.5 py-1 text-[11px] font-medium transition",
+                filter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {f === "all" ? "All" : f === "path" ? "This path" : f}
+            </button>
+          ))}
+        </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setCreating(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:opacity-90"
+          >
+            <Plus className="size-3.5" /> Add resource
+          </button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border/70 bg-card p-10 text-center text-sm text-muted-foreground">
+          No resources match this filter yet.
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {filtered.map((r) => (
+            <ResourceCard
+              key={r.id}
+              resource={r}
+              isAdmin={isAdmin}
+              onEdit={() => setEditing(r)}
+              onRemove={() => {
+                if (confirm(`Remove "${r.title}"?${r.seeded ? " (Seeded resources are hidden — they can be restored later.)" : ""}`)) {
+                  removeResource(r.id);
+                }
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {(creating || editing) && (
+        <ResourceEditor
+          initial={editing ?? undefined}
+          path={path}
+          onClose={() => { setCreating(false); setEditing(null); }}
+        />
+      )}
     </section>
   );
+}
+
+function ResourceCard({
+  resource, isAdmin, onEdit, onRemove,
+}: { resource: RBTResource; isAdmin: boolean; onEdit: () => void; onRemove: () => void }) {
+  const Icon = resourceIcon(resource.type);
+  const isExternal = !!resource.url && /^https?:\/\//.test(resource.url);
+  const Wrapper: React.ElementType = resource.url ? (isExternal ? "a" : Link) : "div";
+  const wrapperProps = resource.url
+    ? isExternal
+      ? { href: resource.url, target: "_blank", rel: "noreferrer" }
+      : { to: resource.url }
+    : {};
+  return (
+    <div className="group relative rounded-2xl border border-border/70 bg-card p-4 transition hover:border-border">
+      <Wrapper
+        {...(wrapperProps as Record<string, unknown>)}
+        className="flex items-start gap-3"
+      >
+        <div className="grid size-10 place-items-center rounded-xl bg-muted text-foreground">
+          <Icon className="size-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-sm font-medium text-foreground">{resource.title}</p>
+            {isExternal && <ExternalLink className="size-3 text-muted-foreground" />}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {resource.type}
+            {typeof resource.minutes === "number" && ` · ${resource.minutes} min`}
+            {resource.moduleIds.length > 0 && ` · ${resource.moduleIds.length} module${resource.moduleIds.length === 1 ? "" : "s"}`}
+          </p>
+          {resource.description && (
+            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{resource.description}</p>
+          )}
+        </div>
+      </Wrapper>
+      {isAdmin && (
+        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="grid size-7 place-items-center rounded-lg border border-border/70 bg-card text-muted-foreground hover:text-foreground"
+            aria-label="Edit"
+          >
+            <Pencil className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="grid size-7 place-items-center rounded-lg border border-border/70 bg-card text-muted-foreground hover:text-destructive"
+            aria-label="Remove"
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ResourceEditor({
+  initial, path, onClose,
+}: { initial?: RBTResource; path: RBTPath; onClose: () => void }) {
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [type, setType] = useState<RBTResourceType>(initial?.type ?? "SOP");
+  const [url, setUrl] = useState(initial?.url ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [body, setBody] = useState(initial?.body ?? "");
+  const [minutes, setMinutes] = useState<string>(
+    typeof initial?.minutes === "number" ? String(initial.minutes) : "",
+  );
+  const [moduleIds, setModuleIds] = useState<string[]>(initial?.moduleIds ?? []);
+
+  const allModules = useMemo(
+    () => path.phases.flatMap((p) => p.modules.map((m) => ({ id: m.id, title: m.title, phase: p.title }))),
+    [path],
+  );
+
+  function toggleModule(id: string) {
+    setModuleIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+  }
+
+  function save() {
+    if (!title.trim()) return;
+    const payload = {
+      title: title.trim(),
+      type,
+      url: url.trim() || undefined,
+      description: description.trim() || undefined,
+      body: body.trim() || undefined,
+      moduleIds,
+      minutes: minutes ? Math.max(0, parseInt(minutes, 10) || 0) : undefined,
+    };
+    if (initial) updateResource(initial.id, payload);
+    else addResource(payload);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/30 backdrop-blur-sm sm:items-center" onClick={onClose}>
+      <div
+        className="w-full max-w-lg overflow-hidden rounded-t-2xl border border-border bg-card shadow-2xl sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex items-center justify-between border-b border-border/70 p-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {initial ? "Edit resource" : "New resource"}
+            </p>
+            <h3 className="text-base font-semibold">{initial ? initial.title : "Add a resource"}</h3>
+          </div>
+          <button type="button" onClick={onClose} className="grid size-8 place-items-center rounded-lg hover:bg-muted">
+            <X className="size-4" />
+          </button>
+        </header>
+        <div className="max-h-[70vh] space-y-3 overflow-y-auto p-4">
+          <Field2 label="Title">
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} placeholder="e.g. Data Collection quick guide" />
+          </Field2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field2 label="Type">
+              <select value={type} onChange={(e) => setType(e.target.value as RBTResourceType)} className={inputCls}>
+                {RBT_RESOURCE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </Field2>
+            <Field2 label="Minutes (optional)">
+              <input value={minutes} onChange={(e) => setMinutes(e.target.value.replace(/[^0-9]/g, ""))} className={inputCls} placeholder="e.g. 8" inputMode="numeric" />
+            </Field2>
+          </div>
+          <Field2 label="URL or internal path">
+            <input value={url} onChange={(e) => setUrl(e.target.value)} className={inputCls} placeholder="https://… or /resources/…" />
+          </Field2>
+          <Field2 label="Description (one line)">
+            <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputCls} placeholder="What the resource covers" />
+          </Field2>
+          {(type === "Trainer Note" || type === "Quiz" || type === "Mock Form") && (
+            <Field2 label="Body / notes (optional)">
+              <textarea value={body} onChange={(e) => setBody(e.target.value)} className={cn(inputCls, "min-h-[100px] py-2")} placeholder="Notes, questions, or instructions" />
+            </Field2>
+          )}
+          <Field2 label={`Attach to modules (${moduleIds.length} selected)`}>
+            <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-border/70 bg-secondary/40 p-2">
+              {allModules.map((m) => (
+                <label key={m.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-xs hover:bg-muted">
+                  <input type="checkbox" checked={moduleIds.includes(m.id)} onChange={() => toggleModule(m.id)} />
+                  <span className="flex-1 truncate">{m.title}</span>
+                  <span className="text-[10px] text-muted-foreground">{m.phase.replace(/^Phase \d+ · /, "")}</span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">Leave empty for academy-wide resources.</p>
+          </Field2>
+        </div>
+        <footer className="flex justify-end gap-2 border-t border-border/70 p-3">
+          <button type="button" onClick={onClose} className="rounded-lg border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted">Cancel</button>
+          <button type="button" onClick={save} disabled={!title.trim()} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50">
+            {initial ? "Save changes" : "Add resource"}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+const inputCls = "h-9 w-full rounded-lg border border-border/70 bg-card px-3 text-sm outline-none transition focus:border-primary/60";
+
+function Field2({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function resourceIcon(type: RBTResourceType): React.ComponentType<{ className?: string }> {
+  switch (type) {
+    case "YouTube Video":  return Youtube;
+    case "Internal Video": return Video;
+    case "SOP":            return FileText;
+    case "Checklist":      return ListChecks;
+    case "Template":       return FileSpreadsheet;
+    case "Quiz":           return ClipboardCheck;
+    case "Mock Form":      return FileSpreadsheet;
+    case "Trainer Note":   return StickyNote;
+  }
 }
 
 function SignoffsTab({ signoffs }: { signoffs: SignoffItem[] }) {
