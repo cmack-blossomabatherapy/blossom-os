@@ -749,6 +749,17 @@ const App = () => (
                   <Route path="/marketing/attribution" element={<MarketingAttribution />} />
                   <Route path="/marketing/state-growth" element={<MarketingStateGrowth />} />
                   <Route path="/marketing/reports" element={<MarketingReports />} />
+                  {/* Phase 4 — Growth & Admissions */}
+                  <Route path="/business-development" element={<BusinessDevelopmentDashboard />} />
+                  <Route path="/marketing/leadtrap" element={<LeadTrap />} />
+                  <Route path="/marketing/facebook-ads" element={<FacebookAds />} />
+                  <Route path="/marketing/google-ads" element={<GoogleAds />} />
+                  <Route path="/patient-journey" element={<PatientLifetimeJourney />} />
+                  <Route path="/intake/dashboard" element={<IntakeDashboard />} />
+                  <Route path="/intake/lead-to-active" element={<LeadToActivePipeline />} />
+                  <Route path="/intake/referral-queue" element={<ReferralQueue />} />
+                  <Route path="/intake/tasks" element={<IntakeTasks />} />
+                  <Route path="/intake/benefits-cheat-sheets" element={<LeadBenefitsCheatSheets />} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />
