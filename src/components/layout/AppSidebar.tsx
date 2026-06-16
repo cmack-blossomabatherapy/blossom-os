@@ -247,6 +247,12 @@ export function AppSidebar({
   }, [defaultOpen]);
 
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
+  const [openItems, setOpenItems] = useState<Set<string>>(new Set());
+  const toggleItem = (path: string) => setOpenItems((cur) => {
+    const next = new Set(cur);
+    if (next.has(path)) next.delete(path); else next.add(path);
+    return next;
+  });
   const [navQuery, setNavQuery] = useState("");
   const [mobileNavQuery, setMobileNavQuery] = useState("");
 
