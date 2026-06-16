@@ -265,7 +265,8 @@ export function AppSidebar({
         items: section.items.filter(
           (item) =>
             item.label.toLowerCase().includes(trimmed) ||
-            section.title.toLowerCase().includes(trimmed),
+            section.title.toLowerCase().includes(trimmed) ||
+            (item.children?.some((c) => c.label.toLowerCase().includes(trimmed)) ?? false),
         ),
       }))
       .filter((s) => s.items.length > 0);
