@@ -50,7 +50,7 @@ const ROLES = {
 };
 
 export const PHASE3_REPORTS: Phase3Report[] = [
-  // ───────── BCBA Productivity (live, universal) ─────────
+  // --------- BCBA Productivity (live, universal) ---------
   {
     id: "bcba-productivity-report-v3",
     name: "BCBA Productivity Report",
@@ -65,15 +65,15 @@ export const PHASE3_REPORTS: Phase3Report[] = [
     canExport: true,
   },
 
-  // ───────── Training Reports (universal) ─────────
+  // --------- Training Reports (universal) ---------
   { id: "training-completion", name: "Training Completion", description: "Required and optional training progress for your role and team.", department: "Training Academy", lastUpdated: "Live", status: "live", section: "training", visibleTo: ALL_ROLES, route: "/academy" },
   { id: "role-readiness", name: "Role Readiness", description: "Are people fully trained and ready for their role responsibilities?", department: "Training Academy", lastUpdated: "Updated daily", status: "coming_soon", section: "training", visibleTo: ALL_ROLES },
   { id: "future-career-path", name: "Future Career Path", description: "Suggested training paths and growth opportunities for your role.", department: "Training Academy", lastUpdated: "Coming soon", status: "coming_soon", section: "training", visibleTo: [...ROLES.rbt, ...ROLES.bcba, "case_manager", "behavioral_support"] as OSRole[] },
 
-  // ───────── Resource Reports (universal) ─────────
+  // --------- Resource Reports (universal) ---------
   { id: "resource-usage", name: "Resource Usage", description: "Which SOPs, policies, and resources are most used across the team.", department: "Resource Library", lastUpdated: "Live", status: "live", section: "resource", visibleTo: ALL_ROLES, route: "/resource-library" },
 
-  // ───────── Growth Reports ─────────
+  // --------- Growth Reports ---------
   { id: "marketing-source-performance", name: "Marketing Source Performance", description: "Lead source quality, conversion, and channel ROI.", department: "Marketing", lastUpdated: "Coming soon", status: "coming_soon", section: "growth", visibleTo: [...ROLES.marketing, ...ROLES.exec] as OSRole[] },
   { id: "campaign-performance", name: "Campaign Performance", description: "Campaign reach, response, and pipeline impact.", department: "Marketing", lastUpdated: "Coming soon", status: "coming_soon", section: "growth", visibleTo: ROLES.marketing },
   { id: "phone-activity", name: "Phone Activity", description: "Inbound, outbound, after-hours and missed calls.", department: "Marketing / HR", lastUpdated: "Coming soon", status: "coming_soon", section: "growth", visibleTo: [...ROLES.marketing, ...ROLES.hr] as OSRole[] },
@@ -89,7 +89,7 @@ export const PHASE3_REPORTS: Phase3Report[] = [
   { id: "after-hours-calls", name: "After-Hours Calls", description: "Calls received outside business hours and their handling.", department: "Phone System", lastUpdated: "Coming soon", status: "coming_soon", section: "growth", visibleTo: [...ROLES.marketing, ...ROLES.hr] as OSRole[] },
   { id: "no-oon-benefits", name: "No OON Benefits", description: "Verified VOBs that returned no out-of-network benefits.", department: "Intake", lastUpdated: "Coming soon", status: "coming_soon", section: "growth", visibleTo: ROLES.intake },
 
-  // ───────── Operations Reports ─────────
+  // --------- Operations Reports ---------
   { id: "authorizations-queue", name: "Authorizations Queue", description: "Open and pending authorizations with owner and aging.", department: "Authorizations", lastUpdated: "Coming soon", status: "coming_soon", section: "operations", visibleTo: ROLES.auth },
   { id: "approved-authorizations", name: "Approved Authorizations", description: "Recently approved authorizations and start readiness.", department: "Authorizations", lastUpdated: "Coming soon", status: "coming_soon", section: "operations", visibleTo: ROLES.auth },
   { id: "denials", name: "Denials", description: "Denied authorizations with reason codes and next steps.", department: "Authorizations", lastUpdated: "Coming soon", status: "coming_soon", section: "operations", visibleTo: ROLES.auth },
@@ -99,27 +99,27 @@ export const PHASE3_REPORTS: Phase3Report[] = [
   { id: "scheduling-gaps", name: "Scheduling Gaps", description: "Authorized hours not yet scheduled, by client and BCBA.", department: "Scheduling", lastUpdated: "Coming soon", status: "coming_soon", section: "operations", visibleTo: [...ROLES.scheduling, ...ROLES.stateDir] as OSRole[] },
   { id: "qa-review", name: "QA Review", description: "Treatment plans and documentation in active QA review.", department: "QA", lastUpdated: "Coming soon", status: "coming_soon", section: "operations", visibleTo: ROLES.qa },
 
-  // ───────── Clinical Reports ─────────
+  // --------- Clinical Reports ---------
   { id: "case-management-activity", name: "Case Management Activity", description: "Caseload activity, family follow-ups, and open tasks.", department: "Clinical", lastUpdated: "Coming soon", status: "coming_soon", section: "clinical", visibleTo: ROLES.caseManager },
   { id: "caseload-summary", name: "Caseload Summary", description: "Active caseload at a glance with key clinical signals.", department: "Clinical", lastUpdated: "Coming soon", status: "coming_soon", section: "clinical", visibleTo: ROLES.caseManager },
   { id: "family-followup", name: "Family Follow-Up", description: "Open family communications and follow-up actions.", department: "Clinical", lastUpdated: "Coming soon", status: "coming_soon", section: "clinical", visibleTo: ROLES.caseManager },
   { id: "evaluations", name: "Evaluations", description: "Open and recently completed evaluations.", department: "Clinical", lastUpdated: "Live", status: "live", section: "clinical", visibleTo: [...ROLES.caseManager, ...ROLES.bcba] as OSRole[], route: "/evaluations" },
   { id: "patient-activity", name: "Patient Activity", description: "Active patients, hours delivered, and clinical engagement.", department: "Clinical", lastUpdated: "Coming soon", status: "coming_soon", section: "clinical", visibleTo: [...ROLES.bcba, ...ROLES.exec, ...ROLES.stateDir] as OSRole[] },
 
-  // ───────── Credentialing Reports ─────────
+  // --------- Credentialing Reports ---------
   { id: "credentialing-status", name: "Credentialing Status", description: "Where every clinician sits in the credentialing process.", department: "Credentialing", lastUpdated: "Coming soon", status: "coming_soon", section: "credentialing", visibleTo: ROLES.credentialing },
   { id: "bcba-credentials", name: "BCBA Credentials", description: "BCBA credential coverage by payer and state.", department: "Credentialing", lastUpdated: "Coming soon", status: "coming_soon", section: "credentialing", visibleTo: ROLES.credentialing },
   { id: "uncredentialed-bcbas", name: "Uncredentialed BCBAs", description: "BCBAs not yet credentialed with one or more payers.", department: "Credentialing", lastUpdated: "Coming soon", status: "coming_soon", section: "credentialing", visibleTo: ROLES.credentialing },
-  { id: "expiring-credentials", name: "Expiring Credentials", description: "Credentials expiring soon — by clinician and payer.", department: "Credentialing", lastUpdated: "Coming soon", status: "coming_soon", section: "credentialing", visibleTo: ROLES.credentialing },
+  { id: "expiring-credentials", name: "Expiring Credentials", description: "Credentials expiring soon - by clinician and payer.", department: "Credentialing", lastUpdated: "Coming soon", status: "coming_soon", section: "credentialing", visibleTo: ROLES.credentialing },
   { id: "payer-credentialing", name: "Payer Credentialing", description: "Credentialing posture across all contracted payers.", department: "Credentialing", lastUpdated: "Coming soon", status: "coming_soon", section: "credentialing", visibleTo: ROLES.credentialing },
 
-  // ───────── Department / HR Reports ─────────
+  // --------- Department / HR Reports ---------
   { id: "hr-requests", name: "HR Requests", description: "Open HR requests with owner and aging.", department: "HR", lastUpdated: "Coming soon", status: "coming_soon", section: "department", visibleTo: ROLES.hr },
   { id: "device-requests", name: "Device Requests", description: "Open device requests and fulfillment status.", department: "HR", lastUpdated: "Coming soon", status: "coming_soon", section: "department", visibleTo: ROLES.hr },
   { id: "nfc-badge-status", name: "NFC Badge Status", description: "NFC badge issuance and active status by employee.", department: "HR", lastUpdated: "Coming soon", status: "coming_soon", section: "department", visibleTo: ROLES.hr },
   { id: "user-activity", name: "User Activity", description: "User sign-in, page, and feature activity across Blossom OS.", department: "Systems", lastUpdated: "Coming soon", status: "coming_soon", section: "department", visibleTo: ["super_admin", "systems_admin"] as OSRole[] },
 
-  // ───────── State Reports ─────────
+  // --------- State Reports ---------
   { id: "state-operations-health", name: "State Operations Health", description: "Operational posture and risks for your state.", department: "State Operations", lastUpdated: "Coming soon", status: "coming_soon", section: "state", visibleTo: ROLES.stateDir },
   { id: "state-growth", name: "State Growth", description: "New leads, active growth, and pipeline by state.", department: "State Operations", lastUpdated: "Coming soon", status: "coming_soon", section: "state", visibleTo: ROLES.stateDir },
 ];
