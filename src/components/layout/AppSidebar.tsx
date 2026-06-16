@@ -504,19 +504,56 @@ export function AppSidebar({
                           </Tooltip>
                         );
                       }
+                      const hasChildren = !!item.children?.length;
+                      const itemOpen = openItems.has(item.path);
+                      const selfActive = isItemActive(item.path);
+                      const childActive = item.children?.some((c) => isItemActive(c.path)) ?? false;
+                      const anyActive = selfActive || childActive;
                       return (
-                        <NavLink
-                          key={item.path}
-                          to={item.path}
-                          end={item.path === "/"}
-                          className={({ isActive }) => {
-                            const active = item.path.includes("?") ? isItemActive(item.path) : isActive || isItemActive(item.path);
-                            return cn("nav-item", active ? "nav-item-active" : "nav-item-inactive");
-                          }}
-                        >
-                          <item.icon className="h-4 w-4 shrink-0" />
-                          <span>{item.label}</span>
-                        </NavLink>
+                        <div key={item.path}>
+                          <div className="flex items-stretch gap-0.5">
+                            <NavLink
+                              to={item.path}
+                              end={item.path === "/"}
+                              className={cn("nav-item flex-1", anyActive ? "nav-item-active" : "nav-item-inactive")}
+                            >
+                              <item.icon className="h-4 w-4 shrink-0" />
+                              <span className="truncate">{item.label}</span>
+                            </NavLink>
+                            {hasChildren && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); toggleItem(item.path); }}
+                                aria-label={itemOpen ? "Collapse" : "Expand"}
+                                aria-expanded={itemOpen}
+                                className="grid w-6 place-items-center rounded-md text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground"
+                              >
+                                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !itemOpen && "-rotate-90")} />
+                              </button>
+                            )}
+                          </div>
+                          {hasChildren && itemOpen && (
+                            <div className="mt-0.5 ml-5 space-y-0.5 border-l border-sidebar-border/40 pl-2">
+                              {item.children!.map((child) => {
+                                const cActive = isItemActive(child.path);
+                                return (
+                                  <NavLink
+                                    key={child.path}
+                                    to={child.path}
+                                    className={cn(
+                                      "block rounded-md px-2.5 py-1 text-[12.5px] leading-tight transition-colors",
+                                      cActive
+                                        ? "bg-sidebar-accent/60 text-sidebar-accent-foreground font-medium"
+                                        : "text-sidebar-foreground/75 hover:bg-sidebar-accent/30 hover:text-sidebar-accent-foreground",
+                                    )}
+                                  >
+                                    {child.label}
+                                  </NavLink>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
