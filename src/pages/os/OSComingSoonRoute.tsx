@@ -41,7 +41,7 @@ export default function OSComingSoonRoute() {
       <div className="mt-10 grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
         <PreviewCard icon={Workflow} title="What this will manage" body="Role-based queues, status tracking, and the workflows that move work through this area." />
         <PreviewCard icon={Users} title="Who will use it" body="Owners and assigned teammates with action items, not passive viewers." />
-        <PreviewCard icon={Database} title="What data it will connect" body="Operational sources already in Blossom OS — clients, staffing, training, and more." />
+        <PreviewCard icon={Database} title="What data it will connect" body="Operational sources already in Blossom OS - clients, staffing, training, and more." />
         <PreviewCard icon={BarChart3} title="What reports leadership will see" body="Activity history, performance, and risk views for the people accountable for this work." />
       </div>
 
@@ -73,9 +73,9 @@ function PreviewCard({ icon: Icon, title, body }: { icon: React.ElementType; tit
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Module Wireframe
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function ModuleWireframe({ def, moduleName }: { def: ModuleDefinition; moduleName: string }) {
   const { toast } = useToast();
@@ -101,10 +101,10 @@ function ModuleWireframe({ def, moduleName }: { def: ModuleDefinition; moduleNam
               <Users className="h-3 w-3" /> {def.ownerRole}
             </span>
           </div>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">{def.title}</h1>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">{moduleName}</h1>
           <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">{def.purpose}</p>
           {moduleName !== def.title && (
-            <p className="mt-1 text-xs text-muted-foreground">Requested module: {moduleName}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Part of {def.title}</p>
           )}
           {def.relatedModules && def.relatedModules.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-1.5">
@@ -156,7 +156,7 @@ function ModuleWireframe({ def, moduleName }: { def: ModuleDefinition; moduleNam
       {/* Main grid: queue + side panel */}
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Section title="Queue" subtitle="Wireframe data — sample records for the planned table.">
+          <Section title="Queue" subtitle="Wireframe data - sample records for the planned table.">
             <QueueTable def={def} />
           </Section>
 
@@ -169,7 +169,7 @@ function ModuleWireframe({ def, moduleName }: { def: ModuleDefinition; moduleNam
                     <div className="flex-1">
                       <div className="flex flex-wrap items-baseline gap-x-2">
                         <span className="font-medium text-foreground">{a.type}</span>
-                        <span className="text-xs text-muted-foreground">· {a.who}</span>
+                        <span className="text-xs text-muted-foreground">- {a.who}</span>
                         <span className="ml-auto text-xs text-muted-foreground">{a.when}</span>
                       </div>
                       <p className="mt-0.5 text-[13px] text-muted-foreground">{a.detail}</p>
@@ -194,7 +194,7 @@ function ModuleWireframe({ def, moduleName }: { def: ModuleDefinition; moduleNam
                     <AlertTriangle className="h-3.5 w-3.5" /> {e.level}
                   </div>
                   <p className="mt-1.5 text-sm font-medium text-foreground">{e.reason}</p>
-                  <p className="mt-1 text-[12px] text-muted-foreground">Owner: {e.owner} · Age: {e.age}</p>
+                  <p className="mt-1 text-[12px] text-muted-foreground">Owner: {e.owner} - Age: {e.age}</p>
                   <p className="mt-1 text-[12px] text-muted-foreground">Next: {e.next}</p>
                 </div>
               ))}
@@ -309,13 +309,13 @@ function QueueTable({ def }: { def: ModuleDefinition }) {
             {def.sampleRecords.map((r, i) => (
               <tr key={i} className="hover:bg-muted/40">
                 <td className="px-4 py-2.5 font-medium text-foreground">{r.name}</td>
-                <td className="px-4 py-2.5 text-muted-foreground">{r.state || "—"}</td>
+                <td className="px-4 py-2.5 text-muted-foreground">{r.state || "-"}</td>
                 <td className="px-4 py-2.5 text-muted-foreground">{r.status}</td>
                 <td className="px-4 py-2.5 text-muted-foreground">{r.owner}</td>
                 <td className="px-4 py-2.5">
                   <PriorityPill priority={r.priority} />
                 </td>
-                <td className="px-4 py-2.5 text-muted-foreground">{r.nextAction || "—"}</td>
+                <td className="px-4 py-2.5 text-muted-foreground">{r.nextAction || "-"}</td>
               </tr>
             ))}
           </tbody>
@@ -326,7 +326,7 @@ function QueueTable({ def }: { def: ModuleDefinition }) {
 }
 
 function PriorityPill({ priority }: { priority?: string }) {
-  if (!priority) return <span className="text-xs text-muted-foreground">—</span>;
+  if (!priority) return <span className="text-xs text-muted-foreground">-</span>;
   const tone =
     priority === "Urgent" ? "border-destructive/30 bg-destructive/10 text-destructive" :
     priority === "High" ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300" :
@@ -341,13 +341,13 @@ function DetailPanel({ def }: { def: ModuleDefinition }) {
       {rec ? (
         <>
           <p className="text-sm font-semibold text-foreground">{rec.name}</p>
-          <p className="mt-0.5 text-[12px] text-muted-foreground">{rec.state || ""} · {rec.status}</p>
+          <p className="mt-0.5 text-[12px] text-muted-foreground">{rec.state || ""} - {rec.status}</p>
           <dl className="mt-3 space-y-1.5 text-[13px]">
             <Row k="Owner" v={rec.owner} />
             <Row k="Priority" v={rec.priority || "Normal"} />
-            <Row k="Due" v={rec.due || "—"} />
-            <Row k="Last Activity" v={rec.lastActivity || "—"} />
-            <Row k="Next Action" v={rec.nextAction || "—"} />
+            <Row k="Due" v={rec.due || "-"} />
+            <Row k="Last Activity" v={rec.lastActivity || "-"} />
+            <Row k="Next Action" v={rec.nextAction || "-"} />
           </dl>
         </>
       ) : (
@@ -355,7 +355,7 @@ function DetailPanel({ def }: { def: ModuleDefinition }) {
       )}
       <div className="mt-4 rounded-xl bg-muted/40 p-3 text-[12px] text-muted-foreground">
         <p className="font-medium text-foreground">Workflow stages</p>
-        <p className="mt-1">{def.workflowStages.join(" → ")}</p>
+        <p className="mt-1">{def.workflowStages.join(" -> ")}</p>
       </div>
     </div>
   );

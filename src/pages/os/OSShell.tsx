@@ -53,7 +53,7 @@ type NavSection = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Super Admin — canonical grouped menu (matches AppSidebar)          */
+/* Super Admin - canonical grouped menu (matches AppSidebar)          */
 /* ------------------------------------------------------------------ */
 
 const SUPER_ADMIN_SECTIONS: NavSection[] = [
@@ -259,7 +259,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
 
   const showOldVersion = platform("accessOldVersion");
 
-  // ⌘K palette
+  // CmdK palette
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
@@ -340,7 +340,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       return (
         <Tooltip key={`${item.to}-${item.label}`} delayDuration={120}>
           <TooltipTrigger asChild>{disabledNode}</TooltipTrigger>
-          <TooltipContent side="right" className="text-[12px] font-medium">{item.label} — Coming Soon</TooltipContent>
+          <TooltipContent side="right" className="text-[12px] font-medium">{item.label} - Coming Soon</TooltipContent>
         </Tooltip>
       );
     }
@@ -400,7 +400,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                   <input
                     value={mobileSearch}
                     onChange={(e) => setMobileSearch(e.target.value)}
-                    placeholder="Search menu…"
+                    placeholder="Search menu..."
                     aria-label="Search menu"
                     className="os-glass-input h-10 w-full rounded-2xl pl-10 pr-3 text-[13.5px] focus:outline-none"
                   />
@@ -427,7 +427,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                 </div>
                 {mobileSearch.trim() && mobileSections.length === 0 && (
                   <p className="mt-6 rounded-xl border border-dashed border-foreground/10 bg-foreground/[0.02] p-4 text-center text-[12px] text-muted-foreground">
-                    No menu matches for “{mobileSearch.trim()}”.
+                    No menu matches for "{mobileSearch.trim()}".
                   </p>
                 )}
                 {showOldVersion && (
@@ -536,7 +536,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                       }
                     }
                   }}
-                  placeholder="Search everything…"
+                  placeholder="Search everything..."
                   aria-label="Search Blossom OS"
                   className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
                 />
@@ -560,7 +560,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                   <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-[60vh] overflow-y-auto rounded-2xl border border-border/60 bg-background/95 p-2 shadow-2xl backdrop-blur-xl">
                     {filtered.length === 0 ? (
                       <div className="px-3 py-6 text-center text-[13px] text-muted-foreground">
-                        No results for “{headerSearch.trim()}”.
+                        No results for "{headerSearch.trim()}".
                       </div>
                     ) : (
                       filtered.map((section) => (
@@ -712,7 +712,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
 
       {/* COMMAND PALETTE */}
       <CommandDialog open={paletteOpen} onOpenChange={setPaletteOpen}>
-        <CommandInput placeholder="Search pages, modules, dashboards…" />
+        <CommandInput placeholder="Search pages, modules, dashboards..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           {sections.map((section, idx) => (

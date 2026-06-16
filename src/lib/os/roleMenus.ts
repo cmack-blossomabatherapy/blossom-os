@@ -34,7 +34,7 @@ const BASE_ACTIVE: RoleMenuItem[] = [
   { label: "Reports",          path: "/reports",   icon: FileText },
 ];
 
-/** Placeholder route used for "coming soon" entries — they render disabled. */
+/** Placeholder route used for "coming soon" entries - they render disabled. */
 const SOON = "/coming-soon";
 
 const cs = (label: string, icon: LucideIcon): RoleMenuItem => ({
@@ -288,7 +288,7 @@ export const DEFAULT_ROLE_MENU: RoleMenu = {
 
 /**
  * Roles surfaced in the Super Admin "View as Role" preview switcher.
- * Order matters — this is what shows up in the dropdown.
+ * Order matters - this is what shows up in the dropdown.
  */
 export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "Super Admin",                 role: "super_admin" },

@@ -1,5 +1,5 @@
 /**
- * Module Registry — Blossom OS planned modules.
+ * Module Registry - Blossom OS planned modules.
  *
  * Powers the Coming Soon wireframe experience. Every module here renders a
  * structured operational blueprint (KPIs, queue, detail, activity, escalation,
@@ -100,10 +100,10 @@ const generic = (overrides: Partial<ModuleDefinition>): ModuleDefinition => ({
 });
 
 const ALL: ModuleDefinition[] = [
-  // ───────── Growth & Marketing ─────────
+  // --------- Growth & Marketing ---------
   generic({
     id: "marketing-dashboard",
-    matchNames: ["Marketing Dashboard"],
+    matchNames: ["Marketing Dashboard", "Referral CRM", "Lead Sources", "Campaigns", "CTM / Call Tracking", "LeadTrap", "Facebook Ads", "Google Ads", "SEO & Content", "Web Analytics", "Recruiting Marketing", "Community Outreach", "Reputation", "Attribution & ROI"],
     title: "Marketing Dashboard",
     description: "Operating center for source performance, campaigns, calls, and the patient lifetime journey.",
     department: "Marketing",
@@ -119,9 +119,9 @@ const ALL: ModuleDefinition[] = [
       { label: "Missed Calls", value: "4", tone: "warning" },
     ],
     sampleRecords: [
-      { name: "Google Search — GA", status: "Active", owner: "Marketing", priority: "High", due: "—", lastActivity: "1h ago", nextAction: "Review CPL" },
-      { name: "Facebook — NC Awareness", status: "Active", owner: "Marketing", priority: "Normal", due: "—", lastActivity: "Today", nextAction: "A/B creative" },
-      { name: "Pediatric Referral — VA", status: "Nurture", owner: "Business Dev", priority: "Normal", due: "Fri", lastActivity: "Yesterday", nextAction: "Follow-up call" },
+      { name: "Google Search - GA", status: "Active", owner: "Marketing", priority: "High", due: "-", lastActivity: "1h ago", nextAction: "Review CPL" },
+      { name: "Facebook - NC Awareness", status: "Active", owner: "Marketing", priority: "Normal", due: "-", lastActivity: "Today", nextAction: "A/B creative" },
+      { name: "Pediatric Referral - VA", status: "Nurture", owner: "Business Dev", priority: "Normal", due: "Fri", lastActivity: "Yesterday", nextAction: "Follow-up call" },
     ],
     reports: [
       { name: "Marketing Source Performance", description: "Source quality, conversion, ROI." },
@@ -158,7 +158,7 @@ const ALL: ModuleDefinition[] = [
   }),
   generic({
     id: "bd-dashboard",
-    matchNames: ["Business Development Dashboard", "Referral Partner CRM", "Outreach Pipeline"],
+    matchNames: ["Business Development Dashboard", "Referral Partner CRM", "Outreach Pipeline", "Follow-Up Tasks", "Provider Relationships", "Community Relationships"],
     title: "Business Development",
     description: "Referral partners, outreach, and source conversion across markets.",
     department: "Business Development",
@@ -173,11 +173,11 @@ const ALL: ModuleDefinition[] = [
     ],
     reports: [
       { name: "Business Development Referral Sources", description: "Partner activity and volume." },
-      { name: "Referral Source Conversion", description: "Partner → active client conversion." },
+      { name: "Referral Source Conversion", description: "Partner -> active client conversion." },
     ],
   }),
 
-  // ───────── Intake ─────────
+  // --------- Intake ---------
   generic({
     id: "intake-dashboard",
     matchNames: ["Intake Dashboard", "New Referral Queue", "Lead To Active Pipeline", "Missing Information", "Parent Communication", "Intake Tasks", "Lead Benefits Cheat Sheets"],
@@ -206,7 +206,7 @@ const ALL: ModuleDefinition[] = [
     ],
   }),
 
-  // ───────── Recruiting ─────────
+  // --------- Recruiting ---------
   generic({
     id: "recruiting-dashboard",
     matchNames: ["Recruiting Dashboard", "Candidate Pipeline", "Hiring Sources", "Interview Scheduling", "Offer Tracker", "Onboarding Handoff", "Recruiting Reports"],
@@ -219,8 +219,8 @@ const ALL: ModuleDefinition[] = [
     primaryActions: ["Add Candidate", "Schedule Interview", "Send Offer", "Handoff to Onboarding"],
     plannedDataFields: ["Candidate", "Role", "State", "Source", "Stage", "Owner", "Last Touch", "Next Step"],
     sampleRecords: [
-      { name: "Williams, T. — RBT", state: "GA", status: "Interview Scheduled", owner: "Recruiter", priority: "High", due: "Wed", lastActivity: "Today", nextAction: "Calendly hold" },
-      { name: "Lopez, S. — BCBA", state: "NC", status: "Offer Sent", owner: "Recruiter", priority: "High", due: "Fri", lastActivity: "Today", nextAction: "Follow up offer" },
+      { name: "Williams, T. - RBT", state: "GA", status: "Interview Scheduled", owner: "Recruiter", priority: "High", due: "Wed", lastActivity: "Today", nextAction: "Calendly hold" },
+      { name: "Lopez, S. - BCBA", state: "NC", status: "Offer Sent", owner: "Recruiter", priority: "High", due: "Fri", lastActivity: "Today", nextAction: "Follow up offer" },
     ],
     reports: [
       { name: "Recruiting Pipeline", description: "Candidate funnel by stage." },
@@ -228,7 +228,7 @@ const ALL: ModuleDefinition[] = [
     ],
   }),
 
-  // ───────── Authorizations ─────────
+  // --------- Authorizations ---------
   generic({
     id: "authorizations-dashboard",
     matchNames: ["Authorizations Dashboard", "Auth Queue", "Approved Authorizations", "Expiring Authorizations", "Denials", "Missing Docs", "Payer Requirements", "Authorization Reports"],
@@ -247,8 +247,8 @@ const ALL: ModuleDefinition[] = [
       { label: "Approved (7d)", value: "18", tone: "success" },
     ],
     sampleRecords: [
-      { name: "Patel, R. — Aetna", state: "VA", status: "Submitted", owner: "Auth Coord.", priority: "High", due: "Mon", lastActivity: "Today", nextAction: "Payer follow-up" },
-      { name: "Carter, J. — Anthem", state: "GA", status: "Missing Docs", owner: "Auth Coord.", priority: "Urgent", due: "Today", lastActivity: "1h ago", nextAction: "Request eval", escalation: "Level 1" },
+      { name: "Patel, R. - Aetna", state: "VA", status: "Submitted", owner: "Auth Coord.", priority: "High", due: "Mon", lastActivity: "Today", nextAction: "Payer follow-up" },
+      { name: "Carter, J. - Anthem", state: "GA", status: "Missing Docs", owner: "Auth Coord.", priority: "Urgent", due: "Today", lastActivity: "1h ago", nextAction: "Request eval", escalation: "Level 1" },
     ],
     reports: [
       { name: "Authorizations Queue", description: "Open and pending auths." },
@@ -257,7 +257,7 @@ const ALL: ModuleDefinition[] = [
     ],
   }),
 
-  // ───────── Scheduling ─────────
+  // --------- Scheduling ---------
   generic({
     id: "scheduling-dashboard",
     matchNames: ["Scheduling Dashboard", "Schedule Gaps", "Session Coverage", "Cancellations", "Make-Up Sessions", "Scheduling Reports"],
@@ -284,7 +284,7 @@ const ALL: ModuleDefinition[] = [
     ],
   }),
 
-  // ───────── Staffing ─────────
+  // --------- Staffing ---------
   generic({
     id: "staffing-dashboard",
     matchNames: ["Staffing Dashboard", "Open Cases", "RBT Match Queue", "Coverage Needs", "Family Staffing Preferences", "Staffing Reports"],
@@ -305,7 +305,7 @@ const ALL: ModuleDefinition[] = [
     ],
   }),
 
-  // ───────── HR ─────────
+  // --------- HR ---------
   generic({
     id: "hr-dashboard",
     matchNames: ["HR Dashboard", "Employee Records", "HR Requests", "Compliance Items", "Device Requests", "Device Inventory", "NFC Badge Support", "HR Reports"],
@@ -318,7 +318,7 @@ const ALL: ModuleDefinition[] = [
     primaryActions: ["Create Request", "Assign Owner", "Mark Resolved", "Issue Device", "Activate Badge"],
     plannedDataFields: ["Employee", "Type", "Owner", "Status", "Open Date", "Due", "Compliance Items"],
     sampleRecords: [
-      { name: "Williams, T.", status: "Device Request — Laptop", owner: "HR", priority: "Normal", due: "Fri", lastActivity: "Today", nextAction: "Order device" },
+      { name: "Williams, T.", status: "Device Request - Laptop", owner: "HR", priority: "Normal", due: "Fri", lastActivity: "Today", nextAction: "Order device" },
       { name: "Lopez, S.", status: "Badge Activation", owner: "HR", priority: "High", due: "Mon", lastActivity: "Yesterday", nextAction: "Provision NFC" },
     ],
     reports: [
@@ -328,7 +328,7 @@ const ALL: ModuleDefinition[] = [
     ],
   }),
 
-  // ───────── Credentialing ─────────
+  // --------- Credentialing ---------
   generic({
     id: "credentialing-dashboard",
     matchNames: ["Credentialing Dashboard", "Provider Credentialing", "Insurance Credentialing", "BCBA Credentials", "Uncredentialed BCBAs", "Expiring Credentials", "Credentialing Reports"],
@@ -347,7 +347,7 @@ const ALL: ModuleDefinition[] = [
       { label: "Approved (30d)", value: "14", tone: "success" },
     ],
     sampleRecords: [
-      { name: "Lopez, S. — Aetna", state: "GA", status: "Submitted", owner: "Credentialing", priority: "High", due: "—", lastActivity: "2d ago", nextAction: "Payer follow-up" },
+      { name: "Lopez, S. - Aetna", state: "GA", status: "Submitted", owner: "Credentialing", priority: "High", due: "-", lastActivity: "2d ago", nextAction: "Payer follow-up" },
     ],
     reports: [
       { name: "Credentialing Status", description: "Process posture by clinician." },
@@ -356,10 +356,10 @@ const ALL: ModuleDefinition[] = [
     ],
   }),
 
-  // ───────── State Operations ─────────
+  // --------- State Operations ---------
   generic({
     id: "state-dashboard",
-    matchNames: ["State Dashboard", "State Health", "State Staffing Snapshot", "State Intake Snapshot", "State Authorization Snapshot", "State Clinical Snapshot", "State Support Dashboard", "State Intake Support", "State Task Queue", "Escalation Support", "Follow-Up Tracker", "State Health Overview"],
+    matchNames: ["State Dashboard", "State Health", "State Staffing Snapshot", "State Intake Snapshot", "State Authorization Snapshot", "State Clinical Snapshot", "State Support Dashboard", "State Intake Support", "State Task Queue", "Escalation Support", "Follow-Up Tracker", "State Health Overview", "Escalations", "Workflow Bottlenecks", "Department Scorecards", "Operations Dashboard", "System Requests", "Executive Dashboard", "Company KPIs", "Growth Snapshot", "Operations Scorecard"],
     title: "State Operations",
     description: "State health, escalations, and cross-department snapshots.",
     department: "State Operations",
@@ -369,8 +369,8 @@ const ALL: ModuleDefinition[] = [
     primaryActions: ["Open Escalation", "Reassign Owner", "Request Status", "Mark Resolved"],
     plannedDataFields: ["State", "Department", "Open Items", "Aging", "Escalations", "KPI Trend"],
     sampleRecords: [
-      { name: "Georgia — Intake", state: "GA", status: "Healthy", owner: "State Director", priority: "Normal", lastActivity: "Today", nextAction: "Weekly review" },
-      { name: "North Carolina — Staffing", state: "NC", status: "At Risk", owner: "State Director", priority: "High", lastActivity: "Today", nextAction: "Escalate to Ops", escalation: "Level 2" },
+      { name: "Georgia - Intake", state: "GA", status: "Healthy", owner: "State Director", priority: "Normal", lastActivity: "Today", nextAction: "Weekly review" },
+      { name: "North Carolina - Staffing", state: "NC", status: "At Risk", owner: "State Director", priority: "High", lastActivity: "Today", nextAction: "Escalate to Ops", escalation: "Level 2" },
     ],
     reports: [
       { name: "State Operations Health", description: "Operational posture and risk." },
@@ -378,10 +378,10 @@ const ALL: ModuleDefinition[] = [
     ],
   }),
 
-  // ───────── Clinical ─────────
+  // --------- Clinical ---------
   generic({
     id: "clinical-dashboard",
-    matchNames: ["Clinical Dashboard", "BCBA Oversight", "Clinical Quality", "Supervision Health", "Clinical Escalations", "Clinical Reports", "Caseload", "Supervision", "Treatment Plans", "Parent Training", "Clinical Documentation", "BCBA Dashboard"],
+    matchNames: ["Clinical Dashboard", "BCBA Oversight", "Clinical Quality", "Supervision Health", "Clinical Escalations", "Clinical Reports", "Caseload", "Supervision", "Treatment Plans", "Parent Training", "Clinical Documentation", "BCBA Dashboard", "Evaluations"],
     title: "Clinical Workspace",
     description: "BCBA oversight, supervision, quality, and clinical escalations.",
     department: "Clinical",
@@ -462,7 +462,7 @@ const ALL: ModuleDefinition[] = [
     ],
   }),
 
-  // ───────── Communications ─────────
+  // --------- Communications ---------
   generic({
     id: "call-logs",
     matchNames: ["Call Logs", "Shared Lines", "Phone Requests", "Directory"],
