@@ -105,6 +105,13 @@ export interface RBTResource {
 
 // ---------- Starter resources ----------
 
+// Module attachment groups — keep in one place so we can re-target later without hunting.
+const MODS_BACB           = ["nc-c1", "nc-cp1", "nc-cp2", "nc-b1", "ex-r1"];
+const MODS_ORIENT_POLICY  = ["welcome-1", "ne-p1", "ne-f1", "ex-s1", "ex-p1", "ex-d1"];
+const MODS_CR_HOWTO       = ["nc-c2", "nc-c3", "nc-k1", "nc-k2", "ne-d1", "ne-a1", "u2-c1", "u2-g2", "ex-c1"];
+const MODS_PRACTICE       = ["nc-c4", "ne-r1", "u2-g1", "ne-s1", "nc-fs1", "ne-fs1", "u2-e1"];
+const MODS_RESEARCH       = ["ex-o1", "ex-o2", "ex-o3", "nc-b1", "ne-p1", "ex-p1"];
+
 export const STARTER_RBT_RESOURCES: RBTResource[] = [
   {
     id: "seed-aba-playlist",
