@@ -4,15 +4,22 @@ import {
   PlayCircle, CheckCircle2, Lock, Clock, ChevronRight, Sparkles,
   BookOpen, LifeBuoy, MessageSquare, FileText, ListChecks, Video,
   GraduationCap, ArrowRight, ShieldCheck, UserCircle2, ClipboardCheck,
-  AlertCircle, Compass, Award,
+  AlertCircle, Compass, Award, Plus, Pencil, Trash2, ExternalLink,
+  Youtube, FileSpreadsheet, StickyNote, X,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
-  RBT_PATHS, RBT_OWNERSHIP, RBT_RESOURCES, pathStats,
+  RBT_PATHS, RBT_OWNERSHIP, pathStats,
   type RBTPath, type RBTPathId, type RBTModule, type ModuleType, type SignoffItem,
 } from "@/lib/training/rbtAcademy";
+import {
+  useRBTResources, getResourcesForModule, addResource, updateResource,
+  removeResource, RBT_RESOURCE_TYPES,
+  type RBTResource, type RBTResourceType,
+} from "@/lib/training/rbtResources";
+import { TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
 
 // RBT Training Academy — experience-based, guided journey. Calm, mobile-first.
 
