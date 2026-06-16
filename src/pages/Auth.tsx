@@ -182,16 +182,15 @@ export default function Auth() {
 
         {/* Form panel */}
         <main className="relative flex min-h-screen w-full items-center justify-center p-6 sm:p-10">
-          {/* mobile brand bar - centered full logo */}
-          <div className="absolute left-0 right-0 top-6 z-10 flex justify-center lg:hidden">
-            <img
-              src={logoWordmark}
-              alt="Blossom ABA Therapy"
-              className="h-10 w-auto object-contain"
-            />
-          </div>
-
-          <div className="w-full max-w-[460px] rounded-3xl border border-slate-200/80 bg-white p-8 shadow-2xl shadow-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700 sm:p-10 pt-16 lg:pt-8">
+          <div className="w-full max-w-[460px] rounded-3xl border border-slate-200/80 bg-white p-8 shadow-2xl shadow-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700 sm:p-10">
+            {/* mobile logo inside card */}
+            <div className="mb-6 flex justify-center lg:hidden">
+              <img
+                src={logoWordmark}
+                alt="Blossom ABA Therapy"
+                className="h-10 w-auto object-contain"
+              />
+            </div>
           <header className="mb-8 text-center sm:text-left">
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
               {isWelcome ? "Activate your account" : "Please enter your details"}
