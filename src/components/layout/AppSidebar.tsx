@@ -592,6 +592,43 @@ export function AppSidebar({
               No menu matches.
             </p>
           )}
+
+          {isAdmin && (
+            <div className="pt-2">
+              {impersonating ? (
+                <button
+                  type="button"
+                  onClick={() => osCtx?.setRole("super_admin")}
+                  className="flex w-full items-center gap-2 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/40 px-3 py-2 text-[12px] font-medium text-sidebar-foreground hover:bg-sidebar-accent/60"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Stop previewing
+                </button>
+              ) : (
+                <div>
+                  <p className="mb-1.5 flex items-center gap-1.5 px-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/80">
+                    <Eye className="h-3 w-3" /> Preview as Role
+                  </p>
+                  <div className="space-y-0.5 md:pl-1">
+                    {ROLE_PREVIEW.map((r) => (
+                      <button
+                        key={r.role}
+                        type="button"
+                        onClick={() => {
+                          osCtx?.setRole(r.role);
+                          navigate(ROLE_HOME[r.role] ?? "/");
+                        }}
+                        className="nav-item nav-item-inactive w-full text-left"
+                      >
+                        <Eye className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                        <span className="truncate">{r.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </nav>
       </aside>
     </>
