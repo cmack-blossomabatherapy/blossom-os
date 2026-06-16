@@ -1251,9 +1251,11 @@ function FilterSelect({ label, value, onChange, options }: {
 }
 function Row({ bcba, expanded, onToggle }: {
   bcba: { bcba: string; isUnassigned: boolean; totalHours: number; h97153: number; directHours: number;
-          clients: Map<string, number>; rbts: Map<string, number>; codes: Map<string, number>; rows: OwnedRow[]; };
+          supervisionHours: number; clients: Map<string, number>; rbts: Map<string, number>; codes: Map<string, number>; rows: OwnedRow[]; };
   expanded: boolean; onToggle: () => void;
 }) {
+  const pct = supervisionPctValue(bcba.supervisionHours, bcba.h97153);
+  const tone = supervisionTone(pct);
   return (
     <>
       <tr className={cn("border-t hover:bg-muted/30", bcba.isUnassigned && "bg-warning/10")}>
@@ -1269,13 +1271,19 @@ function Row({ bcba, expanded, onToggle }: {
         <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.totalHours)}</td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.h97153)}</td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.directHours)}</td>
+        <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.supervisionHours)}</td>
+        <td className={cn("px-3 py-2 text-right tabular-nums font-medium",
+          tone === "danger" && "text-destructive",
+          tone === "warn" && "text-warning-foreground",
+          tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+        )}>{pct === null ? "—" : `${pct.toFixed(1)}%`}</td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt0(bcba.clients.size)}</td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt0(bcba.rbts.size)}</td>
       </tr>
       {expanded && (
         <tr className="bg-muted/10">
           <td></td>
-          <td colSpan={6} className="px-3 py-3">
+          <td colSpan={8} className="px-3 py-3">
             <div className="grid gap-4 md:grid-cols-3">
               <DrillList title="Clients" items={[...bcba.clients.entries()]} />
               <DrillList title="RBTs / Rendering Providers" items={[...bcba.rbts.entries()]} />
