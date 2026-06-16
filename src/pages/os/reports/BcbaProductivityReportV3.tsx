@@ -5,6 +5,9 @@ import {
   Stethoscope, Plus, Trash2, Save, History, ArrowLeftRight, X, Pencil, Database, AlertTriangle,
   UserPlus, RefreshCw, HelpCircle,
 } from "lucide-react";
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell,
+} from "recharts";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,8 +40,18 @@ const num = (v: any) => {
   const n = parseFloat(String(v).replace(/[$,%]/g, ""));
   return isFinite(n) ? n : NaN;
 };
-const fmt1 = (n: number) => (isFinite(n) ? n.toFixed(1) : "—");
+const fmt1 = (n: number) =>
+  isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "—";
 const fmt0 = (n: number) => (isFinite(n) ? Math.round(n).toLocaleString() : "—");
+const fmtPct = (num: number, denom: number) =>
+  denom > 0 && isFinite(num) ? `${((num / denom) * 100).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : "—";
+const supervisionPctValue = (sup: number, h97153: number) => (h97153 > 0 ? (sup / h97153) * 100 : null);
+function supervisionTone(pct: number | null): "danger" | "warn" | "ok" | undefined {
+  if (pct === null) return undefined;
+  if (pct < 5) return "danger";
+  if (pct < 10) return "warn";
+  return "ok";
+}
 function isoDate(d: string) {
   if (!d) return "";
   const t = new Date(d).getTime();
@@ -99,6 +112,7 @@ interface AssignmentIssue {
 }
 
 const isRbt97153 = (code: string) => /^97153\b/.test(code.trim()) || code.trim().startsWith("97153");
+const isSupervision = (code: string) => /^97155\b/.test(code.trim()) || code.trim().startsWith("97155");
 
 function addDaysIso(date: string, days: number) {
   const d = new Date(`${date}T00:00:00`);
@@ -420,16 +434,17 @@ export default function BcbaProductivityReportV3() {
 
   /* ----- KPIs ----- */
   const kpis = useMemo(() => {
-    let totalHours = 0, h97153 = 0, directHours = 0, unassigned = 0;
+    let totalHours = 0, h97153 = 0, directHours = 0, supervisionHours = 0, unassigned = 0;
     const clients = new Set<string>(), rbts = new Set<string>(), bcbas = new Set<string>();
     for (const r of filtered) {
       totalHours += r.hours;
       if (r.is97153) h97153 += r.hours; else directHours += r.hours;
+      if (isSupervision(r.code)) supervisionHours += r.hours;
       clients.add(r.clientId || normalizeName(r.clientName));
       if (r.is97153 && r.renderingProvider) rbts.add(r.renderingProvider);
       if (r.bcbaOwner) bcbas.add(r.bcbaOwner); else unassigned += r.hours;
     }
-    return { totalHours, h97153, directHours, unassigned,
+    return { totalHours, h97153, directHours, supervisionHours, unassigned,
       clients: clients.size, rbts: rbts.size, bcbas: bcbas.size };
   }, [filtered]);
 
@@ -440,6 +455,7 @@ export default function BcbaProductivityReportV3() {
     totalHours: number;
     h97153: number;
     directHours: number;
+    supervisionHours: number;
     clients: Map<string, number>;
     rbts: Map<string, number>;
     codes: Map<string, number>;
@@ -450,7 +466,7 @@ export default function BcbaProductivityReportV3() {
     const ensure = (b: string, isU: boolean) => {
       let v = map.get(b);
       if (!v) {
-        v = { bcba: b, isUnassigned: isU, totalHours: 0, h97153: 0, directHours: 0,
+        v = { bcba: b, isUnassigned: isU, totalHours: 0, h97153: 0, directHours: 0, supervisionHours: 0,
               clients: new Map(), rbts: new Map(), codes: new Map(), rows: [] };
         map.set(b, v);
       }
@@ -461,6 +477,7 @@ export default function BcbaProductivityReportV3() {
       const row = ensure(owner, !r.bcbaOwner);
       row.totalHours += r.hours;
       if (r.is97153) row.h97153 += r.hours; else row.directHours += r.hours;
+      if (isSupervision(r.code)) row.supervisionHours += r.hours;
       row.clients.set(r.clientName, (row.clients.get(r.clientName) || 0) + r.hours);
       if (r.is97153 && r.renderingProvider) row.rbts.set(r.renderingProvider, (row.rbts.get(r.renderingProvider) || 0) + r.hours);
       row.codes.set(r.code, (row.codes.get(r.code) || 0) + r.hours);
@@ -521,8 +538,15 @@ export default function BcbaProductivityReportV3() {
 
   function exportBcbaCsv() {
     downloadCsv(`bcba-productivity-v3-${Date.now()}.csv`,
-      ["BCBA", "Total Hours", "97153 Hours", "Direct Hours", "Client Count", "RBT Count"],
-      bcbaTable.map(b => [b.bcba, b.totalHours.toFixed(2), b.h97153.toFixed(2), b.directHours.toFixed(2), b.clients.size, b.rbts.size])
+      ["BCBA", "Total Hours", "97153 Hours", "Direct Hours", "Supervision Hours", "Supervision %", "Client Count", "RBT Count"],
+      bcbaTable.map(b => {
+        const pct = supervisionPctValue(b.supervisionHours, b.h97153);
+        return [
+          b.bcba, b.totalHours.toFixed(2), b.h97153.toFixed(2), b.directHours.toFixed(2),
+          b.supervisionHours.toFixed(2), pct === null ? "" : pct.toFixed(1),
+          b.clients.size, b.rbts.size,
+        ];
+      })
     );
   }
   function exportTransfersCsv() {
@@ -648,143 +672,7 @@ export default function BcbaProductivityReportV3() {
           </div>
         </div>
 
-        {/* Upload zone */}
-        <div
-          className={cn(
-            "rounded-2xl border-2 border-dashed p-6 transition",
-            dragOver ? "border-primary bg-primary/5" : "border-border bg-card/40",
-          )}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-        >
-          <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
-            <div className="rounded-xl bg-primary/10 p-3 text-primary"><Upload className="h-6 w-6" /></div>
-            <div className="flex-1">
-              <div className="font-medium">
-                {fileName ? `Loaded: ${fileName}` : "Upload a single Billing Report (CSV or XLSX)"}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {rows.length > 0
-                  ? `${rows.length.toLocaleString()} rows accepted · ${
-                      assignments.length
-                        ? "ownership resolved via saved Assignment History"
-                        : usingInferred
-                          ? `ownership inferred from this billing report (${inferred.assignments.length} assignments, ${inferred.uniqueBcbas} BCBAs)`
-                          : "Assignment History setup required"
-                    }`
-                  : "Drag a file here, or click choose."}
-              </div>
-              {missingCols.length > 0 && (
-                <div className="mt-2 text-xs text-destructive">Missing columns: {missingCols.join(", ")}</div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <input
-                ref={inputRef} type="file" hidden accept={SUPPORTED_EXTENSIONS}
-                onChange={(e) => handleFiles(e.target.files)}
-              />
-              <Button size="sm" onClick={() => inputRef.current?.click()} disabled={loading}>
-                <FileSpreadsheet className="mr-2 h-4 w-4" /> {loading ? "Parsing…" : "Choose file"}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Upload validation panel */}
-        {validation && (
-          <div className="rounded-xl border bg-card/60 p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Upload Validation
-              </div>
-              <div className="text-xs text-muted-foreground">{validation.fileName}</div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
-              <ValPill label="Raw rows" value={fmt0(validation.rawRowCount)} />
-              <ValPill label="Accepted" value={fmt0(validation.acceptedRowCount)} />
-              <ValPill label="Dropped" value={fmt0(validation.droppedRowCount)} tone={validation.droppedRowCount ? "warn" : undefined} />
-              <ValPill label="Total hours" value={fmt1(validation.totalHours)} />
-              <ValPill label="Date range" value={validation.dateMin && validation.dateMax ? `${validation.dateMin} → ${validation.dateMax}` : "—"} />
-              <ValPill label="Unique clients" value={fmt0(validation.uniqueClients)} />
-              <ValPill label="Unique providers" value={fmt0(validation.uniqueProviders)} />
-              <ValPill label="Assignment rows" value={fmt0(validationCoverage.assignmentRows)} tone={!validationCoverage.assignmentRows ? "warn" : undefined} />
-              <ValPill label="Assigned rows" value={fmt0(validationCoverage.assignedRows)} />
-              <ValPill label="Assigned hours" value={fmt1(validationCoverage.assignedHours)} />
-              <ValPill label="Unassigned rows" value={fmt0(validationCoverage.unassignedRows)} tone={validationCoverage.unassignedRows ? "warn" : undefined} />
-              <ValPill label="Unassigned hours" value={fmt1(validationCoverage.unassignedHours)} tone={validationCoverage.unassignedHours ? "warn" : undefined} />
-            </div>
-            {Object.keys(validation.dropReasons).length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                {Object.entries(validation.dropReasons).map(([k, v]) => (
-                  <Badge key={k} variant="outline" className="font-normal">
-                    <AlertTriangle className="mr-1 h-3 w-3 text-warning" />
-                    {k}: {v.toLocaleString()}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {validation.topCodes.length > 0 && (
-              <div className="mt-3">
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Top codes</div>
-                <div className="flex flex-wrap gap-1.5 text-xs">
-                  {validation.topCodes.map(c => (
-                    <span key={c.code} className="rounded-md border bg-background px-2 py-0.5">
-                      <span className="font-medium">{c.code}</span>
-                      <span className="ml-1 text-muted-foreground">{fmt0(c.rows)} rows · {fmt1(c.hours)} hrs</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {(validationCoverage.missingClients.length > 0 || validationCoverage.dateGaps.length > 0) && (
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <MiniAuditList
-                  title="Clients missing assignment history"
-                  rows={validationCoverage.missingClients.slice(0, 10).map(c => [`${c.clientName || c.clientId}`, `${fmt1(c.hours)} hrs · ${fmt0(c.rows)} rows`])}
-                />
-                <MiniAuditList
-                  title="Clients with assignment date gaps"
-                  rows={validationCoverage.dateGaps.slice(0, 10).map(g => [g.clientName, g.detail])}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Saved reports */}
-        {savedList.length > 0 && (
-          <div className="rounded-xl border bg-card/60 p-4">
-            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Database className="h-3.5 w-3.5" /> Saved Reports
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {savedList.map(r => (
-                <div key={r.id} className="group flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-xs">
-                  <button className="font-medium hover:underline" onClick={() => handleRegenerate(r.id)}>{r.name}</button>
-                  <span className="text-muted-foreground">{r.rowCount.toLocaleString()} rows</span>
-                  <button
-                    className="opacity-60 hover:opacity-100"
-                    onClick={async () => { await deleteSavedReportV3(r.id); setSavedList(readSavedReportsV3()); }}
-                    title="Delete"
-                  ><Trash2 className="h-3 w-3" /></button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* KPIs */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
-          <KpiCard label="Total Hours" value={fmt1(kpis.totalHours)} />
-          <KpiCard label="97153 Hours" value={fmt1(kpis.h97153)} />
-          <KpiCard label="Direct BCBA Hours" value={fmt1(kpis.directHours)} />
-          <KpiCard label="Active Clients" value={fmt0(kpis.clients)} />
-          <KpiCard label="Active RBTs" value={fmt0(kpis.rbts)} />
-          <KpiCard label="Active BCBAs" value={fmt0(kpis.bcbas)} />
-          <KpiCard label="Unassigned Hours" value={fmt1(kpis.unassigned)} tone={kpis.unassigned > 0 ? "warn" : undefined} />
-          <KpiCard label="Dropped Rows" value={fmt0(validation?.droppedRowCount ?? 0)} tone={(validation?.droppedRowCount ?? 0) > 0 ? "warn" : undefined} />
-        </div>
+        {/* Setup / inferred banners stay above tabs */}
         {setupIncomplete && (
           <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning-foreground">
             <AlertTriangle className="mr-1.5 inline h-4 w-4" />
@@ -852,119 +740,253 @@ export default function BcbaProductivityReportV3() {
           </div>
         </div>
 
-        {/* Main BCBA table */}
-        <div className="overflow-hidden rounded-xl border">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="w-8 px-3 py-2"></th>
-                  <th className="px-3 py-2">BCBA</th>
-                  <th className="px-3 py-2 text-right">Total Hours</th>
-                  <th className="px-3 py-2 text-right">97153 Hours</th>
-                  <th className="px-3 py-2 text-right">Direct Hours</th>
-                  <th className="px-3 py-2 text-right">Clients</th>
-                  <th className="px-3 py-2 text-right">RBTs</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bcbaTable.length === 0 && (
-                  <tr><td colSpan={7} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                    Upload a billing report to populate productivity.
-                  </td></tr>
-                )}
-                {bcbaTable.map(b => {
-                  const open = !!expanded[b.bcba];
-                  return (
-                    <Row key={b.bcba} expanded={open} onToggle={() => setExpanded(s => ({ ...s, [b.bcba]: !open }))} bcba={b} />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* Main tabbed report */}
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="bcba">BCBA Summary</TabsTrigger>
+            <TabsTrigger value="supervision">Supervision</TabsTrigger>
+            <TabsTrigger value="clients">Clients &amp; RBTs</TabsTrigger>
+            <TabsTrigger value="upload">Upload Details</TabsTrigger>
+          </TabsList>
 
-        {/* Unassigned audit */}
-        {unassignedAudit.length > 0 && (
-          <div className="overflow-hidden rounded-xl border">
-            <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <AlertTriangle className="h-3.5 w-3.5" /> Unassigned Audit
+          <TabsContent value="overview" className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
+              <KpiCard label="Total Hours" value={fmt1(kpis.totalHours)} />
+              <KpiCard label="97153 Hours" value={fmt1(kpis.h97153)} />
+              <KpiCard label="Direct BCBA Hours" value={fmt1(kpis.directHours)} />
+              <KpiCard label="Supervision Hours" value={fmt1(kpis.supervisionHours)} />
+              <KpiCard label="Supervision %" value={fmtPct(kpis.supervisionHours, kpis.h97153)}
+                tone={supervisionTone(supervisionPctValue(kpis.supervisionHours, kpis.h97153)) === "danger" ? "warn" : undefined} />
+              <KpiCard label="Active BCBAs" value={fmt0(kpis.bcbas)} />
+              <KpiCard label="Active Clients" value={fmt0(kpis.clients)} />
+              <KpiCard label="Active RBTs" value={fmt0(kpis.rbts)} />
+            </div>
+            <OverviewCharts bcbaTable={bcbaTable} />
+          </TabsContent>
+
+          <TabsContent value="bcba" className="space-y-3">
+            <BcbaSummaryTable
+              bcbaTable={bcbaTable}
+              expanded={expanded}
+              setExpanded={setExpanded}
+            />
+          </TabsContent>
+
+          <TabsContent value="supervision" className="space-y-4">
+            <SupervisionTab bcbaTable={bcbaTable} />
+          </TabsContent>
+
+          <TabsContent value="clients" className="space-y-4">
+            <ClientsRbtsTab filtered={filtered} bcbaTable={bcbaTable} />
+          </TabsContent>
+
+          <TabsContent value="upload" className="space-y-4">
+            {/* Upload zone */}
+            <div
+              className={cn(
+                "rounded-2xl border-2 border-dashed p-6 transition",
+                dragOver ? "border-primary bg-primary/5" : "border-border bg-card/40",
+              )}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+            >
+              <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
+                <div className="rounded-xl bg-primary/10 p-3 text-primary"><Upload className="h-6 w-6" /></div>
+                <div className="flex-1">
+                  <div className="font-medium">
+                    {fileName ? `Loaded: ${fileName}` : "Upload a single Billing Report (CSV or XLSX)"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {rows.length > 0
+                      ? `${rows.length.toLocaleString()} rows accepted · ${
+                          assignments.length
+                            ? "ownership resolved via saved Assignment History"
+                            : usingInferred
+                              ? `ownership inferred from this billing report (${inferred.assignments.length} assignments, ${inferred.uniqueBcbas} BCBAs)`
+                              : "Assignment History setup required"
+                        }`
+                      : "Drag a file here, or click choose."}
+                  </div>
+                  {missingCols.length > 0 && (
+                    <div className="mt-2 text-xs text-destructive">Missing columns: {missingCols.join(", ")}</div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    ref={inputRef} type="file" hidden accept={SUPPORTED_EXTENSIONS}
+                    onChange={(e) => handleFiles(e.target.files)}
+                  />
+                  <Button size="sm" onClick={() => inputRef.current?.click()} disabled={loading}>
+                    <FileSpreadsheet className="mr-2 h-4 w-4" /> {loading ? "Parsing…" : "Choose file"}
+                  </Button>
+                </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={exportUnassignedCsv}>
-                <Download className="mr-1.5 h-3.5 w-3.5" /> Export
-              </Button>
             </div>
-            <div className="max-h-80 overflow-auto">
-              <table className="w-full min-w-[980px] text-sm">
-                <thead className="sticky top-0 bg-background text-left text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2">Client</th><th className="px-3 py-2">Client ID</th><th className="px-3 py-2">DOS</th>
-                    <th className="px-3 py-2">Code</th><th className="px-3 py-2">Rendering Provider</th><th className="px-3 py-2 text-right">Hours</th>
-                    <th className="px-3 py-2">State</th><th className="px-3 py-2">Payor</th><th className="px-3 py-2">Reason</th><th className="px-3 py-2"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {unassignedAudit.slice(0, 250).map((r, i) => (
-                    <tr key={`${r.clientId}-${r.clientName}-${r.date}-${i}`} className="border-t">
-                      <td className="px-3 py-2 font-medium">{r.clientName}</td><td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.clientId || "—"}</td>
-                      <td className="px-3 py-2">{r.date}</td><td className="px-3 py-2">{r.code}</td><td className="px-3 py-2">{r.renderingProvider || "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.hours)}</td><td className="px-3 py-2">{r.state || "—"}</td><td className="px-3 py-2">{r.payor || "—"}</td>
-                      <td className="px-3 py-2">{r.reason}</td>
-                      <td className="px-3 py-2 text-right">
-                        <Button variant="ghost" size="sm" onClick={() => openClientHistory(r)}>
-                          <History className="mr-1.5 h-3.5 w-3.5" /> Open history
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => startAssignmentForRow(r)}>
-                          <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Create assignment
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
-        {/* Transfer audit */}
-        <div className="overflow-hidden rounded-xl border">
-          <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <ArrowLeftRight className="h-3.5 w-3.5" /> Transfer Audit
-            </div>
-            <Button variant="ghost" size="sm" onClick={exportTransfersCsv} disabled={!transfers.length}>
-              <Download className="mr-1.5 h-3.5 w-3.5" /> Export
-            </Button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
-              <thead className="bg-background text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2">Client</th>
-                  <th className="px-3 py-2">Previous BCBA</th>
-                  <th className="px-3 py-2">New BCBA</th>
-                  <th className="px-3 py-2">Transfer Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transfers.length === 0 && (
-                  <tr><td colSpan={4} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                    No transfers yet. Add a new assignment for a client to create a transfer event.
-                  </td></tr>
+            {validation && (
+              <div className="rounded-xl border bg-card/60 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Upload Validation
+                  </div>
+                  <div className="text-xs text-muted-foreground">{validation.fileName}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
+                  <ValPill label="Raw rows" value={fmt0(validation.rawRowCount)} />
+                  <ValPill label="Accepted" value={fmt0(validation.acceptedRowCount)} />
+                  <ValPill label="Dropped" value={fmt0(validation.droppedRowCount)} tone={validation.droppedRowCount ? "warn" : undefined} />
+                  <ValPill label="Total hours" value={fmt1(validation.totalHours)} />
+                  <ValPill label="Date range" value={validation.dateMin && validation.dateMax ? `${validation.dateMin} → ${validation.dateMax}` : "—"} />
+                  <ValPill label="Unique clients" value={fmt0(validation.uniqueClients)} />
+                  <ValPill label="Unique providers" value={fmt0(validation.uniqueProviders)} />
+                  <ValPill label="Assignment rows" value={fmt0(validationCoverage.assignmentRows)} tone={!validationCoverage.assignmentRows ? "warn" : undefined} />
+                  <ValPill label="Assigned rows" value={fmt0(validationCoverage.assignedRows)} />
+                  <ValPill label="Assigned hours" value={fmt1(validationCoverage.assignedHours)} />
+                  <ValPill label="Unassigned rows" value={fmt0(validationCoverage.unassignedRows)} tone={validationCoverage.unassignedRows ? "warn" : undefined} />
+                  <ValPill label="Unassigned hours" value={fmt1(validationCoverage.unassignedHours)} tone={validationCoverage.unassignedHours ? "warn" : undefined} />
+                </div>
+                {Object.keys(validation.dropReasons).length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    {Object.entries(validation.dropReasons).map(([k, v]) => (
+                      <Badge key={k} variant="outline" className="font-normal">
+                        <AlertTriangle className="mr-1 h-3 w-3 text-warning" />
+                        {k}: {v.toLocaleString()}
+                      </Badge>
+                    ))}
+                  </div>
                 )}
-                {transfers.map((t, i) => (
-                  <tr key={i} className="border-t">
-                    <td className="px-3 py-2">{t.clientName}</td>
-                    <td className="px-3 py-2">{t.previousBcba}</td>
-                    <td className="px-3 py-2">{t.newBcba}</td>
-                    <td className="px-3 py-2">{t.transferDate}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                {validation.topCodes.length > 0 && (
+                  <div className="mt-3">
+                    <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Top codes</div>
+                    <div className="flex flex-wrap gap-1.5 text-xs">
+                      {validation.topCodes.map(c => (
+                        <span key={c.code} className="rounded-md border bg-background px-2 py-0.5">
+                          <span className="font-medium">{c.code}</span>
+                          <span className="ml-1 text-muted-foreground">{fmt0(c.rows)} rows · {fmt1(c.hours)} hrs</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(validationCoverage.missingClients.length > 0 || validationCoverage.dateGaps.length > 0) && (
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <MiniAuditList
+                      title="Clients missing assignment history"
+                      rows={validationCoverage.missingClients.slice(0, 10).map(c => [`${c.clientName || c.clientId}`, `${fmt1(c.hours)} hrs · ${fmt0(c.rows)} rows`])}
+                    />
+                    <MiniAuditList
+                      title="Clients with assignment date gaps"
+                      rows={validationCoverage.dateGaps.slice(0, 10).map(g => [g.clientName, g.detail])}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {savedList.length > 0 && (
+              <div className="rounded-xl border bg-card/60 p-4">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Database className="h-3.5 w-3.5" /> Saved Reports
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {savedList.map(r => (
+                    <div key={r.id} className="group flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-xs">
+                      <button className="font-medium hover:underline" onClick={() => handleRegenerate(r.id)}>{r.name}</button>
+                      <span className="text-muted-foreground">{r.rowCount.toLocaleString()} rows</span>
+                      <button
+                        className="opacity-60 hover:opacity-100"
+                        onClick={async () => { await deleteSavedReportV3(r.id); setSavedList(readSavedReportsV3()); }}
+                        title="Delete"
+                      ><Trash2 className="h-3 w-3" /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {unassignedAudit.length > 0 && (
+              <div className="overflow-hidden rounded-xl border">
+                <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <AlertTriangle className="h-3.5 w-3.5" /> Unassigned Audit
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={exportUnassignedCsv}>
+                    <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+                  </Button>
+                </div>
+                <div className="max-h-80 overflow-auto">
+                  <table className="w-full min-w-[980px] text-sm">
+                    <thead className="sticky top-0 bg-background text-left text-xs uppercase tracking-wider text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2">Client</th><th className="px-3 py-2">Client ID</th><th className="px-3 py-2">DOS</th>
+                        <th className="px-3 py-2">Code</th><th className="px-3 py-2">Rendering Provider</th><th className="px-3 py-2 text-right">Hours</th>
+                        <th className="px-3 py-2">State</th><th className="px-3 py-2">Payor</th><th className="px-3 py-2">Reason</th><th className="px-3 py-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {unassignedAudit.slice(0, 250).map((r, i) => (
+                        <tr key={`${r.clientId}-${r.clientName}-${r.date}-${i}`} className="border-t">
+                          <td className="px-3 py-2 font-medium">{r.clientName}</td><td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.clientId || "—"}</td>
+                          <td className="px-3 py-2">{r.date}</td><td className="px-3 py-2">{r.code}</td><td className="px-3 py-2">{r.renderingProvider || "—"}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.hours)}</td><td className="px-3 py-2">{r.state || "—"}</td><td className="px-3 py-2">{r.payor || "—"}</td>
+                          <td className="px-3 py-2">{r.reason}</td>
+                          <td className="px-3 py-2 text-right">
+                            <Button variant="ghost" size="sm" onClick={() => openClientHistory(r)}>
+                              <History className="mr-1.5 h-3.5 w-3.5" /> Open history
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => startAssignmentForRow(r)}>
+                              <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Create assignment
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-hidden rounded-xl border">
+              <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <ArrowLeftRight className="h-3.5 w-3.5" /> Transfer Audit
+                </div>
+                <Button variant="ghost" size="sm" onClick={exportTransfersCsv} disabled={!transfers.length}>
+                  <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+                </Button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-sm">
+                  <thead className="bg-background text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2">Client</th>
+                      <th className="px-3 py-2">Previous BCBA</th>
+                      <th className="px-3 py-2">New BCBA</th>
+                      <th className="px-3 py-2">Transfer Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transfers.length === 0 && (
+                      <tr><td colSpan={4} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                        No transfers yet. Add a new assignment for a client to create a transfer event.
+                      </td></tr>
+                    )}
+                    {transfers.map((t, i) => (
+                      <tr key={i} className="border-t">
+                        <td className="px-3 py-2">{t.clientName}</td>
+                        <td className="px-3 py-2">{t.previousBcba}</td>
+                        <td className="px-3 py-2">{t.newBcba}</td>
+                        <td className="px-3 py-2">{t.transferDate}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Assignment history drawer */}
@@ -1229,9 +1251,11 @@ function FilterSelect({ label, value, onChange, options }: {
 }
 function Row({ bcba, expanded, onToggle }: {
   bcba: { bcba: string; isUnassigned: boolean; totalHours: number; h97153: number; directHours: number;
-          clients: Map<string, number>; rbts: Map<string, number>; codes: Map<string, number>; rows: OwnedRow[]; };
+          supervisionHours: number; clients: Map<string, number>; rbts: Map<string, number>; codes: Map<string, number>; rows: OwnedRow[]; };
   expanded: boolean; onToggle: () => void;
 }) {
+  const pct = supervisionPctValue(bcba.supervisionHours, bcba.h97153);
+  const tone = supervisionTone(pct);
   return (
     <>
       <tr className={cn("border-t hover:bg-muted/30", bcba.isUnassigned && "bg-warning/10")}>
@@ -1247,13 +1271,19 @@ function Row({ bcba, expanded, onToggle }: {
         <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.totalHours)}</td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.h97153)}</td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.directHours)}</td>
+        <td className="px-3 py-2 text-right tabular-nums">{fmt1(bcba.supervisionHours)}</td>
+        <td className={cn("px-3 py-2 text-right tabular-nums font-medium",
+          tone === "danger" && "text-destructive",
+          tone === "warn" && "text-warning-foreground",
+          tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+        )}>{pct === null ? "—" : `${pct.toFixed(1)}%`}</td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt0(bcba.clients.size)}</td>
         <td className="px-3 py-2 text-right tabular-nums">{fmt0(bcba.rbts.size)}</td>
       </tr>
       {expanded && (
         <tr className="bg-muted/10">
           <td></td>
-          <td colSpan={6} className="px-3 py-3">
+          <td colSpan={8} className="px-3 py-3">
             <div className="grid gap-4 md:grid-cols-3">
               <DrillList title="Clients" items={[...bcba.clients.entries()]} />
               <DrillList title="RBTs / Rendering Providers" items={[...bcba.rbts.entries()]} />
@@ -1584,6 +1614,411 @@ function OwnershipConflictsTable({ conflicts }: { conflicts: OwnershipConflict[]
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/* ---------- new tab subcomponents ---------- */
+type BcbaTableRow = {
+  bcba: string; isUnassigned: boolean; totalHours: number; h97153: number; directHours: number;
+  supervisionHours: number; clients: Map<string, number>; rbts: Map<string, number>;
+  codes: Map<string, number>; rows: OwnedRow[];
+};
+
+const CHART_TICK = { fontSize: 11 };
+
+function OverviewCharts({ bcbaTable }: { bcbaTable: BcbaTableRow[] }) {
+  const real = bcbaTable.filter(b => !b.isUnassigned);
+  const byHours = [...real].sort((a, b) => b.totalHours - a.totalHours).slice(0, 12);
+  const top10 = [...real].sort((a, b) => b.totalHours - a.totalHours).slice(0, 10)
+    .map(b => ({ name: b.bcba, hours: +b.totalHours.toFixed(1) }));
+  const stacked = byHours.map(b => ({
+    name: b.bcba,
+    "97153": +b.h97153.toFixed(1),
+    "Direct": +Math.max(0, b.directHours - b.supervisionHours).toFixed(1),
+    "Supervision": +b.supervisionHours.toFixed(1),
+  }));
+  const supPct = real.map(b => ({
+    name: b.bcba,
+    pct: supervisionPctValue(b.supervisionHours, b.h97153) ?? 0,
+    has: supervisionPctValue(b.supervisionHours, b.h97153) !== null,
+  })).filter(x => x.has).sort((a, b) => b.pct - a.pct).slice(0, 20);
+  const tooltipFmt = (v: any) => typeof v === "number" ? v.toLocaleString(undefined, { maximumFractionDigits: 1 }) : v;
+
+  if (!real.length) {
+    return <div className="rounded-xl border bg-card/40 p-10 text-center text-sm text-muted-foreground">Upload a billing report to see charts.</div>;
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <ChartShell title="Hours by BCBA">
+        <BarChart data={byHours.map(b => ({ name: b.bcba, hours: +b.totalHours.toFixed(1) }))}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+          <XAxis dataKey="name" tick={CHART_TICK} interval={0} angle={-30} textAnchor="end" height={70} />
+          <YAxis tick={CHART_TICK} tickFormatter={(v) => v.toLocaleString()} />
+          <Tooltip formatter={tooltipFmt} />
+          <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ChartShell>
+      <ChartShell title="97153 vs Direct vs Supervision">
+        <BarChart data={stacked}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+          <XAxis dataKey="name" tick={CHART_TICK} interval={0} angle={-30} textAnchor="end" height={70} />
+          <YAxis tick={CHART_TICK} tickFormatter={(v) => v.toLocaleString()} />
+          <Tooltip formatter={tooltipFmt} />
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Bar dataKey="97153" stackId="a" fill="hsl(var(--primary))" />
+          <Bar dataKey="Direct" stackId="a" fill="hsl(var(--muted-foreground))" />
+          <Bar dataKey="Supervision" stackId="a" fill="#10b981" />
+        </BarChart>
+      </ChartShell>
+      <ChartShell title="Top 10 BCBAs by total hours">
+        <BarChart data={top10} layout="vertical">
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+          <XAxis type="number" tick={CHART_TICK} tickFormatter={(v) => v.toLocaleString()} />
+          <YAxis type="category" dataKey="name" tick={CHART_TICK} width={120} />
+          <Tooltip formatter={tooltipFmt} />
+          <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+        </BarChart>
+      </ChartShell>
+      <ChartShell title="Supervision % by BCBA">
+        <BarChart data={supPct}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+          <XAxis dataKey="name" tick={CHART_TICK} interval={0} angle={-30} textAnchor="end" height={70} />
+          <YAxis tick={CHART_TICK} tickFormatter={(v) => `${v}%`} />
+          <Tooltip formatter={(v: any) => `${Number(v).toFixed(1)}%`} />
+          <Bar dataKey="pct" radius={[4, 4, 0, 0]}>
+            {supPct.map((d, i) => {
+              const tone = supervisionTone(d.pct);
+              const color = tone === "danger" ? "hsl(var(--destructive))"
+                : tone === "warn" ? "#eab308" : "#10b981";
+              return <Cell key={i} fill={color} />;
+            })}
+          </Bar>
+        </BarChart>
+      </ChartShell>
+    </div>
+  );
+}
+
+function ChartShell({ title, children }: { title: string; children: React.ReactElement }) {
+  return (
+    <div className="rounded-xl border bg-card/60 p-4">
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+      <div className="h-72">
+        <ResponsiveContainer width="100%" height="100%">
+          {children}
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+type SortKey = "bcba" | "totalHours" | "h97153" | "directHours" | "supervisionHours" | "supervisionPct" | "clients" | "rbts";
+
+function BcbaSummaryTable({ bcbaTable, expanded, setExpanded }: {
+  bcbaTable: BcbaTableRow[];
+  expanded: Record<string, boolean>;
+  setExpanded: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+}) {
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "totalHours", dir: "desc" });
+  const sorted = useMemo(() => {
+    const arr = [...bcbaTable];
+    arr.sort((a, b) => {
+      const dir = sort.dir === "asc" ? 1 : -1;
+      const av = sortValue(a, sort.key);
+      const bv = sortValue(b, sort.key);
+      if (av === bv) return 0;
+      if (typeof av === "string") return av.localeCompare(String(bv)) * dir;
+      return ((av as number) - (bv as number)) * dir;
+    });
+    return arr;
+  }, [bcbaTable, sort]);
+
+  const SortHeader = ({ k, label, align = "right" }: { k: SortKey; label: string; align?: "left" | "right" }) => (
+    <th className={cn("px-3 py-2 cursor-pointer select-none", align === "right" ? "text-right" : "text-left")}
+        onClick={() => setSort(s => s.key === k ? { key: k, dir: s.dir === "asc" ? "desc" : "asc" } : { key: k, dir: "desc" })}>
+      {label}{sort.key === k ? (sort.dir === "asc" ? " ▲" : " ▼") : ""}
+    </th>
+  );
+
+  return (
+    <div className="overflow-hidden rounded-xl border">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[920px] text-sm">
+          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="w-8 px-3 py-2"></th>
+              <SortHeader k="bcba" label="BCBA" align="left" />
+              <SortHeader k="totalHours" label="Total Hours" />
+              <SortHeader k="h97153" label="97153 Hours" />
+              <SortHeader k="directHours" label="Direct Hours" />
+              <SortHeader k="supervisionHours" label="Supervision Hours" />
+              <SortHeader k="supervisionPct" label="Supervision %" />
+              <SortHeader k="clients" label="Clients" />
+              <SortHeader k="rbts" label="RBTs" />
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.length === 0 && (
+              <tr><td colSpan={9} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                Upload a billing report to populate productivity.
+              </td></tr>
+            )}
+            {sorted.map(b => {
+              const open = !!expanded[b.bcba];
+              return (
+                <Row key={b.bcba} expanded={open} onToggle={() => setExpanded(s => ({ ...s, [b.bcba]: !open }))} bcba={b} />
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function sortValue(b: BcbaTableRow, k: SortKey): string | number {
+  switch (k) {
+    case "bcba": return b.bcba.toLowerCase();
+    case "totalHours": return b.totalHours;
+    case "h97153": return b.h97153;
+    case "directHours": return b.directHours;
+    case "supervisionHours": return b.supervisionHours;
+    case "supervisionPct": return supervisionPctValue(b.supervisionHours, b.h97153) ?? -1;
+    case "clients": return b.clients.size;
+    case "rbts": return b.rbts.size;
+  }
+}
+
+function SupervisionTab({ bcbaTable }: { bcbaTable: BcbaTableRow[] }) {
+  const rows = bcbaTable.filter(b => !b.isUnassigned);
+  const withPct = rows.map(b => ({
+    ...b, pct: supervisionPctValue(b.supervisionHours, b.h97153),
+  }));
+  const lowest = [...withPct].filter(r => r.pct !== null).sort((a, b) => (a.pct! - b.pct!)).slice(0, 10);
+  const highHoursLowSup = [...withPct].filter(r => r.pct !== null && r.pct < 10)
+    .sort((a, b) => b.h97153 - a.h97153).slice(0, 10);
+  const byPct = [...withPct].filter(r => r.pct !== null).sort((a, b) => b.pct! - a.pct!);
+
+  const tooltipPct = (v: any) => `${Number(v).toFixed(1)}%`;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ChartShell title="Supervision % by BCBA">
+          <BarChart data={byPct.map(r => ({ name: r.bcba, pct: +(r.pct ?? 0).toFixed(1) }))}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <XAxis dataKey="name" tick={CHART_TICK} interval={0} angle={-30} textAnchor="end" height={70} />
+            <YAxis tick={CHART_TICK} tickFormatter={(v) => `${v}%`} />
+            <Tooltip formatter={tooltipPct} />
+            <Bar dataKey="pct" radius={[4, 4, 0, 0]}>
+              {byPct.map((d, i) => {
+                const tone = supervisionTone(d.pct);
+                const color = tone === "danger" ? "hsl(var(--destructive))"
+                  : tone === "warn" ? "#eab308" : "#10b981";
+                return <Cell key={i} fill={color} />;
+              })}
+            </Bar>
+          </BarChart>
+        </ChartShell>
+        <ChartShell title="Lowest supervision % BCBAs">
+          <BarChart data={lowest.map(r => ({ name: r.bcba, pct: +(r.pct ?? 0).toFixed(1) }))} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <XAxis type="number" tick={CHART_TICK} tickFormatter={(v) => `${v}%`} />
+            <YAxis type="category" dataKey="name" tick={CHART_TICK} width={120} />
+            <Tooltip formatter={tooltipPct} />
+            <Bar dataKey="pct" fill="hsl(var(--destructive))" radius={[0, 4, 4, 0]} />
+          </BarChart>
+        </ChartShell>
+        <ChartShell title="High 97153 hours with low supervision %">
+          <BarChart data={highHoursLowSup.map(r => ({ name: r.bcba, hours: +r.h97153.toFixed(1), pct: +(r.pct ?? 0).toFixed(1) }))}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <XAxis dataKey="name" tick={CHART_TICK} interval={0} angle={-30} textAnchor="end" height={70} />
+            <YAxis tick={CHART_TICK} tickFormatter={(v) => v.toLocaleString()} />
+            <Tooltip formatter={(v: any, n: any) => n === "pct" ? `${Number(v).toFixed(1)}%` : Number(v).toLocaleString(undefined, { maximumFractionDigits: 1 })} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Bar dataKey="hours" name="97153 Hours" fill="hsl(var(--primary))" />
+          </BarChart>
+        </ChartShell>
+        <SupervisionLegend />
+      </div>
+
+      <div className="overflow-hidden rounded-xl border">
+        <table className="w-full min-w-[820px] text-sm">
+          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2">BCBA</th>
+              <th className="px-3 py-2 text-right">97153 Hours</th>
+              <th className="px-3 py-2 text-right">Supervision Hours</th>
+              <th className="px-3 py-2 text-right">Supervision %</th>
+              <th className="px-3 py-2 text-right">Clients</th>
+              <th className="px-3 py-2 text-right">RBTs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">No data.</td></tr>
+            )}
+            {[...withPct].sort((a, b) => (a.pct ?? 999) - (b.pct ?? 999)).map(r => {
+              const tone = supervisionTone(r.pct);
+              return (
+                <tr key={r.bcba} className="border-t">
+                  <td className="px-3 py-2 font-medium">{r.bcba}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.h97153)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.supervisionHours)}</td>
+                  <td className={cn("px-3 py-2 text-right tabular-nums font-medium",
+                    tone === "danger" && "text-destructive",
+                    tone === "warn" && "text-warning-foreground",
+                    tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+                  )}>
+                    {r.pct === null ? "—" : `${r.pct.toFixed(1)}%`}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt0(r.clients.size)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt0(r.rbts.size)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SupervisionLegend() {
+  return (
+    <div className="rounded-xl border bg-card/60 p-4 text-sm">
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Supervision % thresholds</div>
+      <ul className="space-y-2">
+        <li className="flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-sm bg-destructive" /> Under 5% — urgent</li>
+        <li className="flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-sm" style={{ background: "#eab308" }} /> 5%–10% — monitor</li>
+        <li className="flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-sm" style={{ background: "#10b981" }} /> 10% or higher — healthy</li>
+      </ul>
+      <div className="mt-3 text-xs text-muted-foreground">
+        Supervision % = 97155 hours ÷ 97153 hours × 100. Shown as “—” when a BCBA has no 97153 hours to supervise.
+      </div>
+    </div>
+  );
+}
+
+function ClientsRbtsTab({ filtered, bcbaTable }: { filtered: OwnedRow[]; bcbaTable: BcbaTableRow[] }) {
+  const real = bcbaTable.filter(b => !b.isUnassigned);
+
+  const clientByCode = useMemo(() => {
+    const m = new Map<string, { client: string; codes: Map<string, number>; total: number }>();
+    for (const r of filtered) {
+      const key = r.clientName;
+      const v = m.get(key) || { client: key, codes: new Map<string, number>(), total: 0 };
+      v.codes.set(r.code, (v.codes.get(r.code) || 0) + r.hours);
+      v.total += r.hours;
+      m.set(key, v);
+    }
+    return [...m.values()].sort((a, b) => b.total - a.total).slice(0, 100);
+  }, [filtered]);
+
+  const rbtHours = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of filtered) {
+      if (r.is97153 && r.renderingProvider) {
+        m.set(r.renderingProvider, (m.get(r.renderingProvider) || 0) + r.hours);
+      }
+    }
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  }, [filtered]);
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Panel title="BCBA → Clients">
+        <div className="max-h-[420px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr><th className="px-3 py-2">BCBA</th><th className="px-3 py-2">Clients</th><th className="px-3 py-2 text-right">Hours</th></tr>
+            </thead>
+            <tbody>
+              {real.map(b => (
+                <tr key={b.bcba} className="border-t align-top">
+                  <td className="px-3 py-2 font-medium">{b.bcba}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">
+                    {[...b.clients.keys()].slice(0, 12).join(", ")}{b.clients.size > 12 ? ` +${b.clients.size - 12} more` : ""}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(b.totalHours)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+      <Panel title="BCBA → RBTs">
+        <div className="max-h-[420px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr><th className="px-3 py-2">BCBA</th><th className="px-3 py-2">RBTs</th><th className="px-3 py-2 text-right">97153 Hours</th></tr>
+            </thead>
+            <tbody>
+              {real.map(b => (
+                <tr key={b.bcba} className="border-t align-top">
+                  <td className="px-3 py-2 font-medium">{b.bcba}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">
+                    {[...b.rbts.keys()].slice(0, 12).join(", ")}{b.rbts.size > 12 ? ` +${b.rbts.size - 12} more` : ""}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(b.h97153)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+      <Panel title="Client → Hours by Code">
+        <div className="max-h-[420px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr><th className="px-3 py-2">Client</th><th className="px-3 py-2">Codes</th><th className="px-3 py-2 text-right">Total</th></tr>
+            </thead>
+            <tbody>
+              {clientByCode.map(c => (
+                <tr key={c.client} className="border-t align-top">
+                  <td className="px-3 py-2 font-medium">{c.client}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">
+                    {[...c.codes.entries()].sort((a, b) => b[1] - a[1])
+                      .map(([k, v]) => `${k}: ${fmt1(v)}`).join(" · ")}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(c.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+      <Panel title="RBT → 97153 Hours">
+        <div className="max-h-[420px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr><th className="px-3 py-2">RBT</th><th className="px-3 py-2 text-right">97153 Hours</th></tr>
+            </thead>
+            <tbody>
+              {rbtHours.length === 0 && (
+                <tr><td colSpan={2} className="px-3 py-6 text-center text-muted-foreground">No 97153 rows.</td></tr>
+              )}
+              {rbtHours.map(([name, hours]) => (
+                <tr key={name} className="border-t">
+                  <td className="px-3 py-2 font-medium">{name}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(hours)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-xl border bg-card/60">
+      <div className="border-b bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+      {children}
     </div>
   );
 }
