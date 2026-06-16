@@ -196,9 +196,21 @@ function NextActionCard({ module: m }: { module: RBTModule }) {
 
 function Ownership() {
   return (
-    <section className="grid gap-3 sm:grid-cols-2">
-      <OwnerCard icon={Compass} role={RBT_OWNERSHIP.leadTrainer.name} name={RBT_OWNERSHIP.leadTrainer.placeholder} note={RBT_OWNERSHIP.leadTrainer.role} />
-      <OwnerCard icon={UserCircle2} role={RBT_OWNERSHIP.bcba.name} name={RBT_OWNERSHIP.bcba.placeholder} note={RBT_OWNERSHIP.bcba.role} />
+    <section className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <OwnerCard icon={Compass} role={RBT_OWNERSHIP.leadTrainer.name} name={RBT_OWNERSHIP.leadTrainer.placeholder} note={RBT_OWNERSHIP.leadTrainer.role} />
+        <OwnerCard icon={UserCircle2} role={RBT_OWNERSHIP.bcba.name} name={RBT_OWNERSHIP.bcba.placeholder} note={RBT_OWNERSHIP.bcba.role} />
+      </div>
+      <Link
+        to="/training/rbt-readiness"
+        className="flex items-center justify-between rounded-2xl border border-border/70 bg-secondary/50 p-4 text-sm transition hover:bg-muted"
+      >
+        <span className="flex items-center gap-2 font-medium text-foreground">
+          <ShieldCheck className="size-4 text-primary" />
+          Trainer & Scheduling · RBT Readiness Board
+        </span>
+        <ArrowRight className="size-4 text-muted-foreground" />
+      </Link>
     </section>
   );
 }
