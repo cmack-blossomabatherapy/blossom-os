@@ -621,15 +621,20 @@ export function AppSidebar({
                         return (
                           <Tooltip key={item.path}>
                             <TooltipTrigger asChild>
-                              <button type="button" onClick={(e) => e.preventDefault()} aria-disabled="true" className={cn("nav-item nav-item-disabled w-full")}>
-                                <Lock className="h-4 w-4 shrink-0" />
-                                <span className="truncate">{item.label}</span>
-                                {item.comingSoon && (
+                              {item.comingSoon ? (
+                                <NavLink to={item.path} className={cn("nav-item w-full opacity-80 hover:opacity-100")}>
+                                  <Lock className="h-4 w-4 shrink-0" />
+                                  <span className="truncate">{item.label}</span>
                                   <span className="ml-auto rounded-full bg-sidebar-accent/40 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-sidebar-foreground/70">
                                     Soon
                                   </span>
-                                )}
-                              </button>
+                                </NavLink>
+                              ) : (
+                                <button type="button" onClick={(e) => e.preventDefault()} aria-disabled="true" className={cn("nav-item nav-item-disabled w-full")}>
+                                  <Lock className="h-4 w-4 shrink-0" />
+                                  <span className="truncate">{item.label}</span>
+                                </button>
+                              )}
                             </TooltipTrigger>
                             <TooltipContent side="right">
                               {item.comingSoon ? "Coming soon" : "Access restricted"}
