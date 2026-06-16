@@ -175,9 +175,10 @@ export const RBT_PATHS: RBTPath[] = [
       { id: "so-2", label: "Clinical Skills Role Play passed", owner: "Lead RBT Trainer", required: true, status: "pending" },
       { id: "so-3", label: "Client-Based Competency Assessment passed", owner: "BCBA", required: true, status: "pending" },
       { id: "so-4", label: "Assistance Test passed", owner: "Lead RBT Trainer", required: true, status: "pending" },
-      { id: "so-5", label: "Mock Session Note approved", owner: "Lead RBT Trainer", required: true, status: "pending" },
+      { id: "so-5", label: "Mock Session Note approved", owner: "Documentation Reviewer", required: true, status: "pending" },
       { id: "so-6", label: "Full Session With Lead RBT signoff", owner: "Lead RBT Trainer", required: true, status: "pending" },
       { id: "so-7", label: "BCBA Final Readiness signoff", owner: "BCBA", required: true, status: "pending" },
+      { id: "so-8", label: "Training Admin file & compliance review", owner: "Training Admin", required: true, status: "pending" },
     ],
   },
   {
@@ -224,9 +225,10 @@ export const RBT_PATHS: RBTPath[] = [
     signoffs: [
       { id: "so-1", label: "Welcome to Blossom complete", owner: "Operations", required: true, status: "pending" },
       { id: "so-2", label: "Lead RBT Role Play passed", owner: "Lead RBT Trainer", required: true, status: "pending" },
-      { id: "so-3", label: "Shadow & reflection reviewed", owner: "Lead RBT Trainer", required: true, status: "pending" },
+      { id: "so-3", label: "Shadow & reflection reviewed", owner: "Documentation Reviewer", required: true, status: "pending" },
       { id: "so-4", label: "Full Session With Lead RBT signoff", owner: "Lead RBT Trainer", required: true, status: "pending" },
       { id: "so-5", label: "BCBA Readiness Observation signoff", owner: "BCBA", required: true, status: "pending" },
+      { id: "so-6", label: "Training Admin file & compliance review", owner: "Training Admin", required: true, status: "pending" },
     ],
   },
   {
@@ -276,6 +278,7 @@ export const RBT_PATHS: RBTPath[] = [
       { id: "so-3", label: "ABA Concept Check passed", owner: "Lead RBT Trainer", required: true, status: "pending" },
       { id: "so-4", label: "Assigned gap modules complete (if any)", owner: "Lead RBT Trainer", required: false, status: "pending" },
       { id: "so-5", label: "Day 2 BCBA Supervision signoff", owner: "BCBA", required: true, status: "pending" },
+      { id: "so-6", label: "Training Admin file & compliance review", owner: "Training Admin", required: true, status: "pending" },
     ],
   },
   {
@@ -319,6 +322,7 @@ export const RBT_PATHS: RBTPath[] = [
       { id: "so-3", label: "Client-specific protocol review with BCBA", owner: "BCBA", required: true, status: "pending" },
       { id: "so-4", label: "Experienced RBT Readiness Signoff", owner: "Lead RBT Trainer", required: true, status: "pending" },
       { id: "so-5", label: "Optional · Lead RBT / Mentor track complete", owner: "Lead RBT Trainer", required: false, status: "pending" },
+      { id: "so-6", label: "Training Admin file & compliance review", owner: "Training Admin", required: true, status: "pending" },
     ],
   },
 ];
