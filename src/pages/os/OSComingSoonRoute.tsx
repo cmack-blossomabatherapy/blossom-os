@@ -101,10 +101,10 @@ function ModuleWireframe({ def, moduleName }: { def: ModuleDefinition; moduleNam
               <Users className="h-3 w-3" /> {def.ownerRole}
             </span>
           </div>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">{def.title}</h1>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">{moduleName}</h1>
           <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">{def.purpose}</p>
           {moduleName !== def.title && (
-            <p className="mt-1 text-xs text-muted-foreground">Requested module: {moduleName}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Part of {def.title}</p>
           )}
           {def.relatedModules && def.relatedModules.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-1.5">
