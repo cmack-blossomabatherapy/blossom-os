@@ -150,7 +150,7 @@ export function PhoneDashboard() {
 
       <div className="grid gap-4 md:grid-cols-3 mt-4">
         <StatCard label="Open Change Requests"   value={openRequests.length}  icon={CalendarClock} />
-        <StatCard label="After-Hours AI Calls"   value={retellCalls.length}   icon={Moon} />
+        <StatCard label="After-Hours Calls"   value={retellCalls.length}   icon={Moon} />
         <StatCard label="Calls Needing Follow-Up" value={followUpCalls.length} icon={AlertTriangle} />
       </div>
 
@@ -188,8 +188,8 @@ export function PhoneDashboard() {
             <QuickLink to="/phone/directory" label="Routing Directory" />
             <QuickLink to="/phone/shared"    label="Shared Routing" />
             <QuickLink to="/phone/requests"  label="Change Requests" />
-            <QuickLink to="/phone/ai-calls"  label="After-Hours AI Calls" />
-            <QuickLink to="/phone/ai-calls/audit" label="AI Calls — Email Audit Log" />
+            <QuickLink to="/phone/ai-calls"  label="After-Hours Calls" />
+            <QuickLink to="/phone/ai-calls/audit" label="Call Email Audit" />
             <QuickLink to="/phone/admin"     label="Admin Settings" />
           </CardContent>
         </Card>

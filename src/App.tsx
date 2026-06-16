@@ -47,6 +47,7 @@ import BcbaProductivityReport from "./pages/os/reports/BcbaProductivityReport";
 import BcbaProductivityReportV3 from "./pages/os/reports/BcbaProductivityReportV3";
 import CancellationCommandCenter from "./pages/os/reports/CancellationCommandCenter";
 import OSComingSoon from "./pages/os/OSComingSoon";
+import OSComingSoonRoute from "./pages/os/OSComingSoonRoute";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
 
@@ -784,6 +785,7 @@ const App = () => (
                   <Route path="/onboarding/complete" element={<OnboardingComplete />} />
                   <Route path="/help" element={<HelpPage />} />
                   <Route path="/dashboard" element={<RoleDashboardRedirect />} />
+                  <Route path="/coming-soon" element={<OSComingSoonRoute />} />
                   <Route path="/blossom/academy" element={<Navigate to="/academy" replace />} />
                   <Route path="/blossom/academy/:trackId" element={<TrackDetail />} />
                   <Route path="/blossom/departments" element={<Departments />} />

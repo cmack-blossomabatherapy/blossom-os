@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronDown, Shield, MapPin, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOSRole, OS_STATES } from "@/contexts/OSRoleContext";
-import { OS_ROLES } from "@/lib/os/permissions";
+import { ROLE_PREVIEW_LIST } from "@/lib/os/roleMenus";
 import { useAuth } from "@/contexts/AuthContext";
 
 /** Demo control for switching the active OS role + state scope. */
@@ -10,7 +10,8 @@ export function RoleSwitcher({ compact = false }: { compact?: boolean }) {
   const { role, scope, activeState, setRole, setActiveState } = useOSRole();
   const { isAdmin, loading } = useAuth();
   const [open, setOpen] = useState(false);
-  const current = OS_ROLES.find((r) => r.id === role)!;
+  const current =
+    ROLE_PREVIEW_LIST.find((r) => r.role === role) ?? ROLE_PREVIEW_LIST[0];
 
   // Only super admins can impersonate other roles.
   if (loading || !isAdmin) return null;
@@ -49,17 +50,17 @@ export function RoleSwitcher({ compact = false }: { compact?: boolean }) {
               </p>
             </div>
             <div className="max-h-72 overflow-y-auto">
-              {OS_ROLES.map((r) => (
+              {ROLE_PREVIEW_LIST.map((r) => (
                 <button
-                  key={r.id}
-                  onClick={() => { setRole(r.id); setOpen(false); }}
+                  key={r.role}
+                  onClick={() => { setRole(r.role); setOpen(false); }}
                   className={cn(
                     "flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left text-[12.5px] transition",
-                    r.id === role ? "bg-gradient-to-r from-[hsl(265_85%_65%)]/15 to-transparent text-foreground" : "hover:bg-foreground/[0.04]",
+                    r.role === role ? "bg-gradient-to-r from-[hsl(265_85%_65%)]/15 to-transparent text-foreground" : "hover:bg-foreground/[0.04]",
                   )}
                 >
                   <span className="font-medium">{r.label}</span>
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{r.tier}</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">role</span>
                 </button>
               ))}
             </div>

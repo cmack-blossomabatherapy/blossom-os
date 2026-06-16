@@ -4,7 +4,7 @@ import {
   HeartHandshake, Users, MessageSquare, Star, TrendingUp, Briefcase,
   Building2, Wallet, ShieldCheck, Wrench, IdCard,
   Calendar, FileSignature, ClipboardList, UserCheck,
-  Brain, type LucideIcon,
+  Brain, LayoutDashboard, type LucideIcon,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
 
@@ -27,6 +27,7 @@ export interface RoleMenu {
  * Specific roles extend this (Phone System, Evaluations, etc).
  */
 const BASE_ACTIVE: RoleMenuItem[] = [
+  { label: "My Dashboard",     path: "/dashboard", icon: LayoutDashboard },
   { label: "Training Academy", path: "/academy",   icon: GraduationCap },
   { label: "Resource Library", path: "/resources", icon: BookOpen },
   { label: "Reports",          path: "/reports",   icon: FileText },
@@ -37,7 +38,7 @@ const SOON = "/coming-soon";
 
 const cs = (label: string, icon: LucideIcon): RoleMenuItem => ({
   label,
-  path: `${SOON}#${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+  path: `${SOON}?module=${encodeURIComponent(label)}`,
   icon,
 });
 
@@ -86,6 +87,48 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       cs("Client Notes", FileSignature),
       cs("Scheduling", Calendar),
       cs("Authorizations", ShieldCheck),
+    ],
+  },
+  business_development: {
+    active: BASE_ACTIVE,
+    comingSoon: [
+      cs("Business Development Dashboard", TrendingUp),
+      cs("Referral CRM", HeartHandshake),
+      cs("Outreach", MessageSquare),
+      cs("Partnerships", Briefcase),
+    ],
+  },
+  staffing_team: {
+    active: BASE_ACTIVE,
+    comingSoon: [
+      cs("Staffing Queue", Users),
+      cs("Coverage Map", Calendar),
+      cs("Pairings", UserCheck),
+    ],
+  },
+  credentialing_team: {
+    active: BASE_ACTIVE,
+    comingSoon: [
+      cs("Credentialing Queue", IdCard),
+      cs("Expirations", ShieldCheck),
+      cs("Provider Files", FileSignature),
+    ],
+  },
+  clinical_director: {
+    active: BASE_ACTIVE,
+    comingSoon: [
+      cs("Clinical Dashboard", BarChart3),
+      cs("Supervision", ClipboardCheck),
+      cs("BCBA Roster", UserCheck),
+      cs("Treatment Plan Reviews", FileSignature),
+    ],
+  },
+  assistant_state_director: {
+    active: BASE_ACTIVE,
+    comingSoon: [
+      cs("State Work Queue", ClipboardList),
+      cs("Local Escalations", ShieldCheck),
+      cs("State Staffing", Users),
     ],
   },
   executive_leadership: {
@@ -223,18 +266,20 @@ export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "Executive Leadership",        role: "executive_leadership" },
   { label: "Operations Leadership",       role: "operations_leadership" },
   { label: "State Director",              role: "state_director" },
-  { label: "Intake Coordinator",          role: "intake_coordinator" },
-  { label: "Authorization Coordinator",   role: "authorization_coordinator" },
-  { label: "Scheduling Team",             role: "scheduling_team" },
-  { label: "Recruiting Team",             role: "recruiting_team" },
-  { label: "HR Team",                     role: "hr_team" },
-  { label: "Billing / Finance",           role: "billing_finance" },
-  { label: "QA / Compliance",             role: "qa_team" },
-  { label: "Payroll Coordinator",         role: "payroll_coordinator" },
-  { label: "BCBA",                        role: "bcba" },
-  { label: "RBT",                         role: "rbt" },
+  { label: "State Director Assistant",    role: "assistant_state_director" },
   { label: "Marketing Team",              role: "marketing_team" },
+  { label: "Business Development",        role: "business_development" },
+  { label: "Intake Team",                 role: "intake_coordinator" },
+  { label: "Recruiting Team",             role: "recruiting_team" },
+  { label: "Authorizations Team",         role: "authorization_coordinator" },
+  { label: "Scheduling Team",             role: "scheduling_team" },
+  { label: "Staffing Team",               role: "staffing_team" },
+  { label: "HR Team",                     role: "hr_team" },
+  { label: "Credentialing Team",          role: "credentialing_team" },
+  { label: "QA Team",                     role: "qa_team" },
+  { label: "Clinical Director",           role: "clinical_director" },
+  { label: "BCBA",                        role: "bcba" },
   { label: "Case Manager",                role: "case_manager" },
+  { label: "RBT",                         role: "rbt" },
   { label: "Behavioral Support",          role: "behavioral_support" },
-  { label: "Viewer",                      role: "viewer" },
 ];
