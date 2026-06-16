@@ -1617,3 +1617,408 @@ function OwnershipConflictsTable({ conflicts }: { conflicts: OwnershipConflict[]
     </div>
   );
 }
+
+/* ---------- new tab subcomponents ---------- */
+type BcbaTableRow = {
+  bcba: string; isUnassigned: boolean; totalHours: number; h97153: number; directHours: number;
+  supervisionHours: number; clients: Map<string, number>; rbts: Map<string, number>;
+  codes: Map<string, number>; rows: OwnedRow[];
+};
+
+const CHART_TICK = { fontSize: 11 };
+
+function OverviewCharts({ bcbaTable }: { bcbaTable: BcbaTableRow[] }) {
+  const real = bcbaTable.filter(b => !b.isUnassigned);
+  const byHours = [...real].sort((a, b) => b.totalHours - a.totalHours).slice(0, 12);
+  const top10 = [...real].sort((a, b) => b.totalHours - a.totalHours).slice(0, 10)
+    .map(b => ({ name: b.bcba, hours: +b.totalHours.toFixed(1) }));
+  const stacked = byHours.map(b => ({
+    name: b.bcba,
+    "97153": +b.h97153.toFixed(1),
+    "Direct": +Math.max(0, b.directHours - b.supervisionHours).toFixed(1),
+    "Supervision": +b.supervisionHours.toFixed(1),
+  }));
+  const supPct = real.map(b => ({
+    name: b.bcba,
+    pct: supervisionPctValue(b.supervisionHours, b.h97153) ?? 0,
+    has: supervisionPctValue(b.supervisionHours, b.h97153) !== null,
+  })).filter(x => x.has).sort((a, b) => b.pct - a.pct).slice(0, 20);
+  const tooltipFmt = (v: any) => typeof v === "number" ? v.toLocaleString(undefined, { maximumFractionDigits: 1 }) : v;
+
+  if (!real.length) {
+    return <div className="rounded-xl border bg-card/40 p-10 text-center text-sm text-muted-foreground">Upload a billing report to see charts.</div>;
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <ChartShell title="Hours by BCBA">
+        <BarChart data={byHours.map(b => ({ name: b.bcba, hours: +b.totalHours.toFixed(1) }))}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+          <XAxis dataKey="name" tick={CHART_TICK} interval={0} angle={-30} textAnchor="end" height={70} />
+          <YAxis tick={CHART_TICK} tickFormatter={(v) => v.toLocaleString()} />
+          <Tooltip formatter={tooltipFmt} />
+          <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ChartShell>
+      <ChartShell title="97153 vs Direct vs Supervision">
+        <BarChart data={stacked}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+          <XAxis dataKey="name" tick={CHART_TICK} interval={0} angle={-30} textAnchor="end" height={70} />
+          <YAxis tick={CHART_TICK} tickFormatter={(v) => v.toLocaleString()} />
+          <Tooltip formatter={tooltipFmt} />
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Bar dataKey="97153" stackId="a" fill="hsl(var(--primary))" />
+          <Bar dataKey="Direct" stackId="a" fill="hsl(var(--muted-foreground))" />
+          <Bar dataKey="Supervision" stackId="a" fill="#10b981" />
+        </BarChart>
+      </ChartShell>
+      <ChartShell title="Top 10 BCBAs by total hours">
+        <BarChart data={top10} layout="vertical">
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+          <XAxis type="number" tick={CHART_TICK} tickFormatter={(v) => v.toLocaleString()} />
+          <YAxis type="category" dataKey="name" tick={CHART_TICK} width={120} />
+          <Tooltip formatter={tooltipFmt} />
+          <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+        </BarChart>
+      </ChartShell>
+      <ChartShell title="Supervision % by BCBA">
+        <BarChart data={supPct}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+          <XAxis dataKey="name" tick={CHART_TICK} interval={0} angle={-30} textAnchor="end" height={70} />
+          <YAxis tick={CHART_TICK} tickFormatter={(v) => `${v}%`} />
+          <Tooltip formatter={(v: any) => `${Number(v).toFixed(1)}%`} />
+          <Bar dataKey="pct" radius={[4, 4, 0, 0]}>
+            {supPct.map((d, i) => {
+              const tone = supervisionTone(d.pct);
+              const color = tone === "danger" ? "hsl(var(--destructive))"
+                : tone === "warn" ? "#eab308" : "#10b981";
+              return <Cell key={i} fill={color} />;
+            })}
+          </Bar>
+        </BarChart>
+      </ChartShell>
+    </div>
+  );
+}
+
+function ChartShell({ title, children }: { title: string; children: React.ReactElement }) {
+  return (
+    <div className="rounded-xl border bg-card/60 p-4">
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+      <div className="h-72">
+        <ResponsiveContainer width="100%" height="100%">
+          {children}
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+type SortKey = "bcba" | "totalHours" | "h97153" | "directHours" | "supervisionHours" | "supervisionPct" | "clients" | "rbts";
+
+function BcbaSummaryTable({ bcbaTable, expanded, setExpanded }: {
+  bcbaTable: BcbaTableRow[];
+  expanded: Record<string, boolean>;
+  setExpanded: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+}) {
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "totalHours", dir: "desc" });
+  const sorted = useMemo(() => {
+    const arr = [...bcbaTable];
+    arr.sort((a, b) => {
+      const dir = sort.dir === "asc" ? 1 : -1;
+      const av = sortValue(a, sort.key);
+      const bv = sortValue(b, sort.key);
+      if (av === bv) return 0;
+      if (typeof av === "string") return av.localeCompare(String(bv)) * dir;
+      return ((av as number) - (bv as number)) * dir;
+    });
+    return arr;
+  }, [bcbaTable, sort]);
+
+  const SortHeader = ({ k, label, align = "right" }: { k: SortKey; label: string; align?: "left" | "right" }) => (
+    <th className={cn("px-3 py-2 cursor-pointer select-none", align === "right" ? "text-right" : "text-left")}
+        onClick={() => setSort(s => s.key === k ? { key: k, dir: s.dir === "asc" ? "desc" : "asc" } : { key: k, dir: "desc" })}>
+      {label}{sort.key === k ? (sort.dir === "asc" ? " ▲" : " ▼") : ""}
+    </th>
+  );
+
+  return (
+    <div className="overflow-hidden rounded-xl border">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[920px] text-sm">
+          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="w-8 px-3 py-2"></th>
+              <SortHeader k="bcba" label="BCBA" align="left" />
+              <SortHeader k="totalHours" label="Total Hours" />
+              <SortHeader k="h97153" label="97153 Hours" />
+              <SortHeader k="directHours" label="Direct Hours" />
+              <SortHeader k="supervisionHours" label="Supervision Hours" />
+              <SortHeader k="supervisionPct" label="Supervision %" />
+              <SortHeader k="clients" label="Clients" />
+              <SortHeader k="rbts" label="RBTs" />
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.length === 0 && (
+              <tr><td colSpan={9} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                Upload a billing report to populate productivity.
+              </td></tr>
+            )}
+            {sorted.map(b => {
+              const open = !!expanded[b.bcba];
+              return (
+                <Row key={b.bcba} expanded={open} onToggle={() => setExpanded(s => ({ ...s, [b.bcba]: !open }))} bcba={b} />
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function sortValue(b: BcbaTableRow, k: SortKey): string | number {
+  switch (k) {
+    case "bcba": return b.bcba.toLowerCase();
+    case "totalHours": return b.totalHours;
+    case "h97153": return b.h97153;
+    case "directHours": return b.directHours;
+    case "supervisionHours": return b.supervisionHours;
+    case "supervisionPct": return supervisionPctValue(b.supervisionHours, b.h97153) ?? -1;
+    case "clients": return b.clients.size;
+    case "rbts": return b.rbts.size;
+  }
+}
+
+function SupervisionTab({ bcbaTable }: { bcbaTable: BcbaTableRow[] }) {
+  const rows = bcbaTable.filter(b => !b.isUnassigned);
+  const withPct = rows.map(b => ({
+    ...b, pct: supervisionPctValue(b.supervisionHours, b.h97153),
+  }));
+  const lowest = [...withPct].filter(r => r.pct !== null).sort((a, b) => (a.pct! - b.pct!)).slice(0, 10);
+  const highHoursLowSup = [...withPct].filter(r => r.pct !== null && r.pct < 10)
+    .sort((a, b) => b.h97153 - a.h97153).slice(0, 10);
+  const byPct = [...withPct].filter(r => r.pct !== null).sort((a, b) => b.pct! - a.pct!);
+
+  const tooltipPct = (v: any) => `${Number(v).toFixed(1)}%`;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ChartShell title="Supervision % by BCBA">
+          <BarChart data={byPct.map(r => ({ name: r.bcba, pct: +(r.pct ?? 0).toFixed(1) }))}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <XAxis dataKey="name" tick={CHART_TICK} interval={0} angle={-30} textAnchor="end" height={70} />
+            <YAxis tick={CHART_TICK} tickFormatter={(v) => `${v}%`} />
+            <Tooltip formatter={tooltipPct} />
+            <Bar dataKey="pct" radius={[4, 4, 0, 0]}>
+              {byPct.map((d, i) => {
+                const tone = supervisionTone(d.pct);
+                const color = tone === "danger" ? "hsl(var(--destructive))"
+                  : tone === "warn" ? "#eab308" : "#10b981";
+                return <Cell key={i} fill={color} />;
+              })}
+            </Bar>
+          </BarChart>
+        </ChartShell>
+        <ChartShell title="Lowest supervision % BCBAs">
+          <BarChart data={lowest.map(r => ({ name: r.bcba, pct: +(r.pct ?? 0).toFixed(1) }))} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <XAxis type="number" tick={CHART_TICK} tickFormatter={(v) => `${v}%`} />
+            <YAxis type="category" dataKey="name" tick={CHART_TICK} width={120} />
+            <Tooltip formatter={tooltipPct} />
+            <Bar dataKey="pct" fill="hsl(var(--destructive))" radius={[0, 4, 4, 0]} />
+          </BarChart>
+        </ChartShell>
+        <ChartShell title="High 97153 hours with low supervision %">
+          <BarChart data={highHoursLowSup.map(r => ({ name: r.bcba, hours: +r.h97153.toFixed(1), pct: +(r.pct ?? 0).toFixed(1) }))}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <XAxis dataKey="name" tick={CHART_TICK} interval={0} angle={-30} textAnchor="end" height={70} />
+            <YAxis tick={CHART_TICK} tickFormatter={(v) => v.toLocaleString()} />
+            <Tooltip formatter={(v: any, n: any) => n === "pct" ? `${Number(v).toFixed(1)}%` : Number(v).toLocaleString(undefined, { maximumFractionDigits: 1 })} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Bar dataKey="hours" name="97153 Hours" fill="hsl(var(--primary))" />
+          </BarChart>
+        </ChartShell>
+        <SupervisionLegend />
+      </div>
+
+      <div className="overflow-hidden rounded-xl border">
+        <table className="w-full min-w-[820px] text-sm">
+          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2">BCBA</th>
+              <th className="px-3 py-2 text-right">97153 Hours</th>
+              <th className="px-3 py-2 text-right">Supervision Hours</th>
+              <th className="px-3 py-2 text-right">Supervision %</th>
+              <th className="px-3 py-2 text-right">Clients</th>
+              <th className="px-3 py-2 text-right">RBTs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">No data.</td></tr>
+            )}
+            {[...withPct].sort((a, b) => (a.pct ?? 999) - (b.pct ?? 999)).map(r => {
+              const tone = supervisionTone(r.pct);
+              return (
+                <tr key={r.bcba} className="border-t">
+                  <td className="px-3 py-2 font-medium">{r.bcba}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.h97153)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.supervisionHours)}</td>
+                  <td className={cn("px-3 py-2 text-right tabular-nums font-medium",
+                    tone === "danger" && "text-destructive",
+                    tone === "warn" && "text-warning-foreground",
+                    tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+                  )}>
+                    {r.pct === null ? "—" : `${r.pct.toFixed(1)}%`}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt0(r.clients.size)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt0(r.rbts.size)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SupervisionLegend() {
+  return (
+    <div className="rounded-xl border bg-card/60 p-4 text-sm">
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Supervision % thresholds</div>
+      <ul className="space-y-2">
+        <li className="flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-sm bg-destructive" /> Under 5% — urgent</li>
+        <li className="flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-sm" style={{ background: "#eab308" }} /> 5%–10% — monitor</li>
+        <li className="flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-sm" style={{ background: "#10b981" }} /> 10% or higher — healthy</li>
+      </ul>
+      <div className="mt-3 text-xs text-muted-foreground">
+        Supervision % = 97155 hours ÷ 97153 hours × 100. Shown as “—” when a BCBA has no 97153 hours to supervise.
+      </div>
+    </div>
+  );
+}
+
+function ClientsRbtsTab({ filtered, bcbaTable }: { filtered: OwnedRow[]; bcbaTable: BcbaTableRow[] }) {
+  const real = bcbaTable.filter(b => !b.isUnassigned);
+
+  const clientByCode = useMemo(() => {
+    const m = new Map<string, { client: string; codes: Map<string, number>; total: number }>();
+    for (const r of filtered) {
+      const key = r.clientName;
+      const v = m.get(key) || { client: key, codes: new Map<string, number>(), total: 0 };
+      v.codes.set(r.code, (v.codes.get(r.code) || 0) + r.hours);
+      v.total += r.hours;
+      m.set(key, v);
+    }
+    return [...m.values()].sort((a, b) => b.total - a.total).slice(0, 100);
+  }, [filtered]);
+
+  const rbtHours = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of filtered) {
+      if (r.is97153 && r.renderingProvider) {
+        m.set(r.renderingProvider, (m.get(r.renderingProvider) || 0) + r.hours);
+      }
+    }
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  }, [filtered]);
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Panel title="BCBA → Clients">
+        <div className="max-h-[420px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr><th className="px-3 py-2">BCBA</th><th className="px-3 py-2">Clients</th><th className="px-3 py-2 text-right">Hours</th></tr>
+            </thead>
+            <tbody>
+              {real.map(b => (
+                <tr key={b.bcba} className="border-t align-top">
+                  <td className="px-3 py-2 font-medium">{b.bcba}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">
+                    {[...b.clients.keys()].slice(0, 12).join(", ")}{b.clients.size > 12 ? ` +${b.clients.size - 12} more` : ""}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(b.totalHours)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+      <Panel title="BCBA → RBTs">
+        <div className="max-h-[420px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr><th className="px-3 py-2">BCBA</th><th className="px-3 py-2">RBTs</th><th className="px-3 py-2 text-right">97153 Hours</th></tr>
+            </thead>
+            <tbody>
+              {real.map(b => (
+                <tr key={b.bcba} className="border-t align-top">
+                  <td className="px-3 py-2 font-medium">{b.bcba}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">
+                    {[...b.rbts.keys()].slice(0, 12).join(", ")}{b.rbts.size > 12 ? ` +${b.rbts.size - 12} more` : ""}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(b.h97153)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+      <Panel title="Client → Hours by Code">
+        <div className="max-h-[420px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr><th className="px-3 py-2">Client</th><th className="px-3 py-2">Codes</th><th className="px-3 py-2 text-right">Total</th></tr>
+            </thead>
+            <tbody>
+              {clientByCode.map(c => (
+                <tr key={c.client} className="border-t align-top">
+                  <td className="px-3 py-2 font-medium">{c.client}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">
+                    {[...c.codes.entries()].sort((a, b) => b[1] - a[1])
+                      .map(([k, v]) => `${k}: ${fmt1(v)}`).join(" · ")}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(c.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+      <Panel title="RBT → 97153 Hours">
+        <div className="max-h-[420px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr><th className="px-3 py-2">RBT</th><th className="px-3 py-2 text-right">97153 Hours</th></tr>
+            </thead>
+            <tbody>
+              {rbtHours.length === 0 && (
+                <tr><td colSpan={2} className="px-3 py-6 text-center text-muted-foreground">No 97153 rows.</td></tr>
+              )}
+              {rbtHours.map(([name, hours]) => (
+                <tr key={name} className="border-t">
+                  <td className="px-3 py-2 font-medium">{name}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{fmt1(hours)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-xl border bg-card/60">
+      <div className="border-b bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+      {children}
+    </div>
+  );
+}
