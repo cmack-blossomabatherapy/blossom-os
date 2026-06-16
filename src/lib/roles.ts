@@ -28,7 +28,37 @@ export type AppRole =
   | "hr_admin_assistant"
   | "marketing"
   | "behavioral_support"
-  | "viewer";
+  | "viewer"
+  // ---- New canonical Blossom roles (2026 org structure) ----
+  | "super_admin"
+  | "systems_admin"
+  | "executive"
+  | "coo"
+  | "director_of_operations"
+  | "operations_manager"
+  | "marketing_growth_lead"
+  | "marketing_team"
+  | "intake_lead"
+  | "intake_coordinator"
+  | "finance_benefits_lead"
+  | "finance_benefits_team"
+  | "authorization_manager"
+  | "authorization_coordinator"
+  | "qa_director"
+  | "qa_specialist"
+  | "clinical_lead"
+  | "scheduling_lead"
+  | "scheduling_coordinator"
+  | "staffing_lead"
+  | "staffing_coordinator"
+  | "recruiting_lead"
+  | "recruiting_coordinator"
+  | "hr_lead"
+  | "payroll_lead"
+  | "billing_lead"
+  | "credentialing_lead"
+  | "rcm_team"
+  | "assistant_state_director";
 
 export interface RoleMeta {
   key: AppRole;
