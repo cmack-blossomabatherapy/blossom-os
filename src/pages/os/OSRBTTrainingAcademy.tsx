@@ -392,7 +392,11 @@ function ResourceChip({ resource }: { resource: RBTResource }) {
 
 function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
   const all = useRBTResources();
-  const [filter, setFilter] = useState<"all" | "path" | RBTResourceType>("all");
+  const [category, setCategory] = useState<"all" | RBTResourceCategoryId>("all");
+  const [trackFilter, setTrackFilter] = useState<"all" | "this" | RBTPathId>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | RBTResourceType>("all");
+  const [requiredOnly, setRequiredOnly] = useState(false);
+  const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<RBTResource | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -402,32 +406,63 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
   );
 
   const filtered = useMemo(() => {
-    if (filter === "all") return all;
-    if (filter === "path") {
-      return all.filter(
-        (r) => r.moduleIds.length === 0 || r.moduleIds.some((id) => pathModuleIds.has(id)),
-      );
+    const q = query.trim().toLowerCase();
+    return all.filter((r) => {
+      if (category !== "all" && r.category !== category) return false;
+      if (typeFilter !== "all" && r.type !== typeFilter) return false;
+      if (requiredOnly && !r.required) return false;
+      if (trackFilter !== "all") {
+        const tracks = r.tracks && r.tracks.length > 0 ? r.tracks : null;
+        if (trackFilter === "this") {
+          // Show if academy-wide, attached to this path's modules, or explicitly visible to this track.
+          const targetTrack = path.id;
+          const trackOk = !tracks || tracks.includes(targetTrack);
+          const moduleOk = r.moduleIds.length === 0 || r.moduleIds.some((id) => pathModuleIds.has(id));
+          if (!trackOk && !moduleOk) return false;
+        } else if (tracks && !tracks.includes(trackFilter)) {
+          return false;
+        }
+      }
+      if (q) {
+        const hay = [r.title, r.description, r.type, ...(r.tags ?? [])].join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [all, category, typeFilter, requiredOnly, trackFilter, query, pathModuleIds, path.id]);
+
+  // Group by category for cleaner browsing when no specific category selected.
+  const grouped = useMemo(() => {
+    if (category !== "all") return null;
+    const map = new Map<RBTResourceCategoryId | "_uncat", RBTResource[]>();
+    for (const r of filtered) {
+      const k = (r.category ?? "_uncat") as RBTResourceCategoryId | "_uncat";
+      const arr = map.get(k) ?? [];
+      arr.push(r);
+      map.set(k, arr);
     }
-    return all.filter((r) => r.type === filter);
-  }, [all, filter, pathModuleIds]);
+    return RBT_RESOURCE_CATEGORIES
+      .map((c) => ({ id: c.id, label: c.label, description: c.description, items: map.get(c.id) ?? [] }))
+      .filter((g) => g.items.length > 0)
+      .concat(
+        map.has("_uncat")
+          ? [{ id: "_uncat" as never, label: "Other", description: "Uncategorized", items: map.get("_uncat") ?? [] }]
+          : [],
+      );
+  }, [filtered, category]);
 
   return (
     <section className="space-y-4">
+      {/* Search + admin button */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/70 bg-card p-1">
-          {(["all", "path", ...RBT_RESOURCE_TYPES] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              className={cn(
-                "rounded-lg px-2.5 py-1 text-[11px] font-medium transition",
-                filter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
-              )}
-            >
-              {f === "all" ? "All" : f === "path" ? "This path" : f}
-            </button>
-          ))}
+        <div className="relative min-w-[240px] flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search resources, tags, types…"
+            className="h-9 w-full rounded-xl border border-border/70 bg-card pl-8 pr-3 text-sm outline-none transition focus:border-primary/60"
+          />
         </div>
         {isAdmin && (
           <button
@@ -440,9 +475,89 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
         )}
       </div>
 
+      {/* Category chips */}
+      <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/70 bg-card p-1">
+        <button
+          type="button"
+          onClick={() => setCategory("all")}
+          className={cn(
+            "rounded-lg px-2.5 py-1 text-[11px] font-medium transition",
+            category === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
+          )}
+        >All categories</button>
+        {RBT_RESOURCE_CATEGORIES.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => setCategory(c.id)}
+            className={cn(
+              "rounded-lg px-2.5 py-1 text-[11px] font-medium transition",
+              category === c.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
+            )}
+            title={c.description}
+          >{c.label}</button>
+        ))}
+      </div>
+
+      {/* Secondary filters: track + type + required */}
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={trackFilter}
+          onChange={(e) => setTrackFilter(e.target.value as typeof trackFilter)}
+          className="h-8 rounded-lg border border-border/70 bg-card px-2 text-[11px] outline-none"
+        >
+          <option value="all">All tracks</option>
+          <option value="this">This track ({TRACK_LABELS[path.id]})</option>
+          {(Object.keys(TRACK_LABELS) as RBTPathId[]).map((id) => (
+            <option key={id} value={id}>{TRACK_LABELS[id]}</option>
+          ))}
+        </select>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+          className="h-8 rounded-lg border border-border/70 bg-card px-2 text-[11px] outline-none"
+        >
+          <option value="all">All types</option>
+          {RBT_RESOURCE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border/70 bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground">
+          <input type="checkbox" checked={requiredOnly} onChange={(e) => setRequiredOnly(e.target.checked)} />
+          Required only
+        </label>
+        <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
+          {filtered.length} {filtered.length === 1 ? "resource" : "resources"}
+        </span>
+      </div>
+
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border/70 bg-card p-10 text-center text-sm text-muted-foreground">
           No resources match this filter yet.
+        </div>
+      ) : grouped ? (
+        <div className="space-y-6">
+          {grouped.map((g) => (
+            <div key={g.id} className="space-y-2">
+              <div className="flex items-baseline justify-between gap-2">
+                <h3 className="text-sm font-semibold text-foreground">{g.label}</h3>
+                <span className="text-[11px] text-muted-foreground tabular-nums">{g.items.length}</span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {g.items.map((r) => (
+                  <ResourceCard
+                    key={r.id}
+                    resource={r}
+                    isAdmin={isAdmin}
+                    onEdit={() => setEditing(r)}
+                    onRemove={() => {
+                      if (confirm(`Remove "${r.title}"?${r.seeded ? " (Seeded resources are hidden — they can be restored later.)" : ""}`)) {
+                        removeResource(r.id);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
