@@ -103,7 +103,7 @@ const ALL: ModuleDefinition[] = [
   // --------- Growth & Marketing ---------
   generic({
     id: "marketing-dashboard",
-    matchNames: ["Marketing Dashboard"],
+    matchNames: ["Marketing Dashboard", "Referral CRM", "Lead Sources", "Campaigns", "CTM / Call Tracking", "LeadTrap", "Facebook Ads", "Google Ads", "SEO & Content", "Web Analytics", "Recruiting Marketing", "Community Outreach", "Reputation", "Attribution & ROI"],
     title: "Marketing Dashboard",
     description: "Operating center for source performance, campaigns, calls, and the patient lifetime journey.",
     department: "Marketing",
@@ -158,7 +158,7 @@ const ALL: ModuleDefinition[] = [
   }),
   generic({
     id: "bd-dashboard",
-    matchNames: ["Business Development Dashboard", "Referral Partner CRM", "Outreach Pipeline"],
+    matchNames: ["Business Development Dashboard", "Referral Partner CRM", "Outreach Pipeline", "Follow-Up Tasks", "Provider Relationships", "Community Relationships"],
     title: "Business Development",
     description: "Referral partners, outreach, and source conversion across markets.",
     department: "Business Development",
@@ -359,7 +359,7 @@ const ALL: ModuleDefinition[] = [
   // --------- State Operations ---------
   generic({
     id: "state-dashboard",
-    matchNames: ["State Dashboard", "State Health", "State Staffing Snapshot", "State Intake Snapshot", "State Authorization Snapshot", "State Clinical Snapshot", "State Support Dashboard", "State Intake Support", "State Task Queue", "Escalation Support", "Follow-Up Tracker", "State Health Overview"],
+    matchNames: ["State Dashboard", "State Health", "State Staffing Snapshot", "State Intake Snapshot", "State Authorization Snapshot", "State Clinical Snapshot", "State Support Dashboard", "State Intake Support", "State Task Queue", "Escalation Support", "Follow-Up Tracker", "State Health Overview", "Escalations", "Workflow Bottlenecks", "Department Scorecards", "Operations Dashboard", "System Requests", "Executive Dashboard", "Company KPIs", "Growth Snapshot", "Operations Scorecard"],
     title: "State Operations",
     description: "State health, escalations, and cross-department snapshots.",
     department: "State Operations",
@@ -381,7 +381,7 @@ const ALL: ModuleDefinition[] = [
   // --------- Clinical ---------
   generic({
     id: "clinical-dashboard",
-    matchNames: ["Clinical Dashboard", "BCBA Oversight", "Clinical Quality", "Supervision Health", "Clinical Escalations", "Clinical Reports", "Caseload", "Supervision", "Treatment Plans", "Parent Training", "Clinical Documentation", "BCBA Dashboard"],
+    matchNames: ["Clinical Dashboard", "BCBA Oversight", "Clinical Quality", "Supervision Health", "Clinical Escalations", "Clinical Reports", "Caseload", "Supervision", "Treatment Plans", "Parent Training", "Clinical Documentation", "BCBA Dashboard", "Evaluations"],
     title: "Clinical Workspace",
     description: "BCBA oversight, supervision, quality, and clinical escalations.",
     department: "Clinical",
