@@ -36,9 +36,7 @@ interface CommandPaletteProps {
 const enterprisePages = [
   { label: "Workforce Readiness", path: "/enterprise/readiness", icon: BarChart3 },
   { label: "Compliance & Audit", path: "/enterprise/compliance", icon: ShieldCheck },
-  { label: "AI Recommendations", path: "/enterprise/recommendations", icon: Sparkles },
   { label: "SOP Intelligence", path: "/enterprise/sop-intelligence", icon: BookOpen },
-  { label: "AI Course Studio", path: "/enterprise/course-studio", icon: GraduationCap },
   { label: "Simulations", path: "/enterprise/simulations", icon: Compass },
   { label: "Automations", path: "/enterprise/automations", icon: Zap },
 ];
@@ -81,22 +79,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <AlertTriangle className="mr-2 h-4 w-4 text-muted-foreground" />
               <span className="truncate">{c.title}</span>
               <span className="ml-auto text-xs text-muted-foreground">{c.status}</span>
-            </CommandItem>
-          ))}
-        </CommandGroup>
-
-        <CommandSeparator />
-
-        <CommandGroup heading="AI recommendations">
-          {recommendations.map((r) => (
-            <CommandItem
-              key={r.id}
-              value={`recommendation ${r.title} ${r.module} ${r.owner}`}
-              onSelect={() => go("/enterprise/recommendations")}
-            >
-              <Sparkles className="mr-2 h-4 w-4 text-muted-foreground" />
-              <span className="truncate">{r.title}</span>
-              <span className="ml-auto text-xs text-muted-foreground capitalize">{r.severity}</span>
             </CommandItem>
           ))}
         </CommandGroup>
