@@ -613,7 +613,7 @@ export async function hydrateFromSupabase(): Promise<{
  * wipe original imported fields with null.
  */
 function contactToRow(c: Contact) {
-  return {
+  const row: Record<string, unknown> = {
     id: isPersisted(c.id) ? c.id : undefined,
     first_name: c.firstName || null,
     last_name: c.lastName || null,
@@ -624,8 +624,6 @@ function contactToRow(c: Contact) {
     title: c.jobTitle || null,
     company_id: c.companyId && isPersisted(c.companyId) ? c.companyId : null,
     state: c.state || null,
-    status: c.deletedAt ? "Archived" : (c.leadStatus || "New"),
-    relationship_stage: c.referralPartnerStatus || null,
     role_type: c.referralSourceType || null,
     last_contacted_at: c.lastContactedDate || null,
     next_follow_up_at: c.nextFollowUpDate || null,
@@ -644,10 +642,16 @@ function contactToRow(c: Contact) {
     full_address: c.fullAddress ?? null,
     website_url: c.websiteUrl ?? null,
   };
+  // NOT NULL columns with DB defaults — only send when we have a value,
+  // otherwise let the database default apply.
+  const status = c.deletedAt ? "Archived" : (c.leadStatus || "");
+  if (status) row.status = status;
+  if (c.referralPartnerStatus) row.relationship_stage = c.referralPartnerStatus;
+  return row;
 }
 
 function companyToRow(c: Company) {
-  return {
+  const row: Record<string, unknown> = {
     id: isPersisted(c.id) ? c.id : undefined,
     company_name: c.name,
     website_url: c.websiteUrl ?? c.website ?? null,
@@ -656,7 +660,6 @@ function companyToRow(c: Company) {
     full_address: c.fullAddress ?? c.address ?? null,
     state: c.state || null,
     company_type: c.companyType || null,
-    relationship_stage: c.referralPartnerStatus || null,
     referral_count: c.referralCount ?? 0,
     last_referral_date: c.lastReferralDate || null,
     last_contacted_at: c.lastContactedDate || null,
@@ -669,6 +672,8 @@ function companyToRow(c: Company) {
     relationship_owner: c.relationshipOwner ?? null,
     import_batch_id: c.importBatchId ?? null,
   };
+  if (c.referralPartnerStatus) row.relationship_stage = c.referralPartnerStatus;
+  return row;
 }
 
 /**
@@ -700,7 +705,9 @@ function contactPatchToRow(patch: Partial<Contact>): Record<string, unknown> {
   if ("leadStatus" in patch || "deletedAt" in patch) {
     out.status = patch.deletedAt ? "Archived" : (patch.leadStatus ?? "New");
   }
-  set("referralPartnerStatus", "relationship_stage");
+  if ("referralPartnerStatus" in patch && patch.referralPartnerStatus) {
+    out.relationship_stage = patch.referralPartnerStatus;
+  }
   set("referralSourceType", "role_type");
   set("lastContactedDate", "last_contacted_at");
   set("nextFollowUpDate", "next_follow_up_at");
@@ -739,7 +746,9 @@ function companyPatchToRow(patch: Partial<Company>): Record<string, unknown> {
   }
   set("state", "state");
   set("companyType", "company_type");
-  set("referralPartnerStatus", "relationship_stage");
+  if ("referralPartnerStatus" in patch && patch.referralPartnerStatus) {
+    out.relationship_stage = patch.referralPartnerStatus;
+  }
   if ("referralCount" in patch) out.referral_count = patch.referralCount ?? 0;
   set("lastReferralDate", "last_referral_date");
   set("lastContactedDate", "last_contacted_at");
