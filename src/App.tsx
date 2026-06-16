@@ -492,6 +492,7 @@ const App = () => (
                 {PublicRoutes}
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<OSDashboard />} />
+                  <Route path="/ws/:id" element={<WorkspacePage />} />
                   <Route path="/executive" element={<ExecutiveOverview />} />
                   <Route path="/executive/overview" element={<Navigate to="/executive" replace />} />
                   <Route path="/executive/pulse" element={<CompanyPulse />} />
