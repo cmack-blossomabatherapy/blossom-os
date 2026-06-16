@@ -434,16 +434,17 @@ export default function BcbaProductivityReportV3() {
 
   /* ----- KPIs ----- */
   const kpis = useMemo(() => {
-    let totalHours = 0, h97153 = 0, directHours = 0, unassigned = 0;
+    let totalHours = 0, h97153 = 0, directHours = 0, supervisionHours = 0, unassigned = 0;
     const clients = new Set<string>(), rbts = new Set<string>(), bcbas = new Set<string>();
     for (const r of filtered) {
       totalHours += r.hours;
       if (r.is97153) h97153 += r.hours; else directHours += r.hours;
+      if (isSupervision(r.code)) supervisionHours += r.hours;
       clients.add(r.clientId || normalizeName(r.clientName));
       if (r.is97153 && r.renderingProvider) rbts.add(r.renderingProvider);
       if (r.bcbaOwner) bcbas.add(r.bcbaOwner); else unassigned += r.hours;
     }
-    return { totalHours, h97153, directHours, unassigned,
+    return { totalHours, h97153, directHours, supervisionHours, unassigned,
       clients: clients.size, rbts: rbts.size, bcbas: bcbas.size };
   }, [filtered]);
 
@@ -454,6 +455,7 @@ export default function BcbaProductivityReportV3() {
     totalHours: number;
     h97153: number;
     directHours: number;
+    supervisionHours: number;
     clients: Map<string, number>;
     rbts: Map<string, number>;
     codes: Map<string, number>;
@@ -464,7 +466,7 @@ export default function BcbaProductivityReportV3() {
     const ensure = (b: string, isU: boolean) => {
       let v = map.get(b);
       if (!v) {
-        v = { bcba: b, isUnassigned: isU, totalHours: 0, h97153: 0, directHours: 0,
+        v = { bcba: b, isUnassigned: isU, totalHours: 0, h97153: 0, directHours: 0, supervisionHours: 0,
               clients: new Map(), rbts: new Map(), codes: new Map(), rows: [] };
         map.set(b, v);
       }
@@ -475,6 +477,7 @@ export default function BcbaProductivityReportV3() {
       const row = ensure(owner, !r.bcbaOwner);
       row.totalHours += r.hours;
       if (r.is97153) row.h97153 += r.hours; else row.directHours += r.hours;
+      if (isSupervision(r.code)) row.supervisionHours += r.hours;
       row.clients.set(r.clientName, (row.clients.get(r.clientName) || 0) + r.hours);
       if (r.is97153 && r.renderingProvider) row.rbts.set(r.renderingProvider, (row.rbts.get(r.renderingProvider) || 0) + r.hours);
       row.codes.set(r.code, (row.codes.get(r.code) || 0) + r.hours);
