@@ -6,6 +6,7 @@ import {
   ShieldAlert, HeartHandshake, MonitorSmartphone, Users, Video, Zap,
   ArrowUpRight, X,
 } from "lucide-react";
+import { RBTRetentionSection } from "@/components/training/RBTRetentionSection";
 
 type ResourceType = "SOP" | "Guide" | "Video" | "Checklist" | "Workflow" | "Quick Reference";
 
