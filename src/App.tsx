@@ -217,6 +217,7 @@ import OSIntakeClients from "./pages/os/OSIntakeClients";
 import OSIntakeAuthorizations from "./pages/os/OSIntakeAuthorizations";
 import OpsExecutiveDashboard from "./pages/os/operations/OpsExecutiveDashboard";
 import ExecutiveOverview from "./pages/os/executive/ExecutiveOverview";
+import WorkspacePage from "./pages/os/workspaces/WorkspacePage";
 import CompanyPulse from "./pages/os/executive/CompanyPulse";
 import ExecutiveBriefing from "./pages/os/executive/ExecutiveBriefing";
 import OrganizationalHealth from "./pages/os/executive/OrganizationalHealth";
@@ -492,6 +493,7 @@ const App = () => (
                 {PublicRoutes}
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<OSDashboard />} />
+                  <Route path="/ws/:id" element={<WorkspacePage />} />
                   <Route path="/executive" element={<ExecutiveOverview />} />
                   <Route path="/executive/overview" element={<Navigate to="/executive" replace />} />
                   <Route path="/executive/pulse" element={<CompanyPulse />} />
