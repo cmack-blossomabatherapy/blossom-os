@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import {
   LifeBuoy,
-  Sparkles,
   Mail,
   MessageCircle,
   BookOpen,
