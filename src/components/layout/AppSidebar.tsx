@@ -7,6 +7,7 @@ import {
   Calendar, UserCheck, Megaphone, TrendingUp, Wallet, Settings as SettingsIcon,
   Plug, Briefcase, Building2, IdCard, KeyRound, Smartphone, Stethoscope,
   AlertTriangle, BarChart3, ClipboardList, ListTodo, MapPin, XCircle, CheckCircle2,
+  PhoneCall, BookUser, Activity, Workflow as WorkflowIcon, Inbox, Bug,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -224,7 +225,15 @@ function buildSections(args: {
       {
         title: "Communications",
         items: [
-          { label: "Phone System", path: "/phone", icon: Phone },
+          { label: "Phone System",         path: "/phone",                          icon: Phone },
+          { label: "Call Logs",            path: "/communications/call-logs",       icon: PhoneCall },
+          { label: "Shared Lines",         path: "/phone/shared",                   icon: Phone },
+          { label: "Phone Requests",       path: "/communications/phone-requests",  icon: ClipboardList },
+          { label: "Directory",            path: "/communications/directory",       icon: BookUser },
+          { label: "After-Hours Calls",    path: "/phone/ai-calls",                 icon: PhoneCall },
+          { label: "Call Email Audit",     path: "/phone/ai-calls/audit",           icon: FileText },
+          { label: "User Activity Log",    path: "/communications/user-activity",   icon: Activity },
+          { label: "Patient Activity Log", path: "/communications/patient-activity",icon: HeartHandshake },
         ],
       },
       {
@@ -233,6 +242,17 @@ function buildSections(args: {
           { label: "Settings",     path: "/settings",            icon: SettingsIcon },
           { label: "Integrations", path: "/admin/integrations",  icon: Plug },
         ],
+      },
+      {
+        title: "System Tools",
+        items: [
+          { label: "Integrations",       path: "/admin/integrations",        icon: Plug },
+          { label: "Workflow Inventory", path: "/system/workflow-inventory", icon: WorkflowIcon },
+          { label: "Request Intake",     path: "/system/request-intake",     icon: Inbox },
+          { label: "System Settings",    path: "/settings",                  icon: SettingsIcon },
+          { label: "Issue Tracker",      path: "/system/issue-tracker",      icon: Bug },
+        ],
+        defaultCollapsed: true,
       },
     ];
   }

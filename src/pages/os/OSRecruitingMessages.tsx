@@ -581,7 +581,7 @@ export default function OSRecruitingMessages() {
             <div className="flex items-center justify-between mb-3 px-1">
               <div className="flex items-center gap-2">
                 <Brain className="size-4 text-primary" />
-                <h2 className="text-base font-semibold tracking-tight">Ask Blossom AI</h2>
+                <h2 className="text-base font-semibold tracking-tight">Operational Insights</h2>
               </div>
               <Sparkles className="size-4 text-primary/70" />
             </div>

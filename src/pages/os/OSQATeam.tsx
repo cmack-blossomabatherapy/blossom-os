@@ -568,7 +568,7 @@ export default function OSQATeam() {
           {/* RIGHT — sidebar */}
           <div className="space-y-8">
 
-            {/* Ask Blossom AI */}
+            {/* Operational Insights */}
             <section>
               <Card className="p-5 bg-gradient-to-br from-primary/5 via-card to-card">
                 <div className="flex items-center gap-2 mb-3">
@@ -576,7 +576,7 @@ export default function OSQATeam() {
                     <Brain className="h-4 w-4" strokeWidth={1.75} />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-foreground">Ask Blossom AI</div>
+                    <div className="text-sm font-semibold text-foreground">Operational Insights</div>
                     <div className="text-xs text-muted-foreground">Operational copilot for QA</div>
                   </div>
                 </div>

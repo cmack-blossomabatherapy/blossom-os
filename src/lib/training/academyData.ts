@@ -404,7 +404,7 @@ const SEED_TRAININGS: Training[] = [
   {
     id: "qa-using-blossom-os",
     title: "Using Blossom OS for QA",
-    description: "Navigating the QA Dashboard and Workspace, managing queues, and using Ask Blossom AI.",
+    description: "Navigating the QA Dashboard and Workspace, managing queues, and using Operational Insights.",
     type: "Tango", estimatedMinutes: 18, required: true,
     category: "role", department: "qa", owner: "QA Lead", lastUpdated: "2026-05-22",
     overview: "A click-by-click tour of the QA surfaces inside Blossom OS.",
@@ -416,12 +416,12 @@ const SEED_TRAININGS: Training[] = [
       { id: "u4", item: "Updating Workflow Statuses", required: true },
       { id: "u5", item: "Using Search & Filters", required: true },
       { id: "u6", item: "Internal Notes & Follow-Ups", required: true },
-      { id: "u7", item: "Using Ask Blossom AI", required: true },
+      { id: "u7", item: "Using Operational Insights", required: true },
     ],
     resources: [
       { id: "r1", type: "Link", title: "QA Dashboard", url: "/qa-team" },
       { id: "r2", type: "Link", title: "QA Workspace", url: "/qa-workspace" },
-      { id: "r3", type: "Link", title: "Ask Blossom AI", url: "/ai/assistant" },
+      { id: "r3", type: "Link", title: "Operational Insights", url: "/ai/assistant" },
     ],
   },
   {
@@ -604,19 +604,19 @@ const CASE_MANAGER_TRAININGS: Training[] = [
   },
   {
     id: "cm-ai",
-    title: "Ask Blossom AI for Case Managers",
+    title: "Operational Insights for Case Managers",
     description: "Use AI for summaries, drafts, and risk awareness — never for clinical decisions.",
     type: "Quick Guide", estimatedMinutes: 10,
     category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
     overview: "AI is a calm co-pilot. Human review always comes first.",
     checklist: [
-      { id: "c1", item: "Using Ask Blossom AI for Family Support", required: true },
+      { id: "c1", item: "Using Operational Insights for Family Support", required: true },
       { id: "c2", item: "AI Follow-Up Suggestions", required: true },
       { id: "c3", item: "AI Escalation Summaries", required: true },
       { id: "c4", item: "What Not to Ask AI", required: true },
       { id: "c5", item: "Human Review Always Comes First", required: true },
     ],
-    resources: [{ id: "r1", type: "Link", title: "Ask Blossom AI", url: "/case-manager/ai" }],
+    resources: [{ id: "r1", type: "Link", title: "Operational Insights", url: "/case-manager/ai" }],
   },
   {
     id: "cm-readiness",

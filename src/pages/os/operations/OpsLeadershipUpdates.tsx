@@ -727,7 +727,7 @@ export default function OpsLeadershipUpdates() {
           <div className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Ask Blossom — communications layer
+              Insights — communications layer
             </span>
           </div>
           <p className="mt-3 text-[14px] leading-relaxed text-foreground/90">{aiSummary}</p>

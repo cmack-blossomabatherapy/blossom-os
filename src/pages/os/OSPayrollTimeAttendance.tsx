@@ -344,7 +344,7 @@ export default function OSPayrollTimeAttendance() {
           title="Time & Attendance"
           subtitle="Review missing hours, attendance issues, and payroll-impacting time records before payroll closes."
         >
-          <HeaderBtn icon={Sparkles} to="/ai/assistant?q=Summarize time and attendance issues for this payroll cycle">Ask Blossom AI</HeaderBtn>
+          <HeaderBtn icon={Sparkles} to="/ai/assistant?q=Summarize time and attendance issues for this payroll cycle">Operational Insights</HeaderBtn>
           <HeaderBtn icon={Plus} primary to="/payroll/queue">Log issue</HeaderBtn>
         </PageHeader>
 
@@ -509,11 +509,11 @@ export default function OSPayrollTimeAttendance() {
               </div>
             </Card>
 
-            {/* Ask Blossom AI */}
+            {/* Operational Insights */}
             <Card className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <h3 className="text-[13px] font-medium tracking-tight">Ask Blossom AI</h3>
+                <h3 className="text-[13px] font-medium tracking-tight">Operational Insights</h3>
               </div>
               <div className="space-y-1.5">
                 {[

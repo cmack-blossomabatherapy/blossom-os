@@ -342,19 +342,19 @@ const modules: Module[] = [
     number: 9,
     phase: "Assisted",
     title: "Using Blossom OS",
-    subtitle: "Your daily operating surface: Dashboard, Workspace, queues, and Ask Blossom AI.",
+    subtitle: "Your daily operating surface: Dashboard, Workspace, queues, and Operational Insights.",
     icon: Compass,
     objectives: [
       "Navigate the BCBA Dashboard and Workspace fluently",
       "Use the supervision, auth, and parent training queues effectively",
-      "Leverage Ask Blossom AI for operational summaries and next actions",
+      "Leverage Operational Insights for operational summaries and next actions",
       "Set up your personal operating cadence inside Blossom OS",
     ],
     lessons: [
       { id: "m9-l1", title: "Navigating Blossom OS", kind: "Tango", minutes: 7, summary: "Sidebar, home, workspace, and key shortcuts for BCBAs." },
       { id: "m9-l2", title: "Managing your Workspace", kind: "Workflow", minutes: 7, summary: "Action queue, caseload board, and right-rail tools." },
       { id: "m9-l3", title: "Working with queues", kind: "Workflow", minutes: 5, summary: "Supervision, parent training, and auth queues — what each is for." },
-      { id: "m9-l4", title: "Ask Blossom AI for BCBAs", kind: "Overview", minutes: 5, summary: "Operational prompts that save you 20 minutes a day." },
+      { id: "m9-l4", title: "Operational Insights for BCBAs", kind: "Overview", minutes: 5, summary: "Operational prompts that save you 20 minutes a day." },
       { id: "m9-l5", title: "Personal operating cadence", kind: "Checklist", minutes: 4, summary: "Daily, weekly, and monthly rituals using Blossom OS." },
     ],
     sopLinks: [
@@ -367,7 +367,7 @@ const modules: Module[] = [
     ],
     checklist: [
       "Set up your Workspace layout",
-      "Used Ask Blossom AI at least three times",
+      "Used Operational Insights at least three times",
       "Established your daily morning routine inside Blossom OS",
     ],
     aiPrompts: [
@@ -793,7 +793,7 @@ export default function BCBAJourney() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-foreground">Ask Blossom AI · {active.title}</p>
+                  <p className="text-sm font-medium text-foreground">Operational Insights · {active.title}</p>
                   <Badge variant="secondary" className="rounded-full text-[10px]">role-aware</Badge>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">Contextual help grounded in your caseload and SOPs. HIPAA-aware.</p>

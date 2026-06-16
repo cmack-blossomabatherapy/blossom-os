@@ -278,7 +278,7 @@ export default function OSHRNewHires() {
               <BookOpen className="h-3.5 w-3.5" strokeWidth={1.75} /> Assign training
             </Link>
             <Link to="/ai/assistant" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
-              <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} /> Ask Blossom AI
+              <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} /> Operational Insights
             </Link>
           </div>
         </header>
@@ -433,7 +433,7 @@ export default function OSHRNewHires() {
             <Card className="p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Ask Blossom AI</h3>
+                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Operational Insights</h3>
               </div>
               <div className="space-y-1.5">
                 {[

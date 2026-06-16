@@ -557,12 +557,12 @@ export default function OSRecruitingPerformance() {
           <QA icon={Target} label="Export operational snapshot" />
         </section>
 
-        {/* Ask Blossom AI floating */}
+        {/* Operational Insights floating */}
         <button
           onClick={() => setAiOpen((v) => !v)}
           className="fixed bottom-6 right-6 z-40 h-12 px-5 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition inline-flex items-center gap-2 text-sm font-medium"
         >
-          <Sparkles className="size-4" /> Ask Blossom AI
+          <Sparkles className="size-4" /> Operational Insights
         </button>
         {aiOpen && (
           <div className="fixed bottom-24 right-6 z-40 w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl p-4">

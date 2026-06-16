@@ -1152,7 +1152,7 @@ function SupportTab() {
         </div>
         <p className="mt-2 text-sm text-foreground">You are never on your own. Reach out — that's why we're here.</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          <SupportLink to="/ai/assistant" icon={Sparkles} label="Ask Blossom AI" />
+          <SupportLink to="/ai/assistant" icon={Sparkles} label="Operational Insights" />
           <SupportLink to="/rbt/help" icon={LifeBuoy} label="Get help" />
           <SupportLink to="/rbt/messages?focus=training" icon={MessageSquare} label="Contact training" />
         </div>

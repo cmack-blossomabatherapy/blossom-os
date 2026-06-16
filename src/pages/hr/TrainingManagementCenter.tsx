@@ -1333,7 +1333,7 @@ function AIAssistantPanel() {
           setInput("");
         }}
       >
-        <Wand2 className="mr-1.5 h-3.5 w-3.5" /> Ask Blossom
+        <Wand2 className="mr-1.5 h-3.5 w-3.5" /> Insights
       </Button>
     </div>
   );

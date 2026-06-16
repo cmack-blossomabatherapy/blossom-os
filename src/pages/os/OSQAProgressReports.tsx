@@ -536,7 +536,7 @@ export default function OSQAProgressReports() {
             </section>
 
             <section>
-              <SectionLabel>Ask Blossom AI</SectionLabel>
+              <SectionLabel>Operational Insights</SectionLabel>
               <Card className="p-4 bg-gradient-to-br from-primary/5 via-card to-card">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary grid place-items-center">

@@ -375,7 +375,7 @@ export default function OSRecruitingBackgroundChecks() {
                   <Sparkles className="size-4 text-primary" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold tracking-tight">Ask Blossom AI</div>
+                  <div className="text-sm font-semibold tracking-tight">Operational Insights</div>
                   <div className="text-[11px] text-muted-foreground">Background-check copilot</div>
                 </div>
               </div>

@@ -830,7 +830,7 @@ export default function OSClients() {
             <Sparkles className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold">Ask Blossom AI about your clients</p>
+            <p className="text-[13px] font-semibold">Operational Insights about your clients</p>
             <p className="mt-0.5 text-[11.5px] text-muted-foreground">Summarize history, surface expiring auths, flag staffing gaps, or suggest next actions.</p>
           </div>
           <button className="inline-flex items-center gap-1.5 rounded-xl bg-foreground/[0.06] px-3 py-2 text-[12px] font-semibold text-foreground/80 hover:bg-foreground/[0.09]">

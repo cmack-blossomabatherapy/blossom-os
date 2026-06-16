@@ -187,7 +187,7 @@ const QUICK_ACTIONS = [
   { icon: Flame,         label: "Escalate concern" },
   { icon: Users,         label: "Assigned families" },
   { icon: BookOpen,      label: "Service issues" },
-  { icon: Bot,           label: "Ask Blossom AI" },
+  { icon: Bot,           label: "Operational Insights" },
 ];
 
 const AI_SUGGESTIONS = [
@@ -476,7 +476,7 @@ export default function CMProgressFollowUpsPage() {
 
         {/* 9. ASK BLOSSOM AI */}
         <section className="space-y-3">
-          <SectionHeader title="Ask Blossom AI" hint="A quiet assistant for follow-through work." />
+          <SectionHeader title="Operational Insights" hint="A quiet assistant for follow-through work." />
           <div className="relative overflow-hidden rounded-3xl border border-[hsl(265_60%_90%)] bg-gradient-to-br from-[hsl(265_100%_98%)] via-white/70 to-[hsl(210_100%_98%)] p-5 backdrop-blur-xl md:p-7">
             <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-[hsl(265_100%_92%)] opacity-60 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-12 -left-12 h-56 w-56 rounded-full bg-[hsl(210_100%_94%)] opacity-50 blur-3xl" />

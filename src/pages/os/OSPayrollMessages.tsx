@@ -408,14 +408,14 @@ export default function OSPayrollMessages() {
               </div>
             </Card>
 
-            {/* Ask Blossom AI */}
+            {/* Operational Insights */}
             <Card className="p-5">
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-7 w-7 rounded-xl bg-primary/10 grid place-items-center">
                   <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
                 </div>
                 <div>
-                  <h3 className="text-[14px] font-semibold tracking-tight">Ask Blossom AI</h3>
+                  <h3 className="text-[14px] font-semibold tracking-tight">Operational Insights</h3>
                   <p className="text-[11px] text-muted-foreground">Payroll Communication</p>
                 </div>
               </div>

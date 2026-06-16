@@ -301,14 +301,14 @@ export default function OSSchedulingTeam() {
           </Card>
         </section>
 
-        {/* Ask Blossom AI */}
+        {/* Operational Insights */}
         <Card>
           <div className="flex items-start gap-3">
             <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-muted/70 text-foreground/70">
               <Sparkles className="h-4 w-4" />
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="text-[15px] font-medium tracking-tight text-foreground">Ask Blossom AI</h3>
+              <h3 className="text-[15px] font-medium tracking-tight text-foreground">Operational Insights</h3>
               <p className="mt-0.5 text-[12.5px] text-muted-foreground">
                 Get help finding staffing risks, schedule blockers, or next actions.
               </p>

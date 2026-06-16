@@ -936,7 +936,7 @@ function AIRail() {
     <div className="space-y-3">
       <div className="flex items-center gap-2 px-1">
         <Sparkles className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold tracking-tight">Ask Blossom</h3>
+        <h3 className="text-sm font-semibold tracking-tight">Insights</h3>
       </div>
       <div className="rounded-2xl border border-border/60 bg-card p-3 space-y-1.5 shadow-sm">
         {AI_PROMPTS.map((p) => (
@@ -951,7 +951,7 @@ function AIRail() {
         ))}
       </div>
       <p className="px-1 text-[11px] text-muted-foreground leading-relaxed">
-        Ask Blossom uses your role and state scope to keep responses focused on leads you own.
+        Insights uses your role and state scope to keep responses focused on leads you own.
       </p>
     </div>
   );

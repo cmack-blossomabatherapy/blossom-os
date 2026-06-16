@@ -75,7 +75,7 @@ export default function Memory() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">AI Memory</h2>
-          <p className="text-sm text-muted-foreground">Persistent context injected into every Ask Blossom prompt.</p>
+          <p className="text-sm text-muted-foreground">Persistent context injected into every Insights prompt.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />New memory</Button></DialogTrigger>

@@ -569,10 +569,10 @@ export default function OSQAWorkspace() {
               </Card>
             </section>
 
-            {/* Ask Blossom AI */}
+            {/* Operational Insights */}
             <section>
               <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground px-2 mb-2">
-                Ask Blossom AI
+                Operational Insights
               </div>
               <Card className="p-4 bg-gradient-to-br from-primary/5 via-card to-card">
                 <div className="flex items-center gap-2 mb-3">

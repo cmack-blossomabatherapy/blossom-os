@@ -510,7 +510,7 @@ export default function OSBCBAAuthorizations() {
             <QuickAction to="/bcba/parent-training" icon={FileSignature} label="Parent training" />
             <QuickAction to="/bcba/scheduling"     icon={CalendarClock}  label="Scheduling" />
             <QuickAction to="/bcba/workspace"      icon={Activity}       label="Workspace" />
-            <QuickAction to="/ai"                  icon={Sparkles}       label="Ask Blossom AI" />
+            <QuickAction to="/ai"                  icon={Sparkles}       label="Operational Insights" />
           </div>
         </section>
       </div>
@@ -605,7 +605,7 @@ export default function OSBCBAAuthorizations() {
                     <PanelLink to="/authorizations" icon={Upload}>Upload docs</PanelLink>
                     <PanelLink to="/qa-team"        icon={MessageSquare}>Message QA</PanelLink>
                     <PanelLink to="/bcba/scheduling" icon={CalendarClock}>Scheduling</PanelLink>
-                    <PanelLink to="/ai"             icon={Sparkles}>Ask Blossom AI</PanelLink>
+                    <PanelLink to="/ai"             icon={Sparkles}>Operational Insights</PanelLink>
                   </div>
                 </PanelSection>
               </div>

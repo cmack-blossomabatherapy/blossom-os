@@ -669,7 +669,7 @@ export default function OpsEscalations() {
         </OpsCard>
 
         {/* 10. AI escalation intelligence */}
-        <OpsCard title="AI Escalation Intelligence" hint="Ask Blossom AI">
+        <OpsCard title="AI Escalation Intelligence" hint="Operational Insights">
           <div className="rounded-xl border border-border/60 bg-muted/30 p-4">
             <div className="flex items-start gap-3">
               <Sparkles className="mt-0.5 h-4 w-4 text-foreground/70 shrink-0" />

@@ -261,7 +261,7 @@ export default function OSHRResources() {
               <ShieldCheck className="mr-1.5 h-3.5 w-3.5" /> Manage visibility
             </Button>
             <Button asChild size="sm" className="rounded-full">
-              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Ask Blossom AI</Link>
+              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Operational Insights</Link>
             </Button>
           </div>
         </header>
@@ -378,7 +378,7 @@ export default function OSHRResources() {
               </div>
             </Section>
 
-            <Section title="Ask Blossom AI" subtitle="Find SOPs, workflows, templates, or operational guidance.">
+            <Section title="Operational Insights" subtitle="Find SOPs, workflows, templates, or operational guidance.">
               <div className="rounded-2xl border border-border/70 bg-card p-5">
                 <div className="flex flex-wrap gap-2">
                   {aiPrompts.map((p, i) => (
@@ -559,7 +559,7 @@ function ResourceRail({ saved, recent, onClearFilters }: { saved: number; recent
           <RailLink to="/hr/orientation-queue" label="Orientation queue" icon={GraduationCap} />
           <RailLink to="/hr/training-certifications" label="Training & certifications" icon={BadgeCheck} />
           <RailLink to="/hr/messages" label="Messages & updates" icon={BellRing} />
-          <RailLink to="/ai/assistant" label="Ask Blossom AI" icon={Bot} />
+          <RailLink to="/ai/assistant" label="Operational Insights" icon={Bot} />
         </div>
       </div>
     </div>

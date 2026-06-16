@@ -398,7 +398,7 @@ export default function ResourceManagement() {
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-[13.5px] font-semibold text-foreground">Ask Blossom AI</div>
+                  <div className="text-[13.5px] font-semibold text-foreground">Operational Insights</div>
                   <div className="text-[11.5px] text-muted-foreground">Suggestions for HR</div>
                 </div>
               </div>

@@ -84,7 +84,7 @@ export default function Training() {
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Canonical answer</label>
-                <Textarea value={a} onChange={(e) => setA(e.target.value)} rows={6} placeholder="The exact answer Ask Blossom should give." />
+                <Textarea value={a} onChange={(e) => setA(e.target.value)} rows={6} placeholder="The exact answer Insights should give." />
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>

@@ -76,7 +76,7 @@ const RESOURCES: Resource[] = [
   { id: "tr1", title: "Leadership Onboarding Journey", category: "Training & Organizational Enablement", owner: "HR Leadership", visibility: "Leadership", updated: "Updated this month", importance: "Operational", tags: ["Training", "Leadership"], summary: "Structured onboarding ramp for new operational and clinical leaders." },
   { id: "tr2", title: "Multi-State Leadership Training", category: "Training & Organizational Enablement", owner: "Director of Operations", visibility: "Executive Leadership", updated: "Updated this quarter", importance: "Executive", tags: ["Training", "Leadership", "Expansion"], summary: "Training framework for leaders operating across multiple states." },
   { id: "tr3", title: "SOP Adoption Framework", category: "Training & Organizational Enablement", owner: "Director of Operations", visibility: "Leadership", updated: "Updated this month", importance: "Operational", tags: ["Training", "Operational"], summary: "How new SOPs are rolled out and reinforced into operational behavior." },
-  { id: "tr4", title: "Executive AI Workflow Training", category: "Training & Organizational Enablement", owner: "CEO", visibility: "Executive Leadership", updated: "Updated this month", importance: "Executive", tags: ["Executive", "Training"], summary: "How executive leadership uses Ask Blossom AI as an operating layer." },
+  { id: "tr4", title: "Executive AI Workflow Training", category: "Training & Organizational Enablement", owner: "CEO", visibility: "Executive Leadership", updated: "Updated this month", importance: "Executive", tags: ["Executive", "Training"], summary: "How executive leadership uses Operational Insights as an operating layer." },
 
   // 8 — Systems & Software Operations
   { id: "sw1", title: "Blossom OS System Architecture", category: "Systems & Software Operations", owner: "Director of Operations", visibility: "Executive Leadership", updated: "Updated this month", importance: "Executive", tags: ["Executive"], summary: "Overview of how Blossom OS connects operational systems into one layer." },
@@ -223,7 +223,7 @@ export default function ExecResourceLibrary() {
         <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-background/40 to-background/60 p-4">
           <Sparkles className="mt-0.5 size-4 text-primary/80 shrink-0" />
           <p className="text-[13px] text-foreground/90 max-w-3xl">
-            Ask Blossom AI can surface the right executive framework, SOP, or playbook for the operational decision in front of you — without forcing you to browse folders.
+            Operational Insights can surface the right executive framework, SOP, or playbook for the operational decision in front of you — without forcing you to browse folders.
           </p>
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">

@@ -573,7 +573,7 @@ export default function OSBCBA() {
               <Quick to="/parent-training" icon={Baby} label="Parent training" />
               <Quick to="/scheduling" icon={CalendarDays} label="Scheduling" />
               <Quick to="/authorizations" icon={FileSignature} label="View PRs" />
-              <Quick to="/ai/assistant" icon={Sparkles} label="Ask Blossom AI" />
+              <Quick to="/ai/assistant" icon={Sparkles} label="Operational Insights" />
             </div>
           </Card>
 
@@ -583,7 +583,7 @@ export default function OSBCBA() {
                 <Sparkles className="size-4" />
               </div>
               <div>
-                <div className="text-sm font-medium text-foreground">Ask Blossom</div>
+                <div className="text-sm font-medium text-foreground">Insights</div>
                 <div className="text-xs text-muted-foreground">Scoped to your caseload</div>
               </div>
             </div>

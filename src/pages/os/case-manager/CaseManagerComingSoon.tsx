@@ -91,7 +91,7 @@ export default function CaseManagerComingSoon({
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-white">
               <Sparkles className="h-3.5 w-3.5" />
             </div>
-            <p className="text-[13px] font-semibold tracking-tight">Ask Blossom AI · upcoming</p>
+            <p className="text-[13px] font-semibold tracking-tight">Operational Insights · upcoming</p>
           </div>
           <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {aiPreview.map((line) => (

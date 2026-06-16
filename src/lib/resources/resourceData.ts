@@ -256,8 +256,8 @@ export const resources: Resource[] = [
   },
   {
     id: "r-ask-blossom-ai-guide",
-    title: "Ask Blossom AI Quick Guide",
-    description: "How to use Ask Blossom AI in your daily workflow.",
+    title: "Operational Insights Quick Guide",
+    description: "How to use Operational Insights in your daily workflow.",
     type: "Link", category: "training", status: "Published",
     roles: [], departments: [], states: [],
     tags: ["ai","blossom","quickstart"], uploadedBy: "AI Team",

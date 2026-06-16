@@ -221,7 +221,7 @@ export default function OSAskBlossom() {
                 <Sparkles className="h-5 w-5" />
               </span>
               <div>
-                <h1 className="text-[19px] font-semibold tracking-tight text-foreground">Ask Blossom AI</h1>
+                <h1 className="text-[19px] font-semibold tracking-tight text-foreground">Operational Insights</h1>
                 <p className="text-[12.5px] text-muted-foreground">The operational brain of Blossom — search, summarize, decide.</p>
               </div>
             </div>
@@ -428,7 +428,7 @@ export default function OSAskBlossom() {
 
             {/* RIGHT: insights + actions */}
             <aside className="os-glass-panel hidden flex-col p-4 lg:flex lg:max-h-[calc(100vh-220px)]">
-              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">AI Insights</h3>
+              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational Insights</h3>
               <div className="space-y-2">
                 {insights.map((i) => (
                   <div key={i.id} className="rounded-xl border border-foreground/[0.06] bg-white/80 p-3">

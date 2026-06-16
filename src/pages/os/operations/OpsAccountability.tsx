@@ -603,7 +603,7 @@ export default function OpsAccountability() {
         </div>
 
         {/* 10. AI Intelligence */}
-        <OpsCard title="AI Accountability Intelligence" hint="Ask Blossom AI">
+        <OpsCard title="AI Accountability Intelligence" hint="Operational Insights">
           <div className="rounded-xl border border-border/60 bg-muted/30 p-4">
             <div className="flex items-start gap-3">
               <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-foreground/70" />

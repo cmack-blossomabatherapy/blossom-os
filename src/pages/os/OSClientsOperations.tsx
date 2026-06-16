@@ -591,7 +591,7 @@ function RecentActivity({ clients, onOpen }: { clients: Client[]; onOpen: (id: s
   );
 }
 
-/* ─────────── Ask Blossom Rail ─────────── */
+/* ─────────── Insights Rail ─────────── */
 
 function AskBlossomClientsRail({ clients, onOpen }: { clients: Client[]; onOpen: (id: string) => void }) {
   const priorities = useMemo(() => {
@@ -627,7 +627,7 @@ function AskBlossomClientsRail({ clients, onOpen }: { clients: Client[]; onOpen:
           <Sparkles className="h-4 w-4" />
         </div>
         <div>
-          <p className="text-sm font-medium">Ask Blossom</p>
+          <p className="text-sm font-medium">Insights</p>
           <p className="text-[11px] text-muted-foreground">Client operations assistant</p>
         </div>
       </div>

@@ -306,19 +306,19 @@ const modules: Module[] = [
     number: 8,
     phase: "Independent",
     title: "Systems & Tools",
-    subtitle: "Blossom OS, CentralReach, legacy Monday, QA workflows, Resource Library, Ask Blossom AI.",
+    subtitle: "Blossom OS, CentralReach, legacy Monday, QA workflows, Resource Library, Operational Insights.",
     icon: Wrench,
     objectives: [
       "Move fluidly between Blossom OS and CentralReach",
       "Understand legacy Monday boards well enough to read history",
-      "Use the Resource Library and Ask Blossom AI as daily tools",
+      "Use the Resource Library and Operational Insights as daily tools",
     ],
     lessons: [
       { id: "m8-l1", title: "Blossom OS — authorization workspace tour", kind: "Tango", minutes: 7, summary: "Every panel, every filter, every keyboard shortcut." },
       { id: "m8-l2", title: "CentralReach for coordinators", kind: "Tango", minutes: 10, summary: "Auth lookup, treatment plan workflows, contact exports." },
       { id: "m8-l3", title: "Reading legacy Monday context", kind: "Workflow", minutes: 5, summary: "When historical context lives outside Blossom OS." },
       { id: "m8-l4", title: "Resource Library navigation", kind: "Workflow", minutes: 4, summary: "Find any SOP in under 15 seconds." },
-      { id: "m8-l5", title: "Ask Blossom AI as a daily tool", kind: "Workflow", minutes: 5, summary: "When to ask AI, when to ask a human." },
+      { id: "m8-l5", title: "Operational Insights as a daily tool", kind: "Workflow", minutes: 5, summary: "When to ask AI, when to ask a human." },
     ],
     sopLinks: [
       { label: "Authorizations workspace", href: "/authorizations" },
@@ -333,7 +333,7 @@ const modules: Module[] = [
     checklist: [
       "Completed all CR tangos",
       "Found 5 SOPs in the Resource Library in under 2 minutes total",
-      "Used Ask Blossom AI to answer one real operational question",
+      "Used Operational Insights to answer one real operational question",
     ],
     aiPrompts: [
       "Where is the SOP for treatment plan handoffs?",
@@ -700,7 +700,7 @@ export default function AuthorizationCoordinatorJourney() {
             )}
           </GlassPanel>
 
-          {/* Ask Blossom AI */}
+          {/* Operational Insights */}
           <GlassPanel className="p-5">
             <div className="flex items-start gap-3">
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -708,7 +708,7 @@ export default function AuthorizationCoordinatorJourney() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-foreground">Ask Blossom AI · {active.title}</p>
+                  <p className="text-sm font-medium text-foreground">Operational Insights · {active.title}</p>
                   <Badge variant="secondary" className="rounded-full text-[10px]">role-aware</Badge>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">Contextual help grounded in your caseload and SOPs. HIPAA-aware.</p>

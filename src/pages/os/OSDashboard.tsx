@@ -72,19 +72,19 @@ const departments = [
 const projects = [
   { name: "Blossom OS Redesign",     pct: 72, team: ["CM","ER","JT"], due: "Jun 14", priority: "High",   status: "On track", tone: "os-tone-violet" },
   { name: "Training Academy v2",     pct: 58, team: ["OC","SM"],      due: "Jun 28", priority: "High",   status: "On track", tone: "os-tone-lilac" },
-  { name: "AI Intake Agent",         pct: 41, team: ["CM","BB"],      due: "Jul 05", priority: "Medium", status: "At risk",  tone: "os-tone-rose" },
+  { name: "Intake Automation",         pct: 41, team: ["CM","BB"],      due: "Jul 05", priority: "Medium", status: "At risk",  tone: "os-tone-rose" },
   { name: "KPI Dashboard Rollout",   pct: 86, team: ["CM","ER"],      due: "Jun 03", priority: "High",   status: "On track", tone: "os-tone-mint" },
   { name: "Scheduling Automation",   pct: 33, team: ["JT","SM"],      due: "Jul 18", priority: "Medium", status: "Blocked",  tone: "os-tone-amber" },
-  { name: "Viventium Payroll Sync",  pct: 64, team: ["BB","OC"],      due: "Jun 21", priority: "Low",    status: "On track", tone: "os-tone-sky" },
+  { name: "Payroll Sync",  pct: 64, team: ["BB","OC"],      due: "Jun 21", priority: "Low",    status: "On track", tone: "os-tone-sky" },
 ];
 
 const automations = [
-  { name: "Make.com — Lead Intake → CRM",    status: "healthy",  detail: "412 runs / 24h" },
-  { name: "Monday — Auth Tracker Sync",      status: "warning",  detail: "Last sync 38m ago" },
-  { name: "AI Call Transcription Queue",     status: "critical", detail: "Queue backed up — 64 pending" },
+  { name: "Lead Intake → CRM",    status: "healthy",  detail: "412 runs / 24h" },
+  { name: "Auth Tracker Sync",      status: "warning",  detail: "Last sync 38m ago" },
+  { name: "Call Transcription Queue",     status: "critical", detail: "Queue backed up — 64 pending" },
   { name: "RBT Onboarding Workflow",         status: "healthy",  detail: "18 completed today" },
-  { name: "BCBA Credential Renewal Bot",     status: "healthy",  detail: "0 failures / 7d" },
-  { name: "Insurance Verification Agent",    status: "warning",  detail: "2 failed overnight" },
+  { name: "BCBA Credential Renewal",     status: "healthy",  detail: "0 failures / 7d" },
+  { name: "Insurance Verification",    status: "warning",  detail: "2 failed overnight" },
 ];
 
 const performers = [
@@ -110,7 +110,7 @@ const tasks = [
   { title: "Review Blossom OS redesign PR",       project: "OS Redesign",   due: "Today",     priority: "High",   status: "In progress" },
   { title: "Approve VA credentialing batch",      project: "Credentialing", due: "Today",     priority: "High",   status: "Waiting" },
   { title: "Sign off on Training Academy v2",     project: "Training",      due: "Tomorrow",  priority: "Medium", status: "Open" },
-  { title: "Fix Monday→CRM sync regression",      project: "Automations",   due: "Tomorrow",  priority: "High",   status: "Blocked" },
+  { title: "Fix lead routing sync regression",      project: "Automations",   due: "Tomorrow",  priority: "High",   status: "Blocked" },
   { title: "QBR deck — May",                      project: "Leadership",    due: "May 30",    priority: "Medium", status: "Open" },
   { title: "Interview 2 BCBA candidates",         project: "Recruiting",    due: "Fri",       priority: "Low",    status: "Open" },
 ];
@@ -122,7 +122,7 @@ const activity = [
   { who: "Jacob T.",  what: "completed HIPAA refresher",     when: "1h",  tone: "os-tone-lilac",  icon: GraduationCap },
   { who: "System",    what: "published new Intake SOP",      when: "2h",  tone: "os-tone-sky",    icon: BookOpen },
   { who: "Corey M.",  what: "updated KPI Dashboard project", when: "3h",  tone: "os-tone-violet", icon: FolderKanban },
-  { who: "Make.com",  what: "automation failure recovered",  when: "4h",  tone: "os-tone-amber",  icon: Zap },
+  { who: "Lead routing",  what: "automation failure recovered",  when: "4h",  tone: "os-tone-amber",  icon: Zap },
 ];
 
 const aiInsights = [
@@ -130,7 +130,7 @@ const aiInsights = [
   { icon: TrendingUp,tone: "os-tone-mint",   title: "Intake speed improving",    body: "Avg response time down 23% WoW across FL & TX.",                cta: "View trend" },
   { icon: AlertTriangle,tone: "os-tone-amber", title: "NC intake conversion ↓",  body: "Conversion dropped 12% last 14 days. 3 likely causes identified.", cta: "See analysis" },
   { icon: Lightbulb, tone: "os-tone-lilac",  title: "Suggested rollout",         body: "Roll Documentation SOP to BCBA group — adoption gap detected.",  cta: "Plan rollout" },
-  { icon: Cpu,       tone: "os-tone-sky",    title: "Automation degradation",   body: "Monday sync latency rising 4 days. Recommend health check.",     cta: "Run check" },
+  { icon: Cpu,       tone: "os-tone-sky",    title: "Automation degradation",   body: "Lead routing latency rising 4 days. Recommend health check.",     cta: "Run check" },
 ];
 
 const meetings = [
@@ -262,7 +262,7 @@ export default function OSDashboard() {
                 <div className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_72%)] text-white">
                   <Brain className="h-3.5 w-3.5" />
                 </div>
-                <h3 className="text-[14px] font-semibold tracking-tight">AI Insights</h3>
+                <h3 className="text-[14px] font-semibold tracking-tight">Operational Insights</h3>
               </div>
               <button className="text-[11px] font-semibold text-[hsl(265_70%_55%)] hover:underline">All</button>
             </header>
@@ -361,7 +361,7 @@ export default function OSDashboard() {
                 <AlertTriangle className="h-3 w-3" /> 3 active alerts
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(265_100%_95%)] px-2.5 py-1 font-semibold text-[hsl(265_70%_50%)]">
-                <Sparkles className="h-3 w-3" /> 5 new AI insights
+                <Sparkles className="h-3 w-3" /> 5 new insights
               </span>
             </div>
           </div>
@@ -393,7 +393,7 @@ export default function OSDashboard() {
               ))}
             </ul>
             <button className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] px-3 py-2 text-[12px] font-semibold text-white shadow-[0_10px_24px_-12px_hsl(265_85%_60%/0.55)] transition hover:opacity-95">
-              Open AI Insights <ChevronRight className="h-3.5 w-3.5" />
+              Open insights <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

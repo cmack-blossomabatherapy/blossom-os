@@ -6,7 +6,7 @@ import OSIntakeOperations from "./OSIntakeOperations";
  * Shares the same operational workspace as the Leads page so Intake
  * Coordinators work from a single source of truth: KPIs, families needing
  * action, daily follow-ups, assessment coordination, missing-info center,
- * service-readiness pipeline, recent activity, and the Ask Blossom rail.
+ * service-readiness pipeline, recent activity, and the Insights rail.
  */
 export default function OSIntakeCoordinator() {
   return (

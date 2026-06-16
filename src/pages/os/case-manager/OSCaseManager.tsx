@@ -64,7 +64,7 @@ const QUICK_ACTIONS = [
   { label: "Send parent message",   icon: Send },
   { label: "Service issues",        icon: ShieldAlert },
   { label: "Resource library",      icon: BookOpen },
-  { label: "Ask Blossom AI",        icon: Bot },
+  { label: "Operational Insights",        icon: Bot },
 ];
 
 const TIMELINE = [
@@ -315,7 +315,7 @@ export default function OSCaseManager() {
               <span className="absolute -right-1 -top-1 h-2 w-2 animate-pulse rounded-full bg-[hsl(285_85%_70%)]" />
             </div>
             <div>
-              <p className="text-[14px] font-semibold tracking-tight">Ask Blossom AI — your operational co-pilot</p>
+              <p className="text-[14px] font-semibold tracking-tight">Operational Insights — your operational co-pilot</p>
               <p className="text-[12px] text-muted-foreground">Calm, emotionally aware help for the relationships you steward.</p>
             </div>
           </div>

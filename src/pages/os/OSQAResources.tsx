@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 // QA / Compliance Resource Library
 // Role-scoped operational knowledge for the QA team. Categories, SOP placeholders,
 // workflow placeholders, templates, and quick references — no fake content beyond
-// curated placeholder titles. Search, favorites, recents, and Ask Blossom AI use
+// curated placeholder titles. Search, favorites, recents, and Operational Insights use
 // the established Blossom OS Resource Library pattern.
 // =============================================================================
 
@@ -180,7 +180,7 @@ const resources: Resource[] = [
   { id: "g4", title: "Using Search & Filters", description: "Global search and operational filtering across QA.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 3, updated: "2026-05-11" },
   { id: "g5", title: "Workflow Timeline Guide", description: "How workflow timelines render and what each event means.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 4, updated: "2026-05-09" },
   { id: "g6", title: "Internal Notes Guide", description: "How to use internal notes for hand-offs and audit trail.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 3, updated: "2026-05-07" },
-  { id: "g7", title: "Ask Blossom AI Guide", description: "What Ask Blossom AI can and cannot answer for QA.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 4, updated: "2026-05-05", href: "/ai/assistant" },
+  { id: "g7", title: "Operational Insights Guide", description: "What Operational Insights can and cannot answer for QA.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 4, updated: "2026-05-05", href: "/ai/assistant" },
   { id: "g8", title: "CentralReach Workflow References", description: "How QA touches CentralReach operationally.", category: "System Guides & Platform Workflows", type: "Reference", minutes: 5, updated: "2026-05-03" },
   { id: "g9", title: "Monday.com Workflow References", description: "Operational references for legacy Monday workflows.", category: "System Guides & Platform Workflows", type: "Reference", minutes: 5, updated: "2026-05-01" },
   { id: "g10", title: "QA Operational System Navigation Guide", description: "Where everything lives across Blossom OS for QA.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 5, updated: "2026-04-29" },
@@ -289,7 +289,7 @@ export default function OSQAResources() {
               <Bookmark className="mr-1.5 h-3.5 w-3.5" /> Saved ({saved.size})
             </Button>
             <Button asChild size="sm" className="rounded-full">
-              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Ask Blossom AI</Link>
+              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Operational Insights</Link>
             </Button>
           </div>
         </header>
@@ -407,8 +407,8 @@ export default function OSQAResources() {
               </div>
             </Section>
 
-            {/* Ask Blossom AI */}
-            <Section title="Ask Blossom AI" subtitle="Find SOPs, workflows, templates, or escalation instructions.">
+            {/* Operational Insights */}
+            <Section title="Operational Insights" subtitle="Find SOPs, workflows, templates, or escalation instructions.">
               <div className="rounded-2xl border border-border/70 bg-card p-5">
                 <div className="flex flex-wrap gap-2">
                   {aiPrompts.map((p, i) => (

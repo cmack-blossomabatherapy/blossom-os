@@ -640,7 +640,7 @@ import { useOSRole } from "@/contexts/OSRoleContext";
      <div className="rounded-2xl border border-border/70 p-5 bg-gradient-to-br from-primary/5 to-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
        <div className="flex items-center gap-2">
          <Sparkles className="size-4 text-primary" />
-         <h3 className="text-sm font-semibold tracking-tight text-foreground">Ask Blossom AI</h3>
+         <h3 className="text-sm font-semibold tracking-tight text-foreground">Operational Insights</h3>
        </div>
        <p className="text-xs text-muted-foreground mt-1">Scheduling assistant — permission-scoped.</p>
        <div className="mt-3 space-y-1.5">

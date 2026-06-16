@@ -485,8 +485,8 @@ export default function OSBCBAParentTraining() {
           )}
         </Section>
 
-        {/* Ask Blossom AI */}
-        <Section title="Ask Blossom AI">
+        {/* Operational Insights */}
+        <Section title="Operational Insights">
           <Card className="bg-gradient-to-br from-primary/5 via-card to-card">
             <div className="flex items-start gap-3">
               <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary"><Sparkles className="size-5" /></div>
@@ -520,7 +520,7 @@ export default function OSBCBAParentTraining() {
             <QuickAction to="/scheduling"           icon={MessageSquare}  label="Contact scheduling" />
             <QuickAction to="/bcba/supervision"     icon={Users}          label="Supervision" />
             <QuickAction to="/bcba/workspace"       icon={Activity}       label="Open workspace" />
-            <QuickAction to="/ai"                   icon={Sparkles}       label="Ask Blossom AI" />
+            <QuickAction to="/ai"                   icon={Sparkles}       label="Operational Insights" />
           </div>
         </section>
       </div>
@@ -586,7 +586,7 @@ export default function OSBCBAParentTraining() {
                     <PanelLink to="/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
                     <PanelLink to="/bcba/supervision" icon={Users}>Supervision</PanelLink>
                     <PanelLink to="/bcba/authorizations" icon={FileSignature}>View PR</PanelLink>
-                    <PanelLink to={`/ai?q=${encodeURIComponent(`Tell me about parent training for ${activeRow.client.clientName}`)}`} icon={Sparkles}>Ask Blossom AI</PanelLink>
+                    <PanelLink to={`/ai?q=${encodeURIComponent(`Tell me about parent training for ${activeRow.client.clientName}`)}`} icon={Sparkles}>Operational Insights</PanelLink>
                   </div>
                 </PanelSection>
 

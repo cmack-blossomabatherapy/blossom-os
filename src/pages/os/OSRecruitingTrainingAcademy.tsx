@@ -125,7 +125,7 @@ const SECTIONS: Section[] = [
       { id: "s6-3", title: "Using Candidate Notes Correctly", summary: "Note hygiene that holds up over time.", minutes: 5, type: "Checklist", status: "not_started" },
       { id: "s6-4", title: "Internal Communication Standards", summary: "Where to talk, what to document.", minutes: 5, type: "SOP", status: "not_started" },
       { id: "s6-5", title: "Managing Recruiter Follow-Ups", summary: "Never lose a candidate to silence.", minutes: 6, type: "Walkthrough", status: "not_started" },
-      { id: "s6-6", title: "Using Ask Blossom AI", summary: "Prompts that actually help recruiters.", minutes: 5, type: "Video", status: "not_started" },
+      { id: "s6-6", title: "Using Operational Insights", summary: "Prompts that actually help recruiters.", minutes: 5, type: "Video", status: "not_started" },
       { id: "s6-7", title: "Understanding Operational Dashboards", summary: "Reading the recruiting dashboard at a glance.", minutes: 6, type: "Overview", status: "not_started" },
     ],
   },
@@ -408,7 +408,7 @@ export default function OSRecruitingTrainingAcademy() {
           </div>
           <p className="mt-2 text-sm text-foreground">Stuck on something? We're here.</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <SupportLink to="/ai/assistant?q=Help+me+with+recruiting" icon={Sparkles} label="Ask Blossom AI" />
+            <SupportLink to="/ai/assistant?q=Help+me+with+recruiting" icon={Sparkles} label="Operational Insights" />
             <SupportLink to="/recruiting/messages?focus=training" icon={MessageSquare} label="Message recruiting lead" />
             <SupportLink to="/recruiting/resources" icon={LifeBuoy} label="Resource library" />
           </div>

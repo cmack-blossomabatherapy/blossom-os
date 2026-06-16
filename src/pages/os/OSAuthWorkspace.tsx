@@ -329,7 +329,7 @@ export default function OSAuthWorkspace() {
             <Bell className="h-4 w-4" />
           </button>
           <button className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/70 bg-white/70 px-3 text-[12.5px] font-semibold text-foreground/85 transition hover:text-foreground">
-            <Sparkles className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" /> Ask Blossom AI
+            <Sparkles className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" /> Operational Insights
           </button>
           <button className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[hsl(265_85%_62%)] to-[hsl(285_85%_68%)] px-3 text-[12.5px] font-semibold text-white shadow-[0_10px_24px_-14px_hsl(265_85%_55%/0.5)] transition hover:opacity-95">
             <Plus className="h-3.5 w-3.5" /> New Authorization
@@ -651,7 +651,7 @@ function RightContextPanel({ queueLabel }: { queueLabel: string }) {
         </ul>
       </section>
 
-      {/* Ask Blossom AI */}
+      {/* Operational Insights */}
       <section className="os-card relative overflow-hidden">
         <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.22)] to-transparent blur-2xl" />
         <header className="mb-3 flex items-center gap-2">
@@ -659,7 +659,7 @@ function RightContextPanel({ queueLabel }: { queueLabel: string }) {
             <Brain className="h-3.5 w-3.5" />
           </div>
           <div>
-            <h3 className="text-[14px] font-semibold tracking-tight">Ask Blossom AI</h3>
+            <h3 className="text-[14px] font-semibold tracking-tight">Operational Insights</h3>
             <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Auth operations</p>
           </div>
         </header>
@@ -880,7 +880,7 @@ function AuthDetailDrawer({ auth }: { auth: AuthCard }) {
         </DrawerSection>
 
         {/* AI */}
-        <DrawerSection title="Ask Blossom AI about this authorization">
+        <DrawerSection title="Operational Insights about this authorization">
           <ul className="space-y-1">
             {[
               "Why is this auth at risk?",
