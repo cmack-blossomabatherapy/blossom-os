@@ -504,6 +504,9 @@ function ResourcesTab({
 
   return (
     <section className="space-y-5">
+      {/* Warm, retention-focused support surface — always visible at the top. */}
+      <RBTRetentionSection />
+
       {/* Search + admin button */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative min-w-[240px] flex-1">
