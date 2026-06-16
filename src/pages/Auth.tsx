@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, Mail, KeyRound, ShieldCheck, Sparkles, ArrowLeft } from "lucide-react";
 import logoWhiteAsset from "@/assets/blossom-logo-white.png.asset.json";
 import logoWordmark from "@/assets/blossom-logo-wordmark.png";
-import logoMark from "@/assets/blossom-flower-mark.png";
 import { Checkbox } from "@/components/ui/checkbox";
 import { setRememberPreference, getRememberPreference } from "@/lib/rememberSession";
 import { RequestAccessDialog } from "@/components/auth/RequestAccessDialog";
