@@ -6,7 +6,7 @@ import {
   BookOpen, FileText, HeartHandshake, ShieldCheck, ClipboardCheck,
   Calendar, UserCheck, Megaphone, TrendingUp, Wallet, Settings as SettingsIcon,
   Plug, Briefcase, Building2, IdCard, KeyRound, Smartphone, Stethoscope,
-  AlertTriangle, BarChart3, ClipboardList,
+  AlertTriangle, BarChart3, ClipboardList, ListTodo, MapPin, XCircle, CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -147,6 +147,24 @@ function buildSections(args: {
           { label: "QA",              path: "/qa",              icon: ClipboardCheck },
           { label: "Evaluations",     path: "/evaluations",     icon: ClipboardCheck },
         ],
+      },
+      {
+        title: "State Operations",
+        items: [
+          { label: "State Operations",            path: "/state-operations",                icon: MapPin },
+          { label: "Authorizations",              path: "/ops/authorizations",              icon: ShieldCheck },
+          { label: "Approved Authorizations",     path: "/ops/approved-authorizations",     icon: CheckCircle2 },
+          { label: "Denials",                     path: "/ops/denials",                     icon: XCircle },
+          { label: "Scheduling",                  path: "/ops/scheduling",                  icon: Calendar },
+          { label: "Staffing",                    path: "/ops/staffing",                    icon: UsersIcon },
+          { label: "Case Management",             path: "/ops/case-management",             icon: HeartHandshake },
+          { label: "No OON Benefits",             path: "/ops/no-oon-benefits",             icon: ShieldCheck },
+          { label: "Family Staffing Preferences", path: "/ops/family-staffing-preferences", icon: HeartHandshake },
+          { label: "QA Dashboard",                path: "/ops/qa",                          icon: ClipboardCheck },
+          { label: "State Escalations",           path: "/ops/state-escalations",           icon: AlertTriangle },
+          { label: "Operational Tasks",           path: "/ops/tasks",                       icon: ListTodo },
+        ],
+        defaultCollapsed: true,
       },
       {
         title: "Growth & Admissions",

@@ -365,6 +365,12 @@ import {
   CredentialingDashboardPage, ProviderCredentialingPage, InsuranceCredentialingPage,
   BCBACredentialsPage, UncredentialedBCBAsPage, ExpiringCredentialsPage, CredentialingReportsPage,
 } from "./pages/os/people/PeoplePages";
+import {
+  StateOperationsPage, AuthorizationsPhase6Page, ApprovedAuthorizationsPage,
+  DenialsPage, SchedulingPhase6Page, StaffingPhase6Page, NoOONBenefitsPage,
+  CaseManagementPhase6Page, QADashboardPhase6Page, FamilyStaffingPreferencesPage,
+  StateEscalationsPage, OperationalTasksPage,
+} from "./pages/os/operations-phase6/OperationsPages";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
 import OSAskBlossom from "./pages/os/OSAskBlossom";
 import OSResourceLibrary from "./pages/os/OSResourceLibrary";
@@ -745,6 +751,19 @@ const App = () => (
                   <Route path="/credentialing/uncredentialed-bcbas" element={<AdminRoute><UncredentialedBCBAsPage /></AdminRoute>} />
                   <Route path="/credentialing/expiring" element={<AdminRoute><ExpiringCredentialsPage /></AdminRoute>} />
                   <Route path="/credentialing/reports" element={<AdminRoute><CredentialingReportsPage /></AdminRoute>} />
+                  {/* Phase 6 — Core ABA Operations */}
+                  <Route path="/state-operations" element={<AdminRoute><StateOperationsPage /></AdminRoute>} />
+                  <Route path="/ops/authorizations" element={<AdminRoute><AuthorizationsPhase6Page /></AdminRoute>} />
+                  <Route path="/ops/approved-authorizations" element={<AdminRoute><ApprovedAuthorizationsPage /></AdminRoute>} />
+                  <Route path="/ops/denials" element={<AdminRoute><DenialsPage /></AdminRoute>} />
+                  <Route path="/ops/scheduling" element={<AdminRoute><SchedulingPhase6Page /></AdminRoute>} />
+                  <Route path="/ops/staffing" element={<AdminRoute><StaffingPhase6Page /></AdminRoute>} />
+                  <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
+                  <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
+                  <Route path="/ops/qa" element={<AdminRoute><QADashboardPhase6Page /></AdminRoute>} />
+                  <Route path="/ops/family-staffing-preferences" element={<AdminRoute><FamilyStaffingPreferencesPage /></AdminRoute>} />
+                  <Route path="/ops/state-escalations" element={<AdminRoute><StateEscalationsPage /></AdminRoute>} />
+                  <Route path="/ops/tasks" element={<AdminRoute><OperationalTasksPage /></AdminRoute>} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
