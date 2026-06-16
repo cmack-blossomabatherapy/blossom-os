@@ -6,6 +6,7 @@ import {
   GraduationCap, ArrowRight, ShieldCheck, UserCircle2, ClipboardCheck,
   AlertCircle, Compass, Award, Plus, Pencil, Trash2, ExternalLink,
   Youtube, FileSpreadsheet, StickyNote, X, Search, BookMarked, FileBadge,
+  Bookmark, BookmarkCheck, Check, RotateCcw, Download, EyeOff, Layers,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,8 +19,12 @@ import {
   useRBTResources, getResourcesForModule, addResource, updateResource,
   removeResource, RBT_RESOURCE_TYPES,
   RBT_RESOURCE_CATEGORIES, TRACK_LABELS,
+  useHiddenSeedIds, getSeededResourceById, restoreSeededResource,
   type RBTResource, type RBTResourceType, type RBTResourceCategoryId,
 } from "@/lib/training/rbtResources";
+import {
+  useResourcePrefs, toggleBookmark, toggleComplete, markViewed,
+} from "@/lib/training/rbtResourcePrefs";
 import { TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
 
 // RBT Training Academy — experience-based, guided journey. Calm, mobile-first.
@@ -94,7 +99,9 @@ export default function OSRBTTrainingAcademy() {
         <Tabs value={tab} onChange={setTab} />
 
         {tab === "journey" && <JourneyTab path={path} />}
-        {tab === "resources" && <ResourcesTab isAdmin={isAdmin} path={path} />}
+        {tab === "resources" && (
+          <ResourcesTab isAdmin={isAdmin} path={path} currentModule={stats.nextModule ?? null} />
+        )}
         {tab === "signoffs" && <SignoffsTab signoffs={path.signoffs} />}
         {tab === "support" && <SupportTab />}
       </div>
@@ -390,33 +397,48 @@ function ResourceChip({ resource }: { resource: RBTResource }) {
   return <Link className={cls} to={resource.url} title={resource.description}>{content}</Link>;
 }
 
-function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
+type QuickFilter = "none" | "required" | "optional" | "worksheets" | "research" | "policies";
+
+function ResourcesTab({
+  isAdmin, path, currentModule,
+}: { isAdmin: boolean; path: RBTPath; currentModule: RBTModule | null }) {
   const all = useRBTResources();
+  const prefs = useResourcePrefs();
+  const hiddenIds = useHiddenSeedIds();
   const [category, setCategory] = useState<"all" | RBTResourceCategoryId>("all");
-  const [trackFilter, setTrackFilter] = useState<"all" | "this" | RBTPathId>("all");
+  const [trackFilter, setTrackFilter] = useState<"all" | "this" | RBTPathId>("this");
   const [typeFilter, setTypeFilter] = useState<"all" | RBTResourceType>("all");
-  const [requiredOnly, setRequiredOnly] = useState(false);
+  const [quick, setQuick] = useState<QuickFilter>("none");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<RBTResource | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
 
-  const pathModuleIds = useMemo(
-    () => new Set(path.phases.flatMap((p) => p.modules.map((m) => m.id))),
+  const allModules = useMemo(
+    () => path.phases.flatMap((p) => p.modules.map((m) => ({ id: m.id, title: m.title }))),
     [path],
   );
+  const moduleTitleById = useMemo(() => {
+    const m = new Map<string, string>();
+    allModules.forEach((x) => m.set(x.id, x.title));
+    return m;
+  }, [allModules]);
+  const pathModuleIds = useMemo(() => new Set(allModules.map((m) => m.id)), [allModules]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return all.filter((r) => {
       if (category !== "all" && r.category !== category) return false;
       if (typeFilter !== "all" && r.type !== typeFilter) return false;
-      if (requiredOnly && !r.required) return false;
+      if (quick === "required" && !(r.required && r.moduleIds.some((id) => pathModuleIds.has(id)))) return false;
+      if (quick === "optional" && r.required) return false;
+      if (quick === "worksheets" && r.type !== "Worksheet") return false;
+      if (quick === "research" && r.type !== "Research Article") return false;
+      if (quick === "policies" && r.type !== "Policy") return false;
       if (trackFilter !== "all") {
         const tracks = r.tracks && r.tracks.length > 0 ? r.tracks : null;
         if (trackFilter === "this") {
-          // Show if academy-wide, attached to this path's modules, or explicitly visible to this track.
-          const targetTrack = path.id;
-          const trackOk = !tracks || tracks.includes(targetTrack);
+          const trackOk = !tracks || tracks.includes(path.id);
           const moduleOk = r.moduleIds.length === 0 || r.moduleIds.some((id) => pathModuleIds.has(id));
           if (!trackOk && !moduleOk) return false;
         } else if (tracks && !tracks.includes(trackFilter)) {
@@ -429,9 +451,23 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
       }
       return true;
     });
-  }, [all, category, typeFilter, requiredOnly, trackFilter, query, pathModuleIds, path.id]);
+  }, [all, category, typeFilter, quick, trackFilter, query, pathModuleIds, path.id]);
 
-  // Group by category for cleaner browsing when no specific category selected.
+  const currentModuleResources = useMemo(
+    () => currentModule ? all.filter((r) => r.moduleIds.includes(currentModule.id)) : [],
+    [all, currentModule],
+  );
+  const byId = useMemo(() => new Map(all.map((r) => [r.id, r])), [all]);
+  const bookmarked = useMemo(
+    () => prefs.bookmarked.map((id) => byId.get(id)).filter((r): r is RBTResource => !!r),
+    [prefs.bookmarked, byId],
+  );
+  const recent = useMemo(
+    () => prefs.recent.map((id) => byId.get(id)).filter((r): r is RBTResource => !!r).slice(0, 6),
+    [prefs.recent, byId],
+  );
+
+  // Group filtered by category for browsing.
   const grouped = useMemo(() => {
     if (category !== "all") return null;
     const map = new Map<RBTResourceCategoryId | "_uncat", RBTResource[]>();
@@ -442,17 +478,31 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
       map.set(k, arr);
     }
     return RBT_RESOURCE_CATEGORIES
-      .map((c) => ({ id: c.id, label: c.label, description: c.description, items: map.get(c.id) ?? [] }))
+      .map((c) => ({ id: c.id, label: c.label, items: map.get(c.id) ?? [] }))
       .filter((g) => g.items.length > 0)
       .concat(
         map.has("_uncat")
-          ? [{ id: "_uncat" as never, label: "Other", description: "Uncategorized", items: map.get("_uncat") ?? [] }]
+          ? [{ id: "_uncat" as never, label: "Other", items: map.get("_uncat") ?? [] }]
           : [],
       );
   }, [filtered, category]);
 
+  const cardProps = (r: RBTResource) => ({
+    resource: r,
+    isAdmin,
+    bookmarked: prefs.bookmarked.includes(r.id),
+    completed: prefs.completed.includes(r.id),
+    moduleTitleById,
+    onEdit: () => setEditing(r),
+    onRemove: () => {
+      if (confirm(`Remove "${r.title}"?${r.seeded ? " (Seeded resources are hidden — they can be restored later.)" : ""}`)) {
+        removeResource(r.id);
+      }
+    },
+  });
+
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       {/* Search + admin button */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative min-w-[240px] flex-1">
@@ -470,10 +520,66 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
             onClick={() => setCreating(true)}
             className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:opacity-90"
           >
-            <Plus className="size-3.5" /> Add resource
+            <Plus className="size-3.5" /> Upload resource
           </button>
         )}
       </div>
+
+      {/* Quick filter pills */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {([
+          ["none", "All"],
+          ["required", "Required for my path"],
+          ["optional", "Optional enrichment"],
+          ["worksheets", "Worksheets"],
+          ["research", "Research articles"],
+          ["policies", "Policies"],
+        ] as [QuickFilter, string][]).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setQuick(key)}
+            className={cn(
+              "rounded-full px-3 py-1 text-[11px] font-medium transition border",
+              quick === key
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border/70 bg-card text-muted-foreground hover:text-foreground",
+            )}
+          >{label}</button>
+        ))}
+      </div>
+
+      {/* Current module resources */}
+      {currentModule && currentModuleResources.length > 0 && (
+        <SectionBlock
+          icon={PlayCircle}
+          title="For your current module"
+          subtitle={currentModule.title}
+          count={currentModuleResources.length}
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            {currentModuleResources.map((r) => <ResourceCard key={r.id} {...cardProps(r)} />)}
+          </div>
+        </SectionBlock>
+      )}
+
+      {/* Bookmarked */}
+      {bookmarked.length > 0 && (
+        <SectionBlock icon={BookmarkCheck} title="Saved" count={bookmarked.length}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {bookmarked.map((r) => <ResourceCard key={r.id} {...cardProps(r)} />)}
+          </div>
+        </SectionBlock>
+      )}
+
+      {/* Recently viewed */}
+      {recent.length > 0 && (
+        <SectionBlock icon={Clock} title="Recently viewed" count={recent.length}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {recent.map((r) => <ResourceCard key={r.id} {...cardProps(r)} />)}
+          </div>
+        </SectionBlock>
+      )}
 
       {/* Category chips */}
       <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/70 bg-card p-1">
@@ -499,15 +605,15 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
         ))}
       </div>
 
-      {/* Secondary filters: track + type + required */}
+      {/* Secondary filters: track + type */}
       <div className="flex flex-wrap items-center gap-2">
         <select
           value={trackFilter}
           onChange={(e) => setTrackFilter(e.target.value as typeof trackFilter)}
           className="h-8 rounded-lg border border-border/70 bg-card px-2 text-[11px] outline-none"
         >
-          <option value="all">All tracks</option>
           <option value="this">This track ({TRACK_LABELS[path.id]})</option>
+          <option value="all">All tracks</option>
           {(Object.keys(TRACK_LABELS) as RBTPathId[]).map((id) => (
             <option key={id} value={id}>{TRACK_LABELS[id]}</option>
           ))}
@@ -520,10 +626,6 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
           <option value="all">All types</option>
           {RBT_RESOURCE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
-        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border/70 bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground">
-          <input type="checkbox" checked={requiredOnly} onChange={(e) => setRequiredOnly(e.target.checked)} />
-          Required only
-        </label>
         <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
           {filtered.length} {filtered.length === 1 ? "resource" : "resources"}
         </span>
@@ -542,38 +644,55 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
                 <span className="text-[11px] text-muted-foreground tabular-nums">{g.items.length}</span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                {g.items.map((r) => (
-                  <ResourceCard
-                    key={r.id}
-                    resource={r}
-                    isAdmin={isAdmin}
-                    onEdit={() => setEditing(r)}
-                    onRemove={() => {
-                      if (confirm(`Remove "${r.title}"?${r.seeded ? " (Seeded resources are hidden — they can be restored later.)" : ""}`)) {
-                        removeResource(r.id);
-                      }
-                    }}
-                  />
-                ))}
+                {g.items.map((r) => <ResourceCard key={r.id} {...cardProps(r)} />)}
               </div>
             </div>
           ))}
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {filtered.map((r) => (
-            <ResourceCard
-              key={r.id}
-              resource={r}
-              isAdmin={isAdmin}
-              onEdit={() => setEditing(r)}
-              onRemove={() => {
-                if (confirm(`Remove "${r.title}"?${r.seeded ? " (Seeded resources are hidden — they can be restored later.)" : ""}`)) {
-                  removeResource(r.id);
-                }
-              }}
-            />
-          ))}
+          {filtered.map((r) => <ResourceCard key={r.id} {...cardProps(r)} />)}
+        </div>
+      )}
+
+      {/* Admin: hidden resources restore */}
+      {isAdmin && hiddenIds.length > 0 && (
+        <div className="rounded-2xl border border-border/70 bg-card p-4">
+          <button
+            type="button"
+            onClick={() => setShowHidden((v) => !v)}
+            className="flex w-full items-center justify-between gap-2 text-left"
+          >
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+              <EyeOff className="size-4 text-muted-foreground" />
+              Hidden seeded resources
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{hiddenIds.length}</span>
+            </span>
+            <ChevronRight className={cn("size-4 text-muted-foreground transition", showHidden && "rotate-90")} />
+          </button>
+          {showHidden && (
+            <ul className="mt-3 space-y-1.5">
+              {hiddenIds.map((id) => {
+                const r = getSeededResourceById(id);
+                if (!r) return null;
+                return (
+                  <li key={id} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-secondary/40 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-foreground">{r.title}</p>
+                      <p className="truncate text-[10.5px] text-muted-foreground">{r.type}{r.category ? ` · ${labelForCategory(r.category)}` : ""}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => restoreSeededResource(id)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      <RotateCcw className="size-3" /> Restore
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       )}
 
@@ -588,45 +707,132 @@ function ResourcesTab({ isAdmin, path }: { isAdmin: boolean; path: RBTPath }) {
   );
 }
 
+function labelForCategory(id: RBTResourceCategoryId): string {
+  return RBT_RESOURCE_CATEGORIES.find((c) => c.id === id)?.label ?? "—";
+}
+
+function SectionBlock({
+  icon: Icon, title, subtitle, count, children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string; subtitle?: string; count: number; children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Icon className="size-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          {subtitle && <span className="truncate text-[11px] text-muted-foreground">· {subtitle}</span>}
+        </div>
+        <span className="text-[11px] text-muted-foreground tabular-nums">{count}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function ResourceCard({
-  resource, isAdmin, onEdit, onRemove,
-}: { resource: RBTResource; isAdmin: boolean; onEdit: () => void; onRemove: () => void }) {
+  resource, isAdmin, bookmarked, completed, moduleTitleById, onEdit, onRemove,
+}: {
+  resource: RBTResource;
+  isAdmin: boolean;
+  bookmarked: boolean;
+  completed: boolean;
+  moduleTitleById: Map<string, string>;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
   const Icon = resourceIcon(resource.type);
   const isExternal = !!resource.url && /^https?:\/\//.test(resource.url);
-  const Wrapper: React.ElementType = resource.url ? (isExternal ? "a" : Link) : "div";
-  const wrapperProps = resource.url
-    ? isExternal
-      ? { href: resource.url, target: "_blank", rel: "noreferrer" }
-      : { to: resource.url }
-    : {};
+  const [showModules, setShowModules] = useState(false);
+  const moduleCount = resource.moduleIds.length;
+  const catLabel = resource.category ? labelForCategory(resource.category) : null;
+
+  function open() {
+    if (!resource.url) return;
+    markViewed(resource.id);
+    if (isExternal) {
+      window.open(resource.url, "_blank", "noreferrer");
+    } else {
+      // Internal route — navigate in-place.
+      window.location.assign(resource.url);
+    }
+  }
+
   return (
-    <div className="group relative rounded-2xl border border-border/70 bg-card p-4 transition hover:border-border">
-      <Wrapper
-        {...(wrapperProps as Record<string, unknown>)}
-        className="flex items-start gap-3"
-      >
-        <div className="grid size-10 place-items-center rounded-xl bg-muted text-foreground">
+    <div className={cn(
+      "group relative rounded-2xl border bg-card p-4 transition",
+      completed ? "border-emerald-500/30" : "border-border/70 hover:border-border",
+    )}>
+      <div className="flex items-start gap-3">
+        <div className={cn(
+          "grid size-10 place-items-center rounded-xl text-foreground",
+          completed ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-muted",
+        )}>
           <Icon className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <p className="truncate text-sm font-medium text-foreground">{resource.title}</p>
-            {isExternal && <ExternalLink className="size-3 text-muted-foreground" />}
-            {resource.required && (
+            {resource.required ? (
               <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
                 Required
               </span>
+            ) : (
+              <span className="rounded-full bg-secondary/70 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Optional
+              </span>
+            )}
+            {completed && (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                <Check className="size-2.5" /> Done
+              </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {resource.type}
-            {typeof resource.minutes === "number" && ` · ${resource.minutes} min`}
-            {resource.moduleIds.length > 0 && ` · ${resource.moduleIds.length} module${resource.moduleIds.length === 1 ? "" : "s"}`}
-            {resource.tracks && resource.tracks.length > 0 && ` · ${resource.tracks.length === 1 ? TRACK_LABELS[resource.tracks[0]] : `${resource.tracks.length} tracks`}`}
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            <span className="font-medium text-foreground/80">{resource.type}</span>
+            {catLabel && <> · {catLabel}</>}
+            {typeof resource.minutes === "number" && <> · {resource.minutes} min</>}
           </p>
           {resource.description && (
-            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{resource.description}</p>
+            <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{resource.description}</p>
           )}
+
+          {/* Meta row: modules + tracks */}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10.5px] text-muted-foreground">
+            {moduleCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowModules((v) => !v)}
+                className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-secondary/40 px-1.5 py-0.5 font-medium hover:text-foreground"
+                title="Show modules using this resource"
+              >
+                <Layers className="size-2.5" /> {moduleCount} module{moduleCount === 1 ? "" : "s"}
+              </button>
+            ) : (
+              <span className="rounded-full bg-secondary/40 px-1.5 py-0.5">Academy-wide</span>
+            )}
+            {resource.tracks && resource.tracks.length > 0 && (
+              <span className="rounded-full bg-secondary/40 px-1.5 py-0.5">
+                {resource.tracks.length === 1 ? TRACK_LABELS[resource.tracks[0]] : `${resource.tracks.length} tracks`}
+              </span>
+            )}
+            {(!resource.tracks || resource.tracks.length === 0) && (
+              <span className="rounded-full bg-secondary/40 px-1.5 py-0.5">All tracks</span>
+            )}
+          </div>
+
+          {showModules && moduleCount > 0 && (
+            <ul className="mt-2 space-y-0.5 rounded-lg border border-border/60 bg-secondary/30 px-2 py-1.5 text-[11px]">
+              {resource.moduleIds.map((id) => (
+                <li key={id} className="truncate text-muted-foreground">
+                  · {moduleTitleById.get(id) ?? id}
+                </li>
+              ))}
+            </ul>
+          )}
+
           {resource.tags && resource.tags.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
               {resource.tags.slice(0, 5).map((t) => (
@@ -636,8 +842,48 @@ function ResourceCard({
               ))}
             </div>
           )}
+
+          {/* Learner actions */}
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            {resource.url && (
+              <button
+                type="button"
+                onClick={open}
+                className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground transition hover:opacity-90"
+              >
+                {isExternal ? <ExternalLink className="size-3" /> : <Download className="size-3" />}
+                {isExternal ? "Open" : "Open / download"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => toggleComplete(resource.id)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition",
+                completed
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  : "border-border/70 bg-card text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Check className="size-3" /> {completed ? "Completed" : "Mark complete"}
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleBookmark(resource.id)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition",
+                bookmarked
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border/70 bg-card text-muted-foreground hover:text-foreground",
+              )}
+              aria-label={bookmarked ? "Unsave" : "Save"}
+            >
+              {bookmarked ? <BookmarkCheck className="size-3" /> : <Bookmark className="size-3" />}
+              {bookmarked ? "Saved" : "Save"}
+            </button>
+          </div>
         </div>
-      </Wrapper>
+      </div>
       {isAdmin && (
         <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
           <button
@@ -652,9 +898,10 @@ function ResourceCard({
             type="button"
             onClick={onRemove}
             className="grid size-7 place-items-center rounded-lg border border-border/70 bg-card text-muted-foreground hover:text-destructive"
-            aria-label="Remove"
+            aria-label={resource.seeded ? "Hide" : "Remove"}
+            title={resource.seeded ? "Hide" : "Remove"}
           >
-            <Trash2 className="size-3.5" />
+            {resource.seeded ? <EyeOff className="size-3.5" /> : <Trash2 className="size-3.5" />}
           </button>
         </div>
       )}

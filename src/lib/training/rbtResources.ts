@@ -398,6 +398,21 @@ export function useRBTResources(): RBTResource[] {
   return useSyncExternalStore(subscribe, getSnapshot, () => STARTER_RBT_RESOURCES);
 }
 
+// Returns the IDs of seeded resources currently hidden by an admin.
+let hiddenCache: { sig: string; value: string[] } | null = null;
+function hiddenSnapshot(): string[] {
+  const store = readStore();
+  const sig = JSON.stringify(store.hiddenSeedIds);
+  if (!hiddenCache || hiddenCache.sig !== sig) hiddenCache = { sig, value: store.hiddenSeedIds };
+  return hiddenCache.value;
+}
+export function useHiddenSeedIds(): string[] {
+  return useSyncExternalStore(subscribe, hiddenSnapshot, () => []);
+}
+export function getSeededResourceById(id: string): RBTResource | undefined {
+  return STARTER_RBT_RESOURCES.find((r) => r.id === id);
+}
+
 export function getResourcesForModule(all: RBTResource[], moduleId: string): RBTResource[] {
   return all.filter((r) => r.moduleIds.includes(moduleId));
 }
