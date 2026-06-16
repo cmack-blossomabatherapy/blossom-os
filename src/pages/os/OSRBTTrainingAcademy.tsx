@@ -674,6 +674,10 @@ function ResourceEditor({
     typeof initial?.minutes === "number" ? String(initial.minutes) : "",
   );
   const [moduleIds, setModuleIds] = useState<string[]>(initial?.moduleIds ?? []);
+  const [category, setCategory] = useState<RBTResourceCategoryId | "">(initial?.category ?? "");
+  const [required, setRequired] = useState<boolean>(!!initial?.required);
+  const [tagsText, setTagsText] = useState<string>((initial?.tags ?? []).join(", "));
+  const [tracks, setTracks] = useState<RBTPathId[]>(initial?.tracks ?? []);
 
   const allModules = useMemo(
     () => path.phases.flatMap((p) => p.modules.map((m) => ({ id: m.id, title: m.title, phase: p.title }))),
@@ -694,6 +698,10 @@ function ResourceEditor({
       body: body.trim() || undefined,
       moduleIds,
       minutes: minutes ? Math.max(0, parseInt(minutes, 10) || 0) : undefined,
+      category: category || undefined,
+      required: required || undefined,
+      tags: tagsText.split(",").map((t) => t.trim()).filter(Boolean),
+      tracks: tracks.length ? tracks : undefined,
     };
     if (initial) updateResource(initial.id, payload);
     else addResource(payload);
@@ -736,6 +744,38 @@ function ResourceEditor({
           </Field2>
           <Field2 label="Description (one line)">
             <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputCls} placeholder="What the resource covers" />
+          </Field2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field2 label="Category">
+              <select value={category} onChange={(e) => setCategory(e.target.value as RBTResourceCategoryId | "")} className={inputCls}>
+                <option value="">— None —</option>
+                {RBT_RESOURCE_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </select>
+            </Field2>
+            <Field2 label="Required vs optional">
+              <label className="inline-flex h-9 items-center gap-2 rounded-lg border border-border/70 bg-card px-3 text-sm">
+                <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} />
+                Required reading
+              </label>
+            </Field2>
+          </div>
+          <Field2 label="Tags (comma-separated)">
+            <input value={tagsText} onChange={(e) => setTagsText(e.target.value)} className={inputCls} placeholder="e.g. ethics, prompting, video" />
+          </Field2>
+          <Field2 label={`Track visibility (${tracks.length === 0 ? "all tracks" : `${tracks.length} selected`})`}>
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-border/70 bg-secondary/40 p-2">
+              {(Object.keys(TRACK_LABELS) as RBTPathId[]).map((id) => (
+                <label key={id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-xs hover:bg-muted">
+                  <input
+                    type="checkbox"
+                    checked={tracks.includes(id)}
+                    onChange={() => setTracks((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id])}
+                  />
+                  <span className="flex-1 truncate">{TRACK_LABELS[id]}</span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">Leave empty for all tracks.</p>
           </Field2>
           {(type === "Trainer Note" || type === "Quiz" || type === "Mock Form") && (
             <Field2 label="Body / notes (optional)">
