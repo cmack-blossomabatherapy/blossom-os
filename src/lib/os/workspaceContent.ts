@@ -482,6 +482,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     resources: [{ label: "Scheduling SOPs", path: "/resources?cat=scheduling" }],
     related: [
       { label: "RBT Readiness Board", path: "/training/rbt-readiness" },
+      { label: "RBT Academy Admin", path: "/training/rbt-admin" },
       { label: "Recruiting", path: "/ws/recruiting" },
     ],
   },

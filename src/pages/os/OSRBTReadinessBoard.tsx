@@ -7,7 +7,7 @@ import {
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import {
-  RBT_TRAINEES, summarize, READINESS_TONE,
+  useTrainees, summarize, READINESS_TONE,
   type ReadinessStatus,
 } from "@/lib/training/rbtReadiness";
 
@@ -24,12 +24,13 @@ const STATUS_ORDER: ReadinessStatus[] = [
 const STATE_CHIPS = ["All", "GA", "NC", "TN", "VA", "MD"] as const;
 
 export default function OSRBTReadinessBoard() {
+  const trainees = useTrainees();
   const [query, setQuery] = useState("");
   const [state, setState] = useState<(typeof STATE_CHIPS)[number]>("All");
   const [status, setStatus] = useState<ReadinessStatus | "All">("All");
 
   const rows = useMemo(() => {
-    return RBT_TRAINEES.map((t) => ({ t, s: summarize(t) }))
+    return trainees.map((t) => ({ t, s: summarize(t) }))
       .filter(({ t }) => state === "All" || t.state === state)
       .filter(({ t, s }) => {
         if (status !== "All" && s.status !== status) return false;
@@ -46,7 +47,7 @@ export default function OSRBTReadinessBoard() {
         (a, b) =>
           STATUS_ORDER.indexOf(a.s.status) - STATUS_ORDER.indexOf(b.s.status),
       );
-  }, [query, state, status]);
+  }, [trainees, query, state, status]);
 
   const counts = useMemo(() => {
     const acc: Record<ReadinessStatus, number> = {
@@ -54,9 +55,9 @@ export default function OSRBTReadinessBoard() {
       "Awaiting Lead RBT Signoff": 0, "Awaiting BCBA Signoff": 0,
       "Ready for Independent Assignment": 0, Blocked: 0,
     };
-    RBT_TRAINEES.forEach((t) => { acc[summarize(t).status]++; });
+    trainees.forEach((t) => { acc[summarize(t).status]++; });
     return acc;
-  }, []);
+  }, [trainees]);
 
   return (
     <OSShell>

@@ -304,6 +304,7 @@ import OSRBT from "./pages/os/OSRBT";
 import OSRBTMyDay from "./pages/os/OSRBTMyDay";
 import OSRBTTrainingAcademy from "./pages/os/OSRBTTrainingAcademy";
 import OSRBTReadinessBoard from "./pages/os/OSRBTReadinessBoard";
+import OSRBTAcademyAdmin from "./pages/os/OSRBTAcademyAdmin";
 import OSRBTClients from "./pages/os/OSRBTClients";
 import OSRBTSchedule from "./pages/os/OSRBTSchedule";
 import OSRBTSessionSupport from "./pages/os/OSRBTSessionSupport";
@@ -616,6 +617,7 @@ const App = () => (
                   <Route path="/rbt/training-academy" element={<OSRBTTrainingAcademy />} />
                   <Route path="/rbt/readiness" element={<OSRBTReadinessBoard />} />
                   <Route path="/training/rbt-readiness" element={<OSRBTReadinessBoard />} />
+                  <Route path="/training/rbt-admin" element={<OSRBTAcademyAdmin />} />
                   <Route path="/rbt/clients" element={<OSRBTClients />} />
                   <Route path="/rbt/schedule" element={<OSRBTSchedule />} />
                   <Route path="/rbt/session-support" element={<OSRBTSessionSupport />} />
