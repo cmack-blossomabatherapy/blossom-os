@@ -14,7 +14,6 @@ import { ROLE_HOME } from "@/lib/os/roleHome";
 import { type OSRole } from "@/lib/os/permissions";
 import {
   WORKSPACES,
-  LEGACY_GROUPS,
   workspacesForRoles,
   type Workspace,
 } from "@/lib/os/workspaces";
@@ -90,14 +89,6 @@ const roleLabels: Record<string, string> = {
   staff: "Staff",
   viewer: "Viewer",
 };
-
-// Generic icon for legacy entries — neutral so we don't overload the sidebar.
-const PlainDot: LucideIcon = ((props) => (
-  // simple visual marker
-  <svg viewBox="0 0 24 24" width={16} height={16} fill="currentColor" {...props}>
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-)) as LucideIcon;
 
 function buildSections(args: {
   roles: string[];
