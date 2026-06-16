@@ -4,7 +4,6 @@ import { AppSidebar } from "./AppSidebar";
 import { TopBar } from "./TopBar";
 import { useLocation } from "react-router-dom";
 import { ForcePasswordChange } from "@/components/auth/ForcePasswordChange";
-import { AssistantWidget } from "@/components/assistant/AssistantWidget";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { OnboardingGate } from "@/components/auth/OnboardingGate";
 
@@ -70,7 +69,6 @@ export function AppLayout() {
         </main>
       </div>
       <ForcePasswordChange />
-      <AssistantWidget />
       <MobileBottomNav />
     </div>
   );

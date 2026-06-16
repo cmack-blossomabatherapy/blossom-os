@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  ChevronDown, X, Search, LogOut, Lock, Eye, ArrowLeft,
+  ChevronDown, X, Search, LogOut, Lock, Eye, ArrowLeft, Phone, Users as UsersIcon,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
   workspacesForRoles,
   type Workspace,
 } from "@/lib/os/workspaces";
+import { ROLE_MENUS, DEFAULT_ROLE_MENU, ROLE_PREVIEW_LIST } from "@/lib/os/roleMenus";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -27,6 +28,7 @@ interface NavItem {
   icon: LucideIcon;
   path: string;
   disabled?: boolean;
+  comingSoon?: boolean;
   children?: { label: string; path: string }[];
 }
 
@@ -95,60 +97,78 @@ function buildSections(args: {
   isAdmin: boolean;
   /** When super admin is impersonating an OS role, narrow visibility. */
   impersonatedRoles: string[] | null;
+  /** OS role currently being previewed/used (null when admin not impersonating). */
+  effectiveOSRole: OSRole | null;
 }): NavSection[] {
-  const { roles, isAdmin, impersonatedRoles } = args;
+  const { roles, isAdmin, impersonatedRoles, effectiveOSRole } = args;
   const effectiveRoles = impersonatedRoles ?? roles;
   const effectiveIsAdmin = impersonatedRoles ? false : isAdmin;
 
-  const visible: Workspace[] = workspacesForRoles(effectiveRoles, effectiveIsAdmin);
-
-  const groupFor = (g: Workspace["group"]) =>
-    visible.filter((w) => w.group === g).map<NavItem>((w) => ({
-      label: w.label,
-      icon: w.icon,
-      path: w.path,
-      children: w.tabs,
-    }));
-
-  const sections: NavSection[] = [];
-
-  // Super Admin (not impersonating): show ONLY the Admin workspace.
-  // The role preview switcher and legacy access are rendered separately by the
-  // sidebar component so the menu stays clean.
+  // ---- Super Admin (not impersonating): full access ----
   if (effectiveIsAdmin) {
-    const adminItems = groupFor("system");
-    if (adminItems.length) sections.push({ title: "Admin", items: adminItems });
+    const visible: Workspace[] = WORKSPACES;
+    const groupFor = (g: Workspace["group"]) =>
+      visible.filter((w) => w.group === g).map<NavItem>((w) => ({
+        label: w.label,
+        icon: w.icon,
+        path: w.path,
+        children: w.tabs,
+      }));
+    const sections: NavSection[] = [];
+    const workspaces = groupFor("workspaces");
+    if (workspaces.length) sections.push({ title: "Workspaces", items: workspaces });
+
+    const knowledge = groupFor("knowledge");
+    if (knowledge.length) sections.push({ title: "Knowledge", items: knowledge });
+
+    // Always-on operational tools for Super Admin.
+    sections.push({
+      title: "Operational Tools",
+      items: [
+        { label: "Phone System",     path: "/phone", icon: Phone },
+        { label: "User Management",  path: "/team",  icon: UsersIcon },
+      ],
+    });
+
+    const system = groupFor("system");
+    if (system.length) sections.push({ title: "System", items: system });
+
     return sections;
   }
 
-  const workspaces = groupFor("workspaces");
-  if (workspaces.length) sections.push({ title: "Workspaces", items: workspaces });
-
-  const knowledge = groupFor("knowledge");
-  if (knowledge.length) sections.push({ title: "Knowledge", items: knowledge });
-
-  const system = groupFor("system");
-  if (system.length) sections.push({ title: "System", items: system });
-
+  // ---- Non-admin (and impersonated views): role-scoped simple menu ----
+  const menu = (effectiveOSRole && ROLE_MENUS[effectiveOSRole]) ?? DEFAULT_ROLE_MENU;
+  const sections: NavSection[] = [];
+  sections.push({
+    title: "Workspace",
+    items: menu.active.map<NavItem>((i) => ({
+      label: i.label,
+      icon: i.icon,
+      path: i.path,
+    })),
+  });
+  if (menu.comingSoon.length) {
+    sections.push({
+      title: "Coming Soon",
+      items: menu.comingSoon.map<NavItem>((i) => ({
+        label: i.label,
+        icon: i.icon,
+        path: i.path,
+        disabled: true,
+        comingSoon: true,
+      })),
+      defaultCollapsed: true,
+    });
+  }
+  void roles;
+  void effectiveRoles;
+  void workspacesForRoles;
   return sections;
 }
 
-/** Role preview list surfaced to Super Admins so they can preview any role's menu. */
-const ROLE_PREVIEW: { label: string; role: OSRole }[] = [
-  { label: "Executive",       role: "executive_leadership" },
-  { label: "Operations",      role: "operations_leadership" },
-  { label: "Marketing",       role: "marketing_team" },
-  { label: "Intake",          role: "intake_coordinator" },
-  { label: "Auth",            role: "authorization_coordinator" },
-  { label: "QA",              role: "qa_team" },
-  { label: "Scheduling",      role: "scheduling_team" },
-  { label: "Recruiting",      role: "recruiting_team" },
-  { label: "HR / Payroll",    role: "hr_team" },
-  { label: "Billing",         role: "billing_finance" },
-  { label: "State Director",  role: "state_director" },
-  { label: "BCBA",            role: "bcba" },
-  { label: "RBT",             role: "rbt" },
-];
+/** Role preview list surfaced to Super Admins. Sourced from the canonical
+ *  role menu module so dropdown + sidebar stay in sync. */
+const ROLE_PREVIEW = ROLE_PREVIEW_LIST.filter((r) => r.role !== "super_admin");
 
 export function AppSidebar({
   mobileOpen = false,
@@ -216,8 +236,8 @@ export function AppSidebar({
   }, [impersonating, osRole]);
 
   const baseSections = useMemo(
-    () => buildSections({ roles, isAdmin, impersonatedRoles }),
-    [roles, isAdmin, impersonatedRoles],
+    () => buildSections({ roles, isAdmin, impersonatedRoles, effectiveOSRole: osRole }),
+    [roles, isAdmin, impersonatedRoles, osRole],
   );
 
   // Persisted collapse state.
@@ -561,9 +581,16 @@ export function AppSidebar({
                               <button type="button" onClick={(e) => e.preventDefault()} aria-disabled="true" className={cn("nav-item nav-item-disabled w-full")}>
                                 <Lock className="h-4 w-4 shrink-0" />
                                 <span className="truncate">{item.label}</span>
+                                {item.comingSoon && (
+                                  <span className="ml-auto rounded-full bg-sidebar-accent/40 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-sidebar-foreground/70">
+                                    Soon
+                                  </span>
+                                )}
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="right">Access restricted</TooltipContent>
+                            <TooltipContent side="right">
+                              {item.comingSoon ? "Coming soon" : "Access restricted"}
+                            </TooltipContent>
                           </Tooltip>
                         );
                       }
