@@ -35,6 +35,16 @@ import Tasks from "./pages/Tasks";
 import Reports from "./pages/Reports";
 import ReportsHome from "./pages/os/reports/ReportsHome";
 import ReportsLanding from "./pages/os/reports/ReportsLanding";
+import BusinessDevelopmentDashboard from "./pages/os/growth/BusinessDevelopmentDashboard";
+import LeadTrap from "./pages/os/growth/LeadTrap";
+import FacebookAds from "./pages/os/growth/FacebookAds";
+import GoogleAds from "./pages/os/growth/GoogleAds";
+import PatientLifetimeJourney from "./pages/os/growth/PatientLifetimeJourney";
+import IntakeDashboard from "./pages/os/intake/IntakeDashboard";
+import LeadToActivePipeline from "./pages/os/intake/LeadToActivePipeline";
+import ReferralQueue from "./pages/os/intake/ReferralQueue";
+import IntakeTasks from "./pages/os/intake/IntakeTasks";
+import LeadBenefitsCheatSheets from "./pages/os/intake/LeadBenefitsCheatSheets";
 import ReportDetail from "./pages/os/reports/ReportDetail";
 import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboard";
 import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDashboard";
@@ -739,6 +749,17 @@ const App = () => (
                   <Route path="/marketing/attribution" element={<MarketingAttribution />} />
                   <Route path="/marketing/state-growth" element={<MarketingStateGrowth />} />
                   <Route path="/marketing/reports" element={<MarketingReports />} />
+                  {/* Phase 4 — Growth & Admissions */}
+                  <Route path="/business-development" element={<BusinessDevelopmentDashboard />} />
+                  <Route path="/marketing/leadtrap" element={<LeadTrap />} />
+                  <Route path="/marketing/facebook-ads" element={<FacebookAds />} />
+                  <Route path="/marketing/google-ads" element={<GoogleAds />} />
+                  <Route path="/patient-journey" element={<PatientLifetimeJourney />} />
+                  <Route path="/intake/dashboard" element={<IntakeDashboard />} />
+                  <Route path="/intake/lead-to-active" element={<LeadToActivePipeline />} />
+                  <Route path="/intake/referral-queue" element={<ReferralQueue />} />
+                  <Route path="/intake/tasks" element={<IntakeTasks />} />
+                  <Route path="/intake/benefits-cheat-sheets" element={<LeadBenefitsCheatSheets />} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />
