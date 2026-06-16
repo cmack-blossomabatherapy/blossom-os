@@ -28,6 +28,7 @@ interface NavItem {
   icon: LucideIcon;
   path: string;
   disabled?: boolean;
+  children?: { label: string; path: string }[];
 }
 
 interface NavSection {
@@ -115,6 +116,7 @@ function buildSections(args: {
       label: w.label,
       icon: w.icon,
       path: w.path,
+      children: w.tabs,
     }));
 
   const sections: NavSection[] = [];
