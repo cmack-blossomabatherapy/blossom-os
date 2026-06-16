@@ -313,8 +313,23 @@ export function AppSidebar({
   });
 
   const activeSectionTitles = new Set(
-    baseSections.filter((s) => s.items.some((i) => isItemActive(i.path))).map((s) => s.title),
+    baseSections.filter((s) => s.items.some((i) =>
+      isItemActive(i.path) || (i.children?.some((c) => isItemActive(c.path)) ?? false),
+    )).map((s) => s.title),
   );
+  // Auto-expand any workspace whose tab is the active route.
+  useEffect(() => {
+    setOpenItems((cur) => {
+      const next = new Set(cur);
+      for (const section of baseSections) {
+        for (const item of section.items) {
+          if (item.children?.some((c) => isItemActive(c.path))) next.add(item.path);
+        }
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.search, baseSections]);
   useEffect(() => {
     if (mobileOpen) setMobileOpenSections(activeSectionTitles);
     // eslint-disable-next-line react-hooks/exhaustive-deps
