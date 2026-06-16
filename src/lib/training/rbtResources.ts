@@ -3,6 +3,7 @@
 // so a backend can be added later without changing consumer code.
 
 import { useSyncExternalStore } from "react";
+import type { RBTPathId } from "./rbtAcademy";
 
 export type RBTResourceType =
   | "YouTube Video"
@@ -12,7 +13,13 @@ export type RBTResourceType =
   | "Template"
   | "Quiz"
   | "Mock Form"
-  | "Trainer Note";
+  | "Trainer Note"
+  | "PDF"
+  | "Worksheet"
+  | "Policy"
+  | "Research Article"
+  | "How-To"
+  | "Meeting Recording";
 
 export const RBT_RESOURCE_TYPES: RBTResourceType[] = [
   "YouTube Video",
@@ -23,7 +30,51 @@ export const RBT_RESOURCE_TYPES: RBTResourceType[] = [
   "Quiz",
   "Mock Form",
   "Trainer Note",
+  "PDF",
+  "Worksheet",
+  "Policy",
+  "Research Article",
+  "How-To",
+  "Meeting Recording",
 ];
+
+// ---------- Categories ----------
+
+export type RBTResourceCategoryId =
+  | "welcome"
+  | "credentialing"
+  | "policies"
+  | "documentation"
+  | "aba_skills"
+  | "worksheets"
+  | "research"
+  | "retention"
+  | "admin";
+
+export interface RBTResourceCategory {
+  id: RBTResourceCategoryId;
+  label: string;
+  description: string;
+}
+
+export const RBT_RESOURCE_CATEGORIES: RBTResourceCategory[] = [
+  { id: "welcome",       label: "Welcome & Blossom Orientation", description: "Day-one orientation, intro videos, the Blossom way." },
+  { id: "credentialing", label: "BACB / Credentialing / Ethics", description: "RBT Handbook, requirements, ethics code, competency." },
+  { id: "policies",      label: "Blossom Policies & Field Expectations", description: "Official policies, conduct, field standards." },
+  { id: "documentation", label: "CentralReach / Documentation / Data", description: "CR how-to, session notes, data collection." },
+  { id: "aba_skills",    label: "ABA Skill Practice Guides", description: "Prompting, assent, reinforcement, data — applied." },
+  { id: "worksheets",    label: "Worksheets & Practice Activities", description: "Monthly worksheets to deepen field skills." },
+  { id: "research",      label: "Research & Clinical Articles", description: "Peer-reviewed and applied research RBTs should read." },
+  { id: "retention",     label: "Retention, Engagement & Non-Billable Points", description: "Points system, recognition, non-billable activities." },
+  { id: "admin",         label: "Scheduling, Payroll, PTO & Admin Basics", description: "Day-to-day admin: schedule changes, PTO, mileage, payroll." },
+];
+
+export const TRACK_LABELS: Record<RBTPathId, string> = {
+  not_certified:           "Not Certified",
+  certified_no_experience: "Certified · No Experience",
+  certified_under_2yrs:    "Certified · Under 2 Years",
+  certified_2yrs_plus:     "Certified · 2+ Years",
+};
 
 export interface RBTResource {
   id: string;
@@ -39,6 +90,14 @@ export interface RBTResource {
   moduleIds: string[];
   /** Estimated minutes to consume. */
   minutes?: number;
+  /** Library category. Optional for legacy resources. */
+  category?: RBTResourceCategoryId;
+  /** Free-form tags for search. */
+  tags?: string[];
+  /** Required vs optional inside its category/track. */
+  required?: boolean;
+  /** Tracks this resource is visible to. Empty / undefined = all tracks. */
+  tracks?: RBTPathId[];
   /** True when seeded in code (cannot be hard-deleted, only hidden/overridden). */
   seeded?: boolean;
   updatedAt?: string;
