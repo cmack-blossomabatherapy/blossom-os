@@ -152,7 +152,7 @@ export interface RoleAISummary {
   insights: { icon: LucideIcon; text: string; tone: "violet" | "emerald" | "amber" | "rose" | "sky" }[];
 }
 
-export const ROLE_AI_SUMMARY: Record<OSRole, RoleAISummary> = {
+export const ROLE_AI_SUMMARY: Partial<Record<OSRole, RoleAISummary>> = {
   super_admin:           { headline: "Network in healthy posture. 3 operational risks worth your attention this week.", insights: [
     { icon: TrendingUp, text: "Active client growth pacing 18% above plan.", tone: "emerald" },
     { icon: AlertTriangle, text: "GA capacity gap widened to 62 hours.", tone: "amber" },
