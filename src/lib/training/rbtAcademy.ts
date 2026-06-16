@@ -46,13 +46,20 @@ export interface RBTPhase {
 export interface SignoffItem {
   id: string;
   label: string;
-  owner: "Lead RBT Trainer" | "BCBA" | "Operations";
+  owner: SignoffOwner;
   required: boolean;
   status: "signed" | "pending" | "scheduled";
   signedBy?: string;
   signedOn?: string;
   note?: string;
 }
+
+export type SignoffOwner =
+  | "Lead RBT Trainer"
+  | "BCBA"
+  | "Training Admin"
+  | "Documentation Reviewer"
+  | "Operations";
 
 export interface RBTPath {
   id: RBTPathId;
