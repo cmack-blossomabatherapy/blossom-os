@@ -758,6 +758,31 @@ export default function BcbaProductivityReportV3() {
           </div>
         )}
 
+        {/* Empty state when no admin-uploaded dataset exists. */}
+        {!savedParam && !rows.length && sharedStatus && sharedStatus.activeRowCount === 0 && (
+          <div className="rounded-xl border bg-card/60 p-5">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="rounded-xl bg-primary/10 p-3 text-primary"><Database className="h-6 w-6" /></div>
+                <div>
+                  <div className="font-medium">Admin-fed CentralReach dataset</div>
+                  <div className="mt-1 text-sm text-muted-foreground max-w-xl">
+                    No admin-uploaded BCBA productivity dataset found. Ask an admin to upload the CentralReach billing export.
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" variant="outline" onClick={loadSharedDataset} disabled={sharedLoading}>
+                  <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", sharedLoading && "animate-spin")} /> Refresh dataset
+                </Button>
+                <Button size="sm" asChild>
+                  <Link to="/system/bcba-productivity-uploads">Manage uploads</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="rounded-xl border bg-card/60 p-3">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
@@ -855,7 +880,7 @@ export default function BcbaProductivityReportV3() {
                       </div>
                     ) : (
                       <div className="mt-2 text-xs text-muted-foreground">
-                        No admin-uploaded BCBA productivity dataset found yet. Ask an admin to upload CentralReach data.
+                        No admin-uploaded BCBA productivity dataset found. Ask an admin to upload the CentralReach billing export.
                       </div>
                     )}
                   </div>
@@ -1808,7 +1833,7 @@ function BcbaSummaryTable({ bcbaTable, expanded, setExpanded }: {
           <tbody>
             {sorted.length === 0 && (
               <tr><td colSpan={9} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                Upload a billing report to populate productivity.
+                No productivity rows yet. The report runs on the shared admin dataset.
               </td></tr>
             )}
             {sorted.map(b => {
