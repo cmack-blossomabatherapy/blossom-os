@@ -19,7 +19,7 @@ import {
 
 const STATUS_LABEL: Record<Phase3Status, string> = {
   live: "Live",
-  coming_soon: "Coming Soon",
+  coming_soon: "Setup needed",
   needs_data: "Needs Data",
 };
 
@@ -102,7 +102,7 @@ export default function ReportsLanding() {
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="live">Live</SelectItem>
-                <SelectItem value="coming_soon">Coming Soon</SelectItem>
+                <SelectItem value="coming_soon">Setup needed</SelectItem>
                 <SelectItem value="needs_data">Needs Data</SelectItem>
               </SelectContent>
             </Select>

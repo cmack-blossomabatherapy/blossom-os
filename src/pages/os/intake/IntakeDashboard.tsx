@@ -1,5 +1,5 @@
 import { ClipboardList, TrendingUp, MessageSquare, AlertCircle, FileText, ShieldCheck, Plus, ArrowRightLeft } from "lucide-react";
-import { GrowthPageShell, Section, StatCard, LinkCard, ComingSoonNotice } from "@/components/os/growth/GrowthPageShell";
+import { GrowthPageShell, Section, StatCard, LinkCard, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 
 export default function IntakeDashboard() {
   return (
@@ -25,16 +25,16 @@ export default function IntakeDashboard() {
 
       <Section title="Intake workspaces" description="Open any area to manage that part of intake.">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          <LinkCard title="New Referral Queue" description="Inbound referrals awaiting first contact." to="/intake/referral-queue" status="coming_soon" icon={ClipboardList} />
-          <LinkCard title="Lead To Active Pipeline" description="Stage-by-stage view from lead through active care." to="/intake/lead-to-active" status="coming_soon" icon={TrendingUp} />
-          <LinkCard title="Missing Information" description="Leads blocked by missing documents or details." to="/coming-soon?module=Missing%20Information" status="coming_soon" icon={AlertCircle} />
-          <LinkCard title="Parent Communication" description="Open conversations and required follow-ups with families." to="/coming-soon?module=Parent%20Communication" status="coming_soon" icon={MessageSquare} />
-          <LinkCard title="Intake Tasks" description="Personal task list for the intake team." to="/intake/tasks" status="coming_soon" icon={FileText} />
+          <LinkCard title="New Referral Queue" description="Inbound referrals awaiting first contact." to="/intake/referral-queue" status="ready" icon={ClipboardList} />
+          <LinkCard title="Lead To Active Pipeline" description="Stage-by-stage view from lead through active care." to="/intake/lead-to-active" status="ready" icon={TrendingUp} />
+          <LinkCard title="Missing Information" description="Leads blocked by missing documents or details." to="/intake/missing-information" status="ready" icon={AlertCircle} />
+          <LinkCard title="Parent Communication" description="Open conversations and required follow-ups with families." to="/intake/parent-communication" status="ready" icon={MessageSquare} />
+          <LinkCard title="Intake Tasks" description="Personal task list for the intake team." to="/intake/tasks" status="ready" icon={FileText} />
           <LinkCard title="Lead Benefits Cheat Sheets" description="Payer guidance to support eligibility and qualification." to="/intake/benefits-cheat-sheets" status="live" icon={ShieldCheck} />
         </div>
       </Section>
 
-      <ComingSoonNotice message="As intake workflows connect, this dashboard will surface live queues, ownership, blockers, and the next action for every lead." />
+      <ReadyForDataNotice message="This workspace is ready for live data. As intake activity comes in, this dashboard will surface live queues, ownership, blockers, and the next action for every lead." />
     </GrowthPageShell>
   );
 }

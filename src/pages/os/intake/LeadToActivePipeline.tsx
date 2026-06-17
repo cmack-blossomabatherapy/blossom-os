@@ -1,5 +1,5 @@
 import { TrendingUp, ArrowRight } from "lucide-react";
-import { GrowthPageShell, Section, ComingSoonNotice } from "@/components/os/growth/GrowthPageShell";
+import { GrowthPageShell, Section, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 
 const STAGES = [
   { name: "New Lead", count: "—" },
@@ -35,7 +35,7 @@ export default function LeadToActivePipeline() {
         </div>
       </Section>
 
-      <ComingSoonNotice message="Once intake data is connected, each stage will show live counts, owners, aging, and one-click actions to move leads forward." />
+      <ReadyForDataNotice message="This workspace is ready for live data. Each stage will show live counts, owners, aging, and one-click actions to move leads forward." />
     </GrowthPageShell>
   );
 }
