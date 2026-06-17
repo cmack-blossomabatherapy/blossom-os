@@ -138,6 +138,14 @@ function logLeadActivity(
     .then(() => undefined, () => undefined);
 }
 
+/** Phase D — fire-and-forget persistence helper for intake_leads updates. */
+function persistLeadPatch(leadId: string, patch: Record<string, unknown>) {
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRe.test(leadId)) return;
+  void supabase.from("intake_leads").update(patch as never).eq("id", leadId)
+    .then(() => undefined, () => undefined);
+}
+
 const leastLoadedCoordinator = (leads: Lead[]) => {
   const counts = INTAKE_COORDINATORS.map((owner) => ({ owner, count: leads.filter((lead) => lead.owner === owner).length }));
   return counts.sort((a, b) => a.count - b.count)[0]?.owner ?? INTAKE_COORDINATORS[0];
@@ -415,6 +423,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       if (!ids.includes(l.id)) return l;
       const event = makeTimelineEvent(`Stage moved to ${status}`);
       logLeadActivity(l.id, "note", `Stage moved from ${l.status} → ${status}`);
+      persistLeadPatch(l.id, { pipeline_stage: status });
       return {
         ...l,
         status,
@@ -454,6 +463,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     setLeads((prev) => prev.map((l) => {
       if (!ids.includes(l.id)) return l;
       logLeadActivity(l.id, "note", `Owner reassigned: ${l.owner || "Unassigned"} → ${owner}`);
+      persistLeadPatch(l.id, { assigned_intake_coordinator: owner });
       return { ...l, owner, automationLog: [...l.automationLog, `Reassigned to ${owner}`] };
     }));
   }, []);
@@ -464,6 +474,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       const next = Array.from(new Set([...(l.tags ?? []), tag]));
       if (next.length !== (l.tags ?? []).length) {
         logLeadActivity(l.id, "note", `Tag added: ${tag}`);
+        persistLeadPatch(l.id, { tags: next });
       }
       return { ...l, tags: next };
     }));

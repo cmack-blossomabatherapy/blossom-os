@@ -3,13 +3,14 @@ import { Link } from "react-router-dom";
 import { FileText, Plus, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
-import type { Lead, LeadTask } from "@/data/leads";
+import type { Lead } from "@/data/leads";
+import { useIntakeTasksLive, type IntakeTaskRow } from "@/hooks/useIntakeTasksLive";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 interface TaskRow {
-  task: LeadTask;
-  lead: Lead;
+  task: IntakeTaskRow;
+  lead: Lead | undefined;
 }
 
 function bucketize(rows: TaskRow[]) {
@@ -19,9 +20,9 @@ function bucketize(rows: TaskRow[]) {
   const dueToday: TaskRow[] = [];
   const upcoming: TaskRow[] = [];
   rows.forEach((r) => {
-    if (r.task.completed) return;
-    if (!r.task.dueDate) { upcoming.push(r); return; }
-    const due = new Date(r.task.dueDate);
+    if (r.task.status === "Completed") return;
+    if (!r.task.due_date) { upcoming.push(r); return; }
+    const due = new Date(r.task.due_date);
     due.setHours(0, 0, 0, 0);
     if (due.getTime() < today.getTime()) overdue.push(r);
     else if (due.getTime() === today.getTime()) dueToday.push(r);
@@ -30,26 +31,38 @@ function bucketize(rows: TaskRow[]) {
   return { overdue, dueToday, upcoming };
 }
 
-function TaskCard({ row }: { row: TaskRow }) {
-  const complete = () => toast.success(`Marked complete: ${row.task.title}`);
-  const snooze = () => toast.success(`Snoozed: ${row.task.title}`);
-  const reassign = () => {
-    const next = window.prompt("Reassign to", row.task.owner || "");
-    if (next && next.trim()) toast.success(`Reassigned to ${next.trim()}`);
+function TaskCard({ row, onComplete, onSnooze, onReassign }: {
+  row: TaskRow;
+  onComplete: (id: string) => Promise<void>;
+  onSnooze: (id: string) => Promise<void>;
+  onReassign: (id: string, owner: string) => Promise<void>;
+}) {
+  const wrap = (label: string, fn: () => Promise<void>) => async () => {
+    try { await fn(); toast.success(`${label}: ${row.task.title}`); }
+    catch (e) { toast.error(e instanceof Error ? e.message : `Could not ${label.toLowerCase()}`); }
   };
+  const reassign = async () => {
+    const next = window.prompt("Reassign to", row.task.owner || "");
+    if (next && next.trim()) {
+      try { await onReassign(row.task.id, next.trim()); toast.success(`Reassigned to ${next.trim()}`); }
+      catch (e) { toast.error(e instanceof Error ? e.message : "Could not reassign"); }
+    }
+  };
+  const leadName = row.lead?.childName ?? "Lead";
+  const leadId = row.lead?.id ?? row.task.lead_id;
   return (
     <div className="rounded-xl border border-border/60 bg-card p-3 hover:shadow-sm transition-shadow">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="font-medium text-sm truncate">{row.task.title}</div>
           <div className="text-xs text-muted-foreground mt-0.5">
-            <Link to={`/leads/${row.lead.id}`} className="hover:underline">{row.lead.childName}</Link>
-            {row.task.workflowStep && <span> · {row.task.workflowStep}</span>}
+            <Link to={`/leads/${leadId}`} className="hover:underline">{leadName}</Link>
+            {row.task.task_type && <span> · {row.task.task_type}</span>}
           </div>
         </div>
-        {row.task.dueDate && (
+        {row.task.due_date && (
           <div className="text-[11px] text-muted-foreground shrink-0 flex items-center gap-1">
-            <Clock className="h-3 w-3" /> {row.task.dueDate}
+            <Clock className="h-3 w-3" /> {row.task.due_date}
           </div>
         )}
       </div>
@@ -57,8 +70,8 @@ function TaskCard({ row }: { row: TaskRow }) {
         Owner: {row.task.owner || "Unassigned"}
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        <Button size="sm" variant="outline" onClick={complete}>Complete</Button>
-        <Button size="sm" variant="ghost" onClick={snooze}>Snooze</Button>
+        <Button size="sm" variant="outline" onClick={wrap("Completed", () => onComplete(row.task.id))}>Complete</Button>
+        <Button size="sm" variant="ghost" onClick={wrap("Snoozed", () => onSnooze(row.task.id))}>Snooze</Button>
         <Button size="sm" variant="ghost" onClick={reassign}>Reassign</Button>
       </div>
     </div>
@@ -66,11 +79,18 @@ function TaskCard({ row }: { row: TaskRow }) {
 }
 
 export default function IntakeTasks() {
-  const { leads, loading } = useLeads();
+  const { leads } = useLeads();
+  const { tasks, loading, complete, snooze, reassign } = useIntakeTasksLive();
+
+  const leadById = useMemo(() => {
+    const map = new Map<string, Lead>();
+    leads.forEach((l) => map.set(l.id, l));
+    return map;
+  }, [leads]);
 
   const rows = useMemo<TaskRow[]>(
-    () => leads.flatMap((l) => (l.tasks ?? []).map((t) => ({ task: t, lead: l }))),
-    [leads],
+    () => tasks.map((t) => ({ task: t, lead: leadById.get(t.lead_id) })),
+    [tasks, leadById],
   );
   const { overdue, dueToday, upcoming } = useMemo(() => bucketize(rows), [rows]);
   const openTotal = overdue.length + dueToday.length + upcoming.length;
@@ -93,21 +113,21 @@ export default function IntakeTasks() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
               {overdue.length === 0 ? (
                 <div className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-600" /> Nothing overdue.</div>
-              ) : overdue.map((r) => <TaskCard key={r.task.id} row={r} />)}
+              ) : overdue.map((r) => <TaskCard key={r.task.id} row={r} onComplete={complete} onSnooze={snooze} onReassign={reassign} />)}
             </div>
           </Section>
           <Section title={`Due today (${dueToday.length})`}>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
               {dueToday.length === 0 ? (
                 <div className="text-xs text-muted-foreground">Nothing due today.</div>
-              ) : dueToday.map((r) => <TaskCard key={r.task.id} row={r} />)}
+              ) : dueToday.map((r) => <TaskCard key={r.task.id} row={r} onComplete={complete} onSnooze={snooze} onReassign={reassign} />)}
             </div>
           </Section>
           <Section title={`Upcoming (${upcoming.length})`}>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
               {upcoming.length === 0 ? (
                 <div className="text-xs text-muted-foreground flex items-center gap-1"><AlertCircle className="h-3 w-3" /> No upcoming tasks.</div>
-              ) : upcoming.map((r) => <TaskCard key={r.task.id} row={r} />)}
+              ) : upcoming.map((r) => <TaskCard key={r.task.id} row={r} onComplete={complete} onSnooze={snooze} onReassign={reassign} />)}
             </div>
           </Section>
         </>
