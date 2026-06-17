@@ -221,6 +221,8 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
   const [credential, setCredential] = useState<string>(m.credential ?? "");
   const [pronouns, setPronouns] = useState<string>("");
   const [savingEmployment, setSavingEmployment] = useState(false);
+  const [firstName, setFirstName] = useState<string>("");
+  const [lastName, setLastName] = useState<string>("");
   const phoneRecord = useMemo(() => phoneEmployees.find((employee) =>
     (m.uuid && employee.userId === m.uuid) ||
     (m.email && employee.email?.toLowerCase() === m.email.toLowerCase()) ||
@@ -232,7 +234,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     const [{ data }, { data: deptRows }] = await Promise.all([
       supabase
         .from("employees")
-        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,mentor_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,job_title,department_id,state,email,phone,credential,pronouns")
+        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,mentor_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,job_title,department_id,state,email,phone,credential,pronouns,first_name,last_name,user_id")
         .eq("id", m.uuid)
         .maybeSingle(),
       supabase.from("hr_departments").select("id,name").order("name"),
@@ -240,6 +242,8 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     setDepartments(deptRows ?? []);
     if (!data) return;
     setRow(data as EmploymentRow);
+    setFirstName((data as any).first_name ?? "");
+    setLastName((data as any).last_name ?? "");
     setTitle(data.job_title ?? "");
     setDepartmentId(data.department_id ?? "unassigned");
     setState(data.state ?? "GA");
@@ -270,10 +274,15 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     if (!canEditEmployment) { toast.error("You don't have permission to edit employment records."); return; }
     const cleanTitle = title.trim();
     if (!cleanTitle) { toast.error("Title is required."); return; }
+    const cleanFirst = firstName.trim();
+    const cleanLast = lastName.trim();
+    if (!cleanFirst || !cleanLast) { toast.error("First and last name are required."); return; }
     setSavingEmployment(true);
     const { error } = await supabase
       .from("employees")
       .update({
+        first_name: cleanFirst,
+        last_name: cleanLast,
         job_title: cleanTitle,
         department_id: departmentId === "unassigned" ? null : departmentId,
         state,
@@ -291,6 +300,15 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
       .eq("id", m.uuid);
     setSavingEmployment(false);
     if (error) { toast.error(error.message); return; }
+    // Sync the linked profile's display_name so the user directory + auth
+    // surfaces reflect the renamed employee everywhere.
+    const linkedUserId = (row as any)?.user_id as string | null | undefined;
+    if (linkedUserId) {
+      await supabase
+        .from("profiles")
+        .update({ display_name: `${cleanFirst} ${cleanLast}`.trim() })
+        .eq("user_id", linkedUserId);
+    }
     toast.success("Employment updated");
     await loadEmployment();
     window.dispatchEvent(new Event("employee-directory:refresh"));
