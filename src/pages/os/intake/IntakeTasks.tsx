@@ -1,11 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Plus, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
+import { FileText, Plus, Clock, AlertCircle, CheckCircle2, HeartHandshake, ExternalLink } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import type { Lead } from "@/data/leads";
 import { useIntakeTasksLive, type IntakeTaskRow } from "@/hooks/useIntakeTasksLive";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 interface TaskRow {
@@ -73,6 +74,12 @@ function TaskCard({ row, onComplete, onSnooze, onReassign }: {
         <Button size="sm" variant="outline" onClick={wrap("Completed", () => onComplete(row.task.id))}>Complete</Button>
         <Button size="sm" variant="ghost" onClick={wrap("Snoozed", () => onSnooze(row.task.id))}>Snooze</Button>
         <Button size="sm" variant="ghost" onClick={reassign}>Reassign</Button>
+        <Button asChild size="sm" variant="ghost">
+          <Link to={`/patient-journey?lead=${leadId}`}><HeartHandshake className="h-3 w-3 mr-1" /> Journey</Link>
+        </Button>
+        <Button asChild size="sm" variant="ghost">
+          <Link to={`/leads/${leadId}`}><ExternalLink className="h-3 w-3 mr-1" /> Lead</Link>
+        </Button>
       </div>
     </div>
   );
@@ -81,6 +88,7 @@ function TaskCard({ row, onComplete, onSnooze, onReassign }: {
 export default function IntakeTasks() {
   const { leads } = useLeads();
   const { tasks, loading, complete, snooze, reassign } = useIntakeTasksLive();
+  const [filter, setFilter] = useState<"all" | "today" | "overdue" | "escalated">("all");
 
   const leadById = useMemo(() => {
     const map = new Map<string, Lead>();
@@ -93,7 +101,16 @@ export default function IntakeTasks() {
     [tasks, leadById],
   );
   const { overdue, dueToday, upcoming } = useMemo(() => bucketize(rows), [rows]);
+  const escalated = useMemo(
+    () => rows.filter((r) => (r.lead?.tags ?? []).some((t) => /escalat/i.test(t))),
+    [rows],
+  );
   const openTotal = overdue.length + dueToday.length + upcoming.length;
+
+  const showOverdue = filter === "all" || filter === "overdue";
+  const showToday = filter === "all" || filter === "today";
+  const showUpcoming = filter === "all";
+  const showEscalated = filter === "all" || filter === "escalated";
 
   return (
     <GrowthPageShell
@@ -109,6 +126,15 @@ export default function IntakeTasks() {
         <ReadyForDataNotice message={loading ? "Loading tasks…" : "No open intake tasks. Tasks created from leads will appear here."} />
       ) : (
         <>
+          <div className="flex flex-wrap gap-1.5">
+            {(["all", "today", "overdue", "escalated"] as const).map((k) => (
+              <button key={k} onClick={() => setFilter(k)}
+                className={`px-3 py-1 rounded-full text-xs border ${filter === k ? "bg-foreground text-background border-foreground" : "bg-card border-border/70 hover:bg-muted"}`}>
+                {k === "all" ? "All open" : k === "today" ? "Due today" : k === "overdue" ? "Overdue" : "Escalated"}
+              </button>
+            ))}
+          </div>
+          {showOverdue && (
           <Section title={`Overdue (${overdue.length})`} description="Tasks past their due date.">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
               {overdue.length === 0 ? (
@@ -116,6 +142,8 @@ export default function IntakeTasks() {
               ) : overdue.map((r) => <TaskCard key={r.task.id} row={r} onComplete={complete} onSnooze={snooze} onReassign={reassign} />)}
             </div>
           </Section>
+          )}
+          {showToday && (
           <Section title={`Due today (${dueToday.length})`}>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
               {dueToday.length === 0 ? (
@@ -123,6 +151,8 @@ export default function IntakeTasks() {
               ) : dueToday.map((r) => <TaskCard key={r.task.id} row={r} onComplete={complete} onSnooze={snooze} onReassign={reassign} />)}
             </div>
           </Section>
+          )}
+          {showUpcoming && (
           <Section title={`Upcoming (${upcoming.length})`}>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
               {upcoming.length === 0 ? (
@@ -130,6 +160,16 @@ export default function IntakeTasks() {
               ) : upcoming.map((r) => <TaskCard key={r.task.id} row={r} onComplete={complete} onSnooze={snooze} onReassign={reassign} />)}
             </div>
           </Section>
+          )}
+          {showEscalated && (
+          <Section title={`Escalated (${escalated.length})`} description="Tasks tied to leads tagged as escalated.">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+              {escalated.length === 0 ? (
+                <div className="text-xs text-muted-foreground flex items-center gap-1"><Badge variant="outline" className="text-[10px]">none</Badge> No escalated tasks.</div>
+              ) : escalated.map((r) => <TaskCard key={r.task.id} row={r} onComplete={complete} onSnooze={snooze} onReassign={reassign} />)}
+            </div>
+          </Section>
+          )}
         </>
       )}
     </GrowthPageShell>
