@@ -117,8 +117,8 @@ describe("Sprint 05 — preserved People & Access surfaces and shell", () => {
     expect(app).toMatch(/nfc-badges/);
   });
   it("no role menu path points to /coming-soon", () => {
-    const allPaths = ROLE_MENUS.flatMap((m) =>
-      m.sections.flatMap((s) => s.items.map((i) => i.path)),
+    const allPaths = Object.values(ROLE_MENUS).flatMap((m) =>
+      (m?.sections ?? []).flatMap((s) => s.items.map((i) => i.path)),
     );
     expect(allPaths.some((p) => p === "/coming-soon")).toBe(false);
   });
