@@ -14,28 +14,13 @@ import { cn } from "@/lib/utils";
 import { GrowthPageShell, Section } from "@/components/os/growth/GrowthPageShell";
 import { LiveActivityFeed } from "@/components/growth/LiveActivityFeed";
 import { useLeads } from "@/contexts/LeadsContext";
+import { useLeadJourneyLive, type LeadCommunicationRow, type LeadTaskRow } from "@/hooks/useLeadJourneyLive";
 import type { Lead } from "@/data/leads";
 import { format, formatDistanceToNow } from "date-fns";
 
-// Local interactions persisted per-lead so users can log calls/notes before
-// the full backend wiring lands. Key: blossom-os.lead-interactions.v1
-const INTERACTION_KEY = "blossom-os.lead-interactions.v1";
-type LocalInteraction = {
-  id: string;
-  leadId: string;
-  kind: "call" | "email" | "text" | "note" | "follow-up";
-  preview: string;
-  when: string; // ISO
-  owner?: string;
-  dueDate?: string;
-};
-function loadInteractions(): LocalInteraction[] {
-  if (typeof window === "undefined") return [];
-  try { return JSON.parse(window.localStorage.getItem(INTERACTION_KEY) || "[]"); } catch { return []; }
-}
-function saveInteractions(rows: LocalInteraction[]) {
-  try { window.localStorage.setItem(INTERACTION_KEY, JSON.stringify(rows)); } catch { /* ignore */ }
-}
+// Sprint 04 Phase C — interactions and follow-ups persist to Lovable Cloud
+// (intake_communications + intake_tasks). No localStorage fallback.
+type InteractionKind = "call" | "sms" | "email" | "note";
 
 type FilterKey =
   | "all" | "calls" | "emails" | "forms" | "intake" | "insurance"
