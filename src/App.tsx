@@ -57,8 +57,7 @@ import HrBcbaProductivityDashboard from "./pages/os/reports/HrBcbaProductivityDa
 import BcbaProductivityReport from "./pages/os/reports/BcbaProductivityReport";
 import BcbaProductivityReportV3 from "./pages/os/reports/BcbaProductivityReportV3";
 import CancellationCommandCenter from "./pages/os/reports/CancellationCommandCenter";
-import OSComingSoon from "./pages/os/OSComingSoon";
-import OSComingSoonRoute from "./pages/os/OSComingSoonRoute";
+import OSMvpPage from "./pages/os/mvp/OSMvpPage";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
 
@@ -532,7 +531,15 @@ const App = () => (
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<BlossomOSHome />} />
                   <Route path="/dashboard/legacy" element={<OSDashboard />} />
-                  <Route path="/ws/:id" element={<WorkspacePage />} />
+                  {/* Legacy /ws/:id routes are kept only for back-compat redirects
+                      onto the live Blossom OS shell. Executive Leadership and
+                      friends must never land in the old workspace shell. */}
+                  <Route path="/ws/executive"  element={<Navigate to="/executive"                  replace />} />
+                  <Route path="/ws/operations" element={<Navigate to="/operations/command-center"  replace />} />
+                  <Route path="/ws/marketing"  element={<Navigate to="/marketing"                  replace />} />
+                  <Route path="/ws/intake"     element={<Navigate to="/intake/dashboard"           replace />} />
+                  <Route path="/ws/finance"    element={<Navigate to="/reports"                    replace />} />
+                  <Route path="/ws/:id"        element={<WorkspacePage />} />
                   <Route path="/executive" element={<ExecutiveOverview />} />
                   <Route path="/executive/overview" element={<Navigate to="/executive" replace />} />
                   <Route path="/executive/pulse" element={<CompanyPulse />} />
@@ -722,8 +729,8 @@ const App = () => (
                   <Route path="/internal-requests" element={<OSPlaceholder title="Internal Requests" description="Operational and internal forms and approvals." icon={Inbox} />} />
                   <Route path="/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
                   <Route path="/projects" element={<OSPlaceholder title="Project Tracking" description="Internal projects and initiatives." icon={KanbanSquare} />} />
-                  <Route path="/ai/assistant" element={<OSComingSoon title="Operational Insights" description="Your operational AI copilot is on the way. Soon you'll be able to ask Blossom anything about your workflows, reports, and operations." icon={Sparkles} />} />
-                  <Route path="/ask-blossom" element={<Navigate to="/ai/assistant" replace />} />
+                  <Route path="/ai/assistant" element={<Navigate to="/ai/insights" replace />} />
+                  <Route path="/ask-blossom"  element={<Navigate to="/ai/insights" replace />} />
                   <Route path="/ai/insights" element={<OSAiInsights />} />
                   <Route path="/ai/automations" element={<Navigate to="/automations" replace />} />
                   <Route path="/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
@@ -828,6 +835,17 @@ const App = () => (
                   <Route path="/intake/referral-queue" element={<ReferralQueue />} />
                   <Route path="/intake/tasks" element={<IntakeTasks />} />
                   <Route path="/intake/benefits-cheat-sheets" element={<LeadBenefitsCheatSheets />} />
+                  {/* --- Live MVP pages backing role menu items that don't have a
+                       dedicated workspace yet. Real route, real shell, no
+                       /coming-soon. Will be replaced with full workspaces in
+                       future passes. --- */}
+                  <Route path="/intake/missing-information"  element={<OSMvpPage eyebrow="Intake"          title="Missing Information"        description="Leads with missing intake or insurance details. Owners action items appear here as the intake workflow goes live."      primaryActionLabel="New Follow-Up" />} />
+                  <Route path="/intake/parent-communication" element={<OSMvpPage eyebrow="Intake"          title="Parent Communication"       description="Inbound and outbound family communication queue across phone, SMS, email, and forms."                                      primaryActionLabel="Log Message" />} />
+                  <Route path="/ops/expiring-authorizations" element={<OSMvpPage eyebrow="Authorizations"  title="Expiring Authorizations"    description="Authorizations expiring in the next 30 / 60 / 90 days, grouped by payer and state."                                      primaryActionLabel="Start Renewal" />} />
+                  <Route path="/ops/missing-docs"            element={<OSMvpPage eyebrow="Authorizations"  title="Missing Documents"          description="Cases blocked on missing payer documentation, with owner, due date, and next action."                                primaryActionLabel="Request Document" />} />
+                  <Route path="/ops/payer-requirements"      element={<OSMvpPage eyebrow="Authorizations"  title="Payer Requirements"         description="Per-payer documentation, auth, and submission requirements for every state Blossom serves."                          primaryActionLabel="Add Payer" />} />
+                  <Route path="/ops/make-up-sessions"        element={<OSMvpPage eyebrow="Scheduling"      title="Make-Up Sessions"           description="Approved make-up session requests, tracked through scheduling and confirmation."                                     primaryActionLabel="New Make-Up" />} />
+                  <Route path="/ops/rbt-match-queue"         element={<OSMvpPage eyebrow="Staffing"        title="RBT Match Queue"            description="Open cases ready for staffing match — by state, hours needed, language, and family preferences."                       primaryActionLabel="Propose Match" />} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />
@@ -880,7 +898,9 @@ const App = () => (
                   <Route path="/onboarding/complete" element={<OnboardingComplete />} />
                   <Route path="/help" element={<HelpPage />} />
                   <Route path="/dashboard" element={<RoleDashboardRedirect />} />
-                  <Route path="/coming-soon" element={<OSComingSoonRoute />} />
+                  {/* /coming-soon is removed from active navigation; bookmarks
+                      and stale links fall back to the user's dashboard. */}
+                  <Route path="/coming-soon" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/blossom/academy" element={<Navigate to="/academy" replace />} />
                   <Route path="/blossom/academy/:trackId" element={<TrackDetail />} />
                   <Route path="/blossom/departments" element={<Departments />} />

@@ -1,20 +1,25 @@
 import { describe, it, expect } from "vitest";
 import { ROLE_MENUS, ROLE_PREVIEW_LIST } from "@/lib/os/roleMenus";
-import { findModuleByName, MODULE_REGISTRY } from "@/lib/os/moduleRegistry";
+import { MODULE_REGISTRY } from "@/lib/os/moduleRegistry";
 import { PHASE3_REPORTS } from "@/lib/os/phase3Reports";
 
 describe("Blossom OS alignment", () => {
-  it("every comingSoon menu label resolves to a module wireframe", () => {
-    const missing: string[] = [];
+  it("no role menu item routes to /coming-soon or uses Coming Soon copy", () => {
+    const offenders: string[] = [];
     for (const [role, menu] of Object.entries(ROLE_MENUS)) {
       if (!menu) continue;
-      for (const item of menu.comingSoon) {
-        const params = new URL("http://x" + item.path).searchParams;
-        const mod = params.get("module") || item.label;
-        if (!findModuleByName(mod)) missing.push(`${role}:${mod}`);
+      for (const section of menu.sections) {
+        if (/coming soon|available now/i.test(section.label)) {
+          offenders.push(`${role}:section:${section.label}`);
+        }
+        for (const item of section.items) {
+          if (item.path.startsWith("/coming-soon")) {
+            offenders.push(`${role}:${item.label}->${item.path}`);
+          }
+        }
       }
     }
-    expect(missing, `Unmapped Coming Soon labels: ${missing.join(", ")}`).toEqual([]);
+    expect(offenders, `Coming Soon leakage: ${offenders.join(", ")}`).toEqual([]);
   });
 
   it("View as Role does not expose hidden/business-office roles", () => {

@@ -2,6 +2,67 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, R
 import { createIntakeTask, FINANCIAL_OWNER, INTAKE_COORDINATORS, Lead, LeadStatus, TimelineEvent } from "@/data/leads";
 import { supabase } from "@/integrations/supabase/client";
 import { mondayRowToLead, type MondayLeadRow } from "@/lib/leads/mondayMapper";
+import { intakeLeadRowToLead, type IntakeLeadRow } from "@/lib/leads/intakeLeadMapper";
+
+/** Input accepted by createLead — mirrors the Monday Leads board fields. */
+export interface CreateLeadInput {
+  // Patient
+  patientFirstName?: string;
+  patientLastName?: string;
+  childName: string;            // "Name of Patient" (required)
+  dob?: string;                 // ISO date
+  diagnosisStatus?: string;
+  dxNeeded?: boolean;
+
+  // Parent / Guardian
+  parentFirstName?: string;
+  parentLastName?: string;
+  parentName: string;           // "Parents Full Name" (required)
+  parent2Name?: string;
+  parent2Email?: string;
+  phone: string;                // either phone or email required
+  parentCellPhone?: string;
+  homePhone?: string;
+  email: string;
+  preferredContactMethod?: string;
+
+  // Lead source / ownership
+  state: string;
+  leadSource: string;
+  leadType?: string;
+  referralSource?: string;
+  referralPartner?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  originationDate?: string;
+  assignedIntakeCoordinator?: string;
+  priority?: "Hot" | "Warm" | "Cold";
+
+  // Insurance
+  insurance?: string;
+  insuranceType?: string;
+  secondaryInsurance?: string;
+
+  // Workflow
+  pipelineStage: string;
+  nextAction?: string;
+  nextTaskDue?: string;
+
+  // Communication
+  regularCallLog?: string;
+  etCallLog?: string;
+  messageComments?: string;
+  lastContactDate?: string;
+
+  // Notes / tags
+  notes?: string;
+  tags?: string[];
+
+  // Source attribution payload for future integrations.
+  sourceMetadata?: Record<string, unknown>;
+  originalColumnData?: Record<string, unknown>;
+}
 
 interface LeadsContextValue {
   leads: Lead[];
@@ -9,7 +70,10 @@ interface LeadsContextValue {
   error: string | null;
   refresh: () => Promise<void>;
   getLead: (id: string) => Lead | undefined;
+  /** @deprecated local-only insert kept for legacy callers — use createLead. */
   addLead: (lead: Lead) => void;
+  /** Persist a new lead to public.intake_leads + first task / communication. */
+  createLead: (input: CreateLeadInput) => Promise<Lead>;
   updateLead: (id: string, patch: Partial<Lead>) => void;
   bulkUpdate: (ids: string[], patch: Partial<Lead>) => void;
   moveStage: (ids: string[], status: LeadStatus) => void;
@@ -148,8 +212,19 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      // Page through monday_leads_raw — newest first, capped at ~5k rows.
-      const all: MondayLeadRow[] = [];
+      // 1) Load canonical Blossom OS intake_leads first (newest first).
+      const intakeRes = await supabase
+        .from("intake_leads")
+        .select(
+          "id, child_name, parent_name, phone, email, state, lead_source, pipeline_stage, assigned_intake_coordinator, priority, notes, insurance, insurance_type, next_action, next_task_due, created_at, updated_at, stage_entered_at, monday_item_id, monday_group, tags, source_metadata, original_column_data"
+        )
+        .order("created_at", { ascending: false })
+        .limit(2000);
+      if (intakeRes.error) throw intakeRes.error;
+      const intakeLeads = (intakeRes.data ?? []).map((r) => intakeLeadRowToLead(r as unknown as IntakeLeadRow));
+
+      // 2) Load Monday imports (legacy staging). Page through up to ~5k rows.
+      const mondayRows: MondayLeadRow[] = [];
       const pageSize = 1000;
       let from = 0;
       // eslint-disable-next-line no-constant-condition
@@ -161,13 +236,27 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
           .range(from, from + pageSize - 1);
         if (qErr) throw qErr;
         const rows = (data ?? []) as unknown as MondayLeadRow[];
-        all.push(...rows);
-        if (rows.length < pageSize || all.length >= 5000) break;
+        mondayRows.push(...rows);
+        if (rows.length < pageSize || mondayRows.length >= 5000) break;
         from += pageSize;
       }
-      setLeads(all.map(mondayRowToLead));
+
+      // 3) De-dupe — drop Monday rows already converted into intake_leads
+      // (matched by monday_item_id, or by phone+email+child name fingerprint).
+      const seenMondayIds = new Set(
+        intakeLeads.map((l) => (l as Lead & { _mondayId?: string })._mondayId).filter(Boolean) as string[],
+      );
+      const seenFingerprints = new Set(
+        intakeLeads.map((l) => `${l.phone}|${l.email}|${l.childName}`.toLowerCase()),
+      );
+      const mondayLeads = mondayRows
+        .filter((r) => !(r.monday_item_id && seenMondayIds.has(r.monday_item_id)))
+        .map(mondayRowToLead)
+        .filter((l) => !seenFingerprints.has(`${l.phone}|${l.email}|${l.childName}`.toLowerCase()));
+
+      setLeads([...intakeLeads, ...mondayLeads]);
     } catch (e: any) {
-      setError(e?.message ?? "Failed to load leads from Monday");
+      setError(e?.message ?? "Failed to load leads");
       setLeads([]);
     } finally {
       setLoading(false);
@@ -184,6 +273,94 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       const created = withIntakeAutomation({ ...lead, owner, status: "New Lead", nextAction: "Contact Lead", tasks: lead.tasks.length ? lead.tasks : [createIntakeTask("Contact Lead", owner)] }, {});
       return [created, ...prev];
     });
+  }, []);
+
+  const createLead = useCallback(async (input: CreateLeadInput): Promise<Lead> => {
+    // Compose the row exactly as the intake_leads schema expects.
+    const today = new Date().toISOString().split("T")[0];
+    const insertPayload: Record<string, unknown> = {
+      child_name:  input.childName.trim(),
+      parent_name: input.parentName.trim(),
+      phone:       input.phone.trim(),
+      email:       input.email.trim(),
+      state:       input.state,
+      lead_source: input.leadSource,
+      pipeline_stage: input.pipelineStage,
+      priority:    input.priority ?? "Warm",
+      assigned_intake_coordinator: input.assignedIntakeCoordinator ?? null,
+      insurance:      input.insurance ?? null,
+      insurance_type: input.insuranceType ?? null,
+      notes:          input.notes ?? null,
+      next_action:    input.nextAction ?? "Contact Lead",
+      next_task_due:  input.nextTaskDue ?? today,
+
+      // New Monday-board–style columns.
+      patient_first_name: input.patientFirstName ?? null,
+      patient_last_name:  input.patientLastName ?? null,
+      dob:                input.dob ?? null,
+      parent_first_name:  input.parentFirstName ?? null,
+      parent_last_name:   input.parentLastName ?? null,
+      parent_2_name:      input.parent2Name ?? null,
+      parent_2_email:     input.parent2Email ?? null,
+      parent_cell_phone:  input.parentCellPhone ?? null,
+      home_phone:         input.homePhone ?? null,
+      preferred_contact_method: input.preferredContactMethod ?? null,
+      lead_type:          input.leadType ?? null,
+      utm_source:         input.utmSource ?? null,
+      utm_medium:         input.utmMedium ?? null,
+      utm_campaign:       input.utmCampaign ?? null,
+      referral_source:    input.referralSource ?? null,
+      referral_partner:   input.referralPartner ?? null,
+      origination_date:   input.originationDate ?? today,
+      last_contact_date:  input.lastContactDate ?? null,
+      regular_call_log:   input.regularCallLog ?? null,
+      et_call_log:        input.etCallLog ?? null,
+      message_comments:   input.messageComments ?? null,
+      secondary_insurance: input.secondaryInsurance ?? null,
+      diagnosis_status:   input.diagnosisStatus ?? null,
+      dx_needed:          input.dxNeeded ?? false,
+      tags:               input.tags && input.tags.length ? input.tags : ["Blossom OS"],
+      source_metadata:    input.sourceMetadata ?? {},
+      original_column_data: input.originalColumnData ?? {},
+    };
+
+    const { data, error: insErr } = await supabase
+      .from("intake_leads")
+      .insert(insertPayload as never)
+      .select(
+        "id, child_name, parent_name, phone, email, state, lead_source, pipeline_stage, assigned_intake_coordinator, priority, notes, insurance, insurance_type, next_action, next_task_due, created_at, updated_at, stage_entered_at, monday_item_id, monday_group, tags, source_metadata, original_column_data"
+      )
+      .single();
+    if (insErr || !data) {
+      throw insErr ?? new Error("Failed to create lead");
+    }
+    const row = data as unknown as IntakeLeadRow;
+    const lead = intakeLeadRowToLead(row);
+
+    // Best-effort first task + communication. These are optional — RLS errors
+    // shouldn't block the new lead from showing up.
+    void supabase.from("intake_tasks").insert({
+      lead_id: row.id,
+      title: "Contact Lead",
+      owner: input.assignedIntakeCoordinator ?? null,
+      due_date: input.nextTaskDue ?? today,
+      workflow_step: "New Lead",
+    } as never).then(() => undefined, () => undefined);
+
+    const commPreview =
+      input.regularCallLog || input.etCallLog || input.messageComments;
+    if (commPreview) {
+      void supabase.from("intake_communications").insert({
+        lead_id: row.id,
+        type: input.regularCallLog || input.etCallLog ? "call" : "note",
+        direction: "outbound",
+        preview: commPreview,
+        user_label: input.assignedIntakeCoordinator ?? "Intake",
+      } as never).then(() => undefined, () => undefined);
+    }
+
+    setLeads((prev) => [lead, ...prev]);
+    return lead;
   }, []);
 
   const updateLead = useCallback((id: string, patch: Partial<Lead>) => {
@@ -251,8 +428,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ leads, loading, error, refresh, getLead, addLead, updateLead, bulkUpdate, moveStage, revertStage, assignOwner, addTag, deleteLeads }),
-    [leads, loading, error, refresh, getLead, addLead, updateLead, bulkUpdate, moveStage, revertStage, assignOwner, addTag, deleteLeads],
+    () => ({ leads, loading, error, refresh, getLead, addLead, createLead, updateLead, bulkUpdate, moveStage, revertStage, assignOwner, addTag, deleteLeads }),
+    [leads, loading, error, refresh, getLead, addLead, createLead, updateLead, bulkUpdate, moveStage, revertStage, assignOwner, addTag, deleteLeads],
   );
 
   return <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>;

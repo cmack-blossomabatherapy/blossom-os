@@ -257,30 +257,17 @@ function buildSections(args: {
     ];
   }
 
-  // ---- Non-admin (and impersonated views): role-scoped simple menu ----
+  // ---- Non-admin (and impersonated views): role-scoped live menu ----
   const menu = (effectiveOSRole && ROLE_MENUS[effectiveOSRole]) ?? DEFAULT_ROLE_MENU;
-  const sections: NavSection[] = [];
-  sections.push({
-    title: "Available Now",
-    items: menu.active.map<NavItem>((i) => ({
+  const sections: NavSection[] = menu.sections.map((s) => ({
+    title: s.label,
+    defaultCollapsed: s.defaultCollapsed,
+    items: s.items.map<NavItem>((i) => ({
       label: i.label,
       icon: i.icon,
       path: i.path,
     })),
-  });
-  if (menu.comingSoon.length) {
-    sections.push({
-      title: "Coming Soon",
-      items: menu.comingSoon.map<NavItem>((i) => ({
-        label: i.label,
-        icon: i.icon,
-        path: i.path,
-        disabled: true,
-        comingSoon: true,
-      })),
-      defaultCollapsed: true,
-    });
-  }
+  }));
   void roles;
   void effectiveRoles;
   void workspacesForRoles;
