@@ -38,6 +38,7 @@ export function StatusBadge({ status }: { status: GrowthStatus }) {
 export interface PageAction {
   label: string;
   to?: string;
+  onClick?: () => void;
   icon?: LucideIcon;
   variant?: "default" | "outline" | "ghost";
 }
@@ -70,12 +71,22 @@ export function GrowthPageShell({
                     {a.label}
                   </>
                 );
-                return a.to ? (
-                  <Button key={a.label} asChild size="sm" variant={a.variant ?? "outline"}>
-                    <Link to={a.to}>{inner}</Link>
+                if (a.to) {
+                  return (
+                    <Button key={a.label} asChild size="sm" variant={a.variant ?? "outline"}>
+                      <Link to={a.to}>{inner}</Link>
+                    </Button>
+                  );
+                }
+                return (
+                  <Button
+                    key={a.label}
+                    size="sm"
+                    variant={a.variant ?? "outline"}
+                    onClick={a.onClick}
+                  >
+                    {inner}
                   </Button>
-                ) : (
-                  <Button key={a.label} size="sm" variant={a.variant ?? "outline"}>{inner}</Button>
                 );
               })}
             </div>
