@@ -46,255 +46,380 @@ const DASHBOARD_ITEM: RoleMenuItem = {
   label: "My Dashboard", path: "/dashboard", icon: LayoutDashboard,
 };
 
+/**
+ * Every role menu is a list of grouped sections. Every item routes to a real,
+ * mounted page in the OS shell — no Coming Soon entries, no /coming-soon paths.
+ */
 export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
-  marketing_team: {
-    active: [
-      ...BASE_ACTIVE,
-      { label: "Phone System", path: "/phone", icon: Phone },
-    ],
-    comingSoon: [
-      cs("Marketing Dashboard", BarChart3),
-      cs("Referral CRM", HeartHandshake),
-      cs("Lead Sources", TrendingUp),
-      cs("Campaigns", Megaphone),
-      cs("CTM / Call Tracking", PhoneCall),
-      cs("LeadTrap", TrendingUp),
-      cs("Facebook Ads", Megaphone),
-      cs("Google Ads", TrendingUp),
-      cs("Patient Lifetime Journey", HeartHandshake),
-      cs("SEO & Content", SearchIcon),
-      cs("Web Analytics", LineChart),
-      cs("Recruiting Marketing", Briefcase),
-      cs("Community Outreach", Users),
-      cs("Reputation", Star),
-      cs("Attribution & ROI", Gauge),
-    ],
-  },
-  hr_team: {
-    active: [
-      ...BASE_ACTIVE,
-      { label: "Phone System", path: "/phone", icon: Phone },
-    ],
-    comingSoon: [
-      cs("HR Dashboard", LayoutDashboard),
-      cs("Employee Records", Users),
-      cs("HR Requests", ClipboardList),
-      cs("Compliance Items", ShieldCheck),
-      cs("Device Requests", Wrench),
-      cs("Device Inventory", Wrench),
-      cs("NFC Badge Support", IdCard),
-      cs("HR Reports", BarChart3),
-    ],
-  },
-  case_manager: {
-    active: [
-      ...BASE_ACTIVE,
-      { label: "Evaluations", path: "/evaluations", icon: ClipboardCheck },
-    ],
-    comingSoon: [
-      cs("Case Manager Dashboard", LayoutDashboard),
-      cs("Caseload", Users),
-      cs("Client Follow-Up", MessageSquare),
-      cs("Care Coordination", HeartHandshake),
-      cs("Family Communication", MessageSquare),
-      cs("Case Notes", FileSignature),
-    ],
-  },
-  business_development: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("Business Development Dashboard", LayoutDashboard),
-      cs("Referral Partner CRM", HeartHandshake),
-      cs("Outreach Pipeline", MessageSquare),
-      cs("Follow-Up Tasks", ClipboardList),
-      cs("Provider Relationships", Briefcase),
-      cs("Community Relationships", Users),
-      cs("Patient Lifetime Journey", HeartHandshake),
-    ],
-  },
-  staffing_team: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("Staffing Dashboard", LayoutDashboard),
-      cs("Open Cases", Briefcase),
-      cs("RBT Match Queue", UserCheck),
-      cs("Coverage Needs", Calendar),
-      cs("Family Staffing Preferences", HeartHandshake),
-      cs("Staffing Reports", BarChart3),
-    ],
-  },
-  credentialing_team: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("Credentialing Dashboard", LayoutDashboard),
-      cs("Provider Credentialing", Stethoscope),
-      cs("Insurance Credentialing", Building2),
-      cs("BCBA Credentials", IdCard),
-      cs("Uncredentialed BCBAs", AlertTriangle),
-      cs("Expiring Credentials", Calendar),
-      cs("Credentialing Reports", BarChart3),
-    ],
-  },
-  clinical_director: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("Clinical Dashboard", LayoutDashboard),
-      cs("BCBA Oversight", UserCheck),
-      cs("Clinical Quality", CheckCircle2),
-      cs("Supervision Health", ClipboardCheck),
-      cs("Clinical Escalations", AlertTriangle),
-      cs("Clinical Reports", BarChart3),
-    ],
-  },
-  assistant_state_director: {
-    active: BASE_ACTIVE.map((item) =>
-      item.label === "Training Academy"
-        ? { ...item, path: "/training" }
-        : item,
-    ),
-    comingSoon: [
-      cs("State Support Dashboard", LayoutDashboard),
-      cs("State Intake Support", Briefcase),
-      cs("State Task Queue", ClipboardList),
-      cs("Escalation Support", AlertTriangle),
-      cs("Follow-Up Tracker", Activity),
-    ],
-  },
+
+  /* --------------------------- Executive Leadership --------------------------- */
   executive_leadership: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("Executive Dashboard", LayoutDashboard),
-      cs("Company KPIs", BarChart3),
-      cs("State Health Overview", MapPin),
-      cs("Growth Snapshot", TrendingUp),
-      cs("Operations Scorecard", Gauge),
+    sections: [
+      {
+        id: "leadership", label: "Leadership", items: [
+          DASHBOARD_ITEM,
+          { label: "Executive Dashboard",   path: "/executive",                    icon: BarChart3 },
+          { label: "Company KPIs",          path: "/reports",                      icon: Gauge },
+          { label: "State Health Overview", path: "/state-operations",             icon: MapPin },
+          { label: "Growth Snapshot",       path: "/marketing/state-growth",       icon: TrendingUp },
+          { label: "Operations Scorecard",  path: "/operations/command-center",    icon: Gauge },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
     ],
   },
+
+  /* -------------------------- Operations Leadership -------------------------- */
   operations_leadership: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("Operations Dashboard", LayoutDashboard),
-      cs("Department Scorecards", Gauge),
-      cs("State Health Overview", MapPin),
-      cs("Escalations", AlertTriangle),
-      cs("Workflow Bottlenecks", ShieldCheck),
-      cs("System Requests", ClipboardList),
+    sections: [
+      {
+        id: "ops_command", label: "Operations Command", items: [
+          DASHBOARD_ITEM,
+          { label: "Operations Dashboard",  path: "/operations/command-center",  icon: BarChart3 },
+          { label: "Department Scorecards", path: "/operations/department-health", icon: Gauge },
+          { label: "State Health Overview", path: "/state-operations",            icon: MapPin },
+          { label: "Escalations",           path: "/operations/escalations",      icon: AlertTriangle },
+          { label: "Workflow Bottlenecks",  path: "/operations/workflow-risks",   icon: ShieldCheck },
+          { label: "System Requests",       path: "/system/request-intake",       icon: Inbox },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
     ],
   },
+
+  /* ----------------------------- State Director ------------------------------ */
   state_director: {
-    active: BASE_ACTIVE.map((item) =>
-      item.label === "Training Academy"
-        ? { ...item, path: "/training" }
-        : item,
-    ),
-    comingSoon: [
-      cs("State Dashboard", LayoutDashboard),
-      cs("State Health", MapPin),
-      cs("Escalations", AlertTriangle),
-      cs("State Staffing Snapshot", Users),
-      cs("State Intake Snapshot", Briefcase),
-      cs("State Authorization Snapshot", ShieldCheck),
-      cs("State Clinical Snapshot", Stethoscope),
+    sections: [
+      {
+        id: "state_ops", label: "State Operations", items: [
+          DASHBOARD_ITEM,
+          { label: "State Dashboard",                path: "/state-operations",       icon: MapPin },
+          { label: "State Health",                   path: "/state-operations",       icon: Activity },
+          { label: "Escalations",                    path: "/ops/state-escalations",  icon: AlertTriangle },
+          { label: "State Staffing Snapshot",        path: "/ops/staffing",           icon: Users },
+          { label: "State Intake Snapshot",          path: "/intake/dashboard",       icon: Briefcase },
+          { label: "State Authorization Snapshot",   path: "/ops/authorizations",     icon: ShieldCheck },
+          { label: "State Clinical Snapshot",        path: "/qa",                     icon: Stethoscope },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
     ],
   },
+
+  /* ------------------------ Assistant State Director ------------------------- */
+  assistant_state_director: {
+    sections: [
+      {
+        id: "state_support", label: "State Support", items: [
+          DASHBOARD_ITEM,
+          { label: "State Support Dashboard", path: "/state-operations",       icon: LayoutDashboard },
+          { label: "State Intake Support",    path: "/intake/dashboard",       icon: Briefcase },
+          { label: "State Task Queue",        path: "/ops/tasks",              icon: ClipboardList },
+          { label: "Escalation Support",      path: "/ops/state-escalations",  icon: AlertTriangle },
+          { label: "Follow-Up Tracker",       path: "/ops/tasks",              icon: Activity },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* ------------------------------ Marketing Team ----------------------------- */
+  marketing_team: {
+    sections: [
+      {
+        id: "growth_marketing", label: "Growth & Marketing", items: [
+          DASHBOARD_ITEM,
+          { label: "Marketing Dashboard",      path: "/marketing",                  icon: BarChart3 },
+          { label: "Referral CRM",             path: "/marketing/referral-crm",     icon: HeartHandshake },
+          { label: "Lead Sources",             path: "/marketing/lead-sources",     icon: TrendingUp },
+          { label: "Campaigns",                path: "/marketing/campaigns",        icon: Megaphone },
+          { label: "CTM / Call Tracking",      path: "/marketing/call-tracking",    icon: PhoneCall },
+          { label: "LeadTrap",                 path: "/marketing/leadtrap",         icon: TrendingUp },
+          { label: "Facebook Ads",             path: "/marketing/facebook-ads",     icon: Megaphone },
+          { label: "Google Ads",               path: "/marketing/google-ads",       icon: TrendingUp },
+          { label: "Patient Lifetime Journey", path: "/patient-journey",            icon: HeartHandshake },
+          { label: "SEO & Content",            path: "/marketing/seo",              icon: SearchIcon },
+          { label: "Web Analytics",            path: "/marketing/web-analytics",    icon: LineChart },
+          { label: "Recruiting Marketing",     path: "/marketing/recruiting",       icon: Briefcase },
+          { label: "Community Outreach",       path: "/marketing/outreach",         icon: Users },
+          { label: "Reputation",               path: "/marketing/reputation",       icon: Star },
+          { label: "Attribution & ROI",        path: "/marketing/attribution",      icon: Gauge },
+          { label: "Phone System",             path: "/phone",                      icon: Phone },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* --------------------------- Business Development -------------------------- */
+  business_development: {
+    sections: [
+      {
+        id: "biz_dev", label: "Business Development", items: [
+          DASHBOARD_ITEM,
+          { label: "Business Development Dashboard", path: "/business-development",                    icon: HeartHandshake },
+          { label: "Referral Partner CRM",           path: "/business-development?tab=partners",       icon: HeartHandshake },
+          { label: "Outreach Pipeline",              path: "/business-development?tab=outreach",       icon: MessageSquare },
+          { label: "Follow-Up Tasks",                path: "/business-development?tab=tasks",          icon: ClipboardList },
+          { label: "Provider Relationships",         path: "/business-development?tab=providers",      icon: Briefcase },
+          { label: "Community Relationships",        path: "/business-development?tab=community",      icon: Users },
+          { label: "Patient Lifetime Journey",       path: "/patient-journey",                         icon: HeartHandshake },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* -------------------------------- Intake Team ------------------------------ */
   intake_coordinator: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("Intake Dashboard", LayoutDashboard),
-      cs("New Referral Queue", ClipboardList),
-      cs("Lead To Active Pipeline", TrendingUp),
-      cs("Missing Information", ShieldCheck),
-      cs("Parent Communication", MessageSquare),
-      cs("Intake Tasks", ClipboardList),
-      cs("Lead Benefits Cheat Sheets", ShieldCheck),
-      cs("Patient Lifetime Journey", HeartHandshake),
+    sections: [
+      {
+        id: "intake", label: "Intake", items: [
+          DASHBOARD_ITEM,
+          { label: "Intake Dashboard",           path: "/intake/dashboard",              icon: LayoutDashboard },
+          { label: "New Referral Queue",         path: "/intake/referral-queue",         icon: ClipboardList },
+          { label: "Lead To Active Pipeline",    path: "/intake/lead-to-active",         icon: TrendingUp },
+          { label: "Missing Information",        path: "/intake/missing-information",    icon: ShieldCheck },
+          { label: "Parent Communication",       path: "/intake/parent-communication",   icon: MessageSquare },
+          { label: "Intake Tasks",               path: "/intake/tasks",                  icon: ClipboardList },
+          { label: "Lead Benefits Cheat Sheets", path: "/intake/benefits-cheat-sheets",  icon: ShieldCheck },
+          { label: "Patient Lifetime Journey",   path: "/patient-journey",               icon: HeartHandshake },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
     ],
   },
-  authorization_coordinator: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("Authorizations Dashboard", LayoutDashboard),
-      cs("Auth Queue", ShieldCheck),
-      cs("Approved Authorizations", CheckCircle2),
-      cs("Expiring Authorizations", Calendar),
-      cs("Denials", XCircle),
-      cs("Missing Docs", AlertTriangle),
-      cs("Payer Requirements", FileSignature),
-      cs("Authorization Reports", BarChart3),
-    ],
-  },
-  scheduling_team: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("Scheduling Dashboard", LayoutDashboard),
-      cs("Schedule Gaps", AlertTriangle),
-      cs("Session Coverage", Calendar),
-      cs("Cancellations", XCircle),
-      cs("Make-Up Sessions", Activity),
-      cs("Scheduling Reports", BarChart3),
-    ],
-  },
+
+  /* ------------------------------ Recruiting Team ---------------------------- */
   recruiting_team: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("Recruiting Dashboard", LayoutDashboard),
-      cs("Candidate Pipeline", Briefcase),
-      cs("Hiring Sources", TrendingUp),
-      cs("Interview Scheduling", Calendar),
-      cs("Offer Tracker", FileSignature),
-      cs("Onboarding Handoff", HeartHandshake),
-      cs("Recruiting Reports", BarChart3),
+    sections: [
+      {
+        id: "recruiting", label: "Recruiting", items: [
+          DASHBOARD_ITEM,
+          { label: "Recruiting Dashboard",  path: "/recruiting/workspace",   icon: LayoutDashboard },
+          { label: "Candidate Pipeline",    path: "/recruiting/pipeline",    icon: Briefcase },
+          { label: "Hiring Sources",        path: "/recruiting/performance", icon: TrendingUp },
+          { label: "Interview Scheduling",  path: "/recruiting/interviews",  icon: Calendar },
+          { label: "Offer Tracker",         path: "/recruiting/offers",      icon: FileSignature },
+          { label: "Onboarding Handoff",    path: "/recruiting/onboarding",  icon: HeartHandshake },
+          { label: "Recruiting Reports",    path: "/reports",                icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
     ],
   },
+
+  /* ----------------------------- Authorizations ------------------------------ */
+  authorization_coordinator: {
+    sections: [
+      {
+        id: "authorizations", label: "Authorizations", items: [
+          DASHBOARD_ITEM,
+          { label: "Authorizations Dashboard",  path: "/authorizations",                  icon: LayoutDashboard },
+          { label: "Auth Queue",                path: "/auth-workspace",                  icon: ShieldCheck },
+          { label: "Approved Authorizations",   path: "/ops/approved-authorizations",     icon: CheckCircle2 },
+          { label: "Expiring Authorizations",   path: "/ops/expiring-authorizations",     icon: Calendar },
+          { label: "Denials",                   path: "/ops/denials",                     icon: XCircle },
+          { label: "Missing Docs",              path: "/ops/missing-docs",                icon: AlertTriangle },
+          { label: "Payer Requirements",        path: "/ops/payer-requirements",          icon: FileSignature },
+          { label: "Authorization Reports",     path: "/reports",                         icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* ------------------------------- Scheduling -------------------------------- */
+  scheduling_team: {
+    sections: [
+      {
+        id: "scheduling", label: "Scheduling", items: [
+          DASHBOARD_ITEM,
+          { label: "Scheduling Dashboard", path: "/scheduling",                              icon: LayoutDashboard },
+          { label: "Schedule Gaps",        path: "/ops/scheduling",                          icon: AlertTriangle },
+          { label: "Session Coverage",     path: "/scheduling-workspace",                    icon: Calendar },
+          { label: "Cancellations",        path: "/reports/cancellation-command-center",     icon: XCircle },
+          { label: "Make-Up Sessions",     path: "/ops/make-up-sessions",                    icon: Activity },
+          { label: "Scheduling Reports",   path: "/reports",                                 icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* -------------------------------- Staffing --------------------------------- */
+  staffing_team: {
+    sections: [
+      {
+        id: "staffing", label: "Staffing", items: [
+          DASHBOARD_ITEM,
+          { label: "Staffing Dashboard",          path: "/ops/staffing",                    icon: LayoutDashboard },
+          { label: "Open Cases",                  path: "/staffing",                        icon: Briefcase },
+          { label: "RBT Match Queue",             path: "/ops/rbt-match-queue",             icon: UserCheck },
+          { label: "Coverage Needs",              path: "/ops/staffing",                    icon: Calendar },
+          { label: "Family Staffing Preferences", path: "/ops/family-staffing-preferences", icon: HeartHandshake },
+          { label: "Staffing Reports",            path: "/reports",                         icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* ---------------------------------- HR Team -------------------------------- */
+  hr_team: {
+    sections: [
+      {
+        id: "hr", label: "HR", items: [
+          DASHBOARD_ITEM,
+          { label: "HR Dashboard",       path: "/hr-team",            icon: LayoutDashboard },
+          { label: "Employee Records",   path: "/employee-directory", icon: Users },
+          { label: "HR Requests",        path: "/hr/requests",        icon: ClipboardList },
+          { label: "Compliance Items",   path: "/hr/compliance",      icon: ShieldCheck },
+          { label: "Device Requests",    path: "/device-requests",    icon: Wrench },
+          { label: "Device Inventory",   path: "/device-inventory",   icon: Wrench },
+          { label: "NFC Badge Support",  path: "/nfc-badges",         icon: IdCard },
+          { label: "HR Reports",         path: "/reports",            icon: BarChart3 },
+          { label: "Phone System",       path: "/phone",              icon: Phone },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* ----------------------------- Credentialing ------------------------------- */
+  credentialing_team: {
+    sections: [
+      {
+        id: "credentialing", label: "Credentialing", items: [
+          DASHBOARD_ITEM,
+          { label: "Credentialing Dashboard",   path: "/credentialing",                       icon: LayoutDashboard },
+          { label: "Provider Credentialing",    path: "/credentialing/providers",             icon: Stethoscope },
+          { label: "Insurance Credentialing",   path: "/credentialing/insurance",             icon: Building2 },
+          { label: "BCBA Credentials",          path: "/credentialing/bcba",                  icon: IdCard },
+          { label: "Uncredentialed BCBAs",      path: "/credentialing/uncredentialed-bcbas",  icon: AlertTriangle },
+          { label: "Expiring Credentials",      path: "/credentialing/expiring",              icon: Calendar },
+          { label: "Credentialing Reports",     path: "/reports",                             icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* ---------------------------------- QA Team -------------------------------- */
   qa_team: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("QA Dashboard", LayoutDashboard),
-      cs("Documentation Review", FileSignature),
-      cs("Session Note Review", FileText),
-      cs("Compliance Issues", AlertTriangle),
-      cs("QA Reports", BarChart3),
+    sections: [
+      {
+        id: "qa", label: "QA", items: [
+          DASHBOARD_ITEM,
+          { label: "QA Dashboard",         path: "/qa",            icon: LayoutDashboard },
+          { label: "Documentation Review", path: "/qa-workspace",  icon: FileSignature },
+          { label: "Session Note Review",  path: "/qa-queue",      icon: FileText },
+          { label: "Compliance Issues",    path: "/qa-clients",    icon: AlertTriangle },
+          { label: "QA Reports",           path: "/reports",       icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
     ],
   },
+
+  /* --------------------------- Clinical Director ----------------------------- */
+  clinical_director: {
+    sections: [
+      {
+        id: "clinical_leadership", label: "Clinical Leadership", items: [
+          DASHBOARD_ITEM,
+          { label: "Clinical Dashboard",   path: "/bcba",                   icon: LayoutDashboard },
+          { label: "BCBA Oversight",       path: "/assigned-bcbas",         icon: UserCheck },
+          { label: "Clinical Quality",     path: "/qa",                     icon: CheckCircle2 },
+          { label: "Supervision Health",   path: "/supervision-tracking",   icon: ClipboardCheck },
+          { label: "Clinical Escalations", path: "/escalations-followups",  icon: AlertTriangle },
+          { label: "Clinical Reports",     path: "/reports",                icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* ----------------------------------- BCBA ---------------------------------- */
   bcba: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("BCBA Dashboard", LayoutDashboard),
-      cs("Caseload", UserCheck),
-      cs("Supervision", ClipboardCheck),
-      cs("Treatment Plans", FileSignature),
-      cs("Parent Training", HeartHandshake),
-      cs("Clinical Documentation", FileText),
-      cs("Evaluations", ClipboardCheck),
+    sections: [
+      {
+        id: "bcba", label: "BCBA", items: [
+          DASHBOARD_ITEM,
+          { label: "BCBA Dashboard",         path: "/bcba",                  icon: LayoutDashboard },
+          { label: "Caseload",               path: "/bcba/clients",          icon: UserCheck },
+          { label: "Supervision",            path: "/bcba/supervision",      icon: ClipboardCheck },
+          { label: "Treatment Plans",        path: "/bcba/workspace",        icon: FileSignature },
+          { label: "Parent Training",        path: "/bcba/parent-training",  icon: HeartHandshake },
+          { label: "Clinical Documentation", path: "/bcba/workspace",        icon: FileText },
+          { label: "Evaluations",            path: "/evaluations",           icon: ClipboardCheck },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
     ],
   },
+
+  /* -------------------------------- Case Manager ----------------------------- */
+  case_manager: {
+    sections: [
+      {
+        id: "case_management", label: "Case Management", items: [
+          DASHBOARD_ITEM,
+          { label: "Case Manager Dashboard", path: "/case-manager",                  icon: LayoutDashboard },
+          { label: "Caseload",               path: "/case-manager/families",         icon: Users },
+          { label: "Client Follow-Up",       path: "/case-manager/follow-ups",       icon: MessageSquare },
+          { label: "Care Coordination",      path: "/case-manager/scheduling",       icon: HeartHandshake },
+          { label: "Family Communication",   path: "/case-manager/communication",    icon: MessageSquare },
+          { label: "Case Notes",             path: "/case-manager/family-support",   icon: FileSignature },
+          { label: "Evaluations",            path: "/evaluations",                   icon: ClipboardCheck },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* ------------------------------------ RBT ---------------------------------- */
   rbt: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("RBT Dashboard", LayoutDashboard),
-      cs("My Clients", UserCheck),
-      cs("Session Support", MessageSquare),
-      cs("Supervision Notes", ClipboardCheck),
-      cs("Nonbillable Points", Activity),
-      cs("Career Path", TrendingUp),
+    sections: [
+      {
+        id: "rbt", label: "RBT", items: [
+          DASHBOARD_ITEM,
+          { label: "RBT Dashboard",      path: "/rbt/my-day",          icon: LayoutDashboard },
+          { label: "My Clients",         path: "/rbt/clients",         icon: UserCheck },
+          { label: "Session Support",    path: "/rbt/session-support", icon: MessageSquare },
+          { label: "Supervision Notes",  path: "/rbt/supervision",     icon: ClipboardCheck },
+          { label: "Nonbillable Points", path: "/rbt/readiness",       icon: Activity },
+          { label: "Career Path",        path: "/academy",             icon: TrendingUp },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
     ],
   },
+
+  /* ----------------------------- Behavioral Support -------------------------- */
   behavioral_support: {
-    active: BASE_ACTIVE,
-    comingSoon: [
-      cs("Behavioral Support Dashboard", LayoutDashboard),
-      cs("Crisis Support", AlertTriangle),
-      cs("Behavior Escalations", AlertTriangle),
-      cs("Support Plans", FileSignature),
-      cs("Follow-Up Tracker", Activity),
+    sections: [
+      {
+        id: "behavioral_support", label: "Behavioral Support", items: [
+          DASHBOARD_ITEM,
+          { label: "Behavioral Support Dashboard", path: "/reports",                       icon: LayoutDashboard },
+          { label: "Crisis Support",               path: "/case-manager/service-issues",   icon: AlertTriangle },
+          { label: "Behavior Escalations",         path: "/escalations-followups",         icon: AlertTriangle },
+          { label: "Support Plans",                path: "/bcba/workspace",                icon: FileSignature },
+          { label: "Follow-Up Tracker",            path: "/case-manager/follow-ups",       icon: Activity },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
     ],
   },
 };
 
 /** Fallback for any role without an explicit menu definition. */
 export const DEFAULT_ROLE_MENU: RoleMenu = {
-  active: BASE_ACTIVE,
-  comingSoon: [],
+  sections: [
+    { id: "core", label: "Core", items: [DASHBOARD_ITEM] },
+    TRAINING_AND_RESOURCES,
+  ],
 };
 
 /**
