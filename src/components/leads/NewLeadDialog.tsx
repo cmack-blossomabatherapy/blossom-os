@@ -112,179 +112,268 @@ interface NewLeadDialogProps {
 export function NewLeadDialog({ open, onOpenChange, onCreated }: NewLeadDialogProps) {
   const isMobile = useIsMobile();
   const { addLead } = useLeads();
-  const [form, setForm] = useState({
-    childName: "", parentName: "", phone: "", email: "",
-    state: "GA", source: "Website" as LeadSource, priority: "Warm" as Priority,
-    childAge: "", insurance: "", insuranceType: "PPO", notes: "",
-    owner: owners[0],
-  });
+  const { createLead } = useLeads();
+  const [form, setForm] = useState<FormShape>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
-  const update = <K extends keyof typeof form>(k: K, v: typeof form[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const update = <K extends keyof FormShape>(k: K, v: FormShape[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
 
-  const submit = () => {
+  const submit = async () => {
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
       const fieldErrors: Record<string, string> = {};
       parsed.error.issues.forEach((i) => { fieldErrors[i.path[0] as string] = i.message; });
       setErrors(fieldErrors);
+      toast.error("Please fix the highlighted fields");
       return;
     }
     setErrors({});
-    const id = `L-${Math.floor(1100 + Math.random() * 900)}`;
-    const now = new Date().toISOString();
-    const newLead: Lead = {
-      id,
-      childName: form.childName.trim(),
-      parentName: form.parentName.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-      state: form.state,
-      source: form.source,
-      status: "New Lead",
-      owner: form.owner,
-      priority: form.priority,
-      childAge: form.childAge || "—",
-      formStatus: "Not Sent",
-      consentStatus: "Not Sent",
-      vobStatus: "Not Started",
-      formReviewStatus: "Pending",
-      insurance: form.insurance.trim(),
-      insuranceType: form.insuranceType,
-      ...defaultFinancialFields(form.insurance.trim()),
-      createdAt: now,
-      updatedAt: now,
-      lastContacted: null,
-      daysInStage: 0,
-      nextAction: "Make first contact",
-      nextTaskDue: now.split("T")[0],
-      lastActivity: "Lead created manually",
-      payor: form.insurance.trim(),
-      coverageType: form.insuranceType,
-      paymentPlanNeeded: false,
-      initialFormLink: `https://app.pandadoc.com/intake/${id}`,
-      notes: form.notes,
-      tags: [],
-      timeline: [{ id: "t1", type: "system", description: "Lead created manually", timestamp: now, user: form.owner }],
-      tasks: [],
-      documents: [],
-      communications: [],
-      automationLog: ["Lead created manually"],
-    };
-    addLead(newLead);
-    toast.success(`Lead created: ${newLead.childName}`, { description: `${newLead.id} · assigned to ${newLead.owner}` });
-    onCreated?.(newLead);
-    onOpenChange(false);
-    setForm({
-      childName: "", parentName: "", phone: "", email: "",
-      state: "GA", source: "Website", priority: "Warm",
-      childAge: "", insurance: "", insuranceType: "PPO", notes: "", owner: owners[0],
-    });
+    setSubmitting(true);
+    try {
+      const v = parsed.data;
+      const tags = (v.tags || "").split(",").map((t) => t.trim()).filter(Boolean);
+      const lead = await createLead({
+        patientFirstName: v.patientFirstName || undefined,
+        patientLastName:  v.patientLastName  || undefined,
+        childName:        v.childName,
+        dob:              v.dob || undefined,
+        diagnosisStatus:  v.diagnosisStatus || undefined,
+        dxNeeded:         v.dxNeeded,
+
+        parentFirstName:  v.parentFirstName  || undefined,
+        parentLastName:   v.parentLastName   || undefined,
+        parentName:       v.parentName,
+        parent2Name:      v.parent2Name      || undefined,
+        parent2Email:     v.parent2Email     || undefined,
+        phone:            (v.phone || "").trim(),
+        parentCellPhone:  v.parentCellPhone  || undefined,
+        homePhone:        v.homePhone        || undefined,
+        email:            (v.email || "").trim(),
+        preferredContactMethod: v.preferredContactMethod || undefined,
+
+        state:        v.state,
+        leadSource:   v.leadSource,
+        leadType:     v.leadType        || undefined,
+        referralSource:   v.referralSource   || undefined,
+        referralPartner:  v.referralPartner  || undefined,
+        utmSource:    v.utmSource       || undefined,
+        utmMedium:    v.utmMedium       || undefined,
+        utmCampaign:  v.utmCampaign     || undefined,
+        originationDate: v.originationDate || undefined,
+        assignedIntakeCoordinator: v.assignedIntakeCoordinator || undefined,
+        priority: v.priority,
+
+        insurance:        v.insurance         || undefined,
+        insuranceType:    v.insuranceType     || undefined,
+        secondaryInsurance: v.secondaryInsurance || undefined,
+
+        pipelineStage: v.pipelineStage,
+        nextAction:    v.nextAction || undefined,
+        nextTaskDue:   v.nextTaskDue || undefined,
+
+        regularCallLog:  v.regularCallLog  || undefined,
+        etCallLog:       v.etCallLog       || undefined,
+        messageComments: v.messageComments || undefined,
+        lastContactDate: v.lastContactDate || undefined,
+
+        notes: v.notes || undefined,
+        tags:  tags.length ? tags : undefined,
+
+        sourceMetadata: {
+          created_via: "manual",
+          created_at_client: new Date().toISOString(),
+        },
+      });
+      toast.success(`Lead created: ${lead.childName}`, {
+        description: `${lead.id.slice(0, 8)} · ${lead.state} · ${lead.source}`,
+      });
+      onCreated?.(lead);
+      onOpenChange(false);
+      setForm(EMPTY);
+    } catch (e: any) {
+      toast.error("Could not save lead", { description: e?.message ?? "Unknown error" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  return (
-    isMobile ? (
+  const body = <FormTabs form={form} update={update} errors={errors} />;
+  const footer = (
+    <>
+      <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
+      <Button onClick={submit} disabled={submitting}>{submitting ? "Saving…" : "Create lead"}</Button>
+    </>
+  );
+
+  if (isMobile) {
+    return (
       <ResponsiveSheet open={open} onOpenChange={onOpenChange}>
         <div className="flex h-full flex-col overflow-hidden">
           <SheetHeader className="px-5 pb-2 pt-3 text-left">
             <SheetTitle>New lead</SheetTitle>
             <SheetDescription className="text-xs">
-              Manually create a lead. Form starts in <strong>New Lead</strong> stage.
+              Manually create a lead. Saved to Blossom OS intake.
             </SheetDescription>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto border-t border-border/60 px-5 py-4">
-            <FormBody form={form} update={update} errors={errors} />
-          </div>
+          <div className="flex-1 overflow-y-auto border-t border-border/60 px-5 py-4">{body}</div>
           <SheetFooter className="flex-row gap-2 border-t border-border/60 bg-background px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button className="flex-1" onClick={submit}>Create lead</Button>
+            {footer}
           </SheetFooter>
         </div>
       </ResponsiveSheet>
-    ) : (
+    );
+  }
+
+  return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className="sm:max-w-[760px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>New lead</DialogTitle>
-          <DialogDescription>Manually create a lead. Form starts in <strong>New Lead</strong> stage.</DialogDescription>
+          <DialogDescription>
+            Captures Monday Leads board fields. Persists to Blossom OS intake.
+          </DialogDescription>
         </DialogHeader>
-        <div className="py-2">
-          <FormBody form={form} update={update} errors={errors} />
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit}>Create lead</Button>
-        </DialogFooter>
+        <div className="flex-1 overflow-y-auto py-2">{body}</div>
+        <DialogFooter>{footer}</DialogFooter>
       </DialogContent>
     </Dialog>
-    )
   );
 }
 
-function FormBody({ form, update, errors }: { form: any; update: (k: any, v: any) => void; errors: Record<string, string> }) {
+/* ----------------------------- Tabbed form body ---------------------------- */
+
+interface FormBodyProps {
+  form: FormShape;
+  update: <K extends keyof FormShape>(k: K, v: FormShape[K]) => void;
+  errors: Record<string, string>;
+}
+
+function FormTabs({ form, update, errors }: FormBodyProps) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <Label className="text-xs">Child name *</Label>
-            <Input value={form.childName} onChange={(e) => update("childName", e.target.value)} className="h-9" />
-            {errors.childName && <p className="text-[11px] text-destructive mt-1">{errors.childName}</p>}
-          </div>
-          <div>
-            <Label className="text-xs">Parent name *</Label>
-            <Input value={form.parentName} onChange={(e) => update("parentName", e.target.value)} className="h-9" />
-            {errors.parentName && <p className="text-[11px] text-destructive mt-1">{errors.parentName}</p>}
-          </div>
-          <div>
-            <Label className="text-xs">Phone *</Label>
-            <Input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="(404) 555-0100" className="h-9" />
-            {errors.phone && <p className="text-[11px] text-destructive mt-1">{errors.phone}</p>}
-          </div>
-          <div>
-            <Label className="text-xs">Email *</Label>
-            <Input value={form.email} onChange={(e) => update("email", e.target.value)} className="h-9" />
-            {errors.email && <p className="text-[11px] text-destructive mt-1">{errors.email}</p>}
-          </div>
-          <div>
-            <Label className="text-xs">Child age</Label>
-            <Input value={form.childAge} onChange={(e) => update("childAge", e.target.value)} placeholder="3y 4m" className="h-9" />
-          </div>
-          <div>
-            <Label className="text-xs">State</Label>
-            <Select value={form.state} onValueChange={(v) => update("state", v)}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>{states.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Source</Label>
-            <Select value={form.source} onValueChange={(v) => update("source", v as LeadSource)}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>{sources.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Priority</Label>
-            <Select value={form.priority} onValueChange={(v) => update("priority", v as Priority)}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>{priorities.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Insurance *</Label>
-            <Input value={form.insurance} onChange={(e) => update("insurance", e.target.value)} placeholder="BCBS" className="h-9" />
-            {errors.insurance && <p className="text-[11px] text-destructive mt-1">{errors.insurance}</p>}
-          </div>
-          <div>
-            <Label className="text-xs">Insurance type</Label>
-            <Input value={form.insuranceType} onChange={(e) => update("insuranceType", e.target.value)} placeholder="PPO" className="h-9" />
-          </div>
-          <div className="col-span-2">
-            <Label className="text-xs">Assigned coordinator</Label>
-            <Select value={form.owner} onValueChange={(v) => update("owner", v)}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>{owners.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
+    <Tabs defaultValue="source" className="w-full">
+      <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 h-auto">
+        <TabsTrigger value="source"        className="text-[11px]">Source</TabsTrigger>
+        <TabsTrigger value="patient"       className="text-[11px]">Patient</TabsTrigger>
+        <TabsTrigger value="parent"        className="text-[11px]">Parent</TabsTrigger>
+        <TabsTrigger value="insurance"     className="text-[11px]">Insurance</TabsTrigger>
+        <TabsTrigger value="workflow"      className="text-[11px]">Workflow</TabsTrigger>
+        <TabsTrigger value="communication" className="text-[11px]">Comms</TabsTrigger>
+        <TabsTrigger value="documents"     className="text-[11px]">Docs</TabsTrigger>
+        <TabsTrigger value="notes"         className="text-[11px]">Notes</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="source" className="mt-4">
+        <Grid>
+          <Field label="Lead Source *" error={errors.leadSource}>
+            <SelectInput value={form.leadSource} onChange={(v) => update("leadSource", v)} options={LEAD_SOURCES as unknown as string[]} />
+          </Field>
+          <Field label="Lead Type"><Input className="h-9" value={form.leadType} onChange={(e) => update("leadType", e.target.value)} placeholder="Self-Pay, Insurance, …" /></Field>
+          <Field label="State *" error={errors.state}>
+            <SelectInput value={form.state} onChange={(v) => update("state", v)} options={STATES as unknown as string[]} />
+          </Field>
+          <Field label="Priority"><SelectInput value={form.priority} onChange={(v) => update("priority", v as FormShape["priority"])} options={PRIORITIES as unknown as string[]} /></Field>
+          <Field label="Origination Date"><Input type="date" className="h-9" value={form.originationDate || ""} onChange={(e) => update("originationDate", e.target.value)} /></Field>
+          <Field label="Assigned Intake Coordinator"><Input className="h-9" value={form.assignedIntakeCoordinator || ""} onChange={(e) => update("assignedIntakeCoordinator", e.target.value)} placeholder="e.g. Sarah M." /></Field>
+          <Field label="Referral Source"><Input className="h-9" value={form.referralSource || ""} onChange={(e) => update("referralSource", e.target.value)} /></Field>
+          <Field label="Referral Partner"><Input className="h-9" value={form.referralPartner || ""} onChange={(e) => update("referralPartner", e.target.value)} /></Field>
+          <Field label="UTM Source"><Input className="h-9" value={form.utmSource || ""} onChange={(e) => update("utmSource", e.target.value)} /></Field>
+          <Field label="UTM Medium"><Input className="h-9" value={form.utmMedium || ""} onChange={(e) => update("utmMedium", e.target.value)} /></Field>
+          <Field label="UTM Campaign" colSpan2><Input className="h-9" value={form.utmCampaign || ""} onChange={(e) => update("utmCampaign", e.target.value)} /></Field>
+        </Grid>
+      </TabsContent>
+
+      <TabsContent value="patient" className="mt-4">
+        <Grid>
+          <Field label="Patient First Name"><Input className="h-9" value={form.patientFirstName || ""} onChange={(e) => update("patientFirstName", e.target.value)} /></Field>
+          <Field label="Patient Last Name"><Input className="h-9" value={form.patientLastName || ""} onChange={(e) => update("patientLastName", e.target.value)} /></Field>
+          <Field label="Name of Patient *" colSpan2 error={errors.childName}><Input className="h-9" value={form.childName} onChange={(e) => update("childName", e.target.value)} placeholder="Full patient name (as known)" /></Field>
+          <Field label="Date of Birth"><Input type="date" className="h-9" value={form.dob || ""} onChange={(e) => update("dob", e.target.value)} /></Field>
+          <Field label="Diagnosis Status"><Input className="h-9" value={form.diagnosisStatus || ""} onChange={(e) => update("diagnosisStatus", e.target.value)} placeholder="Diagnosed / In Progress / None" /></Field>
+          <Field label="DX Needed"><label className="inline-flex h-9 items-center gap-2 text-sm"><input type="checkbox" checked={!!form.dxNeeded} onChange={(e) => update("dxNeeded", e.target.checked)} /> Patient needs a diagnosis</label></Field>
+        </Grid>
+      </TabsContent>
+
+      <TabsContent value="parent" className="mt-4">
+        <Grid>
+          <Field label="Parents Full Name *" colSpan2 error={errors.parentName}><Input className="h-9" value={form.parentName} onChange={(e) => update("parentName", e.target.value)} /></Field>
+          <Field label="Parent First Name"><Input className="h-9" value={form.parentFirstName || ""} onChange={(e) => update("parentFirstName", e.target.value)} /></Field>
+          <Field label="Parent Last Name"><Input className="h-9" value={form.parentLastName || ""} onChange={(e) => update("parentLastName", e.target.value)} /></Field>
+          <Field label="Parent 2 Name"><Input className="h-9" value={form.parent2Name || ""} onChange={(e) => update("parent2Name", e.target.value)} /></Field>
+          <Field label="Parent 2 Email"><Input className="h-9" value={form.parent2Email || ""} onChange={(e) => update("parent2Email", e.target.value)} /></Field>
+          <Field label="Phone" error={errors.phone}><Input className="h-9" value={form.phone || ""} onChange={(e) => update("phone", e.target.value)} placeholder="(404) 555-0100" /></Field>
+          <Field label="Parent Cell Phone"><Input className="h-9" value={form.parentCellPhone || ""} onChange={(e) => update("parentCellPhone", e.target.value)} /></Field>
+          <Field label="Home Phone"><Input className="h-9" value={form.homePhone || ""} onChange={(e) => update("homePhone", e.target.value)} /></Field>
+          <Field label="Email"><Input className="h-9" value={form.email || ""} onChange={(e) => update("email", e.target.value)} /></Field>
+          <Field label="Preferred Contact"><SelectInput value={form.preferredContactMethod || "Phone"} onChange={(v) => update("preferredContactMethod", v)} options={CONTACT_METHODS as unknown as string[]} /></Field>
+        </Grid>
+      </TabsContent>
+
+      <TabsContent value="insurance" className="mt-4">
+        <Grid>
+          <Field label="Primary Insurance"><Input className="h-9" value={form.insurance || ""} onChange={(e) => update("insurance", e.target.value)} placeholder="BCBS, Aetna, Cigna…" /></Field>
+          <Field label="Insurance Type"><Input className="h-9" value={form.insuranceType || ""} onChange={(e) => update("insuranceType", e.target.value)} placeholder="PPO / HMO" /></Field>
+          <Field label="Secondary Insurance" colSpan2><Input className="h-9" value={form.secondaryInsurance || ""} onChange={(e) => update("secondaryInsurance", e.target.value)} /></Field>
+        </Grid>
+      </TabsContent>
+
+      <TabsContent value="workflow" className="mt-4">
+        <Grid>
+          <Field label="Pipeline Stage *" error={errors.pipelineStage}>
+            <SelectInput value={form.pipelineStage} onChange={(v) => update("pipelineStage", v)} options={PIPELINE_STAGES as unknown as string[]} />
+          </Field>
+          <Field label="Next Action"><Input className="h-9" value={form.nextAction || ""} onChange={(e) => update("nextAction", e.target.value)} placeholder="Contact Lead" /></Field>
+          <Field label="Next Task Due"><Input type="date" className="h-9" value={form.nextTaskDue || ""} onChange={(e) => update("nextTaskDue", e.target.value)} /></Field>
+          <Field label="Last Contact Date"><Input type="date" className="h-9" value={form.lastContactDate || ""} onChange={(e) => update("lastContactDate", e.target.value)} /></Field>
+        </Grid>
+      </TabsContent>
+
+      <TabsContent value="communication" className="mt-4">
+        <div className="space-y-3">
+          <Field label="Regular Call Log"><Textarea rows={3} value={form.regularCallLog || ""} onChange={(e) => update("regularCallLog", e.target.value)} placeholder="Notes from standard intake calls." /></Field>
+          <Field label="E/T Call Log"><Textarea rows={3} value={form.etCallLog || ""} onChange={(e) => update("etCallLog", e.target.value)} placeholder="Evening / after-hours call notes." /></Field>
+          <Field label="Message / Comments"><Textarea rows={3} value={form.messageComments || ""} onChange={(e) => update("messageComments", e.target.value)} placeholder="Internal context about the family." /></Field>
         </div>
+      </TabsContent>
+
+      <TabsContent value="documents" className="mt-4">
+        <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 px-6 py-10 text-center text-sm text-muted-foreground">
+          Document uploads will open here in a follow-up build. For now, capture document context in <strong>Notes</strong>.
+        </div>
+      </TabsContent>
+
+      <TabsContent value="notes" className="mt-4">
+        <div className="space-y-3">
+          <Field label="Internal Notes"><Textarea rows={5} value={form.notes || ""} onChange={(e) => update("notes", e.target.value)} placeholder="Anything the intake team should know." /></Field>
+          <Field label="Tags (comma-separated)"><Input className="h-9" value={form.tags || ""} onChange={(e) => update("tags", e.target.value)} placeholder="vip, spanish-speaking, …" /></Field>
+        </div>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+/* ------------------------------ tiny helpers ------------------------------ */
+
+function Grid({ children }: { children: React.ReactNode }) {
+  return <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>;
+}
+
+function Field({ label, children, error, colSpan2 }: { label: string; children: React.ReactNode; error?: string; colSpan2?: boolean }) {
+  return (
+    <div className={colSpan2 ? "sm:col-span-2" : ""}>
+      <Label className="text-xs">{label}</Label>
+      <div className="mt-1">{children}</div>
+      {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
+    </div>
+  );
+}
+
+function SelectInput({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+      <SelectContent>{options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+    </Select>
   );
 }
