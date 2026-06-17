@@ -39,7 +39,7 @@ describe("BCBA Productivity admin uploads — Sprint", () => {
     }
   });
 
-  it("BCBA Productivity Report V3 runs on the shared admin dataset (manual upload retired)", () => {
+  it("BCBA Productivity Report V3 runs from the admin-fed shared dataset", () => {
     const src = read("src/pages/os/reports/BcbaProductivityReportV3.tsx");
     // shared dataset wired in
     expect(src).toMatch(/Using shared admin dataset/);
@@ -51,11 +51,10 @@ describe("BCBA Productivity admin uploads — Sprint", () => {
     expect(src).toMatch(
       /No admin-uploaded BCBA productivity dataset found\. Ask an admin to upload the CentralReach billing export\./,
     );
-    // user-facing manual upload UI removed
-    expect(src).not.toMatch(/Choose file/);
-    expect(src).not.toMatch(/Drag a file here/);
-    expect(src).not.toMatch(/Upload a single Billing Report/);
-    expect(src).not.toMatch(/Upload a billing report to populate productivity/);
+    // no retired language
+    expect(src).not.toMatch(/retired/i);
+    expect(src).not.toMatch(/Manual uploads have been retired/);
+    expect(src).not.toMatch(/data only comes from the shared admin dataset/);
   });
 
   it("Admin upload page uses the agreed product copy", () => {
