@@ -363,9 +363,16 @@ export default function PatientLifetimeJourney() {
                                 <div className="text-[11px] text-muted-foreground">{e.when}</div>
                               </div>
                               {e.detail && <div className="text-xs text-muted-foreground mt-1">{e.detail}</div>}
-                              {e.owner && (
-                                <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-                                  <Badge variant="outline" className="text-[10px] py-0">{e.owner}</Badge>
+                              {(e.owner || e.origin) && (
+                                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                                  {e.origin && (
+                                    <Badge variant="secondary" className="text-[10px] py-0">
+                                      Origin: {e.origin}
+                                    </Badge>
+                                  )}
+                                  {e.owner && (
+                                    <Badge variant="outline" className="text-[10px] py-0">{e.owner}</Badge>
+                                  )}
                                 </div>
                               )}
                             </div>
