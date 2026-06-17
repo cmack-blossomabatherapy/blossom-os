@@ -244,7 +244,7 @@ export default function ReportsHome() {
                 key={sr.id}
                 className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-4 transition hover:-translate-y-0.5 hover:border-[hsl(345_70%_50%/0.35)] hover:shadow-[0_20px_40px_-25px_hsl(345_60%_50%/0.4)]"
               >
-                <Link to={`/os/reports/cancellation-command-center?saved=${sr.id}`} className="block">
+                <Link to={`/reports/cancellation-command-center?saved=${sr.id}`} className="block">
                   <Badge
                     variant="secondary"
                     className="rounded-full bg-[hsl(345_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(345_70%_50%)]"
@@ -423,7 +423,7 @@ function Sparkline({ points, color = "hsl(265 70% 55%)" }: { points: number[]; c
 function FeaturedCard({ report, favored, onFav }: { report: ReportDef; favored: boolean; onFav: (id: string) => void }) {
   const cat = REPORT_CATEGORIES.find(c => c.id === report.category)!;
   return (
-    <Link to={`/os/reports/${report.id}`} className="group block">
+    <Link to={`/reports/${report.id}`} className="group block">
       <article className={cn(
         "relative overflow-hidden rounded-3xl border border-white/70 bg-card p-5 transition-all duration-300",
         "shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.35)] hover:-translate-y-0.5 hover:shadow-[0_30px_70px_-30px_hsl(265_60%_50%/0.5)]",
@@ -525,7 +525,7 @@ function CategoryCard({ cat }: { cat: ReturnType<typeof visibleCategoriesForRole
           {cat.mostViewed && (
             <div className="mt-3 flex items-center justify-between rounded-lg border border-border/40 bg-secondary/30 px-2.5 py-1.5">
               <span className="truncate text-[11px] text-muted-foreground">Most viewed</span>
-              <Link to={`/os/reports/${cat.mostViewed.id}`} className="ml-2 truncate text-[11px] font-medium text-foreground hover:text-[hsl(265_70%_55%)]">
+              <Link to={`/reports/${cat.mostViewed.id}`} className="ml-2 truncate text-[11px] font-medium text-foreground hover:text-[hsl(265_70%_55%)]">
                 {cat.mostViewed.title}
               </Link>
             </div>
@@ -558,7 +558,7 @@ function SidePanel({ title, icon: Icon, empty, children }: { title: string; icon
 function MiniReportRow({ report }: { report: ReportDef }) {
   const cat = REPORT_CATEGORIES.find(c => c.id === report.category)!;
   return (
-    <Link to={`/os/reports/${report.id}`} className="group flex items-center justify-between rounded-xl border border-border/40 bg-card/70 px-3 py-2.5 transition hover:border-[hsl(265_70%_55%/0.4)] hover:shadow-sm">
+    <Link to={`/reports/${report.id}`} className="group flex items-center justify-between rounded-xl border border-border/40 bg-card/70 px-3 py-2.5 transition hover:border-[hsl(265_70%_55%/0.4)] hover:shadow-sm">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: cat.accent }} />
@@ -574,7 +574,7 @@ function MiniReportRow({ report }: { report: ReportDef }) {
 function MiniReportCard({ report, favored, onFav }: { report: ReportDef; favored: boolean; onFav: (id: string) => void }) {
   const cat = REPORT_CATEGORIES.find(c => c.id === report.category)!;
   return (
-    <Link to={`/os/reports/${report.id}`} className="group block rounded-2xl border border-border/60 bg-card p-3.5 transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.35)] hover:shadow-md">
+    <Link to={`/reports/${report.id}`} className="group block rounded-2xl border border-border/60 bg-card p-3.5 transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.35)] hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
         <Badge variant="secondary" className="rounded-full bg-secondary text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: cat.accent }}>{cat.name}</Badge>
         <button onClick={(e) => { e.preventDefault(); onFav(report.id); }} className={cn("rounded-full p-1", favored ? "text-amber-500" : "text-muted-foreground/60 hover:text-amber-500")}>
