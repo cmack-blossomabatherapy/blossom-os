@@ -8,6 +8,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { parseAnyFile } from "@/lib/os/dashboardEngine/excelParser";
+import { normalizeUsState, resolveRowState } from "./stateNormalization";
 
 /* ----- shared types ----- */
 
@@ -153,7 +154,8 @@ export async function parseBcbaProductivityUpload(file: File): Promise<BcbaUploa
   const provFirstH = findH(h, ["ProviderFirstName", "Provider First Name"]);
   const provLastH = findH(h, ["ProviderLastName", "Provider Last Name"]);
   const provNameH = findH(h, ["Provider", "Provider Name", "RenderingProvider", "Rendering Provider"]);
-  const stateH = findH(h, ["ClientLocationStateProvince", "ServiceLocationStateProvince", "State"]);
+  // State is resolved per-row via resolveRowState (column fallback + normalization),
+  // so we don't pick a single global state header here.
   const payorH = findH(h, ["PayorNickname", "PayorName", "Payor Name", "Payor", "Payer", "Insurance"]);
   const provLabelsH = findH(h, [
     "ProviderContactLabels", "Provider Contact Labels", "ProviderLabels", "Provider Labels",
@@ -210,7 +212,7 @@ export async function parseBcbaProductivityUpload(file: File): Promise<BcbaUploa
         code,
         hours,
         date: dos,
-        state: String((stateH ? r[stateH] : "") ?? "").trim(),
+        state: resolveRowState(r as Record<string, unknown>),
         payor: String((payorH ? r[payorH] : "") ?? "").trim(),
       };
 
@@ -438,7 +440,7 @@ export async function getBcbaProductivitySharedRows(
     const to = Math.min(from + PAGE - 1, max - 1);
     const { data, error } = await supabase
       .from("bcba_productivity_billing_rows")
-      .select("normalized")
+      .select("normalized,raw")
       .eq("active", true)
       .order("service_date", { ascending: true })
       .range(from, to);
@@ -446,7 +448,11 @@ export async function getBcbaProductivitySharedRows(
     if (!data || data.length === 0) break;
     for (const d of data) {
       const n = (d.normalized as unknown as BcbaSharedBillingRow) || null;
-      if (n && n.date && n.code) out.push(n);
+      if (n && n.date && n.code) {
+        const normState = normalizeUsState(n.state);
+        const state = normState || resolveRowState((d as any).raw as Record<string, unknown>);
+        out.push({ ...n, state });
+      }
     }
     if (data.length < PAGE) break;
     from += PAGE;

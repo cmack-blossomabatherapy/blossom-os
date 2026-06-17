@@ -31,6 +31,7 @@ import {
   getBcbaProductivitySharedRows, getBcbaProductivityDatasetStatus,
   type BcbaDatasetStatus,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
+import { normalizeUsState, resolveRowState } from "@/lib/os/bcbaProductivityV3/stateNormalization";
 import { Link } from "react-router-dom";
 
 /* ----- helpers ----- */
@@ -288,7 +289,7 @@ export default function BcbaProductivityReportV3() {
       const provFirstH = findH(h, ["ProviderFirstName", "Provider First Name"]);
       const provLastH = findH(h, ["ProviderLastName", "Provider Last Name"]);
       const provNameH = findH(h, ["Provider", "Provider Name", "RenderingProvider", "Rendering Provider"]);
-      const stateH = findH(h, ["ClientLocationStateProvince", "ServiceLocationStateProvince", "State"]);
+      // State resolved per-row via resolveRowState (column fallback + normalization).
       const payorH = findH(h, ["PayorNickname", "PayorName", "Payor Name", "Payor", "Payer", "Insurance"]);
       const provLabelsH = findH(h, ["ProviderContactLabels", "Provider Contact Labels", "ProviderLabels", "Provider Labels"]);
 
@@ -340,7 +341,7 @@ export default function BcbaProductivityReportV3() {
           code,
           hours,
           date: dos,
-          state: (stateH ? r[stateH] : "").trim(),
+          state: resolveRowState(r as Record<string, unknown>),
           payor: (payorH ? r[payorH] : "").trim(),
         };
         parsedRows.push(row);
@@ -442,7 +443,12 @@ export default function BcbaProductivityReportV3() {
     const s = new Set<string>(); for (const r of ownedRows) if (r.renderingProvider) s.add(r.renderingProvider); return [...s].sort();
   }, [ownedRows]);
   const stateOptions = useMemo(() => {
-    const s = new Set<string>(); for (const r of ownedRows) if (r.state) s.add(r.state); return [...s].sort();
+    const s = new Set<string>();
+    for (const r of ownedRows) {
+      const code = normalizeUsState(r.state);
+      if (code) s.add(code);
+    }
+    return [...s].sort();
   }, [ownedRows]);
   const payorOptions = useMemo(() => {
     const s = new Set<string>(); for (const r of ownedRows) if (r.payor) s.add(r.payor); return [...s].sort();
@@ -462,7 +468,7 @@ export default function BcbaProductivityReportV3() {
       if (bcbaF !== "all" && (r.bcbaOwner ?? "— Unassigned —") !== bcbaF) return false;
       if (clientF !== "all" && r.clientName !== clientF) return false;
       if (rbtF !== "all" && r.renderingProvider !== rbtF) return false;
-      if (stateF !== "all" && r.state !== stateF) return false;
+      if (stateF !== "all" && normalizeUsState(r.state) !== stateF) return false;
       if (payorF !== "all" && r.payor !== payorF) return false;
       if (codeF !== "all" && r.code !== codeF) return false;
       if (q && !(r.clientName.toLowerCase().includes(q) ||
