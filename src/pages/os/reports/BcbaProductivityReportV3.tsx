@@ -788,7 +788,7 @@ export default function BcbaProductivityReportV3() {
             <TabsTrigger value="bcba">BCBA Summary</TabsTrigger>
             <TabsTrigger value="supervision">Supervision</TabsTrigger>
             <TabsTrigger value="clients">Clients &amp; RBTs</TabsTrigger>
-            <TabsTrigger value="upload">Upload Details</TabsTrigger>
+            <TabsTrigger value="upload">Data Source</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
