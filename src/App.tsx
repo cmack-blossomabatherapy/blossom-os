@@ -533,7 +533,15 @@ const App = () => (
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<BlossomOSHome />} />
                   <Route path="/dashboard/legacy" element={<OSDashboard />} />
-                  <Route path="/ws/:id" element={<WorkspacePage />} />
+                  {/* Legacy /ws/:id routes are kept only for back-compat redirects
+                      onto the live Blossom OS shell. Executive Leadership and
+                      friends must never land in the old workspace shell. */}
+                  <Route path="/ws/executive"  element={<Navigate to="/executive"                  replace />} />
+                  <Route path="/ws/operations" element={<Navigate to="/operations/command-center"  replace />} />
+                  <Route path="/ws/marketing"  element={<Navigate to="/marketing"                  replace />} />
+                  <Route path="/ws/intake"     element={<Navigate to="/intake/dashboard"           replace />} />
+                  <Route path="/ws/finance"    element={<Navigate to="/reports"                    replace />} />
+                  <Route path="/ws/:id"        element={<WorkspacePage />} />
                   <Route path="/executive" element={<ExecutiveOverview />} />
                   <Route path="/executive/overview" element={<Navigate to="/executive" replace />} />
                   <Route path="/executive/pulse" element={<CompanyPulse />} />
