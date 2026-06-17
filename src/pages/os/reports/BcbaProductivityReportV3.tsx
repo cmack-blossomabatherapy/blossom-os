@@ -264,13 +264,7 @@ export default function BcbaProductivityReportV3() {
           return;
         }
       }
-      // Restore the last uploaded billing report so leaving/returning to the
-      // tab does not discard work. Data is only cleared on explicit Reset.
-      const last = await loadLastBillingV3();
-      if (last?.rows?.length) {
-        setRows(last.rows as BillingRow[]);
-        if (last.fileName) setFileName(last.fileName);
-      }
+      // Manual upload retired — data only comes from the shared admin dataset.
     })();
   }, [savedParam]);
 
