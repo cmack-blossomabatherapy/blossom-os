@@ -98,6 +98,32 @@ const makeTimelineEvent = (description: string): TimelineEvent => ({
   user: "You",
 });
 
+/**
+ * Phase F — write a lightweight activity row to `intake_communications`. Best
+ * effort: monday/imported leads have no `intake_leads` row so the FK insert
+ * will fail, and that's fine — we swallow errors here so UI flow never breaks.
+ */
+function logLeadActivity(
+  leadId: string,
+  communicationType: "call" | "sms" | "email" | "note",
+  preview: string,
+  loggedByName?: string,
+) {
+  // Skip non-UUID ids (monday-imported leads, mock data).
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRe.test(leadId)) return;
+  void supabase
+    .from("intake_communications")
+    .insert({
+      lead_id: leadId,
+      communication_type: communicationType,
+      direction: "outbound",
+      preview,
+      logged_by_name: loggedByName ?? "Blossom OS",
+    } as never)
+    .then(() => undefined, () => undefined);
+}
+
 const leastLoadedCoordinator = (leads: Lead[]) => {
   const counts = INTAKE_COORDINATORS.map((owner) => ({ owner, count: leads.filter((lead) => lead.owner === owner).length }));
   return counts.sort((a, b) => a.count - b.count)[0]?.owner ?? INTAKE_COORDINATORS[0];
