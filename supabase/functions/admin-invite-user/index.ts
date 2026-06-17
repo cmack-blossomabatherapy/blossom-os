@@ -174,6 +174,13 @@ Deno.serve(async (req) => {
   });
   if (logErr) console.error("Failed to log invite email result", logErr.message);
 
+  if (welcomeEmailResult.status === "sent") {
+    await admin.from("profiles").update({
+      welcome_sent_at: new Date().toISOString(),
+      welcome_sent_by: callerId,
+    }).eq("user_id", created.user.id);
+  }
+
   // Insert any additional roles beyond the primary one (which the trigger inserted).
   const extraRoles = roles.slice(1);
   if (extraRoles.length > 0) {
