@@ -217,6 +217,54 @@ export default function BcbaProductivityReportV3() {
 
   useEffect(() => { void refreshAssignments(); }, []);
 
+  /* Detect shared admin dataset on mount. If available, default the data source
+   * selector to "shared". Manual upload behavior is preserved. */
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await getBcbaProductivityDatasetStatus();
+        setSharedStatus(s);
+        if (s.activeRowCount > 0 && (sharedRequested || rows.length === 0)) {
+          setDataSource("shared");
+        }
+      } catch {
+        /* ignore — manual upload still works */
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function loadSharedDataset() {
+    setSharedLoading(true);
+    try {
+      const shared = await getBcbaProductivitySharedRows();
+      if (!shared.length) {
+        toast.info("Shared admin dataset is empty.");
+        setSharedLoading(false);
+        return;
+      }
+      setRows(shared as BillingRow[]);
+      setFileName("Shared admin dataset");
+      const s = await getBcbaProductivityDatasetStatus();
+      setSharedStatus(s);
+      toast.success(`Loaded ${shared.length.toLocaleString()} shared admin rows`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load shared admin dataset");
+    } finally {
+      setSharedLoading(false);
+    }
+  }
+
+  /* Auto-load shared dataset when user selects that source (and no rows yet
+   * from that source). */
+  useEffect(() => {
+    if (dataSource === "shared" && sharedStatus && sharedStatus.activeRowCount > 0
+        && fileName !== "Shared admin dataset") {
+      void loadSharedDataset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataSource, sharedStatus?.activeRowCount]);
+
   useEffect(() => {
     (async () => {
       if (savedParam) {
