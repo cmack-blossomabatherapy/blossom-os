@@ -1,11 +1,10 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { MessageSquare, Phone, Mail, Plus, HeartHandshake } from "lucide-react";
+import { MessageSquare, Phone, Mail, Plus } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { useIntakeCommsLive } from "@/hooks/useIntakeCommsLive";
+import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
 
 interface CommRow {
   leadId: string;
@@ -20,24 +19,13 @@ const ICONS = { call: Phone, sms: MessageSquare, email: Mail, note: MessageSquar
 
 export default function ParentCommunication() {
   const { leads, loading } = useLeads();
-  const { comms, logComm } = useIntakeCommsLive(100);
+  const { comms } = useIntakeCommsLive(100);
 
   const leadNameById = useMemo(() => {
     const map = new Map<string, string>();
     leads.forEach((l) => map.set(l.id, l.childName));
     return map;
   }, [leads]);
-
-  const handleLog = async (lead: { id: string; childName: string }, type: "call" | "sms" | "email" | "note") => {
-    const preview = window.prompt(`${type.toUpperCase()} — what happened?`);
-    if (!preview || !preview.trim()) return;
-    try {
-      await logComm(lead.id, type, preview.trim());
-      toast.success(`${type} logged`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : `Could not log ${type}`);
-    }
-  };
 
   const recent = useMemo<CommRow[]>(() => {
     return comms.map((c) => ({
@@ -102,16 +90,8 @@ export default function ParentCommunication() {
                   <span className="text-[11px] text-muted-foreground shrink-0">{l.status}</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{l.nextAction}</div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  <Button asChild size="sm" variant="outline"><Link to={`/leads/${l.id}`}>Open</Link></Button>
-                  <Button asChild size="sm" variant="ghost">
-                    <Link to={`/patient-journey?lead=${l.id}`}>
-                      <HeartHandshake className="mr-1 h-3 w-3" /> Journey
-                    </Link>
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleLog(l, "call")}>Log Call</Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleLog(l, "sms")}>Log Text</Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleLog(l, "email")}>Log Email</Button>
+                <div className="mt-2">
+                  <LeadActionPanel lead={l} compact sourcePage="parent-communication" />
                 </div>
               </div>
             ))}
