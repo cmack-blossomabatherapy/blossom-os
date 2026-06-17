@@ -1489,6 +1489,11 @@ export function getTraining(id: string): Training | undefined {
 }
 
 export function getJourneyForRole(role: string): RoleJourney {
+  // Assistant State Director shares the State Director launch journey.
+  if (role === "assistant_state_director") {
+    const sd = state.journeys.find((j) => j.role === "state_director");
+    if (sd) return sd;
+  }
   const direct = state.journeys.find((j) => j.role === role);
   if (direct) return direct;
   if (role === "super_admin") {
