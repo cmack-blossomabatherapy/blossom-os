@@ -837,6 +837,17 @@ const App = () => (
                   <Route path="/intake/referral-queue" element={<ReferralQueue />} />
                   <Route path="/intake/tasks" element={<IntakeTasks />} />
                   <Route path="/intake/benefits-cheat-sheets" element={<LeadBenefitsCheatSheets />} />
+                  {/* --- Live MVP pages backing role menu items that don't have a
+                       dedicated workspace yet. Real route, real shell, no
+                       /coming-soon. Will be replaced with full workspaces in
+                       future passes. --- */}
+                  <Route path="/intake/missing-information"  element={<OSMvpPage eyebrow="Intake"          title="Missing Information"        description="Leads with missing intake or insurance details. Owners action items appear here as the intake workflow goes live."      primaryActionLabel="New Follow-Up" />} />
+                  <Route path="/intake/parent-communication" element={<OSMvpPage eyebrow="Intake"          title="Parent Communication"       description="Inbound and outbound family communication queue across phone, SMS, email, and forms."                                      primaryActionLabel="Log Message" />} />
+                  <Route path="/ops/expiring-authorizations" element={<OSMvpPage eyebrow="Authorizations"  title="Expiring Authorizations"    description="Authorizations expiring in the next 30 / 60 / 90 days, grouped by payer and state."                                      primaryActionLabel="Start Renewal" />} />
+                  <Route path="/ops/missing-docs"            element={<OSMvpPage eyebrow="Authorizations"  title="Missing Documents"          description="Cases blocked on missing payer documentation, with owner, due date, and next action."                                primaryActionLabel="Request Document" />} />
+                  <Route path="/ops/payer-requirements"      element={<OSMvpPage eyebrow="Authorizations"  title="Payer Requirements"         description="Per-payer documentation, auth, and submission requirements for every state Blossom serves."                          primaryActionLabel="Add Payer" />} />
+                  <Route path="/ops/make-up-sessions"        element={<OSMvpPage eyebrow="Scheduling"      title="Make-Up Sessions"           description="Approved make-up session requests, tracked through scheduling and confirmation."                                     primaryActionLabel="New Make-Up" />} />
+                  <Route path="/ops/rbt-match-queue"         element={<OSMvpPage eyebrow="Staffing"        title="RBT Match Queue"            description="Open cases ready for staffing match — by state, hours needed, language, and family preferences."                       primaryActionLabel="Propose Match" />} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />
