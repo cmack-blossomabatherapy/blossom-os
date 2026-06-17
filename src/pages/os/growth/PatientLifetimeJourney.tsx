@@ -159,17 +159,28 @@ function buildEvents(lead: Lead): JourneyEvent[] {
   return events.sort((a, b) => a.rawTs - b.rawTs);
 }
 
-function mergeLocalInteractions(lead: Lead, events: JourneyEvent[], local: LocalInteraction[]): JourneyEvent[] {
+function mergeLiveJourney(
+  events: JourneyEvent[],
+  comms: LeadCommunicationRow[],
+  tasks: LeadTaskRow[],
+): JourneyEvent[] {
   const safeTs = (s: string) => { const t = new Date(s).getTime(); return Number.isFinite(t) ? t : Date.now(); };
-  const mapped: JourneyEvent[] = local.filter((i) => i.leadId === lead.id).map((i) => ({
-    type: i.kind === "call" ? "call_received" : i.kind === "email" ? "email_sent"
-        : i.kind === "text" ? "text" : i.kind === "follow-up" ? "intake_followup" : "parent_contact",
-    when: format(new Date(safeTs(i.when)), "MMM d"),
-    rawTs: safeTs(i.when),
-    detail: i.dueDate ? `${i.preview} (due ${i.dueDate})` : i.preview,
-    owner: i.owner,
+  const fmt = (s: string) => { try { return format(new Date(safeTs(s)), "MMM d"); } catch { return ""; } };
+  const mappedComms: JourneyEvent[] = comms.map((c) => ({
+    type: communicationToEventType(c.communication_type),
+    when: fmt(c.created_at),
+    rawTs: safeTs(c.created_at),
+    detail: c.subject ? `${c.subject} — ${c.preview}` : c.preview,
+    owner: c.logged_by_name ?? undefined,
   }));
-  return [...events, ...mapped].sort((a, b) => a.rawTs - b.rawTs);
+  const mappedTasks: JourneyEvent[] = tasks.map((t) => ({
+    type: "intake_followup",
+    when: fmt(t.created_at),
+    rawTs: safeTs(t.created_at),
+    detail: t.due_date ? `${t.title} (due ${t.due_date})` : t.title,
+    owner: t.owner ?? undefined,
+  }));
+  return [...events, ...mappedComms, ...mappedTasks].sort((a, b) => a.rawTs - b.rawTs);
 }
 
 export default function PatientLifetimeJourney() {
@@ -182,10 +193,8 @@ export default function PatientLifetimeJourney() {
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [interactions, setInteractions] = useState<LocalInteraction[]>(() => loadInteractions());
   const [logOpen, setLogOpen] = useState(false);
   const [followOpen, setFollowOpen] = useState(false);
-  useEffect(() => { saveInteractions(interactions); }, [interactions]);
 
   const states = useMemo(() => Array.from(new Set(leads.map((l) => l.state).filter(Boolean))).sort(), [leads]);
   const sources = useMemo(() => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))).sort(), [leads]);
@@ -210,9 +219,10 @@ export default function PatientLifetimeJourney() {
     () => leads.find((l) => l.id === selectedId) ?? null,
     [leads, selectedId],
   );
+  const live = useLeadJourneyLive(selected?.id ?? null);
   const events = useMemo(
-    () => (selected ? mergeLocalInteractions(selected, buildEvents(selected), interactions) : []),
-    [selected, interactions],
+    () => (selected ? mergeLiveJourney(buildEvents(selected), live.communications, live.tasks) : []),
+    [selected, live.communications, live.tasks],
   );
 
   return (
@@ -382,25 +392,27 @@ export default function PatientLifetimeJourney() {
       <LogInteractionDialog
         open={logOpen}
         onOpenChange={setLogOpen}
-        onSave={(kind, preview, owner) => {
+        onSave={async (kind, preview, owner) => {
           if (!selected) return;
-          setInteractions((rows) => [
-            { id: `li-${Date.now()}`, leadId: selected.id, kind, preview, when: new Date().toISOString(), owner },
-            ...rows,
-          ]);
-          toast.success("Interaction logged");
+          try {
+            await live.logInteraction(kind, preview, owner);
+            toast.success("Interaction logged");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Could not log interaction");
+          }
         }}
       />
       <FollowUpDialog
         open={followOpen}
         onOpenChange={setFollowOpen}
-        onSave={(title, dueDate, owner) => {
+        onSave={async (title, dueDate, owner) => {
           if (!selected) return;
-          setInteractions((rows) => [
-            { id: `li-${Date.now()}`, leadId: selected.id, kind: "follow-up", preview: title, when: new Date().toISOString(), owner, dueDate },
-            ...rows,
-          ]);
-          toast.success("Follow-up added");
+          try {
+            await live.addFollowUp(title, dueDate, owner);
+            toast.success("Follow-up added");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Could not add follow-up");
+          }
         }}
       />
     </GrowthPageShell>
