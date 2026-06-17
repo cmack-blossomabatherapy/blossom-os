@@ -854,16 +854,15 @@ export default function BcbaProductivityReportV3() {
           </TabsContent>
 
           <TabsContent value="upload" className="space-y-4">
-            {/* Shared admin dataset — manual upload has been retired. */}
+            {/* Admin-fed dataset status and controls. */}
             <div className="rounded-2xl border bg-card/60 p-5">
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-3">
                   <div className="rounded-xl bg-primary/10 p-3 text-primary"><Database className="h-6 w-6" /></div>
                   <div>
-                    <div className="font-medium">Shared admin dataset</div>
+                    <div className="font-medium">Admin-fed CentralReach dataset</div>
                     <div className="text-xs text-muted-foreground max-w-xl">
-                      This report runs on CentralReach data uploaded by admins in System Tools.
-                      Manual uploads have been retired — data now flows in the background.
+                      This report runs on CentralReach billing data uploaded by admins in System Tools. Users do not need to upload the daily CentralReach export.
                     </div>
                     {sharedStatus && sharedStatus.activeRowCount > 0 ? (
                       <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
