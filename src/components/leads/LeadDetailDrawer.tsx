@@ -287,9 +287,11 @@ export function LeadDetailDrawer({
                 <Field label="Primary insurance" value={lead.primaryInsurance} />
                 <Field label="Primary ID" value={str("Primary Insurance ID")} />
                 <Field label="Insurance type" value={lead.insuranceType} />
-                <Field label="Secondary insurance" value={lead.secondaryInsurance} />
+                <Field label="Secondary insurance" value={lead.secondaryInsurance || i.secondaryInsurance} />
                 <Field label="Secondary ID" value={str("Secondary Insurance ID")} />
                 <Field label="Policyholder" value={str("Name of Insured Policyholder")} />
+                <Field label="Diagnosis status" value={i.diagnosisStatus} />
+                <Field label="DX needed" value={i.dxNeeded == null ? undefined : i.dxNeeded ? "Yes" : "No"} />
               </div>
               <div className="rounded-2xl bg-muted/60 border border-border/60 p-4 space-y-3">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">VOB</p>
