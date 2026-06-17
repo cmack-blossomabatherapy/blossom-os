@@ -1,9 +1,7 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 import { ClipboardList, TrendingUp, MessageSquare, AlertCircle, FileText, ShieldCheck, Plus, ArrowRightLeft } from "lucide-react";
 import { GrowthPageShell, Section, StatCard, LinkCard, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
-import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 
 const PIPELINE_STAGES = new Set([
   "New Lead", "In Contact", "Sent Form", "Missing Information",
@@ -15,8 +13,6 @@ const CONVERTED_STAGES = new Set(["VOB Completed"]);
 
 export default function IntakeDashboard() {
   const { leads, loading } = useLeads();
-  const navigate = useNavigate();
-  const [newLeadOpen, setNewLeadOpen] = useState(false);
 
   const counts = useMemo(() => {
     const now = Date.now();
@@ -42,7 +38,7 @@ export default function IntakeDashboard() {
       title="Intake Dashboard"
       description="Manage new referrals, parent communication, missing information, insurance checks, and movement from lead to active care."
       actions={[
-        { label: "Add Lead", icon: Plus, variant: "default" },
+        { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
         { label: "Log parent contact", icon: MessageSquare, to: "/intake/parent-communication" },
         { label: "Request missing info", icon: AlertCircle, to: "/intake/missing-information" },
         { label: "Convert lead", icon: ArrowRightLeft, to: "/intake/lead-to-active" },
@@ -71,14 +67,6 @@ export default function IntakeDashboard() {
       {leads.length === 0 && (
         <ReadyForDataNotice message="This workspace is ready for live data. Create your first lead with Add Lead, or connect a source to populate intake queues automatically." />
       )}
-
-      <NewLeadDialog
-        open={newLeadOpen}
-        onOpenChange={setNewLeadOpen}
-        onCreated={(lead) => navigate(`/leads/${lead.id}`)}
-      />
-      {/* Wire the header "Add Lead" action via a hidden trigger button overlay */}
-      <button type="button" onClick={() => setNewLeadOpen(true)} className="hidden" data-testid="open-add-lead" aria-hidden />
     </GrowthPageShell>
   );
 }
