@@ -157,7 +157,7 @@ const INTEGRATIONS: Integration[] = [
   },
   {
     id: "ms365",
-    name: "Microsoft 365",
+    name: "Microsoft Outlook / Microsoft 365",
     category: "core",
     description: "Teams, Outlook, SharePoint, and calendars.",
     purpose: ["Email", "Calendar", "Teams", "SSO"],
@@ -187,7 +187,7 @@ const INTEGRATIONS: Integration[] = [
   // INTAKE
   {
     id: "solum",
-    name: "Solum",
+    name: "Solom / Solum",
     category: "intake",
     description: "Automated verification of benefits and eligibility.",
     purpose: ["VOBs", "Eligibility", "Attachments"],
@@ -328,7 +328,7 @@ const INTEGRATIONS: Integration[] = [
   // MARKETING
   {
     id: "meta-ads",
-    name: "Meta Ads",
+    name: "Facebook Ads / Meta Ads",
     category: "marketing",
     description: "Facebook & Instagram ad attribution.",
     purpose: ["Lead attribution", "Campaign analytics"],
@@ -384,7 +384,7 @@ const INTEGRATIONS: Integration[] = [
   },
   {
     id: "ctm",
-    name: "CallTrackingMetrics",
+    name: "CTM / CallTrackingMetrics",
     category: "marketing",
     description: "Call attribution, recordings, and AI summaries.",
     purpose: ["Calls", "Attribution"],
