@@ -4,6 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { mondayRowToLead, type MondayLeadRow } from "@/lib/leads/mondayMapper";
 import { intakeLeadRowToLead, type IntakeLeadRow } from "@/lib/leads/intakeLeadMapper";
 
+/** Columns selected from public.intake_leads — must include every extended field
+ *  read by IntakeLeadRow / intakeLeadRowToLead so the round-trip is lossless. */
+const INTAKE_LEADS_SELECT =
+  "id, child_name, parent_name, phone, email, state, lead_source, pipeline_stage, " +
+  "assigned_intake_coordinator, priority, notes, insurance, insurance_type, next_action, " +
+  "next_task_due, created_at, updated_at, stage_entered_at, monday_item_id, monday_group, " +
+  "tags, source_metadata, original_column_data, " +
+  // Monday board–style extended columns (Phase D round-trip).
+  "patient_first_name, patient_last_name, dob, parent_first_name, parent_last_name, " +
+  "parent_2_name, parent_2_email, parent_cell_phone, home_phone, preferred_contact_method, " +
+  "lead_type, utm_source, utm_medium, utm_campaign, referral_source, referral_partner, " +
+  "origination_date, last_contact_date, regular_call_log, et_call_log, message_comments, " +
+  "secondary_insurance, diagnosis_status, dx_needed";
+
 /** Input accepted by createLead — mirrors the Monday Leads board fields. */
 export interface CreateLeadInput {
   // Patient
@@ -241,9 +255,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       // 1) Load canonical Blossom OS intake_leads first (newest first).
       const intakeRes = await supabase
         .from("intake_leads")
-        .select(
-          "id, child_name, parent_name, phone, email, state, lead_source, pipeline_stage, assigned_intake_coordinator, priority, notes, insurance, insurance_type, next_action, next_task_due, created_at, updated_at, stage_entered_at, monday_item_id, monday_group, tags, source_metadata, original_column_data"
-        )
+        .select(INTAKE_LEADS_SELECT)
         .order("created_at", { ascending: false })
         .limit(2000);
       if (intakeRes.error) throw intakeRes.error;
@@ -353,9 +365,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     const { data, error: insErr } = await supabase
       .from("intake_leads")
       .insert(insertPayload as never)
-      .select(
-        "id, child_name, parent_name, phone, email, state, lead_source, pipeline_stage, assigned_intake_coordinator, priority, notes, insurance, insurance_type, next_action, next_task_due, created_at, updated_at, stage_entered_at, monday_item_id, monday_group, tags, source_metadata, original_column_data"
-      )
+      .select(INTAKE_LEADS_SELECT)
       .single();
     if (insErr || !data) {
       throw insErr ?? new Error("Failed to create lead");

@@ -90,6 +90,13 @@ export function LeadDetailDrawer({
     if (v === null || v === undefined) return "";
     return String(v).trim();
   };
+  // Prefer the structured intake_leads value; fall back to the monday raw blob.
+  const fallback = (intakeValue: string | null | undefined, mondayKey: string) => {
+    const v = (intakeValue ?? "").toString().trim();
+    if (v) return v;
+    return str(mondayKey);
+  };
+  const i = lead.intake ?? {};
   const link = (k: string) => {
     const v = str(k);
     return v && /^https?:\/\//i.test(v) ? v : null;
@@ -213,37 +220,62 @@ export function LeadDetailDrawer({
             <>
               <section className="grid grid-cols-2 gap-4">
                 <Field label="Patient" value={lead.childName} />
-                <Field label="DOB / Age" value={`${str("DOB") || "—"}${lead.childAge && lead.childAge !== "—" ? ` · ${lead.childAge}` : ""}`} />
+                <Field label="DOB / Age" value={`${fallback(i.dob, "DOB") || "—"}${lead.childAge && lead.childAge !== "—" ? ` · ${lead.childAge}` : ""}`} />
                 <Field label="Gender" value={str("Gender")} />
                 <Field label="State" value={lead.state} />
                 <Field label="Parent name" value={lead.parentName} />
                 <Field label="Relationship" value={str("Relationship to Patient")} />
-                <Field label="Cell phone" value={str("Parent Cell Phone") || lead.phone} />
-                <Field label="Home phone" value={str("Home Phone")} />
+                <Field label="Cell phone" value={fallback(i.parentCellPhone, "Parent Cell Phone") || lead.phone} />
+                <Field label="Home phone" value={fallback(i.homePhone, "Home Phone")} />
                 <Field label="Email" value={lead.email} />
                 <Field label="Zip" value={str("Zip Code")} />
               </section>
               <Field label="Address" value={str("Address")} />
 
               <section className="rounded-2xl bg-muted/60 border border-border/60 p-4 space-y-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Parent / Guardian</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <Field label="Parent 1 first" value={i.parentFirstName} />
+                  <Field label="Parent 1 last" value={i.parentLastName} />
+                  <Field label="Parent 2 name" value={i.parent2Name} />
+                  <Field label="Parent 2 email" value={i.parent2Email} />
+                  <Field label="Preferred contact" value={i.preferredContactMethod} />
+                </div>
+              </section>
+
+              <section className="rounded-2xl bg-muted/60 border border-border/60 p-4 space-y-3">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Intake</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <Field label="Lead type" value={str("Lead Type")} />
-                  <Field label="Source" value={str("How did you hear about us") || lead.source} />
-                  <Field label="UTM source" value={str("UTM Source")} />
+                  <Field label="Lead type" value={fallback(i.leadType, "Lead Type")} />
+                  <Field label="Source" value={fallback(i.referralSource, "How did you hear about us") || lead.source} />
+                  <Field label="UTM source" value={fallback(i.utmSource, "UTM Source")} />
                   <Field label="Intake person" value={lead.owner} />
-                  <Field label="Origination" value={str("Origination Date")} />
-                  <Field label="Last contact" value={lead.lastContacted ? new Date(lead.lastContacted).toLocaleDateString() : "—"} />
+                  <Field label="Origination" value={fallback(i.originationDate, "Origination Date")} />
+                  <Field label="Last contact" value={fallback(i.lastContactDate, "Last Contact") || (lead.lastContacted ? new Date(lead.lastContacted).toLocaleDateString() : "—")} />
                 </div>
-                <Field label="E/T Call Log" value={str("E/T Call Log")} />
-                <Field label="Reg Call Log" value={str("Reg Call Log")} />
+                <Field label="E/T Call Log" value={fallback(i.etCallLog, "E/T Call Log")} />
+                <Field label="Reg Call Log" value={fallback(i.regularCallLog, "Reg Call Log")} />
                 <Field label="Next action" value={lead.nextAction} />
               </section>
 
-              {str("Message/Comments") && (
+              <section className="rounded-2xl bg-muted/60 border border-border/60 p-4 space-y-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Source & Attribution</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <Field label="Lead source" value={lead.source} />
+                  <Field label="Lead type" value={i.leadType} />
+                  <Field label="UTM source" value={i.utmSource} />
+                  <Field label="UTM medium" value={i.utmMedium} />
+                  <Field label="UTM campaign" value={i.utmCampaign} />
+                  <Field label="Referral source" value={i.referralSource} />
+                  <Field label="Referral partner" value={i.referralPartner} />
+                  <Field label="Created via" value={i.mondayItemId ? "Monday import" : "Blossom OS"} />
+                </div>
+              </section>
+
+              {(fallback(i.messageComments, "Message/Comments")) && (
                 <section className="rounded-2xl border border-border/60 p-4">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Notes</p>
-                  <p className="text-sm whitespace-pre-wrap">{str("Message/Comments")}</p>
+                  <p className="text-sm whitespace-pre-wrap">{fallback(i.messageComments, "Message/Comments")}</p>
                 </section>
               )}
             </>
@@ -255,9 +287,11 @@ export function LeadDetailDrawer({
                 <Field label="Primary insurance" value={lead.primaryInsurance} />
                 <Field label="Primary ID" value={str("Primary Insurance ID")} />
                 <Field label="Insurance type" value={lead.insuranceType} />
-                <Field label="Secondary insurance" value={lead.secondaryInsurance} />
+                <Field label="Secondary insurance" value={lead.secondaryInsurance || i.secondaryInsurance} />
                 <Field label="Secondary ID" value={str("Secondary Insurance ID")} />
                 <Field label="Policyholder" value={str("Name of Insured Policyholder")} />
+                <Field label="Diagnosis status" value={i.diagnosisStatus} />
+                <Field label="DX needed" value={i.dxNeeded == null ? undefined : i.dxNeeded ? "Yes" : "No"} />
               </div>
               <div className="rounded-2xl bg-muted/60 border border-border/60 p-4 space-y-3">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">VOB</p>

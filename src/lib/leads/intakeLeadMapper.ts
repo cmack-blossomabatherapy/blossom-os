@@ -1,5 +1,5 @@
 import {
-  defaultFinancialFields, FINANCIAL_OWNER, type Lead, type LeadSource, type LeadStatus,
+  defaultFinancialFields, FINANCIAL_OWNER, type Lead, type LeadIntakeFields, type LeadSource, type LeadStatus,
   type Priority,
 } from "@/data/leads";
 
@@ -28,6 +28,32 @@ export interface IntakeLeadRow {
   tags: string[] | null;
   source_metadata: Record<string, unknown> | null;
   original_column_data: Record<string, unknown> | null;
+
+  // Monday-board–style extended columns.
+  patient_first_name?: string | null;
+  patient_last_name?: string | null;
+  dob?: string | null;
+  parent_first_name?: string | null;
+  parent_last_name?: string | null;
+  parent_2_name?: string | null;
+  parent_2_email?: string | null;
+  parent_cell_phone?: string | null;
+  home_phone?: string | null;
+  preferred_contact_method?: string | null;
+  lead_type?: string | null;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  referral_source?: string | null;
+  referral_partner?: string | null;
+  origination_date?: string | null;
+  last_contact_date?: string | null;
+  regular_call_log?: string | null;
+  et_call_log?: string | null;
+  message_comments?: string | null;
+  secondary_insurance?: string | null;
+  diagnosis_status?: string | null;
+  dx_needed?: boolean | null;
 }
 
 function mapStage(stage: string | null): LeadStatus {
@@ -78,6 +104,37 @@ export function intakeLeadRowToLead(row: IntakeLeadRow): Lead {
   const stage = mapStage(row.pipeline_stage);
   const owner = row.assigned_intake_coordinator || "Unassigned";
 
+  const intake: LeadIntakeFields = {
+    patientFirstName: row.patient_first_name ?? null,
+    patientLastName: row.patient_last_name ?? null,
+    dob: row.dob ?? null,
+    parentFirstName: row.parent_first_name ?? null,
+    parentLastName: row.parent_last_name ?? null,
+    parent2Name: row.parent_2_name ?? null,
+    parent2Email: row.parent_2_email ?? null,
+    parentCellPhone: row.parent_cell_phone ?? null,
+    homePhone: row.home_phone ?? null,
+    preferredContactMethod: row.preferred_contact_method ?? null,
+    leadType: row.lead_type ?? null,
+    utmSource: row.utm_source ?? null,
+    utmMedium: row.utm_medium ?? null,
+    utmCampaign: row.utm_campaign ?? null,
+    referralSource: row.referral_source ?? null,
+    referralPartner: row.referral_partner ?? null,
+    originationDate: row.origination_date ?? null,
+    lastContactDate: row.last_contact_date ?? null,
+    regularCallLog: row.regular_call_log ?? null,
+    etCallLog: row.et_call_log ?? null,
+    messageComments: row.message_comments ?? null,
+    secondaryInsurance: row.secondary_insurance ?? null,
+    diagnosisStatus: row.diagnosis_status ?? null,
+    dxNeeded: row.dx_needed ?? null,
+    mondayItemId: row.monday_item_id ?? null,
+    mondayGroup: row.monday_group ?? null,
+    sourceMetadata: row.source_metadata ?? null,
+    originalColumnData: row.original_column_data ?? null,
+  };
+
   return {
     id: row.id,
     childName:  row.child_name  || "—",
@@ -89,7 +146,7 @@ export function intakeLeadRowToLead(row: IntakeLeadRow): Lead {
     status:     stage,
     owner,
     priority:   mapPriority(row.priority),
-    childAge:   "—",
+    childAge:   row.dob ?? "—",
     formStatus:        "Not Sent",
     consentStatus:     "Not Sent",
     vobStatus:         "Not Started",
@@ -97,10 +154,11 @@ export function intakeLeadRowToLead(row: IntakeLeadRow): Lead {
     insurance:      row.insurance      || "",
     insuranceType:  row.insurance_type || "",
     ...defaultFinancialFields(row.insurance || ""),
+    secondaryInsurance: row.secondary_insurance ?? undefined,
     financialOwner: FINANCIAL_OWNER,
     createdAt: created,
     updatedAt: updated,
-    lastContacted: null,
+    lastContacted: row.last_contact_date ?? null,
     daysInStage: row.stage_entered_at
       ? Math.max(0, Math.round((Date.now() - new Date(row.stage_entered_at).getTime()) / 86_400_000))
       : 0,
@@ -123,5 +181,6 @@ export function intakeLeadRowToLead(row: IntakeLeadRow): Lead {
     documents: [],
     communications: [],
     automationLog: [],
+    intake,
   };
 }

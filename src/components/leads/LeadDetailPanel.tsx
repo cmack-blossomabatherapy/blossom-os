@@ -198,10 +198,55 @@ export function LeadDetailPanel({ lead, open, onClose }: LeadDetailPanelProps) {
               <span className="text-muted-foreground">Payment Plan</span>
               <p className="text-foreground font-medium">{lead.paymentPlanNeeded ? "Needed" : "No"}</p>
             </div>
+            <div>
+              <span className="text-muted-foreground">Secondary insurance</span>
+              <p className="text-foreground font-medium">{lead.secondaryInsurance || lead.intake?.secondaryInsurance || "—"}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Diagnosis status</span>
+              <p className="text-foreground font-medium">{lead.intake?.diagnosisStatus || "—"}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">DX needed</span>
+              <p className="text-foreground font-medium">{lead.intake?.dxNeeded == null ? "—" : lead.intake.dxNeeded ? "Yes" : "No"}</p>
+            </div>
           </div>
         </div>
 
         <Separator />
+
+        {/* Source & Attribution */}
+        {lead.intake && (
+          <>
+            <div className="p-4">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Source & Attribution</h4>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div><span className="text-muted-foreground">Lead source</span><p className="font-medium">{lead.source}</p></div>
+                <div><span className="text-muted-foreground">Lead type</span><p className="font-medium">{lead.intake.leadType || "—"}</p></div>
+                <div><span className="text-muted-foreground">UTM source</span><p className="font-medium">{lead.intake.utmSource || "—"}</p></div>
+                <div><span className="text-muted-foreground">UTM medium</span><p className="font-medium">{lead.intake.utmMedium || "—"}</p></div>
+                <div><span className="text-muted-foreground">UTM campaign</span><p className="font-medium">{lead.intake.utmCampaign || "—"}</p></div>
+                <div><span className="text-muted-foreground">Referral source</span><p className="font-medium">{lead.intake.referralSource || "—"}</p></div>
+                <div><span className="text-muted-foreground">Referral partner</span><p className="font-medium">{lead.intake.referralPartner || "—"}</p></div>
+                <div><span className="text-muted-foreground">Origination</span><p className="font-medium">{lead.intake.originationDate || "—"}</p></div>
+              </div>
+            </div>
+            <Separator />
+
+            <div className="p-4">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Parent / Guardian</h4>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div><span className="text-muted-foreground">Parent 1</span><p className="font-medium">{[lead.intake.parentFirstName, lead.intake.parentLastName].filter(Boolean).join(" ") || lead.parentName}</p></div>
+                <div><span className="text-muted-foreground">Preferred contact</span><p className="font-medium">{lead.intake.preferredContactMethod || "—"}</p></div>
+                <div><span className="text-muted-foreground">Parent 2 name</span><p className="font-medium">{lead.intake.parent2Name || "—"}</p></div>
+                <div><span className="text-muted-foreground">Parent 2 email</span><p className="font-medium">{lead.intake.parent2Email || "—"}</p></div>
+                <div><span className="text-muted-foreground">Cell phone</span><p className="font-medium">{lead.intake.parentCellPhone || lead.phone || "—"}</p></div>
+                <div><span className="text-muted-foreground">Home phone</span><p className="font-medium">{lead.intake.homePhone || "—"}</p></div>
+              </div>
+            </div>
+            <Separator />
+          </>
+        )}
 
         {/* Automation Log */}
         <div className="p-4 pb-8">
