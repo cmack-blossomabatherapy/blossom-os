@@ -368,7 +368,7 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
         hours: p.row.hours,
         units: p.units,
         raw: p.raw,
-        normalized: p.row,
+        normalized: p.row as unknown as Record<string, unknown>,
         active: true,
       }));
       const { error: rowsErr } = await supabase
@@ -445,7 +445,7 @@ export async function getBcbaProductivitySharedRows(
     if (error) throw error;
     if (!data || data.length === 0) break;
     for (const d of data) {
-      const n = (d.normalized as BcbaSharedBillingRow) || null;
+      const n = (d.normalized as unknown as BcbaSharedBillingRow) || null;
       if (n && n.date && n.code) out.push(n);
     }
     if (data.length < PAGE) break;
@@ -509,6 +509,6 @@ export async function getBcbaProductivityBatchRows(batchId: string): Promise<Bcb
     .eq("batch_id", batchId);
   if (error) throw error;
   return (data ?? [])
-    .map((d) => d.normalized as BcbaSharedBillingRow)
+    .map((d) => d.normalized as unknown as BcbaSharedBillingRow)
     .filter((r) => !!r && !!r.date);
 }
