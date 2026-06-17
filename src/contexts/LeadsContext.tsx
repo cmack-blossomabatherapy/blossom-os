@@ -255,9 +255,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       // 1) Load canonical Blossom OS intake_leads first (newest first).
       const intakeRes = await supabase
         .from("intake_leads")
-        .select(
-          "id, child_name, parent_name, phone, email, state, lead_source, pipeline_stage, assigned_intake_coordinator, priority, notes, insurance, insurance_type, next_action, next_task_due, created_at, updated_at, stage_entered_at, monday_item_id, monday_group, tags, source_metadata, original_column_data"
-        )
+        .select(INTAKE_LEADS_SELECT)
         .order("created_at", { ascending: false })
         .limit(2000);
       if (intakeRes.error) throw intakeRes.error;
@@ -367,9 +365,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     const { data, error: insErr } = await supabase
       .from("intake_leads")
       .insert(insertPayload as never)
-      .select(
-        "id, child_name, parent_name, phone, email, state, lead_source, pipeline_stage, assigned_intake_coordinator, priority, notes, insurance, insurance_type, next_action, next_task_due, created_at, updated_at, stage_entered_at, monday_item_id, monday_group, tags, source_metadata, original_column_data"
-      )
+      .select(INTAKE_LEADS_SELECT)
       .single();
     if (insErr || !data) {
       throw insErr ?? new Error("Failed to create lead");
