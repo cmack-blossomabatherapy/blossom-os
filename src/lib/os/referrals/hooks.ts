@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { listContacts, listCompanies, listActivities, listBatches } from "./api";
+import { listContacts, listCompanies, listActivities, listBatches, listTasks, type ReferralCrmTask } from "./api";
 import type { ReferralCompany, ReferralContact, ReferralActivity, ReferralImportBatch } from "./types";
 
 function useChannelRefresh(table: string, refresh: () => void) {
@@ -61,5 +61,19 @@ export function useReferralBatches() {
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
   useChannelRefresh("referral_import_batches", refresh);
+  return { data, loading, error, refresh };
+}
+
+export function useReferralTasks(filter: { companyId?: string; contactId?: string } = {}) {
+  const [data, setData] = useState<ReferralCrmTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const key = `${filter.companyId ?? ""}|${filter.contactId ?? ""}`;
+  const refresh = useCallback(async () => {
+    try { setError(null); setData(await listTasks(filter)); } catch (e) { setError(e instanceof Error ? e : new Error(String(e))); } finally { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  useEffect(() => { refresh(); }, [refresh]);
+  useChannelRefresh("referral_crm_tasks", refresh);
   return { data, loading, error, refresh };
 }
