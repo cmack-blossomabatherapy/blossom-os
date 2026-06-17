@@ -127,7 +127,7 @@ describe("Phase D — createLead persists to Supabase", () => {
     await waitFor(() => expect(insertSpies.intake_communications).toHaveBeenCalledTimes(1));
     expect(insertSpies.intake_communications.mock.calls[0][0]).toMatchObject({
       lead_id: "lead-test-1",
-      type: "call",
+      communication_type: "call",
       direction: "outbound",
       preview: "Left voicemail",
     });
