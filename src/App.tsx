@@ -889,7 +889,9 @@ const App = () => (
                   <Route path="/onboarding/complete" element={<OnboardingComplete />} />
                   <Route path="/help" element={<HelpPage />} />
                   <Route path="/dashboard" element={<RoleDashboardRedirect />} />
-                  <Route path="/coming-soon" element={<OSComingSoonRoute />} />
+                  {/* /coming-soon is removed from active navigation; bookmarks
+                      and stale links fall back to the user's dashboard. */}
+                  <Route path="/coming-soon" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/blossom/academy" element={<Navigate to="/academy" replace />} />
                   <Route path="/blossom/academy/:trackId" element={<TrackDetail />} />
                   <Route path="/blossom/departments" element={<Departments />} />
