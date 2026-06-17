@@ -98,6 +98,32 @@ const makeTimelineEvent = (description: string): TimelineEvent => ({
   user: "You",
 });
 
+/**
+ * Phase F — write a lightweight activity row to `intake_communications`. Best
+ * effort: monday/imported leads have no `intake_leads` row so the FK insert
+ * will fail, and that's fine — we swallow errors here so UI flow never breaks.
+ */
+function logLeadActivity(
+  leadId: string,
+  communicationType: "call" | "sms" | "email" | "note",
+  preview: string,
+  loggedByName?: string,
+) {
+  // Skip non-UUID ids (monday-imported leads, mock data).
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRe.test(leadId)) return;
+  void supabase
+    .from("intake_communications")
+    .insert({
+      lead_id: leadId,
+      communication_type: communicationType,
+      direction: "outbound",
+      preview,
+      logged_by_name: loggedByName ?? "Blossom OS",
+    } as never)
+    .then(() => undefined, () => undefined);
+}
+
 const leastLoadedCoordinator = (leads: Lead[]) => {
   const counts = INTAKE_COORDINATORS.map((owner) => ({ owner, count: leads.filter((lead) => lead.owner === owner).length }));
   return counts.sort((a, b) => a.count - b.count)[0]?.owner ?? INTAKE_COORDINATORS[0];
@@ -352,12 +378,15 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     if (commPreview) {
       void supabase.from("intake_communications").insert({
         lead_id: row.id,
-        type: input.regularCallLog || input.etCallLog ? "call" : "note",
+        communication_type: input.regularCallLog || input.etCallLog ? "call" : "note",
         direction: "outbound",
         preview: commPreview,
-        user_label: input.assignedIntakeCoordinator ?? "Intake",
+        logged_by_name: input.assignedIntakeCoordinator ?? "Intake",
       } as never).then(() => undefined, () => undefined);
     }
+
+    // Lead created — activity event for the lifetime journey.
+    logLeadActivity(row.id, "note", `Lead created via Blossom OS (${input.leadSource})`, input.assignedIntakeCoordinator ?? "Intake");
 
     setLeads((prev) => [lead, ...prev]);
     return lead;
@@ -375,6 +404,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     setLeads((prev) => prev.map((l) => {
       if (!ids.includes(l.id)) return l;
       const event = makeTimelineEvent(`Stage moved to ${status}`);
+      logLeadActivity(l.id, "note", `Stage moved from ${l.status} → ${status}`);
       return {
         ...l,
         status,
@@ -411,16 +441,22 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const assignOwner = useCallback((ids: string[], owner: string) => {
-    setLeads((prev) => prev.map((l) => (ids.includes(l.id) ? {
-      ...l, owner,
-      automationLog: [...l.automationLog, `Reassigned to ${owner}`],
-    } : l)));
+    setLeads((prev) => prev.map((l) => {
+      if (!ids.includes(l.id)) return l;
+      logLeadActivity(l.id, "note", `Owner reassigned: ${l.owner || "Unassigned"} → ${owner}`);
+      return { ...l, owner, automationLog: [...l.automationLog, `Reassigned to ${owner}`] };
+    }));
   }, []);
 
   const addTag = useCallback((ids: string[], tag: string) => {
-    setLeads((prev) => prev.map((l) => (ids.includes(l.id) ? {
-      ...l, tags: Array.from(new Set([...(l.tags ?? []), tag])),
-    } : l)));
+    setLeads((prev) => prev.map((l) => {
+      if (!ids.includes(l.id)) return l;
+      const next = Array.from(new Set([...(l.tags ?? []), tag]));
+      if (next.length !== (l.tags ?? []).length) {
+        logLeadActivity(l.id, "note", `Tag added: ${tag}`);
+      }
+      return { ...l, tags: next };
+    }));
   }, []);
 
   const deleteLeads = useCallback((ids: string[]) => {

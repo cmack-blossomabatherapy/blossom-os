@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { GrowthPageShell, Section } from "@/components/os/growth/GrowthPageShell";
+import { LiveActivityFeed } from "@/components/growth/LiveActivityFeed";
 
 type FilterKey =
   | "all" | "calls" | "emails" | "forms" | "intake" | "insurance"
@@ -216,6 +217,7 @@ export default function PatientLifetimeJourney() {
         </div>
 
         <aside className="space-y-3">
+          <LiveActivityFeed limit={8} />
           <div className="rounded-2xl border border-border/70 bg-card p-4">
             <h3 className="text-sm font-semibold text-foreground">Next action</h3>
             {selected ? (
