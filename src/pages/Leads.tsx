@@ -51,6 +51,15 @@ export default function Leads() {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const { clients } = useClients();
 
+  // Initial ?source=… filter (linked from marketing source pages).
+  useEffect(() => {
+    const src = searchParams.get("source");
+    if (src) {
+      setFilters((f) => (f.sources.includes(src) ? f : { ...f, sources: [...f.sources, src] }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Sync external ?q= into search input (e.g. from TopBar global search)
   useEffect(() => {
     const q = searchParams.get("q");
