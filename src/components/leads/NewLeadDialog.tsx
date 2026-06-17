@@ -5,36 +5,109 @@ import { ResponsiveSheet, SheetHeader, SheetTitle, SheetDescription, SheetFooter
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { defaultFinancialFields, Lead, LeadSource, Priority } from "@/data/leads";
+import { Lead } from "@/data/leads";
 import { useLeads } from "@/contexts/LeadsContext";
 import { toast } from "sonner";
 
-const schema = z.object({
-  childName: z.string().trim().min(1, "Child name required").max(80),
-  parentName: z.string().trim().min(1, "Parent name required").max(80),
-  phone: z.string().trim().min(7, "Phone required").max(20),
-  email: z.string().trim().email("Invalid email").max(120),
-  state: z.string().min(2).max(3),
-  source: z.string(),
-  priority: z.string(),
-  childAge: z.string().trim().max(20),
-  insurance: z.string().trim().min(1, "Insurance required").max(60),
-  insuranceType: z.string().trim().max(40),
-  notes: z.string().max(500).optional(),
-});
+const PIPELINE_STAGES = [
+  "New Lead", "In Contact", "Sent Form", "Missing Information", "Form Received",
+  "Sent to VOB", "VOB Completed", "Can't Reach", "Sent Packet - Can't Reach",
+  "Can Not Submit Auth", "Getting DX", "Needs DX", "Non-Qualified",
+] as const;
+
+const LEAD_SOURCES = [
+  "Website", "Phone", "Facebook", "Referral", "Ads", "Organic", "Digital",
+  "Insurance", "Google Ads", "LeadTrap", "CTM",
+] as const;
+
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
+const PRIORITIES = ["Hot", "Warm", "Cold"] as const;
+const CONTACT_METHODS = ["Phone", "Cell", "Text", "Email"] as const;
+
+const schema = z
+  .object({
+    // Patient
+    patientFirstName: z.string().trim().max(80).optional().or(z.literal("")),
+    patientLastName:  z.string().trim().max(80).optional().or(z.literal("")),
+    childName:        z.string().trim().min(1, "Patient name required").max(120),
+    dob:              z.string().optional().or(z.literal("")),
+    diagnosisStatus:  z.string().max(80).optional().or(z.literal("")),
+    dxNeeded:         z.boolean().optional(),
+    // Parent
+    parentFirstName:  z.string().trim().max(80).optional().or(z.literal("")),
+    parentLastName:   z.string().trim().max(80).optional().or(z.literal("")),
+    parentName:       z.string().trim().min(1, "Parent/guardian name required").max(160),
+    parent2Name:      z.string().trim().max(160).optional().or(z.literal("")),
+    parent2Email:     z.string().trim().email("Invalid email").optional().or(z.literal("")),
+    phone:            z.string().trim().max(40).optional().or(z.literal("")),
+    parentCellPhone:  z.string().trim().max(40).optional().or(z.literal("")),
+    homePhone:        z.string().trim().max(40).optional().or(z.literal("")),
+    email:            z.string().trim().max(160).optional().or(z.literal("")),
+    preferredContactMethod: z.string().optional(),
+    // Source / ownership
+    state:        z.string().min(2),
+    leadSource:   z.string().min(1, "Lead source required"),
+    leadType:     z.string().max(80).optional().or(z.literal("")),
+    referralSource:   z.string().max(160).optional().or(z.literal("")),
+    referralPartner:  z.string().max(160).optional().or(z.literal("")),
+    utmSource:    z.string().max(160).optional().or(z.literal("")),
+    utmMedium:    z.string().max(160).optional().or(z.literal("")),
+    utmCampaign:  z.string().max(160).optional().or(z.literal("")),
+    originationDate: z.string().optional().or(z.literal("")),
+    assignedIntakeCoordinator: z.string().max(160).optional().or(z.literal("")),
+    priority: z.enum(PRIORITIES),
+    // Insurance
+    insurance:        z.string().max(120).optional().or(z.literal("")),
+    insuranceType:    z.string().max(60).optional().or(z.literal("")),
+    secondaryInsurance: z.string().max(120).optional().or(z.literal("")),
+    // Workflow
+    pipelineStage: z.string().min(1, "Pipeline stage required"),
+    nextAction:    z.string().max(160).optional().or(z.literal("")),
+    nextTaskDue:   z.string().optional().or(z.literal("")),
+    // Communication
+    regularCallLog:  z.string().max(2000).optional().or(z.literal("")),
+    etCallLog:       z.string().max(2000).optional().or(z.literal("")),
+    messageComments: z.string().max(2000).optional().or(z.literal("")),
+    lastContactDate: z.string().optional().or(z.literal("")),
+    // Notes
+    notes: z.string().max(2000).optional().or(z.literal("")),
+    tags:  z.string().max(400).optional().or(z.literal("")),
+  })
+  .refine((v) => (v.phone && v.phone.length >= 7) || (v.email && v.email.includes("@")), {
+    message: "Phone or email required",
+    path: ["phone"],
+  });
+
+type FormShape = z.input<typeof schema>;
+
+const EMPTY: FormShape = {
+  patientFirstName: "", patientLastName: "", childName: "", dob: "",
+  diagnosisStatus: "", dxNeeded: false,
+  parentFirstName: "", parentLastName: "", parentName: "",
+  parent2Name: "", parent2Email: "",
+  phone: "", parentCellPhone: "", homePhone: "", email: "",
+  preferredContactMethod: "Phone",
+  state: "GA", leadSource: "Website", leadType: "",
+  referralSource: "", referralPartner: "",
+  utmSource: "", utmMedium: "", utmCampaign: "",
+  originationDate: new Date().toISOString().split("T")[0],
+  assignedIntakeCoordinator: "",
+  priority: "Warm",
+  insurance: "", insuranceType: "", secondaryInsurance: "",
+  pipelineStage: "New Lead", nextAction: "Contact Lead", nextTaskDue: "",
+  regularCallLog: "", etCallLog: "", messageComments: "", lastContactDate: "",
+  notes: "", tags: "",
+};
 
 interface NewLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (lead: Lead) => void;
 }
-
-const sources: LeadSource[] = ["Website", "Phone", "Facebook", "Referral", "Ads", "Organic", "Digital", "Insurance"];
-const priorities: Priority[] = ["Hot", "Warm", "Cold"];
-const states = ["GA", "NC", "VA", "TN", "MD", "NJ"];
-const owners = ["Sarah M.", "James R.", "Maya P."];
 
 export function NewLeadDialog({ open, onOpenChange, onCreated }: NewLeadDialogProps) {
   const isMobile = useIsMobile();
