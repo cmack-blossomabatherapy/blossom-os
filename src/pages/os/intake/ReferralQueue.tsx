@@ -1,5 +1,5 @@
 import { ClipboardList, Plus } from "lucide-react";
-import { GrowthPageShell, ComingSoonNotice } from "@/components/os/growth/GrowthPageShell";
+import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 
 export default function ReferralQueue() {
   return (
@@ -12,7 +12,7 @@ export default function ReferralQueue() {
         { label: "Assign intake owner", icon: ClipboardList },
       ]}
     >
-      <ComingSoonNotice message="The live referral queue will appear here once intake data is connected. Until then, use the Marketing Referral CRM and Intake workspace to manage incoming referrals." />
+      <ReadyForDataNotice message="This workspace is ready for live data. The referral queue will populate as intake activity comes in. Meanwhile, use the Marketing Referral CRM and Intake workspace to manage incoming referrals." />
     </GrowthPageShell>
   );
 }
