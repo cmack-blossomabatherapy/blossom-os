@@ -60,6 +60,11 @@ import BcbaProductivityReport from "./pages/os/reports/BcbaProductivityReport";
 import BcbaProductivityReportV3 from "./pages/os/reports/BcbaProductivityReportV3";
 import CancellationCommandCenter from "./pages/os/reports/CancellationCommandCenter";
 import OSMvpPage from "./pages/os/mvp/OSMvpPage";
+import ExpiringAuthorizations from "./pages/os/operations/ExpiringAuthorizations";
+import MissingDocs from "./pages/os/operations/MissingDocs";
+import PayerRequirements from "./pages/os/operations/PayerRequirements";
+import MakeUpSessions from "./pages/os/operations/MakeUpSessions";
+import RbtMatchQueue from "./pages/os/operations/RbtMatchQueue";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
 
@@ -843,11 +848,11 @@ const App = () => (
                        future passes. --- */}
                   <Route path="/intake/missing-information"  element={<MissingInformation />} />
                   <Route path="/intake/parent-communication" element={<ParentCommunication />} />
-                  <Route path="/ops/expiring-authorizations" element={<OSMvpPage eyebrow="Authorizations"  title="Expiring Authorizations"    description="Authorizations expiring in the next 30 / 60 / 90 days, grouped by payer and state."                                      primaryActionLabel="Start Renewal" />} />
-                  <Route path="/ops/missing-docs"            element={<OSMvpPage eyebrow="Authorizations"  title="Missing Documents"          description="Cases blocked on missing payer documentation, with owner, due date, and next action."                                primaryActionLabel="Request Document" />} />
-                  <Route path="/ops/payer-requirements"      element={<OSMvpPage eyebrow="Authorizations"  title="Payer Requirements"         description="Per-payer documentation, auth, and submission requirements for every state Blossom serves."                          primaryActionLabel="Add Payer" />} />
-                  <Route path="/ops/make-up-sessions"        element={<OSMvpPage eyebrow="Scheduling"      title="Make-Up Sessions"           description="Approved make-up session requests, tracked through scheduling and confirmation."                                     primaryActionLabel="New Make-Up" />} />
-                  <Route path="/ops/rbt-match-queue"         element={<OSMvpPage eyebrow="Staffing"        title="RBT Match Queue"            description="Open cases ready for staffing match — by state, hours needed, language, and family preferences."                       primaryActionLabel="Propose Match" />} />
+                  <Route path="/ops/expiring-authorizations" element={<ExpiringAuthorizations />} />
+                  <Route path="/ops/missing-docs"            element={<MissingDocs />} />
+                  <Route path="/ops/payer-requirements"      element={<PayerRequirements />} />
+                  <Route path="/ops/make-up-sessions"        element={<MakeUpSessions />} />
+                  <Route path="/ops/rbt-match-queue"         element={<RbtMatchQueue />} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />

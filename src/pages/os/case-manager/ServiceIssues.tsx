@@ -42,13 +42,6 @@ function Pill({ tone, children, icon: Icon }: { tone: Tone; children: React.Reac
   );
 }
 
-function ComingSoon() {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(265_60%_90%)] bg-[hsl(265_100%_98%)] px-2 py-0.5 text-[10px] font-medium text-[hsl(265_60%_50%)]">
-      <Sparkles className="h-2.5 w-2.5" /> Coming soon
-    </span>
-  );
-}
 
 function SectionHeader({ title, hint, action }: { title: string; hint?: string; action?: string }) {
   return (
@@ -515,7 +508,6 @@ export default function CMServiceIssuesPage() {
                 </div>
                 <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">{f.desc}</p>
                 <div className="mt-3">
-                  <ComingSoon />
                 </div>
               </div>
             ))}

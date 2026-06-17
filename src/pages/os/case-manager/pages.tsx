@@ -1,10 +1,6 @@
-import {
-  GraduationCap, Users, MessageSquare, HeartHandshake, Activity,
-  CalendarDays, ShieldCheck, UserCog, AlertTriangle, Flame,
-  Globe2, BookOpen,
-} from "lucide-react";
-import CaseManagerComingSoon from "./CaseManagerComingSoon";
 import OSTraining from "../OSTraining";
+import CommunityReferralsPage from "./CommunityReferrals";
+import CMResourcesPage from "./CMResourcesPage";
 import CMAssignedFamiliesPage from "./AssignedFamilies";
 import CMParentCommunicationPage from "./ParentCommunication";
 import CMFamilySupportPage from "./FamilySupport";
@@ -70,34 +66,9 @@ export function CMEscalations() {
 /* ---------- COMMUNITY & SUPPORT ---------- */
 
 export function CMCommunityReferrals() {
-  return (
-    <CaseManagerComingSoon
-      title="Community Referrals"
-      icon={Globe2}
-      description="A warm, curated library of autism resources, support organizations, and local programs to share with families."
-      features={[
-        { icon: Globe2,        title: "Autism resources",         description: "Trusted national and regional resources." },
-        { icon: HeartHandshake,title: "Local programs",           description: "Programs near each family, by region." },
-        { icon: Users,         title: "Parent support networks",  description: "Communities families can lean on." },
-      ]}
-    />
-  );
+  return <CommunityReferralsPage />;
 }
 
 export function CMResources() {
-  return (
-    <CaseManagerComingSoon
-      title="Resource Library"
-      icon={BookOpen}
-      description="Connected to the global Blossom Resource Library — with categories tailored for Case Managers."
-      features={[
-        { icon: BookOpen,      title: "SOPs",                       description: "Standard operating procedures for Case Managers." },
-        { icon: HeartHandshake,title: "Parent support resources",   description: "Curated for warm, helpful conversations." },
-        { icon: MessageSquare, title: "Communication guidelines",   description: "Voice and tone across every family touch-point." },
-        { icon: Flame,         title: "Escalation procedures",      description: "Clear steps for sensitive situations." },
-        { icon: Activity,      title: "Service continuity workflows", description: "Keep care moving even through disruption." },
-        { icon: ShieldCheck,   title: "Operational support documents", description: "Everything you need to operate calmly." },
-      ]}
-    />
-  );
+  return <CMResourcesPage />;
 }
