@@ -289,6 +289,7 @@ function FormTabs({ form, update, errors }: FormBodyProps) {
       </TabsList>
 
       <TabsContent value="source" className="mt-4">
+        <SourceAttributionSummary value={form.leadSource} />
         <Grid>
           <Field label="Lead Source *" error={errors.leadSource}>
             <SelectInput value={form.leadSource} onChange={(v) => update("leadSource", v)} options={LEAD_SOURCES as unknown as string[]} />
@@ -399,5 +400,22 @@ function SelectInput({ value, onChange, options }: { value: string; onChange: (v
       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
       <SelectContent>{options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
     </Select>
+  );
+}
+
+function SourceAttributionSummary({ value }: { value: string }) {
+  const opt = getLeadSourceOption(value);
+  if (!opt) return null;
+  const connector = opt.integrationId ? `Future connector: ${opt.integrationId}` : "Future connector: manual";
+  const origin = opt.journeyOrigin ?? "Manual";
+  return (
+    <div className="mb-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+      <span className="font-medium text-foreground">Source: {opt.label}</span>
+      <span className="mx-2">·</span>
+      <span>{connector}</span>
+      <span className="mx-2">·</span>
+      <span>Patient Lifetime Journey origin: {origin}</span>
+      {opt.description && <div className="mt-1 text-[11px]">{opt.description}</div>}
+    </div>
   );
 }
