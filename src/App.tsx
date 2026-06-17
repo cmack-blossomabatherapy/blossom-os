@@ -541,7 +541,8 @@ const App = () => (
                   <Route path="/ws/marketing"  element={<Navigate to="/marketing"                  replace />} />
                   <Route path="/ws/intake"     element={<Navigate to="/intake/dashboard"           replace />} />
                   <Route path="/ws/finance"    element={<Navigate to="/reports"                    replace />} />
-                  <Route path="/ws/:id"        element={<WorkspacePage />} />
+                  {/* Old workspace shell is fully retired — any /ws/:id falls back to dashboard. */}
+                  <Route path="/ws/:id"        element={<Navigate to="/dashboard" replace />} />
                   <Route path="/executive" element={<ExecutiveOverview />} />
                   <Route path="/executive/overview" element={<Navigate to="/executive" replace />} />
                   <Route path="/executive/pulse" element={<CompanyPulse />} />
