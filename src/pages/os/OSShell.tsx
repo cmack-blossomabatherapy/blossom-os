@@ -240,8 +240,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     setSearchParams(params, { replace: true });
   };
 
-  const showOldVersion = platform("accessOldVersion");
-
   // CmdK palette
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
