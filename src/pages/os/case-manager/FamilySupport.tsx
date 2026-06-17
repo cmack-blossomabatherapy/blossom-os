@@ -41,13 +41,6 @@ function Pill({ tone, children, icon: Icon }: { tone: Tone; children: React.Reac
   );
 }
 
-function ComingSoon() {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(265_60%_90%)] bg-[hsl(265_100%_98%)] px-2 py-0.5 text-[10px] font-medium text-[hsl(265_60%_50%)]">
-      <Sparkles className="h-2.5 w-2.5" /> Coming soon
-    </span>
-  );
-}
 
 function SectionHeader({ title, hint, action }: { title: string; hint?: string; action?: string }) {
   return (
@@ -384,7 +377,6 @@ export default function CMFamilySupportPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <div className="text-[12.5px] font-semibold text-foreground">{c.title}</div>
-                        <ComingSoon />
                       </div>
                       <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">{c.desc}</p>
                     </div>
@@ -453,7 +445,6 @@ export default function CMFamilySupportPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <div className="text-[14px] font-semibold text-foreground">Blossom AI</div>
-                  <ComingSoon />
                 </div>
                 <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
                   Soon, Blossom will help summarize concerns, surface relationship risks, and draft warm outreach — always in your voice.
@@ -489,7 +480,6 @@ export default function CMFamilySupportPage() {
                   <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_100%_96%)] to-[hsl(330_100%_96%)] text-[hsl(265_60%_50%)]">
                     <f.icon className="h-4 w-4" strokeWidth={2} />
                   </div>
-                  <ComingSoon />
                 </div>
                 <div className="mt-3 text-[13.5px] font-semibold text-foreground">{f.title}</div>
                 <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{f.desc}</p>

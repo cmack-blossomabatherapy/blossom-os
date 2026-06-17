@@ -43,13 +43,6 @@ function Pill({ tone, children, icon: Icon }: { tone: Tone; children: React.Reac
   );
 }
 
-function ComingSoon() {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(265_60%_90%)] bg-[hsl(265_100%_98%)] px-2 py-0.5 text-[10px] font-medium text-[hsl(265_60%_50%)]">
-      <Sparkles className="h-2.5 w-2.5" /> Coming soon
-    </span>
-  );
-}
 
 function SectionHeader({ title, hint, action }: { title: string; hint?: string; action?: string }) {
   return (
@@ -227,7 +220,6 @@ export default function CMAssignedFamiliesPage() {
               <p className="mt-3 text-[12.5px] font-medium text-muted-foreground">{r.title}</p>
               <p className="mt-0.5 text-[18px] font-semibold tracking-tight text-foreground/90">{r.value}</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">{r.hint}</p>
-              <div className="mt-2"><ComingSoon /></div>
             </div>
           ))}
         </div>
@@ -382,7 +374,6 @@ export default function CMAssignedFamiliesPage() {
                   </div>
                   <p className="text-[13.5px] font-semibold tracking-tight">{v.title}</p>
                 </div>
-                <ComingSoon />
               </div>
               <ul className="mt-3 space-y-1.5">
                 {v.lines.map((l) => (
@@ -410,7 +401,6 @@ export default function CMAssignedFamiliesPage() {
               <p className="text-[12px] text-muted-foreground">Calm, family-aware nudges across your caseload.</p>
             </div>
           </div>
-          <ComingSoon />
         </div>
         <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {[
@@ -441,7 +431,6 @@ export default function CMAssignedFamiliesPage() {
                   <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_100%_97%)] to-[hsl(330_100%_97%)] text-[hsl(265_60%_55%)]">
                     <f.icon className="h-4 w-4" strokeWidth={1.75} />
                   </div>
-                  <ComingSoon />
                 </div>
                 <p className="mt-3 text-[13.5px] font-semibold tracking-tight">{f.title}</p>
                 <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{f.desc}</p>
@@ -554,7 +543,6 @@ function PanelBlock({ icon: Icon, title, tone, children }: { icon: typeof Heart;
           </div>
           <p className="text-[12.5px] font-semibold tracking-tight">{title}</p>
         </div>
-        <ComingSoon />
       </div>
       <div className="mt-3 text-[12px] leading-relaxed text-foreground/80">{children}</div>
     </div>
