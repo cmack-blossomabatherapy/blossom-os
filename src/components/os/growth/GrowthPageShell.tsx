@@ -130,9 +130,6 @@ export function ReadyForDataNotice({ message }: { message: string }) {
   );
 }
 
-/** @deprecated Use ReadyForDataNotice — kept for backwards compatibility. */
-export const ComingSoonNotice = ReadyForDataNotice;
-
 export function LinkCard({
   title, description, to, status, icon: Icon,
 }: { title: string; description: string; to: string; status?: GrowthStatus; icon?: LucideIcon }) {

@@ -5,11 +5,12 @@ import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/gr
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 const QUEUE_STAGES = new Set(["New Lead", "In Contact"]);
 
 export default function ReferralQueue() {
-  const { leads, loading } = useLeads();
+  const { leads, loading, moveStage, assignOwner, addTag } = useLeads();
 
   const queue = useMemo(
     () =>
@@ -61,6 +62,15 @@ export default function ReferralQueue() {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   <Button asChild size="sm" variant="outline"><Link to={`/leads/${lead.id}`}>Open Lead</Link></Button>
                   <Button asChild size="sm" variant="ghost"><Link to={`/leads/${lead.id}#log`}>Log Contact</Link></Button>
+                  <Button size="sm" variant="ghost" onClick={() => { moveStage([lead.id], "In Contact"); toast.success("Moved to In Contact"); }}>Move to Contacted</Button>
+                  <Button size="sm" variant="ghost" onClick={() => {
+                    const owner = window.prompt("Assign owner to", lead.owner || "");
+                    if (owner && owner.trim()) { assignOwner([lead.id], owner.trim()); toast.success("Owner assigned"); }
+                  }}>Assign Owner</Button>
+                  <Button size="sm" variant="ghost" onClick={() => {
+                    const tag = window.prompt("Add tag");
+                    if (tag && tag.trim()) { addTag([lead.id], tag.trim()); toast.success("Tag added"); }
+                  }}>Add Tag</Button>
                 </div>
               </div>
             ))}

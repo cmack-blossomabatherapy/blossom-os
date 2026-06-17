@@ -5,9 +5,10 @@ import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/gr
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 export default function MissingInformation() {
-  const { leads, loading } = useLeads();
+  const { leads, loading, updateLead, addTag } = useLeads();
 
   const blocked = useMemo(
     () =>
@@ -16,7 +17,13 @@ export default function MissingInformation() {
           (l) =>
             l.status === "Missing Information" ||
             l.formReviewStatus === "Missing Info" ||
-            l.formReviewStatus === "Missing Information",
+            l.formReviewStatus === "Missing Information" ||
+            !!l.intake?.dxNeeded ||
+            !l.insurance ||
+            !l.phone ||
+            !l.email ||
+            (l.tags ?? []).some((t) => /missing|blocker/i.test(t)) ||
+            /missing|blocker/i.test(l.notes ?? ""),
         )
         .sort((a, b) => (a.nextTaskDue ?? "").localeCompare(b.nextTaskDue ?? "")),
     [leads],
@@ -61,6 +68,15 @@ export default function MissingInformation() {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   <Button asChild size="sm" variant="outline"><Link to={`/leads/${lead.id}`}>Open Lead</Link></Button>
                   <Button asChild size="sm" variant="ghost"><Link to={`/leads/${lead.id}#log`}>Log Contact</Link></Button>
+                  <Button size="sm" variant="ghost" onClick={() => {
+                    updateLead(lead.id, { nextAction: "Awaiting missing info from family" });
+                    addTag([lead.id], "Info Requested");
+                    toast.success("Marked as requested");
+                  }}>Mark requested</Button>
+                  <Button size="sm" variant="ghost" onClick={() => {
+                    const note = window.prompt("Add note", lead.notes ?? "");
+                    if (note != null) { updateLead(lead.id, { notes: note }); toast.success("Note added"); }
+                  }}>Add note</Button>
                 </div>
               </div>
             ))}

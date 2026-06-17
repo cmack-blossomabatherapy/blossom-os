@@ -1,9 +1,15 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { MessageSquare, Phone, Mail, Plus } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+
+const COMM_KEY = "blossom-os.intake-comms.v1";
+type LocalComm = { id: string; leadId: string; leadName: string; type: "call" | "sms" | "email" | "note"; preview: string; timestamp: string; user?: string };
+function loadLocal(): LocalComm[] { if (typeof window === "undefined") return []; try { return JSON.parse(window.localStorage.getItem(COMM_KEY) || "[]"); } catch { return []; } }
+function saveLocal(rows: LocalComm[]) { try { window.localStorage.setItem(COMM_KEY, JSON.stringify(rows)); } catch { /* ignore */ } }
 
 interface CommRow {
   leadId: string;
@@ -18,6 +24,15 @@ const ICONS = { call: Phone, sms: MessageSquare, email: Mail, note: MessageSquar
 
 export default function ParentCommunication() {
   const { leads, loading } = useLeads();
+  const [local, setLocal] = useState<LocalComm[]>(() => loadLocal());
+  useEffect(() => { saveLocal(local); }, [local]);
+
+  const logComm = (lead: { id: string; childName: string }, type: LocalComm["type"]) => {
+    const preview = window.prompt(`${type.toUpperCase()} — what happened?`);
+    if (!preview || !preview.trim()) return;
+    setLocal((rows) => [{ id: `lc-${Date.now()}`, leadId: lead.id, leadName: lead.childName, type, preview: preview.trim(), timestamp: new Date().toISOString() }, ...rows]);
+    toast.success(`${type} logged`);
+  };
 
   const recent = useMemo<CommRow[]>(() => {
     const rows: CommRow[] = [];
@@ -33,8 +48,9 @@ export default function ParentCommunication() {
         }),
       );
     });
+    local.forEach((c) => rows.push({ leadId: c.leadId, leadName: c.leadName, type: c.type, preview: c.preview, timestamp: c.timestamp, user: c.user }));
     return rows.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 50);
-  }, [leads]);
+  }, [leads, local]);
 
   const followUps = useMemo(
     () => leads.filter((l) => !!l.nextAction && l.status !== "VOB Completed").slice(0, 30),
@@ -88,9 +104,11 @@ export default function ParentCommunication() {
                   <span className="text-[11px] text-muted-foreground shrink-0">{l.status}</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{l.nextAction}</div>
-                <div className="mt-2 flex gap-1.5">
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   <Button asChild size="sm" variant="outline"><Link to={`/leads/${l.id}`}>Open</Link></Button>
-                  <Button asChild size="sm" variant="ghost"><Link to={`/leads/${l.id}#log`}>Log Contact</Link></Button>
+                  <Button size="sm" variant="ghost" onClick={() => logComm(l, "call")}>Log Call</Button>
+                  <Button size="sm" variant="ghost" onClick={() => logComm(l, "sms")}>Log Text</Button>
+                  <Button size="sm" variant="ghost" onClick={() => logComm(l, "email")}>Log Email</Button>
                 </div>
               </div>
             ))}

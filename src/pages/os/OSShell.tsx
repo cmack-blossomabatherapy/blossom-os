@@ -285,9 +285,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const allItems = sections.flatMap((s) => s.items);
 
   const homeForRole = ROLE_HOME[role] ?? "/dashboard";
+  const isStateTrainingRole = role === "state_director" || role === "assistant_state_director";
+  const trainingPath = isStateTrainingRole ? "/training" : "/academy";
   const bottomNav: NavEntry[] = [
     { to: homeForRole, label: "Home", icon: LayoutDashboard, end: true },
-    { to: "/academy", label: "Training", icon: GraduationCap },
+    { to: trainingPath, label: "Training", icon: GraduationCap },
     { to: "/resource-library", label: "Resources", icon: BookOpen },
     { to: "/reports", label: "Reports", icon: BarChart3 },
   ];

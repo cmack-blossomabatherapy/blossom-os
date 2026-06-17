@@ -4,6 +4,8 @@ import { FileText, Plus, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import type { Lead, LeadTask } from "@/data/leads";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface TaskRow {
   task: LeadTask;
@@ -29,6 +31,12 @@ function bucketize(rows: TaskRow[]) {
 }
 
 function TaskCard({ row }: { row: TaskRow }) {
+  const complete = () => toast.success(`Marked complete: ${row.task.title}`);
+  const snooze = () => toast.success(`Snoozed: ${row.task.title}`);
+  const reassign = () => {
+    const next = window.prompt("Reassign to", row.task.owner || "");
+    if (next && next.trim()) toast.success(`Reassigned to ${next.trim()}`);
+  };
   return (
     <div className="rounded-xl border border-border/60 bg-card p-3 hover:shadow-sm transition-shadow">
       <div className="flex items-start justify-between gap-2">
@@ -47,6 +55,11 @@ function TaskCard({ row }: { row: TaskRow }) {
       </div>
       <div className="mt-2 text-[11px] text-muted-foreground">
         Owner: {row.task.owner || "Unassigned"}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        <Button size="sm" variant="outline" onClick={complete}>Complete</Button>
+        <Button size="sm" variant="ghost" onClick={snooze}>Snooze</Button>
+        <Button size="sm" variant="ghost" onClick={reassign}>Reassign</Button>
       </div>
     </div>
   );

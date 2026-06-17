@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { GrowthPageShell, Section, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import type { LeadStatus } from "@/data/leads";
 
 const STAGES: LeadStatus[] = [
@@ -17,7 +19,7 @@ const STAGES: LeadStatus[] = [
 ];
 
 export default function LeadToActivePipeline() {
-  const { leads, loading } = useLeads();
+  const { leads, loading, moveStage, revertStage } = useLeads();
 
   const byStage = useMemo(() => {
     const map = new Map<LeadStatus, typeof leads>();
@@ -28,6 +30,12 @@ export default function LeadToActivePipeline() {
     });
     return map;
   }, [leads]);
+
+  const avgAgeForStage = (items: typeof leads) => {
+    if (items.length === 0) return null;
+    const total = items.reduce((sum, l) => sum + (l.daysInStage ?? 0), 0);
+    return Math.round(total / items.length);
+  };
 
   return (
     <GrowthPageShell
@@ -44,22 +52,37 @@ export default function LeadToActivePipeline() {
           <div className="flex items-stretch gap-3 min-w-max pb-2">
             {STAGES.map((stage) => {
               const items = byStage.get(stage) ?? [];
+              const avgAge = avgAgeForStage(items);
+              const stageIdx = STAGES.indexOf(stage);
               return (
                 <div key={stage} className="rounded-2xl border border-border/70 bg-card p-4 w-64 shrink-0">
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">{stage}</div>
                     <div className="text-lg font-semibold tabular-nums text-foreground">{items.length}</div>
                   </div>
+                  {avgAge !== null && (
+                    <div className="text-[10px] text-muted-foreground">Avg age: {avgAge}d</div>
+                  )}
                   <div className="mt-3 space-y-1.5">
                     {items.slice(0, 6).map((l) => (
-                      <Link
-                        key={l.id}
-                        to={`/leads/${l.id}`}
-                        className="block rounded-md border border-border/60 bg-background/60 px-2 py-1.5 text-xs hover:bg-accent transition-colors"
-                      >
-                        <div className="font-medium truncate">{l.childName}</div>
+                      <div key={l.id} className="rounded-md border border-border/60 bg-background/60 px-2 py-1.5 text-xs">
+                        <Link to={`/leads/${l.id}`} className="font-medium truncate block hover:underline">{l.childName}</Link>
                         <div className="text-[10px] text-muted-foreground truncate">{l.owner || "Unassigned"} · {l.state}</div>
-                      </Link>
+                        <div className="mt-1 flex gap-1">
+                          {stageIdx > 0 && (
+                            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
+                              onClick={() => { revertStage(l.id, STAGES[stageIdx - 1], 0, "Move back"); toast.success(`Moved back to ${STAGES[stageIdx - 1]}`); }}>
+                              <ChevronLeft className="h-3 w-3" /> Back
+                            </Button>
+                          )}
+                          {stageIdx < STAGES.length - 1 && (
+                            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
+                              onClick={() => { moveStage([l.id], STAGES[stageIdx + 1]); toast.success(`Moved to ${STAGES[stageIdx + 1]}`); }}>
+                              Forward <ChevronRight className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     ))}
                     {items.length === 0 && (
                       <div className="text-[11px] text-muted-foreground italic">No leads in stage</div>

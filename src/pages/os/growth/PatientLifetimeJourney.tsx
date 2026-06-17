@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Search, Phone, Mail, MessageSquare, FileText, ShieldCheck, UserCheck,
   Calendar, ClipboardCheck, HeartHandshake, AlertCircle, FileSignature,
   Briefcase, Plus, Download, ArrowUpRight, type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +16,26 @@ import { LiveActivityFeed } from "@/components/growth/LiveActivityFeed";
 import { useLeads } from "@/contexts/LeadsContext";
 import type { Lead } from "@/data/leads";
 import { format, formatDistanceToNow } from "date-fns";
+
+// Local interactions persisted per-lead so users can log calls/notes before
+// the full backend wiring lands. Key: blossom-os.lead-interactions.v1
+const INTERACTION_KEY = "blossom-os.lead-interactions.v1";
+type LocalInteraction = {
+  id: string;
+  leadId: string;
+  kind: "call" | "email" | "text" | "note" | "follow-up";
+  preview: string;
+  when: string; // ISO
+  owner?: string;
+  dueDate?: string;
+};
+function loadInteractions(): LocalInteraction[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(window.localStorage.getItem(INTERACTION_KEY) || "[]"); } catch { return []; }
+}
+function saveInteractions(rows: LocalInteraction[]) {
+  try { window.localStorage.setItem(INTERACTION_KEY, JSON.stringify(rows)); } catch { /* ignore */ }
+}
 
 type FilterKey =
   | "all" | "calls" | "emails" | "forms" | "intake" | "insurance"
@@ -152,6 +174,19 @@ function buildEvents(lead: Lead): JourneyEvent[] {
   return events.sort((a, b) => a.rawTs - b.rawTs);
 }
 
+function mergeLocalInteractions(lead: Lead, events: JourneyEvent[], local: LocalInteraction[]): JourneyEvent[] {
+  const safeTs = (s: string) => { const t = new Date(s).getTime(); return Number.isFinite(t) ? t : Date.now(); };
+  const mapped: JourneyEvent[] = local.filter((i) => i.leadId === lead.id).map((i) => ({
+    type: i.kind === "call" ? "call_received" : i.kind === "email" ? "email_sent"
+        : i.kind === "text" ? "text" : i.kind === "follow-up" ? "intake_followup" : "parent_contact",
+    when: format(new Date(safeTs(i.when)), "MMM d"),
+    rawTs: safeTs(i.when),
+    detail: i.dueDate ? `${i.preview} (due ${i.dueDate})` : i.preview,
+    owner: i.owner,
+  }));
+  return [...events, ...mapped].sort((a, b) => a.rawTs - b.rawTs);
+}
+
 export default function PatientLifetimeJourney() {
   const { leads, loading } = useLeads();
   const [search, setSearch] = useState("");
@@ -162,6 +197,10 @@ export default function PatientLifetimeJourney() {
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [interactions, setInteractions] = useState<LocalInteraction[]>(() => loadInteractions());
+  const [logOpen, setLogOpen] = useState(false);
+  const [followOpen, setFollowOpen] = useState(false);
+  useEffect(() => { saveInteractions(interactions); }, [interactions]);
 
   const states = useMemo(() => Array.from(new Set(leads.map((l) => l.state).filter(Boolean))).sort(), [leads]);
   const sources = useMemo(() => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))).sort(), [leads]);
@@ -186,7 +225,10 @@ export default function PatientLifetimeJourney() {
     () => leads.find((l) => l.id === selectedId) ?? null,
     [leads, selectedId],
   );
-  const events = useMemo(() => (selected ? buildEvents(selected) : []), [selected]);
+  const events = useMemo(
+    () => (selected ? mergeLocalInteractions(selected, buildEvents(selected), interactions) : []),
+    [selected, interactions],
+  );
 
   return (
     <GrowthPageShell
@@ -194,10 +236,19 @@ export default function PatientLifetimeJourney() {
       title="Patient Lifetime Journey"
       description="A complete chronological view of every lead, call, email, form, note, referral touchpoint, intake step, authorization movement, staffing update, clinical milestone, and ongoing patient interaction."
       actions={selected ? [
-        { label: "Add note", icon: Plus, variant: "default" },
+        { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
+        { label: "Open Lead Record", icon: ArrowUpRight, to: `/leads/${selected.id}` },
         { label: "Export journey", icon: Download },
-      ] : []}
+      ] : [
+        { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
+      ]}
     >
+      {selected && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          <Button size="sm" onClick={() => setLogOpen(true)}><Plus className="h-4 w-4 mr-1.5" /> Log Interaction</Button>
+          <Button size="sm" variant="outline" onClick={() => setFollowOpen(true)}>Add Follow-Up</Button>
+        </div>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
         <FilterSelect value={stateFilter} onChange={setStateFilter} label="State" options={states} />
         <FilterSelect value={sourceFilter} onChange={setSourceFilter} label="Source" options={sources} />
@@ -342,7 +393,98 @@ export default function PatientLifetimeJourney() {
           </div>
         </aside>
       </div>
+
+      <LogInteractionDialog
+        open={logOpen}
+        onOpenChange={setLogOpen}
+        onSave={(kind, preview, owner) => {
+          if (!selected) return;
+          setInteractions((rows) => [
+            { id: `li-${Date.now()}`, leadId: selected.id, kind, preview, when: new Date().toISOString(), owner },
+            ...rows,
+          ]);
+          toast.success("Interaction logged");
+        }}
+      />
+      <FollowUpDialog
+        open={followOpen}
+        onOpenChange={setFollowOpen}
+        onSave={(title, dueDate, owner) => {
+          if (!selected) return;
+          setInteractions((rows) => [
+            { id: `li-${Date.now()}`, leadId: selected.id, kind: "follow-up", preview: title, when: new Date().toISOString(), owner, dueDate },
+            ...rows,
+          ]);
+          toast.success("Follow-up added");
+        }}
+      />
     </GrowthPageShell>
+  );
+}
+
+function LogInteractionDialog({
+  open, onOpenChange, onSave,
+}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (kind: LocalInteraction["kind"], preview: string, owner?: string) => void }) {
+  const [kind, setKind] = useState<LocalInteraction["kind"]>("call");
+  const [preview, setPreview] = useState("");
+  const [owner, setOwner] = useState("");
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Log Interaction</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <Select value={kind} onValueChange={(v) => setKind(v as LocalInteraction["kind"])}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="call">Call</SelectItem>
+              <SelectItem value="text">Text</SelectItem>
+              <SelectItem value="email">Email</SelectItem>
+              <SelectItem value="note">Note</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input placeholder="What happened?" value={preview} onChange={(e) => setPreview(e.target.value)} />
+          <Input placeholder="Logged by" value={owner} onChange={(e) => setOwner(e.target.value)} />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={() => {
+            if (!preview.trim()) { toast.error("Add a short description"); return; }
+            onSave(kind, preview.trim(), owner || undefined);
+            setPreview(""); setOwner("");
+            onOpenChange(false);
+          }}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FollowUpDialog({
+  open, onOpenChange, onSave,
+}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (title: string, dueDate: string, owner?: string) => void }) {
+  const [title, setTitle] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [owner, setOwner] = useState("");
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Add Follow-Up</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <Input placeholder="Follow-up action" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <Input placeholder="Owner" value={owner} onChange={(e) => setOwner(e.target.value)} />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={() => {
+            if (!title.trim()) { toast.error("Add a title"); return; }
+            onSave(title.trim(), dueDate, owner || undefined);
+            setTitle(""); setDueDate(""); setOwner("");
+            onOpenChange(false);
+          }}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
