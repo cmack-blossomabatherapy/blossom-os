@@ -3,7 +3,7 @@ import { OSShell } from "./OSShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, UserPlus, Users2, Pencil, Loader2, ExternalLink, Check } from "lucide-react";
+import { Search, UserPlus, Users2, Pencil, Loader2, ExternalLink, Check, MailCheck, RefreshCw, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole } from "@/lib/roles";
 import { ROLE_META } from "@/lib/roles";
@@ -25,9 +25,27 @@ interface Row {
   hire_date: string | null;
   employment_type: string | null;
   viventium_employee_id: string | null;
+  welcome_sent_at: string | null;
   active: boolean;
   roles: AppRole[];
   isWorkforce?: boolean;
+}
+
+interface InviteDeliveryStatus {
+  log: {
+    created_at: string;
+    status: "sent" | "failed" | "skipped" | string;
+    resend_message_id: string | null;
+    error_message: string | null;
+    recipient_email: string;
+  } | null;
+  provider: {
+    last_event?: string;
+    created_at?: string;
+    subject?: string;
+    to?: string[];
+  } | null;
+  providerError?: string | null;
 }
 
 const roleLabel = (r: AppRole) => ROLE_META.find((m) => m.key === r)?.label ?? r;
@@ -46,7 +64,7 @@ export default function OSUserManagement() {
       setLoading(true);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, display_name, email, state, active, department, job_title, phone, hire_date, employment_type, viventium_employee_id")
+        .select("user_id, display_name, email, state, active, department, job_title, phone, hire_date, employment_type, viventium_employee_id, welcome_sent_at")
         .order("display_name", { ascending: true });
       const ids = (profiles ?? []).map((p) => p.user_id);
       let roleMap = new Map<string, AppRole[]>();
@@ -73,6 +91,7 @@ export default function OSUserManagement() {
           hire_date: p.hire_date,
           employment_type: p.employment_type,
           viventium_employee_id: p.viventium_employee_id,
+          welcome_sent_at: p.welcome_sent_at,
           active: p.active,
           roles: roleMap.get(p.user_id) ?? [],
         })),
@@ -103,6 +122,7 @@ export default function OSUserManagement() {
       hire_date: w.hire_date,
       employment_type: null,
       viventium_employee_id: null,
+      welcome_sent_at: null,
       active: w.active_status,
       roles: [w.role === "BCBA" ? "bcba" : "rbt"] as AppRole[],
       isWorkforce: true,
