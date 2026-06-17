@@ -553,12 +553,18 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                               <button
                                 key={`${section.id}-${item.to}-${item.label}`}
                                 type="button"
+                                disabled={item.disabled}
+                                aria-disabled={item.disabled || undefined}
                                 onClick={() => {
+                                  if (item.disabled) return;
                                   navigate(item.to);
                                   setHeaderSearchOpen(false);
                                   setHeaderSearch("");
                                 }}
-                                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[13px] text-foreground hover:bg-muted/60"
+                                className={cn(
+                                  "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[13px] text-foreground hover:bg-muted/60",
+                                  item.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
+                                )}
                               >
                                 <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                                 <span className="truncate">{item.label}</span>
@@ -704,7 +710,9 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                     <CommandItem
                       key={`${section.id}-${item.to}-${item.label}`}
                       value={`${section.label} ${item.label} ${item.to}`}
+                      disabled={item.disabled}
                       onSelect={() => {
+                        if (item.disabled) return;
                         setPaletteOpen(false);
                         navigate(item.to);
                       }}
