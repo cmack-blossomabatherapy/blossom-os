@@ -144,6 +144,27 @@ describe("Sprint 03 — Intake pages use useLeads + action labels", () => {
   });
 });
 
+describe("Sprint 04 Phase D — Intake action surfaces persist to Cloud", () => {
+  it("LeadsContext persists moveStage/assignOwner/addTag to intake_leads", () => {
+    const s = read("src/contexts/LeadsContext.tsx");
+    expect(s).toMatch(/persistLeadPatch/);
+    expect(s).toMatch(/pipeline_stage:/);
+    expect(s).toMatch(/assigned_intake_coordinator:/);
+  });
+  it("ParentCommunication no longer uses localStorage and uses useIntakeCommsLive", () => {
+    const s = read("src/pages/os/intake/ParentCommunication.tsx");
+    expect(s).not.toMatch(/blossom-os\.intake-comms/);
+    expect(s).toMatch(/useIntakeCommsLive/);
+  });
+  it("IntakeTasks reads from useIntakeTasksLive and uses DB mutators", () => {
+    const s = read("src/pages/os/intake/IntakeTasks.tsx");
+    expect(s).toMatch(/useIntakeTasksLive/);
+    expect(s).toMatch(/onComplete/);
+    expect(s).toMatch(/onSnooze/);
+    expect(s).toMatch(/onReassign/);
+  });
+});
+
 describe("Sprint 03 — BCBA Productivity Report V3 visible for every role", () => {
   for (const r of ROLE_PREVIEW_LIST) {
     it(`${r.role} can see bcba-productivity-report-v3`, () => {
