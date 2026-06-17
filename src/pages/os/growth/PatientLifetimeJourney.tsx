@@ -592,7 +592,7 @@ function JourneySummary({
   liveComms: LeadCommunicationRow[];
 }) {
   const openTaskCount =
-    liveTasks.filter((t) => !t.completed_at).length +
+    liveTasks.filter((t) => t.status !== "completed" && t.status !== "done").length +
     (patient.tasks ?? []).filter((t) => !t.completed).length;
   const lastComm = liveComms[0]?.created_at ?? patient.lastContacted ?? null;
   const missingFlags: string[] = [];
