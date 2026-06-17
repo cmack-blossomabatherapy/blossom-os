@@ -71,10 +71,15 @@ describe("Sprint 03 — Coming Soon retirement", () => {
   });
 });
 
-describe("Sprint 03 — Business Development workspace", () => {
+describe("Sprint 03/04 — Business Development workspace", () => {
   const src = read("src/pages/os/growth/BusinessDevelopmentDashboard.tsx");
-  it("uses localStorage with the namespaced key", () => {
-    expect(src).toMatch(/blossom-os\.business-development\.v1/);
+  it("Sprint 04: no longer uses the local-only namespaced storage key", () => {
+    expect(src).not.toMatch(/blossom-os\.business-development\.v1/);
+  });
+  it("Sprint 04: reads referral CRM data from Lovable Cloud via referral hooks", () => {
+    expect(src).toMatch(/useReferralCompanies/);
+    expect(src).toMatch(/useReferralActivities/);
+    expect(src).toMatch(/useReferralTasks/);
   });
   it("has Add Partner, Log Outreach, Add Follow-Up, Export CSV actions", () => {
     expect(src).toMatch(/Add Partner/);
