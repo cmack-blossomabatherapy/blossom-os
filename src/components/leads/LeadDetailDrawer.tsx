@@ -90,6 +90,13 @@ export function LeadDetailDrawer({
     if (v === null || v === undefined) return "";
     return String(v).trim();
   };
+  // Prefer the structured intake_leads value; fall back to the monday raw blob.
+  const fallback = (intakeValue: string | null | undefined, mondayKey: string) => {
+    const v = (intakeValue ?? "").toString().trim();
+    if (v) return v;
+    return str(mondayKey);
+  };
+  const i = lead.intake ?? {};
   const link = (k: string) => {
     const v = str(k);
     return v && /^https?:\/\//i.test(v) ? v : null;
