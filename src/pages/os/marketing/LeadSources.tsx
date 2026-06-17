@@ -13,6 +13,7 @@ import {
   Minus,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
+import { LeadSourceActions } from "@/components/marketing/LeadSourceActions";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 import { mockLeads, pipelineStages, type LeadSource } from "@/data/leads";
 import { mockCandidates } from "@/data/recruiting";
@@ -112,6 +113,7 @@ export default function LeadSources() {
       subtitle="How families and staff discover Blossom — and what happens after they do."
       actions={<AIPrompt label="What's our highest-quality source?" variant="card" />}
     >
+      <LeadSourceActions sourceLabel="All Sources" sourceValue="Website" utmSource="website" />
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
         <div className="absolute -top-24 -right-24 size-72 rounded-full bg-primary/10 blur-3xl" aria-hidden />
