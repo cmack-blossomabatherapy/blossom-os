@@ -9,7 +9,7 @@ import {
   BookOpen, Megaphone, Inbox, AlertTriangle,
   HeartHandshake, MapPin, UserPlus, Headphones, KeyRound, IdCard, Smartphone,
   Stethoscope, PhoneCall, BookUser, Activity, Bug, UserCheck,
-  History, Plug, MonitorSmartphone, XCircle, CheckCircle2, ListTodo,
+  Plug, MonitorSmartphone, XCircle, CheckCircle2, ListTodo,
   Phone, FileText, LogOut,
   type LucideIcon,
 } from "lucide-react";
