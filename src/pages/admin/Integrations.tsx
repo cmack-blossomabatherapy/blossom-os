@@ -63,6 +63,19 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import {
+  BLOSSOM_INTEGRATIONS,
+  getIntegration as getRegistryIntegration,
+} from "@/lib/os/integrations/integrationRegistry";
+
+/**
+ * Shared integration registry — single source of truth for the systems
+ * Blossom ABA Therapy actually runs against. The catalog below renders
+ * the operational/UX layer; ownership, data flows, and dependent modules
+ * live in the registry.
+ */
+void BLOSSOM_INTEGRATIONS;
+void getRegistryIntegration;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types & mock data
@@ -144,7 +157,7 @@ const INTEGRATIONS: Integration[] = [
   },
   {
     id: "ms365",
-    name: "Microsoft 365",
+    name: "Microsoft Outlook / Microsoft 365",
     category: "core",
     description: "Teams, Outlook, SharePoint, and calendars.",
     purpose: ["Email", "Calendar", "Teams", "SSO"],
@@ -174,7 +187,7 @@ const INTEGRATIONS: Integration[] = [
   // INTAKE
   {
     id: "solum",
-    name: "Solum",
+    name: "Solom / Solum",
     category: "intake",
     description: "Automated verification of benefits and eligibility.",
     purpose: ["VOBs", "Eligibility", "Attachments"],
@@ -315,7 +328,7 @@ const INTEGRATIONS: Integration[] = [
   // MARKETING
   {
     id: "meta-ads",
-    name: "Meta Ads",
+    name: "Facebook Ads / Meta Ads",
     category: "marketing",
     description: "Facebook & Instagram ad attribution.",
     purpose: ["Lead attribution", "Campaign analytics"],
@@ -371,7 +384,7 @@ const INTEGRATIONS: Integration[] = [
   },
   {
     id: "ctm",
-    name: "CallTrackingMetrics",
+    name: "CTM / CallTrackingMetrics",
     category: "marketing",
     description: "Call attribution, recordings, and AI summaries.",
     purpose: ["Calls", "Attribution"],
@@ -515,6 +528,90 @@ const INTEGRATIONS: Integration[] = [
     icon: Zap,
     accent: "text-primary",
     critical: true,
+  },
+
+  // ── Additions from the shared registry (Sprint 05 backbone) ──
+  {
+    id: "mailchimp",
+    name: "Mailchimp",
+    category: "marketing",
+    description: "Email campaigns, nurture flows, and audience segments.",
+    purpose: ["Email", "Nurture", "Segments"],
+    status: "connected",
+    account: "blossom-aba",
+    lastSync: "Today",
+    enabled: true,
+    health: "healthy",
+    icon: Mail,
+    accent: "text-amber-500",
+  },
+  {
+    id: "leadtrap",
+    name: "LeadTrap",
+    category: "marketing",
+    description: "Web lead capture and form submissions routed into Intake.",
+    purpose: ["Web leads", "Forms", "Attribution"],
+    status: "connected",
+    account: "blossom-leadtrap",
+    lastSync: "12 min ago",
+    enabled: true,
+    health: "healthy",
+    icon: Globe,
+    accent: "text-sky-500",
+  },
+  {
+    id: "jivetel",
+    name: "Jivetel",
+    category: "comms",
+    description: "Office phone system — extensions, shared lines, and call routing.",
+    purpose: ["Phone", "Extensions", "Shared lines"],
+    status: "connected",
+    account: "blossom-phones",
+    lastSync: "8 min ago",
+    enabled: true,
+    health: "healthy",
+    icon: Phone,
+    accent: "text-indigo-500",
+  },
+  {
+    id: "fathom",
+    name: "Fathom AI",
+    category: "ai",
+    description: "AI meeting notes and summaries for leadership and operations.",
+    purpose: ["Meeting notes", "Summaries", "Follow-ups"],
+    status: "coming_soon",
+    enabled: false,
+    health: "idle",
+    icon: Sparkles,
+    accent: "text-fuchsia-500",
+  },
+  {
+    id: "bloomgrowth",
+    name: "BloomGrowth",
+    category: "core",
+    description: "L10 meetings, rocks, issues, and to-dos for leadership cadence.",
+    purpose: ["L10", "Rocks", "Issues", "To-dos"],
+    status: "connected",
+    account: "blossom-aba",
+    lastSync: "Today",
+    enabled: true,
+    health: "healthy",
+    icon: Gauge,
+    accent: "text-teal-500",
+  },
+  {
+    id: "calendly",
+    name: "Calendly",
+    category: "comms",
+    description: "Scheduling links for interviews, consults, and partner meetings.",
+    purpose: ["Scheduling", "Booking links"],
+    status: "connected",
+    account: "blossom-aba",
+    lastSync: "Today",
+    enabled: true,
+    health: "healthy",
+    icon: Calendar,
+    accent: "text-emerald-500",
   },
 ];
 
