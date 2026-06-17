@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BarChart3, Search, Star, ArrowUpRight, Download, BookOpen,
-  Sparkles, Filter, LayoutGrid,
+  Sparkles, Filter, LayoutGrid, Plug, Upload, MessageSquarePlus,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -19,13 +19,13 @@ import {
 
 const STATUS_LABEL: Record<Phase3Status, string> = {
   live: "Live",
-  coming_soon: "Setup needed",
+  setup_needed: "Setup needed",
   needs_data: "Needs Data",
 };
 
 const STATUS_TONE: Record<Phase3Status, string> = {
   live: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  coming_soon: "bg-amber-50 text-amber-800 border-amber-200",
+  setup_needed: "bg-amber-50 text-amber-800 border-amber-200",
   needs_data: "bg-sky-50 text-sky-700 border-sky-200",
 };
 
@@ -102,7 +102,7 @@ export default function ReportsLanding() {
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="live">Live</SelectItem>
-                <SelectItem value="coming_soon">Setup needed</SelectItem>
+                <SelectItem value="setup_needed">Setup needed</SelectItem>
                 <SelectItem value="needs_data">Needs Data</SelectItem>
               </SelectContent>
             </Select>
@@ -188,7 +188,7 @@ function ReportCard({
   report, starred, onStar,
 }: { report: Phase3Report; starred: boolean; onStar: () => void }) {
   const route = reportRoute(report);
-  const isComing = report.status !== "live";
+  const isLive = report.status === "live";
   return (
     <article className="group relative rounded-xl border border-border/60 bg-card p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
       <div className="flex items-start justify-between gap-3">
@@ -218,19 +218,44 @@ function ReportCard({
         <span>{report.lastUpdated}</span>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <Button asChild size="sm" variant={isComing ? "outline" : "default"} className="h-8">
-          <Link to={route}>
-            {isComing ? <BookOpen className="h-3.5 w-3.5 mr-1.5" /> : <ArrowUpRight className="h-3.5 w-3.5 mr-1.5" />}
-            {isComing ? "View Roadmap" : "Open Report"}
-          </Link>
-        </Button>
-        {report.canExport && !isComing && (
-          <Button size="sm" variant="ghost" className="h-8">
-            <Download className="h-3.5 w-3.5 mr-1.5" /> Export
+      {isLive ? (
+        <div className="mt-3 flex items-center gap-2">
+          <Button asChild size="sm" variant="default" className="h-8">
+            <Link to={route}>
+              <ArrowUpRight className="h-3.5 w-3.5 mr-1.5" /> Open Report
+            </Link>
           </Button>
-        )}
-      </div>
+          {report.canExport && (
+            <Button size="sm" variant="ghost" className="h-8">
+              <Download className="h-3.5 w-3.5 mr-1.5" /> Export
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <Button asChild size="sm" variant="outline" className="h-8">
+            <Link to="/admin/integrations">
+              <Plug className="h-3.5 w-3.5 mr-1.5" /> Connect
+            </Link>
+          </Button>
+          <Button size="sm" variant="ghost" className="h-8">
+            <Upload className="h-3.5 w-3.5 mr-1.5" /> Upload data
+          </Button>
+          <Button size="sm" variant="ghost" className="h-8">
+            <MessageSquarePlus className="h-3.5 w-3.5 mr-1.5" /> Request
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8"
+            onClick={onStar}
+            aria-pressed={starred}
+          >
+            <Star className={cn("h-3.5 w-3.5 mr-1.5", starred && "fill-amber-400 text-amber-500")} />
+            {starred ? "Starred" : "Star"}
+          </Button>
+        </div>
+      )}
     </article>
   );
 }
