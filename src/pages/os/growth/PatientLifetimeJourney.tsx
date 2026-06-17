@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Search, Phone, Mail, MessageSquare, FileText, ShieldCheck, UserCheck,
   Calendar, ClipboardCheck, HeartHandshake, AlertCircle, FileSignature,
@@ -17,6 +18,11 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { useLeadJourneyLive, type LeadCommunicationRow, type LeadTaskRow } from "@/hooks/useLeadJourneyLive";
 import type { Lead } from "@/data/leads";
 import { format, formatDistanceToNow } from "date-fns";
+import {
+  leadSourceJourneyOrigin,
+  leadSourceLabel,
+  type PatientJourneyEventOrigin,
+} from "@/lib/leads/leadSourceConfig";
 
 // Sprint 04 Phase C — interactions and follow-ups persist to Lovable Cloud
 // (intake_communications + intake_tasks). No localStorage fallback.
@@ -79,6 +85,7 @@ interface JourneyEvent {
   rawTs: number;         // sortable
   detail?: string;
   owner?: string;
+  origin?: PatientJourneyEventOrigin;
 }
 
 function communicationToEventType(t: string): EventType {
@@ -185,6 +192,7 @@ function mergeLiveJourney(
 
 export default function PatientLifetimeJourney() {
   const { leads, loading } = useLeads();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -195,6 +203,13 @@ export default function PatientLifetimeJourney() {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [logOpen, setLogOpen] = useState(false);
   const [followOpen, setFollowOpen] = useState(false);
+
+  // Allow deep-links like /patient-journey?lead=<id>
+  useEffect(() => {
+    const q = searchParams.get("lead");
+    if (q && q !== selectedId) setSelectedId(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const states = useMemo(() => Array.from(new Set(leads.map((l) => l.state).filter(Boolean))).sort(), [leads]);
   const sources = useMemo(() => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))).sort(), [leads]);
