@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { MessageSquare, Phone, Mail, Plus } from "lucide-react";
+import { MessageSquare, Phone, Mail, Plus, HeartHandshake } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
@@ -104,6 +104,11 @@ export default function ParentCommunication() {
                 <div className="text-xs text-muted-foreground mt-1">{l.nextAction}</div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <Button asChild size="sm" variant="outline"><Link to={`/leads/${l.id}`}>Open</Link></Button>
+                  <Button asChild size="sm" variant="ghost">
+                    <Link to={`/patient-journey?lead=${l.id}`}>
+                      <HeartHandshake className="mr-1 h-3 w-3" /> Journey
+                    </Link>
+                  </Button>
                   <Button size="sm" variant="ghost" onClick={() => handleLog(l, "call")}>Log Call</Button>
                   <Button size="sm" variant="ghost" onClick={() => handleLog(l, "sms")}>Log Text</Button>
                   <Button size="sm" variant="ghost" onClick={() => handleLog(l, "email")}>Log Email</Button>
