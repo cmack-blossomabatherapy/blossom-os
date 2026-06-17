@@ -352,12 +352,15 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     if (commPreview) {
       void supabase.from("intake_communications").insert({
         lead_id: row.id,
-        type: input.regularCallLog || input.etCallLog ? "call" : "note",
+        communication_type: input.regularCallLog || input.etCallLog ? "call" : "note",
         direction: "outbound",
         preview: commPreview,
-        user_label: input.assignedIntakeCoordinator ?? "Intake",
+        logged_by_name: input.assignedIntakeCoordinator ?? "Intake",
       } as never).then(() => undefined, () => undefined);
     }
+
+    // Lead created — activity event for the lifetime journey.
+    logLeadActivity(row.id, "note", `Lead created via Blossom OS (${input.leadSource})`, input.assignedIntakeCoordinator ?? "Intake");
 
     setLeads((prev) => [lead, ...prev]);
     return lead;
