@@ -295,39 +295,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   ];
 
   const renderNavItem = (item: NavEntry, onClick?: () => void) => {
-    if (item.disabled) {
-      const disabledNode = (
-        <NavLink
-          key={`${item.to}-${item.label}`}
-          to={item.to}
-          onClick={onClick}
-          className={cn(
-            "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all",
-            collapsed
-              ? "h-10 w-10 justify-center bg-muted/70 px-0 text-muted-foreground ring-1 ring-border/70"
-              : "text-muted-foreground/70 hover:bg-muted/50 hover:text-muted-foreground",
-          )}
-        >
-          <item.icon className={cn("h-[16px] w-[16px] shrink-0", collapsed ? "opacity-100" : "opacity-50")} />
-          {!collapsed && (
-            <>
-              <span className="truncate">{item.label}</span>
-              <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                Soon
-              </span>
-            </>
-          )}
-        </NavLink>
-      );
-      if (!collapsed) return disabledNode;
-      return (
-        <Tooltip key={`${item.to}-${item.label}`} delayDuration={120}>
-          <TooltipTrigger asChild>{disabledNode}</TooltipTrigger>
-          <TooltipContent side="right" className="text-[12px] font-medium">{item.label} - Coming Soon</TooltipContent>
-        </Tooltip>
-      );
-    }
-
+    // All items render as live links now — no "Soon" badges, no disabled state.
     const link = (
       <NavLink
         key={`${item.to}-${item.label}`}
