@@ -7,9 +7,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { GrowthPageShell, Section } from "@/components/os/growth/GrowthPageShell";
 import { LiveActivityFeed } from "@/components/growth/LiveActivityFeed";
+import { useLeads } from "@/contexts/LeadsContext";
+import type { Lead } from "@/data/leads";
+import { format, formatDistanceToNow } from "date-fns";
 
 type FilterKey =
   | "all" | "calls" | "emails" | "forms" | "intake" | "insurance"
@@ -62,61 +66,127 @@ const EVENT_META: Record<EventType, { label: string; icon: LucideIcon; filter: F
   discharge: { label: "Discharge / inactive", icon: AlertCircle, filter: "internal_notes" },
 };
 
-interface MockEvent { type: EventType; when: string; detail?: string; owner?: string }
-interface MockPatient {
-  id: string; name: string; stage: string; state: string;
-  source: string; owner: string; status: string; nextAction: string; events: MockEvent[];
+interface JourneyEvent {
+  type: EventType;
+  when: string;          // formatted display label
+  rawTs: number;         // sortable
+  detail?: string;
+  owner?: string;
 }
 
-const MOCK_PATIENTS: MockPatient[] = [
-  {
-    id: "p1", name: "Avery Chen", stage: "Active care", state: "NC",
-    source: "Google Ads", owner: "Intake — Maria", status: "Active",
-    nextAction: "Confirm weekly supervision is scheduled for this month.",
-    events: [
-      { type: "lead_created", when: "Mar 4", detail: "Inbound web form" },
-      { type: "call_received", when: "Mar 4", detail: "Initial parent call · 6 min", owner: "Maria" },
-      { type: "form_submitted", when: "Mar 5", detail: "Intake packet completed" },
-      { type: "benefits_check", when: "Mar 6", detail: "BCBS — in-network confirmed" },
-      { type: "auth_requested", when: "Mar 8" },
-      { type: "auth_approved", when: "Mar 14", detail: "20 hours / week approved" },
-      { type: "bcba_assignment", when: "Mar 16", detail: "Assigned to BCBA Jordan" },
-      { type: "evaluation", when: "Mar 22" },
-      { type: "clinical_note", when: "Apr 2", detail: "Skill acquisition trending up" },
-    ],
-  },
-  {
-    id: "p2", name: "Noah Patel", stage: "Intake", state: "GA",
-    source: "Pediatrician referral", owner: "Intake — Sam", status: "In progress",
-    nextAction: "Request missing IEP document from family.",
-    events: [
-      { type: "referral_received", when: "Apr 1", detail: "From Dr. Roberts, Pediatric Partners" },
-      { type: "parent_contact", when: "Apr 2", detail: "Left voicemail", owner: "Sam" },
-      { type: "call_received", when: "Apr 3", detail: "Returned call — scheduled intake review" },
-      { type: "form_submitted", when: "Apr 4", detail: "Insurance card uploaded" },
-      { type: "intake_followup", when: "Apr 5", detail: "Awaiting IEP" },
-    ],
-  },
-  {
-    id: "p3", name: "Lily Kim", stage: "Lead", state: "TN",
-    source: "Facebook Ads", owner: "Intake — Alex", status: "New",
-    nextAction: "First parent outreach call.",
-    events: [
-      { type: "lead_created", when: "Apr 6", detail: "Captured via LeadTrap" },
-      { type: "after_hours_call", when: "Apr 6", detail: "Routed to voicemail at 7:42pm" },
-    ],
-  },
-];
+function communicationToEventType(t: string): EventType {
+  switch (t) {
+    case "call": return "call_received";
+    case "email": return "email_sent";
+    case "sms": return "text";
+    case "note":
+    default: return "parent_contact";
+  }
+}
+
+function timelineToEventType(t: string, desc: string): EventType {
+  const d = desc.toLowerCase();
+  if (d.includes("auth") && d.includes("approv")) return "auth_approved";
+  if (d.includes("auth")) return "auth_requested";
+  if (d.includes("benefit") || d.includes("vob") || d.includes("insurance")) return "benefits_check";
+  if (d.includes("denial") || d.includes("denied")) return "denial";
+  if (d.includes("bcba")) return "bcba_assignment";
+  if (d.includes("schedul")) return "scheduling_update";
+  if (d.includes("staff")) return "staffing_update";
+  if (d.includes("eval")) return "evaluation";
+  if (d.includes("discharg") || d.includes("inactive")) return "discharge";
+  if (d.includes("form") && d.includes("complet")) return "form_submitted";
+  if (d.includes("form")) return "form_submitted";
+  if (d.includes("referral")) return "referral_received";
+  if (d.includes("created") || d.includes("imported") || d.includes("new lead")) return "lead_created";
+  switch (t) {
+    case "call": return "call_received";
+    case "email": return "email_sent";
+    case "sms": return "text";
+    case "form": return "form_submitted";
+    case "note": return "parent_contact";
+    case "system":
+    default: return "intake_followup";
+  }
+}
+
+function buildEvents(lead: Lead): JourneyEvent[] {
+  const events: JourneyEvent[] = [];
+  const safeTs = (s: string | null | undefined) => {
+    if (!s) return Date.now();
+    const t = new Date(s).getTime();
+    return Number.isFinite(t) ? t : Date.now();
+  };
+  const fmt = (s: string | null | undefined) => {
+    const ts = safeTs(s);
+    try { return format(new Date(ts), "MMM d"); } catch { return ""; }
+  };
+
+  events.push({
+    type: "lead_created",
+    when: fmt(lead.createdAt),
+    rawTs: safeTs(lead.createdAt),
+    detail: `Source: ${lead.source}`,
+  });
+
+  for (const ev of lead.timeline ?? []) {
+    events.push({
+      type: timelineToEventType(ev.type, ev.description),
+      when: fmt(ev.timestamp),
+      rawTs: safeTs(ev.timestamp),
+      detail: ev.description,
+      owner: ev.user,
+    });
+  }
+  for (const c of lead.communications ?? []) {
+    const dur = c.durationSec ? ` · ${Math.round(c.durationSec / 60)} min` : "";
+    events.push({
+      type: communicationToEventType(c.type),
+      when: fmt(c.timestamp),
+      rawTs: safeTs(c.timestamp),
+      detail: `${c.subject ? c.subject + " — " : ""}${c.preview}${dur}`,
+      owner: c.user,
+    });
+  }
+
+  return events.sort((a, b) => a.rawTs - b.rawTs);
+}
 
 export default function PatientLifetimeJourney() {
+  const { leads, loading } = useLeads();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [stageFilter, setStageFilter] = useState<string>("all");
+  const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
-  const selected = useMemo(() => MOCK_PATIENTS.find((p) => p.id === selectedId) ?? null, [selectedId]);
-  const filteredPatients = MOCK_PATIENTS.filter((p) =>
-    !search ? true : (p.name + " " + p.state).toLowerCase().includes(search.toLowerCase()),
+  const states = useMemo(() => Array.from(new Set(leads.map((l) => l.state).filter(Boolean))).sort(), [leads]);
+  const sources = useMemo(() => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))).sort(), [leads]);
+  const stages = useMemo(() => Array.from(new Set(leads.map((l) => l.status).filter(Boolean))).sort(), [leads]);
+  const owners = useMemo(() => Array.from(new Set(leads.map((l) => l.owner).filter(Boolean))).sort(), [leads]);
+
+  const filteredLeads = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return leads.filter((l) => {
+      if (stateFilter !== "all" && l.state !== stateFilter) return false;
+      if (sourceFilter !== "all" && l.source !== sourceFilter) return false;
+      if (stageFilter !== "all" && l.status !== stageFilter) return false;
+      if (ownerFilter !== "all" && l.owner !== ownerFilter) return false;
+      if (priorityFilter !== "all" && l.priority !== priorityFilter) return false;
+      if (!q) return true;
+      const hay = `${l.childName} ${l.parentName} ${l.state} ${l.source} ${l.owner}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [leads, search, stateFilter, sourceFilter, stageFilter, ownerFilter, priorityFilter]);
+
+  const selected = useMemo(
+    () => leads.find((l) => l.id === selectedId) ?? null,
+    [leads, selectedId],
   );
+  const events = useMemo(() => (selected ? buildEvents(selected) : []), [selected]);
 
   return (
     <GrowthPageShell
@@ -128,6 +198,14 @@ export default function PatientLifetimeJourney() {
         { label: "Export journey", icon: Download },
       ] : []}
     >
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
+        <FilterSelect value={stateFilter} onChange={setStateFilter} label="State" options={states} />
+        <FilterSelect value={sourceFilter} onChange={setSourceFilter} label="Source" options={sources} />
+        <FilterSelect value={stageFilter} onChange={setStageFilter} label="Stage" options={stages} />
+        <FilterSelect value={ownerFilter} onChange={setOwnerFilter} label="Owner" options={owners} />
+        <FilterSelect value={priorityFilter} onChange={setPriorityFilter} label="Priority" options={["High", "Medium", "Low"]} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_320px] gap-4">
         <aside className="rounded-2xl border border-border/70 bg-card p-3 h-fit">
           <div className="relative">
@@ -140,7 +218,10 @@ export default function PatientLifetimeJourney() {
             />
           </div>
           <div className="mt-3 space-y-1 max-h-[60vh] overflow-auto">
-            {filteredPatients.map((p) => (
+            {loading && leads.length === 0 && (
+              <div className="text-xs text-muted-foreground p-3">Loading leads…</div>
+            )}
+            {filteredLeads.map((p) => (
               <button
                 key={p.id}
                 onClick={() => setSelectedId(p.id)}
@@ -149,19 +230,19 @@ export default function PatientLifetimeJourney() {
                   selectedId === p.id ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/60 border border-transparent",
                 )}
               >
-                <div className="text-sm font-medium text-foreground">{p.name}</div>
-                <div className="text-[11px] text-muted-foreground">{p.stage} · {p.state}</div>
+                <div className="text-sm font-medium text-foreground">{p.childName || p.parentName || "Unnamed lead"}</div>
+                <div className="text-[11px] text-muted-foreground">{p.status} · {p.state || "—"}</div>
               </button>
             ))}
-            {filteredPatients.length === 0 && (
-              <div className="text-xs text-muted-foreground p-3">No matches.</div>
+            {!loading && filteredLeads.length === 0 && (
+              <div className="text-xs text-muted-foreground p-3">No leads match the current filters.</div>
             )}
           </div>
         </aside>
 
         <div className="space-y-4">
           {!selected ? (
-            <EmptyState />
+            <EmptyState hasLeads={leads.length > 0} />
           ) : (
             <>
               <PatientSummary patient={selected} />
@@ -184,33 +265,43 @@ export default function PatientLifetimeJourney() {
               </div>
 
               <Section title="Journey timeline">
-                <ol className="relative border-l border-border/70 ml-3 pl-6 space-y-4">
-                  {selected.events
-                    .filter((e) => filter === "all" || EVENT_META[e.type].filter === filter)
-                    .map((e, i) => {
-                      const meta = EVENT_META[e.type];
-                      const Icon = meta.icon;
-                      return (
-                        <li key={i} className="relative">
-                          <span className="absolute -left-[34px] top-1 h-6 w-6 rounded-full bg-card border border-border/70 grid place-items-center">
-                            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                          </span>
-                          <div className="rounded-xl border border-border/60 bg-card p-3">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="text-sm font-medium text-foreground">{meta.label}</div>
-                              <div className="text-[11px] text-muted-foreground">{e.when}</div>
-                            </div>
-                            {e.detail && <div className="text-xs text-muted-foreground mt-1">{e.detail}</div>}
-                            {e.owner && (
-                              <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-                                <Badge variant="outline" className="text-[10px] py-0">{e.owner}</Badge>
+                {(() => {
+                  const visible = events.filter((e) => filter === "all" || EVENT_META[e.type].filter === filter);
+                  if (visible.length === 0) {
+                    return (
+                      <div className="text-xs text-muted-foreground p-4 rounded-xl border border-dashed border-border/60 bg-card/40">
+                        No activity recorded for this filter yet. Logged calls, emails, forms, and automation events will appear here as they happen.
+                      </div>
+                    );
+                  }
+                  return (
+                    <ol className="relative border-l border-border/70 ml-3 pl-6 space-y-4">
+                      {visible.map((e, i) => {
+                        const meta = EVENT_META[e.type];
+                        const Icon = meta.icon;
+                        return (
+                          <li key={i} className="relative">
+                            <span className="absolute -left-[34px] top-1 h-6 w-6 rounded-full bg-card border border-border/70 grid place-items-center">
+                              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                            </span>
+                            <div className="rounded-xl border border-border/60 bg-card p-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="text-sm font-medium text-foreground">{meta.label}</div>
+                                <div className="text-[11px] text-muted-foreground">{e.when}</div>
                               </div>
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                </ol>
+                              {e.detail && <div className="text-xs text-muted-foreground mt-1">{e.detail}</div>}
+                              {e.owner && (
+                                <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                                  <Badge variant="outline" className="text-[10px] py-0">{e.owner}</Badge>
+                                </div>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  );
+                })()}
               </Section>
             </>
           )}
@@ -222,7 +313,14 @@ export default function PatientLifetimeJourney() {
             <h3 className="text-sm font-semibold text-foreground">Next action</h3>
             {selected ? (
               <>
-                <p className="text-xs text-muted-foreground mt-1">{selected.nextAction}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {selected.nextAction || "No next action set."}
+                </p>
+                {selected.nextTaskDue && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Due {formatDistanceToNow(new Date(selected.nextTaskDue), { addSuffix: true })}
+                  </p>
+                )}
                 <Button size="sm" className="mt-3 w-full">Complete next step</Button>
               </>
             ) : (
@@ -233,7 +331,7 @@ export default function PatientLifetimeJourney() {
             <h3 className="text-sm font-semibold text-foreground">Related records</h3>
             {selected ? (
               <ul className="mt-2 space-y-1.5 text-sm">
-                <RelatedLink label="Client record" to="/clients" />
+                <RelatedLink label="Lead detail" to={`/leads?lead=${selected.id}`} />
                 <RelatedLink label="Authorizations" to="/authorizations" />
                 <RelatedLink label="Referral source" to="/marketing/referral-crm" />
                 <RelatedLink label="Lead benefits cheat sheet" to="/intake/benefits-cheat-sheets" />
@@ -248,32 +346,58 @@ export default function PatientLifetimeJourney() {
   );
 }
 
-function EmptyState() {
+function FilterSelect({
+  value, onChange, label, options,
+}: { value: string; onChange: (v: string) => void; label: string; options: string[] }) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-9 text-xs bg-card">
+        <SelectValue placeholder={label} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All {label.toLowerCase()}s</SelectItem>
+        {options.map((o) => (
+          <SelectItem key={o} value={o}>{o}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function EmptyState({ hasLeads }: { hasLeads: boolean }) {
   return (
     <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-10 text-center">
       <Search className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
-      <h3 className="text-sm font-semibold text-foreground">Search for a lead or patient</h3>
+      <h3 className="text-sm font-semibold text-foreground">
+        {hasLeads ? "Select a lead to view their journey" : "No leads yet"}
+      </h3>
       <p className="text-xs text-muted-foreground mt-2 max-w-md mx-auto">
-        Search for a lead or patient to view the complete Blossom journey. As Blossom OS connects
-        more workflows, this timeline will become the single source of truth for every interaction
-        from first touch through ongoing care.
+        {hasLeads
+          ? "Pick any lead from the list to see every call, email, form, intake step, authorization movement, and clinical milestone in one chronological timeline."
+          : "When new leads are captured, they'll appear here with a complete chronological timeline of every interaction from first touch through ongoing care."}
       </p>
     </div>
   );
 }
 
-function PatientSummary({ patient }: { patient: MockPatient }) {
+function PatientSummary({ patient }: { patient: Lead }) {
+  const displayName = patient.childName || patient.parentName || "Unnamed lead";
   return (
     <div className="rounded-2xl border border-border/70 bg-card p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-xs text-muted-foreground">{patient.stage}</div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">{patient.name}</h2>
+          <div className="text-xs text-muted-foreground">{patient.status}</div>
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">{displayName}</h2>
           <div className="text-xs text-muted-foreground mt-1">
-            {patient.state} · Source: {patient.source} · Owner: {patient.owner}
+            {patient.state || "—"} · Source: {patient.source} · Owner: {patient.owner || "Unassigned"}
           </div>
+          {patient.parentName && patient.childName && (
+            <div className="text-[11px] text-muted-foreground mt-1">
+              Parent: {patient.parentName}{patient.phone ? ` · ${patient.phone}` : ""}
+            </div>
+          )}
         </div>
-        <Badge variant="outline" className="text-[10px] py-0">{patient.status}</Badge>
+        <Badge variant="outline" className="text-[10px] py-0">{patient.priority}</Badge>
       </div>
     </div>
   );
