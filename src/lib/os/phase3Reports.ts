@@ -23,7 +23,7 @@ export interface Phase3Report {
   section: Phase3Section;
   /** Roles that should see this card. "all" = every role. */
   visibleTo: OSRole[] | "all";
-  /** Live route. When omitted, opens the Coming Soon roadmap. */
+  /** Live route. When omitted, falls back to /reports?report=<id>. */
   route?: string;
   canExport?: boolean;
 }
