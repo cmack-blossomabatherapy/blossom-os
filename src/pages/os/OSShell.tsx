@@ -432,15 +432,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             )}
           </nav>
 
-          {!collapsed && showOldVersion && (
-            <button
-              onClick={() => navigate("/dashboard/legacy")}
-              className="mx-3 mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-[11.5px] font-medium text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
-            >
-              <History className="h-3.5 w-3.5" /> Old Version
-            </button>
-          )}
-
           <button
             onClick={() => setCollapsed((c) => !c)}
             className="mx-3 mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-[11.5px] font-medium text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
