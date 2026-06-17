@@ -1,36 +1,21 @@
-import { OSShell } from "../OSShell";
-import { Sparkles, type LucideIcon, ChevronRight } from "lucide-react";
-
-interface FuturePreview {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-}
-
-interface Props {
-  eyebrow?: string;
-  title: string;
-  description: string;
-  icon?: LucideIcon;
-  features?: FuturePreview[];
-  aiPreview?: string[];
-}
-
 /**
- * Premium Case Manager "Coming Soon" page.
- * Used across every Case Manager surface while we scaffold the role.
- * Calm, supportive, warm — mobile-first, role-aware.
+ * Retired in Sprint 04. Case Manager surfaces are now real workspaces.
+ * Kept as an inert stub so any stale import resolves to nothing visible.
+ * Do not import this in active routes.
  */
-export default function CaseManagerComingSoon({
-  eyebrow = "Case Manager · Preview",
-  title,
-  description,
-  icon: Icon = Sparkles,
-  features = [],
-  aiPreview,
-}: Props) {
-  return (
-    <OSShell>
+export default function CaseManagerComingSoon(_props: Record<string, unknown> = {}) {
+  return null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _legacy = () => {
+  // legacy markup intentionally removed
+  return null;
+};
+
+// (Original UI removed.)
+const _unused = (
+    <div>
       {/* HERO */}
       <header className="os-rise relative overflow-hidden rounded-3xl border border-white/60 bg-gradient-to-br from-[hsl(330_100%_98%)] via-white to-[hsl(265_100%_98%)] p-6 md:p-8 shadow-[0_18px_50px_-30px_hsl(330_40%_50%/0.25)]">
         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[hsl(330_100%_92%)]/60 blur-3xl" />
