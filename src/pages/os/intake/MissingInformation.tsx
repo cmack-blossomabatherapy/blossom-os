@@ -1,30 +1,24 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ArrowRight, Plus, HeartHandshake } from "lucide-react";
+import { AlertCircle, ArrowRight, Plus } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
+import { getMissingInfoFlags } from "@/lib/intake/intakeWorkflow";
 
 export default function MissingInformation() {
-  const { leads, loading, updateLead, addTag } = useLeads();
+  const { leads, loading } = useLeads();
 
   const blocked = useMemo(
     () =>
       leads
-        .filter(
-          (l) =>
-            l.status === "Missing Information" ||
-            l.formReviewStatus === "Missing Info" ||
-            l.formReviewStatus === "Missing Information" ||
-            !!l.intake?.dxNeeded ||
-            !l.insurance ||
-            !l.phone ||
-            !l.email ||
-            (l.tags ?? []).some((t) => /missing|blocker/i.test(t)) ||
-            /missing|blocker/i.test(l.notes ?? ""),
-        )
+        .filter((l) => {
+          if (l.status === "Missing Information") return true;
+          if (l.formReviewStatus === "Missing Info" || l.formReviewStatus === "Missing Information") return true;
+          const flags = getMissingInfoFlags(l);
+          return flags.any || (l.tags ?? []).some((t) => /missing|blocker/i.test(t));
+        })
         .sort((a, b) => (a.nextTaskDue ?? "").localeCompare(b.nextTaskDue ?? "")),
     [leads],
   );
@@ -65,23 +59,28 @@ export default function MissingInformation() {
                   )}
                   {lead.nextTaskDue && <div>Due: {lead.nextTaskDue}</div>}
                 </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  <Button asChild size="sm" variant="outline"><Link to={`/leads/${lead.id}`}>Open Lead</Link></Button>
-                  <Button asChild size="sm" variant="ghost"><Link to={`/leads/${lead.id}#log`}>Log Contact</Link></Button>
-                  <Button asChild size="sm" variant="ghost">
-                    <Link to={`/patient-journey?lead=${lead.id}`}>
-                      <HeartHandshake className="mr-1 h-3 w-3" /> Open Journey
-                    </Link>
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => {
-                    updateLead(lead.id, { nextAction: "Awaiting missing info from family" });
-                    addTag([lead.id], "Info Requested");
-                    toast.success("Marked as requested");
-                  }}>Mark requested</Button>
-                  <Button size="sm" variant="ghost" onClick={() => {
-                    const note = window.prompt("Add note", lead.notes ?? "");
-                    if (note != null) { updateLead(lead.id, { notes: note }); toast.success("Note added"); }
-                  }}>Add note</Button>
+                {(() => {
+                  const flags = getMissingInfoFlags(lead);
+                  const list = [
+                    flags.phone && "phone",
+                    flags.email && "email",
+                    flags.insurance && "insurance",
+                    flags.diagnosis && "DX",
+                    flags.dob && "DOB",
+                    flags.referralSource && "referral",
+                    flags.documents && "docs",
+                    flags.owner && "owner",
+                  ].filter(Boolean) as string[];
+                  return list.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {list.map((f) => (
+                        <Badge key={f} variant="secondary" className="text-[10px] py-0">Missing: {f}</Badge>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
+                <div className="mt-3">
+                  <LeadActionPanel lead={lead} compact sourcePage="missing-information" />
                 </div>
               </div>
             ))}
