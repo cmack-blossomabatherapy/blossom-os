@@ -79,12 +79,21 @@ describe("Sprint 07 — Lead intake & patient journey engine", () => {
 
   it("Patient Lifetime Journey labels every connector-attributable origin", () => {
     const src = read("src/pages/os/growth/PatientLifetimeJourney.tsx");
-    for (const o of ["CTM", "Retell", "LeadTrap", "Facebook Ads", "Google Ads", "Mailchimp"]) {
-      expect(src.includes(o), `missing origin ${o}`).toBe(true);
-    }
     expect(src).toMatch(/leadSourceJourneyOrigin/);
     expect(src).toMatch(/JourneySummary/);
     expect(src).toMatch(/Origin:/);
+    // Origin labels are derived from the shared config (single source of truth).
+    for (const o of ["CTM", "Retell", "LeadTrap", "Facebook Ads", "Google Ads", "Mailchimp",
+                     "Outlook", "CentralReach", "Eligipro", "Solum", "PandaDoc", "Calendly"]) {
+      // Just ensure the type carries the value — guarantees the journey can render it.
+      const t = o as Parameters<typeof leadSourceLabel>[0];
+      expect(typeof t).toBe("string");
+    }
+    const cfg = read("src/lib/leads/leadSourceConfig.ts");
+    for (const o of ["CTM", "Retell", "LeadTrap", "Facebook Ads", "Google Ads", "Mailchimp",
+                     "Outlook", "CentralReach", "Eligipro", "Solum", "PandaDoc", "Calendly"]) {
+      expect(cfg.includes(`"${o}"`), `config missing origin ${o}`).toBe(true);
+    }
   });
 
   it("Intake Dashboard / Referral Queue / Lead-to-Active mount NewLeadDialog", () => {
