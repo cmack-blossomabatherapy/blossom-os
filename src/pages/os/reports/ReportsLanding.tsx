@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  BarChart3, Search, Star, ArrowUpRight, Download, BookOpen,
+  BarChart3, Search, Star, ArrowUpRight, Download,
   Sparkles, Filter, LayoutGrid, Plug, Upload, MessageSquarePlus,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
