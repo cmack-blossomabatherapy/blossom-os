@@ -10,8 +10,9 @@ import type { ReactNode } from "react";
 const STATUS_TONE = {
   live: "bg-emerald-50 text-emerald-700 border-emerald-200",
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  coming_soon: "bg-amber-50 text-amber-800 border-amber-200",
+  setup_needed: "bg-amber-50 text-amber-800 border-amber-200",
   needs_data: "bg-sky-50 text-sky-700 border-sky-200",
+  ready: "bg-sky-50 text-sky-700 border-sky-200",
   paused: "bg-zinc-100 text-zinc-700 border-zinc-200",
 } as const;
 
@@ -20,8 +21,9 @@ export type GrowthStatus = keyof typeof STATUS_TONE;
 const STATUS_LABEL: Record<GrowthStatus, string> = {
   live: "Live",
   active: "Active",
-  coming_soon: "Coming Soon",
+  setup_needed: "Setup needed",
   needs_data: "Needs Data",
+  ready: "Ready for data",
   paused: "Paused",
 };
 
@@ -120,13 +122,16 @@ export function Section({
   );
 }
 
-export function ComingSoonNotice({ message }: { message: string }) {
+export function ReadyForDataNotice({ message }: { message: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-6 text-sm text-muted-foreground">
       {message}
     </div>
   );
 }
+
+/** @deprecated Use ReadyForDataNotice — kept for backwards compatibility. */
+export const ComingSoonNotice = ReadyForDataNotice;
 
 export function LinkCard({
   title, description, to, status, icon: Icon,
