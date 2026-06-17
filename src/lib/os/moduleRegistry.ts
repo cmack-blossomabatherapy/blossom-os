@@ -1,9 +1,9 @@
 /**
- * Module Registry - Blossom OS planned modules.
+ * Module Readiness Registry — Blossom OS planned modules.
  *
- * Powers the Coming Soon wireframe experience. Every module here renders a
- * structured operational blueprint (KPIs, queue, detail, activity, escalation,
- * reports) instead of a generic placeholder.
+ * Describes the operational blueprint (KPIs, queue, detail, activity,
+ * escalation, reports) for modules still being wired to live data.
+ * Not used by any active product route in Sprint 03+.
  */
 
 export interface ModuleKpi {
@@ -53,7 +53,7 @@ export interface ModuleDefinition {
   description: string;
   department: string;
   ownerRole: string;
-  status?: "coming_soon" | "needs_data";
+  status?: "setup_needed" | "needs_data" | "planned";
   purpose: string;
   relatedModules?: string[];
   primaryActions: string[];
@@ -74,7 +74,7 @@ const generic = (overrides: Partial<ModuleDefinition>): ModuleDefinition => ({
   description: overrides.description || "",
   department: overrides.department || "Operations",
   ownerRole: overrides.ownerRole || "Department Owner",
-  status: "coming_soon",
+  status: "planned",
   purpose: overrides.purpose || "",
   relatedModules: overrides.relatedModules || [],
   primaryActions: overrides.primaryActions || ["Create New", "Assign Owner", "Add Note", "Escalate"],
