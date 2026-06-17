@@ -5,7 +5,7 @@ import {
   Plus, CalendarPlus, ClipboardList, Download, CheckCircle2, Search,
   type LucideIcon,
 } from "lucide-react";
-import { GrowthPageShell, Section, StatCard } from "@/components/os/growth/GrowthPageShell";
+import { GrowthPageShell, StatCard } from "@/components/os/growth/GrowthPageShell";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
