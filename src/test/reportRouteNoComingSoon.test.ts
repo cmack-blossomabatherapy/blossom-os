@@ -19,8 +19,7 @@ describe("phase3Reports.reportRoute", () => {
 
   it("has no remaining 'coming_soon' statuses in the catalog", () => {
     for (const report of PHASE3_REPORTS) {
-      // @ts-expect-error — coming_soon is no longer a valid Phase3Status
-      expect(report.status).not.toBe("coming_soon");
+      expect(report.status as string).not.toBe("coming_soon");
     }
   });
 });
