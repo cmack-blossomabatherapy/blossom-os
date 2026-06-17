@@ -170,6 +170,16 @@ function buildSectionsForRole(role: string): NavSection[] {
     (ROLE_MENUS as Record<string, typeof DEFAULT_ROLE_MENU>)[role] ??
     DEFAULT_ROLE_MENU;
 
+  // Non–super-admin roles: only Training Academy, Resource Library, and
+  // Reports are live. Everything else is shown as "Coming Soon" and is not
+  // clickable.
+  const ALWAYS_LIVE = new Set<string>([
+    "/academy",
+    "/training",
+    "/resource-library",
+    "/reports",
+  ]);
+
   return menu.sections.map((s) => ({
     id: s.id,
     label: s.label,
@@ -179,6 +189,7 @@ function buildSectionsForRole(role: string): NavSection[] {
       label: i.label,
       icon: i.icon,
       end: i.path === "/dashboard" || i.path === "/",
+      disabled: !ALWAYS_LIVE.has(i.path),
     })),
   }));
 }
@@ -295,7 +306,41 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   ];
 
   const renderNavItem = (item: NavEntry, onClick?: () => void) => {
-    // All items render as live links now — no "Soon" badges, no disabled state.
+    // Non–super-admin roles only have Training Academy, Resource Library, and
+    // Reports as live links. All other items render as inert "Coming Soon"
+    // entries — visible in the menu but not clickable.
+    if (item.disabled) {
+      const inert = (
+        <div
+          key={`${item.to}-${item.label}-disabled`}
+          aria-disabled="true"
+          title="Coming soon"
+          className={cn(
+            "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-foreground/45 cursor-not-allowed select-none",
+            collapsed && "h-10 w-10 justify-center px-0 ring-1 ring-border/50 bg-card/60",
+          )}
+        >
+          <item.icon className="h-[16px] w-[16px] shrink-0 text-current" strokeWidth={collapsed ? 2.35 : 2} />
+          {!collapsed && (
+            <>
+              <span className="truncate">{item.label}</span>
+              <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                Soon
+              </span>
+            </>
+          )}
+        </div>
+      );
+      if (!collapsed) return inert;
+      return (
+        <Tooltip key={`${item.to}-${item.label}-disabled`} delayDuration={120}>
+          <TooltipTrigger asChild>{inert}</TooltipTrigger>
+          <TooltipContent side="right" className="text-[12px] font-medium">
+            {item.label} · Coming soon
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
     const link = (
       <NavLink
         key={`${item.to}-${item.label}`}
@@ -508,12 +553,18 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                               <button
                                 key={`${section.id}-${item.to}-${item.label}`}
                                 type="button"
+                                disabled={item.disabled}
+                                aria-disabled={item.disabled || undefined}
                                 onClick={() => {
+                                  if (item.disabled) return;
                                   navigate(item.to);
                                   setHeaderSearchOpen(false);
                                   setHeaderSearch("");
                                 }}
-                                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[13px] text-foreground hover:bg-muted/60"
+                                className={cn(
+                                  "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[13px] text-foreground hover:bg-muted/60",
+                                  item.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
+                                )}
                               >
                                 <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                                 <span className="truncate">{item.label}</span>
@@ -659,7 +710,9 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                     <CommandItem
                       key={`${section.id}-${item.to}-${item.label}`}
                       value={`${section.label} ${item.label} ${item.to}`}
+                      disabled={item.disabled}
                       onSelect={() => {
+                        if (item.disabled) return;
                         setPaletteOpen(false);
                         navigate(item.to);
                       }}
