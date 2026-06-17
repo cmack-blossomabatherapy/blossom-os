@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, BookOpen, Clock, FileText, ClipboardCheck, Video,
   CheckCircle2, GraduationCap,
@@ -12,6 +12,13 @@ const STUB_COPY =
 /** Detail page shown for every training path. RBT shows experience-level buckets. */
 export default function TrainingPathDetail() {
   const { slug = "" } = useParams();
+  // The State Director academy slug is a stub. The real 5-week / 25-day
+  // State Director journey lives at /training (SDLearnerHome). Always send
+  // visitors of this slug there so the live program is never hidden behind
+  // the generic stub card.
+  if (slug === "state-director") {
+    return <Navigate to="/training" replace />;
+  }
   const path = getTrainingPath(slug);
 
   if (!path) {
