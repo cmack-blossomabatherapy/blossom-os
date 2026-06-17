@@ -404,6 +404,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     setLeads((prev) => prev.map((l) => {
       if (!ids.includes(l.id)) return l;
       const event = makeTimelineEvent(`Stage moved to ${status}`);
+      logLeadActivity(l.id, "note", `Stage moved from ${l.status} → ${status}`);
       return {
         ...l,
         status,
@@ -440,16 +441,22 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const assignOwner = useCallback((ids: string[], owner: string) => {
-    setLeads((prev) => prev.map((l) => (ids.includes(l.id) ? {
-      ...l, owner,
-      automationLog: [...l.automationLog, `Reassigned to ${owner}`],
-    } : l)));
+    setLeads((prev) => prev.map((l) => {
+      if (!ids.includes(l.id)) return l;
+      logLeadActivity(l.id, "note", `Owner reassigned: ${l.owner || "Unassigned"} → ${owner}`);
+      return { ...l, owner, automationLog: [...l.automationLog, `Reassigned to ${owner}`] };
+    }));
   }, []);
 
   const addTag = useCallback((ids: string[], tag: string) => {
-    setLeads((prev) => prev.map((l) => (ids.includes(l.id) ? {
-      ...l, tags: Array.from(new Set([...(l.tags ?? []), tag])),
-    } : l)));
+    setLeads((prev) => prev.map((l) => {
+      if (!ids.includes(l.id)) return l;
+      const next = Array.from(new Set([...(l.tags ?? []), tag]));
+      if (next.length !== (l.tags ?? []).length) {
+        logLeadActivity(l.id, "note", `Tag added: ${tag}`);
+      }
+      return { ...l, tags: next };
+    }));
   }, []);
 
   const deleteLeads = useCallback((ids: string[]) => {
