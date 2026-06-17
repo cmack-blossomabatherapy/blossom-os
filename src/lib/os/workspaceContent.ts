@@ -111,8 +111,8 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
       { label: "Bloom Growth Playbook",  path: "/resources?cat=bloom" },
     ],
     related: [
-      { label: "Operations Workspace", path: "/ws/operations" },
-      { label: "State Command Center", path: "/ws/state-command" },
+      { label: "Operations Workspace", path: "/operations/command-center" },
+      { label: "State Command Center", path: "/state-director" },
     ],
   },
 
@@ -187,7 +187,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
       { label: "Workflow Risks",    path: "/reports?view=workflow-risks" },
     ],
     resources: [{ label: "Operations SOPs", path: "/resources?cat=ops" }],
-    related:   [{ label: "Executive Workspace", path: "/ws/executive" }],
+    related:   [{ label: "Executive Workspace", path: "/executive" }],
   },
 
   // ---------- MARKETING ----------
@@ -248,7 +248,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
       { label: "State Growth",    path: "/reports?view=state-growth" },
     ],
     resources: [{ label: "Brand & Messaging", path: "/resources?cat=brand" }],
-    related:   [{ label: "Intake Workspace", path: "/ws/intake" }],
+    related:   [{ label: "Intake Workspace", path: "/intake/dashboard" }],
   },
 
   // ---------- INTAKE ----------
@@ -315,7 +315,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     ],
     reports: [{ label: "Intake Funnel", path: "/reports?view=intake-funnel" }],
     resources: [{ label: "Intake Scripts", path: "/resources?cat=intake" }],
-    related: [{ label: "Authorizations", path: "/ws/authorizations" }, { label: "Finance / Benefits", path: "/ws/finance" }],
+    related: [{ label: "Authorizations", path: "/authorizations" }, { label: "Finance / Benefits", path: "/reports" }],
   },
 
   // ---------- AUTHORIZATIONS ----------
@@ -381,7 +381,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     ],
     reports: [{ label: "Auth Utilization", path: "/reports?view=auth-utilization" }, { label: "Denial Trends", path: "/reports?view=denials" }],
     resources: [{ label: "Payer Playbooks", path: "/resources?cat=payers" }],
-    related: [{ label: "QA / Compliance", path: "/ws/qa" }, { label: "Billing / Credentialing", path: "/ws/billing-credentialing" }],
+    related: [{ label: "QA / Compliance", path: "/qa" }, { label: "Billing / Credentialing", path: "/reports" }],
   },
 
   // ---------- QA ----------
@@ -431,7 +431,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     ai: [{ id: "qai1", text: "Which BCBAs have the most return-for-revision rate?" }],
     reports: [{ label: "QA Throughput", path: "/reports?view=qa-throughput" }],
     resources: [{ label: "Clinical SOPs", path: "/resources?cat=clinical" }],
-    related: [{ label: "Authorizations", path: "/ws/authorizations" }],
+    related: [{ label: "Authorizations", path: "/authorizations" }],
   },
 
   // ---------- SCHEDULING ----------
@@ -483,7 +483,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     related: [
       { label: "RBT Readiness Board", path: "/training/rbt-readiness" },
       { label: "RBT Academy Admin", path: "/training/rbt-admin" },
-      { label: "Recruiting", path: "/ws/recruiting" },
+      { label: "Recruiting", path: "/recruiting" },
     ],
   },
 
@@ -536,7 +536,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     ai: [{ id: "rai1", text: "Which sources convert best for BCBAs?" }],
     reports: [{ label: "Pipeline Health", path: "/reports?view=recruiting" }],
     resources: [{ label: "Interview Guides", path: "/resources?cat=interviews" }],
-    related: [{ label: "HR / Payroll", path: "/ws/hr" }, { label: "Scheduling", path: "/ws/scheduling" }],
+    related: [{ label: "HR / Payroll", path: "/hr" }, { label: "Scheduling", path: "/scheduling" }],
   },
 
   // ---------- HR ----------
@@ -586,7 +586,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     ai: [{ id: "hai1", text: "Who has certifications expiring in 30 days?" }],
     reports: [{ label: "Payroll Variances", path: "/reports?view=payroll" }, { label: "Training Compliance", path: "/reports?view=training" }],
     resources: [{ label: "Employee Handbook", path: "/resources?cat=hr" }],
-    related: [{ label: "Recruiting", path: "/ws/recruiting" }],
+    related: [{ label: "Recruiting", path: "/recruiting" }],
   },
 
   // ---------- BILLING / CREDENTIALING ----------
@@ -638,7 +638,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     ai: [{ id: "bai1", text: "What's driving Cigna denials this month?" }],
     reports: [{ label: "RCM Scorecard", path: "/reports?view=rcm" }, { label: "AR Aging", path: "/reports?view=ar" }],
     resources: [{ label: "Coding Playbooks", path: "/resources?cat=coding" }],
-    related: [{ label: "Authorizations", path: "/ws/authorizations" }, { label: "Finance / Benefits", path: "/ws/finance" }],
+    related: [{ label: "Authorizations", path: "/authorizations" }, { label: "Finance / Benefits", path: "/reports" }],
   },
 
   // ---------- FINANCE / BENEFITS ----------
@@ -687,7 +687,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     ai: [{ id: "fai1", text: "Summarize benefits across pending VOBs." }],
     reports: [{ label: "VOB Throughput", path: "/reports?view=vob" }],
     resources: [{ label: "Benefits References", path: "/resources?cat=benefits" }],
-    related: [{ label: "Billing / Credentialing", path: "/ws/billing-credentialing" }, { label: "Intake", path: "/ws/intake" }],
+    related: [{ label: "Billing / Credentialing", path: "/reports" }, { label: "Intake", path: "/intake/dashboard" }],
   },
 
   // ---------- STATE COMMAND ----------
@@ -736,7 +736,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     ai: [{ id: "stai1", text: "What's driving GA scorecard regression?" }],
     reports: [{ label: "State Scorecard", path: "/reports?view=state-scorecard" }],
     resources: [{ label: "State Playbook", path: "/resources?cat=state" }],
-    related: [{ label: "Operations", path: "/ws/operations" }, { label: "Executive", path: "/ws/executive" }],
+    related: [{ label: "Operations", path: "/operations/command-center" }, { label: "Executive", path: "/executive" }],
   },
 };
 
