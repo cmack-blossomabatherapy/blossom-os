@@ -65,17 +65,15 @@ import {
 import { cn } from "@/lib/utils";
 import {
   BLOSSOM_INTEGRATIONS,
-  getIntegration as getRegistryIntegration,
 } from "@/lib/os/integrations/integrationRegistry";
+import type { BlossomIntegration } from "@/lib/os/integrations/types";
 
 /**
- * Shared integration registry — single source of truth for the systems
- * Blossom ABA Therapy actually runs against. The catalog below renders
- * the operational/UX layer; ownership, data flows, and dependent modules
- * live in the registry.
+ * Admin > Integrations renders directly from the shared registry
+ * (`BLOSSOM_INTEGRATIONS`) so a new integration added there appears here
+ * automatically. UI-only concerns (icon, accent color) are layered on
+ * via small overlay tables below.
  */
-void BLOSSOM_INTEGRATIONS;
-void getRegistryIntegration;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types & mock data
@@ -112,6 +110,14 @@ type Integration = {
   icon: typeof Plug;
   accent: string; // tailwind text color class
   critical?: boolean;
+  ownerDepartment?: string;
+  criticality?: BlossomIntegration["criticality"];
+  methods?: BlossomIntegration["methods"];
+  inboundData?: string[];
+  outboundData?: string[];
+  dependentModules?: string[];
+  sourceOfTruthFor?: string[];
+  notes?: string;
 };
 
 const CATEGORIES: { id: IntegrationCategory; label: string; icon: typeof Plug }[] = [
@@ -123,497 +129,130 @@ const CATEGORIES: { id: IntegrationCategory; label: string; icon: typeof Plug }[
   { id: "ai", label: "AI & Automation", icon: Sparkles },
 ];
 
-const INTEGRATIONS: Integration[] = [
-  // CORE
-  {
-    id: "centralreach",
-    name: "CentralReach",
-    category: "core",
-    description: "Clients, scheduling, billing, SOAP notes, and authorizations.",
-    purpose: ["Clients", "Scheduling", "Billing", "SOAP Notes", "Auths"],
-    status: "connected",
-    account: "blossomaba.centralreach.com",
-    lastSync: "2 min ago",
-    enabled: true,
-    health: "healthy",
-    icon: HeartPulse,
-    accent: "text-rose-500",
-    critical: true,
-  },
-  {
-    id: "blossom-db",
-    name: "Blossom Database",
-    category: "core",
-    description: "The operational brain — users, workflows, automations, audit logs.",
-    purpose: ["Database", "Realtime", "Auth", "Storage"],
-    status: "connected",
-    account: "blossom-os.production",
-    lastSync: "Live",
-    enabled: true,
-    health: "healthy",
-    icon: Database,
-    accent: "text-primary",
-    critical: true,
-  },
-  {
-    id: "ms365",
-    name: "Microsoft Outlook / Microsoft 365",
-    category: "core",
-    description: "Teams, Outlook, SharePoint, and calendars.",
-    purpose: ["Email", "Calendar", "Teams", "SSO"],
-    status: "connected",
-    account: "blossomaba.com",
-    lastSync: "12 min ago",
-    enabled: true,
-    health: "healthy",
-    icon: Cloud,
-    accent: "text-sky-500",
-  },
-  {
-    id: "google-workspace",
-    name: "Google Workspace",
-    category: "core",
-    description: "Gmail, Calendar, Drive, and Meet.",
-    purpose: ["Mail", "Calendar", "Drive", "Meet"],
-    status: "reauth",
-    account: "ops@blossomaba.com",
-    lastSync: "6 hrs ago",
-    enabled: true,
-    health: "warning",
-    icon: Mail,
-    accent: "text-emerald-500",
-  },
+// ── Visual overlay (icon + accent) by registry id ──
+const ICON_BY_ID: Record<string, typeof Plug> = {
+  centralreach: HeartPulse,
+  viventium: Workflow,
+  apploi: Users,
+  ms365: Cloud,
+  jivetel: Phone,
+  ctm: Phone,
+  retell: Bot,
+  leadtrap: Globe,
+  mailchimp: Mail,
+  "google-ads": TrendingUp,
+  "meta-ads": TrendingUp,
+  solum: ShieldCheck,
+  eligipro: CheckCircle2,
+  pandadoc: FileText,
+  calendly: Calendar,
+  fathom: Sparkles,
+  bloomgrowth: Gauge,
+};
 
-  // INTAKE
-  {
-    id: "solum",
-    name: "Solom / Solum",
-    category: "intake",
-    description: "Automated verification of benefits and eligibility.",
-    purpose: ["VOBs", "Eligibility", "Attachments"],
-    status: "syncing",
-    account: "blossom-intake",
-    lastSync: "Just now",
-    enabled: true,
-    health: "healthy",
-    icon: ShieldCheck,
-    accent: "text-violet-500",
-  },
-  {
-    id: "eligipro",
-    name: "Eligipro",
-    category: "intake",
-    description: "Real-time insurance eligibility validation.",
-    purpose: ["Eligibility", "Plan details"],
-    status: "connected",
-    account: "blossom-aba",
-    lastSync: "47 min ago",
-    enabled: true,
-    health: "healthy",
-    icon: CheckCircle2,
-    accent: "text-emerald-500",
-  },
-  {
-    id: "pandadoc",
-    name: "PandaDoc",
-    category: "intake",
-    description: "Intake forms, consents, and e-signatures.",
-    purpose: ["Forms", "Signatures", "Templates"],
-    status: "error",
-    account: "intake@blossomaba.com",
-    lastSync: "2 hrs ago",
-    enabled: true,
-    health: "critical",
-    icon: FileText,
-    accent: "text-amber-500",
-  },
-  {
-    id: "availity",
-    name: "Availity",
-    category: "intake",
-    description: "Clearinghouse for eligibility and claims.",
-    purpose: ["Clearinghouse", "Claims"],
-    status: "coming_soon",
-    enabled: false,
-    health: "idle",
-    icon: Globe,
-    accent: "text-muted-foreground",
-  },
+const ACCENT_BY_ID: Record<string, string> = {
+  centralreach: "text-rose-500",
+  viventium: "text-teal-500",
+  apploi: "text-indigo-500",
+  ms365: "text-sky-500",
+  jivetel: "text-indigo-500",
+  ctm: "text-rose-500",
+  retell: "text-violet-500",
+  leadtrap: "text-sky-500",
+  mailchimp: "text-amber-500",
+  "google-ads": "text-amber-500",
+  "meta-ads": "text-blue-500",
+  solum: "text-violet-500",
+  eligipro: "text-emerald-500",
+  pandadoc: "text-amber-500",
+  calendly: "text-emerald-500",
+  fathom: "text-fuchsia-500",
+  bloomgrowth: "text-teal-500",
+};
 
-  // HR
-  {
-    id: "apploi",
-    name: "Apploi",
-    category: "hr",
-    description: "Applicant tracking and recruiting.",
-    purpose: ["ATS", "Interviews", "Offers"],
-    status: "connected",
-    account: "blossom-careers",
-    lastSync: "21 min ago",
-    enabled: true,
-    health: "healthy",
-    icon: Users,
-    accent: "text-indigo-500",
-  },
-  {
-    id: "viventium",
-    name: "Viventium",
-    category: "hr",
-    description: "Payroll, HR onboarding, and tax forms.",
-    purpose: ["Payroll", "Onboarding", "Tax forms"],
-    status: "connected",
-    account: "blossomaba",
-    lastSync: "1 hr ago",
-    enabled: true,
-    health: "healthy",
-    icon: Workflow,
-    accent: "text-teal-500",
-    critical: true,
-  },
-  {
-    id: "checkr",
-    name: "Checkr",
-    category: "hr",
-    description: "Background checks for new hires.",
-    purpose: ["Background checks"],
-    status: "connected",
-    account: "blossom-checkr",
-    lastSync: "3 hrs ago",
-    enabled: true,
-    health: "healthy",
-    icon: ShieldCheck,
-    accent: "text-emerald-500",
-  },
-  {
-    id: "sterling",
-    name: "Sterling",
-    category: "hr",
-    description: "Secondary background check provider.",
-    purpose: ["Background checks"],
-    status: "disconnected",
-    enabled: false,
-    health: "idle",
-    icon: ShieldCheck,
-    accent: "text-muted-foreground",
-  },
-  {
-    id: "stellarcheck",
-    name: "StellarCheck",
-    category: "hr",
-    description: "Clinical credential verification.",
-    purpose: ["Credentials"],
-    status: "connected",
-    account: "blossom-stellar",
-    lastSync: "Yesterday",
-    enabled: true,
-    health: "healthy",
-    icon: ShieldCheck,
-    accent: "text-emerald-500",
-  },
-  {
-    id: "bacb",
-    name: "BACB Verification",
-    category: "hr",
-    description: "License validation and expiration monitoring.",
-    purpose: ["License sync", "Expirations"],
-    status: "delayed",
-    account: "Public API",
-    lastSync: "8 hrs ago",
-    enabled: true,
-    health: "warning",
-    icon: ShieldCheck,
-    accent: "text-amber-500",
-  },
+function mapRegistryCategory(c: BlossomIntegration["category"]): IntegrationCategory {
+  switch (c) {
+    case "clinical_emr":
+      return "core";
+    case "hris":
+    case "recruiting":
+      return "hr";
+    case "marketing":
+    case "lead_capture":
+      return "marketing";
+    case "eligibility":
+    case "documents":
+      return "intake";
+    case "communications":
+      return "comms";
+    case "meetings":
+      return c === "meetings" ? "comms" : "comms";
+    case "ai_voice":
+      return "ai";
+    default:
+      return "core";
+  }
+}
 
-  // MARKETING
-  {
-    id: "meta-ads",
-    name: "Facebook Ads / Meta Ads",
-    category: "marketing",
-    description: "Facebook & Instagram ad attribution.",
-    purpose: ["Lead attribution", "Campaign analytics"],
-    status: "connected",
-    account: "Blossom ABA Ads",
-    lastSync: "35 min ago",
-    enabled: true,
-    health: "healthy",
-    icon: TrendingUp,
-    accent: "text-blue-500",
-  },
-  {
-    id: "google-ads",
-    name: "Google Ads",
-    category: "marketing",
-    description: "PPC tracking and conversions.",
-    purpose: ["PPC", "Conversions"],
-    status: "connected",
-    account: "blossom-aba-ads",
-    lastSync: "1 hr ago",
-    enabled: true,
-    health: "healthy",
-    icon: TrendingUp,
-    accent: "text-amber-500",
-  },
-  {
-    id: "ga4",
-    name: "Google Analytics",
-    category: "marketing",
-    description: "Web behavior and funnel analytics.",
-    purpose: ["Funnels", "Attribution"],
-    status: "connected",
-    account: "GA4 — Blossom",
-    lastSync: "8 min ago",
-    enabled: true,
-    health: "healthy",
-    icon: LineChart,
-    accent: "text-rose-500",
-  },
-  {
-    id: "gsc",
-    name: "Google Search Console",
-    category: "marketing",
-    description: "SEO performance and indexing.",
-    purpose: ["SEO", "Indexing"],
-    status: "connected",
-    account: "blossomaba.com",
-    lastSync: "Today",
-    enabled: true,
-    health: "healthy",
-    icon: Search,
-    accent: "text-blue-400",
-  },
-  {
-    id: "ctm",
-    name: "CTM / CallTrackingMetrics",
-    category: "marketing",
-    description: "Call attribution, recordings, and AI summaries.",
-    purpose: ["Calls", "Attribution"],
-    status: "connected",
-    account: "blossom-ctm",
-    lastSync: "3 min ago",
-    enabled: true,
-    health: "healthy",
-    icon: Phone,
-    accent: "text-rose-500",
-  },
+function mapRegistryStatus(s: BlossomIntegration["status"]): IntegrationStatus {
+  switch (s) {
+    case "connected":
+      return "connected";
+    case "configured":
+      return "connected";
+    case "needs_attention":
+      return "error";
+    case "error":
+      return "error";
+    case "maybe":
+    case "planned":
+      return "coming_soon";
+    case "disabled":
+      return "disconnected";
+    default:
+      return "disconnected";
+  }
+}
 
-  // COMMS
-  {
-    id: "twilio",
-    name: "Twilio",
-    category: "comms",
-    description: "SMS and notification delivery.",
-    purpose: ["SMS", "Notifications"],
-    status: "connected",
-    account: "blossom-msg",
-    lastSync: "1 min ago",
-    enabled: true,
-    health: "healthy",
-    icon: MessageSquare,
-    accent: "text-red-500",
-  },
-  {
-    id: "retell",
-    name: "Retell AI",
-    category: "comms",
-    description: "AI voice agents for inbound and after-hours calls. Captures caller details and routes to the right department.",
-    purpose: ["AI calls", "After-hours intake"],
-    status: "connected",
-    account: "blossom-retell",
-    lastSync: "Live",
-    enabled: true,
-    health: "healthy",
-    icon: Bot,
-    accent: "text-violet-500",
-  },
-  {
-    id: "zoom",
-    name: "Zoom",
-    category: "comms",
-    description: "Meetings and recordings.",
-    purpose: ["Meetings", "Recordings"],
-    status: "connected",
-    account: "blossomaba.zoom.us",
-    lastSync: "Today",
-    enabled: true,
-    health: "healthy",
-    icon: Video,
-    accent: "text-sky-500",
-  },
-  {
-    id: "loom",
-    name: "Loom",
-    category: "comms",
-    description: "Recorded training and walkthroughs.",
-    purpose: ["Training videos"],
-    status: "connected",
-    account: "blossom-loom",
-    lastSync: "Today",
-    enabled: true,
-    health: "healthy",
-    icon: Video,
-    accent: "text-violet-400",
-  },
+function mapRegistryHealth(
+  s: BlossomIntegration["status"],
+  c: BlossomIntegration["criticality"],
+): Integration["health"] {
+  if (s === "error" || s === "needs_attention") return c === "critical" ? "critical" : "warning";
+  if (s === "maybe" || s === "planned" || s === "disabled") return "idle";
+  return "healthy";
+}
 
-  // AI
-  {
-    id: "openai",
-    name: "OpenAI",
-    category: "ai",
-    description: "Powers Operational Insights and operational copilots.",
-    purpose: ["Chat", "Reasoning"],
-    status: "connected",
-    account: "blossom-prod",
-    lastSync: "Live",
-    enabled: true,
-    health: "healthy",
-    icon: Sparkles,
-    accent: "text-emerald-500",
-    critical: true,
-  },
-  {
-    id: "anthropic",
-    name: "Anthropic Claude",
-    category: "ai",
-    description: "Long-form reasoning and document analysis.",
-    purpose: ["Reasoning", "Long context"],
-    status: "connected",
-    account: "blossom-claude",
-    lastSync: "Live",
-    enabled: true,
-    health: "healthy",
-    icon: Brain,
-    accent: "text-rose-500",
-  },
-  {
-    id: "elevenlabs",
-    name: "ElevenLabs",
-    category: "ai",
-    description: "AI voice synthesis for callbacks and outreach.",
-    purpose: ["Voice"],
-    status: "connected",
-    account: "blossom-voice",
-    lastSync: "Today",
-    enabled: true,
-    health: "healthy",
-    icon: Activity,
-    accent: "text-fuchsia-500",
-  },
-  {
-    id: "assemblyai",
-    name: "AssemblyAI",
-    category: "ai",
-    description: "Call transcription and intelligence.",
-    purpose: ["Transcripts"],
-    status: "connected",
-    account: "blossom-transcribe",
-    lastSync: "12 min ago",
-    enabled: true,
-    health: "healthy",
-    icon: BookOpen,
-    accent: "text-indigo-500",
-  },
-  {
-    id: "blossom-engine",
-    name: "Blossom Automation Engine",
-    category: "ai",
-    description:
-      "Internal workflow engine — replaces Monday automations. Queues, triggers, retries, and webhooks.",
-    purpose: ["Workflows", "Triggers", "Webhooks", "Queues"],
-    status: "connected",
-    account: "Internal",
-    lastSync: "Live",
-    enabled: true,
-    health: "healthy",
-    icon: Zap,
-    accent: "text-primary",
-    critical: true,
-  },
+function toIntegrationCard(reg: BlossomIntegration): Integration {
+  const status = mapRegistryStatus(reg.status);
+  const enabled = reg.status !== "disabled" && reg.status !== "planned" && reg.status !== "maybe";
+  return {
+    id: reg.id,
+    name: reg.displayName,
+    category: mapRegistryCategory(reg.category),
+    description: reg.notes || reg.inboundData.slice(0, 3).join(" · "),
+    purpose: reg.inboundData.slice(0, 4),
+    status,
+    account: reg.ownerDepartment,
+    lastSync: enabled ? "Recently" : undefined,
+    enabled,
+    health: mapRegistryHealth(reg.status, reg.criticality),
+    icon: ICON_BY_ID[reg.id] ?? Plug,
+    accent: ACCENT_BY_ID[reg.id] ?? "text-muted-foreground",
+    critical: reg.criticality === "critical",
+    ownerDepartment: reg.ownerDepartment,
+    criticality: reg.criticality,
+    methods: reg.methods,
+    inboundData: reg.inboundData,
+    outboundData: reg.outboundData,
+    dependentModules: reg.dependentModules,
+    sourceOfTruthFor: reg.sourceOfTruthFor,
+    notes: reg.notes,
+  };
+}
 
-  // ── Additions from the shared registry (Sprint 05 backbone) ──
-  {
-    id: "mailchimp",
-    name: "Mailchimp",
-    category: "marketing",
-    description: "Email campaigns, nurture flows, and audience segments.",
-    purpose: ["Email", "Nurture", "Segments"],
-    status: "connected",
-    account: "blossom-aba",
-    lastSync: "Today",
-    enabled: true,
-    health: "healthy",
-    icon: Mail,
-    accent: "text-amber-500",
-  },
-  {
-    id: "leadtrap",
-    name: "LeadTrap",
-    category: "marketing",
-    description: "Web lead capture and form submissions routed into Intake.",
-    purpose: ["Web leads", "Forms", "Attribution"],
-    status: "connected",
-    account: "blossom-leadtrap",
-    lastSync: "12 min ago",
-    enabled: true,
-    health: "healthy",
-    icon: Globe,
-    accent: "text-sky-500",
-  },
-  {
-    id: "jivetel",
-    name: "Jivetel",
-    category: "comms",
-    description: "Office phone system — extensions, shared lines, and call routing.",
-    purpose: ["Phone", "Extensions", "Shared lines"],
-    status: "connected",
-    account: "blossom-phones",
-    lastSync: "8 min ago",
-    enabled: true,
-    health: "healthy",
-    icon: Phone,
-    accent: "text-indigo-500",
-  },
-  {
-    id: "fathom",
-    name: "Fathom AI",
-    category: "ai",
-    description: "AI meeting notes and summaries for leadership and operations.",
-    purpose: ["Meeting notes", "Summaries", "Follow-ups"],
-    status: "coming_soon",
-    enabled: false,
-    health: "idle",
-    icon: Sparkles,
-    accent: "text-fuchsia-500",
-  },
-  {
-    id: "bloomgrowth",
-    name: "BloomGrowth",
-    category: "core",
-    description: "L10 meetings, rocks, issues, and to-dos for leadership cadence.",
-    purpose: ["L10", "Rocks", "Issues", "To-dos"],
-    status: "connected",
-    account: "blossom-aba",
-    lastSync: "Today",
-    enabled: true,
-    health: "healthy",
-    icon: Gauge,
-    accent: "text-teal-500",
-  },
-  {
-    id: "calendly",
-    name: "Calendly",
-    category: "comms",
-    description: "Scheduling links for interviews, consults, and partner meetings.",
-    purpose: ["Scheduling", "Booking links"],
-    status: "connected",
-    account: "blossom-aba",
-    lastSync: "Today",
-    enabled: true,
-    health: "healthy",
-    icon: Calendar,
-    accent: "text-emerald-500",
-  },
-];
+/** Source of truth: derived directly from `BLOSSOM_INTEGRATIONS`. */
+const INTEGRATIONS: Integration[] = BLOSSOM_INTEGRATIONS.map(toIntegrationCard);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Small UI atoms
@@ -941,10 +580,90 @@ function IntegrationDrawer({
                     </p>
                   </div>
                   <div className="text-sm font-medium text-foreground">
-                    {integration.name}
+                    {integration.sourceOfTruthFor?.[0] ?? integration.name}
                   </div>
                 </div>
               </Card>
+
+              {/* Registry-derived detail */}
+              {(integration.ownerDepartment ||
+                integration.criticality ||
+                (integration.methods && integration.methods.length > 0)) && (
+                <Card className="rounded-2xl border-border/60 p-4 space-y-3">
+                  <div className="text-sm font-medium">Operational ownership</div>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {integration.ownerDepartment && (
+                      <div>
+                        <div className="uppercase tracking-wider text-muted-foreground">Owner</div>
+                        <div className="mt-0.5 text-foreground">{integration.ownerDepartment}</div>
+                      </div>
+                    )}
+                    {integration.criticality && (
+                      <div>
+                        <div className="uppercase tracking-wider text-muted-foreground">Criticality</div>
+                        <div className="mt-0.5 text-foreground capitalize">{integration.criticality}</div>
+                      </div>
+                    )}
+                    {integration.methods && integration.methods.length > 0 && (
+                      <div className="col-span-2">
+                        <div className="uppercase tracking-wider text-muted-foreground">Sync methods</div>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {integration.methods.map((m) => (
+                            <Badge key={m} variant="secondary" className="rounded-full text-[10px]">
+                              {m}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
+
+              {integration.inboundData && integration.inboundData.length > 0 && (
+                <Card className="rounded-2xl border-border/60 p-4">
+                  <div className="text-sm font-medium">Inbound data</div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {integration.inboundData.map((d) => (
+                      <Badge key={d} variant="secondary" className="rounded-full text-[11px]">
+                        {d}
+                      </Badge>
+                    ))}
+                  </div>
+                  {integration.outboundData && integration.outboundData.length > 0 && (
+                    <>
+                      <div className="mt-3 text-sm font-medium">Outbound data</div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {integration.outboundData.map((d) => (
+                          <Badge key={d} variant="outline" className="rounded-full text-[11px]">
+                            {d}
+                          </Badge>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </Card>
+              )}
+
+              {integration.dependentModules && integration.dependentModules.length > 0 && (
+                <Card className="rounded-2xl border-border/60 p-4">
+                  <div className="text-sm font-medium">Dependent Blossom OS modules</div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {integration.dependentModules.map((m) => (
+                      <Badge key={m} variant="secondary" className="rounded-full text-[11px]">
+                        {m}
+                      </Badge>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {integration.notes && (
+                <Card className="rounded-2xl border-border/60 bg-muted/20 p-4">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Notes</div>
+                  <p className="mt-1 text-sm text-foreground">{integration.notes}</p>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="activity" className="mt-6">

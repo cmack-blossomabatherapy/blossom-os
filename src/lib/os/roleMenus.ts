@@ -24,8 +24,27 @@ export interface RoleMenuSection {
 }
 
 /**
- * Live role menu — every item routes to a real Blossom OS page.
- * No "Coming Soon" entries, no /coming-soon paths.
+ * Role menu definition.
+ *
+ * `ROLE_MENUS` describes the TARGET / future operating menu for each role
+ * — the Blossom OS each role will eventually use day-to-day. It is the
+ * shape of the product, not the live availability map.
+ *
+ * Staged availability is enforced separately by `OSShell` using
+ * `STAGED_ROLE_LIVE_PATHS`:
+ *   - Super Admin: full navigation, nothing gated.
+ *   - All other roles: only Training Academy (/academy or /training for
+ *     State Director + Assistant State Director), Resource Library, and
+ *     Reports are clickable. Every other menu item is shown but rendered
+ *     as an inert "Soon" entry until that surface is ready for users.
+ *
+ * Rules for editing this file:
+ *   - Do NOT delete future modules just because they are not live yet.
+ *     The staged "Soon" treatment is intentional.
+ *   - Do NOT route menu items at `/coming-soon` paths.
+ *   - New live modules become clickable for non-super-admin roles by
+ *     adding their base path to `STAGED_ROLE_LIVE_PATHS` in OSShell,
+ *     not by removing them from here.
  */
 export interface RoleMenu {
   sections: RoleMenuSection[];

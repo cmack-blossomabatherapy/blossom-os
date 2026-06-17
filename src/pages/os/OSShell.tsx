@@ -163,6 +163,23 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
 /* Section builder                                                    */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Staged-menu live paths.
+ *
+ * For non–super-admin roles, every menu item in `ROLE_MENUS` is rendered
+ * as visible-but-inert ("Soon") UNLESS its base path is in this set.
+ * Super Admin is not subject to this gate.
+ *
+ * This is the intentional product behavior: users can see where Blossom OS
+ * is going, but only the surfaces below are actually clickable today.
+ */
+export const STAGED_ROLE_LIVE_PATHS: ReadonlySet<string> = new Set([
+  "/academy",
+  "/training",
+  "/resource-library",
+  "/reports",
+]);
+
 function buildSectionsForRole(role: string): NavSection[] {
   if (role === "super_admin") return SUPER_ADMIN_SECTIONS;
 
@@ -170,27 +187,20 @@ function buildSectionsForRole(role: string): NavSection[] {
     (ROLE_MENUS as Record<string, typeof DEFAULT_ROLE_MENU>)[role] ??
     DEFAULT_ROLE_MENU;
 
-  // Non–super-admin roles: only Training Academy, Resource Library, and
-  // Reports are live. Everything else is shown as "Coming Soon" and is not
-  // clickable.
-  const ALWAYS_LIVE = new Set<string>([
-    "/academy",
-    "/training",
-    "/resource-library",
-    "/reports",
-  ]);
-
   return menu.sections.map((s) => ({
     id: s.id,
     label: s.label,
     defaultCollapsed: s.defaultCollapsed,
-    items: s.items.map((i) => ({
-      to: i.path,
-      label: i.label,
-      icon: i.icon,
-      end: i.path === "/dashboard" || i.path === "/",
-      disabled: !ALWAYS_LIVE.has(i.path),
-    })),
+    items: s.items.map((i) => {
+      const basePath = i.path.split("?")[0];
+      return {
+        to: i.path,
+        label: i.label,
+        icon: i.icon,
+        end: i.path === "/dashboard" || i.path === "/",
+        disabled: !STAGED_ROLE_LIVE_PATHS.has(basePath),
+      };
+    }),
   }));
 }
 
