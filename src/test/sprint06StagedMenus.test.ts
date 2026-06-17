@@ -53,7 +53,7 @@ describe("Sprint 06 — Staged role menus", () => {
   });
 
   it("State Director training content modules are not accidentally renamed/deleted", () => {
-    expect(fs.existsSync("src/data/training/stateDirectorFullTraining.ts")).toBe(true);
+    expect(fs.existsSync("src/lib/training/stateDirectorFullTraining.ts")).toBe(true);
   });
 });
 
