@@ -92,7 +92,7 @@ export function useLeadJourneyLive(leadId: string | null | undefined) {
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase.from("intake_tasks").insert({
         lead_id: leadId!,
-        task_type: "Follow-up",
+        task_type: "Follow Up",
         title,
         owner: owner ?? null,
         due_date: dueDate || null,
