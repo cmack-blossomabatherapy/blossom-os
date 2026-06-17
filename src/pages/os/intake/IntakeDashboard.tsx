@@ -1,9 +1,13 @@
 import { useMemo, useState } from "react";
-import { ClipboardList, TrendingUp, MessageSquare, AlertCircle, FileText, ShieldCheck, Plus, ArrowRightLeft } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ClipboardList, TrendingUp, MessageSquare, AlertCircle, FileText, ShieldCheck, Plus, ArrowRightLeft, Flame } from "lucide-react";
 import { GrowthPageShell, Section, StatCard, LinkCard, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
+import { Badge } from "@/components/ui/badge";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
+import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
+import { getLeadWorkflowRisk } from "@/lib/intake/intakeWorkflow";
 
 const PIPELINE_STAGES = new Set([
   "New Lead", "In Contact", "Sent Form", "Missing Information",
@@ -34,6 +38,14 @@ export default function IntakeDashboard() {
   }, [leads]);
 
   const fmt = (n: number) => (loading ? "…" : n.toLocaleString());
+
+  const actionRequired = useMemo(() => {
+    return leads
+      .map((l) => ({ lead: l, risk: getLeadWorkflowRisk(l) }))
+      .filter((r) => r.risk.level === "urgent" || r.risk.level === "risk")
+      .sort((a, b) => (a.risk.level === "urgent" ? -1 : 1) - (b.risk.level === "urgent" ? -1 : 1))
+      .slice(0, 6);
+  }, [leads]);
 
   return (
     <GrowthPageShell
@@ -66,6 +78,34 @@ export default function IntakeDashboard() {
           <LinkCard title="Lead Benefits Cheat Sheets" description="Payer guidance to support eligibility and qualification." to="/intake/benefits-cheat-sheets" status="live" icon={ShieldCheck} />
         </div>
       </Section>
+
+      {actionRequired.length > 0 && (
+        <Section title={`Action required (${actionRequired.length})`} description="Highest-risk leads operating in your queue right now.">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {actionRequired.map(({ lead, risk }) => (
+              <div key={lead.id} className="rounded-2xl border border-border/70 bg-card p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <Link to={`/leads/${lead.id}`} className="font-semibold hover:underline truncate">
+                    {lead.childName}
+                  </Link>
+                  <Badge variant={risk.level === "urgent" ? "destructive" : "secondary"} className="text-[10px]">
+                    <Flame className="h-3 w-3 mr-1" /> {risk.level}
+                  </Badge>
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">{lead.status} · {lead.owner || "Unassigned"}</div>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {risk.reasons.slice(0, 3).map((r) => (
+                    <Badge key={r} variant="outline" className="text-[10px] py-0">{r}</Badge>
+                  ))}
+                </div>
+                <div className="mt-3">
+                  <LeadActionPanel lead={lead} compact sourcePage="intake-dashboard" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
 
       {leads.length === 0 && (
         <ReadyForDataNotice message="This workspace is ready for live data. Create your first lead with Add Lead, or connect a source to populate intake queues automatically." />

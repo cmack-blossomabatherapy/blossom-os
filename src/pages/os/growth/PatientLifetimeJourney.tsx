@@ -17,6 +17,7 @@ import { LiveActivityFeed } from "@/components/growth/LiveActivityFeed";
 import { useLeads } from "@/contexts/LeadsContext";
 import { useLeadJourneyLive, type LeadCommunicationRow, type LeadTaskRow } from "@/hooks/useLeadJourneyLive";
 import type { Lead } from "@/data/leads";
+import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   leadSourceJourneyOrigin,
@@ -263,12 +264,8 @@ export default function PatientLifetimeJourney() {
       ]}
     >
       {selected && (
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Button size="sm" disabled={!live.isPersistable} onClick={() => setLogOpen(true)}><Plus className="h-4 w-4 mr-1.5" /> Log Interaction</Button>
-          <Button size="sm" variant="outline" disabled={!live.isPersistable} onClick={() => setFollowOpen(true)}>Add Follow-Up</Button>
-          {!live.isPersistable && (
-            <span className="text-[11px] text-muted-foreground">This lead isn't synced to the database yet — interactions can't be saved.</span>
-          )}
+        <div className="mb-3 rounded-2xl border border-border/70 bg-card p-3">
+          <LeadActionPanel lead={selected} sourcePage="patient-journey" />
         </div>
       )}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
