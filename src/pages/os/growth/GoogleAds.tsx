@@ -9,7 +9,7 @@ export default function GoogleAds() {
       title="Google Ads"
       description="Search and performance max campaigns with keyword and conversion visibility."
     >
-      <LeadSourceActions sourceLabel="Google Ads" sourceValue="Google Ads" utmSource="google" />
+      <LeadSourceActions sourceLabel="Google Ads" sourceValue="Google Ads" integrationId="google-ads" sourcePage="google-ads" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Active campaigns" value="—" status="needs_data" icon={TrendingUp} />
         <StatCard label="Spend (30d)" value="—" status="needs_data" />

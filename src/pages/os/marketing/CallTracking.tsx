@@ -218,7 +218,7 @@ export default function CallTracking() {
       subtitle="Operational communication intelligence — how inbound conversations translate into intake, recruiting, and operational growth."
       actions={<AIPrompt label="Where is call demand accelerating?" variant="card" />}
     >
-      <LeadSourceActions sourceLabel="CTM Calls" sourceValue="CTM" utmSource="ctm" />
+      <LeadSourceActions sourceLabel="CTM / CallTrackingMetrics" sourceValue="CTM" integrationId="ctm" sourcePage="call-tracking" />
       {/* ── 1. COMMUNICATION INTELLIGENCE HERO ───────────────────────── */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
         <div className="absolute -top-24 -right-24 size-72 rounded-full bg-primary/10 blur-3xl" aria-hidden />
