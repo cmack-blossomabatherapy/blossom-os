@@ -880,7 +880,7 @@ export default function BcbaProductivityReportV3() {
                       </div>
                     ) : (
                       <div className="mt-2 text-xs text-muted-foreground">
-                        No admin-uploaded BCBA productivity dataset found yet. Ask an admin to upload CentralReach data.
+                        No admin-uploaded BCBA productivity dataset found. Ask an admin to upload the CentralReach billing export.
                       </div>
                     )}
                   </div>
