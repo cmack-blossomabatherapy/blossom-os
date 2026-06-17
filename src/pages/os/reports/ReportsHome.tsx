@@ -244,7 +244,7 @@ export default function ReportsHome() {
                 key={sr.id}
                 className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-4 transition hover:-translate-y-0.5 hover:border-[hsl(345_70%_50%/0.35)] hover:shadow-[0_20px_40px_-25px_hsl(345_60%_50%/0.4)]"
               >
-                <Link to={`/os/reports/cancellation-command-center?saved=${sr.id}`} className="block">
+                <Link to={`/reports/cancellation-command-center?saved=${sr.id}`} className="block">
                   <Badge
                     variant="secondary"
                     className="rounded-full bg-[hsl(345_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(345_70%_50%)]"
