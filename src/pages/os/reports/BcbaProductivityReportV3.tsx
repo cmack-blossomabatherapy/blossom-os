@@ -31,7 +31,7 @@ import {
   getBcbaProductivitySharedRows, getBcbaProductivityDatasetStatus,
   type BcbaDatasetStatus,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
-import { normalizeUsState } from "@/lib/os/bcbaProductivityV3/stateNormalization";
+import { normalizeUsState, resolveRowState } from "@/lib/os/bcbaProductivityV3/stateNormalization";
 import { Link } from "react-router-dom";
 
 /* ----- helpers ----- */
@@ -289,7 +289,7 @@ export default function BcbaProductivityReportV3() {
       const provFirstH = findH(h, ["ProviderFirstName", "Provider First Name"]);
       const provLastH = findH(h, ["ProviderLastName", "Provider Last Name"]);
       const provNameH = findH(h, ["Provider", "Provider Name", "RenderingProvider", "Rendering Provider"]);
-      const stateH = findH(h, ["ClientLocationStateProvince", "ServiceLocationStateProvince", "State"]);
+      // State resolved per-row via resolveRowState (column fallback + normalization).
       const payorH = findH(h, ["PayorNickname", "PayorName", "Payor Name", "Payor", "Payer", "Insurance"]);
       const provLabelsH = findH(h, ["ProviderContactLabels", "Provider Contact Labels", "ProviderLabels", "Provider Labels"]);
 
@@ -341,7 +341,7 @@ export default function BcbaProductivityReportV3() {
           code,
           hours,
           date: dos,
-          state: (stateH ? r[stateH] : "").trim(),
+          state: resolveRowState(r as Record<string, unknown>),
           payor: (payorH ? r[payorH] : "").trim(),
         };
         parsedRows.push(row);
