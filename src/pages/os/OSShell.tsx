@@ -170,34 +170,17 @@ function buildSectionsForRole(role: string): NavSection[] {
     (ROLE_MENUS as Record<string, typeof DEFAULT_ROLE_MENU>)[role] ??
     DEFAULT_ROLE_MENU;
 
-  const sections: NavSection[] = [
-    {
-      id: "available_now",
-      label: "Available Now",
-      items: menu.active.map((i) => ({
-        to: i.path,
-        label: i.label,
-        icon: i.icon,
-        end: i.path === "/dashboard" || i.path === "/",
-      })),
-    },
-  ];
-
-  if (menu.comingSoon.length) {
-    sections.push({
-      id: "coming_soon",
-      label: "Coming Soon",
-      items: menu.comingSoon.map((i) => ({
-        to: i.path,
-        label: i.label,
-        icon: i.icon,
-        disabled: true,
-      })),
-      defaultCollapsed: true,
-    });
-  }
-
-  return sections;
+  return menu.sections.map((s) => ({
+    id: s.id,
+    label: s.label,
+    defaultCollapsed: s.defaultCollapsed,
+    items: s.items.map((i) => ({
+      to: i.path,
+      label: i.label,
+      icon: i.icon,
+      end: i.path === "/dashboard" || i.path === "/",
+    })),
+  }));
 }
 
 /* ------------------------------------------------------------------ */
