@@ -383,6 +383,7 @@ import {
 import {
   WorkflowInventoryPage, RequestIntakePage, IssueTrackerPage,
 } from "./pages/os/system-tools/SystemToolsPages";
+import BcbaProductivityUploads from "./pages/os/system/BcbaProductivityUploads";
 import BlossomOSHome from "./pages/os/home/BlossomOSHome";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
 import OSAskBlossom from "./pages/os/OSAskBlossom";
@@ -797,6 +798,7 @@ const App = () => (
                   <Route path="/system/workflow-inventory" element={<AdminRoute><WorkflowInventoryPage /></AdminRoute>} />
                   <Route path="/system/request-intake" element={<AdminRoute><RequestIntakePage /></AdminRoute>} />
                   <Route path="/system/issue-tracker" element={<AdminRoute><IssueTrackerPage /></AdminRoute>} />
+                  <Route path="/system/bcba-productivity-uploads" element={<AdminRoute><BcbaProductivityUploads /></AdminRoute>} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />

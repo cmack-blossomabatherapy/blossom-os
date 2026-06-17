@@ -27,6 +27,11 @@ import {
   type BcbaAssignmentV3,
 } from "@/lib/os/bcbaProductivityV3/store";
 import { inferAssignmentHistory, type OwnershipConflict } from "@/lib/os/bcbaProductivityV3/inferAssignments";
+import {
+  getBcbaProductivitySharedRows, getBcbaProductivityDatasetStatus,
+  type BcbaDatasetStatus,
+} from "@/lib/os/bcbaProductivityV3/adminUploadStore";
+import { Link } from "react-router-dom";
 
 /* ----- helpers ----- */
 const normH = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -179,6 +184,12 @@ export default function BcbaProductivityReportV3() {
   const assignImportRef = useRef<HTMLInputElement>(null);
   const [showHelp, setShowHelp] = useState(false);
 
+  /* ----- shared admin dataset (source: manual | shared) ----- */
+  const [dataSource, setDataSource] = useState<"manual" | "shared">("manual");
+  const [sharedStatus, setSharedStatus] = useState<BcbaDatasetStatus | null>(null);
+  const [sharedLoading, setSharedLoading] = useState(false);
+  const sharedRequested = params.get("source") === "shared";
+
   useEffect(() => {
     const refreshAssign = () => setAssignments(readAssignmentsV3());
     const refreshSaved = () => setSavedList(readSavedReportsV3());
@@ -205,6 +216,54 @@ export default function BcbaProductivityReportV3() {
   }
 
   useEffect(() => { void refreshAssignments(); }, []);
+
+  /* Detect shared admin dataset on mount. If available, default the data source
+   * selector to "shared". Manual upload behavior is preserved. */
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await getBcbaProductivityDatasetStatus();
+        setSharedStatus(s);
+        if (s.activeRowCount > 0 && (sharedRequested || rows.length === 0)) {
+          setDataSource("shared");
+        }
+      } catch {
+        /* ignore — manual upload still works */
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function loadSharedDataset() {
+    setSharedLoading(true);
+    try {
+      const shared = await getBcbaProductivitySharedRows();
+      if (!shared.length) {
+        toast.info("Shared admin dataset is empty.");
+        setSharedLoading(false);
+        return;
+      }
+      setRows(shared as BillingRow[]);
+      setFileName("Shared admin dataset");
+      const s = await getBcbaProductivityDatasetStatus();
+      setSharedStatus(s);
+      toast.success(`Loaded ${shared.length.toLocaleString()} shared admin rows`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load shared admin dataset");
+    } finally {
+      setSharedLoading(false);
+    }
+  }
+
+  /* Auto-load shared dataset when user selects that source (and no rows yet
+   * from that source). */
+  useEffect(() => {
+    if (dataSource === "shared" && sharedStatus && sharedStatus.activeRowCount > 0
+        && fileName !== "Shared admin dataset") {
+      void loadSharedDataset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataSource, sharedStatus?.activeRowCount]);
 
   useEffect(() => {
     (async () => {
@@ -782,6 +841,62 @@ export default function BcbaProductivityReportV3() {
           </TabsContent>
 
           <TabsContent value="upload" className="space-y-4">
+            {/* Data source selector — shared admin dataset vs manual upload */}
+            <div className="rounded-xl border bg-card/60 p-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Data source
+                </span>
+                <div className="inline-flex rounded-lg border bg-background p-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setDataSource("shared")}
+                    className={cn(
+                      "px-3 py-1 rounded-md transition",
+                      dataSource === "shared" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                    )}
+                    disabled={!sharedStatus || sharedStatus.activeRowCount === 0}
+                    title={!sharedStatus || sharedStatus.activeRowCount === 0 ? "No admin-uploaded data yet" : ""}
+                  >
+                    Shared admin dataset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDataSource("manual")}
+                    className={cn(
+                      "px-3 py-1 rounded-md transition",
+                      dataSource === "manual" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Manual upload
+                  </button>
+                </div>
+              </div>
+              {dataSource === "shared" && sharedStatus && sharedStatus.activeRowCount > 0 && (
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5">
+                    <Database className="h-3 w-3" /> Using shared admin dataset
+                  </span>
+                  <span>{sharedStatus.activeRowCount.toLocaleString()} rows</span>
+                  {sharedStatus.earliestServiceDate && sharedStatus.latestServiceDate && (
+                    <span>{sharedStatus.earliestServiceDate} → {sharedStatus.latestServiceDate}</span>
+                  )}
+                  {sharedStatus.lastUploadAt && (
+                    <span>last uploaded {new Date(sharedStatus.lastUploadAt).toLocaleString()}</span>
+                  )}
+                  <Link to="/system/bcba-productivity-uploads" className="text-primary underline">Manage uploads</Link>
+                  <Button size="sm" variant="outline" className="h-7" onClick={loadSharedDataset} disabled={sharedLoading}>
+                    <RefreshCw className={cn("mr-1 h-3 w-3", sharedLoading && "animate-spin")} /> Refresh
+                  </Button>
+                </div>
+              )}
+              {dataSource === "shared" && (!sharedStatus || sharedStatus.activeRowCount === 0) && (
+                <div className="text-xs text-muted-foreground">
+                  No admin-uploaded BCBA productivity dataset found. Upload manually or ask an admin to upload CentralReach data.
+                </div>
+              )}
+            </div>
+
             {/* Upload zone */}
             <div
               className={cn(

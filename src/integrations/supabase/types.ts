@@ -1553,6 +1553,134 @@ export type Database = {
           },
         ]
       }
+      bcba_productivity_billing_rows: {
+        Row: {
+          active: boolean
+          batch_id: string
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          hours: number | null
+          id: string
+          normalized: Json
+          procedure_code: string | null
+          provider_id: string | null
+          provider_name: string | null
+          raw: Json
+          row_hash: string
+          service_date: string | null
+          source_system: string
+          units: number | null
+        }
+        Insert: {
+          active?: boolean
+          batch_id: string
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          hours?: number | null
+          id?: string
+          normalized?: Json
+          procedure_code?: string | null
+          provider_id?: string | null
+          provider_name?: string | null
+          raw: Json
+          row_hash: string
+          service_date?: string | null
+          source_system?: string
+          units?: number | null
+        }
+        Update: {
+          active?: boolean
+          batch_id?: string
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          hours?: number | null
+          id?: string
+          normalized?: Json
+          procedure_code?: string | null
+          provider_id?: string | null
+          provider_name?: string | null
+          raw?: Json
+          row_hash?: string
+          service_date?: string | null
+          source_system?: string
+          units?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_productivity_billing_rows_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_productivity_upload_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_productivity_upload_batches: {
+        Row: {
+          appended_row_count: number
+          created_at: string
+          duplicate_row_count: number
+          file_hash: string | null
+          file_name: string
+          file_size: number | null
+          id: string
+          metadata: Json
+          notes: string | null
+          parsed_row_count: number
+          report_type: string
+          service_date_max: string | null
+          service_date_min: string | null
+          source_system: string
+          status: string
+          upload_label: string | null
+          uploaded_by: string | null
+          uploaded_by_email: string | null
+        }
+        Insert: {
+          appended_row_count?: number
+          created_at?: string
+          duplicate_row_count?: number
+          file_hash?: string | null
+          file_name: string
+          file_size?: number | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          parsed_row_count?: number
+          report_type?: string
+          service_date_max?: string | null
+          service_date_min?: string | null
+          source_system?: string
+          status?: string
+          upload_label?: string | null
+          uploaded_by?: string | null
+          uploaded_by_email?: string | null
+        }
+        Update: {
+          appended_row_count?: number
+          created_at?: string
+          duplicate_row_count?: number
+          file_hash?: string | null
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          parsed_row_count?: number
+          report_type?: string
+          service_date_max?: string | null
+          service_date_min?: string | null
+          source_system?: string
+          status?: string
+          upload_label?: string | null
+          uploaded_by?: string | null
+          uploaded_by_email?: string | null
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
