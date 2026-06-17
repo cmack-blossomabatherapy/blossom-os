@@ -381,14 +381,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                     No menu matches for "{mobileSearch.trim()}".
                   </p>
                 )}
-                {showOldVersion && (
-                  <button
-                    onClick={() => { setMobileOpen(false); navigate("/dashboard/legacy"); }}
-                    className="mt-4 flex w-full items-center gap-2 rounded-xl px-3 py-3 text-[13px] font-medium text-muted-foreground hover:bg-foreground/[0.04]"
-                  >
-                    <History className="h-4 w-4" /> Old Version
-                  </button>
-                )}
               </nav>
             </aside>
           </div>
