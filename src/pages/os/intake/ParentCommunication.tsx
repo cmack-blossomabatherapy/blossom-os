@@ -1,15 +1,11 @@
-import { useMemo, useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { MessageSquare, Phone, Mail, Plus } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
-const COMM_KEY = "blossom-os.intake-comms.v1";
-type LocalComm = { id: string; leadId: string; leadName: string; type: "call" | "sms" | "email" | "note"; preview: string; timestamp: string; user?: string };
-function loadLocal(): LocalComm[] { if (typeof window === "undefined") return []; try { return JSON.parse(window.localStorage.getItem(COMM_KEY) || "[]"); } catch { return []; } }
-function saveLocal(rows: LocalComm[]) { try { window.localStorage.setItem(COMM_KEY, JSON.stringify(rows)); } catch { /* ignore */ } }
+import { useIntakeCommsLive } from "@/hooks/useIntakeCommsLive";
 
 interface CommRow {
   leadId: string;
@@ -24,33 +20,35 @@ const ICONS = { call: Phone, sms: MessageSquare, email: Mail, note: MessageSquar
 
 export default function ParentCommunication() {
   const { leads, loading } = useLeads();
-  const [local, setLocal] = useState<LocalComm[]>(() => loadLocal());
-  useEffect(() => { saveLocal(local); }, [local]);
+  const { comms, logComm } = useIntakeCommsLive(100);
 
-  const logComm = (lead: { id: string; childName: string }, type: LocalComm["type"]) => {
+  const leadNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    leads.forEach((l) => map.set(l.id, l.childName));
+    return map;
+  }, [leads]);
+
+  const handleLog = async (lead: { id: string; childName: string }, type: "call" | "sms" | "email" | "note") => {
     const preview = window.prompt(`${type.toUpperCase()} — what happened?`);
     if (!preview || !preview.trim()) return;
-    setLocal((rows) => [{ id: `lc-${Date.now()}`, leadId: lead.id, leadName: lead.childName, type, preview: preview.trim(), timestamp: new Date().toISOString() }, ...rows]);
-    toast.success(`${type} logged`);
+    try {
+      await logComm(lead.id, type, preview.trim());
+      toast.success(`${type} logged`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Could not log ${type}`);
+    }
   };
 
   const recent = useMemo<CommRow[]>(() => {
-    const rows: CommRow[] = [];
-    leads.forEach((l) => {
-      (l.communications ?? []).forEach((c) =>
-        rows.push({
-          leadId: l.id,
-          leadName: l.childName,
-          type: c.type,
-          preview: c.preview,
-          timestamp: c.timestamp,
-          user: c.user,
-        }),
-      );
-    });
-    local.forEach((c) => rows.push({ leadId: c.leadId, leadName: c.leadName, type: c.type, preview: c.preview, timestamp: c.timestamp, user: c.user }));
-    return rows.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 50);
-  }, [leads, local]);
+    return comms.map((c) => ({
+      leadId: c.lead_id,
+      leadName: leadNameById.get(c.lead_id) ?? "Lead",
+      type: c.communication_type,
+      preview: c.preview,
+      timestamp: c.created_at,
+      user: c.logged_by_name ?? undefined,
+    })).slice(0, 50);
+  }, [comms, leadNameById]);
 
   const followUps = useMemo(
     () => leads.filter((l) => !!l.nextAction && l.status !== "VOB Completed").slice(0, 30),
@@ -106,9 +104,9 @@ export default function ParentCommunication() {
                 <div className="text-xs text-muted-foreground mt-1">{l.nextAction}</div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <Button asChild size="sm" variant="outline"><Link to={`/leads/${l.id}`}>Open</Link></Button>
-                  <Button size="sm" variant="ghost" onClick={() => logComm(l, "call")}>Log Call</Button>
-                  <Button size="sm" variant="ghost" onClick={() => logComm(l, "sms")}>Log Text</Button>
-                  <Button size="sm" variant="ghost" onClick={() => logComm(l, "email")}>Log Email</Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleLog(l, "call")}>Log Call</Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleLog(l, "sms")}>Log Text</Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleLog(l, "email")}>Log Email</Button>
                 </div>
               </div>
             ))}
