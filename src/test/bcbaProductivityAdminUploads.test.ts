@@ -39,17 +39,16 @@ describe("BCBA Productivity admin uploads — Sprint", () => {
     }
   });
 
-  it("BCBA Productivity Report V3 still has manual upload AND a shared admin source option", () => {
+  it("BCBA Productivity Report V3 runs on the shared admin dataset (manual upload retired)", () => {
     const src = read("src/pages/os/reports/BcbaProductivityReportV3.tsx");
-    // manual upload still wired
-    expect(src).toMatch(/handleFiles/);
-    expect(src).toMatch(/Choose file|choose file/);
-    expect(src).toMatch(/saveLastBillingV3/);
-    // data source selector + shared dataset
+    // shared dataset wired in
     expect(src).toMatch(/Shared admin dataset/);
-    expect(src).toMatch(/Manual upload/);
     expect(src).toMatch(/getBcbaProductivitySharedRows/);
-    expect(src).toMatch(/No admin-uploaded BCBA productivity dataset found/);
+    expect(src).toMatch(/Manage uploads/);
+    // user-facing manual upload UI removed
+    expect(src).not.toMatch(/Choose file/);
+    expect(src).not.toMatch(/Drag a file here/);
+    expect(src).not.toMatch(/Upload a single Billing Report/);
   });
 
   it("BCBA Productivity V3 route remains in App.tsx", () => {
