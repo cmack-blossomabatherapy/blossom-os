@@ -57,7 +57,7 @@ export default function TrainingAcademyHome() {
           {myTraining.map((t) => (
             <Link
               key={t.slug}
-              to={`/academy/path/${t.slug}`}
+              to={t.slug === "state-director" ? "/training" : `/academy/path/${t.slug}`}
               className="group flex flex-col rounded-2xl border border-border/70 bg-card p-5 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)] transition-all hover:-translate-y-0.5 hover:border-border"
             >
               <div className="flex items-start justify-between">
