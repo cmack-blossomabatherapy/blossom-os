@@ -12,6 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Lead } from "@/data/leads";
 import { useLeads } from "@/contexts/LeadsContext";
 import { toast } from "sonner";
+import {
+  LEAD_SOURCE_OPTIONS,
+  getLeadSourceOption,
+} from "@/lib/leads/leadSourceConfig";
 
 const PIPELINE_STAGES = [
   "New Lead", "In Contact", "Sent Form", "Missing Information", "Form Received",
@@ -19,10 +23,7 @@ const PIPELINE_STAGES = [
   "Can Not Submit Auth", "Getting DX", "Needs DX", "Non-Qualified",
 ] as const;
 
-const LEAD_SOURCES = [
-  "Website", "Phone", "Facebook", "Referral", "Ads", "Organic", "Digital",
-  "Insurance", "Google Ads", "LeadTrap", "CTM",
-] as const;
+const LEAD_SOURCES = LEAD_SOURCE_OPTIONS.map((o) => o.value);
 
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const PRIORITIES = ["Hot", "Warm", "Cold"] as const;
@@ -80,7 +81,18 @@ const schema = z
   .refine((v) => (v.phone && v.phone.length >= 7) || (v.email && v.email.includes("@")), {
     message: "Phone or email required",
     path: ["phone"],
-  });
+  })
+  .refine(
+    (v) => v.preferredContactMethod !== "Email" || (!!v.email && v.email.includes("@")),
+    { message: "Email is required when preferred contact is Email", path: ["email"] },
+  )
+  .refine(
+    (v) =>
+      !["Phone", "Cell", "Text"].includes(v.preferredContactMethod ?? "") ||
+      (!!v.phone && v.phone.length >= 7) ||
+      (!!v.parentCellPhone && v.parentCellPhone.length >= 7),
+    { message: "Phone or parent cell required for this preferred contact", path: ["phone"] },
+  );
 
 type FormShape = z.input<typeof schema>;
 
@@ -188,9 +200,12 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
         tags:  tags.length ? tags : undefined,
 
         sourceMetadata: {
-          created_via: "manual",
+          ...(defaults?.sourceMetadata as Record<string, unknown> | undefined),
+          created_via:
+            (defaults?.sourceMetadata as Record<string, unknown> | undefined)?.created_via ??
+            "manual",
           created_at_client: new Date().toISOString(),
-        },
+        } as Record<string, unknown>,
       });
       toast.success(`Lead created: ${lead.childName}`, {
         description: `${lead.id.slice(0, 8)} · ${lead.state} · ${lead.source}`,
