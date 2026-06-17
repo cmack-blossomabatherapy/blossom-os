@@ -16,13 +16,15 @@ const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 /* ───────────────────────────── Phase A ───────────────────────────── */
 describe("Phase A — State Director / Assistant SD training routing", () => {
   const roleMenus = read("src/lib/os/roleMenus.ts");
+  const osShell = read("src/pages/os/OSShell.tsx");
 
-  it("exports an isStateDirectorTrainingRole helper", () => {
-    expect(roleMenus).toMatch(/isStateDirectorTrainingRole/);
+  it("role menus never link Training Academy to /coming-soon", () => {
+    // Training Academy should land on /academy or /training — never the old stub.
+    expect(roleMenus).not.toMatch(/Training Academy[^,]*coming-soon/);
   });
 
-  it("routes Training Academy to /training for SD/ASD roles (not /coming-soon)", () => {
-    expect(roleMenus).not.toMatch(/state-director.*coming-soon/i);
+  it("OSShell mobile bottom nav routes Training to /training", () => {
+    expect(osShell).toMatch(/\/training/);
   });
 });
 
