@@ -319,6 +319,7 @@ export default function PatientLifetimeJourney() {
           ) : (
             <>
               <PatientSummary patient={selected} />
+              <JourneySummary patient={selected} liveTasks={live.tasks} liveComms={live.communications} />
 
               <div className="flex flex-wrap gap-1.5">
                 {FILTERS.map((f) => (
