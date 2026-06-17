@@ -126,6 +126,7 @@ function timelineToEventType(t: string, desc: string): EventType {
 
 function buildEvents(lead: Lead): JourneyEvent[] {
   const events: JourneyEvent[] = [];
+  const baseOrigin = leadSourceJourneyOrigin(lead.source);
   const safeTs = (s: string | null | undefined) => {
     if (!s) return Date.now();
     const t = new Date(s).getTime();
@@ -140,7 +141,8 @@ function buildEvents(lead: Lead): JourneyEvent[] {
     type: "lead_created",
     when: fmt(lead.createdAt),
     rawTs: safeTs(lead.createdAt),
-    detail: `Source: ${lead.source}`,
+    detail: `Source: ${leadSourceLabel(lead.source)}`,
+    origin: baseOrigin,
   });
 
   for (const ev of lead.timeline ?? []) {
@@ -150,6 +152,7 @@ function buildEvents(lead: Lead): JourneyEvent[] {
       rawTs: safeTs(ev.timestamp),
       detail: ev.description,
       owner: ev.user,
+      origin: baseOrigin,
     });
   }
   for (const c of lead.communications ?? []) {
@@ -160,6 +163,7 @@ function buildEvents(lead: Lead): JourneyEvent[] {
       rawTs: safeTs(c.timestamp),
       detail: `${c.subject ? c.subject + " — " : ""}${c.preview}${dur}`,
       owner: c.user,
+      origin: baseOrigin,
     });
   }
 
@@ -170,6 +174,7 @@ function mergeLiveJourney(
   events: JourneyEvent[],
   comms: LeadCommunicationRow[],
   tasks: LeadTaskRow[],
+  baseOrigin: PatientJourneyEventOrigin = "Manual",
 ): JourneyEvent[] {
   const safeTs = (s: string) => { const t = new Date(s).getTime(); return Number.isFinite(t) ? t : Date.now(); };
   const fmt = (s: string) => { try { return format(new Date(safeTs(s)), "MMM d"); } catch { return ""; } };
@@ -179,6 +184,7 @@ function mergeLiveJourney(
     rawTs: safeTs(c.created_at),
     detail: c.subject ? `${c.subject} — ${c.preview}` : c.preview,
     owner: c.logged_by_name ?? undefined,
+    origin: baseOrigin,
   }));
   const mappedTasks: JourneyEvent[] = tasks.map((t) => ({
     type: "intake_followup",
@@ -186,6 +192,7 @@ function mergeLiveJourney(
     rawTs: safeTs(t.created_at),
     detail: t.due_date ? `${t.title} (due ${t.due_date})` : t.title,
     owner: t.owner ?? undefined,
+    origin: baseOrigin,
   }));
   return [...events, ...mappedComms, ...mappedTasks].sort((a, b) => a.rawTs - b.rawTs);
 }
@@ -236,7 +243,9 @@ export default function PatientLifetimeJourney() {
   );
   const live = useLeadJourneyLive(selected?.id ?? null);
   const events = useMemo(
-    () => (selected ? mergeLiveJourney(buildEvents(selected), live.communications, live.tasks) : []),
+    () => (selected
+      ? mergeLiveJourney(buildEvents(selected), live.communications, live.tasks, leadSourceJourneyOrigin(selected.source))
+      : []),
     [selected, live.communications, live.tasks],
   );
 
