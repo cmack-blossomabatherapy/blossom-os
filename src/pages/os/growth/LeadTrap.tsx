@@ -9,7 +9,7 @@ export default function LeadTrap() {
       title="LeadTrap"
       description="Inbound web leads captured through Blossom forms and landing pages."
     >
-      <LeadSourceActions sourceLabel="LeadTrap" sourceValue="LeadTrap" utmSource="leadtrap" />
+      <LeadSourceActions sourceLabel="LeadTrap" sourceValue="LeadTrap" integrationId="leadtrap" sourcePage="leadtrap" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Leads captured (7d)" value="—" status="needs_data" icon={PhoneCall} />
         <StatCard label="Conversion to intake" value="—" status="needs_data" />

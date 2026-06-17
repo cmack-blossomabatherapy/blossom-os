@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ClipboardList, Plus, Phone, Mail, MapPin, User, Flame } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
@@ -6,11 +6,14 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
+import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 
 const QUEUE_STAGES = new Set(["New Lead", "In Contact"]);
 
 export default function ReferralQueue() {
   const { leads, loading, moveStage, assignOwner, addTag } = useLeads();
+  const [addOpen, setAddOpen] = useState(false);
 
   const queue = useMemo(
     () =>
@@ -26,7 +29,7 @@ export default function ReferralQueue() {
       title="Referral Queue"
       description="New referrals awaiting first contact, ownership, and intake action."
       actions={[
-        { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
+        { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
         { label: "Open Leads", icon: ClipboardList, to: "/leads" },
       ]}
     >
@@ -77,6 +80,11 @@ export default function ReferralQueue() {
           </div>
         )}
       </Section>
+      <NewLeadDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        defaults={buildLeadSourceDefaults("Website", { sourcePage: "referral-queue" })}
+      />
     </GrowthPageShell>
   );
 }

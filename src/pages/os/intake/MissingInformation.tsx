@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ArrowRight, Plus } from "lucide-react";
+import { AlertCircle, ArrowRight, Plus, HeartHandshake } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,11 @@ export default function MissingInformation() {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   <Button asChild size="sm" variant="outline"><Link to={`/leads/${lead.id}`}>Open Lead</Link></Button>
                   <Button asChild size="sm" variant="ghost"><Link to={`/leads/${lead.id}#log`}>Log Contact</Link></Button>
+                  <Button asChild size="sm" variant="ghost">
+                    <Link to={`/patient-journey?lead=${lead.id}`}>
+                      <HeartHandshake className="mr-1 h-3 w-3" /> Open Journey
+                    </Link>
+                  </Button>
                   <Button size="sm" variant="ghost" onClick={() => {
                     updateLead(lead.id, { nextAction: "Awaiting missing info from family" });
                     addTag([lead.id], "Info Requested");

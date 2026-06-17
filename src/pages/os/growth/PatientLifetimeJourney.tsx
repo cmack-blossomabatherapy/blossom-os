@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Search, Phone, Mail, MessageSquare, FileText, ShieldCheck, UserCheck,
   Calendar, ClipboardCheck, HeartHandshake, AlertCircle, FileSignature,
@@ -17,6 +18,11 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { useLeadJourneyLive, type LeadCommunicationRow, type LeadTaskRow } from "@/hooks/useLeadJourneyLive";
 import type { Lead } from "@/data/leads";
 import { format, formatDistanceToNow } from "date-fns";
+import {
+  leadSourceJourneyOrigin,
+  leadSourceLabel,
+  type PatientJourneyEventOrigin,
+} from "@/lib/leads/leadSourceConfig";
 
 // Sprint 04 Phase C — interactions and follow-ups persist to Lovable Cloud
 // (intake_communications + intake_tasks). No localStorage fallback.
@@ -79,6 +85,7 @@ interface JourneyEvent {
   rawTs: number;         // sortable
   detail?: string;
   owner?: string;
+  origin?: PatientJourneyEventOrigin;
 }
 
 function communicationToEventType(t: string): EventType {
@@ -119,6 +126,7 @@ function timelineToEventType(t: string, desc: string): EventType {
 
 function buildEvents(lead: Lead): JourneyEvent[] {
   const events: JourneyEvent[] = [];
+  const baseOrigin = leadSourceJourneyOrigin(lead.source);
   const safeTs = (s: string | null | undefined) => {
     if (!s) return Date.now();
     const t = new Date(s).getTime();
@@ -133,7 +141,8 @@ function buildEvents(lead: Lead): JourneyEvent[] {
     type: "lead_created",
     when: fmt(lead.createdAt),
     rawTs: safeTs(lead.createdAt),
-    detail: `Source: ${lead.source}`,
+    detail: `Source: ${leadSourceLabel(lead.source)}`,
+    origin: baseOrigin,
   });
 
   for (const ev of lead.timeline ?? []) {
@@ -143,6 +152,7 @@ function buildEvents(lead: Lead): JourneyEvent[] {
       rawTs: safeTs(ev.timestamp),
       detail: ev.description,
       owner: ev.user,
+      origin: baseOrigin,
     });
   }
   for (const c of lead.communications ?? []) {
@@ -153,6 +163,7 @@ function buildEvents(lead: Lead): JourneyEvent[] {
       rawTs: safeTs(c.timestamp),
       detail: `${c.subject ? c.subject + " — " : ""}${c.preview}${dur}`,
       owner: c.user,
+      origin: baseOrigin,
     });
   }
 
@@ -163,6 +174,7 @@ function mergeLiveJourney(
   events: JourneyEvent[],
   comms: LeadCommunicationRow[],
   tasks: LeadTaskRow[],
+  baseOrigin: PatientJourneyEventOrigin = "Manual",
 ): JourneyEvent[] {
   const safeTs = (s: string) => { const t = new Date(s).getTime(); return Number.isFinite(t) ? t : Date.now(); };
   const fmt = (s: string) => { try { return format(new Date(safeTs(s)), "MMM d"); } catch { return ""; } };
@@ -172,6 +184,7 @@ function mergeLiveJourney(
     rawTs: safeTs(c.created_at),
     detail: c.subject ? `${c.subject} — ${c.preview}` : c.preview,
     owner: c.logged_by_name ?? undefined,
+    origin: baseOrigin,
   }));
   const mappedTasks: JourneyEvent[] = tasks.map((t) => ({
     type: "intake_followup",
@@ -179,12 +192,14 @@ function mergeLiveJourney(
     rawTs: safeTs(t.created_at),
     detail: t.due_date ? `${t.title} (due ${t.due_date})` : t.title,
     owner: t.owner ?? undefined,
+    origin: baseOrigin,
   }));
   return [...events, ...mappedComms, ...mappedTasks].sort((a, b) => a.rawTs - b.rawTs);
 }
 
 export default function PatientLifetimeJourney() {
   const { leads, loading } = useLeads();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -195,6 +210,13 @@ export default function PatientLifetimeJourney() {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [logOpen, setLogOpen] = useState(false);
   const [followOpen, setFollowOpen] = useState(false);
+
+  // Allow deep-links like /patient-journey?lead=<id>
+  useEffect(() => {
+    const q = searchParams.get("lead");
+    if (q && q !== selectedId) setSelectedId(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const states = useMemo(() => Array.from(new Set(leads.map((l) => l.state).filter(Boolean))).sort(), [leads]);
   const sources = useMemo(() => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))).sort(), [leads]);
@@ -221,7 +243,9 @@ export default function PatientLifetimeJourney() {
   );
   const live = useLeadJourneyLive(selected?.id ?? null);
   const events = useMemo(
-    () => (selected ? mergeLiveJourney(buildEvents(selected), live.communications, live.tasks) : []),
+    () => (selected
+      ? mergeLiveJourney(buildEvents(selected), live.communications, live.tasks, leadSourceJourneyOrigin(selected.source))
+      : []),
     [selected, live.communications, live.tasks],
   );
 
@@ -295,6 +319,7 @@ export default function PatientLifetimeJourney() {
           ) : (
             <>
               <PatientSummary patient={selected} />
+              <JourneySummary patient={selected} liveTasks={live.tasks} liveComms={live.communications} />
 
               <div className="flex flex-wrap gap-1.5">
                 {FILTERS.map((f) => (
@@ -339,9 +364,16 @@ export default function PatientLifetimeJourney() {
                                 <div className="text-[11px] text-muted-foreground">{e.when}</div>
                               </div>
                               {e.detail && <div className="text-xs text-muted-foreground mt-1">{e.detail}</div>}
-                              {e.owner && (
-                                <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-                                  <Badge variant="outline" className="text-[10px] py-0">{e.owner}</Badge>
+                              {(e.owner || e.origin) && (
+                                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                                  {e.origin && (
+                                    <Badge variant="secondary" className="text-[10px] py-0">
+                                      Origin: {e.origin}
+                                    </Badge>
+                                  )}
+                                  {e.owner && (
+                                    <Badge variant="outline" className="text-[10px] py-0">{e.owner}</Badge>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -524,6 +556,7 @@ function EmptyState({ hasLeads }: { hasLeads: boolean }) {
 
 function PatientSummary({ patient }: { patient: Lead }) {
   const displayName = patient.childName || patient.parentName || "Unnamed lead";
+  const origin = leadSourceJourneyOrigin(patient.source);
   return (
     <div className="rounded-2xl border border-border/70 bg-card p-5">
       <div className="flex items-start justify-between gap-3">
@@ -531,7 +564,11 @@ function PatientSummary({ patient }: { patient: Lead }) {
           <div className="text-xs text-muted-foreground">{patient.status}</div>
           <h2 className="text-xl font-semibold tracking-tight text-foreground">{displayName}</h2>
           <div className="text-xs text-muted-foreground mt-1">
-            {patient.state || "—"} · Source: {patient.source} · Owner: {patient.owner || "Unassigned"}
+            {patient.state || "—"} · Source: {leadSourceLabel(patient.source)} · Owner: {patient.owner || "Unassigned"}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <Badge variant="secondary" className="text-[10px] py-0">Origin: {origin}</Badge>
+            <Badge variant="outline" className="text-[10px] py-0">{leadSourceLabel(patient.source)}</Badge>
           </div>
           {patient.parentName && patient.childName && (
             <div className="text-[11px] text-muted-foreground mt-1">
@@ -541,6 +578,59 @@ function PatientSummary({ patient }: { patient: Lead }) {
         </div>
         <Badge variant="outline" className="text-[10px] py-0">{patient.priority}</Badge>
       </div>
+    </div>
+  );
+}
+
+function JourneySummary({
+  patient,
+  liveTasks,
+  liveComms,
+}: {
+  patient: Lead;
+  liveTasks: LeadTaskRow[];
+  liveComms: LeadCommunicationRow[];
+}) {
+  const openTaskCount =
+    liveTasks.filter((t) => t.status !== "completed" && t.status !== "done").length +
+    (patient.tasks ?? []).filter((t) => !t.completed).length;
+  const lastComm = liveComms[0]?.created_at ?? patient.lastContacted ?? null;
+  const missingFlags: string[] = [];
+  if (!patient.phone) missingFlags.push("phone");
+  if (!patient.email) missingFlags.push("email");
+  if (!patient.insurance) missingFlags.push("insurance");
+  (patient.tags ?? []).forEach((t) => { if (/missing|blocker/i.test(t)) missingFlags.push(t); });
+  return (
+    <div className="rounded-2xl border border-border/70 bg-card p-4">
+      <div className="text-xs font-semibold text-foreground mb-2">Journey summary</div>
+      <dl className="grid grid-cols-2 md:grid-cols-3 gap-3 text-[11px]">
+        <SummaryItem label="Current stage" value={patient.status || "—"} />
+        <SummaryItem label="Lead source" value={leadSourceLabel(patient.source)} />
+        <SummaryItem label="Owner" value={patient.owner || "Unassigned"} />
+        <SummaryItem
+          label="Last contact"
+          value={lastComm ? formatDistanceToNow(new Date(lastComm), { addSuffix: true }) : "—"}
+        />
+        <SummaryItem label="Next action" value={patient.nextAction || "—"} />
+        <SummaryItem label="Open tasks" value={openTaskCount ? String(openTaskCount) : "0"} />
+      </dl>
+      {missingFlags.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <span className="text-[11px] text-muted-foreground">Missing info:</span>
+          {missingFlags.map((f) => (
+            <Badge key={f} variant="outline" className="text-[10px] py-0 border-amber-300 text-amber-700">{f}</Badge>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-foreground font-medium mt-0.5 truncate">{value}</dd>
     </div>
   );
 }

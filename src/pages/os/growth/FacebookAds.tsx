@@ -9,7 +9,7 @@ export default function FacebookAds() {
       title="Facebook Ads"
       description="Meta campaign performance, spend, and downstream lead quality."
     >
-      <LeadSourceActions sourceLabel="Facebook Ads" sourceValue="Facebook Ads" utmSource="facebook" />
+      <LeadSourceActions sourceLabel="Facebook Ads" sourceValue="Facebook Ads" integrationId="meta-ads" sourcePage="facebook-ads" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Active campaigns" value="—" status="needs_data" icon={Megaphone} />
         <StatCard label="Spend (30d)" value="—" status="needs_data" />

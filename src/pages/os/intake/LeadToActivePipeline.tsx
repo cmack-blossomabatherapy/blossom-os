@@ -1,11 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { TrendingUp, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { GrowthPageShell, Section, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { LeadStatus } from "@/data/leads";
+import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
+import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 
 const STAGES: LeadStatus[] = [
   "New Lead",
@@ -20,6 +22,7 @@ const STAGES: LeadStatus[] = [
 
 export default function LeadToActivePipeline() {
   const { leads, loading, moveStage, revertStage } = useLeads();
+  const [addOpen, setAddOpen] = useState(false);
 
   const byStage = useMemo(() => {
     const map = new Map<LeadStatus, typeof leads>();
@@ -43,6 +46,7 @@ export default function LeadToActivePipeline() {
       title="Lead To Active Pipeline"
       description="Track every lead through the journey from first contact to active care."
       actions={[
+        { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
         { label: "Open Patient Lifetime Journey", to: "/patient-journey", icon: TrendingUp },
         { label: "Open Leads", to: "/leads?view=pipeline" },
       ]}
@@ -103,6 +107,11 @@ export default function LeadToActivePipeline() {
       {leads.length === 0 && (
         <ReadyForDataNotice message={loading ? "Loading leads…" : "No leads yet. Add a lead or connect a source to populate the pipeline."} />
       )}
+      <NewLeadDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        defaults={buildLeadSourceDefaults("Website", { sourcePage: "lead-to-active" })}
+      />
     </GrowthPageShell>
   );
 }
