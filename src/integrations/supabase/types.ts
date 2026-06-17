@@ -6021,11 +6021,15 @@ export type Database = {
           created_by: string | null
           deductible_amount: number
           deductible_remaining: number
+          diagnosis_status: string | null
+          dob: string | null
+          dx_needed: boolean
           email: string
           email_sent: boolean
           estimated_client_responsibility: number
           estimated_insurance_coverage_percent: number
           estimated_monthly_revenue: number
+          et_call_log: string | null
           expected_weekly_hours: number
           financial_blockers: string[]
           financial_decision_notes: string | null
@@ -6034,20 +6038,35 @@ export type Database = {
           financial_status: Database["public"]["Enums"]["financial_review_status"]
           form_review_status: Database["public"]["Enums"]["intake_form_review_status"]
           form_status: Database["public"]["Enums"]["intake_form_status"]
+          home_phone: string | null
           id: string
           in_network: boolean
           initial_form_link: string | null
           insurance: string | null
           insurance_type: string | null
+          last_contact_date: string | null
           last_contacted_at: string | null
           lead_source: string
+          lead_type: string | null
           max_out_of_pocket: number
+          message_comments: string | null
+          monday_group: string | null
+          monday_item_id: string | null
           next_action: string
           next_task_due: string | null
           non_qualified_reason: string | null
           notes: string | null
+          original_column_data: Json
+          origination_date: string | null
           out_of_network: boolean
+          parent_2_email: string | null
+          parent_2_name: string | null
+          parent_cell_phone: string | null
+          parent_first_name: string | null
+          parent_last_name: string | null
           parent_name: string
+          patient_first_name: string | null
+          patient_last_name: string | null
           payment_plan_amount: number
           payment_plan_needed: boolean
           payment_plan_sent: boolean
@@ -6055,14 +6074,23 @@ export type Database = {
           payment_plan_status: Database["public"]["Enums"]["payment_plan_status"]
           phone: string
           pipeline_stage: Database["public"]["Enums"]["intake_pipeline_stage"]
+          preferred_contact_method: string | null
           primary_insurance: string | null
           priority: Database["public"]["Enums"]["intake_priority"]
           ready_for_client_conversion: boolean
+          referral_partner: string | null
+          referral_source: string | null
+          regular_call_log: string | null
           secondary_insurance: string | null
           sms_sent: boolean
+          source_metadata: Json
           stage_entered_at: string
           state: string
+          tags: string[]
           updated_at: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
           vob_file_path: string | null
           vob_status: Database["public"]["Enums"]["intake_vob_status"]
         }
@@ -6079,11 +6107,15 @@ export type Database = {
           created_by?: string | null
           deductible_amount?: number
           deductible_remaining?: number
+          diagnosis_status?: string | null
+          dob?: string | null
+          dx_needed?: boolean
           email: string
           email_sent?: boolean
           estimated_client_responsibility?: number
           estimated_insurance_coverage_percent?: number
           estimated_monthly_revenue?: number
+          et_call_log?: string | null
           expected_weekly_hours?: number
           financial_blockers?: string[]
           financial_decision_notes?: string | null
@@ -6092,20 +6124,35 @@ export type Database = {
           financial_status?: Database["public"]["Enums"]["financial_review_status"]
           form_review_status?: Database["public"]["Enums"]["intake_form_review_status"]
           form_status?: Database["public"]["Enums"]["intake_form_status"]
+          home_phone?: string | null
           id?: string
           in_network?: boolean
           initial_form_link?: string | null
           insurance?: string | null
           insurance_type?: string | null
+          last_contact_date?: string | null
           last_contacted_at?: string | null
           lead_source?: string
+          lead_type?: string | null
           max_out_of_pocket?: number
+          message_comments?: string | null
+          monday_group?: string | null
+          monday_item_id?: string | null
           next_action?: string
           next_task_due?: string | null
           non_qualified_reason?: string | null
           notes?: string | null
+          original_column_data?: Json
+          origination_date?: string | null
           out_of_network?: boolean
+          parent_2_email?: string | null
+          parent_2_name?: string | null
+          parent_cell_phone?: string | null
+          parent_first_name?: string | null
+          parent_last_name?: string | null
           parent_name: string
+          patient_first_name?: string | null
+          patient_last_name?: string | null
           payment_plan_amount?: number
           payment_plan_needed?: boolean
           payment_plan_sent?: boolean
@@ -6113,14 +6160,23 @@ export type Database = {
           payment_plan_status?: Database["public"]["Enums"]["payment_plan_status"]
           phone: string
           pipeline_stage?: Database["public"]["Enums"]["intake_pipeline_stage"]
+          preferred_contact_method?: string | null
           primary_insurance?: string | null
           priority?: Database["public"]["Enums"]["intake_priority"]
           ready_for_client_conversion?: boolean
+          referral_partner?: string | null
+          referral_source?: string | null
+          regular_call_log?: string | null
           secondary_insurance?: string | null
           sms_sent?: boolean
+          source_metadata?: Json
           stage_entered_at?: string
           state: string
+          tags?: string[]
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
           vob_file_path?: string | null
           vob_status?: Database["public"]["Enums"]["intake_vob_status"]
         }
@@ -6137,11 +6193,15 @@ export type Database = {
           created_by?: string | null
           deductible_amount?: number
           deductible_remaining?: number
+          diagnosis_status?: string | null
+          dob?: string | null
+          dx_needed?: boolean
           email?: string
           email_sent?: boolean
           estimated_client_responsibility?: number
           estimated_insurance_coverage_percent?: number
           estimated_monthly_revenue?: number
+          et_call_log?: string | null
           expected_weekly_hours?: number
           financial_blockers?: string[]
           financial_decision_notes?: string | null
@@ -6150,20 +6210,35 @@ export type Database = {
           financial_status?: Database["public"]["Enums"]["financial_review_status"]
           form_review_status?: Database["public"]["Enums"]["intake_form_review_status"]
           form_status?: Database["public"]["Enums"]["intake_form_status"]
+          home_phone?: string | null
           id?: string
           in_network?: boolean
           initial_form_link?: string | null
           insurance?: string | null
           insurance_type?: string | null
+          last_contact_date?: string | null
           last_contacted_at?: string | null
           lead_source?: string
+          lead_type?: string | null
           max_out_of_pocket?: number
+          message_comments?: string | null
+          monday_group?: string | null
+          monday_item_id?: string | null
           next_action?: string
           next_task_due?: string | null
           non_qualified_reason?: string | null
           notes?: string | null
+          original_column_data?: Json
+          origination_date?: string | null
           out_of_network?: boolean
+          parent_2_email?: string | null
+          parent_2_name?: string | null
+          parent_cell_phone?: string | null
+          parent_first_name?: string | null
+          parent_last_name?: string | null
           parent_name?: string
+          patient_first_name?: string | null
+          patient_last_name?: string | null
           payment_plan_amount?: number
           payment_plan_needed?: boolean
           payment_plan_sent?: boolean
@@ -6171,14 +6246,23 @@ export type Database = {
           payment_plan_status?: Database["public"]["Enums"]["payment_plan_status"]
           phone?: string
           pipeline_stage?: Database["public"]["Enums"]["intake_pipeline_stage"]
+          preferred_contact_method?: string | null
           primary_insurance?: string | null
           priority?: Database["public"]["Enums"]["intake_priority"]
           ready_for_client_conversion?: boolean
+          referral_partner?: string | null
+          referral_source?: string | null
+          regular_call_log?: string | null
           secondary_insurance?: string | null
           sms_sent?: boolean
+          source_metadata?: Json
           stage_entered_at?: string
           state?: string
+          tags?: string[]
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
           vob_file_path?: string | null
           vob_status?: Database["public"]["Enums"]["intake_vob_status"]
         }
