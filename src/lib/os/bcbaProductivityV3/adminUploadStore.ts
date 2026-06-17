@@ -367,8 +367,8 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
         procedure_code: p.row.code || null,
         hours: p.row.hours,
         units: p.units,
-        raw: p.raw,
-        normalized: p.row as unknown as Record<string, unknown>,
+        raw: p.raw as any,
+        normalized: p.row as any,
         active: true,
       }));
       const { error: rowsErr } = await supabase
