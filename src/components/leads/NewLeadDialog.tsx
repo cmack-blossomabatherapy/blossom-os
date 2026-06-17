@@ -120,7 +120,10 @@ interface NewLeadDialogProps {
   onOpenChange: (open: boolean) => void;
   onCreated?: (lead: Lead) => void;
   /** Pre-fill values when the dialog opens (e.g. from a marketing source page). */
-  defaults?: Partial<FormShape>;
+  defaults?: Partial<FormShape> & {
+    /** Free-form source attribution payload persisted on the new lead. */
+    sourceMetadata?: Record<string, unknown>;
+  };
 }
 
 export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLeadDialogProps) {
