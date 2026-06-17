@@ -9,7 +9,7 @@ import {
   BookOpen, Megaphone, Inbox, AlertTriangle,
   HeartHandshake, MapPin, UserPlus, Headphones, KeyRound, IdCard, Smartphone,
   Stethoscope, PhoneCall, BookUser, Activity, Bug, UserCheck,
-  History, Plug, MonitorSmartphone, XCircle, CheckCircle2, ListTodo,
+  Plug, MonitorSmartphone, XCircle, CheckCircle2, ListTodo,
   Phone, FileText, LogOut,
   type LucideIcon,
 } from "lucide-react";
@@ -240,8 +240,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     setSearchParams(params, { replace: true });
   };
 
-  const showOldVersion = platform("accessOldVersion");
-
   // CmdK palette
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -381,14 +379,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                     No menu matches for "{mobileSearch.trim()}".
                   </p>
                 )}
-                {showOldVersion && (
-                  <button
-                    onClick={() => { setMobileOpen(false); navigate("/dashboard/legacy"); }}
-                    className="mt-4 flex w-full items-center gap-2 rounded-xl px-3 py-3 text-[13px] font-medium text-muted-foreground hover:bg-foreground/[0.04]"
-                  >
-                    <History className="h-4 w-4" /> Old Version
-                  </button>
-                )}
               </nav>
             </aside>
           </div>
@@ -439,15 +429,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               </div>
             )}
           </nav>
-
-          {!collapsed && showOldVersion && (
-            <button
-              onClick={() => navigate("/dashboard/legacy")}
-              className="mx-3 mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-[11.5px] font-medium text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
-            >
-              <History className="h-3.5 w-3.5" /> Old Version
-            </button>
-          )}
 
           <button
             onClick={() => setCollapsed((c) => !c)}
