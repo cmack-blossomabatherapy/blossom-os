@@ -64,19 +64,22 @@ describe("Sprint 05 — Integration registry covers Blossom's actual systems", (
 
 describe("Sprint 05 — Admin Integrations page consumes the shared registry", () => {
   const src = read("src/pages/admin/Integrations.tsx");
+  const registrySrc = read("src/lib/os/integrations/integrationRegistry.ts");
   it("imports from the integration registry", () => {
     expect(src).toMatch(/@\/lib\/os\/integrations\/integrationRegistry/);
+    // Sprint 06: must actually CONSUME it, not just import-and-discard.
+    expect(src).toMatch(/BLOSSOM_INTEGRATIONS\.map\(/);
   });
-  it("renders newly added systems (Mailchimp, LeadTrap, Jivetel, Fathom AI, BloomGrowth)", () => {
+  it("registry includes newly added systems (Mailchimp, LeadTrap, Jivetel, Fathom AI, BloomGrowth)", () => {
     for (const name of ["Mailchimp", "LeadTrap", "Jivetel", "Fathom AI", "BloomGrowth"]) {
-      expect(src).toContain(name);
+      expect(registrySrc).toContain(name);
     }
   });
-  it("uses combined display labels for ambiguous vendors", () => {
-    expect(src).toContain("Solom / Solum");
-    expect(src).toContain("CTM / CallTrackingMetrics");
-    expect(src).toContain("Facebook Ads / Meta Ads");
-    expect(src).toContain("Microsoft Outlook / Microsoft 365");
+  it("registry uses combined display labels for ambiguous vendors", () => {
+    expect(registrySrc).toContain("Solom / Solum");
+    expect(registrySrc).toContain("CTM / CallTrackingMetrics");
+    expect(registrySrc).toContain("Facebook Ads / Meta Ads");
+    expect(registrySrc).toContain("Microsoft Outlook / Microsoft 365");
   });
 });
 
