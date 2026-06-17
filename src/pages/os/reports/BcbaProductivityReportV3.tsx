@@ -841,100 +841,43 @@ export default function BcbaProductivityReportV3() {
           </TabsContent>
 
           <TabsContent value="upload" className="space-y-4">
-            {/* Data source selector — shared admin dataset vs manual upload */}
-            <div className="rounded-xl border bg-card/60 p-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Data source
-                </span>
-                <div className="inline-flex rounded-lg border bg-background p-0.5 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setDataSource("shared")}
-                    className={cn(
-                      "px-3 py-1 rounded-md transition",
-                      dataSource === "shared" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            {/* Shared admin dataset — manual upload has been retired. */}
+            <div className="rounded-2xl border bg-card/60 p-5">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-primary/10 p-3 text-primary"><Database className="h-6 w-6" /></div>
+                  <div>
+                    <div className="font-medium">Shared admin dataset</div>
+                    <div className="text-xs text-muted-foreground max-w-xl">
+                      This report runs on CentralReach data uploaded by admins in System Tools.
+                      Manual uploads have been retired — data now flows in the background.
+                    </div>
+                    {sharedStatus && sharedStatus.activeRowCount > 0 ? (
+                      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5">
+                          Using shared admin dataset
+                        </span>
+                        <span>{sharedStatus.activeRowCount.toLocaleString()} rows</span>
+                        {sharedStatus.earliestServiceDate && sharedStatus.latestServiceDate && (
+                          <span>{sharedStatus.earliestServiceDate} → {sharedStatus.latestServiceDate}</span>
+                        )}
+                        {sharedStatus.lastUploadAt && (
+                          <span>last uploaded {new Date(sharedStatus.lastUploadAt).toLocaleString()}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        No admin-uploaded BCBA productivity dataset found yet. Ask an admin to upload CentralReach data.
+                      </div>
                     )}
-                    disabled={!sharedStatus || sharedStatus.activeRowCount === 0}
-                    title={!sharedStatus || sharedStatus.activeRowCount === 0 ? "No admin-uploaded data yet" : ""}
-                  >
-                    Shared admin dataset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDataSource("manual")}
-                    className={cn(
-                      "px-3 py-1 rounded-md transition",
-                      dataSource === "manual" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    Manual upload
-                  </button>
+                  </div>
                 </div>
-              </div>
-              {dataSource === "shared" && sharedStatus && sharedStatus.activeRowCount > 0 && (
-                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5">
-                    <Database className="h-3 w-3" /> Using shared admin dataset
-                  </span>
-                  <span>{sharedStatus.activeRowCount.toLocaleString()} rows</span>
-                  {sharedStatus.earliestServiceDate && sharedStatus.latestServiceDate && (
-                    <span>{sharedStatus.earliestServiceDate} → {sharedStatus.latestServiceDate}</span>
-                  )}
-                  {sharedStatus.lastUploadAt && (
-                    <span>last uploaded {new Date(sharedStatus.lastUploadAt).toLocaleString()}</span>
-                  )}
-                  <Link to="/system/bcba-productivity-uploads" className="text-primary underline">Manage uploads</Link>
-                  <Button size="sm" variant="outline" className="h-7" onClick={loadSharedDataset} disabled={sharedLoading}>
-                    <RefreshCw className={cn("mr-1 h-3 w-3", sharedLoading && "animate-spin")} /> Refresh
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={loadSharedDataset} disabled={sharedLoading}>
+                    <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", sharedLoading && "animate-spin")} /> Refresh dataset
                   </Button>
-                </div>
-              )}
-              {dataSource === "shared" && (!sharedStatus || sharedStatus.activeRowCount === 0) && (
-                <div className="text-xs text-muted-foreground">
-                  No admin-uploaded BCBA productivity dataset found. Upload manually or ask an admin to upload CentralReach data.
-                </div>
-              )}
-            </div>
-
-            {/* Upload zone */}
-            <div
-              className={cn(
-                "rounded-2xl border-2 border-dashed p-6 transition",
-                dragOver ? "border-primary bg-primary/5" : "border-border bg-card/40",
-              )}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-            >
-              <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
-                <div className="rounded-xl bg-primary/10 p-3 text-primary"><Upload className="h-6 w-6" /></div>
-                <div className="flex-1">
-                  <div className="font-medium">
-                    {fileName ? `Loaded: ${fileName}` : "Upload a single Billing Report (CSV or XLSX)"}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {rows.length > 0
-                      ? `${rows.length.toLocaleString()} rows accepted · ${
-                          assignments.length
-                            ? "ownership resolved via saved Assignment History"
-                            : usingInferred
-                              ? `ownership inferred from this billing report (${inferred.assignments.length} assignments, ${inferred.uniqueBcbas} BCBAs)`
-                              : "Assignment History setup required"
-                        }`
-                      : "Drag a file here, or click choose."}
-                  </div>
-                  {missingCols.length > 0 && (
-                    <div className="mt-2 text-xs text-destructive">Missing columns: {missingCols.join(", ")}</div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    ref={inputRef} type="file" hidden accept={SUPPORTED_EXTENSIONS}
-                    onChange={(e) => handleFiles(e.target.files)}
-                  />
-                  <Button size="sm" onClick={() => inputRef.current?.click()} disabled={loading}>
-                    <FileSpreadsheet className="mr-2 h-4 w-4" /> {loading ? "Parsing…" : "Choose file"}
+                  <Button size="sm" variant="outline" asChild>
+                    <Link to="/system/bcba-productivity-uploads">Manage uploads</Link>
                   </Button>
                 </div>
               </div>
