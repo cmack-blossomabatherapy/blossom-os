@@ -170,27 +170,20 @@ function buildSectionsForRole(role: string): NavSection[] {
     (ROLE_MENUS as Record<string, typeof DEFAULT_ROLE_MENU>)[role] ??
     DEFAULT_ROLE_MENU;
 
-  // Non–super-admin roles: only Training Academy, Resource Library, and
-  // Reports are live. Everything else is shown as "Coming Soon" and is not
-  // clickable.
-  const ALWAYS_LIVE = new Set<string>([
-    "/academy",
-    "/training",
-    "/resource-library",
-    "/reports",
-  ]);
-
   return menu.sections.map((s) => ({
     id: s.id,
     label: s.label,
     defaultCollapsed: s.defaultCollapsed,
-    items: s.items.map((i) => ({
-      to: i.path,
-      label: i.label,
-      icon: i.icon,
-      end: i.path === "/dashboard" || i.path === "/",
-      disabled: !ALWAYS_LIVE.has(i.path),
-    })),
+    items: s.items.map((i) => {
+      const basePath = i.path.split("?")[0];
+      return {
+        to: i.path,
+        label: i.label,
+        icon: i.icon,
+        end: i.path === "/dashboard" || i.path === "/",
+        disabled: !STAGED_ROLE_LIVE_PATHS.has(basePath),
+      };
+    }),
   }));
 }
 
