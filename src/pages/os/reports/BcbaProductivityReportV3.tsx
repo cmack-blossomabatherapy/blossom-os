@@ -215,18 +215,17 @@ export default function BcbaProductivityReportV3() {
 
   useEffect(() => { void refreshAssignments(); }, []);
 
-  /* Detect shared admin dataset on mount. If available, default the data source
-   * selector to "shared". Manual upload behavior is preserved. */
+  /* Load shared admin dataset on mount. This is now the only data source. */
   useEffect(() => {
     (async () => {
       try {
         const s = await getBcbaProductivityDatasetStatus();
         setSharedStatus(s);
-        if (s.activeRowCount > 0 && (sharedRequested || rows.length === 0)) {
-          setDataSource("shared");
+        if (s.activeRowCount > 0) {
+          await loadSharedDataset();
         }
       } catch {
-        /* ignore — manual upload still works */
+        /* ignore — banner will say no admin data found */
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -253,15 +252,6 @@ export default function BcbaProductivityReportV3() {
     }
   }
 
-  /* Auto-load shared dataset when user selects that source (and no rows yet
-   * from that source). */
-  useEffect(() => {
-    if (dataSource === "shared" && sharedStatus && sharedStatus.activeRowCount > 0
-        && fileName !== "Shared admin dataset") {
-      void loadSharedDataset();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataSource, sharedStatus?.activeRowCount]);
 
   useEffect(() => {
     (async () => {
