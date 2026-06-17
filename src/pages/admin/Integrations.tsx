@@ -580,10 +580,90 @@ function IntegrationDrawer({
                     </p>
                   </div>
                   <div className="text-sm font-medium text-foreground">
-                    {integration.name}
+                    {integration.sourceOfTruthFor?.[0] ?? integration.name}
                   </div>
                 </div>
               </Card>
+
+              {/* Registry-derived detail */}
+              {(integration.ownerDepartment ||
+                integration.criticality ||
+                (integration.methods && integration.methods.length > 0)) && (
+                <Card className="rounded-2xl border-border/60 p-4 space-y-3">
+                  <div className="text-sm font-medium">Operational ownership</div>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {integration.ownerDepartment && (
+                      <div>
+                        <div className="uppercase tracking-wider text-muted-foreground">Owner</div>
+                        <div className="mt-0.5 text-foreground">{integration.ownerDepartment}</div>
+                      </div>
+                    )}
+                    {integration.criticality && (
+                      <div>
+                        <div className="uppercase tracking-wider text-muted-foreground">Criticality</div>
+                        <div className="mt-0.5 text-foreground capitalize">{integration.criticality}</div>
+                      </div>
+                    )}
+                    {integration.methods && integration.methods.length > 0 && (
+                      <div className="col-span-2">
+                        <div className="uppercase tracking-wider text-muted-foreground">Sync methods</div>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {integration.methods.map((m) => (
+                            <Badge key={m} variant="secondary" className="rounded-full text-[10px]">
+                              {m}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
+
+              {integration.inboundData && integration.inboundData.length > 0 && (
+                <Card className="rounded-2xl border-border/60 p-4">
+                  <div className="text-sm font-medium">Inbound data</div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {integration.inboundData.map((d) => (
+                      <Badge key={d} variant="secondary" className="rounded-full text-[11px]">
+                        {d}
+                      </Badge>
+                    ))}
+                  </div>
+                  {integration.outboundData && integration.outboundData.length > 0 && (
+                    <>
+                      <div className="mt-3 text-sm font-medium">Outbound data</div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {integration.outboundData.map((d) => (
+                          <Badge key={d} variant="outline" className="rounded-full text-[11px]">
+                            {d}
+                          </Badge>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </Card>
+              )}
+
+              {integration.dependentModules && integration.dependentModules.length > 0 && (
+                <Card className="rounded-2xl border-border/60 p-4">
+                  <div className="text-sm font-medium">Dependent Blossom OS modules</div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {integration.dependentModules.map((m) => (
+                      <Badge key={m} variant="secondary" className="rounded-full text-[11px]">
+                        {m}
+                      </Badge>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {integration.notes && (
+                <Card className="rounded-2xl border-border/60 bg-muted/20 p-4">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Notes</div>
+                  <p className="mt-1 text-sm text-foreground">{integration.notes}</p>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="activity" className="mt-6">
