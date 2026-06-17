@@ -57,6 +57,7 @@ export default function Leads() {
     if (src) {
       setFilters((f) => (f.sources.includes(src) ? f : { ...f, sources: [...f.sources, src] }));
     }
+    if (searchParams.get("new") === "1") setNewLeadOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
