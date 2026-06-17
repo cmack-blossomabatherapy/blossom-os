@@ -259,10 +259,14 @@ function EditUserSheet({
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Row | null>(user);
   const [selectedRoles, setSelectedRoles] = useState<Set<AppRole>>(new Set());
+  const [delivery, setDelivery] = useState<InviteDeliveryStatus | null>(null);
+  const [checkingDelivery, setCheckingDelivery] = useState(false);
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     setForm(user);
     setSelectedRoles(new Set(user?.roles ?? []));
+    setDelivery(null);
   }, [user]);
 
   if (!form) return null;
@@ -322,6 +326,8 @@ function EditUserSheet({
       await supabase
         .from("employees")
         .update({
+          first_name: (form.display_name ?? "").trim().split(/\s+/)[0] || null,
+          last_name: (form.display_name ?? "").trim().split(/\s+/).slice(1).join(" ") || null,
           state: form.state,
           states_supported: form.state ? [form.state] : [],
         })
@@ -346,6 +352,43 @@ function EditUserSheet({
     } finally {
       setSaving(false);
     }
+  };
+
+  const checkInviteDelivery = async () => {
+    if (!form || form.isWorkforce) return;
+    setCheckingDelivery(true);
+    const { data, error } = await supabase.functions.invoke("admin-check-welcome-email", {
+      body: { userId: form.user_id, email: form.email },
+    });
+    setCheckingDelivery(false);
+    if (error || !data?.ok) {
+      toast({ title: "Delivery check failed", description: data?.error ?? error?.message ?? "Could not check the latest invite.", variant: "destructive" });
+      return;
+    }
+    setDelivery(data as InviteDeliveryStatus);
+  };
+
+  const resendWelcome = async () => {
+    if (!form || form.isWorkforce || !form.email) return;
+    setResending(true);
+    const { data, error } = await supabase.functions.invoke("admin-resend-welcome-email", {
+      body: {
+        userId: form.user_id,
+        email: form.email,
+        displayName: form.display_name ?? undefined,
+        roles: Array.from(selectedRoles),
+        jobTitle: form.job_title ?? undefined,
+        siteUrl: window.location.origin,
+      },
+    });
+    setResending(false);
+    if (error || !data?.ok) {
+      toast({ title: "Email not sent", description: data?.error ?? error?.message ?? "The welcome email could not be resent.", variant: "destructive" });
+      return;
+    }
+    setForm({ ...form, welcome_sent_at: data.welcomeSentAt ?? new Date().toISOString() });
+    setDelivery(null);
+    toast({ title: "Welcome email resent" });
   };
 
   const grouped = ROLE_GROUPS.map((g) => ({
@@ -409,6 +452,47 @@ function EditUserSheet({
               </Field>
             </div>
           </section>
+
+          {!form.isWorkforce && (
+          <section className="space-y-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-[12.5px] font-semibold">Welcome email</h3>
+                <p className="text-[11.5px] text-muted-foreground">
+                  {form.welcome_sent_at ? `Last marked sent ${new Date(form.welcome_sent_at).toLocaleString()}` : "No confirmed welcome timestamp on this profile yet."}
+                </p>
+              </div>
+              <Badge variant="outline" className="gap-1 text-[10.5px]">
+                <MailCheck className="h-3 w-3" /> Invite
+              </Badge>
+            </div>
+            {delivery && (
+              <div className="rounded-lg border border-foreground/[0.06] bg-background px-3 py-2 text-[12px]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={delivery.provider?.last_event === "delivered" ? "default" : delivery.provider?.last_event === "bounced" ? "destructive" : "secondary"} className="text-[10.5px]">
+                    {delivery.provider?.last_event ?? delivery.log?.status ?? "No provider event"}
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    {delivery.log?.created_at ? new Date(delivery.log.created_at).toLocaleString() : "No invite log found"}
+                  </span>
+                </div>
+                {delivery.provider?.subject && <p className="mt-2 text-muted-foreground">Subject: {delivery.provider.subject}</p>}
+                {delivery.providerError && <p className="mt-2 flex gap-1 text-destructive"><AlertTriangle className="mt-0.5 h-3.5 w-3.5" /> {delivery.providerError}</p>}
+                {delivery.log?.error_message && <p className="mt-2 text-destructive">{delivery.log.error_message}</p>}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={checkInviteDelivery} disabled={checkingDelivery || resending} className="gap-2">
+                {checkingDelivery ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                Check delivery
+              </Button>
+              <Button type="button" variant="secondary" size="sm" onClick={resendWelcome} disabled={checkingDelivery || resending || !form.email} className="gap-2">
+                {resending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MailCheck className="h-3.5 w-3.5" />}
+                Resend welcome
+              </Button>
+            </div>
+          </section>
+          )}
 
           {!form.isWorkforce && (
           <section className="space-y-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-4">
