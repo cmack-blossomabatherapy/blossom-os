@@ -3,16 +3,16 @@ import { Link } from "react-router-dom";
 import { ClipboardList, Plus, Phone, Mail, MapPin, User, Flame } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
+import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
+import { getLeadWorkflowRisk } from "@/lib/intake/intakeWorkflow";
 
 const QUEUE_STAGES = new Set(["New Lead", "In Contact"]);
 
 export default function ReferralQueue() {
-  const { leads, loading, moveStage, assignOwner, addTag } = useLeads();
+  const { leads, loading } = useLeads();
   const [addOpen, setAddOpen] = useState(false);
 
   const queue = useMemo(
@@ -62,18 +62,18 @@ export default function ReferralQueue() {
                   <div>Owner: {lead.owner || "Unassigned"}</div>
                   {lead.nextAction && <div>Next: {lead.nextAction}</div>}
                 </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  <Button asChild size="sm" variant="outline"><Link to={`/leads/${lead.id}`}>Open Lead</Link></Button>
-                  <Button asChild size="sm" variant="ghost"><Link to={`/leads/${lead.id}#log`}>Log Contact</Link></Button>
-                  <Button size="sm" variant="ghost" onClick={() => { moveStage([lead.id], "In Contact"); toast.success("Moved to In Contact"); }}>Move to Contacted</Button>
-                  <Button size="sm" variant="ghost" onClick={() => {
-                    const owner = window.prompt("Assign owner to", lead.owner || "");
-                    if (owner && owner.trim()) { assignOwner([lead.id], owner.trim()); toast.success("Owner assigned"); }
-                  }}>Assign Owner</Button>
-                  <Button size="sm" variant="ghost" onClick={() => {
-                    const tag = window.prompt("Add tag");
-                    if (tag && tag.trim()) { addTag([lead.id], tag.trim()); toast.success("Tag added"); }
-                  }}>Add Tag</Button>
+                {(() => {
+                  const risk = getLeadWorkflowRisk(lead);
+                  return risk.reasons.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {risk.reasons.slice(0, 3).map((r) => (
+                        <Badge key={r} variant="secondary" className="text-[10px] py-0">{r}</Badge>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
+                <div className="mt-3">
+                  <LeadActionPanel lead={lead} compact sourcePage="referral-queue" />
                 </div>
               </div>
             ))}
