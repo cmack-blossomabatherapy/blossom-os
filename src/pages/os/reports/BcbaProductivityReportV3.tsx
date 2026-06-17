@@ -265,7 +265,7 @@ export default function BcbaProductivityReportV3() {
           return;
         }
       }
-      // Manual upload retired — data only comes from the shared admin dataset.
+      // Auto-load shared admin dataset when no saved report param is present.
     })();
   }, [savedParam]);
 
