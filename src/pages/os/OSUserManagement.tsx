@@ -326,8 +326,8 @@ function EditUserSheet({
       await supabase
         .from("employees")
         .update({
-          first_name: (form.display_name ?? "").trim().split(/\s+/)[0] || null,
-          last_name: (form.display_name ?? "").trim().split(/\s+/).slice(1).join(" ") || null,
+          first_name: (form.display_name ?? "").trim().split(/\s+/)[0] || "Team",
+          last_name: (form.display_name ?? "").trim().split(/\s+/).slice(1).join(" ") || "Member",
           state: form.state,
           states_supported: form.state ? [form.state] : [],
         })
