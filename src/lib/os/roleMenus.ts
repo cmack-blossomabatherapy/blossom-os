@@ -144,7 +144,11 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     ],
   },
   assistant_state_director: {
-    active: BASE_ACTIVE,
+    active: BASE_ACTIVE.map((item) =>
+      item.label === "Training Academy"
+        ? { ...item, path: "/training" }
+        : item,
+    ),
     comingSoon: [
       cs("State Support Dashboard", LayoutDashboard),
       cs("State Intake Support", Briefcase),
@@ -175,7 +179,11 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     ],
   },
   state_director: {
-    active: BASE_ACTIVE,
+    active: BASE_ACTIVE.map((item) =>
+      item.label === "Training Academy"
+        ? { ...item, path: "/training" }
+        : item,
+    ),
     comingSoon: [
       cs("State Dashboard", LayoutDashboard),
       cs("State Health", MapPin),
