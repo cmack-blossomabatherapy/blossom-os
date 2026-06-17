@@ -104,6 +104,14 @@ describe("Sprint 03 — Patient Lifetime Journey", () => {
   it("does not reference MOCK_PATIENTS as source of truth", () => {
     expect(src).not.toMatch(/MOCK_PATIENTS/);
   });
+  it("Sprint 04 Phase C: no longer uses local interactions storage key", () => {
+    expect(src).not.toMatch(/blossom-os\.lead-interactions/);
+  });
+  it("Sprint 04 Phase C: persists interactions/follow-ups via useLeadJourneyLive", () => {
+    expect(src).toMatch(/useLeadJourneyLive/);
+    expect(src).toMatch(/logInteraction/);
+    expect(src).toMatch(/addFollowUp/);
+  });
 });
 
 describe("Sprint 03 — Intake pages use useLeads + action labels", () => {

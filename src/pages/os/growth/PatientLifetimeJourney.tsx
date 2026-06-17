@@ -14,28 +14,13 @@ import { cn } from "@/lib/utils";
 import { GrowthPageShell, Section } from "@/components/os/growth/GrowthPageShell";
 import { LiveActivityFeed } from "@/components/growth/LiveActivityFeed";
 import { useLeads } from "@/contexts/LeadsContext";
+import { useLeadJourneyLive, type LeadCommunicationRow, type LeadTaskRow } from "@/hooks/useLeadJourneyLive";
 import type { Lead } from "@/data/leads";
 import { format, formatDistanceToNow } from "date-fns";
 
-// Local interactions persisted per-lead so users can log calls/notes before
-// the full backend wiring lands. Key: blossom-os.lead-interactions.v1
-const INTERACTION_KEY = "blossom-os.lead-interactions.v1";
-type LocalInteraction = {
-  id: string;
-  leadId: string;
-  kind: "call" | "email" | "text" | "note" | "follow-up";
-  preview: string;
-  when: string; // ISO
-  owner?: string;
-  dueDate?: string;
-};
-function loadInteractions(): LocalInteraction[] {
-  if (typeof window === "undefined") return [];
-  try { return JSON.parse(window.localStorage.getItem(INTERACTION_KEY) || "[]"); } catch { return []; }
-}
-function saveInteractions(rows: LocalInteraction[]) {
-  try { window.localStorage.setItem(INTERACTION_KEY, JSON.stringify(rows)); } catch { /* ignore */ }
-}
+// Sprint 04 Phase C — interactions and follow-ups persist to Lovable Cloud
+// (intake_communications + intake_tasks). No localStorage fallback.
+type InteractionKind = "call" | "sms" | "email" | "note";
 
 type FilterKey =
   | "all" | "calls" | "emails" | "forms" | "intake" | "insurance"
@@ -174,17 +159,28 @@ function buildEvents(lead: Lead): JourneyEvent[] {
   return events.sort((a, b) => a.rawTs - b.rawTs);
 }
 
-function mergeLocalInteractions(lead: Lead, events: JourneyEvent[], local: LocalInteraction[]): JourneyEvent[] {
+function mergeLiveJourney(
+  events: JourneyEvent[],
+  comms: LeadCommunicationRow[],
+  tasks: LeadTaskRow[],
+): JourneyEvent[] {
   const safeTs = (s: string) => { const t = new Date(s).getTime(); return Number.isFinite(t) ? t : Date.now(); };
-  const mapped: JourneyEvent[] = local.filter((i) => i.leadId === lead.id).map((i) => ({
-    type: i.kind === "call" ? "call_received" : i.kind === "email" ? "email_sent"
-        : i.kind === "text" ? "text" : i.kind === "follow-up" ? "intake_followup" : "parent_contact",
-    when: format(new Date(safeTs(i.when)), "MMM d"),
-    rawTs: safeTs(i.when),
-    detail: i.dueDate ? `${i.preview} (due ${i.dueDate})` : i.preview,
-    owner: i.owner,
+  const fmt = (s: string) => { try { return format(new Date(safeTs(s)), "MMM d"); } catch { return ""; } };
+  const mappedComms: JourneyEvent[] = comms.map((c) => ({
+    type: communicationToEventType(c.communication_type),
+    when: fmt(c.created_at),
+    rawTs: safeTs(c.created_at),
+    detail: c.subject ? `${c.subject} — ${c.preview}` : c.preview,
+    owner: c.logged_by_name ?? undefined,
   }));
-  return [...events, ...mapped].sort((a, b) => a.rawTs - b.rawTs);
+  const mappedTasks: JourneyEvent[] = tasks.map((t) => ({
+    type: "intake_followup",
+    when: fmt(t.created_at),
+    rawTs: safeTs(t.created_at),
+    detail: t.due_date ? `${t.title} (due ${t.due_date})` : t.title,
+    owner: t.owner ?? undefined,
+  }));
+  return [...events, ...mappedComms, ...mappedTasks].sort((a, b) => a.rawTs - b.rawTs);
 }
 
 export default function PatientLifetimeJourney() {
@@ -197,10 +193,8 @@ export default function PatientLifetimeJourney() {
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [interactions, setInteractions] = useState<LocalInteraction[]>(() => loadInteractions());
   const [logOpen, setLogOpen] = useState(false);
   const [followOpen, setFollowOpen] = useState(false);
-  useEffect(() => { saveInteractions(interactions); }, [interactions]);
 
   const states = useMemo(() => Array.from(new Set(leads.map((l) => l.state).filter(Boolean))).sort(), [leads]);
   const sources = useMemo(() => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))).sort(), [leads]);
@@ -225,9 +219,10 @@ export default function PatientLifetimeJourney() {
     () => leads.find((l) => l.id === selectedId) ?? null,
     [leads, selectedId],
   );
+  const live = useLeadJourneyLive(selected?.id ?? null);
   const events = useMemo(
-    () => (selected ? mergeLocalInteractions(selected, buildEvents(selected), interactions) : []),
-    [selected, interactions],
+    () => (selected ? mergeLiveJourney(buildEvents(selected), live.communications, live.tasks) : []),
+    [selected, live.communications, live.tasks],
   );
 
   return (
@@ -244,9 +239,12 @@ export default function PatientLifetimeJourney() {
       ]}
     >
       {selected && (
-        <div className="flex flex-wrap gap-2 mb-3">
-          <Button size="sm" onClick={() => setLogOpen(true)}><Plus className="h-4 w-4 mr-1.5" /> Log Interaction</Button>
-          <Button size="sm" variant="outline" onClick={() => setFollowOpen(true)}>Add Follow-Up</Button>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <Button size="sm" disabled={!live.isPersistable} onClick={() => setLogOpen(true)}><Plus className="h-4 w-4 mr-1.5" /> Log Interaction</Button>
+          <Button size="sm" variant="outline" disabled={!live.isPersistable} onClick={() => setFollowOpen(true)}>Add Follow-Up</Button>
+          {!live.isPersistable && (
+            <span className="text-[11px] text-muted-foreground">This lead isn't synced to the database yet — interactions can't be saved.</span>
+          )}
         </div>
       )}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
@@ -397,25 +395,27 @@ export default function PatientLifetimeJourney() {
       <LogInteractionDialog
         open={logOpen}
         onOpenChange={setLogOpen}
-        onSave={(kind, preview, owner) => {
+        onSave={async (kind, preview, owner) => {
           if (!selected) return;
-          setInteractions((rows) => [
-            { id: `li-${Date.now()}`, leadId: selected.id, kind, preview, when: new Date().toISOString(), owner },
-            ...rows,
-          ]);
-          toast.success("Interaction logged");
+          try {
+            await live.logInteraction(kind, preview, owner);
+            toast.success("Interaction logged");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Could not log interaction");
+          }
         }}
       />
       <FollowUpDialog
         open={followOpen}
         onOpenChange={setFollowOpen}
-        onSave={(title, dueDate, owner) => {
+        onSave={async (title, dueDate, owner) => {
           if (!selected) return;
-          setInteractions((rows) => [
-            { id: `li-${Date.now()}`, leadId: selected.id, kind: "follow-up", preview: title, when: new Date().toISOString(), owner, dueDate },
-            ...rows,
-          ]);
-          toast.success("Follow-up added");
+          try {
+            await live.addFollowUp(title, dueDate, owner);
+            toast.success("Follow-up added");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Could not add follow-up");
+          }
         }}
       />
     </GrowthPageShell>
@@ -424,8 +424,8 @@ export default function PatientLifetimeJourney() {
 
 function LogInteractionDialog({
   open, onOpenChange, onSave,
-}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (kind: LocalInteraction["kind"], preview: string, owner?: string) => void }) {
-  const [kind, setKind] = useState<LocalInteraction["kind"]>("call");
+}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (kind: InteractionKind, preview: string, owner?: string) => void | Promise<void> }) {
+  const [kind, setKind] = useState<InteractionKind>("call");
   const [preview, setPreview] = useState("");
   const [owner, setOwner] = useState("");
   return (
@@ -433,11 +433,11 @@ function LogInteractionDialog({
       <DialogContent>
         <DialogHeader><DialogTitle>Log Interaction</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <Select value={kind} onValueChange={(v) => setKind(v as LocalInteraction["kind"])}>
+          <Select value={kind} onValueChange={(v) => setKind(v as InteractionKind)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="call">Call</SelectItem>
-              <SelectItem value="text">Text</SelectItem>
+              <SelectItem value="sms">Text</SelectItem>
               <SelectItem value="email">Email</SelectItem>
               <SelectItem value="note">Note</SelectItem>
             </SelectContent>
@@ -461,7 +461,7 @@ function LogInteractionDialog({
 
 function FollowUpDialog({
   open, onOpenChange, onSave,
-}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (title: string, dueDate: string, owner?: string) => void }) {
+}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (title: string, dueDate: string, owner?: string) => void | Promise<void> }) {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [owner, setOwner] = useState("");
