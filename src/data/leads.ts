@@ -157,6 +157,40 @@ export interface Lead {
   documents: { name: string; type: string; url?: string; uploadedAt?: string }[];
   communications: CommunicationLog[];
   automationLog: string[];
+  /** Extended intake fields sourced from public.intake_leads (Monday-style columns). */
+  intake?: LeadIntakeFields;
+}
+
+/** Monday-style intake fields persisted on public.intake_leads. */
+export interface LeadIntakeFields {
+  patientFirstName?: string | null;
+  patientLastName?: string | null;
+  dob?: string | null;
+  parentFirstName?: string | null;
+  parentLastName?: string | null;
+  parent2Name?: string | null;
+  parent2Email?: string | null;
+  parentCellPhone?: string | null;
+  homePhone?: string | null;
+  preferredContactMethod?: string | null;
+  leadType?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  referralSource?: string | null;
+  referralPartner?: string | null;
+  originationDate?: string | null;
+  lastContactDate?: string | null;
+  regularCallLog?: string | null;
+  etCallLog?: string | null;
+  messageComments?: string | null;
+  secondaryInsurance?: string | null;
+  diagnosisStatus?: string | null;
+  dxNeeded?: boolean | null;
+  mondayItemId?: string | null;
+  mondayGroup?: string | null;
+  sourceMetadata?: Record<string, unknown> | null;
+  originalColumnData?: Record<string, unknown> | null;
 }
 
 export const pipelineStages: { name: LeadStatus; color: string }[] = [
