@@ -232,7 +232,6 @@ import OSIntakeClients from "./pages/os/OSIntakeClients";
 import OSIntakeAuthorizations from "./pages/os/OSIntakeAuthorizations";
 import OpsExecutiveDashboard from "./pages/os/operations/OpsExecutiveDashboard";
 import ExecutiveOverview from "./pages/os/executive/ExecutiveOverview";
-import WorkspacePage from "./pages/os/workspaces/WorkspacePage";
 import CompanyPulse from "./pages/os/executive/CompanyPulse";
 import ExecutiveBriefing from "./pages/os/executive/ExecutiveBriefing";
 import OrganizationalHealth from "./pages/os/executive/OrganizationalHealth";
