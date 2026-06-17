@@ -163,6 +163,23 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
 /* Section builder                                                    */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Staged-menu live paths.
+ *
+ * For non–super-admin roles, every menu item in `ROLE_MENUS` is rendered
+ * as visible-but-inert ("Soon") UNLESS its base path is in this set.
+ * Super Admin is not subject to this gate.
+ *
+ * This is the intentional product behavior: users can see where Blossom OS
+ * is going, but only the surfaces below are actually clickable today.
+ */
+export const STAGED_ROLE_LIVE_PATHS: ReadonlySet<string> = new Set([
+  "/academy",
+  "/training",
+  "/resource-library",
+  "/reports",
+]);
+
 function buildSectionsForRole(role: string): NavSection[] {
   if (role === "super_admin") return SUPER_ADMIN_SECTIONS;
 
