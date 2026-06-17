@@ -83,8 +83,8 @@ export default function OSTraining() {
   const { trainings } = useAcademy(); // subscribe to store
 
   // Assistant State Director uses the same State Director learning journey.
-  const isStateJourneyRole = role === "state_director" || role === "assistant_state_director";
-  const isSD = isStateJourneyRole;
+  const isSD = role === "state_director" || role === "assistant_state_director";
+  const isStateJourneyRole = isSD;
   const journeyRole = isStateJourneyRole ? "state_director" : role;
 
   // --- DB-backed learner home (shared with Training Management) ---
