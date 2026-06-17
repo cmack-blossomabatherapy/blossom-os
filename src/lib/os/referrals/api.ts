@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ReferralCompany, ReferralContact, ReferralActivity, ReferralImportBatch } from "./types";
 import { normalizeCompanyName, extractDomain } from "./utils";
+import type { Database } from "@/integrations/supabase/types";
+
+export type ReferralCrmTask = Database["public"]["Tables"]["referral_crm_tasks"]["Row"];
 
 export async function listContacts(): Promise<ReferralContact[]> {
   const { data, error } = await supabase
@@ -166,3 +169,32 @@ export async function createActivity(input: Partial<ReferralActivity> & { activi
 }
 
 export { extractDomain };
+
+// ---------- referral_crm_tasks ----------
+
+export async function listTasks(filter: { companyId?: string; contactId?: string } = {}): Promise<ReferralCrmTask[]> {
+  let q = supabase.from("referral_crm_tasks").select("*").is("archived_at", null).order("due_date", { ascending: true, nullsFirst: false });
+  if (filter.companyId) q = q.eq("company_id", filter.companyId);
+  if (filter.contactId) q = q.eq("contact_id", filter.contactId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createTask(input: Partial<ReferralCrmTask> & { title: string }): Promise<ReferralCrmTask> {
+  const { data, error } = await supabase
+    .from("referral_crm_tasks")
+    .insert({ status: "Open", ...input })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function setTaskStatus(id: string, status: "Open" | "Done"): Promise<void> {
+  const { error } = await supabase
+    .from("referral_crm_tasks")
+    .update({ status, completed_at: status === "Done" ? new Date().toISOString() : null })
+    .eq("id", id);
+  if (error) throw error;
+}
