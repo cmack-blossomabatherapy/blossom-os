@@ -107,12 +107,19 @@ interface NewLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (lead: Lead) => void;
+  /** Pre-fill values when the dialog opens (e.g. from a marketing source page). */
+  defaults?: Partial<FormShape>;
 }
 
-export function NewLeadDialog({ open, onOpenChange, onCreated }: NewLeadDialogProps) {
+export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLeadDialogProps) {
   const isMobile = useIsMobile();
   const { createLead } = useLeads();
-  const [form, setForm] = useState<FormShape>(EMPTY);
+  const [form, setForm] = useState<FormShape>({ ...EMPTY, ...defaults });
+  // Re-seed when opening so each launch reflects the latest defaults.
+  useEffect(() => {
+    if (open) setForm({ ...EMPTY, ...defaults });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
