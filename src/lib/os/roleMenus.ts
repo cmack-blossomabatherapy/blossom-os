@@ -42,6 +42,20 @@ const TRAINING_AND_RESOURCES: RoleMenuSection = {
   ],
 };
 
+/**
+ * State Director + Assistant State Director get the live State Director
+ * journey at /training, not the generic Academy landing.
+ */
+const STATE_TRAINING_AND_RESOURCES: RoleMenuSection = {
+  id: "training_resources",
+  label: "Training & Resources",
+  items: [
+    { label: "Training Academy", path: "/training",         icon: GraduationCap },
+    { label: "Resource Library", path: "/resource-library", icon: BookOpen },
+    { label: "Reports",          path: "/reports",          icon: FileText },
+  ],
+};
+
 const DASHBOARD_ITEM: RoleMenuItem = {
   label: "My Dashboard", path: "/dashboard", icon: LayoutDashboard,
 };
@@ -102,7 +116,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "State Clinical Snapshot",        path: "/qa",                     icon: Stethoscope },
         ],
       },
-      TRAINING_AND_RESOURCES,
+      STATE_TRAINING_AND_RESOURCES,
     ],
   },
 
@@ -119,7 +133,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Follow-Up Tracker",       path: "/ops/tasks",              icon: Activity },
         ],
       },
-      TRAINING_AND_RESOURCES,
+      STATE_TRAINING_AND_RESOURCES,
     ],
   },
 
