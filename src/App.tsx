@@ -45,6 +45,8 @@ import LeadToActivePipeline from "./pages/os/intake/LeadToActivePipeline";
 import ReferralQueue from "./pages/os/intake/ReferralQueue";
 import IntakeTasks from "./pages/os/intake/IntakeTasks";
 import LeadBenefitsCheatSheets from "./pages/os/intake/LeadBenefitsCheatSheets";
+import MissingInformation from "./pages/os/intake/MissingInformation";
+import ParentCommunication from "./pages/os/intake/ParentCommunication";
 import ReportDetail from "./pages/os/reports/ReportDetail";
 import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboard";
 import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDashboard";
@@ -839,8 +841,8 @@ const App = () => (
                        dedicated workspace yet. Real route, real shell, no
                        /coming-soon. Will be replaced with full workspaces in
                        future passes. --- */}
-                  <Route path="/intake/missing-information"  element={<OSMvpPage eyebrow="Intake"          title="Missing Information"        description="Leads with missing intake or insurance details. Owners action items appear here as the intake workflow goes live."      primaryActionLabel="New Follow-Up" />} />
-                  <Route path="/intake/parent-communication" element={<OSMvpPage eyebrow="Intake"          title="Parent Communication"       description="Inbound and outbound family communication queue across phone, SMS, email, and forms."                                      primaryActionLabel="Log Message" />} />
+                  <Route path="/intake/missing-information"  element={<MissingInformation />} />
+                  <Route path="/intake/parent-communication" element={<ParentCommunication />} />
                   <Route path="/ops/expiring-authorizations" element={<OSMvpPage eyebrow="Authorizations"  title="Expiring Authorizations"    description="Authorizations expiring in the next 30 / 60 / 90 days, grouped by payer and state."                                      primaryActionLabel="Start Renewal" />} />
                   <Route path="/ops/missing-docs"            element={<OSMvpPage eyebrow="Authorizations"  title="Missing Documents"          description="Cases blocked on missing payer documentation, with owner, due date, and next action."                                primaryActionLabel="Request Document" />} />
                   <Route path="/ops/payer-requirements"      element={<OSMvpPage eyebrow="Authorizations"  title="Payer Requirements"         description="Per-payer documentation, auth, and submission requirements for every state Blossom serves."                          primaryActionLabel="Add Payer" />} />
