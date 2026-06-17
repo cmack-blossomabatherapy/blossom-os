@@ -1,11 +1,11 @@
 import {
   GraduationCap, BookOpen, FileText, Phone, ClipboardCheck,
-  Megaphone, BarChart3, Search as SearchIcon, Globe, PhoneCall,
+  Megaphone, BarChart3, Search as SearchIcon, PhoneCall,
   HeartHandshake, Users, MessageSquare, Star, TrendingUp, Briefcase,
-  Building2, Wallet, ShieldCheck, Wrench, IdCard,
+  Building2, ShieldCheck, Wrench, IdCard,
   Calendar, FileSignature, ClipboardList, UserCheck,
   LayoutDashboard, AlertTriangle, MapPin, Stethoscope, CheckCircle2,
-  XCircle, Gauge, LineChart, Activity, type LucideIcon,
+  XCircle, Gauge, LineChart, Activity, Inbox, type LucideIcon,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
 
@@ -15,33 +15,36 @@ export interface RoleMenuItem {
   icon: LucideIcon;
 }
 
-export interface RoleMenu {
-  /** Sections rendered as active nav items. */
-  active: RoleMenuItem[];
-  /** Sections rendered as locked "Coming Soon" items. */
-  comingSoon: RoleMenuItem[];
+export interface RoleMenuSection {
+  id: string;
+  label: string;
+  items: RoleMenuItem[];
+  /** Collapsed by default in the OS shell. */
+  defaultCollapsed?: boolean;
 }
 
 /**
- * Base active items every non-Super-Admin role gets by default:
- *   Training Academy, Resource Library, Reports.
- * Specific roles extend this (Phone System, Evaluations, etc).
+ * Live role menu — every item routes to a real Blossom OS page.
+ * No "Coming Soon" entries, no /coming-soon paths.
  */
-const BASE_ACTIVE: RoleMenuItem[] = [
-  { label: "My Dashboard",     path: "/dashboard", icon: LayoutDashboard },
-  { label: "Training Academy", path: "/academy",   icon: GraduationCap },
-  { label: "Resource Library", path: "/resources", icon: BookOpen },
-  { label: "Reports",          path: "/reports",   icon: FileText },
-];
+export interface RoleMenu {
+  sections: RoleMenuSection[];
+}
 
-/** Placeholder route used for "coming soon" entries - they render disabled. */
-const SOON = "/coming-soon";
+/** Training + Resources + Reports — appended to every non–super-admin menu. */
+const TRAINING_AND_RESOURCES: RoleMenuSection = {
+  id: "training_resources",
+  label: "Training & Resources",
+  items: [
+    { label: "Training Academy", path: "/academy",          icon: GraduationCap },
+    { label: "Resource Library", path: "/resource-library", icon: BookOpen },
+    { label: "Reports",          path: "/reports",          icon: FileText },
+  ],
+};
 
-const cs = (label: string, icon: LucideIcon): RoleMenuItem => ({
-  label,
-  path: `${SOON}?module=${encodeURIComponent(label)}`,
-  icon,
-});
+const DASHBOARD_ITEM: RoleMenuItem = {
+  label: "My Dashboard", path: "/dashboard", icon: LayoutDashboard,
+};
 
 export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
   marketing_team: {
