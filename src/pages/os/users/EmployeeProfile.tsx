@@ -365,6 +365,14 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
           )}
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div id="employment-first-name" className="scroll-mt-24">
+            <EditableLabel label="First name" source={sourceBadge(false)} />
+            <Input value={firstName} disabled={!canEditEmployment} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className="mt-1 h-9" />
+          </div>
+          <div id="employment-last-name" className="scroll-mt-24">
+            <EditableLabel label="Last name" source={sourceBadge(false)} />
+            <Input value={lastName} disabled={!canEditEmployment} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className="mt-1 h-9" />
+          </div>
           <FieldWithSource label="Employee ID" value={row?.employee_code ?? m.uuid?.slice(0, 8).toUpperCase() ?? "—"} source={sourceBadge(false)} />
           <FieldWithSource label="Viventium ID" value={row?.viventium_employee_id ?? "Not linked"} source={sourceBadge(true)} />
           <FieldWithSource label="Hire Date" value={fmtDate(row?.hire_date ?? row?.start_date)} source={sourceBadge(true)} />
