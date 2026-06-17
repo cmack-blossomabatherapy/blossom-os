@@ -841,6 +841,62 @@ export default function BcbaProductivityReportV3() {
           </TabsContent>
 
           <TabsContent value="upload" className="space-y-4">
+            {/* Data source selector — shared admin dataset vs manual upload */}
+            <div className="rounded-xl border bg-card/60 p-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Data source
+                </span>
+                <div className="inline-flex rounded-lg border bg-background p-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setDataSource("shared")}
+                    className={cn(
+                      "px-3 py-1 rounded-md transition",
+                      dataSource === "shared" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                    )}
+                    disabled={!sharedStatus || sharedStatus.activeRowCount === 0}
+                    title={!sharedStatus || sharedStatus.activeRowCount === 0 ? "No admin-uploaded data yet" : ""}
+                  >
+                    Shared admin dataset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDataSource("manual")}
+                    className={cn(
+                      "px-3 py-1 rounded-md transition",
+                      dataSource === "manual" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Manual upload
+                  </button>
+                </div>
+              </div>
+              {dataSource === "shared" && sharedStatus && sharedStatus.activeRowCount > 0 && (
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5">
+                    <Database className="h-3 w-3" /> Using shared admin dataset
+                  </span>
+                  <span>{sharedStatus.activeRowCount.toLocaleString()} rows</span>
+                  {sharedStatus.earliestServiceDate && sharedStatus.latestServiceDate && (
+                    <span>{sharedStatus.earliestServiceDate} → {sharedStatus.latestServiceDate}</span>
+                  )}
+                  {sharedStatus.lastUploadAt && (
+                    <span>last uploaded {new Date(sharedStatus.lastUploadAt).toLocaleString()}</span>
+                  )}
+                  <Link to="/system/bcba-productivity-uploads" className="text-primary underline">Manage uploads</Link>
+                  <Button size="sm" variant="outline" className="h-7" onClick={loadSharedDataset} disabled={sharedLoading}>
+                    <RefreshCw className={cn("mr-1 h-3 w-3", sharedLoading && "animate-spin")} /> Refresh
+                  </Button>
+                </div>
+              )}
+              {dataSource === "shared" && (!sharedStatus || sharedStatus.activeRowCount === 0) && (
+                <div className="text-xs text-muted-foreground">
+                  No admin-uploaded BCBA productivity dataset found. Upload manually or ask an admin to upload CentralReach data.
+                </div>
+              )}
+            </div>
+
             {/* Upload zone */}
             <div
               className={cn(
