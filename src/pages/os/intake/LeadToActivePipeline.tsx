@@ -4,10 +4,13 @@ import { TrendingUp, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { GrowthPageShell, Section, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import type { LeadStatus } from "@/data/leads";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
+import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
+import { getLeadWorkflowRisk } from "@/lib/intake/intakeWorkflow";
 
 const STAGES: LeadStatus[] = [
   "New Lead",
@@ -72,6 +75,17 @@ export default function LeadToActivePipeline() {
                       <div key={l.id} className="rounded-md border border-border/60 bg-background/60 px-2 py-1.5 text-xs">
                         <Link to={`/leads/${l.id}`} className="font-medium truncate block hover:underline">{l.childName}</Link>
                         <div className="text-[10px] text-muted-foreground truncate">{l.owner || "Unassigned"} · {l.state}</div>
+                        {(() => {
+                          const risk = getLeadWorkflowRisk(l);
+                          if (risk.level === "ok") return null;
+                          return (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {risk.reasons.slice(0, 2).map((r) => (
+                                <Badge key={r} variant="secondary" className="text-[9px] py-0">{r}</Badge>
+                              ))}
+                            </div>
+                          );
+                        })()}
                         <div className="mt-1 flex gap-1">
                           {stageIdx > 0 && (
                             <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
@@ -86,6 +100,10 @@ export default function LeadToActivePipeline() {
                             </Button>
                           )}
                         </div>
+                        <details className="mt-1">
+                          <summary className="text-[10px] text-muted-foreground cursor-pointer">Actions</summary>
+                          <div className="mt-1"><LeadActionPanel lead={l} compact sourcePage="lead-to-active" /></div>
+                        </details>
                       </div>
                     ))}
                     {items.length === 0 && (
