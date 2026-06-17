@@ -136,10 +136,9 @@ function TabPanel({
     <div className="rounded-2xl border border-border/70 bg-card p-8">
       <h2 className="text-lg font-semibold text-foreground">{title}</h2>
       <p className="text-sm text-muted-foreground mt-2 max-w-2xl">{description}</p>
-      <ReadyForDataNotice
-        className="mt-6"
-        message="This view is ready for live data. As partner and outreach activity is captured in Blossom OS, it will populate here automatically."
-      />
+      <div className="mt-6">
+        <ReadyForDataNotice message="This view is ready for live data. As partner and outreach activity is captured in Blossom OS, it will populate here automatically." />
+      </div>
       {primaryAction && (
         <button
           type="button"
