@@ -136,7 +136,8 @@ export function reportsForRole(role: OSRole): Phase3Report[] {
 
 export function reportRoute(report: Phase3Report): string {
   if (report.status === "live" && report.route) return report.route;
-  return `/coming-soon?module=${encodeURIComponent(report.name + " Report")}`;
+  if (report.route) return report.route;
+  return `/reports?report=${encodeURIComponent(report.id)}`;
 }
 
 export const PHASE3_SECTIONS: { id: Phase3Section; title: string; description: string }[] = [
