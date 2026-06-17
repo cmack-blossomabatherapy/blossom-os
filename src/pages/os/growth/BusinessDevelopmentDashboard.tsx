@@ -1,5 +1,5 @@
 import { HeartHandshake, MessageSquare, Briefcase, Users, BarChart3, Plus, CalendarPlus, ArrowRightLeft } from "lucide-react";
-import { GrowthPageShell, Section, StatCard, LinkCard, ComingSoonNotice } from "@/components/os/growth/GrowthPageShell";
+import { GrowthPageShell, Section, StatCard, LinkCard, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 
 export default function BusinessDevelopmentDashboard() {
   return (
@@ -26,15 +26,15 @@ export default function BusinessDevelopmentDashboard() {
       <Section title="Workspaces" description="Open any area to manage relationships and activity.">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           <LinkCard title="Referral Partner CRM" description="All referral partners with owner, status, and last contact." to="/marketing/referral-crm" status="live" icon={HeartHandshake} />
-          <LinkCard title="Outreach Pipeline" description="Active outreach with stage, owner, and next step." to="/coming-soon?module=Outreach%20Pipeline" status="coming_soon" icon={MessageSquare} />
-          <LinkCard title="Follow-Up Tasks" description="Open follow-ups with due dates and owners." to="/coming-soon?module=Follow-Up%20Tasks" status="coming_soon" icon={CalendarPlus} />
-          <LinkCard title="Provider Relationships" description="Pediatricians, psychologists, and clinical partners." to="/coming-soon?module=Provider%20Relationships" status="coming_soon" icon={Briefcase} />
-          <LinkCard title="Community Relationships" description="Schools, support groups, advocacy organizations." to="/coming-soon?module=Community%20Relationships" status="coming_soon" icon={Users} />
+          <LinkCard title="Outreach Pipeline" description="Active outreach with stage, owner, and next step." to="/business-development?tab=outreach" status="ready" icon={MessageSquare} />
+          <LinkCard title="Follow-Up Tasks" description="Open follow-ups with due dates and owners." to="/business-development?tab=tasks" status="ready" icon={CalendarPlus} />
+          <LinkCard title="Provider Relationships" description="Pediatricians, psychologists, and clinical partners." to="/business-development?tab=providers" status="ready" icon={Briefcase} />
+          <LinkCard title="Community Relationships" description="Schools, support groups, advocacy organizations." to="/business-development?tab=community" status="ready" icon={Users} />
           <LinkCard title="Referral Source Reports" description="Volume, conversion, and quality by partner." to="/reports" status="live" icon={BarChart3} />
         </div>
       </Section>
 
-      <ComingSoonNotice message="As Blossom OS connects outreach, partner CRM, and referral activity, this dashboard will surface live partner health and the next best actions to grow the network." />
+      <ReadyForDataNotice message="This workspace is ready for live data. As outreach, partner CRM, and referral activity comes in, this dashboard will surface live partner health and the next best actions to grow the network." />
     </GrowthPageShell>
   );
 }
