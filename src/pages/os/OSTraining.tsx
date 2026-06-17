@@ -82,7 +82,10 @@ export default function OSTraining() {
   const [showAllRequired, setShowAllRequired] = useState(false);
   const { trainings } = useAcademy(); // subscribe to store
 
-  const isSD = role === "state_director";
+  // Assistant State Director uses the same State Director learning journey.
+  const isStateJourneyRole = role === "state_director" || role === "assistant_state_director";
+  const isSD = isStateJourneyRole;
+  const journeyRole = isStateJourneyRole ? "state_director" : role;
 
   // --- DB-backed learner home (shared with Training Management) ---
   const [learnerHome, setLearnerHome] = useState<LearnerHome>(() => emptyLearnerHome());
@@ -127,7 +130,7 @@ export default function OSTraining() {
     else { toast.success("Module completed — synced to Training Management"); await refreshLearnerHome(); }
   }
 
-  const journey = useMemo(() => getJourneyForRole(role), [role, trainings]);
+  const journey = useMemo(() => getJourneyForRole(journeyRole), [journeyRole, trainings]);
   const journeyModules = useMemo(() => getJourneyModules(journey), [journey, trainings]);
   // Continue Learning = next-up modules from the user's role journey that aren't completed.
   // Falls back to in-progress/overdue items if the journey is empty.
