@@ -455,7 +455,7 @@ function HRPlaceholder({ title, icon }: { title: string; icon: LucideIcon }) {
           Once this workflow is connected, this view will show live status, trends, ownership, and action items.
         </p>
         <Button asChild variant="outline" size="sm" className="mt-5">
-          <Link to="/coming-soon">View Roadmap</Link>
+          <Link to="/dashboard">Back to Dashboard</Link>
         </Button>
       </Card>
     </Shell>
@@ -563,7 +563,7 @@ function CredPlaceholder({ title, icon, sub }: { title: string; icon: LucideIcon
           Once this workflow is connected, this view will show live status, trends, ownership, and action items.
         </p>
         <Button asChild variant="outline" size="sm" className="mt-5">
-          <Link to="/coming-soon">View Roadmap</Link>
+          <Link to="/dashboard">Back to Dashboard</Link>
         </Button>
       </Card>
     </Shell>

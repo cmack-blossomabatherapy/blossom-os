@@ -601,7 +601,7 @@ export function OperationalTasksPage() {
           <div className="text-muted-foreground">See what other operational workflows are coming online.</div>
         </div>
         <Button asChild size="sm" variant="outline">
-          <Link to="/coming-soon">View Roadmap <ArrowUpRight className="h-3.5 w-3.5 ml-1" /></Link>
+          <Link to="/dashboard">Back to Dashboard <ArrowUpRight className="h-3.5 w-3.5 ml-1" /></Link>
         </Button>
       </Card>
     </Shell>
