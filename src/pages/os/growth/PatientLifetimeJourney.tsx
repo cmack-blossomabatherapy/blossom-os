@@ -421,8 +421,8 @@ export default function PatientLifetimeJourney() {
 
 function LogInteractionDialog({
   open, onOpenChange, onSave,
-}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (kind: LocalInteraction["kind"], preview: string, owner?: string) => void }) {
-  const [kind, setKind] = useState<LocalInteraction["kind"]>("call");
+}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (kind: InteractionKind, preview: string, owner?: string) => void | Promise<void> }) {
+  const [kind, setKind] = useState<InteractionKind>("call");
   const [preview, setPreview] = useState("");
   const [owner, setOwner] = useState("");
   return (
@@ -430,11 +430,11 @@ function LogInteractionDialog({
       <DialogContent>
         <DialogHeader><DialogTitle>Log Interaction</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <Select value={kind} onValueChange={(v) => setKind(v as LocalInteraction["kind"])}>
+          <Select value={kind} onValueChange={(v) => setKind(v as InteractionKind)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="call">Call</SelectItem>
-              <SelectItem value="text">Text</SelectItem>
+              <SelectItem value="sms">Text</SelectItem>
               <SelectItem value="email">Email</SelectItem>
               <SelectItem value="note">Note</SelectItem>
             </SelectContent>
