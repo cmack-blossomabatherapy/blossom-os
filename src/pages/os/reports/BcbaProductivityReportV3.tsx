@@ -1833,7 +1833,7 @@ function BcbaSummaryTable({ bcbaTable, expanded, setExpanded }: {
           <tbody>
             {sorted.length === 0 && (
               <tr><td colSpan={9} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                Upload a billing report to populate productivity.
+                No productivity rows yet. The report runs on the shared admin dataset.
               </td></tr>
             )}
             {sorted.map(b => {
