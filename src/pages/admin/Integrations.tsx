@@ -63,6 +63,19 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import {
+  BLOSSOM_INTEGRATIONS,
+  getIntegration as getRegistryIntegration,
+} from "@/lib/os/integrations/integrationRegistry";
+
+/**
+ * Shared integration registry — single source of truth for the systems
+ * Blossom ABA Therapy actually runs against. The catalog below renders
+ * the operational/UX layer; ownership, data flows, and dependent modules
+ * live in the registry.
+ */
+void BLOSSOM_INTEGRATIONS;
+void getRegistryIntegration;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types & mock data
