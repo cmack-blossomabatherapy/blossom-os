@@ -184,6 +184,12 @@ export default function BcbaProductivityReportV3() {
   const assignImportRef = useRef<HTMLInputElement>(null);
   const [showHelp, setShowHelp] = useState(false);
 
+  /* ----- shared admin dataset (source: manual | shared) ----- */
+  const [dataSource, setDataSource] = useState<"manual" | "shared">("manual");
+  const [sharedStatus, setSharedStatus] = useState<BcbaDatasetStatus | null>(null);
+  const [sharedLoading, setSharedLoading] = useState(false);
+  const sharedRequested = params.get("source") === "shared";
+
   useEffect(() => {
     const refreshAssign = () => setAssignments(readAssignmentsV3());
     const refreshSaved = () => setSavedList(readSavedReportsV3());
