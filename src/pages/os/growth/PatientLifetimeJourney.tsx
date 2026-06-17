@@ -458,7 +458,7 @@ function LogInteractionDialog({
 
 function FollowUpDialog({
   open, onOpenChange, onSave,
-}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (title: string, dueDate: string, owner?: string) => void }) {
+}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (title: string, dueDate: string, owner?: string) => void | Promise<void> }) {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [owner, setOwner] = useState("");
