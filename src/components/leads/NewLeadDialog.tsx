@@ -111,7 +111,6 @@ interface NewLeadDialogProps {
 
 export function NewLeadDialog({ open, onOpenChange, onCreated }: NewLeadDialogProps) {
   const isMobile = useIsMobile();
-  const { addLead } = useLeads();
   const { createLead } = useLeads();
   const [form, setForm] = useState<FormShape>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
