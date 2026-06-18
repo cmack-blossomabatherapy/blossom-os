@@ -341,18 +341,7 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
 
   // Pre-check duplicates (against current active rows).
   const hashes = parsed.parsedRows.map((r) => r.rowHash);
-  const existing = new Set<string>();
-  const CHUNK = 250;
-  for (let i = 0; i < hashes.length; i += CHUNK) {
-    const chunk = hashes.slice(i, i + CHUNK);
-    const { data, error } = await supabase
-      .from("bcba_productivity_billing_rows")
-      .select("row_hash")
-      .eq("active", true)
-      .in("row_hash", chunk);
-    if (error) throw error;
-    for (const d of data ?? []) existing.add(d.row_hash);
-  }
+  const existing = await fetchExistingHashes(hashes);
 
   const toInsertSource = parsed.parsedRows.filter((p) => !existing.has(p.rowHash));
   // Dedupe within file itself.
