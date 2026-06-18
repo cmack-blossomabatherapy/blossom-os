@@ -24,6 +24,8 @@ import {
   leadSourceLabel,
   type PatientJourneyEventOrigin,
 } from "@/lib/leads/leadSourceConfig";
+import { getEventsForLead, listLeadSourceEvents, subscribeLeadSourceEvents } from "@/lib/leads/leadSourceEventsStore";
+import type { LeadSourceEvent } from "@/lib/leads/leadSourceEvents";
 
 // Sprint 04 Phase C — interactions and follow-ups persist to Lovable Cloud
 // (intake_communications + intake_tasks). No localStorage fallback.
@@ -216,8 +218,25 @@ export default function PatientLifetimeJourney() {
   useEffect(() => {
     const q = searchParams.get("lead");
     if (q && q !== selectedId) setSelectedId(q);
+    const evtId = searchParams.get("sourceEventId");
+    if (evtId) {
+      const matched = listLeadSourceEvents().find((e) => e.id === evtId);
+      if (matched?.resolvedLeadId && matched.resolvedLeadId !== selectedId) {
+        setSelectedId(matched.resolvedLeadId);
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // Subscribe to source events so the journey reflects new attachments live.
+  const [sourceEvents, setSourceEvents] = useState<LeadSourceEvent[]>([]);
+  useEffect(() => subscribeLeadSourceEvents(setSourceEvents), []);
+  const selectedSourceEvents = useMemo(
+    () => (selectedId ? getEventsForLead(selectedId) : []),
+    // include sourceEvents so this recomputes on updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedId, sourceEvents],
+  );
 
   const states = useMemo(() => Array.from(new Set(leads.map((l) => l.state).filter(Boolean))).sort(), [leads]);
   const sources = useMemo(() => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))).sort(), [leads]);
