@@ -791,8 +791,8 @@ const App = () => (
                   {/* Phase 6 — Core ABA Operations */}
                   <Route path="/state-operations" element={<AdminRoute><StateOperationsPage /></AdminRoute>} />
                   <Route path="/ops/authorizations" element={<AdminRoute><AuthorizationsPhase6Page /></AdminRoute>} />
-                  <Route path="/ops/approved-authorizations" element={<AdminRoute><ApprovedAuthorizationsPage /></AdminRoute>} />
-                  <Route path="/ops/denials" element={<AdminRoute><DenialsPage /></AdminRoute>} />
+                  <Route path="/ops/approved-authorizations" element={<PermissionRoute allowedRoles={["admin", "auth_team", "authorization_manager", "authorization_coordinator"]}><ApprovedAuthorizationsPage /></PermissionRoute>} />
+                  <Route path="/ops/denials" element={<PermissionRoute allowedRoles={["admin", "auth_team", "authorization_manager", "authorization_coordinator"]}><DenialsPage /></PermissionRoute>} />
                   <Route path="/ops/scheduling" element={<AdminRoute><SchedulingPhase6Page /></AdminRoute>} />
                   <Route path="/ops/staffing" element={<AdminRoute><StaffingPhase6Page /></AdminRoute>} />
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
@@ -867,9 +867,9 @@ const App = () => (
                        future passes. --- */}
                   <Route path="/intake/missing-information"  element={<MissingInformation />} />
                   <Route path="/intake/parent-communication" element={<ParentCommunication />} />
-                  <Route path="/ops/expiring-authorizations" element={<ExpiringAuthorizations />} />
-                  <Route path="/ops/missing-docs"            element={<MissingDocs />} />
-                  <Route path="/ops/payer-requirements"      element={<PayerRequirements />} />
+                  <Route path="/ops/expiring-authorizations" element={<OSShellPage><ExpiringAuthorizations /></OSShellPage>} />
+                  <Route path="/ops/missing-docs"            element={<OSShellPage><MissingDocs /></OSShellPage>} />
+                  <Route path="/ops/payer-requirements"      element={<OSShellPage><PayerRequirements /></OSShellPage>} />
                   <Route path="/ops/make-up-sessions"        element={<MakeUpSessions />} />
                   <Route path="/ops/rbt-match-queue"         element={<RbtMatchQueue />} />
                   {/* Generic Training Academy routes — render inside the OS shell so
