@@ -786,23 +786,25 @@ const App = () => (
                       Standalone routes kept only as protected redirects for legacy links. */}
                   <Route path="/user-logins-vault" element={<Navigate to="/user-management" replace />} />
                   <Route path="/nfc-badges" element={<Navigate to="/user-management" replace />} />
-                  <Route path="/device-inventory" element={<AdminRoute><DeviceInventory /></AdminRoute>} />
-                  <Route path="/device-requests" element={<AdminRoute><DeviceRequestsPage /></AdminRoute>} />
+                  <Route path="/device-inventory" element={<PermissionRoute allowedRoles={["admin", "hr", "hr_lead", "hr_admin", "hr_manager", "hr_team"]}><DeviceInventory /></PermissionRoute>} />
+                  <Route path="/device-requests" element={<PermissionRoute allowedRoles={["admin", "hr", "hr_lead", "hr_admin", "hr_manager", "hr_team"]}><DeviceRequestsPage /></PermissionRoute>} />
                   {/* Phase 5 — HR */}
                   <Route path="/hr/dashboard" element={<AdminRoute><HRDashboardPage /></AdminRoute>} />
                   <Route path="/hr/employee-records" element={<AdminRoute><HREmployeeRecordsPage /></AdminRoute>} />
-                  <Route path="/hr/requests" element={<AdminRoute><HRRequestsPage /></AdminRoute>} />
+                  {/* /hr/requests canonical OS-shell route defined above; legacy admin variant retired. */}
+                  <Route path="/admin/hr/requests" element={<AdminRoute><HRRequestsPage /></AdminRoute>} />
                   <Route path="/hr/compliance-items" element={<AdminRoute><HRComplianceItemsPage /></AdminRoute>} />
                   <Route path="/hr/nfc-badge-support" element={<Navigate to="/user-management" replace />} />
-                  <Route path="/hr/reports" element={<AdminRoute><HRReportsPage /></AdminRoute>} />
+                  {/* /hr/reports canonical PermissionRoute defined later; legacy admin variant retired. */}
+                  <Route path="/admin/hr/reports" element={<AdminRoute><HRReportsPage /></AdminRoute>} />
                   {/* Phase 5 — Credentialing */}
-                  <Route path="/credentialing" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><CredentialingDashboardPage /></PermissionRoute>} />
-                  <Route path="/credentialing/providers" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><ProviderCredentialingPage /></PermissionRoute>} />
-                  <Route path="/credentialing/insurance" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><InsuranceCredentialingPage /></PermissionRoute>} />
-                  <Route path="/credentialing/bcba" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><BCBACredentialsPage /></PermissionRoute>} />
-                  <Route path="/credentialing/uncredentialed-bcbas" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><UncredentialedBCBAsPage /></PermissionRoute>} />
-                  <Route path="/credentialing/expiring" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><ExpiringCredentialsPage /></PermissionRoute>} />
-                  <Route path="/credentialing/reports" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><CredentialingReportsPage /></PermissionRoute>} />
+                  <Route path="/credentialing" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><CredentialingDashboardPage /></PermissionRoute>} />
+                  <Route path="/credentialing/providers" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><ProviderCredentialingPage /></PermissionRoute>} />
+                  <Route path="/credentialing/insurance" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><InsuranceCredentialingPage /></PermissionRoute>} />
+                  <Route path="/credentialing/bcba" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><BCBACredentialsPage /></PermissionRoute>} />
+                  <Route path="/credentialing/uncredentialed-bcbas" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><UncredentialedBCBAsPage /></PermissionRoute>} />
+                  <Route path="/credentialing/expiring" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><ExpiringCredentialsPage /></PermissionRoute>} />
+                  <Route path="/credentialing/reports" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><CredentialingReportsPage /></PermissionRoute>} />
                   {/* Phase 6 — Core ABA Operations */}
                   <Route path="/state-operations" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director"]}><StateOperationsPage /></PermissionRoute>} />
                   <Route path="/ops/authorizations" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director", "auth_team", "authorization_manager", "authorization_coordinator"]}><AuthorizationsPhase6Page /></PermissionRoute>} />
@@ -859,7 +861,7 @@ const App = () => (
                   {/* Relationships routes — Marketing + Super Admin only */}
                   {/* Old standalone Referrals page is retired — redirect to the unified CRM. */}
                   <Route path="/marketing/referrals" element={<Navigate to="/marketing/referral-crm" replace />} />
-                  <Route path="/marketing/referral-crm" element={<PermissionRoute allowedRoles={["marketing"]}><ReferralCRM /></PermissionRoute>} />
+                  <Route path="/marketing/referral-crm" element={<PermissionRoute allowedRoles={["admin", "marketing", "marketing_team", "marketing_growth_lead", "business_development"]}><ReferralCRM /></PermissionRoute>} />
                   <Route path="/marketing/recruiting" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingRecruiting /></PermissionRoute>} />
                   <Route path="/marketing/outreach" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingOutreach /></PermissionRoute>} />
                   <Route path="/marketing/reputation" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingReputation /></PermissionRoute>} />
