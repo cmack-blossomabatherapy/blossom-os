@@ -59,6 +59,49 @@ Deno.serve(async (req) => {
 
   if (!userId || !email) return json({ error: "User and email are required" }, 400);
 
+  // Pre-check: if the most recent welcome to this address bounced or was marked
+  // as spam, Resend (and most ESPs) will silently drop further sends until the
+  // address is removed from the suppression list. Detect this and refuse with a
+  // clear message instead of logging another "sent" row that never arrives.
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+  if (LOVABLE_API_KEY && RESEND_API_KEY) {
+    const { data: lastLog } = await admin
+      .from("invite_email_logs")
+      .select("resend_message_id")
+      .eq("recipient_email", email)
+      .not("resend_message_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const lastId = lastLog?.resend_message_id;
+    if (lastId) {
+      try {
+        const r = await fetch(`https://connector-gateway.lovable.dev/resend/emails/${lastId}`, {
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "X-Connection-Api-Key": RESEND_API_KEY,
+          },
+        });
+        const text = await r.text();
+        const parsed = text ? JSON.parse(text) as { last_event?: string } : null;
+        const lastEvent = parsed?.last_event;
+        if (lastEvent === "bounced" || lastEvent === "complained") {
+          return json({
+            ok: false,
+            suppressed: true,
+            lastEvent,
+            error: lastEvent === "bounced"
+              ? `Resend reports the previous welcome email to ${email} hard-bounced. Verify the address is spelled correctly and remove it from the Resend Suppressions list before re-sending.`
+              : `Resend reports the previous welcome email to ${email} was marked as spam. Confirm the recipient still wants the invite and remove the address from the Resend Suppressions list before re-sending.`,
+          }, 409);
+        }
+      } catch (e) {
+        console.error("Suppression pre-check failed (continuing)", (e as Error).message);
+      }
+    }
+  }
+
   // Ensure first sign-in forces a password reset.
   await admin.from("profiles").update({ must_change_password: true }).eq("user_id", userId);
 
