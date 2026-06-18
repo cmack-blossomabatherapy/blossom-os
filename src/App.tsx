@@ -446,9 +446,6 @@ const OSOutlet = () => (
 // Training Academy) that don't bring their own shell but are reached from
 // role menus that expect the OS sidebar/topbar to remain visible.
 function OSShellPage({ children }: { children: React.ReactNode }) {
-  // Lazy import to avoid a circular-import edge case at module init.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { OSShell } = require("@/pages/os/OSShell") as typeof import("@/pages/os/OSShell");
   return <OSShell>{children}</OSShell>;
 }
 
