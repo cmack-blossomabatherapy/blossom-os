@@ -629,9 +629,13 @@ function readinessStatusFor(id: string): keyof typeof READINESS_STATUS_LABEL {
   // Map registry status to inbox readiness label.
   const reg = BLOSSOM_INTEGRATIONS.find((i) => i.id === id);
   if (!reg) return "future";
-  if (reg.status === "connected") return "connected";
-  if (reg.status === "planned" || reg.status === "future") return "future";
-  return "needs_credentials";
+  switch (reg.status) {
+    case "connected": return "connected";
+    case "configured": return "ready_for_api";
+    case "planned":
+    case "maybe": return "future";
+    default: return "needs_credentials";
+  }
 }
 
 function nextStepFor(id: string): string {
