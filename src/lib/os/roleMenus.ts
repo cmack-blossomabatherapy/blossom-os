@@ -91,12 +91,16 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "leadership", label: "Leadership", items: [
-          DASHBOARD_ITEM,
           { label: "Executive Dashboard",   path: "/executive",                    icon: BarChart3 },
+          { label: "Command Center",        path: "/command-center",               icon: LayoutDashboard },
           { label: "Company KPIs",          path: "/reports",                      icon: Gauge },
           { label: "State Health Overview", path: "/state-operations",             icon: MapPin },
           { label: "Growth Snapshot",       path: "/marketing/state-growth",       icon: TrendingUp },
           { label: "Operations Scorecard",  path: "/operations/command-center",    icon: Gauge },
+          { label: "Department Health",     path: "/operations/department-health", icon: Activity },
+          { label: "Escalations",           path: "/operations/escalations",       icon: AlertTriangle },
+          { label: "System Requests",       path: "/system/request-intake",        icon: Inbox },
+          { label: "Phone System",          path: "/phone",                        icon: Phone },
         ],
       },
       TRAINING_AND_RESOURCES,
@@ -108,13 +112,17 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "ops_command", label: "Operations Command", items: [
-          DASHBOARD_ITEM,
           { label: "Operations Dashboard",  path: "/operations/command-center",  icon: BarChart3 },
+          { label: "Command Center",        path: "/command-center",             icon: LayoutDashboard },
           { label: "Department Scorecards", path: "/operations/department-health", icon: Gauge },
           { label: "State Health Overview", path: "/state-operations",            icon: MapPin },
           { label: "Escalations",           path: "/operations/escalations",      icon: AlertTriangle },
           { label: "Workflow Bottlenecks",  path: "/operations/workflow-risks",   icon: ShieldCheck },
+          { label: "Work Queue",            path: "/work-queue",                  icon: ClipboardList },
+          { label: "Escalation Center",     path: "/work-queue/escalations",      icon: Flame },
           { label: "System Requests",       path: "/system/request-intake",       icon: Inbox },
+          { label: "Reports",               path: "/reports",                     icon: FileText },
+          { label: "Phone System",          path: "/phone",                       icon: Phone },
         ],
       },
       TRAINING_AND_RESOURCES,
@@ -126,14 +134,16 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "state_ops", label: "State Operations", items: [
-          DASHBOARD_ITEM,
           { label: "State Dashboard",                path: "/state-operations",       icon: MapPin },
           { label: "State Health",                   path: "/state-operations",       icon: Activity },
-          { label: "Escalations",                    path: "/ops/state-escalations",  icon: AlertTriangle },
+          { label: "State Escalations",              path: "/ops/state-escalations",  icon: AlertTriangle },
+          { label: "State Task Queue",               path: "/ops/tasks",              icon: ClipboardList },
           { label: "State Staffing Snapshot",        path: "/ops/staffing",           icon: Users },
           { label: "State Intake Snapshot",          path: "/intake/dashboard",       icon: Briefcase },
           { label: "State Authorization Snapshot",   path: "/ops/authorizations",     icon: ShieldCheck },
-          { label: "State Clinical Snapshot",        path: "/qa",                     icon: Stethoscope },
+          { label: "State Scheduling Snapshot",      path: "/ops/scheduling",         icon: Calendar },
+          { label: "State Clinical Snapshot",        path: "/qa-team",                icon: Stethoscope },
+          { label: "Phone System",                   path: "/phone",                  icon: Phone },
         ],
       },
       STATE_TRAINING_AND_RESOURCES,
@@ -145,12 +155,15 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "state_support", label: "State Support", items: [
-          DASHBOARD_ITEM,
           { label: "State Support Dashboard", path: "/state-operations",       icon: LayoutDashboard },
           { label: "State Intake Support",    path: "/intake/dashboard",       icon: Briefcase },
           { label: "State Task Queue",        path: "/ops/tasks",              icon: ClipboardList },
           { label: "Escalation Support",      path: "/ops/state-escalations",  icon: AlertTriangle },
           { label: "Follow-Up Tracker",       path: "/ops/tasks",              icon: Activity },
+          { label: "Staffing Support",        path: "/ops/staffing",           icon: Users },
+          { label: "Scheduling Support",      path: "/ops/scheduling",         icon: Calendar },
+          { label: "Authorization Support",   path: "/ops/authorizations",     icon: ShieldCheck },
+          { label: "Phone System",            path: "/phone",                  icon: Phone },
         ],
       },
       STATE_TRAINING_AND_RESOURCES,
