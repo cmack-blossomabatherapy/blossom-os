@@ -383,7 +383,7 @@ export default function LeadSourceInbox() {
         <StatCard label="Top source today" value={counts.topSource} icon={Megaphone} status="ready" />
       </div>
 
-      <Section title="Filters" description={null as unknown as string}>
+      <Section title="Filters">
         <div className="flex flex-wrap items-end gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -449,7 +449,7 @@ export default function LeadSourceInbox() {
         </Section>
 
         <aside className="space-y-4">
-          <Section title="Event details" description={null as unknown as string}>
+          <Section title="Event details">
             {!selected ? (
               <div className="text-sm text-muted-foreground p-3">Select an event to see details.</div>
             ) : (
