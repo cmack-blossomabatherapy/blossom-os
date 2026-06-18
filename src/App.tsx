@@ -382,6 +382,8 @@ import {
   UserActivityLogPage, PatientActivityLogPage,
 } from "./pages/os/communications/CommunicationsPages";
 import ActivityCenterPage from "./pages/os/communications/ActivityCenter";
+import WorkQueuePage from "./pages/os/work-queue/WorkQueuePage";
+import EscalationCenterPage from "./pages/os/work-queue/EscalationCenter";
 import {
   WorkflowInventoryPage, RequestIntakePage, IssueTrackerPage,
 } from "./pages/os/system-tools/SystemToolsPages";
@@ -798,6 +800,8 @@ const App = () => (
                   <Route path="/communications/user-activity" element={<AdminRoute><UserActivityLogPage /></AdminRoute>} />
                   <Route path="/communications/patient-activity" element={<AdminRoute><PatientActivityLogPage /></AdminRoute>} />
                   <Route path="/communications/activity-center" element={<AdminRoute><ActivityCenterPage /></AdminRoute>} />
+                  <Route path="/work-queue" element={<AdminRoute><WorkQueuePage /></AdminRoute>} />
+                  <Route path="/work-queue/escalations" element={<AdminRoute><EscalationCenterPage /></AdminRoute>} />
                   {/* Phase 7 — System Tools */}
                   <Route path="/system/workflow-inventory" element={<AdminRoute><WorkflowInventoryPage /></AdminRoute>} />
                   <Route path="/system/request-intake" element={<AdminRoute><RequestIntakePage /></AdminRoute>} />
