@@ -359,6 +359,15 @@ export function getActivityIcon(type: ActivityEventType): LucideIcon {
       return UploadCloud;
     case "integration_event":
       return PlugZap;
+    case "work_item_created":
+    case "work_item_assigned":
+    case "work_item_updated":
+      return ClipboardList;
+    case "work_item_completed":
+      return CheckCircle2;
+    case "work_item_escalated":
+    case "work_item_escalation_resolved":
+      return Sparkles;
     case "system_audit":
       return CheckCircle2;
     default:
