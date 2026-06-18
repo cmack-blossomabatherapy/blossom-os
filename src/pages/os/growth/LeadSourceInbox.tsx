@@ -598,7 +598,7 @@ function EventDetail({
           <Copy className="h-3.5 w-3.5 mr-1" /> Copy
         </Button>
         <Button asChild size="sm" variant="ghost">
-          <Link to={s.event.resolvedLeadId ? `/patient-journey?lead=${s.event.resolvedLeadId}` : `/patient-journey?sourceEventId=${s.event.id}`}>
+          <Link to={s.event.resolvedLeadId ? `/patient-journey?leadId=${s.event.resolvedLeadId}` : `/patient-journey?sourceEventId=${s.event.id}`}>
             <MessageSquare className="h-3.5 w-3.5 mr-1" /> Journey
           </Link>
         </Button>
