@@ -864,6 +864,13 @@ const App = () => (
                   <Route path="/ops/payer-requirements"      element={<PayerRequirements />} />
                   <Route path="/ops/make-up-sessions"        element={<MakeUpSessions />} />
                   <Route path="/ops/rbt-match-queue"         element={<RbtMatchQueue />} />
+                  {/* Generic Training Academy routes — render inside the OS shell so
+                      every non-admin role (including Intake Team) keeps the current
+                      Blossom OS sidebar/topbar. State Director training stays at /training. */}
+                  <Route path="/academy" element={<TrainingAcademyHome />} />
+                  <Route path="/academy/path/:slug" element={<TrainingPathDetail />} />
+                  <Route path="/my-learning" element={<MyLearning />} />
+                  <Route path="/catalog" element={<TrainingCatalog />} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />
@@ -871,11 +878,7 @@ const App = () => (
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/home-redirect" element={<Navigate to="/" replace />} />
                   <Route path="/welcome" element={<WelcomeHome />} />
-                  <Route path="/academy" element={<TrainingAcademyHome />} />
-                  <Route path="/academy/path/:slug" element={<TrainingPathDetail />} />
                   <Route path="/academy/legacy" element={<OperationsAcademy />} />
-                  <Route path="/my-learning" element={<MyLearning />} />
-                  <Route path="/catalog" element={<TrainingCatalog />} />
                   <Route path="/announcements" element={<AnnouncementsFeed />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/notification-preferences" element={<NotificationPreferences />} />
