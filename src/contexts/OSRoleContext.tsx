@@ -21,6 +21,7 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("recruiting_lead")) return "recruiting_lead";
   if (appRoles.includes("recruiting_coordinator")) return "recruiting_coordinator";
   if (appRoles.includes("recruiting_assistant")) return "recruiting_team";
+  if (appRoles.includes("credentialing_lead")) return "credentialing_lead";
   // HR Lead / Admin / Manager get the HR Lead OS experience (User Management Admin).
   if (
     appRoles.includes("hr_lead") ||

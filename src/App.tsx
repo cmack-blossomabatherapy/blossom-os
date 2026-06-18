@@ -791,13 +791,13 @@ const App = () => (
                   <Route path="/hr/nfc-badge-support" element={<Navigate to="/user-management" replace />} />
                   <Route path="/hr/reports" element={<AdminRoute><HRReportsPage /></AdminRoute>} />
                   {/* Phase 5 — Credentialing */}
-                  <Route path="/credentialing" element={<AdminRoute><CredentialingDashboardPage /></AdminRoute>} />
-                  <Route path="/credentialing/providers" element={<AdminRoute><ProviderCredentialingPage /></AdminRoute>} />
-                  <Route path="/credentialing/insurance" element={<AdminRoute><InsuranceCredentialingPage /></AdminRoute>} />
-                  <Route path="/credentialing/bcba" element={<AdminRoute><BCBACredentialsPage /></AdminRoute>} />
-                  <Route path="/credentialing/uncredentialed-bcbas" element={<AdminRoute><UncredentialedBCBAsPage /></AdminRoute>} />
-                  <Route path="/credentialing/expiring" element={<AdminRoute><ExpiringCredentialsPage /></AdminRoute>} />
-                  <Route path="/credentialing/reports" element={<AdminRoute><CredentialingReportsPage /></AdminRoute>} />
+                  <Route path="/credentialing" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><CredentialingDashboardPage /></PermissionRoute>} />
+                  <Route path="/credentialing/providers" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><ProviderCredentialingPage /></PermissionRoute>} />
+                  <Route path="/credentialing/insurance" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><InsuranceCredentialingPage /></PermissionRoute>} />
+                  <Route path="/credentialing/bcba" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><BCBACredentialsPage /></PermissionRoute>} />
+                  <Route path="/credentialing/uncredentialed-bcbas" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><UncredentialedBCBAsPage /></PermissionRoute>} />
+                  <Route path="/credentialing/expiring" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><ExpiringCredentialsPage /></PermissionRoute>} />
+                  <Route path="/credentialing/reports" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><CredentialingReportsPage /></PermissionRoute>} />
                   {/* Phase 6 — Core ABA Operations */}
                   <Route path="/state-operations" element={<AdminRoute><StateOperationsPage /></AdminRoute>} />
                   <Route path="/ops/authorizations" element={<AdminRoute><AuthorizationsPhase6Page /></AdminRoute>} />

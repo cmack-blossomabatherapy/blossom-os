@@ -357,6 +357,18 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
     actions: { dashboard: VIEW, payroll: FULL, staff: VIEW, reports: ["view", "export"] },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
   },
+  credentialing_team: {
+    modules: ["dashboard", "credentialing", "staff", "reports", "sop", "training", "kpi", "ai_assistant"],
+    scope: "company",
+    actions: {
+      dashboard: VIEW,
+      credentialing: FULL,
+      staff: VIEW,
+      reports: ["view", "export"],
+      training: VIEW,
+    },
+    leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
+  },
   bcba: {
     modules: ["dashboard", "clients", "scheduling", "cases", "evaluations", "training", "sop", "kpi", "ai_assistant"],
     scope: "assigned",
@@ -459,12 +471,11 @@ const ROLE_ALIASES: Record<
   hr_lead: "hr_team",
   payroll_lead: "payroll_coordinator",
   billing_lead: "billing_finance",
-  credentialing_lead: "billing_finance",
+  credentialing_lead: "credentialing_team",
   rcm_team: "billing_finance",
   assistant_state_director: "state_director",
   business_development: "marketing_team",
   staffing_team: "scheduling_team",
-  credentialing_team: "hr_team",
   clinical_director: "operations_leadership",
   viewer: "behavioral_support",
 };

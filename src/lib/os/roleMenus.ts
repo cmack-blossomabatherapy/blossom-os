@@ -407,7 +407,23 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "credentialing", label: "Credentialing", items: [
-          DASHBOARD_ITEM,
+          { label: "Credentialing Dashboard",   path: "/credentialing",                       icon: LayoutDashboard },
+          { label: "Provider Credentialing",    path: "/credentialing/providers",             icon: Stethoscope },
+          { label: "Insurance Credentialing",   path: "/credentialing/insurance",             icon: Building2 },
+          { label: "BCBA Credentials",          path: "/credentialing/bcba",                  icon: IdCard },
+          { label: "Uncredentialed BCBAs",      path: "/credentialing/uncredentialed-bcbas",  icon: AlertTriangle },
+          { label: "Expiring Credentials",      path: "/credentialing/expiring",              icon: Calendar },
+          { label: "Credentialing Reports",     path: "/reports",                             icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  credentialing_lead: {
+    sections: [
+      {
+        id: "credentialing", label: "Credentialing", items: [
           { label: "Credentialing Dashboard",   path: "/credentialing",                       icon: LayoutDashboard },
           { label: "Provider Credentialing",    path: "/credentialing/providers",             icon: Stethoscope },
           { label: "Insurance Credentialing",   path: "/credentialing/insurance",             icon: Building2 },
