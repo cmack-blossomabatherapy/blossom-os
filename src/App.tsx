@@ -788,7 +788,7 @@ const App = () => (
                   <Route path="/hr/employee-records" element={<AdminRoute><HREmployeeRecordsPage /></AdminRoute>} />
                   <Route path="/hr/requests" element={<AdminRoute><HRRequestsPage /></AdminRoute>} />
                   <Route path="/hr/compliance-items" element={<AdminRoute><HRComplianceItemsPage /></AdminRoute>} />
-                  <Route path="/hr/nfc-badge-support" element={<AdminRoute><HRNFCBadgeSupportPage /></AdminRoute>} />
+                  <Route path="/hr/nfc-badge-support" element={<Navigate to="/user-management" replace />} />
                   <Route path="/hr/reports" element={<AdminRoute><HRReportsPage /></AdminRoute>} />
                   {/* Phase 5 — Credentialing */}
                   <Route path="/credentialing" element={<AdminRoute><CredentialingDashboardPage /></AdminRoute>} />
