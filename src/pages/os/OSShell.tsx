@@ -224,6 +224,27 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/ops/missing-docs",
     "/ops/payer-requirements",
   ]),
+  scheduling_team: new Set<string>([
+    "/scheduling",
+    "/ops/scheduling",
+    "/scheduling-workspace",
+    "/reports/cancellation-command-center",
+    "/ops/make-up-sessions",
+  ]),
+  scheduling_lead: new Set<string>([
+    "/scheduling",
+    "/ops/scheduling",
+    "/scheduling-workspace",
+    "/reports/cancellation-command-center",
+    "/ops/make-up-sessions",
+  ]),
+  scheduling_coordinator: new Set<string>([
+    "/scheduling",
+    "/ops/scheduling",
+    "/scheduling-workspace",
+    "/reports/cancellation-command-center",
+    "/ops/make-up-sessions",
+  ]),
 };
 
 export function isPathLiveForRole(role: string, basePath: string): boolean {

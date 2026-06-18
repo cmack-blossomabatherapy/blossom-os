@@ -265,7 +265,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "scheduling", label: "Scheduling", items: [
-          DASHBOARD_ITEM,
           { label: "Scheduling Dashboard", path: "/scheduling",                              icon: LayoutDashboard },
           { label: "Schedule Gaps",        path: "/ops/scheduling",                          icon: AlertTriangle },
           { label: "Session Coverage",     path: "/scheduling-workspace",                    icon: Calendar },
