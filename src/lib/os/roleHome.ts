@@ -40,11 +40,11 @@ const ROLE_HOME_MAP: Partial<Record<OSRole, string>> = {
   qa_specialist:              "/qa-team",
   qa_team:                    "/qa-team",
 
-  clinical_director:          "/bcba",
-  clinical_lead:              "/bcba",
+  clinical_director:          "/clinical-director",
+  clinical_lead:              "/clinical-director",
   bcba:                       "/bcba",
   rbt:                        "/rbt/my-day",
-  behavioral_support:         "/reports",
+  behavioral_support:         "/behavioral-support",
 
   scheduling_lead:            "/scheduling",
   scheduling_coordinator:     "/scheduling",
@@ -70,7 +70,7 @@ const ROLE_HOME_MAP: Partial<Record<OSRole, string>> = {
   rcm_team:                   "/billing-finance",
   billing_finance:            "/billing-finance",
 
-  case_manager:               "/evaluations",
+  case_manager:               "/case-manager",
   viewer:                     "/reports",
 };
 

@@ -222,6 +222,8 @@ import OSPayrollMessages from "./pages/os/OSPayrollMessages";
 import OSPayrollResources from "./pages/os/OSPayrollResources";
 import OSPayrollTrainingAcademy from "./pages/os/OSPayrollTrainingAcademy";
 import OSCaseManager from "./pages/os/case-manager/OSCaseManager";
+import ClinicalDirectorDashboard from "./pages/os/clinical/ClinicalDirectorDashboard";
+import BehavioralSupportDashboard from "./pages/os/behavioral-support/BehavioralSupportDashboard";
 import {
   CMTrainingAcademy, CMAssignedFamilies, CMParentCommunication, CMFamilySupport,
   CMProgressFollowUps, CMSchedulingCoordination, CMAuthorizationsVisibility,
@@ -664,6 +666,8 @@ const App = () => (
                   <Route path="/payroll/resources" element={<OSPayrollResources />} />
                   {/* Case Manager role */}
                   <Route path="/case-manager" element={<OSCaseManager />} />
+                  <Route path="/clinical-director" element={<ClinicalDirectorDashboard />} />
+                  <Route path="/behavioral-support" element={<BehavioralSupportDashboard />} />
                   <Route path="/case-manager/training" element={<CMTrainingAcademy />} />
                   <Route path="/case-manager/families" element={<CMAssignedFamilies />} />
                   <Route path="/case-manager/communication" element={<CMParentCommunication />} />
