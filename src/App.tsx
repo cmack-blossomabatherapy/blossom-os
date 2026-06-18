@@ -794,11 +794,11 @@ const App = () => (
                   <Route path="/ops/approved-authorizations" element={<PermissionRoute allowedRoles={["admin", "auth_team", "authorization_manager", "authorization_coordinator"]}><ApprovedAuthorizationsPage /></PermissionRoute>} />
                   <Route path="/ops/denials" element={<PermissionRoute allowedRoles={["admin", "auth_team", "authorization_manager", "authorization_coordinator"]}><DenialsPage /></PermissionRoute>} />
                   <Route path="/ops/scheduling" element={<PermissionRoute allowedRoles={["admin", "scheduling", "scheduling_lead", "scheduling_coordinator"]}><SchedulingPhase6Page /></PermissionRoute>} />
-                  <Route path="/ops/staffing" element={<AdminRoute><StaffingPhase6Page /></AdminRoute>} />
+                  <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><StaffingPhase6Page /></PermissionRoute>} />
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
                   <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
                   <Route path="/ops/qa" element={<AdminRoute><QAPhase6OpsPage /></AdminRoute>} />
-                  <Route path="/ops/family-staffing-preferences" element={<AdminRoute><FamilyStaffingPreferencesPage /></AdminRoute>} />
+                  <Route path="/ops/family-staffing-preferences" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><FamilyStaffingPreferencesPage /></PermissionRoute>} />
                   <Route path="/ops/state-escalations" element={<AdminRoute><StateEscalationsPage /></AdminRoute>} />
                   <Route path="/ops/tasks" element={<AdminRoute><OperationalTasksPage /></AdminRoute>} />
                   {/* Phase 7 — Communications */}
@@ -871,7 +871,7 @@ const App = () => (
                   <Route path="/ops/missing-docs"            element={<OSShellPage><MissingDocs /></OSShellPage>} />
                   <Route path="/ops/payer-requirements"      element={<OSShellPage><PayerRequirements /></OSShellPage>} />
                   <Route path="/ops/make-up-sessions"        element={<OSShellPage><MakeUpSessions /></OSShellPage>} />
-                  <Route path="/ops/rbt-match-queue"         element={<RbtMatchQueue />} />
+                  <Route path="/ops/rbt-match-queue"         element={<OSShellPage><RbtMatchQueue /></OSShellPage>} />
                   {/* Generic Training Academy routes — render inside the OS shell so
                       every non-admin role (including Intake Team) keeps the current
                       Blossom OS sidebar/topbar. State Director training stays at /training. */}
