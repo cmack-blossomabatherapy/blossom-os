@@ -6,7 +6,7 @@ import {
   Calendar, FileSignature, ClipboardList, UserCheck,
   LayoutDashboard, AlertTriangle, MapPin, Stethoscope, CheckCircle2,
   XCircle, Gauge, LineChart, Activity, Inbox, type LucideIcon,
-  FileCheck2, Clock, Eye, Flame, Library,
+  FileCheck2, Clock, Eye, Flame, Library, UserPlus, Bell,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
 
