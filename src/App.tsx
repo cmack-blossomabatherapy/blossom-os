@@ -206,6 +206,7 @@ import JourneyEditor from "./pages/admin/JourneyEditor";
 import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
 import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
+import { OSShell } from "./pages/os/OSShell";
 import OSPayrollCoordinator from "./pages/os/OSPayrollCoordinator";
 import OSPayrollWorkspace from "./pages/os/OSPayrollWorkspace";
 import OSPayrollIssues from "./pages/os/OSPayrollIssues";
