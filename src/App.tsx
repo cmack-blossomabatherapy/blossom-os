@@ -469,6 +469,8 @@ function RoleDashboardRedirect() {
     : roles.includes("recruiting_assistant") ? ROLE_HOME.recruiting_team
     : roles.includes("hr") || roles.includes("hr_admin") || roles.includes("hr_manager") ? ROLE_HOME.hr_team
     : roles.includes("finance") ? ROLE_HOME.billing_finance
+    : roles.includes("qa_director") ? ROLE_HOME.qa_director
+    : roles.includes("qa_specialist") ? ROLE_HOME.qa_specialist
     : roles.includes("qa") ? ROLE_HOME.qa_team
     : roles.includes("payroll_admin") ? ROLE_HOME.payroll_coordinator
     : roles.includes("bcba") ? ROLE_HOME.bcba
@@ -800,7 +802,7 @@ const App = () => (
                   <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><StaffingPhase6Page /></PermissionRoute>} />
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
                   <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
-                  <Route path="/ops/qa" element={<AdminRoute><QAPhase6OpsPage /></AdminRoute>} />
+                  <Route path="/ops/qa" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_director", "qa_specialist"]}><QAPhase6OpsPage /></PermissionRoute>} />
                   <Route path="/ops/family-staffing-preferences" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><FamilyStaffingPreferencesPage /></PermissionRoute>} />
                   <Route path="/ops/state-escalations" element={<AdminRoute><StateEscalationsPage /></AdminRoute>} />
                   <Route path="/ops/tasks" element={<AdminRoute><OperationalTasksPage /></AdminRoute>} />
@@ -968,7 +970,7 @@ const App = () => (
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/pipeline" element={<Pipeline />} />
                   <Route path="/staffing/:id" element={<RBTDetail />} />
-                  <Route path="/qa" element={<QA />} />
+                  <Route path="/qa" element={<Navigate to="/qa-team" replace />} />
                   <Route path="/qa/:id" element={<QADetail />} />
                   <Route path="/documents" element={<Documents />} />
                   <Route path="/tasks" element={<Tasks />} />

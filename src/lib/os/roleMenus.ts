@@ -6,6 +6,7 @@ import {
   Calendar, FileSignature, ClipboardList, UserCheck,
   LayoutDashboard, AlertTriangle, MapPin, Stethoscope, CheckCircle2,
   XCircle, Gauge, LineChart, Activity, Inbox, type LucideIcon,
+  FileCheck2, Clock, Eye, Flame, Library,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
 
@@ -339,12 +340,71 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "qa", label: "QA", items: [
-          DASHBOARD_ITEM,
-          { label: "QA Dashboard",         path: "/qa",            icon: LayoutDashboard },
-          { label: "Documentation Review", path: "/qa-workspace",  icon: FileSignature },
-          { label: "Session Note Review",  path: "/qa-queue",      icon: FileText },
-          { label: "Compliance Issues",    path: "/qa-clients",    icon: AlertTriangle },
-          { label: "QA Reports",           path: "/reports",       icon: BarChart3 },
+          { label: "QA Dashboard",             path: "/qa-team",                icon: LayoutDashboard },
+          { label: "QA Workspace",             path: "/qa-workspace",           icon: FileSignature },
+          { label: "QA Queue",                 path: "/qa-queue",               icon: FileText },
+          { label: "QA Clients",               path: "/qa-clients",             icon: Users },
+          { label: "Authorization Reviews",    path: "/authorization-reviews",  icon: ClipboardCheck },
+          { label: "Progress Reports",         path: "/progress-reports",       icon: BarChart3 },
+          { label: "Treatment Plan Reviews",   path: "/treatment-plan-reviews", icon: FileCheck2 },
+          { label: "Missing Information",      path: "/missing-information",    icon: AlertTriangle },
+          { label: "Expiring Items",           path: "/expiring-items",         icon: Clock },
+          { label: "Assigned BCBAs",           path: "/assigned-bcbas",         icon: UserCheck },
+          { label: "Supervision Visibility",   path: "/supervision-visibility", icon: Eye },
+          { label: "QA Messages",              path: "/qa-messages",            icon: MessageSquare },
+          { label: "Escalations & Follow-Ups", path: "/escalations-followups",  icon: Flame },
+          { label: "QA Resources",             path: "/qa/resources",           icon: Library },
+          { label: "QA Reports",               path: "/reports",                icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  qa_director: {
+    sections: [
+      {
+        id: "qa", label: "QA", items: [
+          { label: "QA Dashboard",             path: "/qa-team",                icon: LayoutDashboard },
+          { label: "QA Workspace",             path: "/qa-workspace",           icon: FileSignature },
+          { label: "QA Queue",                 path: "/qa-queue",               icon: FileText },
+          { label: "QA Clients",               path: "/qa-clients",             icon: Users },
+          { label: "Authorization Reviews",    path: "/authorization-reviews",  icon: ClipboardCheck },
+          { label: "Progress Reports",         path: "/progress-reports",       icon: BarChart3 },
+          { label: "Treatment Plan Reviews",   path: "/treatment-plan-reviews", icon: FileCheck2 },
+          { label: "Missing Information",      path: "/missing-information",    icon: AlertTriangle },
+          { label: "Expiring Items",           path: "/expiring-items",         icon: Clock },
+          { label: "Assigned BCBAs",           path: "/assigned-bcbas",         icon: UserCheck },
+          { label: "Supervision Visibility",   path: "/supervision-visibility", icon: Eye },
+          { label: "QA Messages",              path: "/qa-messages",            icon: MessageSquare },
+          { label: "Escalations & Follow-Ups", path: "/escalations-followups",  icon: Flame },
+          { label: "QA Resources",             path: "/qa/resources",           icon: Library },
+          { label: "QA Reports",               path: "/reports",                icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  qa_specialist: {
+    sections: [
+      {
+        id: "qa", label: "QA", items: [
+          { label: "QA Dashboard",             path: "/qa-team",                icon: LayoutDashboard },
+          { label: "QA Workspace",             path: "/qa-workspace",           icon: FileSignature },
+          { label: "QA Queue",                 path: "/qa-queue",               icon: FileText },
+          { label: "QA Clients",               path: "/qa-clients",             icon: Users },
+          { label: "Authorization Reviews",    path: "/authorization-reviews",  icon: ClipboardCheck },
+          { label: "Progress Reports",         path: "/progress-reports",       icon: BarChart3 },
+          { label: "Treatment Plan Reviews",   path: "/treatment-plan-reviews", icon: FileCheck2 },
+          { label: "Missing Information",      path: "/missing-information",    icon: AlertTriangle },
+          { label: "Expiring Items",           path: "/expiring-items",         icon: Clock },
+          { label: "Assigned BCBAs",           path: "/assigned-bcbas",         icon: UserCheck },
+          { label: "Supervision Visibility",   path: "/supervision-visibility", icon: Eye },
+          { label: "QA Messages",              path: "/qa-messages",            icon: MessageSquare },
+          { label: "Escalations & Follow-Ups", path: "/escalations-followups",  icon: Flame },
+          { label: "QA Resources",             path: "/qa/resources",           icon: Library },
+          { label: "QA Reports",               path: "/reports",                icon: BarChart3 },
         ],
       },
       TRAINING_AND_RESOURCES,

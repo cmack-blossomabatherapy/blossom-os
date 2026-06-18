@@ -36,9 +36,9 @@ const ROLE_HOME_MAP: Partial<Record<OSRole, string>> = {
   authorization_manager:      "/authorizations",
   authorization_coordinator:  "/authorizations",
 
-  qa_director:                "/qa",
-  qa_specialist:              "/qa",
-  qa_team:                    "/qa",
+  qa_director:                "/qa-team",
+  qa_specialist:              "/qa-team",
+  qa_team:                    "/qa-team",
 
   clinical_director:          "/bcba",
   clinical_lead:              "/bcba",
