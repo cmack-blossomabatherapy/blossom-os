@@ -828,7 +828,7 @@ const App = () => (
                   <Route path="/marketing/training" element={<MarketingTraining />} />
                   <Route path="/marketing/campaigns" element={<MarketingCampaigns />} />
                   <Route path="/marketing/lead-sources" element={<MarketingLeadSources />} />
-                  <Route path="/marketing/lead-source-inbox" element={<LeadSourceInbox />} />
+                  <Route path="/marketing/lead-source-inbox" element={<AdminRoute><LeadSourceInbox /></AdminRoute>} />
                   <Route path="/marketing/seo" element={<MarketingSEO />} />
                   <Route path="/marketing/web-analytics" element={<MarketingWebAnalytics />} />
                   <Route path="/marketing/call-tracking" element={<MarketingCallTracking />} />
