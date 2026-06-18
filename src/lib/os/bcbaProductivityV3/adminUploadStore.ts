@@ -179,6 +179,15 @@ export async function parseBcbaProductivityUpload(file: File): Promise<BcbaUploa
   let dateMin = "", dateMax = "";
 
   if (missing.length === 0) {
+    // First pass: build rows + collect hash keys synchronously.
+    interface Pending {
+      row: BcbaSharedBillingRow;
+      raw: Record<string, unknown>;
+      providerId: string;
+      units: number | null;
+      hashKey: string;
+    }
+    const pending: Pending[] = [];
     for (const r of first.rows) {
       const code = String((codeH ? r[codeH] : "") ?? "").trim();
       const hours = numVal(hoursH ? r[hoursH] : "");
@@ -231,11 +240,26 @@ export async function parseBcbaProductivityUpload(file: File): Promise<BcbaUploa
             normNumStr(hours),
             isFinite(units) ? normNumStr(units) : "",
           ].join("|");
-      const rowHash = await sha256Hex(hashKey);
-
-      parsedRows.push({ row, raw: r as Record<string, unknown>, rowHash, providerId, units: isFinite(units) ? units : null });
+      pending.push({ row, raw: r as Record<string, unknown>, providerId, units: isFinite(units) ? units : null, hashKey });
       if (!dateMin || dos < dateMin) dateMin = dos;
       if (!dateMax || dos > dateMax) dateMax = dos;
+    }
+
+    // Second pass: hash everything in parallel batches so we don't await per-row.
+    const HASH_BATCH = 1000;
+    for (let i = 0; i < pending.length; i += HASH_BATCH) {
+      const slice = pending.slice(i, i + HASH_BATCH);
+      const hashes = await Promise.all(slice.map((p) => sha256Hex(p.hashKey)));
+      for (let j = 0; j < slice.length; j++) {
+        const p = slice[j];
+        parsedRows.push({
+          row: p.row,
+          raw: p.raw,
+          rowHash: hashes[j],
+          providerId: p.providerId,
+          units: p.units,
+        });
+      }
     }
   }
 
