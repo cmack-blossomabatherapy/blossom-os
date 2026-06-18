@@ -804,8 +804,8 @@ const App = () => (
                   <Route path="/credentialing/expiring" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><ExpiringCredentialsPage /></PermissionRoute>} />
                   <Route path="/credentialing/reports" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead"]}><CredentialingReportsPage /></PermissionRoute>} />
                   {/* Phase 6 — Core ABA Operations */}
-                  <Route path="/state-operations" element={<AdminRoute><StateOperationsPage /></AdminRoute>} />
-                  <Route path="/ops/authorizations" element={<AdminRoute><AuthorizationsPhase6Page /></AdminRoute>} />
+                  <Route path="/state-operations" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director"]}><StateOperationsPage /></PermissionRoute>} />
+                  <Route path="/ops/authorizations" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "auth_team", "authorization_manager", "authorization_coordinator"]}><AuthorizationsPhase6Page /></PermissionRoute>} />
                   <Route path="/ops/approved-authorizations" element={<PermissionRoute allowedRoles={["admin", "auth_team", "authorization_manager", "authorization_coordinator"]}><ApprovedAuthorizationsPage /></PermissionRoute>} />
                   <Route path="/ops/denials" element={<PermissionRoute allowedRoles={["admin", "auth_team", "authorization_manager", "authorization_coordinator"]}><DenialsPage /></PermissionRoute>} />
                   <Route path="/ops/scheduling" element={<PermissionRoute allowedRoles={["admin", "scheduling", "scheduling_lead", "scheduling_coordinator"]}><SchedulingPhase6Page /></PermissionRoute>} />
@@ -814,8 +814,8 @@ const App = () => (
                   <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
                   <Route path="/ops/qa" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_director", "qa_specialist"]}><QAPhase6OpsPage /></PermissionRoute>} />
                   <Route path="/ops/family-staffing-preferences" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><FamilyStaffingPreferencesPage /></PermissionRoute>} />
-                  <Route path="/ops/state-escalations" element={<AdminRoute><StateEscalationsPage /></AdminRoute>} />
-                  <Route path="/ops/tasks" element={<AdminRoute><OperationalTasksPage /></AdminRoute>} />
+                  <Route path="/ops/state-escalations" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director"]}><StateEscalationsPage /></PermissionRoute>} />
+                  <Route path="/ops/tasks" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director"]}><OperationalTasksPage /></PermissionRoute>} />
                   {/* Phase 7 — Communications */}
                   <Route path="/communications/call-logs" element={<AdminRoute><CallLogsPage /></AdminRoute>} />
                   <Route path="/communications/phone-requests" element={<AdminRoute><PhoneRequestsTopPage /></AdminRoute>} />
@@ -823,11 +823,11 @@ const App = () => (
                   <Route path="/communications/user-activity" element={<AdminRoute><UserActivityLogPage /></AdminRoute>} />
                   <Route path="/communications/patient-activity" element={<AdminRoute><PatientActivityLogPage /></AdminRoute>} />
                   <Route path="/communications/activity-center" element={<AdminRoute><ActivityCenterPage /></AdminRoute>} />
-                  <Route path="/work-queue" element={<AdminRoute><WorkQueuePage /></AdminRoute>} />
-                  <Route path="/work-queue/escalations" element={<AdminRoute><EscalationCenterPage /></AdminRoute>} />
+                  <Route path="/work-queue" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager"]}><WorkQueuePage /></PermissionRoute>} />
+                  <Route path="/work-queue/escalations" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager"]}><EscalationCenterPage /></PermissionRoute>} />
                   {/* Phase 7 — System Tools */}
                   <Route path="/system/workflow-inventory" element={<AdminRoute><WorkflowInventoryPage /></AdminRoute>} />
-                  <Route path="/system/request-intake" element={<AdminRoute><RequestIntakePage /></AdminRoute>} />
+                  <Route path="/system/request-intake" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager"]}><RequestIntakePage /></PermissionRoute>} />
                   <Route path="/system/issue-tracker" element={<AdminRoute><IssueTrackerPage /></AdminRoute>} />
                   <Route path="/system/bcba-productivity-uploads" element={<AdminRoute><BcbaProductivityUploads /></AdminRoute>} />
                   <Route path="/notifications" element={<OSNotifications />} />
