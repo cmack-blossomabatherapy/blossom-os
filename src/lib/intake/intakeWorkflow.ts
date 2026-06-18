@@ -233,3 +233,43 @@ export function getEscalationReason(lead: Lead): EscalationType {
   if ((lead.daysInStage ?? 0) > getStageSlaDays(lead.status)) return "stage_sla_overdue";
   return "other";
 }
+
+/* ---------------------------- Lead age / priority -------------------------- */
+
+/** Whole days since `createdAt`. Returns 0 if the date is missing or invalid. */
+export function getLeadAgeDays(lead: Lead): number {
+  if (!lead.createdAt) return 0;
+  const created = new Date(lead.createdAt).getTime();
+  if (!Number.isFinite(created)) return 0;
+  const diff = Date.now() - created;
+  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+}
+
+/** Days the lead has been sitting in its current stage. */
+export function getDaysInCurrentStage(lead: Lead): number {
+  return Math.max(0, lead.daysInStage ?? 0);
+}
+
+/**
+ * Combined operational priority — blends explicit lead priority with workflow
+ * risk so the UI can sort/queue without recomputing risk on every render.
+ */
+export type LeadPriorityScore = {
+  level: "hot" | "warm" | "cold";
+  weight: number;
+  reasons: string[];
+};
+
+export function getLeadPriority(lead: Lead): LeadPriorityScore {
+  const risk = getLeadWorkflowRisk(lead);
+  const explicit = (lead.priority ?? "Warm").toLowerCase();
+  let weight = 0;
+  if (explicit === "hot") weight += 3;
+  else if (explicit === "warm") weight += 1;
+  if (risk.level === "urgent") weight += 4;
+  else if (risk.level === "risk") weight += 2;
+  else if (risk.level === "watch") weight += 1;
+  const level: LeadPriorityScore["level"] =
+    weight >= 4 ? "hot" : weight >= 2 ? "warm" : "cold";
+  return { level, weight, reasons: risk.reasons };
+}
