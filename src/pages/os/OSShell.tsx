@@ -206,6 +206,24 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/patient-journey",
     "/leads",
   ]),
+  authorization_coordinator: new Set<string>([
+    "/authorizations",
+    "/auth-workspace",
+    "/ops/approved-authorizations",
+    "/ops/expiring-authorizations",
+    "/ops/denials",
+    "/ops/missing-docs",
+    "/ops/payer-requirements",
+  ]),
+  authorization_manager: new Set<string>([
+    "/authorizations",
+    "/auth-workspace",
+    "/ops/approved-authorizations",
+    "/ops/expiring-authorizations",
+    "/ops/denials",
+    "/ops/missing-docs",
+    "/ops/payer-requirements",
+  ]),
 };
 
 export function isPathLiveForRole(role: string, basePath: string): boolean {
