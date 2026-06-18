@@ -72,8 +72,6 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
       { to: "/role-management", label: "Role Management", icon: ShieldCheck },
       { to: "/employee-directory", label: "Employee Directory", icon: UserCheck },
       { to: "/permissions", label: "Permissions", icon: ShieldCheck },
-      { to: "/user-logins-vault", label: "User Logins Vault", icon: KeyRound },
-      { to: "/nfc-badges", label: "NFC Badge Management", icon: IdCard },
       { to: "/device-inventory", label: "Device Inventory", icon: Smartphone },
       { to: "/device-requests", label: "Device Requests", icon: Smartphone },
     ],
