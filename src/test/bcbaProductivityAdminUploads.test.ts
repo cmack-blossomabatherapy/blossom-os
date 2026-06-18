@@ -51,7 +51,7 @@ describe("BCBA Productivity admin uploads — Sprint", () => {
     expect(src).toMatch(
       /No admin-uploaded BCBA productivity dataset found\. Ask an admin to upload the CentralReach billing export\./,
     );
-    // no retired language
+    // no stale manual-direction language
     expect(src).not.toMatch(/retired/i);
     expect(src).not.toMatch(/Manual uploads have been retired/);
     expect(src).not.toMatch(/data only comes from the shared admin dataset/);
@@ -60,13 +60,21 @@ describe("BCBA Productivity admin uploads — Sprint", () => {
   it("Admin upload page uses the agreed product copy", () => {
     const src = read("src/pages/os/system/BcbaProductivityUploads.tsx");
     expect(src).toMatch(/BCBA Productivity Uploads/);
-    expect(src).toMatch(
-      /Upload CentralReach billing exports here so the BCBA Productivity Report can use a shared admin dataset\./,
-    );
+    expect(src).toMatch(/shared admin-fed dataset/i);
+    expect(src).toMatch(/Daily uploads append new rows and skip duplicates/i);
+    expect(src).toMatch(/team members do not need to upload this file themselves/i);
+    expect(src).not.toMatch(/This does not replace manual report uploads/i);
     expect(src).toMatch(/Append Upload/);
     expect(src).toMatch(/Upload History/);
     expect(src).toMatch(/Download Current Dataset/);
     expect(src).toMatch(/duplicates/i);
+  });
+
+  it("Admin upload store comment reflects the admin-fed dataset model", () => {
+    const store = read("src/lib/os/bcbaProductivityV3/adminUploadStore.ts");
+    expect(store).toMatch(/one shared, appended, deduped dataset/i);
+    expect(store).not.toMatch(/does NOT replace the manual upload flow/i);
+    expect(store).not.toMatch(/additional shared source/i);
   });
 
   it("BCBA Productivity V3 route remains in App.tsx", () => {
