@@ -12,6 +12,15 @@
 
 export type OSRole =
   | "super_admin"
+  // TODO(future-roles): Add the following blueprint roles when ready to
+  // surface them in View As Role. Until then, do NOT add them as menu
+  // entries — keep the preview list lean:
+  //   - "director_of_rcm"               (Director of Revenue Cycle Management)
+  //   - "office_manager"                (Office Manager)
+  //   - "regional_state_director"       (Regional State Director — Mentor Program)
+  // When activating any of these, also: add to ROLE_MENUS + ROLE_HOME +
+  // ROLE_PREVIEW_LIST, add a default menu reusing existing pages where
+  // possible, and add an entry to mapAuthRoleToOS.
   | "executive_leadership"
   | "operations_leadership"
   | "state_director"
