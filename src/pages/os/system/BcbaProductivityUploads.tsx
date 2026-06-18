@@ -194,8 +194,8 @@ export default function BcbaProductivityUploads() {
             </div>
             <h1 className="text-3xl font-semibold tracking-tight text-foreground">BCBA Productivity Uploads</h1>
             <p className="text-sm text-muted-foreground mt-1.5 max-w-3xl">
-              Upload CentralReach billing exports here so the BCBA Productivity Report can use a shared admin dataset.
-              This does not replace manual report uploads.
+              Upload CentralReach billing exports here so the BCBA Productivity Report runs from one shared admin-fed dataset.
+              Daily uploads append new rows and skip duplicates so team members do not need to upload this file themselves.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
