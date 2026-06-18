@@ -1,0 +1,139 @@
+import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { ROLE_MENUS } from "@/lib/os/roleMenus";
+import { ROLE_HOME } from "@/lib/os/roleHome";
+
+const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
+
+describe("Sprint 15 — Intake Team live menu", () => {
+  const intake = ROLE_MENUS.intake_coordinator;
+
+  it("Intake menu exposes every required Intake path", () => {
+    expect(intake).toBeDefined();
+    const paths = intake!.sections.flatMap((s) => s.items.map((i) => i.path));
+    for (const p of [
+      "/intake/dashboard",
+      "/intake/referral-queue",
+      "/intake/lead-to-active",
+      "/intake/missing-information",
+      "/intake/parent-communication",
+      "/intake/tasks",
+      "/intake/benefits-cheat-sheets",
+      "/patient-journey",
+    ]) {
+      expect(paths).toContain(p);
+    }
+  });
+
+  it("Intake menu does NOT include the generic /dashboard item", () => {
+    const paths = intake!.sections.flatMap((s) => s.items.map((i) => i.path));
+    expect(paths).not.toContain("/dashboard");
+  });
+
+  it("Intake role home is /intake/dashboard", () => {
+    expect(ROLE_HOME.intake_coordinator).toBe("/intake/dashboard");
+    expect(ROLE_HOME.intake_lead).toBe("/intake/dashboard");
+  });
+
+  it("Intake Team menu definition no longer uses DASHBOARD_ITEM", () => {
+    const src = read("src/lib/os/roleMenus.ts");
+    const start = src.indexOf("intake_coordinator: {");
+    const end = src.indexOf("/* ", start + 1);
+    const block = src.slice(start, end);
+    expect(block).not.toMatch(/DASHBOARD_ITEM/);
+  });
+});
+
+describe("Sprint 15 — OSShell role-specific live paths", () => {
+  const shell = read("src/pages/os/OSShell.tsx");
+
+  it("declares ROLE_SPECIFIC_LIVE_PATHS with intake_coordinator entries", () => {
+    expect(shell).toMatch(/ROLE_SPECIFIC_LIVE_PATHS/);
+    expect(shell).toMatch(/intake_coordinator:\s*new Set/);
+    for (const p of [
+      "/intake/dashboard",
+      "/intake/referral-queue",
+      "/intake/lead-to-active",
+      "/intake/missing-information",
+      "/intake/parent-communication",
+      "/intake/tasks",
+      "/intake/benefits-cheat-sheets",
+      "/patient-journey",
+      "/leads",
+    ]) {
+      expect(shell).toContain(`"${p}"`);
+    }
+  });
+
+  it("uses isPathLiveForRole instead of bare STAGED_ROLE_LIVE_PATHS.has for menu gating", () => {
+    expect(shell).toMatch(/isPathLiveForRole\(role, basePath\)/);
+  });
+
+  it("does NOT add intake paths to the global STAGED_ROLE_LIVE_PATHS set", () => {
+    const startIdx = shell.indexOf("STAGED_ROLE_LIVE_PATHS: ReadonlySet<string>");
+    const endIdx = shell.indexOf("]);", startIdx);
+    const block = shell.slice(startIdx, endIdx);
+    expect(block).not.toMatch(/\/intake\//);
+    expect(block).not.toMatch(/\/patient-journey/);
+    expect(block).not.toMatch(/\/leads/);
+  });
+});
+
+describe("Sprint 15 — App.tsx mounts Intake routes", () => {
+  const app = read("src/App.tsx");
+  it.each([
+    "/intake/dashboard",
+    "/intake/referral-queue",
+    "/intake/lead-to-active",
+    "/intake/missing-information",
+    "/intake/parent-communication",
+    "/intake/tasks",
+    "/intake/benefits-cheat-sheets",
+    "/patient-journey",
+    "/leads",
+  ])("mounts %s", (path) => {
+    expect(app).toContain(`path="${path}"`);
+  });
+});
+
+describe("Sprint 15 — Intake pages canonicalize lead deep links + use LeadActionPanel", () => {
+  const files = [
+    "src/pages/os/intake/IntakeDashboard.tsx",
+    "src/pages/os/intake/ReferralQueue.tsx",
+    "src/pages/os/intake/LeadToActivePipeline.tsx",
+    "src/pages/os/intake/MissingInformation.tsx",
+    "src/pages/os/intake/ParentCommunication.tsx",
+    "src/pages/os/intake/IntakeTasks.tsx",
+  ];
+
+  it("no Intake page uses legacy patient-journey?lead= pattern", () => {
+    for (const f of files) {
+      const src = read(f);
+      expect(src).not.toMatch(/patient-journey\?lead=/);
+    }
+  });
+
+  it("at least one Intake page imports LeadActionPanel", () => {
+    const anyImports = files.some((f) => /LeadActionPanel/.test(read(f)));
+    expect(anyImports).toBe(true);
+  });
+});
+
+describe("Sprint 15 — protected surfaces still mounted", () => {
+  const app = read("src/App.tsx");
+  it.each([
+    "/training",
+    "/academy",
+    "/resource-library",
+    "/reports",
+    "/reports/bcba-productivity-report-v3",
+    "/system/bcba-productivity-uploads",
+    "/user-logins-vault",
+    "/admin/login-vault",
+    "/nfc-badges",
+    "/evaluations",
+  ])("App.tsx still mounts %s", (path) => {
+    expect(app).toContain(`path="${path}"`);
+  });
+});
