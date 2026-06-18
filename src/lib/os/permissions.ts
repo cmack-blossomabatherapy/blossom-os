@@ -357,6 +357,18 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
     actions: { dashboard: VIEW, payroll: FULL, staff: VIEW, reports: ["view", "export"] },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
   },
+  credentialing_team: {
+    modules: ["dashboard", "credentialing", "staff", "reports", "sop", "training", "kpi", "ai_assistant"],
+    scope: "company",
+    actions: {
+      dashboard: VIEW,
+      credentialing: FULL,
+      staff: VIEW,
+      reports: ["view", "export"],
+      training: VIEW,
+    },
+    leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
+  },
   bcba: {
     modules: ["dashboard", "clients", "scheduling", "cases", "evaluations", "training", "sop", "kpi", "ai_assistant"],
     scope: "assigned",
