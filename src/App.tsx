@@ -222,6 +222,8 @@ import OSPayrollMessages from "./pages/os/OSPayrollMessages";
 import OSPayrollResources from "./pages/os/OSPayrollResources";
 import OSPayrollTrainingAcademy from "./pages/os/OSPayrollTrainingAcademy";
 import OSCaseManager from "./pages/os/case-manager/OSCaseManager";
+import ClinicalDirectorDashboard from "./pages/os/clinical/ClinicalDirectorDashboard";
+import BehavioralSupportDashboard from "./pages/os/behavioral-support/BehavioralSupportDashboard";
 import {
   CMTrainingAcademy, CMAssignedFamilies, CMParentCommunication, CMFamilySupport,
   CMProgressFollowUps, CMSchedulingCoordination, CMAuthorizationsVisibility,
