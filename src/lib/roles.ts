@@ -58,13 +58,7 @@ export type AppRole =
   | "billing_lead"
   | "credentialing_lead"
   | "rcm_team"
-  | "assistant_state_director"
-  // ---- Additional canonical roles used by route guards / OS mapping ----
-  | "hr_team"
-  | "credentialing_team"
-  | "credentialing"
-  | "credentialing_coordinator"
-  | "business_development";
+  | "assistant_state_director";
 
 export interface RoleMeta {
   key: AppRole;
