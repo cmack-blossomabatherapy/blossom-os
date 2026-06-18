@@ -1,3 +1,4 @@
+import { Plug } from "lucide-react";
 import { MktgPage, MktgCard, EmptyRow } from "./_shared";
 
 /**
