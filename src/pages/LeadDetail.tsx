@@ -100,7 +100,8 @@ export default function LeadDetail() {
     <StickyNote className="h-3.5 w-3.5" />;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <OSShell>
+      <div className="space-y-6 animate-fade-in">
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -650,6 +651,7 @@ export default function LeadDetail() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </OSShell>
   );
 }
