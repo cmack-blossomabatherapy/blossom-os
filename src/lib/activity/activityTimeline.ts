@@ -601,14 +601,62 @@ function seededMockEvents(): ActivityEvent[] {
 /** Build the current full activity feed (mock + derived from live stores). */
 export function buildActivityFeed(): ActivityEvent[] {
   const sourceEvents = listLeadSourceEvents().map(activityFromSourceEvent);
-  return sortActivityNewestFirst([...seededMockEvents(), ...sourceEvents]);
+  const workEvents = listWorkItems().map(activityFromWorkItem);
+  return sortActivityNewestFirst([...seededMockEvents(), ...sourceEvents, ...workEvents]);
 }
 
 /** Subscribe to changes in any underlying store and re-emit the merged feed. */
 export function subscribeActivityFeed(listener: (events: ActivityEvent[]) => void): () => void {
   const push = () => listener(buildActivityFeed());
-  const unsub = subscribeLeadSourceEvents(() => push());
-  return unsub;
+  const unsubSrc = subscribeLeadSourceEvents(() => push());
+  const unsubWi = subscribeWorkItems(() => push());
+  return () => {
+    unsubSrc();
+    unsubWi();
+  };
+}
+
+/** Normalize a WorkItem into the most representative activity event. */
+export function activityFromWorkItem(item: WorkItem): ActivityEvent {
+  let type: ActivityEventType = "work_item_created";
+  let severity: ActivitySeverity = "info";
+  let title = `Work item created — ${item.title}`;
+  let occurredAt = item.createdAt;
+
+  if (item.status === "escalated") {
+    type = "work_item_escalated";
+    severity = item.priority === "critical" ? "critical" : "warning";
+    title = `Escalated — ${item.title}`;
+    occurredAt = item.escalatedAt ?? occurredAt;
+  } else if (item.status === "resolved" || item.status === "closed") {
+    type = "work_item_completed";
+    severity = "success";
+    title = `Resolved — ${item.title}`;
+    occurredAt = item.resolvedAt ?? occurredAt;
+  } else if (item.updatedAt && item.updatedAt !== item.createdAt) {
+    type = "work_item_updated";
+    occurredAt = item.updatedAt;
+    title = `Updated — ${item.title}`;
+  }
+
+  return normalizeActivityEvent({
+    id: `wi_${item.id}_${type}`,
+    type,
+    objectType: "task",
+    objectId: item.id,
+    objectLabel: item.department,
+    relatedLeadId: item.relatedLeadId,
+    relatedPatientId: item.relatedPatientId,
+    relatedUserId: item.relatedUserId,
+    actorName: item.ownerName,
+    actorRole: item.department,
+    occurredAt,
+    title,
+    summary: item.escalationReason ?? item.description,
+    sourceSystem: item.sourceSystem ?? "Work Queue",
+    severity,
+    status: item.status === "resolved" || item.status === "closed" ? "complete" : "open",
+  });
 }
 
 /** Distinct source-system labels currently in the feed (for filter UIs). */
