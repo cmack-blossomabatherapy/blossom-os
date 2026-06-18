@@ -53,9 +53,9 @@ const ROLE_HOME_MAP: Partial<Record<OSRole, string>> = {
   staffing_coordinator:       "/ops/staffing",
   staffing_team:              "/ops/staffing",
 
-  recruiting_lead:            "/recruiting/workspace",
-  recruiting_coordinator:     "/recruiting/workspace",
-  recruiting_team:            "/recruiting/workspace",
+  recruiting_lead:            "/recruiting-team",
+  recruiting_coordinator:     "/recruiting-team",
+  recruiting_team:            "/recruiting-team",
 
   hr_lead:                    "/hr-team",
   hr_team:                    "/hr-team",
