@@ -11,7 +11,7 @@ import {
   Stethoscope, PhoneCall, BookUser, Activity, Bug, UserCheck,
   Plug, MonitorSmartphone, XCircle, CheckCircle2, ListTodo,
   Phone, FileText, LogOut,
-  UploadCloud,
+  UploadCloud, Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
@@ -62,6 +62,7 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
     id: "command_center", label: "Command Center", items: [
       { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
       { to: "/command-center", label: "Command Center", icon: Workflow },
+      { to: "/work-queue", label: "Work Queue", icon: ListTodo },
       { to: "/reports", label: "Reports", icon: BarChart3 },
     ],
   },
@@ -132,6 +133,7 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
       { to: "/ops/family-staffing-preferences", label: "Family Staffing Preferences", icon: HeartHandshake },
       { to: "/ops/state-escalations", label: "State Escalations", icon: AlertTriangle },
       { to: "/ops/tasks", label: "Operational Tasks", icon: ListTodo },
+      { to: "/work-queue/escalations", label: "Escalation Center", icon: Sparkles },
     ],
     defaultCollapsed: true,
   },
