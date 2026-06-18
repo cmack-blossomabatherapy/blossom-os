@@ -246,7 +246,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "authorizations", label: "Authorizations", items: [
-          DASHBOARD_ITEM,
           { label: "Authorizations Dashboard",  path: "/authorizations",                  icon: LayoutDashboard },
           { label: "Auth Queue",                path: "/auth-workspace",                  icon: ShieldCheck },
           { label: "Approved Authorizations",   path: "/ops/approved-authorizations",     icon: CheckCircle2 },
