@@ -11,7 +11,7 @@ import {
   Stethoscope, PhoneCall, BookUser, Activity, Bug, UserCheck,
   Plug, MonitorSmartphone, XCircle, CheckCircle2, ListTodo,
   Phone, FileText, LogOut,
-  UploadCloud,
+  UploadCloud, Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
