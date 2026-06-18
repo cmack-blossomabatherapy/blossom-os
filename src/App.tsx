@@ -666,6 +666,8 @@ const App = () => (
                   <Route path="/payroll/resources" element={<OSPayrollResources />} />
                   {/* Case Manager role */}
                   <Route path="/case-manager" element={<OSCaseManager />} />
+                  <Route path="/clinical-director" element={<ClinicalDirectorDashboard />} />
+                  <Route path="/behavioral-support" element={<BehavioralSupportDashboard />} />
                   <Route path="/case-manager/training" element={<CMTrainingAcademy />} />
                   <Route path="/case-manager/families" element={<CMAssignedFamilies />} />
                   <Route path="/case-manager/communication" element={<CMParentCommunication />} />
