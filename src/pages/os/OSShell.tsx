@@ -186,6 +186,33 @@ export const STAGED_ROLE_LIVE_PATHS: ReadonlySet<string> = new Set([
   "/reports",
 ]);
 
+/**
+ * Role-specific live paths. These are paths that are clickable for a
+ * specific role even though they are not in the global staged set.
+ *
+ * IMPORTANT: Do NOT add intake paths to STAGED_ROLE_LIVE_PATHS — that would
+ * make State Director / Assistant State Director / Marketing Intake snapshot
+ * links live for those roles before their own role is ready.
+ */
+export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string>>> = {
+  intake_coordinator: new Set<string>([
+    "/intake/dashboard",
+    "/intake/referral-queue",
+    "/intake/lead-to-active",
+    "/intake/missing-information",
+    "/intake/parent-communication",
+    "/intake/tasks",
+    "/intake/benefits-cheat-sheets",
+    "/patient-journey",
+    "/leads",
+  ]),
+};
+
+export function isPathLiveForRole(role: string, basePath: string): boolean {
+  if (STAGED_ROLE_LIVE_PATHS.has(basePath)) return true;
+  return ROLE_SPECIFIC_LIVE_PATHS[role]?.has(basePath) ?? false;
+}
+
 function buildSectionsForRole(role: string): NavSection[] {
   if (role === "super_admin") return SUPER_ADMIN_SECTIONS;
 
@@ -204,7 +231,7 @@ function buildSectionsForRole(role: string): NavSection[] {
         label: i.label,
         icon: i.icon,
         end: i.path === "/dashboard" || i.path === "/",
-        disabled: !STAGED_ROLE_LIVE_PATHS.has(basePath),
+        disabled: !isPathLiveForRole(role, basePath),
       };
     }),
   }));
