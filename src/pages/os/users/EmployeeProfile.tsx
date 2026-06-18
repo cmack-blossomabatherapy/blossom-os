@@ -1395,12 +1395,11 @@ function LoginsTab({ m }: { m: DirectoryEmployee }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-700 dark:text-amber-400">
-        <Lock className="size-3.5" /> Passwords are never displayed. Manage credentials in the Login Vault.
+        <Lock className="size-3.5" /> Passwords are never displayed. Credentials are managed from this employee profile by authorized HR/Admin users.
       </div>
       {rows.length === 0 ? (
         <Empty icon={KeyRound} title="No system logins on file"
-               hint="Add credentials in the Login Vault to centrally manage access."
-               action={<Button size="sm" onClick={() => navigate("/admin/login-vault")}>Open Login Vault</Button>} />
+               hint="Authorized HR/Admin users manage logins directly from this employee profile." />
       ) : (
         <Card className="p-0">
           <ul className="divide-y divide-border/60">
