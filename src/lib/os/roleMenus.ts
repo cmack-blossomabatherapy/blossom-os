@@ -282,7 +282,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "staffing", label: "Staffing", items: [
-          DASHBOARD_ITEM,
           { label: "Staffing Dashboard",          path: "/ops/staffing",                    icon: LayoutDashboard },
           { label: "Open Cases",                  path: "/staffing",                        icon: Briefcase },
           { label: "RBT Match Queue",             path: "/ops/rbt-match-queue",             icon: UserCheck },

@@ -245,6 +245,24 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/reports/cancellation-command-center",
     "/ops/make-up-sessions",
   ]),
+  staffing_team: new Set<string>([
+    "/ops/staffing",
+    "/staffing",
+    "/ops/rbt-match-queue",
+    "/ops/family-staffing-preferences",
+  ]),
+  staffing_lead: new Set<string>([
+    "/ops/staffing",
+    "/staffing",
+    "/ops/rbt-match-queue",
+    "/ops/family-staffing-preferences",
+  ]),
+  staffing_coordinator: new Set<string>([
+    "/ops/staffing",
+    "/staffing",
+    "/ops/rbt-match-queue",
+    "/ops/family-staffing-preferences",
+  ]),
 };
 
 export function isPathLiveForRole(role: string, basePath: string): boolean {
