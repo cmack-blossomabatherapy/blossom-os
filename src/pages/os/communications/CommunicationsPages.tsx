@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   Phone, PhoneCall, Users as UsersIcon, ClipboardList, Activity, HeartHandshake,
@@ -17,7 +17,6 @@ import {
   subscribeActivityFeed,
   type ActivityEvent,
 } from "@/lib/activity/activityTimeline";
-import { useEffect, useMemo, useState as useReactState } from "react";
 
 function Shell({ children }: { children: ReactNode }) {
   return (
