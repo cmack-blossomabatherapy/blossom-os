@@ -158,6 +158,9 @@ function step(num: string, title: string, body: string) {
 
 export const FROM_EMAIL = "Blossom ABA Therapy <welcome@blossom.abacommandcenter.com>";
 export const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
+// Real monitored mailbox so DMARC/reply alignment is clean and recipients can
+// actually reply to welcome emails. Helps deliverability with Gmail/Workspace.
+export const REPLY_TO_EMAIL = "admin@blossomabatherapy.com";
 
 export interface SendResult {
   status: "sent" | "failed" | "skipped";
@@ -179,7 +182,22 @@ export async function sendBlossomWelcomeEmail(input: WelcomeEmailInput): Promise
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "X-Connection-Api-Key": RESEND_API_KEY,
     },
-    body: JSON.stringify({ from: FROM_EMAIL, to: [input.email], subject, html, text }),
+    body: JSON.stringify({
+      from: FROM_EMAIL,
+      to: [input.email],
+      reply_to: REPLY_TO_EMAIL,
+      subject,
+      html,
+      text,
+      headers: {
+        // Helps mail clients group/categorise and identify the sender type.
+        "X-Entity-Ref-ID": `blossom-welcome-${Date.now()}`,
+      },
+      tags: [
+        { name: "type", value: "welcome-invite" },
+        { name: "app", value: "blossom-os" },
+      ],
+    }),
   });
   const responseText = await response.text();
   let body: { id?: string; message?: string; error?: string } | null = null;
