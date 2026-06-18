@@ -15,7 +15,10 @@ import { Unauthorized } from "./Unauthorized";
 interface Props {
   children: ReactNode;
   permission?: string;
-  allowedRoles?: AppRole[];
+  // Accept any role string so route guards can include canonical/legacy role
+  // identifiers that are not yet in the AppRole union (e.g. credentialing_team,
+  // business_development, hr_team). Runtime check uses string equality.
+  allowedRoles?: Array<AppRole | (string & {})>;
 }
 
 export function PermissionRoute({ children, permission, allowedRoles }: Props) {
@@ -31,7 +34,10 @@ export function PermissionRoute({ children, permission, allowedRoles }: Props) {
   if (!user) return <Navigate to="/auth" replace />;
 
   const permOk = !permission || hasPerm(permission);
-  const roleOk = isAdmin || !allowedRoles || allowedRoles.some((role) => roles.includes(role));
+  const roleOk =
+    isAdmin ||
+    !allowedRoles ||
+    allowedRoles.some((role) => (roles as string[]).includes(role));
   if (!permOk || !roleOk) {
     return <Unauthorized permission={permission} />;
   }
