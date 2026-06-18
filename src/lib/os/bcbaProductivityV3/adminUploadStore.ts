@@ -282,19 +282,7 @@ export async function previewBcbaProductivityUpload(file: File): Promise<BcbaUpl
     return { ...parsed, duplicateRowCount: 0, newRowCount: parsed.parsedRows.length };
   }
   const hashes = parsed.parsedRows.map((r) => r.rowHash);
-  const existing = new Set<string>();
-  // Chunk lookup to avoid URL length issues.
-  const CHUNK = 250;
-  for (let i = 0; i < hashes.length; i += CHUNK) {
-    const chunk = hashes.slice(i, i + CHUNK);
-    const { data, error } = await supabase
-      .from("bcba_productivity_billing_rows")
-      .select("row_hash")
-      .eq("active", true)
-      .in("row_hash", chunk);
-    if (error) throw error;
-    for (const d of data ?? []) existing.add(d.row_hash);
-  }
+  const existing = await fetchExistingHashes(hashes);
   let duplicateRowCount = 0;
   for (const h of hashes) if (existing.has(h)) duplicateRowCount += 1;
   return {
@@ -302,6 +290,35 @@ export async function previewBcbaProductivityUpload(file: File): Promise<BcbaUpl
     duplicateRowCount,
     newRowCount: parsed.parsedRows.length - duplicateRowCount,
   };
+}
+
+async function fetchExistingHashes(hashes: string[]): Promise<Set<string>> {
+  const existing = new Set<string>();
+  if (hashes.length === 0) return existing;
+  const CHUNK = 250;
+  const chunks: string[][] = [];
+  for (let i = 0; i < hashes.length; i += CHUNK) {
+    chunks.push(hashes.slice(i, i + CHUNK));
+  }
+  // Run dup-check queries in parallel waves to avoid sequential round-trips.
+  const WAVE = 6;
+  for (let i = 0; i < chunks.length; i += WAVE) {
+    const wave = chunks.slice(i, i + WAVE);
+    const results = await Promise.all(
+      wave.map((chunk) =>
+        supabase
+          .from("bcba_productivity_billing_rows")
+          .select("row_hash")
+          .eq("active", true)
+          .in("row_hash", chunk),
+      ),
+    );
+    for (const { data, error } of results) {
+      if (error) throw error;
+      for (const d of data ?? []) existing.add((d as { row_hash: string }).row_hash);
+    }
+  }
+  return existing;
 }
 
 /* ----- append ----- */
