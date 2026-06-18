@@ -875,10 +875,10 @@ const App = () => (
                   {/* Generic Training Academy routes — render inside the OS shell so
                       every non-admin role (including Intake Team) keeps the current
                       Blossom OS sidebar/topbar. State Director training stays at /training. */}
-                  <Route path="/academy" element={<TrainingAcademyHome />} />
-                  <Route path="/academy/path/:slug" element={<TrainingPathDetail />} />
-                  <Route path="/my-learning" element={<MyLearning />} />
-                  <Route path="/catalog" element={<TrainingCatalog />} />
+                  <Route path="/academy" element={<OSShellPage><TrainingAcademyHome /></OSShellPage>} />
+                  <Route path="/academy/path/:slug" element={<OSShellPage><TrainingPathDetail /></OSShellPage>} />
+                  <Route path="/my-learning" element={<OSShellPage><MyLearning /></OSShellPage>} />
+                  <Route path="/catalog" element={<OSShellPage><TrainingCatalog /></OSShellPage>} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />
