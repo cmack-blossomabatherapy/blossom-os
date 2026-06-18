@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
 import {
   buildActivityFeed,
-  filterActivityEvents,
   subscribeActivityFeed,
   type ActivityEvent,
 } from "@/lib/activity/activityTimeline";
