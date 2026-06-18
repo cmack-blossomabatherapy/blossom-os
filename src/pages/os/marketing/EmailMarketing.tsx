@@ -1,4 +1,3 @@
-import { Mail, Send, Users, BarChart3, Plug } from "lucide-react";
 import { MktgPage, MktgCard, EmptyRow } from "./_shared";
 
 /**
@@ -21,7 +20,7 @@ export default function EmailMarketing() {
       }
     >
       <div className="grid gap-4 md:grid-cols-3">
-        <MktgCard title="Integration" icon={<Plug className="h-4 w-4" />}>
+        <MktgCard title="Integration">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Mailchimp</span>
             <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
@@ -32,11 +31,11 @@ export default function EmailMarketing() {
             Connect Mailchimp to sync audiences, campaign performance, and influenced leads.
           </p>
         </MktgCard>
-        <MktgCard title="Audience Lists" icon={<Users className="h-4 w-4" />}>
+        <MktgCard title="Audience Lists">
           <div className="text-2xl font-semibold tracking-tight">—</div>
           <p className="mt-1 text-xs text-muted-foreground">No audiences mapped yet.</p>
         </MktgCard>
-        <MktgCard title="Influenced Leads" icon={<BarChart3 className="h-4 w-4" />}>
+        <MktgCard title="Influenced Leads">
           <div className="text-2xl font-semibold tracking-tight">—</div>
           <p className="mt-1 text-xs text-muted-foreground">
             Will populate once campaigns are mapped to lead sources.
@@ -44,7 +43,7 @@ export default function EmailMarketing() {
         </MktgCard>
       </div>
 
-      <MktgCard title="Campaigns" icon={<Send className="h-4 w-4" />}>
+      <MktgCard title="Campaigns">
         <div className="overflow-hidden rounded-md border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -61,7 +60,9 @@ export default function EmailMarketing() {
             <tbody>
               <tr>
                 <td colSpan={7} className="px-3 py-6">
-                  <EmptyRow message="No campaigns yet. Connect Mailchimp or create a campaign placeholder." />
+                  <EmptyRow>
+                    No campaigns yet. Connect Mailchimp or create a campaign placeholder.
+                  </EmptyRow>
                 </td>
               </tr>
             </tbody>
@@ -69,7 +70,7 @@ export default function EmailMarketing() {
         </div>
       </MktgCard>
 
-      <MktgCard title="Follow-Up Sequences" icon={<Mail className="h-4 w-4" />}>
+      <MktgCard title="Follow-Up Sequences">
         <p className="text-sm text-muted-foreground">
           Sequences will live here once Mailchimp is connected and audiences are mapped to lead
           sources (CTM, LeadTrap, Facebook, Google, Website).
