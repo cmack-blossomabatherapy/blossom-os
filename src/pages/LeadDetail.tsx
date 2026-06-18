@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useLeads } from "@/contexts/LeadsContext";
 import { toast } from "sonner";
+import { OSShell } from "@/pages/os/OSShell";
 
 const COORDINATORS = ["Sarah M.", "James R.", "Maya P."];
 
@@ -59,12 +60,14 @@ export default function LeadDetail() {
 
   if (!lead) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-        <p className="text-muted-foreground">Lead not found</p>
-        <Button variant="outline" onClick={() => navigate("/leads")}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Leads
-        </Button>
-      </div>
+      <OSShell>
+        <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+          <p className="text-muted-foreground">Lead not found</p>
+          <Button variant="outline" onClick={() => navigate("/leads")}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Leads
+          </Button>
+        </div>
+      </OSShell>
     );
   }
 
@@ -97,7 +100,8 @@ export default function LeadDetail() {
     <StickyNote className="h-3.5 w-3.5" />;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <OSShell>
+      <div className="space-y-6 animate-fade-in">
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -647,6 +651,7 @@ export default function LeadDetail() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </OSShell>
   );
 }

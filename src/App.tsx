@@ -206,6 +206,7 @@ import JourneyEditor from "./pages/admin/JourneyEditor";
 import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
 import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
+import { OSShell } from "./pages/os/OSShell";
 import OSPayrollCoordinator from "./pages/os/OSPayrollCoordinator";
 import OSPayrollWorkspace from "./pages/os/OSPayrollWorkspace";
 import OSPayrollIssues from "./pages/os/OSPayrollIssues";
@@ -440,6 +441,13 @@ const OSOutlet = () => (
     <Outlet />
   </OSRoleProvider>
 );
+
+// Wraps a page in the current Blossom OS shell. Used for generic pages (e.g.
+// Training Academy) that don't bring their own shell but are reached from
+// role menus that expect the OS sidebar/topbar to remain visible.
+function OSShellPage({ children }: { children: React.ReactNode }) {
+  return <OSShell>{children}</OSShell>;
+}
 
 import { LeadsProvider } from "@/contexts/LeadsContext";
 import { ClientsProvider } from "@/contexts/ClientsContext";
@@ -864,6 +872,13 @@ const App = () => (
                   <Route path="/ops/payer-requirements"      element={<PayerRequirements />} />
                   <Route path="/ops/make-up-sessions"        element={<MakeUpSessions />} />
                   <Route path="/ops/rbt-match-queue"         element={<RbtMatchQueue />} />
+                  {/* Generic Training Academy routes — render inside the OS shell so
+                      every non-admin role (including Intake Team) keeps the current
+                      Blossom OS sidebar/topbar. State Director training stays at /training. */}
+                  <Route path="/academy" element={<OSShellPage><TrainingAcademyHome /></OSShellPage>} />
+                  <Route path="/academy/path/:slug" element={<OSShellPage><TrainingPathDetail /></OSShellPage>} />
+                  <Route path="/my-learning" element={<OSShellPage><MyLearning /></OSShellPage>} />
+                  <Route path="/catalog" element={<OSShellPage><TrainingCatalog /></OSShellPage>} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />
@@ -871,11 +886,7 @@ const App = () => (
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/home-redirect" element={<Navigate to="/" replace />} />
                   <Route path="/welcome" element={<WelcomeHome />} />
-                  <Route path="/academy" element={<TrainingAcademyHome />} />
-                  <Route path="/academy/path/:slug" element={<TrainingPathDetail />} />
                   <Route path="/academy/legacy" element={<OperationsAcademy />} />
-                  <Route path="/my-learning" element={<MyLearning />} />
-                  <Route path="/catalog" element={<TrainingCatalog />} />
                   <Route path="/announcements" element={<AnnouncementsFeed />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/notification-preferences" element={<NotificationPreferences />} />
