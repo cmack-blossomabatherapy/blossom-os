@@ -343,6 +343,7 @@ import MarketingDashboard from "./pages/os/marketing/MarketingDashboard";
 import MarketingTraining from "./pages/os/marketing/MarketingTraining";
 import MarketingCampaigns from "./pages/os/marketing/Campaigns";
 import MarketingLeadSources from "./pages/os/marketing/LeadSources";
+import LeadSourceInbox from "./pages/os/growth/LeadSourceInbox";
 import MarketingSEO from "./pages/os/marketing/SEOContent";
 import MarketingWebAnalytics from "./pages/os/marketing/WebAnalytics";
 import MarketingCallTracking from "./pages/os/marketing/CallTracking";
@@ -821,6 +822,7 @@ const App = () => (
                   <Route path="/marketing/training" element={<MarketingTraining />} />
                   <Route path="/marketing/campaigns" element={<MarketingCampaigns />} />
                   <Route path="/marketing/lead-sources" element={<MarketingLeadSources />} />
+                  <Route path="/marketing/lead-source-inbox" element={<LeadSourceInbox />} />
                   <Route path="/marketing/seo" element={<MarketingSEO />} />
                   <Route path="/marketing/web-analytics" element={<MarketingWebAnalytics />} />
                   <Route path="/marketing/call-tracking" element={<MarketingCallTracking />} />
