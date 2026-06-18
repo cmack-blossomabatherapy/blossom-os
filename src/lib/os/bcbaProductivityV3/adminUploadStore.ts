@@ -1,9 +1,9 @@
 /**
  * Admin-uploaded BCBA Productivity dataset (shared across users via Supabase).
  *
- * This module powers the Super Admin → System Tools → BCBA Productivity Uploads
- * page. It does NOT replace the manual upload flow on the BCBA Productivity
- * Report V3 — it provides an additional shared source feeding the same report.
+ * This module powers the Super Admin > System Tools > BCBA Productivity Uploads
+ * page. Admins upload the CentralReach billing export here so the BCBA
+ * Productivity Report V3 can load one shared, appended, deduped dataset for users.
  */
 
 import { supabase } from "@/integrations/supabase/client";
