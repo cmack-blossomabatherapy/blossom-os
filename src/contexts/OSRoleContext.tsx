@@ -21,12 +21,17 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("recruiting_lead")) return "recruiting_lead";
   if (appRoles.includes("recruiting_coordinator")) return "recruiting_coordinator";
   if (appRoles.includes("recruiting_assistant")) return "recruiting_team";
+  // HR Lead / Admin / Manager get the HR Lead OS experience (User Management Admin).
   if (
-    appRoles.includes("hr") ||
+    appRoles.includes("hr_lead") ||
     appRoles.includes("hr_admin") ||
-    appRoles.includes("hr_manager") ||
-    appRoles.includes("hr_admin_assistant")
-  ) return "hr_team";
+    appRoles.includes("hr_manager")
+  ) return "hr_lead";
+  // Plain HR Team members get the standard HR Team menu (User Management without admin).
+  if (appRoles.includes("hr")) return "hr_team";
+  // HR Admin Assistant is a trainee — must NOT inherit full HR Team access.
+  // Drop them to a minimal Viewer experience (Training + Resources + Reports only).
+  if (appRoles.includes("hr_admin_assistant")) return "viewer";
   if (appRoles.includes("finance")) return "billing_finance";
   if (appRoles.includes("qa_director")) return "qa_director";
   if (appRoles.includes("qa_specialist")) return "qa_specialist";
