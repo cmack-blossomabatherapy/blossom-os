@@ -10,15 +10,15 @@ describe("Sprint 18A — Staffing app-role → OS-role mapping", () => {
   const ctx = read("src/contexts/OSRoleContext.tsx");
 
   it("mapAuthRoleToOS maps staffing_lead → staffing_lead", () => {
-    expect(ctx).toMatch(/appRoles\.includes\("staffing_lead"\)\s*return\s+"staffing_lead"/);
+    expect(ctx).toMatch(/appRoles\.includes\("staffing_lead"\)\) return "staffing_lead"/);
   });
 
   it("mapAuthRoleToOS maps staffing_coordinator → staffing_coordinator", () => {
-    expect(ctx).toMatch(/appRoles\.includes\("staffing_coordinator"\)\s*return\s+"staffing_coordinator"/);
+    expect(ctx).toMatch(/appRoles\.includes\("staffing_coordinator"\)\) return "staffing_coordinator"/);
   });
 
   it("mapAuthRoleToOS maps staffing → staffing_team", () => {
-    expect(ctx).toMatch(/appRoles\.includes\("staffing"\)\s*return\s+"staffing_team"/);
+    expect(ctx).toMatch(/appRoles\.includes\("staffing"\)\) return "staffing_team"/);
   });
 });
 
