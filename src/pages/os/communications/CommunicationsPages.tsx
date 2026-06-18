@@ -10,6 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
+import {
+  buildActivityFeed,
+  filterActivityEvents,
+  subscribeActivityFeed,
+  type ActivityEvent,
+} from "@/lib/activity/activityTimeline";
+import { useEffect, useMemo, useState as useReactState } from "react";
 
 function Shell({ children }: { children: ReactNode }) {
   return (
