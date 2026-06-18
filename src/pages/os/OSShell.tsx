@@ -146,6 +146,7 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
       { to: "/phone/ai-calls/audit", label: "Call Email Audit", icon: FileText },
       { to: "/communications/user-activity", label: "User Activity Log", icon: Activity },
       { to: "/communications/patient-activity", label: "Patient Activity Log", icon: HeartHandshake },
+      { to: "/communications/activity-center", label: "Activity Center", icon: Activity },
     ],
     defaultCollapsed: true,
   },
