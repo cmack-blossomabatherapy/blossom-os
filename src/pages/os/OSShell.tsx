@@ -91,6 +91,7 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
       { to: "/business-development", label: "Business Development", icon: HeartHandshake },
       { to: "/marketing/referral-crm", label: "Referral CRM", icon: HeartHandshake },
       { to: "/marketing/lead-sources", label: "Lead Sources", icon: TrendingUp },
+      { to: "/marketing/lead-source-inbox", label: "Lead Source Inbox", icon: Inbox },
       { to: "/marketing/campaigns", label: "Campaigns", icon: Megaphone },
       { to: "/marketing/call-tracking", label: "CTM / Call Tracking", icon: Phone },
       { to: "/marketing/leadtrap", label: "LeadTrap", icon: TrendingUp },
