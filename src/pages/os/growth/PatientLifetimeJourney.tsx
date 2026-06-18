@@ -287,6 +287,35 @@ export default function PatientLifetimeJourney() {
           <LeadActionPanel lead={selected} sourcePage="patient-journey" />
         </div>
       )}
+      {selected && selectedSourceEvents.length > 0 && (
+        <div className="mb-3 rounded-2xl border border-border/70 bg-card p-3">
+          <div className="text-xs font-medium text-muted-foreground mb-2">
+            Source events ({selectedSourceEvents.length})
+          </div>
+          <div className="space-y-1.5">
+            {selectedSourceEvents.map((ev) => (
+              <div key={ev.id} className="text-xs rounded-lg border border-border/60 bg-background/60 p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-medium truncate">
+                    {ev.sourceLabel} · {ev.sourceEventType.replace("_", " ")}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">
+                    {new Date(ev.receivedAt).toLocaleString()}
+                  </span>
+                </div>
+                <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                  {[ev.campaign, ev.utmCampaign, ev.referralPartner, ev.referringProvider]
+                    .filter(Boolean).join(" · ") || ev.summary || "—"}
+                </div>
+                {ev.callRecordingUrl && (
+                  <a href={ev.callRecordingUrl} target="_blank" rel="noreferrer"
+                    className="text-[11px] text-primary hover:underline">Call recording</a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
         <FilterSelect value={stateFilter} onChange={setStateFilter} label="State" options={states} />
         <FilterSelect value={sourceFilter} onChange={setSourceFilter} label="Source" options={sources} />
