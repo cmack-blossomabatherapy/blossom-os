@@ -208,7 +208,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "intake", label: "Intake", items: [
-          DASHBOARD_ITEM,
           { label: "Intake Dashboard",           path: "/intake/dashboard",              icon: LayoutDashboard },
           { label: "New Referral Queue",         path: "/intake/referral-queue",         icon: ClipboardList },
           { label: "Lead To Active Pipeline",    path: "/intake/lead-to-active",         icon: TrendingUp },
