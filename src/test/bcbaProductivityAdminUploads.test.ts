@@ -52,8 +52,8 @@ describe("BCBA Productivity admin uploads — Sprint", () => {
       /No admin-uploaded BCBA productivity dataset found\. Ask an admin to upload the CentralReach billing export\./,
     );
     // no stale manual-direction language
-    expect(src).not.toMatch(/retired/i);
-    expect(src).not.toMatch(/Manual uploads have been retired/);
+    expect(src).not.toMatch(/Manual uploads have been removed/i);
+    expect(src).not.toMatch(/This does not replace manual report uploads/);
     expect(src).not.toMatch(/data only comes from the shared admin dataset/);
   });
 

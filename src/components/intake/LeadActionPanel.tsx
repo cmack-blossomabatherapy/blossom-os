@@ -166,7 +166,7 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
         <Flame className="h-3.5 w-3.5 mr-1" /> Escalate
       </Button>
       <Button asChild size={btnSize} variant="ghost">
-        <Link to={`/patient-journey?lead=${lead.id}`}>
+        <Link to={`/patient-journey?leadId=${lead.id}`}>
           <HeartHandshake className="h-3.5 w-3.5 mr-1" /> Journey
         </Link>
       </Button>

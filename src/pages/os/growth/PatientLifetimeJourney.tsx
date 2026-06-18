@@ -214,9 +214,9 @@ export default function PatientLifetimeJourney() {
   const [logOpen, setLogOpen] = useState(false);
   const [followOpen, setFollowOpen] = useState(false);
 
-  // Allow deep-links like /patient-journey?lead=<id>
+  // Allow deep-links like /patient-journey?leadId=<id> and legacy /patient-journey?lead=<id>.
   useEffect(() => {
-    const q = searchParams.get("lead");
+    const q = searchParams.get("leadId") ?? searchParams.get("lead");
     if (q && q !== selectedId) setSelectedId(q);
     const evtId = searchParams.get("sourceEventId");
     if (evtId) {
@@ -457,7 +457,7 @@ export default function PatientLifetimeJourney() {
             <h3 className="text-sm font-semibold text-foreground">Related records</h3>
             {selected ? (
               <ul className="mt-2 space-y-1.5 text-sm">
-                <RelatedLink label="Lead detail" to={`/leads?lead=${selected.id}`} />
+                <RelatedLink label="Lead detail" to={`/leads/${selected.id}`} />
                 <RelatedLink label="Authorizations" to="/authorizations" />
                 <RelatedLink label="Referral source" to="/marketing/referral-crm" />
                 <RelatedLink label="Lead benefits cheat sheet" to="/intake/benefits-cheat-sheets" />
