@@ -8,7 +8,10 @@ import type { AppRole } from "@/lib/roles";
 import { supabase } from "@/integrations/supabase/client";
 
 function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
-  if (appRoles.includes("admin")) return "super_admin";
+  // Allow checking against role identifiers that are not yet part of the
+  // AppRole union (e.g. credentialing_team, business_development).
+  const has = (r: string) => (appRoles as string[]).includes(r);
+  if (has("admin")) return "super_admin";
   if (appRoles.includes("executive") || appRoles.includes("coo")) return "executive_leadership";
   if (appRoles.includes("director_of_operations") || appRoles.includes("operations_manager")) return "operations_leadership";
   if (appRoles.includes("assistant_state_director")) return "assistant_state_director";
@@ -25,6 +28,7 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("recruiting_coordinator")) return "recruiting_coordinator";
   if (appRoles.includes("recruiting_assistant")) return "recruiting_team";
   if (appRoles.includes("credentialing_lead")) return "credentialing_lead";
+  if (has("credentialing_team") || has("credentialing") || has("credentialing_coordinator")) return "credentialing_team";
   // HR Lead / Admin / Manager get the HR Lead OS experience (User Management Admin).
   if (
     appRoles.includes("hr_lead") ||
@@ -32,7 +36,7 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
     appRoles.includes("hr_manager")
   ) return "hr_lead";
   // Plain HR Team members get the standard HR Team menu (User Management without admin).
-  if (appRoles.includes("hr")) return "hr_team";
+  if (appRoles.includes("hr") || has("hr_team")) return "hr_team";
   // HR Admin Assistant is a trainee — must NOT inherit full HR Team access.
   // Drop them to a minimal Viewer experience (Training + Resources + Reports only).
   if (appRoles.includes("hr_admin_assistant")) return "viewer";
@@ -43,7 +47,9 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("payroll_admin")) return "payroll_coordinator";
   if (appRoles.includes("bcba")) return "bcba";
   if (appRoles.includes("rbt")) return "rbt";
-  if (appRoles.includes("marketing")) return "marketing_team";
+  if (has("business_development")) return "business_development";
+  if (appRoles.includes("marketing_growth_lead")) return "marketing_growth_lead";
+  if (appRoles.includes("marketing") || appRoles.includes("marketing_team")) return "marketing_team";
   if (appRoles.includes("behavioral_support")) return "behavioral_support";
   if (appRoles.includes("clinical_lead")) return "clinical_director";
   return null;
