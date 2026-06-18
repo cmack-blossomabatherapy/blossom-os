@@ -18,5 +18,21 @@ export const LegacyDashboardRedirects = (
     <Route path="/finance-dashboard" element={<Navigate to="/billing-finance" replace />} />
     <Route path="/recruiting-dashboard" element={<Navigate to="/recruiting/workspace" replace />} />
     <Route path="/phone-calls" element={<Navigate to="/phone" replace />} />
+    {/* Sprint 27 — legacy static link redirects.
+        These keep older inline links inside components from landing on
+        404/blank pages while the components themselves are gradually
+        updated to the canonical routes. Do NOT remove without auditing
+        every callsite. */}
+    <Route path="/os/authorizations" element={<Navigate to="/ops/authorizations" replace />} />
+    <Route path="/hr/training-management" element={<Navigate to="/hr/training-center" replace />} />
+    <Route path="/hr/training-assign" element={<Navigate to="/hr/training-center" replace />} />
+    <Route path="/supervision" element={<Navigate to="/bcba/supervision" replace />} />
+    <Route path="/parent-training" element={<Navigate to="/bcba/parent-training" replace />} />
+    <Route path="/ask" element={<Navigate to="/help" replace />} />
+    {/* /ai is intentionally NOT a visible AI menu — fall back to the role
+        dashboard so legacy "Operational Insights" buttons resolve. */}
+    <Route path="/ai" element={<Navigate to="/dashboard" replace />} />
+    <Route path="/payroll/employees" element={<Navigate to="/user-management" replace />} />
+    <Route path="/admin/permissions" element={<Navigate to="/user-management" replace />} />
   </>
 );
