@@ -38,6 +38,8 @@ import {
   subscribeLeadSourceEvents,
 } from "@/lib/leads/leadSourceEventsStore";
 import type { LeadSourceEvent } from "@/lib/leads/leadSourceEvents";
+import { listWorkItems, subscribeWorkItems } from "@/lib/workQueue/workQueueStore";
+import type { WorkItem } from "@/lib/workQueue/workQueueModel";
 
 export type ActivityObjectType =
   | "lead"
@@ -78,6 +80,12 @@ export type ActivityEventType =
   | "report_viewed"
   | "file_uploaded"
   | "integration_event"
+  | "work_item_created"
+  | "work_item_assigned"
+  | "work_item_updated"
+  | "work_item_completed"
+  | "work_item_escalated"
+  | "work_item_escalation_resolved"
   | "system_audit";
 
 export type ActivitySeverity = "info" | "success" | "warning" | "critical";
