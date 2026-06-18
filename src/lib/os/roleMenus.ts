@@ -252,6 +252,62 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     ],
   },
 
+  recruiting_lead: {
+    sections: [
+      {
+        id: "recruiting", label: "Recruiting", items: [
+          { label: "Recruiting Dashboard",       path: "/recruiting-team",            icon: LayoutDashboard },
+          { label: "Recruiting Workspace",       path: "/recruiting/workspace",       icon: Briefcase },
+          { label: "Candidate Pipeline",         path: "/recruiting/pipeline",        icon: UserPlus },
+          { label: "Interviews",                 path: "/recruiting/interviews",      icon: Calendar },
+          { label: "Offers",                     path: "/recruiting/offers",          icon: FileSignature },
+          { label: "Onboarding Handoff",         path: "/recruiting/onboarding",      icon: HeartHandshake },
+          { label: "Background Checks",          path: "/recruiting/background",      icon: ShieldCheck },
+          { label: "Orientation Queue",          path: "/recruiting/orientation",     icon: ClipboardCheck },
+          { label: "Staffing Needs",             path: "/recruiting/staffing-needs",  icon: Users },
+          { label: "RBT Recruiting",             path: "/recruiting/rbt",             icon: UserCheck },
+          { label: "BCBA Recruiting",            path: "/recruiting/bcba",            icon: Stethoscope },
+          { label: "Recruiting Performance",     path: "/recruiting/performance",     icon: TrendingUp },
+          { label: "Follow-Ups",                 path: "/recruiting/follow-ups",      icon: Bell },
+          { label: "Messages",                   path: "/recruiting/messages",        icon: MessageSquare },
+          { label: "Escalations",                path: "/recruiting/escalations",     icon: Flame },
+          { label: "Recruiting Resources",       path: "/recruiting/resources",       icon: Library },
+          { label: "Recruiting Pipeline Report", path: "/reports/hr-recruiting-pipeline", icon: BarChart3 },
+          { label: "Recruiting Reports",         path: "/reports",                    icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  recruiting_coordinator: {
+    sections: [
+      {
+        id: "recruiting", label: "Recruiting", items: [
+          { label: "Recruiting Dashboard",       path: "/recruiting-team",            icon: LayoutDashboard },
+          { label: "Recruiting Workspace",       path: "/recruiting/workspace",       icon: Briefcase },
+          { label: "Candidate Pipeline",         path: "/recruiting/pipeline",        icon: UserPlus },
+          { label: "Interviews",                 path: "/recruiting/interviews",      icon: Calendar },
+          { label: "Offers",                     path: "/recruiting/offers",          icon: FileSignature },
+          { label: "Onboarding Handoff",         path: "/recruiting/onboarding",      icon: HeartHandshake },
+          { label: "Background Checks",          path: "/recruiting/background",      icon: ShieldCheck },
+          { label: "Orientation Queue",          path: "/recruiting/orientation",     icon: ClipboardCheck },
+          { label: "Staffing Needs",             path: "/recruiting/staffing-needs",  icon: Users },
+          { label: "RBT Recruiting",             path: "/recruiting/rbt",             icon: UserCheck },
+          { label: "BCBA Recruiting",            path: "/recruiting/bcba",            icon: Stethoscope },
+          { label: "Recruiting Performance",     path: "/recruiting/performance",     icon: TrendingUp },
+          { label: "Follow-Ups",                 path: "/recruiting/follow-ups",      icon: Bell },
+          { label: "Messages",                   path: "/recruiting/messages",        icon: MessageSquare },
+          { label: "Escalations",                path: "/recruiting/escalations",     icon: Flame },
+          { label: "Recruiting Resources",       path: "/recruiting/resources",       icon: Library },
+          { label: "Recruiting Pipeline Report", path: "/reports/hr-recruiting-pipeline", icon: BarChart3 },
+          { label: "Recruiting Reports",         path: "/reports",                    icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
   /* ----------------------------- Authorizations ------------------------------ */
   authorization_coordinator: {
     sections: [
