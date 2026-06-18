@@ -680,6 +680,7 @@ const App = () => (
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />
                   <Route path="/leads/operations" element={<OSIntakeOperations />} />
+                  <Route path="/leads/:id" element={<LeadDetail />} />
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<ClientsRouter />} />
                   <Route path="/intake/clients" element={<OSIntakeClients />} />
