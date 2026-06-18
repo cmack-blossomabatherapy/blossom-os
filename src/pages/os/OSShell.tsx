@@ -393,6 +393,22 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/device-inventory",
     "/phone",
   ]),
+  credentialing_team: new Set<string>([
+    "/credentialing",
+    "/credentialing/providers",
+    "/credentialing/insurance",
+    "/credentialing/bcba",
+    "/credentialing/uncredentialed-bcbas",
+    "/credentialing/expiring",
+  ]),
+  credentialing_lead: new Set<string>([
+    "/credentialing",
+    "/credentialing/providers",
+    "/credentialing/insurance",
+    "/credentialing/bcba",
+    "/credentialing/uncredentialed-bcbas",
+    "/credentialing/expiring",
+  ]),
 };
 
 export function isPathLiveForRole(role: string, basePath: string): boolean {
