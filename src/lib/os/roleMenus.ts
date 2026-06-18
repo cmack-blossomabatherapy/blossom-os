@@ -366,16 +366,36 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "hr", label: "HR", items: [
-          DASHBOARD_ITEM,
           { label: "HR Dashboard",       path: "/hr-team",            icon: LayoutDashboard },
-          { label: "Employee Records",   path: "/employee-directory", icon: Users },
+          { label: "User Management",    path: "/user-management",    icon: Users },
           { label: "HR Requests",        path: "/hr/requests",        icon: ClipboardList },
           { label: "Compliance Items",   path: "/hr/compliance",      icon: ShieldCheck },
+          { label: "Evaluations",        path: "/evaluations",        icon: ClipboardCheck },
           { label: "Device Requests",    path: "/device-requests",    icon: Wrench },
           { label: "Device Inventory",   path: "/device-inventory",   icon: Wrench },
-          { label: "NFC Badge Support",  path: "/nfc-badges",         icon: IdCard },
           { label: "HR Reports",         path: "/reports",            icon: BarChart3 },
           { label: "Phone System",       path: "/phone",              icon: Phone },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* --------------------------------- HR Lead --------------------------------- */
+  hr_lead: {
+    sections: [
+      {
+        id: "hr", label: "HR Leadership", items: [
+          { label: "HR Dashboard",          path: "/hr-team",                icon: LayoutDashboard },
+          { label: "User Management",       path: "/user-management",        icon: Users },
+          { label: "User Management Admin", path: "/user-management/admin",  icon: ShieldCheck },
+          { label: "HR Requests",           path: "/hr/requests",            icon: ClipboardList },
+          { label: "Compliance Items",      path: "/hr/compliance",          icon: ShieldCheck },
+          { label: "Evaluations",           path: "/evaluations",            icon: ClipboardCheck },
+          { label: "Device Requests",       path: "/device-requests",        icon: Wrench },
+          { label: "Device Inventory",      path: "/device-inventory",       icon: Wrench },
+          { label: "HR Reports",            path: "/reports",                icon: BarChart3 },
+          { label: "Phone System",          path: "/phone",                  icon: Phone },
         ],
       },
       TRAINING_AND_RESOURCES,
