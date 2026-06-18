@@ -471,12 +471,11 @@ const ROLE_ALIASES: Record<
   hr_lead: "hr_team",
   payroll_lead: "payroll_coordinator",
   billing_lead: "billing_finance",
-  credentialing_lead: "billing_finance",
+  credentialing_lead: "credentialing_team",
   rcm_team: "billing_finance",
   assistant_state_director: "state_director",
   business_development: "marketing_team",
   staffing_team: "scheduling_team",
-  credentialing_team: "hr_team",
   clinical_director: "operations_leadership",
   viewer: "behavioral_support",
 };
