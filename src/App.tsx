@@ -469,7 +469,8 @@ function RoleDashboardRedirect() {
     : roles.includes("recruiting_lead") ? ROLE_HOME.recruiting_lead
     : roles.includes("recruiting_coordinator") ? ROLE_HOME.recruiting_coordinator
     : roles.includes("recruiting_assistant") ? ROLE_HOME.recruiting_team
-    : roles.includes("hr") || roles.includes("hr_admin") || roles.includes("hr_manager") ? ROLE_HOME.hr_team
+    : roles.includes("hr_lead") || roles.includes("hr_admin") || roles.includes("hr_manager") ? ROLE_HOME.hr_lead
+    : roles.includes("hr") ? ROLE_HOME.hr_team
     : roles.includes("finance") ? ROLE_HOME.billing_finance
     : roles.includes("qa_director") ? ROLE_HOME.qa_director
     : roles.includes("qa_specialist") ? ROLE_HOME.qa_specialist
@@ -776,8 +777,10 @@ const App = () => (
                   {/* Phase 5 — People & Access */}
                   <Route path="/role-management" element={<AdminRoute><RoleManagementPage /></AdminRoute>} />
                   <Route path="/employee-directory" element={<AdminRoute><EmployeeDirectoryPage /></AdminRoute>} />
-                  <Route path="/user-logins-vault" element={<AdminRoute><UserLoginsVaultPage /></AdminRoute>} />
-                  <Route path="/nfc-badges" element={<AdminRoute><NFCBadgeManagementPage /></AdminRoute>} />
+                  {/* Sprint 21 HR: Login Vault + NFC Badge live INSIDE User Management.
+                      Standalone routes kept only as protected redirects for legacy links. */}
+                  <Route path="/user-logins-vault" element={<Navigate to="/user-management" replace />} />
+                  <Route path="/nfc-badges" element={<Navigate to="/user-management" replace />} />
                   <Route path="/device-inventory" element={<AdminRoute><DeviceInventory /></AdminRoute>} />
                   <Route path="/device-requests" element={<AdminRoute><DeviceRequestsPage /></AdminRoute>} />
                   {/* Phase 5 — HR */}
@@ -900,7 +903,7 @@ const App = () => (
                   <Route path="/account/settings" element={<AccountSettings />} />
                   <Route path="/admin" element={<AdminRoute><AdminHub /></AdminRoute>} />
                   <Route path="/admin/access-requests" element={<AdminRoute><AccessRequests /></AdminRoute>} />
-                  <Route path="/admin/login-vault" element={<AdminRoute><LoginVaultAdmin /></AdminRoute>} />
+                  <Route path="/admin/login-vault" element={<Navigate to="/user-management" replace />} />
                   <Route path="/admin/onboarding-progress" element={<AdminRoute><AdminOnboardingProgress /></AdminRoute>} />
                   <Route path="/admin/journey-editor" element={<AdminRoute><JourneyEditor /></AdminRoute>} />
                   <Route path="/admin/identity" element={<AdminRoute><IdentityDashboard /></AdminRoute>} />
