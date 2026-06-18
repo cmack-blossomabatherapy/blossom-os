@@ -162,22 +162,52 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "growth_marketing", label: "Growth & Marketing", items: [
-          DASHBOARD_ITEM,
           { label: "Marketing Dashboard",      path: "/marketing",                  icon: BarChart3 },
-          { label: "Referral CRM",             path: "/marketing/referral-crm",     icon: HeartHandshake },
+          { label: "Lead Source Inbox",        path: "/marketing/lead-source-inbox",icon: Inbox },
           { label: "Lead Sources",             path: "/marketing/lead-sources",     icon: TrendingUp },
+          { label: "Referral CRM",             path: "/marketing/referral-crm",     icon: HeartHandshake },
+          { label: "Patient Lifetime Journey", path: "/patient-journey",            icon: HeartHandshake },
           { label: "Campaigns",                path: "/marketing/campaigns",        icon: Megaphone },
           { label: "CTM / Call Tracking",      path: "/marketing/call-tracking",    icon: PhoneCall },
           { label: "LeadTrap",                 path: "/marketing/leadtrap",         icon: TrendingUp },
           { label: "Facebook Ads",             path: "/marketing/facebook-ads",     icon: Megaphone },
           { label: "Google Ads",               path: "/marketing/google-ads",       icon: TrendingUp },
-          { label: "Patient Lifetime Journey", path: "/patient-journey",            icon: HeartHandshake },
+          { label: "Email Marketing",          path: "/marketing/email-marketing",  icon: MessageSquare },
           { label: "SEO & Content",            path: "/marketing/seo",              icon: SearchIcon },
           { label: "Web Analytics",            path: "/marketing/web-analytics",    icon: LineChart },
           { label: "Recruiting Marketing",     path: "/marketing/recruiting",       icon: Briefcase },
           { label: "Community Outreach",       path: "/marketing/outreach",         icon: Users },
           { label: "Reputation",               path: "/marketing/reputation",       icon: Star },
           { label: "Attribution & ROI",        path: "/marketing/attribution",      icon: Gauge },
+          { label: "State Growth",             path: "/marketing/state-growth",     icon: MapPin },
+          { label: "Marketing Reports",        path: "/marketing/reports",          icon: BarChart3 },
+          { label: "Phone System",             path: "/phone",                      icon: Phone },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* ------------------------- Marketing Growth Lead --------------------------- */
+  marketing_growth_lead: {
+    sections: [
+      {
+        id: "growth_command", label: "Growth Command", items: [
+          { label: "Growth Command Center",    path: "/marketing",                  icon: BarChart3 },
+          { label: "Lead Source Inbox",        path: "/marketing/lead-source-inbox",icon: Inbox },
+          { label: "Lead Sources",             path: "/marketing/lead-sources",     icon: TrendingUp },
+          { label: "Patient Lifetime Journey", path: "/patient-journey",            icon: HeartHandshake },
+          { label: "Referral CRM",             path: "/marketing/referral-crm",     icon: HeartHandshake },
+          { label: "Business Development",     path: "/business-development",       icon: Briefcase },
+          { label: "Campaigns",                path: "/marketing/campaigns",        icon: Megaphone },
+          { label: "CTM / Call Tracking",      path: "/marketing/call-tracking",    icon: PhoneCall },
+          { label: "LeadTrap",                 path: "/marketing/leadtrap",         icon: TrendingUp },
+          { label: "Facebook Ads",             path: "/marketing/facebook-ads",     icon: Megaphone },
+          { label: "Google Ads",               path: "/marketing/google-ads",       icon: TrendingUp },
+          { label: "Email Marketing",          path: "/marketing/email-marketing",  icon: MessageSquare },
+          { label: "Attribution & ROI",        path: "/marketing/attribution",      icon: Gauge },
+          { label: "State Growth",             path: "/marketing/state-growth",     icon: MapPin },
+          { label: "Marketing Reports",        path: "/marketing/reports",          icon: BarChart3 },
           { label: "Phone System",             path: "/phone",                      icon: Phone },
         ],
       },
@@ -190,14 +220,16 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "biz_dev", label: "Business Development", items: [
-          DASHBOARD_ITEM,
           { label: "Business Development Dashboard", path: "/business-development",                    icon: HeartHandshake },
           { label: "Referral Partner CRM",           path: "/business-development?tab=partners",       icon: HeartHandshake },
           { label: "Outreach Pipeline",              path: "/business-development?tab=outreach",       icon: MessageSquare },
           { label: "Follow-Up Tasks",                path: "/business-development?tab=tasks",          icon: ClipboardList },
           { label: "Provider Relationships",         path: "/business-development?tab=providers",      icon: Briefcase },
           { label: "Community Relationships",        path: "/business-development?tab=community",      icon: Users },
+          { label: "Referral CRM",                   path: "/marketing/referral-crm",                  icon: HeartHandshake },
           { label: "Patient Lifetime Journey",       path: "/patient-journey",                         icon: HeartHandshake },
+          { label: "Phone System",                   path: "/phone",                                   icon: Phone },
+          { label: "Reports",                        path: "/reports",                                 icon: FileText },
         ],
       },
       TRAINING_AND_RESOURCES,
