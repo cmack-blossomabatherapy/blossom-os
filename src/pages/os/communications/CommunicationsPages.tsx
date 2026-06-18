@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   Phone, PhoneCall, Users as UsersIcon, ClipboardList, Activity, HeartHandshake,
@@ -10,6 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
+import {
+  buildActivityFeed,
+  subscribeActivityFeed,
+  type ActivityEvent,
+} from "@/lib/activity/activityTimeline";
 
 function Shell({ children }: { children: ReactNode }) {
   return (
@@ -194,37 +200,46 @@ export function DirectoryTopPage() {
 /* User Activity Log                                                          */
 /* -------------------------------------------------------------------------- */
 
-const USER_ACTIVITY_TYPES = [
-  "Login", "Role switch", "Record viewed", "Record edited", "Task created", "Task completed",
-  "Note added", "Follow-up assigned", "Status changed", "Export generated",
-  "Protected login vault accessed", "NFC badge updated",
-];
+const USER_OBJECT_TYPES = new Set(["user", "employee", "system"]);
+const USER_EVENT_TYPES = new Set([
+  "login_viewed",
+  "nfc_badge_updated",
+  "report_viewed",
+  "file_uploaded",
+  "system_audit",
+  "task_completed",
+  "task_created",
+  "task_reassigned",
+  "integration_event",
+]);
 
 export function UserActivityLogPage() {
+  const [events, setEvents] = useState<ActivityEvent[]>(() => buildActivityFeed());
+  useEffect(() => subscribeActivityFeed(setEvents), []);
+  const userEvents = useMemo(
+    () =>
+      events.filter(
+        (e) => USER_OBJECT_TYPES.has(e.objectType) || USER_EVENT_TYPES.has(e.type),
+      ),
+    [events],
+  );
   return (
     <Shell>
       <PageHeader
         eyebrow="Communications"
         title="User Activity Log"
-        subtitle="Track internal user actions across Blossom OS so leadership can understand ownership, updates, follow-up, and system activity."
+        subtitle="Track internal user actions across Blossom OS so leadership can understand ownership, updates, follow-up, and system activity. Sensitive content is audited but never exposed here."
         icon={Activity}
-        actions={<Button size="sm" variant="outline">Export audit log</Button>}
+        actions={
+          <>
+            <Button asChild size="sm" variant="outline"><Link to="/communications/activity-center">Open Activity Center</Link></Button>
+            <Button size="sm" variant="outline">Export audit log</Button>
+          </>
+        }
       />
-      <ActionRow actions={["Search user activity", "Filter by user", "Filter by action type", "Filter by date", "Open related record", "Export audit log"]} />
-      <div className="text-xs text-muted-foreground">
-        UI scaffold ready for backend logging. Activity types covered: {USER_ACTIVITY_TYPES.join(" · ")}.
-      </div>
-      <DataTable
-        columns={["When", "User", "Action", "Record", "Department", "Detail"]}
-        rows={[
-          ["10:42 AM", "Lauren Brewer", "Protected login vault accessed", "Vault", "Executive", "Viewed CentralReach"],
-          ["10:31 AM", "Briana Diaz", "Status changed", "AUTH-1042", "Authorizations", "Submitted → In Review"],
-          ["10:14 AM", "Devon Ross", "Follow-up assigned", "Sophia Reyes", "Staffing", "Hard-to-staff escalation"],
-          ["09:58 AM", "Maria Lopez", "Note added", "Lead L-2018", "Intake", "VOB requested"],
-          ["09:21 AM", "Ashley Tran", "Record edited", "PR Q4 — Liam P.", "Clinical", "Goals updated"],
-          ["08:55 AM", "Sasha Long", "Login", "—", "Case Management", "From new device"],
-        ]}
-      />
+      <Card className="p-4 rounded-2xl border-border/60">
+        <ActivityTimeline events={userEvents} showFilters emptyMessage="No user activity captured yet." />
+      </Card>
     </Shell>
   );
 }
@@ -233,38 +248,41 @@ export function UserActivityLogPage() {
 /* Patient Activity Log                                                       */
 /* -------------------------------------------------------------------------- */
 
-const PATIENT_ACTIVITY_TYPES = [
-  "Lead created", "Referral received", "Call logged", "Email logged", "Form submitted",
-  "Intake status changed", "Benefit status updated", "Authorization status changed",
-  "Denial logged", "Staffing update", "Scheduling update", "Evaluation update",
-  "Case note added", "Clinical note added", "Family communication logged",
-];
+const PATIENT_OBJECT_TYPES = new Set(["lead", "patient", "source_event", "call", "email", "task"]);
 
 export function PatientActivityLogPage() {
+  const [events, setEvents] = useState<ActivityEvent[]>(() => buildActivityFeed());
+  useEffect(() => subscribeActivityFeed(setEvents), []);
+  const patientEvents = useMemo(
+    () => events.filter((e) => PATIENT_OBJECT_TYPES.has(e.objectType) || Boolean(e.relatedLeadId)),
+    [events],
+  );
   return (
     <Shell>
       <PageHeader
         eyebrow="Communications"
         title="Patient Activity Log"
-        subtitle="Track patient and lead activity across calls, emails, forms, intake, authorizations, staffing, scheduling, clinical work, case management, and internal notes."
+        subtitle="Track patient and lead activity across calls, emails, source events, intake stage changes, tasks, escalations, and family communication."
         icon={HeartHandshake}
-        actions={<Button size="sm" variant="outline">Export activity history</Button>}
+        actions={
+          <>
+            <Button asChild size="sm" variant="outline"><Link to="/communications/activity-center">Open Activity Center</Link></Button>
+            <Button asChild size="sm" variant="outline"><Link to="/patient-journey">Patient Journey</Link></Button>
+          </>
+        }
       />
-      <ActionRow actions={["Search patient activity", "Filter by patient", "Filter by activity type", "Filter by date", "Open Patient Lifetime Journey", "Export activity history"]} />
-      <div className="text-xs text-muted-foreground">
-        UI scaffold ready for backend logging. Activity types covered: {PATIENT_ACTIVITY_TYPES.join(" · ")}.
-      </div>
-      <DataTable
-        columns={["When", "Patient / Lead", "Activity", "Detail", "Owner", "Journey"]}
-        rows={[
-          ["10:42 AM", "Mia Carter", "Call logged", "After-hours voicemail from mother", "Sasha Long", <JourneyLink />],
-          ["09:30 AM", "Liam Patel", "Authorization status changed", "Reauth → Missing docs", "Auth Team", <JourneyLink />],
-          ["Yesterday", "Sophia Reyes", "Staffing update", "Escalated — hard to staff", "Staffing Lead", <JourneyLink />],
-          ["Yesterday", "Ava Kim", "Family communication logged", "Schedule confirmation call", "Sasha Long", <JourneyLink />],
-          ["2 days ago", "Jaden Howard", "Lead created", "Referral via website form", "Intake", <JourneyLink />],
-          ["3 days ago", "Noah Brooks", "Case note added", "Behavior plan adjustment", "Marc Vega", <JourneyLink />],
-        ]}
-      />
+      <Card className="p-4 rounded-2xl border-border/60">
+        <ActivityTimeline
+          events={patientEvents}
+          showFilters
+          emptyMessage="No patient/lead activity yet."
+          onOpenObject={(e) => {
+            if (e.relatedLeadId) {
+              window.location.assign(`/patient-journey?leadId=${e.relatedLeadId}`);
+            }
+          }}
+        />
+      </Card>
     </Shell>
   );
 }
