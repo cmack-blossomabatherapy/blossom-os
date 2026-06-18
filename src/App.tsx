@@ -355,6 +355,7 @@ import MarketingReputation from "./pages/os/marketing/Reputation";
 import MarketingAttribution from "./pages/os/marketing/AttributionROI";
 import MarketingStateGrowth from "./pages/os/marketing/StateGrowth";
 import MarketingReports from "./pages/os/marketing/MarketingReports";
+import EmailMarketing from "./pages/os/marketing/EmailMarketing";
 import OSReportBcbaPerformance from "./pages/os/OSReportBcbaPerformance";
 import OSTraining from "./pages/os/OSTraining";
 import OSTrainingDetail from "./pages/os/OSTrainingDetail";
@@ -846,7 +847,8 @@ const App = () => (
                   <Route path="/marketing/training" element={<MarketingTraining />} />
                   <Route path="/marketing/campaigns" element={<MarketingCampaigns />} />
                   <Route path="/marketing/lead-sources" element={<MarketingLeadSources />} />
-                  <Route path="/marketing/lead-source-inbox" element={<AdminRoute><LeadSourceInbox /></AdminRoute>} />
+                  <Route path="/marketing/lead-source-inbox" element={<PermissionRoute allowedRoles={["marketing"]}><LeadSourceInbox /></PermissionRoute>} />
+                  <Route path="/marketing/email-marketing" element={<PermissionRoute allowedRoles={["marketing"]}><EmailMarketing /></PermissionRoute>} />
                   <Route path="/marketing/seo" element={<MarketingSEO />} />
                   <Route path="/marketing/web-analytics" element={<MarketingWebAnalytics />} />
                   <Route path="/marketing/call-tracking" element={<MarketingCallTracking />} />
