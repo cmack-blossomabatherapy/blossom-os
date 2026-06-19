@@ -49,9 +49,19 @@ export default function TrainingPathDetail() {
   const pct = journeyProgressPct(journey);
   const totalDays = weeks.reduce((s, w) => s + w.days.length, 0);
 
+  const trackSuffix = isRbt && journey.rbtActiveTrackId ? `?track=${journey.rbtActiveTrackId}` : "";
   const continueHref = nextModule
-    ? runtimeRouteFor(nextModule.id)
-    : (nextDay ? `/academy/path/${slug}/day/${encodeURIComponent(nextDay.id)}` : "#");
+    ? `${runtimeRouteFor(nextModule.id)}${trackSuffix}`
+    : (nextDay ? `/academy/path/${slug}/day/${encodeURIComponent(nextDay.id)}${trackSuffix}` : "#");
+
+  const journeyResources = getAcademyResourcesForScope({
+    journeySlug: slug,
+    sourceKind: journey.source,
+  });
+
+  const activeRbtTrack = isRbt
+    ? RBT_PATHS.find((p) => p.id === (journey.rbtActiveTrackId ?? "not_certified"))
+    : undefined;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10">
