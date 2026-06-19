@@ -336,9 +336,6 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
     throw new Error(`Missing required columns: ${parsed.missingColumns.join(", ")}`);
   }
 
-  const { data: userRes } = await supabase.auth.getUser();
-  const user = userRes?.user ?? null;
-
   // Pre-check duplicates (against current active rows).
   const hashes = parsed.parsedRows.map((r) => r.rowHash);
   const existing = await fetchExistingHashes(hashes);
@@ -354,23 +351,17 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
   }
   const duplicateRowCount = parsed.parsedRows.length - toInsert.length;
 
-  // Create batch row.
+  // Create batch row via Edge Function (service-role, reliable).
   const fileHash = await sha256Hex(`${input.file.name}|${input.file.size}|${parsed.rawRowCount}`);
-  const { data: batchRow, error: batchErr } = await supabase
-    .from("bcba_productivity_upload_batches")
-    .insert({
-      uploaded_by: user?.id ?? null,
-      uploaded_by_email: user?.email ?? null,
+  const createRes = await callUploadFn({
+    action: "create_batch",
+    batch: {
       file_name: input.file.name,
       file_size: input.file.size,
       file_hash: fileHash,
       upload_label: input.uploadLabel || null,
       notes: input.notes || null,
-      source_system: "centralreach",
-      report_type: "bcba_productivity_billing",
-      status: "active",
       parsed_row_count: parsed.parsedRows.length,
-      appended_row_count: toInsert.length,
       duplicate_row_count: duplicateRowCount,
       service_date_min: parsed.serviceDateMin,
       service_date_max: parsed.serviceDateMax,
@@ -378,20 +369,30 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
         rawRowCount: parsed.rawRowCount,
         dropReasons: parsed.dropReasons,
       },
-    })
-    .select("*")
-    .single();
-  if (batchErr || !batchRow) throw batchErr ?? new Error("Failed to create upload batch");
+    },
+  });
+  const batchId = createRes.batchId as string;
+  if (!batchId) throw new Error("Failed to create upload batch");
 
-  // Insert rows in chunks.
+  // Insert rows in chunks via Edge Function with limited concurrency.
+  // Server-side inserts using the service role are fast and reliable,
+  // and do not depend on the browser staying open or supabase-js promise
+  // delivery quirks.
+  let actuallyInserted = 0;
   if (toInsert.length > 0) {
-    const INSERT_CHUNK = 500;
-    const insertAll = async () => {
-      for (let i = 0; i < toInsert.length; i += INSERT_CHUNK) {
-        const slice = toInsert.slice(i, i + INSERT_CHUNK).map((p) => ({
-          batch_id: batchRow.id,
+    const CHUNK = 500;
+    const CONCURRENCY = 3;
+    const chunks: ParsedRow[][] = [];
+    for (let i = 0; i < toInsert.length; i += CHUNK) {
+      chunks.push(toInsert.slice(i, i + CHUNK));
+    }
+    let cursor = 0;
+    async function worker() {
+      while (cursor < chunks.length) {
+        const idx = cursor++;
+        const slice = chunks[idx];
+        const payload = slice.map((p) => ({
           row_hash: p.rowHash,
-          source_system: "centralreach",
           service_date: p.row.date || null,
           client_id: p.row.clientId || null,
           client_name: p.row.clientName || null,
@@ -400,78 +401,57 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
           procedure_code: p.row.code || null,
           hours: p.row.hours,
           units: p.units,
-          raw: p.raw as any,
-          normalized: p.row as any,
-          active: true,
+          raw: p.raw,
+          normalized: p.row,
         }));
-        const { error: rowsErr } = await supabase
-          .from("bcba_productivity_billing_rows")
-          .insert(slice);
-        if (rowsErr) throw rowsErr;
+        const res = await callUploadFn({ action: "append_rows", batchId, rows: payload });
+        actuallyInserted += Number(res.inserted ?? 0);
       }
-    };
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, chunks.length) }, worker));
+  }
 
-    // Race the insert loop against a poll that watches the server-side row
-    // count for this batch. If the supabase-js insert promise hangs (large
-    // payloads occasionally never resolve client-side even after PostgREST
-    // commits), the poll resolves the upload as soon as rows are visible.
-    await raceInsertWithPoll(insertAll(), batchRow.id, toInsert.length);
+  // Finalize: server verifies actual row count and updates the batch row
+  // with honest counters (no more "42707 appended" while only 6000 landed).
+  const fin = await callUploadFn({
+    action: "finalize_batch",
+    batchId,
+    expectedNew: toInsert.length,
+    parsed_row_count: parsed.parsedRows.length,
+    duplicate_row_count: duplicateRowCount,
+    service_date_min: parsed.serviceDateMin,
+    service_date_max: parsed.serviceDateMax,
+  });
+  const actualRows = Number(fin.actualRows ?? actuallyInserted);
+  if (toInsert.length > 0 && actualRows < toInsert.length) {
+    throw new Error(
+      `Upload incomplete: only ${actualRows.toLocaleString()} of ${toInsert.length.toLocaleString()} new rows landed. The batch has been marked failed — please re-upload.`,
+    );
   }
 
   return {
-    batchId: batchRow.id,
+    batchId,
     parsedRowCount: parsed.parsedRows.length,
-    appendedRowCount: toInsert.length,
+    appendedRowCount: actualRows,
     duplicateRowCount,
     serviceDateMin: parsed.serviceDateMin,
     serviceDateMax: parsed.serviceDateMax,
   };
 }
 
-/**
- * Resolves when EITHER the insert promise resolves OR a poll confirms the
- * expected number of rows for the batch are visible. Rejects only if the
- * insert promise errors before the poll succeeds.
- */
-async function raceInsertWithPoll(
-  insertPromise: Promise<void>,
-  batchId: string,
-  expectedRows: number,
-  opts: { pollIntervalMs?: number; maxWaitMs?: number } = {},
-): Promise<void> {
-  const pollIntervalMs = opts.pollIntervalMs ?? 1500;
-  const maxWaitMs = opts.maxWaitMs ?? 120_000;
-
-  let insertDone = false;
-  let insertError: unknown = null;
-  const insertTracked = insertPromise.then(
-    () => { insertDone = true; },
-    (e) => { insertError = e; },
-  );
-
-  const start = Date.now();
-  // Small initial delay so we don't poll before the first chunk has a chance.
-  await new Promise((r) => setTimeout(r, 400));
-  while (Date.now() - start < maxWaitMs) {
-    if (insertDone) return;
-    if (insertError) throw insertError;
-    const { count } = await supabase
-      .from("bcba_productivity_billing_rows")
-      .select("id", { count: "exact", head: true })
-      .eq("batch_id", batchId);
-    if ((count ?? 0) >= expectedRows) return;
-    await new Promise((r) => setTimeout(r, pollIntervalMs));
+/** Invoke the bcba-productivity-upload Edge Function. */
+async function callUploadFn(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const { data, error } = await supabase.functions.invoke("bcba-productivity-upload", { body });
+  if (error) {
+    const detail = (data && typeof data === "object" && "error" in (data as any))
+      ? (data as any).error
+      : error.message;
+    throw new Error(detail || "Upload service error");
   }
-
-  // Timed out waiting. Surface whichever signal we have.
-  if (insertError) throw insertError;
-  // Give the insert one last micro-await in case it resolved between polls.
-  await Promise.race([insertTracked, new Promise((r) => setTimeout(r, 50))]);
-  if (insertError) throw insertError;
-  if (insertDone) return;
-  throw new Error(
-    `Upload still processing — ${expectedRows.toLocaleString()} rows expected. Refresh in a moment to see the latest state.`,
-  );
+  if (data && typeof data === "object" && "error" in data) {
+    throw new Error(String((data as any).error));
+  }
+  return (data ?? {}) as Record<string, unknown>;
 }
 
 /* ----- queries ----- */
