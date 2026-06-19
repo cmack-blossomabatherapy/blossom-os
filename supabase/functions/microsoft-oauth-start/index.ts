@@ -2,6 +2,7 @@
 // Builds the Microsoft authorize URL with `offline_access`, profile, mail
 // and calendar scopes, and a signed state carrying the user id.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { generateOauthStateNonce, hashOauthState } from "../_shared/microsoftTokenVault.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,7 +64,26 @@ Deno.serve(async (req) => {
       { onConflict: "integration_id,user_id" },
     );
 
-  const state = btoa(JSON.stringify({ u: user.id, t: Date.now() }));
+  // Generate a cryptographically random OAuth state nonce. We persist only
+  // a SHA-256 hash of it, scoped to this user, so the callback can validate
+  // the returned state server-side without trusting any user id encoded in
+  // the browser redirect.
+  const stateNonce = generateOauthStateNonce(32);
+  const stateHash = await hashOauthState(stateNonce);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const { error: stateErr } = await supabase
+    .from("integration_oauth_states")
+    .insert({
+      integration_id: "ms365",
+      user_id: user.id,
+      state_hash: stateHash,
+      expires_at: expiresAt,
+      metadata: { source: "microsoft-oauth-start" },
+    });
+  if (stateErr) {
+    return json({ ok: false, error: `state_persist_failed: ${stateErr.message}` }, 500);
+  }
+
   const authorizeUrl = new URL(
     `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/authorize`,
   );
@@ -72,7 +92,7 @@ Deno.serve(async (req) => {
   authorizeUrl.searchParams.set("redirect_uri", REDIRECT_URI);
   authorizeUrl.searchParams.set("response_mode", "query");
   authorizeUrl.searchParams.set("scope", SCOPES.join(" "));
-  authorizeUrl.searchParams.set("state", state);
+  authorizeUrl.searchParams.set("state", stateNonce);
   authorizeUrl.searchParams.set("prompt", "select_account");
 
   return json({ ok: true, authorizeUrl: authorizeUrl.toString() });
