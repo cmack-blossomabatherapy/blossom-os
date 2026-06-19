@@ -1,59 +1,83 @@
-## What I found
+## Goal
 
-I traced the most recent "Welcome to Blossom" invites (from `invite_email_logs`) and asked Resend for each message's final delivery event.
+Finish the RBT Training Academy as a real role-based LMS journey inside the universal `/academy` surface, fit in the 4 experience-based tracks from the meeting notes, and represent the official 2026 BACB Initial Competency Assessment as a structured, validated workflow — without breaking State Director or BCBA training, or any existing OS module.
 
-| Recipient | Resend `last_event` |
-|---|---|
-| eroberts@blossomabatherapy.com | **delivered** |
-| mpolter@blossomabatherapy.com | **delivered** |
-| mpoulter@blossomabatherapy.com | **bounced** (typo of `mpolter`) |
-| dbenenfeld@blossomabatherapy.com | **delivered** |
-| emillman@blossomabatherapy.com | **delivered** |
+## Current baseline (confirmed by reading the codebase)
 
-Resend domain check:
-- `blossom.abacommandcenter.com` — **status: verified**, sending **enabled**.
-- From address used: `Blossom ABA Therapy <welcome@blossom.abacommandcenter.com>` — matches the verified domain.
+- Universal LMS runtime exists: `TrainingAcademyHome`, `TrainingPathDetail`, `TrainingPathDayDetail`, `TrainingModuleRuntime`.
+- RBT journey content lives in `src/lib/training/rbtAcademy.ts` (~370 lines).
+- RBT readiness store: `src/lib/training/rbtReadiness.ts`.
+- RBT resources: `src/lib/training/rbtResources.ts`.
+- RBT-specific surfaces: `OSRBTTrainingAcademy`, `OSRBTAcademyAdmin`, `OSRBTReadinessBoard`.
+- Universal journey content / resource resolver in `src/lib/academy/`.
 
-"Sent" in Resend only means Resend accepted the message from us. **"Delivered" means the recipient's mail server accepted it.** All of the recent welcome emails that went to a real address show `delivered`. So the message reached `blossomabatherapy.com`'s mail server (Google Workspace) successfully. The Resend logs and our code are working correctly.
+## Scope (this pass)
 
-## Most likely real cause
+### 1. Source-of-truth data layer
+- Rewrite/extend `src/lib/training/rbtAcademy.ts` so the 4 tracks (`not_certified`, `certified_no_experience`, `certified_under_2yrs`, `certified_2yrs_plus`) match the meeting-notes structure (phases 1–6 + branching for under-2yrs).
+- Create `src/lib/training/rbtCompetency.ts` with: 19 BACB tasks (with allowed assessment types), trainee record, responsible/assistant assessor fields, validation rules (40-hour complete, 90-day window, items 1–19 done, ≥3 of items 6–14 with-client). LocalStorage-backed, shaped so a Supabase swap is trivial.
+- Extend `src/lib/training/rbtReadiness.ts` so "Ready for Independent Assignment" requires the per-track checklist from the spec (sec. 7).
+- Extend `src/lib/training/rbtResources.ts` to add: official 2026 Competency Packet, ABA Explained pack, Data Collection guide, Session Notes guide, Assistance Test placeholder. Mark unmapped links as "resource pending" in the UI.
 
-The emails are landing in **Spam / Junk / Google Workspace Admin Quarantine** on the recipient side, not failing to send. Contributing factors:
+### 2. Universal LMS wiring
+- Ensure `/academy/path/rbt` renders and accepts `?track=` query string; track persists from path → day → module routes.
+- `OSRBTTrainingAcademy` becomes an RBT-flavored landing that deep-links into `/academy/path/rbt?track=...` (does not re-render its own runtime).
+- Wire each RBT module in `src/lib/academy/journeyContent.ts` so the module runtime returns real content (objectives, lessons, resources, checklist, trainer notes, reflection, knowledge-check placeholder, signoff requirement, estimated time) for the 25 modules listed in spec sec. 5.
 
-1. `blossom.abacommandcenter.com` is a young/low-volume sender domain — Gmail aggressively spam-folders new senders, especially when the recipient is on the same parent brand (`blossomabatherapy.com`) but a *different* domain, which looks like spoofing.
-2. The template ships a temporary password in plaintext + has "Welcome to" + a CTA link — classic phishing-filter triggers.
-3. No `Reply-To` header is set, and the logo is hot-linked from a `supabase.co` URL — both are mild reputation drags.
-4. One bad address (`mpoulter@…`) hard-bounced. Resend now has that address on its **suppression list**, so any retry to that exact string will be silently dropped with `last_event: bounced` regardless of fixes.
+### 3. Competency UI
+- **Learner view** inside the Not Certified path: an "Initial Competency Assessment" day/module that shows status, prep resources, scheduled assessments, and a read-only task list (no self-signoff).
+- **Admin/clinical view**: new `CompetencyPanel` component embedded into `OSRBTAcademyAdmin` (trainee detail drawer) and into `OSRBTReadinessBoard`. Supports filters (All / Needs Reassessment / With Client Required / Interview / Complete), per-task status/type/initials/notes/reassessment, evidence upload placeholder, final validation checklist, and a clear "Blocked because…" banner.
+- **Training Management Center**: add an RBT roll-up card (counts by track, in training, needs coaching, awaiting BCBA signoff, competency incomplete, ready). Keep State Director launch readiness intact.
 
-## Proposed actions (no code change required to start)
+### 4. Module runtime content upgrade
+- Expand `src/lib/academy/journeyContent.ts` (and a new `src/lib/training/rbtModuleContent.ts` if it keeps `journeyContent` lean) so all 25 RBT modules in spec sec. 5 return real content blocks. Display Hannah/Anju as label text only (no user IDs).
 
-**Immediate, no-code triage (do first):**
+### 5. Tests and QA
+- Add `src/test/rbtTrainingAcademyPass5.test.ts` covering the verification list in spec sec. 10 (route renders, all 4 tracks, query-string preservation through path→day→module, Not Certified phase coverage, Under-2yrs branching, module runtime content, 19 competency tasks, ≥3 with-client items 6–14 rule, 40-hour gate, 90-day window, readiness gating, SD/BCBA routes still resolve).
+- Create `docs/rbt-training-academy-pass-5-qa.md` listing changes, files touched, learner walkthrough, admin walkthrough, placeholder resources, and what remains for the Supabase persistence pass.
 
-1. Ask each affected recipient to check:
-   - Gmail **Spam** folder
-   - Gmail **All Mail** (search `from:welcome@blossom.abacommandcenter.com`)
-   - Their Google Workspace **Admin Quarantine** (a Workspace admin at Blossom must release it; users can't see it themselves)
-2. Have the Blossom Google Workspace admin add an **allowlist / safe-sender** entry for `blossom.abacommandcenter.com` (Admin Console → Apps → Gmail → Spam, Phishing and Malware → Email allowlist), then re-send.
-3. Fix the typo for `mpoulter@blossomabatherapy.com` → `mpolter@…` and remove `mpoulter@…` from Resend's Suppressions list before retrying that user.
+## Out of scope (this pass)
 
-**Small code improvements I can ship in build mode to improve deliverability:**
+- Supabase persistence for competency/readiness — left as localStorage with a clear migration shape.
+- Real file uploads for evidence — placeholder UI only.
+- New NFC / Login Vault / unrelated admin pages.
+- Any change to State Director content (`sdWeek*Content.ts`, `stateDirector*.ts`) or BCBA training files.
 
-1. Add a `Reply-To: support@blossomabatherapy.com` header (or whichever real mailbox) to the Resend call in `_shared/welcome-email.ts` — improves DMARC/reply alignment and looks more legitimate to Gmail.
-2. Set `tags` on the Resend send (e.g. `{ name: "type", value: "welcome-invite" }`) so we can filter analytics and identify trends.
-3. Surface Resend's `last_event` in the Admin → "Resend Welcome Email" UI by calling the existing `admin-check-welcome-email` function, so when someone says "I didn't get it" an admin can instantly see `delivered` / `bounced` / `complained` / `delivery_delayed` and act accordingly.
-4. Add a Suppressions check in `admin-resend-welcome-email`: before sending, query Resend's suppressions for that address and refuse with a clear message instead of silently re-sending into a suppression.
-5. Optional: stop including the temporary password in the email body — instead send a one-time set-password link. This is the single biggest deliverability and security improvement.
+## Technical notes
 
-## Technical details
+- All four tracks share the universal runtime; track selection lives in URL params and is mirrored into `rbtReadiness` for the trainee record.
+- Competency validation is a pure function (`validateCompetency(record): { ok, blockers[] }`) so the same rules drive learner banners, admin badges, and readiness gating.
+- `OSRBTTrainingAcademy` keeps its name and route but its body is replaced by a thin "Pick your path" landing + recommended-track CTA that links into `/academy/path/rbt?track=…`. Old static tabs are removed only if they are duplicated by the universal runtime.
+- No edits to `supabase/migrations/`, edge functions, or unrelated OS modules.
 
-- Function that sends: `supabase/functions/_shared/welcome-email.ts` → `sendBlossomWelcomeEmail()`, called from `admin-invite-user` and `admin-resend-welcome-email`.
-- Logs written to: `public.invite_email_logs` (status / resend_message_id / error_message).
-- Existing diagnostic function: `admin-check-welcome-email` already fetches `last_event` from Resend per user; it's not wired into the UI.
+## File map (planned)
 
-## What I need from you to proceed
+```text
+new   src/lib/training/rbtCompetency.ts
+new   src/lib/training/rbtModuleContent.ts
+new   src/components/training/CompetencyPanel.tsx
+new   src/test/rbtTrainingAcademyPass5.test.ts
+new   docs/rbt-training-academy-pass-5-qa.md
+edit  src/lib/training/rbtAcademy.ts            (4 tracks, phases, branching)
+edit  src/lib/training/rbtReadiness.ts          (per-track checklist gating)
+edit  src/lib/training/rbtResources.ts          (add required resources)
+edit  src/lib/academy/journeyContent.ts         (resolve RBT modules to real content)
+edit  src/pages/os/OSRBTTrainingAcademy.tsx     (landing → deep-link into /academy/path/rbt)
+edit  src/pages/os/OSRBTAcademyAdmin.tsx        (embed CompetencyPanel)
+edit  src/pages/os/OSRBTReadinessBoard.tsx      (embed CompetencyPanel + roll-up)
+edit  src/pages/hr/TrainingManagementCenter.tsx (RBT roll-up card)
+edit  src/pages/academy/TrainingPathDetail.tsx  (track param + RBT track switcher)
+edit  src/pages/academy/TrainingPathDayDetail.tsx (preserve ?track=)
+edit  src/pages/academy/TrainingModuleRuntime.tsx (preserve ?track=)
+```
 
-Pick any combination:
+## Suggested delivery order
 
-- **A.** Just confirm the diagnosis and you'll have recipients check spam + Workspace quarantine.
-- **B.** Have me ship the deliverability code improvements (Reply-To, tags, suppression pre-check, surface `last_event` in admin UI).
-- **C.** Have me replace the temp-password flow with a one-time set-password magic link (bigger change, best long-term fix).
+1. Data layer (`rbtCompetency`, `rbtAcademy` rewrite, `rbtReadiness` gating, resources).
+2. Module runtime content for the 25 RBT modules.
+3. Universal LMS routing (track query string end-to-end).
+4. `CompetencyPanel` + embed into admin/readiness/management.
+5. `OSRBTTrainingAcademy` landing refactor.
+6. Tests + QA doc.
+
+This is a large pass and will require many parallel file writes. Confirm scope and I will start with step 1 in the next turn.

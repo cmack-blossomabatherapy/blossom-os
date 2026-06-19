@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { parseAcademyModuleId } from "@/lib/academy/journeyContent";
 import { RBT_PATHS, type RBTModule, type RBTPath, type RBTPhase, type RBTPathId } from "@/lib/training/rbtAcademy";
+import { getRbtModuleContent } from "@/lib/training/rbtModuleContent";
 import { BCBA_MODULES, type BCBAModule } from "@/lib/training/bcbaAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime,
@@ -203,6 +204,24 @@ export default function TrainingModuleRuntime() {
             </Card>
           )}
 
+          {ctx.trainerNotes && (
+            <Card title="Trainer notes" icon={ShieldCheck}>
+              <p className="text-[13px] text-foreground/90">{ctx.trainerNotes}</p>
+            </Card>
+          )}
+
+          {ctx.reflectionPrompt && (
+            <Card title="Reflection prompt" icon={BookOpen}>
+              <p className="text-[13px] text-foreground/90">{ctx.reflectionPrompt}</p>
+            </Card>
+          )}
+
+          {ctx.signoffRequired && (
+            <Card title="Signoff required" icon={ShieldCheck}>
+              <p className="text-[13px] text-foreground/90">{ctx.signoffRequired}</p>
+            </Card>
+          )}
+
           {ctx.sopLinks && ctx.sopLinks.length > 0 && (
             <Card title="SOPs and references" icon={Link2}>
               <ul className="space-y-2 text-[13px]">
@@ -345,6 +364,9 @@ interface ModuleCtx {
   sopLinks?: { label: string; href: string }[];
   tangos?: { label: string; note: string }[];
   aiPrompts?: string[];
+  trainerNotes?: string;
+  reflectionPrompt?: string;
+  signoffRequired?: string;
 }
 
 function resolveRbt(sourceModuleId: string): ModuleCtx | null {
@@ -352,16 +374,27 @@ function resolveRbt(sourceModuleId: string): ModuleCtx | null {
     for (const phase of path.phases) {
       const m: RBTModule | undefined = phase.modules.find((mm) => mm.id === sourceModuleId);
       if (m) {
+        const content = getRbtModuleContent(sourceModuleId);
+        const branchingChecklist = m.branching
+          ? m.branching.branches.map((b) => `${b.condition} → ${b.assigns.join(", ")}`)
+          : undefined;
         return {
           title: m.title,
           description: m.summary,
           type: m.type,
           minutes: m.minutes,
           required: !!m.required,
-          objectives: [`Complete: ${m.title}`, `Confirm with your ${path.id === "not_certified" ? "Lead RBT Trainer" : "trainer"} before moving on.`],
-          checklist: m.branching
-            ? m.branching.branches.map((b) => `${b.condition} → ${b.assigns.join(", ")}`)
-            : undefined,
+          objectives: content?.objectives ?? [
+            `Complete: ${m.title}`,
+            `Confirm with your ${path.id === "not_certified" ? "Lead RBT Trainer" : "trainer"} before moving on.`,
+          ],
+          lessons: content?.lessons,
+          checklist: content?.checklist ?? branchingChecklist,
+          shadowing: content?.shadowing,
+          knowledgeCheck: content?.knowledgeCheck,
+          trainerNotes: content?.trainerNotes,
+          reflectionPrompt: content?.reflectionPrompt,
+          signoffRequired: content?.signoffRequired,
         };
       }
     }

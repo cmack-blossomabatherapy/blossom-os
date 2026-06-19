@@ -9,6 +9,7 @@ import {
   type SignoffItem,
   type SignoffOwner,
 } from "./rbtAcademy";
+import { getCompetencyRecord, validateCompetency } from "./rbtCompetency";
 
 export const REQUIRED_SIGNOFF_ROLES: SignoffOwner[] = [
   "Lead RBT Trainer",
@@ -153,7 +154,23 @@ export function summarize(t: RBTTrainee): ReadinessSummary {
     (s) => s.item.owner === "Operations" && s.status !== "signed",
   ).length;
 
-  const independentReady = requiredCount > 0 && signedCount === requiredCount && !t.flags?.blocked;
+  // Per-track gating: the Not Certified path additionally requires the
+  // Initial Competency Assessment record to validate per the 2026 BACB rules.
+  let extraBlocker: string | null = null;
+  if (t.pathId === "not_certified") {
+    const rec = getCompetencyRecord(t.id, t.pathId);
+    const v = validateCompetency(rec);
+    if (!v.ok) {
+      extraBlocker = `Initial Competency Assessment incomplete (${v.completedTaskCount}/${v.totalTaskCount} tasks competent, ${v.withClientCount} With-Client in 6–14).`;
+      missing.push(extraBlocker);
+    }
+  }
+
+  const independentReady =
+    requiredCount > 0 &&
+    signedCount === requiredCount &&
+    !t.flags?.blocked &&
+    !extraBlocker;
 
   let status: ReadinessStatus;
   if (t.flags?.blocked) status = "Blocked";
