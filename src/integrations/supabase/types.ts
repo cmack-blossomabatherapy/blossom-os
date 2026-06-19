@@ -6761,6 +6761,68 @@ export type Database = {
           },
         ]
       }
+      integration_oauth_token_vault: {
+        Row: {
+          access_token_ciphertext: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          integration_id: string
+          key_version: string
+          last_refresh_at: string | null
+          metadata: Json
+          oauth_connection_id: string
+          provider_user_id: string | null
+          refresh_token_ciphertext: string | null
+          scopes: string[]
+          token_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token_ciphertext?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          integration_id: string
+          key_version?: string
+          last_refresh_at?: string | null
+          metadata?: Json
+          oauth_connection_id: string
+          provider_user_id?: string | null
+          refresh_token_ciphertext?: string | null
+          scopes?: string[]
+          token_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token_ciphertext?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          integration_id?: string
+          key_version?: string
+          last_refresh_at?: string | null
+          metadata?: Json
+          oauth_connection_id?: string
+          provider_user_id?: string | null
+          refresh_token_ciphertext?: string | null
+          scopes?: string[]
+          token_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_oauth_token_vault_oauth_connection_id_fkey"
+            columns: ["oauth_connection_id"]
+            isOneToOne: true
+            referencedRelation: "integration_oauth_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_sync_runs: {
         Row: {
           completed_at: string | null

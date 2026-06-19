@@ -1,9 +1,10 @@
 // Microsoft 365 / Outlook OAuth callback.
-// Exchanges the auth code for tokens and stores ONLY metadata + secret
-// references in `integration_oauth_connections`. Raw tokens are not
-// persisted in this Pass 1 — token persistence is gated on the secure
-// per-user secret pattern being finalized (see QA manifest).
+// Exchanges the auth code for tokens, encrypts them with AES-GCM using
+// OAUTH_TOKEN_ENCRYPTION_KEY, and stores the ciphertext in the service-role-only
+// `integration_oauth_token_vault`. Raw tokens never reach the browser or the
+// `integration_oauth_connections` row.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { encryptToken } from "../_shared/oauthTokenCrypto.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,28 +94,94 @@ Deno.serve(async (req) => {
   }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
-  await supabase.from("integration_oauth_connections").upsert(
+
+  // 1. Encrypt tokens BEFORE we touch the database. If this fails, do not
+  //    mark the connection as connected — surface needs_attention instead.
+  let accessCipher: string | null = null;
+  let refreshCipher: string | null = null;
+  let vaultError: string | null = null;
+  try {
+    if (tokenData.access_token) accessCipher = await encryptToken(tokenData.access_token);
+    if (tokenData.refresh_token) refreshCipher = await encryptToken(tokenData.refresh_token);
+  } catch (e) {
+    vaultError = e instanceof Error ? e.message : String(e);
+    console.error("[microsoft-oauth-callback] token encryption failed", vaultError);
+  }
+
+  const expiresAt = tokenData.expires_in
+    ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+    : null;
+  const scopes = (tokenData.scope ?? "").split(" ").filter(Boolean);
+  const connectionStatus = vaultError ? "needs_attention" : "connected";
+
+  const { data: connRow, error: connErr } = await supabase
+    .from("integration_oauth_connections")
+    .upsert(
     {
       integration_id: "ms365",
       user_id: userId,
       provider_email: providerEmail,
       provider_user_id: providerUserId,
       display_name: providerName,
-      scopes: (tokenData.scope ?? "").split(" ").filter(Boolean),
-      status: "connected",
-      expires_at: tokenData.expires_in
-        ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
-        : null,
+        scopes,
+        status: connectionStatus,
+        expires_at: expiresAt,
       last_connected_at: new Date().toISOString(),
-      // NOTE: raw tokens are intentionally NOT stored in this table.
-      // Token persistence is gated on the per-user secret pattern decision.
+        last_error: vaultError ? `token_storage_failed: ${vaultError}` : null,
+        // Raw tokens are NEVER stored on this row — only safe metadata.
       metadata: {
-        token_persistence: "pending",
+          token_persistence: vaultError ? "failed" : "vault",
         scope_granted: tokenData.scope ?? null,
+          token_key_version: "v1",
       },
-    },
-    { onConflict: "integration_id,user_id" },
-  );
+      },
+      { onConflict: "integration_id,user_id" },
+    )
+    .select("id")
+    .single();
+
+  if (connErr || !connRow) {
+    return html(
+      `<h1>Outlook connection failed</h1><pre>${connErr?.message ?? "no row"}</pre>`,
+      500,
+    );
+  }
+
+  // 2. Upsert the encrypted token row into the vault (service-role-only table).
+  if (!vaultError) {
+    const { error: vaultErr } = await supabase
+      .from("integration_oauth_token_vault")
+      .upsert(
+        {
+          oauth_connection_id: connRow.id,
+          integration_id: "ms365",
+          user_id: userId,
+          provider_user_id: providerUserId,
+          access_token_ciphertext: accessCipher,
+          refresh_token_ciphertext: refreshCipher,
+          token_type: tokenData.token_type ?? "Bearer",
+          scopes,
+          expires_at: expiresAt,
+          last_refresh_at: new Date().toISOString(),
+          key_version: "v1",
+        },
+        { onConflict: "oauth_connection_id" },
+      );
+    if (vaultErr) {
+      await supabase
+        .from("integration_oauth_connections")
+        .update({
+          status: "needs_attention",
+          last_error: `vault_write_failed: ${vaultErr.message}`,
+          metadata: { token_persistence: "failed" },
+        })
+        .eq("id", connRow.id);
+      return html(
+        `<h1>Outlook connection partially completed</h1><p>Tokens could not be stored securely. Please try again.</p>`,
+        500,
+      );
+    }
+  }
 
   return html(
     `<!doctype html><html><body style="font-family: -apple-system, system-ui, sans-serif; max-width:480px; margin:80px auto; text-align:center;">

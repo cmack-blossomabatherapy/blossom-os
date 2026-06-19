@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SecurityMfaCard } from "@/components/profile/SecurityMfaCard";
 import { SecurityKeysCard } from "@/components/profile/SecurityKeysCard";
 import { ProfileEditorCard } from "@/components/profile/ProfileEditorCard";
+import { OutlookConnectionCard } from "@/components/profile/OutlookConnectionCard";
 
 export function SettingsSection({ ob }: { ob: any }) {
   const { signOut } = useAuth();
@@ -15,6 +16,7 @@ export function SettingsSection({ ob }: { ob: any }) {
       <ProfileEditorCard />
       <SecurityMfaCard />
       <SecurityKeysCard />
+      <OutlookConnectionCard />
 
       <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm md:col-span-2">
         <div className="mb-3 flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" /><h2 className="text-sm font-semibold">Your secure logins</h2></div>

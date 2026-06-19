@@ -65,24 +65,43 @@ Deno.serve(async (req) => {
   } catch (_) {
     parsed = { _raw: rawBody };
   }
-  const integrationId: string =
+  const integrationId: string | null =
     url.searchParams.get("integration") ??
     parsed?.integration_id ??
     parsed?.integrationId ??
-    "unknown";
+    null;
+
+  if (!integrationId) {
+    return json({ ok: false, error: "Missing integration id" }, 400);
+  }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+  // Reject unknown integration ids before we touch FK-bound tables.
+  const { data: catalogRow } = await supabase
+    .from("integration_catalog")
+    .select("id")
+    .eq("id", integrationId)
+    .maybeSingle();
+  if (!catalogRow) {
+    return json({ ok: false, error: "Unknown integration", integrationId }, 400);
+  }
 
   // Signature verification (best-effort, provider-specific headers).
   let verification: "verified" | "unverified" | "failed" = "unverified";
   const secretEnv = WEBHOOK_SECRET_ENV[integrationId];
   const secret = secretEnv ? Deno.env.get(secretEnv) : undefined;
+  const requiresSecret = !!secretEnv;
   if (secret) {
     const sig =
       req.headers.get("x-signature") ??
       req.headers.get("x-hub-signature-256") ??
       req.headers.get("calendly-webhook-signature") ??
       req.headers.get("x-pandadoc-signature") ??
+      req.headers.get("x-retell-signature") ??
+      req.headers.get("x-ctm-signature") ??
+      req.headers.get("x-leadtrap-signature") ??
+      req.headers.get("x-make-signature") ??
       null;
     verification = (await verifyHmac(rawBody, sig, secret)) ? "verified" : "failed";
   }
@@ -104,10 +123,11 @@ Deno.serve(async (req) => {
       provider_event_id: providerEventId,
       event_type: eventType,
       verification_status: verification,
-      processing_status: "received",
+      processing_status: verification === "failed" ? "rejected" : "received",
       payload: parsed,
       headers,
       source_ip: req.headers.get("x-forwarded-for") ?? null,
+      error_message: verification === "failed" ? "signature_verification_failed" : null,
     })
     .select("id")
     .single();
@@ -117,8 +137,18 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: error.message }, 500);
   }
 
-  // Normalize to integration_events when there's a recognizable shape.
-  if (eventType) {
+  // If signature verification was REQUIRED and FAILED, do not normalize the
+  // event into the business event spine — return 401 so the provider retries.
+  if (verification === "failed") {
+    return json(
+      { ok: false, id: inserted.id, verification, error: "signature_verification_failed", details: { requiresSecret } },
+      401,
+    );
+  }
+
+  // Normalize to integration_events only when verified, or when no secret is
+  // configured (setup phase) AND we have a recognizable event shape.
+  if (eventType && verification !== "failed") {
     await supabase.from("integration_events").insert({
       integration_id: integrationId,
       source_event_id: inserted.id,
@@ -129,5 +159,5 @@ Deno.serve(async (req) => {
     });
   }
 
-  return json({ ok: true, id: inserted.id, verification });
+  return json({ ok: true, id: inserted.id, verification, details: { requiresSecret } });
 });

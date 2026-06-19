@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -67,6 +67,20 @@ import {
   BLOSSOM_INTEGRATIONS,
 } from "@/lib/os/integrations/integrationRegistry";
 import type { BlossomIntegration } from "@/lib/os/integrations/types";
+import {
+  listIntegrationCatalog,
+  listIntegrationConnections,
+  listIntegrationSyncRuns,
+  listIntegrationWebhookEvents,
+  listUserOAuthConnections,
+  testIntegrationConnection,
+  runIntegrationSync,
+  type IntegrationConnectionRow,
+  type IntegrationSyncRunRow,
+  type IntegrationWebhookEventRow,
+  type OAuthConnectionRow,
+} from "@/lib/os/integrations/backend";
+import { toast } from "sonner";
 
 /**
  * Admin > Integrations renders directly from the shared registry
@@ -466,23 +480,52 @@ function IntegrationDrawer({
   integration,
   open,
   onOpenChange,
+  syncRuns,
+  webhookEvents,
+  connection,
+  onRefresh,
 }: {
   integration: Integration | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  syncRuns: IntegrationSyncRunRow[];
+  webhookEvents: IntegrationWebhookEventRow[];
+  connection: IntegrationConnectionRow | null;
+  onRefresh: () => void;
 }) {
   if (!integration) return null;
   const Icon = integration.icon;
 
-  // Sample data — backend wiring in Pass 1. Real per-integration runs
-  // come from `integration_sync_runs` via `listIntegrationSyncRuns()`.
-  const syncTimeline = [
-    { time: "Just now", label: "Pull · clients", count: 312, ok: true },
-    { time: "8 min ago", label: "Push · appointments", count: 47, ok: true },
-    { time: "21 min ago", label: "Pull · authorizations", count: 96, ok: true },
-    { time: "1 hr ago", label: "Push · session notes", count: 12, ok: false },
-    { time: "3 hrs ago", label: "Pull · staff roster", count: 184, ok: true },
-  ];
+  const [testing, setTesting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const integrationSyncRuns = syncRuns.filter((r) => r.integration_id === integration.id);
+  const integrationWebhookEvents = webhookEvents.filter((e) => e.integration_id === integration.id);
+
+  async function handleTest() {
+    setTesting(true);
+    const res = await testIntegrationConnection(integration.id);
+    setTesting(false);
+    if (res.ok) toast.success(`${integration.name}: ${res.message}`);
+    else toast.error(`${integration.name}: ${res.message}`);
+    onRefresh();
+  }
+  async function handleSync() {
+    setSyncing(true);
+    const res = await runIntegrationSync(integration.id);
+    setSyncing(false);
+    if (res.ok) toast.success(`${integration.name}: sync queued`);
+    else toast.error(`${integration.name}: ${res.message ?? "sync failed"}`);
+    onRefresh();
+  }
+
+  const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
+  const retellWebhookUrl = supabaseUrl
+    ? `${supabaseUrl.replace(".supabase.co", ".functions.supabase.co")}/retell-webhook`
+    : null;
+  const genericWebhookUrl = supabaseUrl
+    ? `${supabaseUrl.replace(".supabase.co", ".functions.supabase.co")}/integration-webhook?integration=${integration.id}`
+    : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -516,14 +559,13 @@ function IntegrationDrawer({
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Button size="sm" className="h-9 gap-1.5 rounded-xl">
-              <RefreshCw className="size-3.5" strokeWidth={2} /> Sync now
+            <Button size="sm" className="h-9 gap-1.5 rounded-xl" onClick={handleSync} disabled={syncing}>
+              {syncing ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" strokeWidth={2} />}
+              Run sync
             </Button>
-            <Button size="sm" variant="secondary" className="h-9 gap-1.5 rounded-xl">
-              <Play className="size-3.5" /> Test connection
-            </Button>
-            <Button size="sm" variant="ghost" className="h-9 gap-1.5 rounded-xl">
-              <FileText className="size-3.5" /> View logs
+            <Button size="sm" variant="secondary" className="h-9 gap-1.5 rounded-xl" onClick={handleTest} disabled={testing}>
+              {testing ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
+              Test connection
             </Button>
           </div>
         </SheetHeader>
@@ -553,15 +595,35 @@ function IntegrationDrawer({
 
             <TabsContent value="overview" className="mt-6 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <HealthStat icon={Gauge} label="Health" value="Healthy" />
+                <HealthStat icon={Gauge} label="Backend status" value={connection?.status ?? "no_connection_row"} />
                 <HealthStat
                   icon={RefreshCw}
-                  label="Last sync"
-                  value={integration.lastSync ?? "—"}
+                  label="Last success"
+                  value={connection?.last_success_at ? new Date(connection.last_success_at).toLocaleString() : "—"}
                 />
-                <HealthStat icon={Activity} label="API usage" value="38% of monthly" />
-                <HealthStat icon={AlertTriangle} label="Failures (24h)" value="0" />
+                <HealthStat icon={Activity} label="Sync runs" value={`${integrationSyncRuns.length} recent`} />
+                <HealthStat
+                  icon={AlertTriangle}
+                  label="Last error"
+                  value={connection?.last_error ?? "None"}
+                  tone={connection?.last_error ? "warning" : "healthy"}
+                />
               </div>
+              {connection && (
+                <Card className="rounded-2xl border-border/60 p-4 space-y-2">
+                  <div className="text-sm font-medium">Required secrets</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(connection.secret_names ?? []).map((s) => (
+                      <Badge key={s} variant="secondary" className="rounded-full text-[10px] font-mono">
+                        {s}
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Names only — secret values are never shown in the browser.
+                  </p>
+                </Card>
+              )}
               <Card className="rounded-2xl border-border/60 bg-muted/30 p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -670,28 +732,45 @@ function IntegrationDrawer({
 
             <TabsContent value="activity" className="mt-6">
               <div className="space-y-2">
-                {syncTimeline.map((t, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={cn(
-                          "size-1.5 rounded-full",
-                          t.ok ? "bg-emerald-500" : "bg-rose-500",
-                        )}
-                      />
-                      <div>
-                        <div className="text-sm text-foreground">{t.label}</div>
-                        <div className="text-xs text-muted-foreground">{t.time}</div>
+                {integrationSyncRuns.length === 0 ? (
+                  <Card className="rounded-2xl border-dashed border-border/70 bg-muted/20 p-6 text-center">
+                    <RefreshCw className="mx-auto mb-2 size-5 text-muted-foreground" />
+                    <div className="text-sm font-medium">No sync runs yet</div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Click <strong>Run sync</strong> to record the first attempt.
+                    </p>
+                  </Card>
+                ) : (
+                  integrationSyncRuns.map((r) => {
+                    const ok = r.status === "success" || r.status === "completed";
+                    return (
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 px-4 py-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={cn("size-1.5 rounded-full", ok ? "bg-emerald-500" : r.status === "error" || r.status === "failed" ? "bg-rose-500" : "bg-amber-500")} />
+                          <div>
+                            <div className="text-sm text-foreground">
+                              {r.run_type} · {r.direction} · {r.status}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(r.started_at).toLocaleString()}
+                            </div>
+                            {r.error_message && (
+                              <div className="mt-1 text-[11px] text-rose-500">
+                                {r.error_message}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {r.records_received} in · {r.records_created + r.records_updated} written
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {t.count} records
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })
+                )}
               </div>
             </TabsContent>
 
@@ -722,8 +801,8 @@ function IntegrationDrawer({
             </TabsContent>
 
             <TabsContent value="webhooks" className="mt-6">
-              {integration.id === "retell" ? (
-                <div className="space-y-4">
+              <div className="space-y-4">
+                {integration.id === "retell" && (
                   <Card className="rounded-2xl border border-border/60 bg-card/60 p-5">
                     <div className="flex items-start gap-3">
                       <div className="grid size-10 place-items-center rounded-xl bg-violet-500/10 text-violet-500">
@@ -732,50 +811,74 @@ function IntegrationDrawer({
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-semibold">Retell Webhook URL</div>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          Paste this into Retell → Agent <span className="font-mono">agent_fb8aaca447d2a6c6703d40d77a</span> → Webhook settings. Event: <span className="font-mono">call_analyzed</span>.
+                          Point your Retell agent(s) at either the dedicated
+                          <span className="font-mono"> /retell-webhook </span>
+                          function, or the generic
+                          <span className="font-mono"> /integration-webhook?integration=retell </span>
+                          receiver. Agent filtering is controlled by{" "}
+                          <span className="font-mono">RETELL_AGENT_ID</span> only if configured.
+                          Webhook event:{" "}
+                          <span className="font-mono">call_analyzed</span>.
                         </p>
-                        <div className="mt-3 flex items-center gap-2">
-                          <code className="flex-1 rounded-lg bg-muted/60 px-3 py-2 text-[11px] font-mono text-foreground break-all">
-                            https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook
-                          </code>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="h-8 gap-1.5 rounded-lg shrink-0"
-                            onClick={() => {
-                              navigator.clipboard.writeText("https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook");
-                              // Use a simple toast-like approach or just rely on visual feedback
-                            }}
-                          >
-                            <Copy className="size-3.5" /> Copy
-                          </Button>
-                        </div>
+                        {retellWebhookUrl ? (
+                          <>
+                            <div className="mt-3 flex items-center gap-2">
+                              <code className="flex-1 rounded-lg bg-muted/60 px-3 py-2 text-[11px] font-mono text-foreground break-all">
+                                {retellWebhookUrl}
+                              </code>
+                              <Button size="sm" variant="secondary" className="h-8 gap-1.5 rounded-lg shrink-0"
+                                onClick={() => { navigator.clipboard.writeText(retellWebhookUrl); toast.success("URL copied"); }}>
+                                <Copy className="size-3.5" /> Copy
+                              </Button>
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <code className="flex-1 rounded-lg bg-muted/60 px-3 py-2 text-[11px] font-mono text-foreground break-all">
+                                {genericWebhookUrl}
+                              </code>
+                              <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg shrink-0"
+                                onClick={() => { navigator.clipboard.writeText(genericWebhookUrl!); toast.success("URL copied"); }}>
+                                <Copy className="size-3.5" /> Copy
+                              </Button>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="mt-3 text-xs text-amber-600">
+                            Use your Supabase Functions URL from project settings and
+                            append <span className="font-mono">/retell-webhook</span> or{" "}
+                            <span className="font-mono">/integration-webhook?integration=retell</span>.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </Card>
-                  <Card className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-5 text-center">
-                    <Plug className="mx-auto mb-2 size-5 text-muted-foreground" />
-                    <div className="text-sm font-medium">Additional webhooks</div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Add more webhooks to receive real-time events from Retell.
-                    </p>
-                    <Button size="sm" className="mt-3 h-8 rounded-xl">
-                      Add webhook
-                    </Button>
+                )}
+                {integrationWebhookEvents.length > 0 ? (
+                  <Card className="rounded-2xl border-border/60 p-4">
+                    <div className="mb-2 text-sm font-medium">Recent webhook events</div>
+                    <div className="space-y-1.5">
+                      {integrationWebhookEvents.slice(0, 10).map((e) => (
+                        <div key={e.id} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2 text-xs">
+                          <div>
+                            <div className="text-foreground">{e.event_type ?? "(no type)"}</div>
+                            <div className="text-muted-foreground">{new Date(e.received_at).toLocaleString()}</div>
+                          </div>
+                          <Badge variant="secondary" className="rounded-full text-[10px]">
+                            {e.verification_status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
                   </Card>
-                </div>
-              ) : (
-                <Card className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
-                  <Plug className="mx-auto mb-2 size-5 text-muted-foreground" />
-                  <div className="text-sm font-medium">No webhooks configured</div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Add a webhook to receive real-time events from {integration.name}.
-                  </p>
-                  <Button size="sm" className="mt-3 h-8 rounded-xl">
-                    Add webhook
-                  </Button>
-                </Card>
-              )}
+                ) : (
+                  <Card className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
+                    <Plug className="mx-auto mb-2 size-5 text-muted-foreground" />
+                    <div className="text-sm font-medium">No webhook events received yet</div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Once your provider sends an event to the URL above, it will appear here.
+                    </p>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="advanced" className="mt-6 space-y-3">
@@ -931,6 +1034,40 @@ export default function Integrations() {
   const [selected, setSelected] = useState<Integration | null>(null);
   const [marketplaceOpen, setMarketplaceOpen] = useState(false);
 
+  // Backend data (real integration_* tables).
+  const [connections, setConnections] = useState<IntegrationConnectionRow[]>([]);
+  const [syncRuns, setSyncRuns] = useState<IntegrationSyncRunRow[]>([]);
+  const [webhookEvents, setWebhookEvents] = useState<IntegrationWebhookEventRow[]>([]);
+  const [oauthConnections, setOauthConnections] = useState<OAuthConnectionRow[]>([]);
+  const [backendLoading, setBackendLoading] = useState(true);
+  const [backendReachable, setBackendReachable] = useState(true);
+
+  async function loadBackend() {
+    setBackendLoading(true);
+    try {
+      const [cat, conns, runs, events, oauth] = await Promise.all([
+        listIntegrationCatalog(),
+        listIntegrationConnections(),
+        listIntegrationSyncRuns(undefined, 100),
+        listIntegrationWebhookEvents(undefined, 100),
+        listUserOAuthConnections(),
+      ]);
+      setConnections(conns);
+      setSyncRuns(runs);
+      setWebhookEvents(events);
+      setOauthConnections(oauth);
+      setBackendReachable(cat.length > 0 || conns.length > 0);
+    } catch (e) {
+      setBackendReachable(false);
+    } finally {
+      setBackendLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadBackend();
+  }, []);
+
   const list = useMemo(() => {
     return INTEGRATIONS.map((i) => ({ ...i, enabled: enabledMap[i.id] ?? i.enabled }));
   }, [enabledMap]);
@@ -970,14 +1107,40 @@ export default function Integrations() {
     return map;
   }, [filtered]);
 
-  const totals = useMemo(() => {
-    const connected = list.filter(
-      (i) => i.status === "connected" || i.status === "syncing",
+  const backendStats = useMemo(() => {
+    const connected = connections.filter((c) => c.status === "connected").length;
+    const needsAttention = connections.filter((c) =>
+      ["needs_attention", "error", "not_configured"].includes(c.status),
     ).length;
-    const syncing = list.filter((i) => i.status === "syncing").length;
-    const failed = list.filter((i) => i.status === "error").length;
-    return { connected, syncing, failed };
-  }, [list]);
+    const recentFailures = syncRuns.filter((r) =>
+      ["error", "failed"].includes(r.status),
+    ).length;
+    const lastEvent = [...webhookEvents]
+      .sort((a, b) => +new Date(b.received_at) - +new Date(a.received_at))[0]
+      ?.received_at;
+    const ms365Users = oauthConnections.filter(
+      (o) => o.integration_id === "ms365" && o.status === "connected",
+    ).length;
+    return {
+      configured: connections.length,
+      connected,
+      needsAttention,
+      recentFailures,
+      webhookEvents: webhookEvents.length,
+      ms365Users,
+      lastEvent,
+    };
+  }, [connections, syncRuns, webhookEvents, oauthConnections]);
+
+  const connectionByIntegration = useMemo(() => {
+    const m = new Map<string, IntegrationConnectionRow>();
+    for (const c of connections) {
+      if (c.environment === "production" || !m.has(c.integration_id)) {
+        m.set(c.integration_id, c);
+      }
+    }
+    return m;
+  }, [connections]);
 
   return (
     <div className="min-h-full bg-background">
@@ -1028,46 +1191,61 @@ export default function Integrations() {
           </div>
         </div>
 
-        {/* System status bar */}
+        {/* System status bar — honest, derived from real backend tables only. */}
         <Card className="mt-8 rounded-2xl border-border/70 bg-card/60 p-5">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-              </span>
-              <span className="text-sm font-medium">All systems operational</span>
+              {backendLoading ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Loading integration backend…</span>
+                </>
+              ) : !backendReachable ? (
+                <>
+                  <AlertTriangle className="size-3.5 text-amber-500" />
+                  <span className="text-sm font-medium">Integration backend tables not reachable yet</span>
+                </>
+              ) : backendStats.connected === 0 ? (
+                <>
+                  <span className="size-2 rounded-full bg-muted-foreground/40" />
+                  <span className="text-sm font-medium">Integration backend ready · no live connections yet</span>
+                </>
+              ) : (
+                <>
+                  <span className="size-2 rounded-full bg-emerald-500" />
+                  <span className="text-sm font-medium">
+                    {backendStats.connected} of {backendStats.configured} integrations connected
+                  </span>
+                </>
+              )}
             </div>
-            <span className="text-xs text-muted-foreground">
-              Last full sync · 4 min ago
-            </span>
+            <Button size="sm" variant="ghost" className="h-8 gap-1.5" onClick={loadBackend} disabled={backendLoading}>
+              <RefreshCw className={cn("size-3.5", backendLoading && "animate-spin")} /> Refresh
+            </Button>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-            <HealthStat
-              icon={Plug}
-              label="Connected systems"
-              value={`${totals.connected} of ${list.length}`}
-            />
-            <HealthStat
-              icon={Loader2}
-              label="Active syncs"
-              value={`${totals.syncing} running`}
-              tone="neutral"
-            />
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+            <HealthStat icon={Plug} label="Configured connections" value={`${backendStats.configured}`} />
+            <HealthStat icon={CheckCircle2} label="Connected" value={`${backendStats.connected}`} tone="healthy" />
             <HealthStat
               icon={AlertTriangle}
-              label="Failed syncs"
-              value={`${totals.failed} today`}
-              tone={totals.failed ? "critical" : "healthy"}
+              label="Needs attention"
+              value={`${backendStats.needsAttention}`}
+              tone={backendStats.needsAttention ? "warning" : "healthy"}
             />
-            <HealthStat icon={Activity} label="API usage" value="42% / month" />
-            <HealthStat icon={Zap} label="Queue health" value="Healthy" />
-            <HealthStat icon={Brain} label="AI services" value="6 online" />
-            <HealthStat icon={Workflow} label="Background jobs" value="118 running" />
-            <HealthStat icon={Gauge} label="Webhook activity" value="2.3k / hr" />
-            <HealthStat icon={ShieldCheck} label="Security" value="MFA enforced" />
-            <HealthStat icon={RefreshCw} label="Last full sync" value="4 min ago" />
+            <HealthStat
+              icon={Activity}
+              label="Recent sync failures"
+              value={`${backendStats.recentFailures}`}
+              tone={backendStats.recentFailures ? "critical" : "healthy"}
+            />
+            <HealthStat icon={Workflow} label="Webhook events" value={`${backendStats.webhookEvents}`} tone="neutral" />
+            <HealthStat icon={Users} label="Outlook users connected" value={`${backendStats.ms365Users}`} tone="neutral" />
           </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            {backendStats.lastEvent
+              ? `Last backend event · ${new Date(backendStats.lastEvent).toLocaleString()}`
+              : "No webhook events received yet · static cards below show registry metadata only"}
+          </p>
         </Card>
 
         {/* Search & filters */}
@@ -1171,6 +1349,10 @@ export default function Integrations() {
         integration={selected}
         open={!!selected}
         onOpenChange={(v) => !v && setSelected(null)}
+        syncRuns={syncRuns}
+        webhookEvents={webhookEvents}
+        connection={selected ? connectionByIntegration.get(selected.id) ?? null : null}
+        onRefresh={loadBackend}
       />
       <MarketplaceDialog open={marketplaceOpen} onOpenChange={setMarketplaceOpen} />
     </div>
