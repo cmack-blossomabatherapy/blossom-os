@@ -1,8 +1,9 @@
 // Generic integration sync runner.
-// Admin-only. Records every attempt to `integration_sync_runs`.
-// For most providers this returns a `not_implemented` run; Retell is wired
-// to share logic with the existing retell-sync function via direct invoke.
+// Admin-only. Delegates to provider adapters. Adapters report honest
+// pending/failed status when a vendor endpoint or extra env var is required;
+// no required provider returns a generic unimplemented sentinel anymore.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { getAdapter } from "../_shared/integrations/providerRegistry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,53 +88,32 @@ Deno.serve(async (req) => {
       .eq("id", runId);
   };
 
-  // Retell: delegate to existing retell-sync function.
-  if (integrationId === "retell") {
-    try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/retell-sync`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${SERVICE_ROLE}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        await finish("failed", {}, data?.error ?? `HTTP ${res.status}`);
-        return json({ ok: false, runId, message: data?.error });
-      }
-      await finish("success", {
-        received: data?.fetched ?? 0,
-        created: data?.inserted ?? 0,
-      });
-      return json({ ok: true, runId, delegated: "retell-sync", data });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      await finish("failed", {}, msg);
-      return json({ ok: false, runId, message: msg }, 500);
-    }
+  const adapter = getAdapter(integrationId);
+  if (!adapter) {
+    await finish("failed", {}, "no_adapter_registered");
+    return json({ ok: false, runId, status: "failed", message: `No provider adapter registered for ${integrationId}.` });
   }
 
-  // Resend: report-only. Do not rebuild — surface existing health signal.
-  if (integrationId === "resend") {
-    const ok = Boolean(Deno.env.get("RESEND_API_KEY"));
-    await finish(ok ? "success" : "failed", {}, ok ? undefined : "RESEND_API_KEY missing");
-    return json({
-      ok,
-      runId,
-      message: ok
-        ? "Resend is in production for invites/welcome/MFA. No incremental sync required."
-        : "RESEND_API_KEY not configured",
-    });
+  try {
+    const result = await adapter.sync(
+      { supabase, runId },
+      {
+        mode: body?.mode,
+        since: body?.since,
+        limit: body?.limit,
+        dryRun: Boolean(body?.dryRun),
+      },
+    );
+    await finish(result.status, {
+      received: result.received,
+      created: result.created,
+      updated: result.updated,
+      failed: result.failed,
+    }, result.ok ? undefined : result.message);
+    return json({ ok: result.ok, runId, status: result.status, message: result.message, details: result.details ?? null });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    await finish("failed", {}, msg);
+    return json({ ok: false, runId, status: "failed", message: msg }, 500);
   }
-
-  // Default: not yet implemented.
-  await finish("failed", {}, "Provider sync adapter not implemented in Pass 1");
-  return json({
-    ok: false,
-    runId,
-    status: "not_implemented",
-    message: `Sync adapter for ${integrationId} is not implemented in Pass 1.`,
-  });
 });

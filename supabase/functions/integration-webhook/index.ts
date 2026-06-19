@@ -6,6 +6,8 @@
 //
 // Routing: POST /integration-webhook?integration=<id>  OR  body.integration_id
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { getAdapter } from "../_shared/integrations/providerRegistry.ts";
+import { upsertNormalizedRecord, recordIntegrationEvent } from "../_shared/integrations/normalizers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -146,18 +148,49 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Normalize to integration_events only when verified, or when no secret is
-  // configured (setup phase) AND we have a recognizable event shape.
-  if (eventType && verification !== "failed") {
-    await supabase.from("integration_events").insert({
-      integration_id: integrationId,
-      source_event_id: inserted.id,
-      event_type: eventType,
-      title: `${integrationId}: ${eventType}`,
-      description: providerEventId ? `Provider event ${providerEventId}` : null,
-      metadata: parsed,
-    });
+  // Pass 4: hand the (verified or unverified-when-no-secret-configured)
+  // payload to the provider adapter for normalization. Adapter failures must
+  // not lose the raw event — we mark processing_status accordingly.
+  const adapter = getAdapter(integrationId);
+  let processingStatus = "received";
+  let normalizationError: string | null = null;
+  try {
+    if (adapter) {
+      const headerMap: Record<string, string> = {};
+      req.headers.forEach((v, k) => { headerMap[k] = v; });
+      const norm = adapter.normalizeWebhook(parsed, headerMap);
+      const ctx = { supabase, rawEventId: inserted.id };
+      await recordIntegrationEvent(ctx, integrationId, {
+        eventType: norm.eventType ?? eventType ?? "unknown",
+        title: norm.title ?? `${integrationId}: ${norm.eventType ?? eventType ?? "unknown"}`,
+        description: norm.description ?? (providerEventId ? `Provider event ${providerEventId}` : null),
+        metadata: norm.metadata,
+      });
+      if (norm.record) {
+        const up = await upsertNormalizedRecord(ctx, integrationId, norm.record);
+        if (!up.ok) {
+          processingStatus = "failed";
+          normalizationError = up.error ?? "normalize_failed";
+        } else {
+          processingStatus = "normalized";
+        }
+      } else {
+        processingStatus = "normalized_unknown";
+      }
+    }
+  } catch (e) {
+    processingStatus = "failed";
+    normalizationError = e instanceof Error ? e.message : String(e);
   }
 
-  return json({ ok: true, id: inserted.id, verification, details: { requiresSecret } });
+  await supabase
+    .from("integration_webhook_events")
+    .update({
+      processing_status: processingStatus,
+      processed_at: new Date().toISOString(),
+      error_message: normalizationError,
+    })
+    .eq("id", inserted.id);
+
+  return json({ ok: true, id: inserted.id, verification, processingStatus, details: { requiresSecret } });
 });

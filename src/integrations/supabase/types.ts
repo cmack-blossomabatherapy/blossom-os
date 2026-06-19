@@ -6693,6 +6693,88 @@ export type Database = {
           },
         ]
       }
+      integration_normalized_records: {
+        Row: {
+          created_at: string
+          display_title: string | null
+          external_url: string | null
+          id: string
+          integration_id: string
+          metadata: Json
+          occurred_at: string | null
+          person_email: string | null
+          person_name: string | null
+          person_phone: string | null
+          provider_record_id: string | null
+          raw_event_id: string | null
+          record_kind: string
+          record_status: string | null
+          source_label: string | null
+          sync_run_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_title?: string | null
+          external_url?: string | null
+          id?: string
+          integration_id: string
+          metadata?: Json
+          occurred_at?: string | null
+          person_email?: string | null
+          person_name?: string | null
+          person_phone?: string | null
+          provider_record_id?: string | null
+          raw_event_id?: string | null
+          record_kind: string
+          record_status?: string | null
+          source_label?: string | null
+          sync_run_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_title?: string | null
+          external_url?: string | null
+          id?: string
+          integration_id?: string
+          metadata?: Json
+          occurred_at?: string | null
+          person_email?: string | null
+          person_name?: string | null
+          person_phone?: string | null
+          provider_record_id?: string | null
+          raw_event_id?: string | null
+          record_kind?: string
+          record_status?: string | null
+          source_label?: string | null
+          sync_run_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_normalized_records_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integration_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_normalized_records_raw_event_id_fkey"
+            columns: ["raw_event_id"]
+            isOneToOne: false
+            referencedRelation: "integration_webhook_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_normalized_records_sync_run_id_fkey"
+            columns: ["sync_run_id"]
+            isOneToOne: false
+            referencedRelation: "integration_sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_oauth_connections: {
         Row: {
           created_at: string
