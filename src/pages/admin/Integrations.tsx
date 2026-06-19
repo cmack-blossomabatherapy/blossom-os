@@ -480,23 +480,52 @@ function IntegrationDrawer({
   integration,
   open,
   onOpenChange,
+  syncRuns,
+  webhookEvents,
+  connection,
+  onRefresh,
 }: {
   integration: Integration | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  syncRuns: IntegrationSyncRunRow[];
+  webhookEvents: IntegrationWebhookEventRow[];
+  connection: IntegrationConnectionRow | null;
+  onRefresh: () => void;
 }) {
   if (!integration) return null;
   const Icon = integration.icon;
 
-  // Sample data — backend wiring in Pass 1. Real per-integration runs
-  // come from `integration_sync_runs` via `listIntegrationSyncRuns()`.
-  const syncTimeline = [
-    { time: "Just now", label: "Pull · clients", count: 312, ok: true },
-    { time: "8 min ago", label: "Push · appointments", count: 47, ok: true },
-    { time: "21 min ago", label: "Pull · authorizations", count: 96, ok: true },
-    { time: "1 hr ago", label: "Push · session notes", count: 12, ok: false },
-    { time: "3 hrs ago", label: "Pull · staff roster", count: 184, ok: true },
-  ];
+  const [testing, setTesting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const integrationSyncRuns = syncRuns.filter((r) => r.integration_id === integration.id);
+  const integrationWebhookEvents = webhookEvents.filter((e) => e.integration_id === integration.id);
+
+  async function handleTest() {
+    setTesting(true);
+    const res = await testIntegrationConnection(integration.id);
+    setTesting(false);
+    if (res.ok) toast.success(`${integration.name}: ${res.message}`);
+    else toast.error(`${integration.name}: ${res.message}`);
+    onRefresh();
+  }
+  async function handleSync() {
+    setSyncing(true);
+    const res = await runIntegrationSync(integration.id);
+    setSyncing(false);
+    if (res.ok) toast.success(`${integration.name}: sync queued`);
+    else toast.error(`${integration.name}: ${res.message ?? "sync failed"}`);
+    onRefresh();
+  }
+
+  const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
+  const retellWebhookUrl = supabaseUrl
+    ? `${supabaseUrl.replace(".supabase.co", ".functions.supabase.co")}/retell-webhook`
+    : null;
+  const genericWebhookUrl = supabaseUrl
+    ? `${supabaseUrl.replace(".supabase.co", ".functions.supabase.co")}/integration-webhook?integration=${integration.id}`
+    : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -530,14 +559,13 @@ function IntegrationDrawer({
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Button size="sm" className="h-9 gap-1.5 rounded-xl">
-              <RefreshCw className="size-3.5" strokeWidth={2} /> Sync now
+            <Button size="sm" className="h-9 gap-1.5 rounded-xl" onClick={handleSync} disabled={syncing}>
+              {syncing ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" strokeWidth={2} />}
+              Run sync
             </Button>
-            <Button size="sm" variant="secondary" className="h-9 gap-1.5 rounded-xl">
-              <Play className="size-3.5" /> Test connection
-            </Button>
-            <Button size="sm" variant="ghost" className="h-9 gap-1.5 rounded-xl">
-              <FileText className="size-3.5" /> View logs
+            <Button size="sm" variant="secondary" className="h-9 gap-1.5 rounded-xl" onClick={handleTest} disabled={testing}>
+              {testing ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
+              Test connection
             </Button>
           </div>
         </SheetHeader>
@@ -567,15 +595,35 @@ function IntegrationDrawer({
 
             <TabsContent value="overview" className="mt-6 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <HealthStat icon={Gauge} label="Health" value="Healthy" />
+                <HealthStat icon={Gauge} label="Backend status" value={connection?.status ?? "no_connection_row"} />
                 <HealthStat
                   icon={RefreshCw}
-                  label="Last sync"
-                  value={integration.lastSync ?? "—"}
+                  label="Last success"
+                  value={connection?.last_success_at ? new Date(connection.last_success_at).toLocaleString() : "—"}
                 />
-                <HealthStat icon={Activity} label="API usage" value="38% of monthly" />
-                <HealthStat icon={AlertTriangle} label="Failures (24h)" value="0" />
+                <HealthStat icon={Activity} label="Sync runs" value={`${integrationSyncRuns.length} recent`} />
+                <HealthStat
+                  icon={AlertTriangle}
+                  label="Last error"
+                  value={connection?.last_error ?? "None"}
+                  tone={connection?.last_error ? "warning" : "healthy"}
+                />
               </div>
+              {connection && (
+                <Card className="rounded-2xl border-border/60 p-4 space-y-2">
+                  <div className="text-sm font-medium">Required secrets</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(connection.secret_names ?? []).map((s) => (
+                      <Badge key={s} variant="secondary" className="rounded-full text-[10px] font-mono">
+                        {s}
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Names only — secret values are never shown in the browser.
+                  </p>
+                </Card>
+              )}
               <Card className="rounded-2xl border-border/60 bg-muted/30 p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -684,28 +732,45 @@ function IntegrationDrawer({
 
             <TabsContent value="activity" className="mt-6">
               <div className="space-y-2">
-                {syncTimeline.map((t, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={cn(
-                          "size-1.5 rounded-full",
-                          t.ok ? "bg-emerald-500" : "bg-rose-500",
-                        )}
-                      />
-                      <div>
-                        <div className="text-sm text-foreground">{t.label}</div>
-                        <div className="text-xs text-muted-foreground">{t.time}</div>
+                {integrationSyncRuns.length === 0 ? (
+                  <Card className="rounded-2xl border-dashed border-border/70 bg-muted/20 p-6 text-center">
+                    <RefreshCw className="mx-auto mb-2 size-5 text-muted-foreground" />
+                    <div className="text-sm font-medium">No sync runs yet</div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Click <strong>Run sync</strong> to record the first attempt.
+                    </p>
+                  </Card>
+                ) : (
+                  integrationSyncRuns.map((r) => {
+                    const ok = r.status === "success" || r.status === "completed";
+                    return (
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 px-4 py-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={cn("size-1.5 rounded-full", ok ? "bg-emerald-500" : r.status === "error" || r.status === "failed" ? "bg-rose-500" : "bg-amber-500")} />
+                          <div>
+                            <div className="text-sm text-foreground">
+                              {r.run_type} · {r.direction} · {r.status}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(r.started_at).toLocaleString()}
+                            </div>
+                            {r.error_message && (
+                              <div className="mt-1 text-[11px] text-rose-500">
+                                {r.error_message}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {r.records_received} in · {r.records_created + r.records_updated} written
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {t.count} records
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })
+                )}
               </div>
             </TabsContent>
 
