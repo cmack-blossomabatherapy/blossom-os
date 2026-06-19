@@ -245,7 +245,7 @@ export default function MfaVerify() {
             </Button>
           )}
 
-          <div className="flex justify-center">
+          <div className="flex justify-center py-2">
             <InputOTP
               maxLength={6}
               value={code}
@@ -255,7 +255,7 @@ export default function MfaVerify() {
             >
               <InputOTPGroup>
                 {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <InputOTPSlot key={i} index={i} className="h-12 w-11 text-lg" />
+                  <InputOTPSlot key={i} index={i} />
                 ))}
               </InputOTPGroup>
             </InputOTP>
