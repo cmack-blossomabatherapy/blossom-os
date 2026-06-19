@@ -61,7 +61,9 @@ export function RBTRetentionSection({ compact = false }: { compact?: boolean }) 
                   </li>
                 ))}
                 {items.length === 0 && (
-                  <li className="text-xs text-muted-foreground italic">Coming soon.</li>
+                  <li className="text-xs text-muted-foreground italic">
+                    Ask your Lead RBT — they'll point you to the latest version.
+                  </li>
                 )}
               </ul>
             </div>
