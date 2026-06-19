@@ -78,6 +78,12 @@ import { Heart } from "lucide-react";
 import { LayoutDashboard } from "lucide-react";
 import { ResourceAttachmentManager } from "@/components/training/ResourceAttachmentManager";
 import {
+  JourneyMetaEditor,
+  ModuleEditDialog,
+  CreateModuleDialogReal,
+  CreateJourneyDialogReal,
+} from "@/components/training/management/JourneyEditors";
+import {
   SDLaunchReadinessPanel,
   SDDayOneAdminGuide,
   SDMentorCheckInGuide,
