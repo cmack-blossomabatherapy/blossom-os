@@ -185,3 +185,23 @@ export async function runIntegrationSync(
   if (error) return { ok: false, message: error.message };
   return data as { ok: boolean; runId?: string; message?: string };
 }
+
+export async function probeOutlookConnection(): Promise<{
+  ok: boolean;
+  status?: string;
+  provider_email?: string;
+  display_name?: string;
+  scopes?: string[];
+  expires_at?: string | null;
+  error?: string;
+}> {
+  const { data, error } = await (supabase as any).functions.invoke("microsoft-graph-probe", { body: {} });
+  if (error) return { ok: false, error: error.message };
+  return data as any;
+}
+
+export async function startOutlookOAuth(): Promise<{ url?: string; error?: string }> {
+  const { data, error } = await (supabase as any).functions.invoke("microsoft-oauth-start", { body: {} });
+  if (error) return { error: error.message };
+  return data as any;
+}
