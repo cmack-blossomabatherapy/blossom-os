@@ -515,6 +515,7 @@ export default function TrainingManagementCenter() {
           {nav === "onboarding" && <OnboardingView />}
           {nav === "sops" && <SopsList />}
           {nav === "resources" && <ResourceLibraryView />}
+          {nav === "attachments" && <ResourceAttachmentManager />}
           {nav === "assignments" && <AssignmentsTable />}
           {nav === "categories" && <CategoriesGrid modules={allModules} />}
           {nav === "drafts" && (
