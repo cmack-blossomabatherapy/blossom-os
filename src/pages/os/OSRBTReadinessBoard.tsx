@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   ChevronRight, ShieldCheck, AlertTriangle, Compass, UserCircle2,
   ClipboardCheck, FileText, Search, ArrowRight, CircleDot,
+  ClipboardList, ChevronDown,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,9 @@ import {
   useTrainees, summarize, READINESS_TONE,
   type ReadinessStatus,
 } from "@/lib/training/rbtReadiness";
+import { CompetencyPanel } from "@/components/training/CompetencyPanel";
+import { validateCompetency, getCompetencyRecord } from "@/lib/training/rbtCompetency";
+import { RBT_PATHS } from "@/lib/training/rbtAcademy";
 
 const STATUS_ORDER: ReadinessStatus[] = [
   "Blocked",
@@ -28,6 +32,7 @@ export default function OSRBTReadinessBoard() {
   const [query, setQuery] = useState("");
   const [state, setState] = useState<(typeof STATE_CHIPS)[number]>("All");
   const [status, setStatus] = useState<ReadinessStatus | "All">("All");
+  const [expandedCompetency, setExpandedCompetency] = useState<string | null>(null);
 
   const rows = useMemo(() => {
     return trainees.map((t) => ({ t, s: summarize(t) }))
@@ -57,6 +62,26 @@ export default function OSRBTReadinessBoard() {
     };
     trainees.forEach((t) => { acc[summarize(t).status]++; });
     return acc;
+  }, [trainees]);
+
+  const rollUp = useMemo(() => {
+    const perTrack: Record<string, { label: string; count: number; ready: number; competencyIncomplete: number }> = {};
+    for (const p of RBT_PATHS) {
+      perTrack[p.id] = { label: p.label, count: 0, ready: 0, competencyIncomplete: 0 };
+    }
+    let competencyIncompleteAll = 0;
+    for (const t of trainees) {
+      const slot = perTrack[t.pathId];
+      if (!slot) continue;
+      slot.count += 1;
+      const s = summarize(t);
+      if (s.independentReady) slot.ready += 1;
+      if (t.pathId === "not_certified") {
+        const v = validateCompetency(getCompetencyRecord(t.id, t.pathId));
+        if (!v.ok) { slot.competencyIncomplete += 1; competencyIncompleteAll += 1; }
+      }
+    }
+    return { perTrack, competencyIncompleteAll };
   }, [trainees]);
 
   return (
@@ -92,6 +117,37 @@ export default function OSRBTReadinessBoard() {
             ))}
           </div>
         </header>
+
+        {/* Roll-up by RBT track */}
+        <section className="rounded-2xl border border-border/70 bg-card p-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">RBT roll-up</p>
+              <h2 className="mt-0.5 text-base font-semibold tracking-tight">By experience track</h2>
+            </div>
+            <Link
+              to="/academy/path/rbt"
+              className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-card px-3 py-1.5 text-[12px] font-medium hover:bg-muted"
+            >
+              Open RBT journey <ArrowRight className="size-3.5" />
+            </Link>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {Object.entries(rollUp.perTrack).map(([id, slot]) => (
+              <Link
+                key={id}
+                to={`/academy/path/rbt?track=${id}`}
+                className="rounded-xl border border-border/60 bg-muted/30 p-3 transition hover:border-border hover:bg-muted/60"
+              >
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{slot.label}</p>
+                <p className="mt-1 text-lg font-semibold">{slot.count}</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {slot.ready} ready · {slot.competencyIncomplete} competency open
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
@@ -186,13 +242,35 @@ export default function OSRBTReadinessBoard() {
                       ? "Cleared by all required roles — Scheduling may assign independently."
                       : "Scheduling: do not treat as independently ready until all required signoffs are complete."}
                   </p>
-                  <Link
-                    to="/rbt/training-academy"
-                    className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-card px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted"
-                  >
-                    Open path <ArrowRight className="size-3.5" />
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {t.pathId === "not_certified" && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedCompetency(expandedCompetency === t.id ? null : t.id)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-card px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted"
+                      >
+                        <ClipboardList className="size-3.5" />
+                        {expandedCompetency === t.id ? "Hide competency" : "Open competency"}
+                        <ChevronDown className={cn("size-3.5 transition", expandedCompetency === t.id && "rotate-180")} />
+                      </button>
+                    )}
+                    <Link
+                      to={`/academy/path/rbt?track=${t.pathId}`}
+                      className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-card px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted"
+                    >
+                      Open path <ArrowRight className="size-3.5" />
+                    </Link>
+                  </div>
                 </div>
+
+                {expandedCompetency === t.id && t.pathId === "not_certified" && (
+                  <div className="mt-5 border-t border-border/60 pt-5">
+                    <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      Initial Competency Assessment (2026 BACB)
+                    </p>
+                    <CompetencyPanel traineeId={t.id} trackId={t.pathId} />
+                  </div>
+                )}
               </article>
             ))
           )}
