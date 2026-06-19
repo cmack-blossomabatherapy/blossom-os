@@ -1191,46 +1191,61 @@ export default function Integrations() {
           </div>
         </div>
 
-        {/* System status bar */}
+        {/* System status bar — honest, derived from real backend tables only. */}
         <Card className="mt-8 rounded-2xl border-border/70 bg-card/60 p-5">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-              </span>
-              <span className="text-sm font-medium">All systems operational</span>
+              {backendLoading ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Loading integration backend…</span>
+                </>
+              ) : !backendReachable ? (
+                <>
+                  <AlertTriangle className="size-3.5 text-amber-500" />
+                  <span className="text-sm font-medium">Integration backend tables not reachable yet</span>
+                </>
+              ) : backendStats.connected === 0 ? (
+                <>
+                  <span className="size-2 rounded-full bg-muted-foreground/40" />
+                  <span className="text-sm font-medium">Integration backend ready · no live connections yet</span>
+                </>
+              ) : (
+                <>
+                  <span className="size-2 rounded-full bg-emerald-500" />
+                  <span className="text-sm font-medium">
+                    {backendStats.connected} of {backendStats.configured} integrations connected
+                  </span>
+                </>
+              )}
             </div>
-            <span className="text-xs text-muted-foreground">
-              Last full sync · 4 min ago
-            </span>
+            <Button size="sm" variant="ghost" className="h-8 gap-1.5" onClick={loadBackend} disabled={backendLoading}>
+              <RefreshCw className={cn("size-3.5", backendLoading && "animate-spin")} /> Refresh
+            </Button>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-            <HealthStat
-              icon={Plug}
-              label="Connected systems"
-              value={`${totals.connected} of ${list.length}`}
-            />
-            <HealthStat
-              icon={Loader2}
-              label="Active syncs"
-              value={`${totals.syncing} running`}
-              tone="neutral"
-            />
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+            <HealthStat icon={Plug} label="Configured connections" value={`${backendStats.configured}`} />
+            <HealthStat icon={CheckCircle2} label="Connected" value={`${backendStats.connected}`} tone="healthy" />
             <HealthStat
               icon={AlertTriangle}
-              label="Failed syncs"
-              value={`${totals.failed} today`}
-              tone={totals.failed ? "critical" : "healthy"}
+              label="Needs attention"
+              value={`${backendStats.needsAttention}`}
+              tone={backendStats.needsAttention ? "warning" : "healthy"}
             />
-            <HealthStat icon={Activity} label="API usage" value="42% / month" />
-            <HealthStat icon={Zap} label="Queue health" value="Healthy" />
-            <HealthStat icon={Brain} label="AI services" value="6 online" />
-            <HealthStat icon={Workflow} label="Background jobs" value="118 running" />
-            <HealthStat icon={Gauge} label="Webhook activity" value="2.3k / hr" />
-            <HealthStat icon={ShieldCheck} label="Security" value="MFA enforced" />
-            <HealthStat icon={RefreshCw} label="Last full sync" value="4 min ago" />
+            <HealthStat
+              icon={Activity}
+              label="Recent sync failures"
+              value={`${backendStats.recentFailures}`}
+              tone={backendStats.recentFailures ? "critical" : "healthy"}
+            />
+            <HealthStat icon={Workflow} label="Webhook events" value={`${backendStats.webhookEvents}`} tone="neutral" />
+            <HealthStat icon={Users} label="Outlook users connected" value={`${backendStats.ms365Users}`} tone="neutral" />
           </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            {backendStats.lastEvent
+              ? `Last backend event · ${new Date(backendStats.lastEvent).toLocaleString()}`
+              : "No webhook events received yet · static cards below show registry metadata only"}
+          </p>
         </Card>
 
         {/* Search & filters */}
@@ -1334,6 +1349,10 @@ export default function Integrations() {
         integration={selected}
         open={!!selected}
         onOpenChange={(v) => !v && setSelected(null)}
+        syncRuns={syncRuns}
+        webhookEvents={webhookEvents}
+        connection={selected ? connectionByIntegration.get(selected.id) ?? null : null}
+        onRefresh={loadBackend}
       />
       <MarketplaceDialog open={marketplaceOpen} onOpenChange={setMarketplaceOpen} />
     </div>
