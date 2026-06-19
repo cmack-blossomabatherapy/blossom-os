@@ -474,6 +474,8 @@ function IntegrationDrawer({
   if (!integration) return null;
   const Icon = integration.icon;
 
+  // Sample data — backend wiring in Pass 1. Real per-integration runs
+  // come from `integration_sync_runs` via `listIntegrationSyncRuns()`.
   const syncTimeline = [
     { time: "Just now", label: "Pull · clients", count: 312, ok: true },
     { time: "8 min ago", label: "Push · appointments", count: 47, ok: true },
