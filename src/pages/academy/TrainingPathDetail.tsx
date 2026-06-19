@@ -155,10 +155,9 @@ export default function TrainingPathDetail() {
         {!hasContent ? (
           <div className="mt-6 rounded-2xl border border-dashed border-border/70 bg-muted/30 p-8 text-center">
             <FolderOpen className="mx-auto h-7 w-7 text-muted-foreground" />
-            <p className="mt-3 text-sm font-medium">Curriculum coming online for {path.title}</p>
+            <p className="mt-3 text-sm font-medium">No role-specific journey assigned yet</p>
             <p className="mt-1 text-[13px] text-muted-foreground">
-              The {path.audience} journey is code-defined and being mapped into the new LMS shell.
-              In the meantime, related SOPs and resources live in the Resource Library.
+              Related SOPs and resources for {path.audience} live in the Resource Library.
             </p>
             <Link to="/hr/resources" className="mt-4 inline-flex items-center gap-1 text-[12.5px] font-medium text-primary">
               <Library className="h-3.5 w-3.5" /> Open Resource Library
