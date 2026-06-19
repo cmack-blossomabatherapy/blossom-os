@@ -8,7 +8,7 @@
  */
 import {
   Compass, Workflow, Layers, Eye, Calendar, HeartHandshake, ShieldCheck,
-  Award, Stethoscope, Brain,
+  Award, Stethoscope, Brain, FileText,
 } from "lucide-react";
 
 export type LessonKind = "Overview" | "SOP" | "Workflow" | "Tango" | "Checklist" | "Shadowing" | "Knowledge Check";
