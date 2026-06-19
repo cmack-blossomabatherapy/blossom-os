@@ -346,6 +346,9 @@ interface ModuleCtx {
   sopLinks?: { label: string; href: string }[];
   tangos?: { label: string; note: string }[];
   aiPrompts?: string[];
+  trainerNotes?: string;
+  reflectionPrompt?: string;
+  signoffRequired?: string;
 }
 
 function resolveRbt(sourceModuleId: string): ModuleCtx | null {
