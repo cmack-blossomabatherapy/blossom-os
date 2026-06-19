@@ -832,6 +832,15 @@ function JourneyBuilderView({
                   </button>
                   <button
                     type="button"
+                    onClick={() => onEditModule(m.id)}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted"
+                    aria-label="Edit module"
+                    title="Edit module content"
+                  >
+                    <PenSquare className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => {
                       removeModuleFromJourney(journey.id, m.id);
                       toast.success(`Removed "${m.title}" from journey`);
