@@ -609,11 +609,19 @@ export default function TrainingManagementCenter() {
         )}
       </div>
 
-      <AIGenerateDialog open={aiOpen} onOpenChange={setAiOpen} />
+      <AIGenerateDialog
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        onCreated={(t) => setEditingModuleId(t.id)}
+      />
       <CreateModuleDialogReal
         open={createModuleOpen}
-        onOpenChange={setCreateModuleOpen}
+        onOpenChange={(v) => {
+          setCreateModuleOpen(v);
+          if (!v) setCreateModulePrefill(undefined);
+        }}
         journeyId={selectedJourneyId}
+        initial={createModulePrefill}
         onCreated={(t) => {
           // If we're inside a journey, the helper already added it.
           // Open editor for the newly-created module to encourage deep editing.
