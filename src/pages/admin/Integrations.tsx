@@ -801,8 +801,8 @@ function IntegrationDrawer({
             </TabsContent>
 
             <TabsContent value="webhooks" className="mt-6">
-              {integration.id === "retell" ? (
-                <div className="space-y-4">
+              <div className="space-y-4">
+                {integration.id === "retell" && (
                   <Card className="rounded-2xl border border-border/60 bg-card/60 p-5">
                     <div className="flex items-start gap-3">
                       <div className="grid size-10 place-items-center rounded-xl bg-violet-500/10 text-violet-500">
@@ -811,50 +811,74 @@ function IntegrationDrawer({
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-semibold">Retell Webhook URL</div>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          Paste this into Retell → Agent <span className="font-mono">agent_fb8aaca447d2a6c6703d40d77a</span> → Webhook settings. Event: <span className="font-mono">call_analyzed</span>.
+                          Point your Retell agent(s) at either the dedicated
+                          <span className="font-mono"> /retell-webhook </span>
+                          function, or the generic
+                          <span className="font-mono"> /integration-webhook?integration=retell </span>
+                          receiver. Agent filtering is controlled by{" "}
+                          <span className="font-mono">RETELL_AGENT_ID</span> only if configured.
+                          Webhook event:{" "}
+                          <span className="font-mono">call_analyzed</span>.
                         </p>
-                        <div className="mt-3 flex items-center gap-2">
-                          <code className="flex-1 rounded-lg bg-muted/60 px-3 py-2 text-[11px] font-mono text-foreground break-all">
-                            https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook
-                          </code>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="h-8 gap-1.5 rounded-lg shrink-0"
-                            onClick={() => {
-                              navigator.clipboard.writeText("https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook");
-                              // Use a simple toast-like approach or just rely on visual feedback
-                            }}
-                          >
-                            <Copy className="size-3.5" /> Copy
-                          </Button>
-                        </div>
+                        {retellWebhookUrl ? (
+                          <>
+                            <div className="mt-3 flex items-center gap-2">
+                              <code className="flex-1 rounded-lg bg-muted/60 px-3 py-2 text-[11px] font-mono text-foreground break-all">
+                                {retellWebhookUrl}
+                              </code>
+                              <Button size="sm" variant="secondary" className="h-8 gap-1.5 rounded-lg shrink-0"
+                                onClick={() => { navigator.clipboard.writeText(retellWebhookUrl); toast.success("URL copied"); }}>
+                                <Copy className="size-3.5" /> Copy
+                              </Button>
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <code className="flex-1 rounded-lg bg-muted/60 px-3 py-2 text-[11px] font-mono text-foreground break-all">
+                                {genericWebhookUrl}
+                              </code>
+                              <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg shrink-0"
+                                onClick={() => { navigator.clipboard.writeText(genericWebhookUrl!); toast.success("URL copied"); }}>
+                                <Copy className="size-3.5" /> Copy
+                              </Button>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="mt-3 text-xs text-amber-600">
+                            Use your Supabase Functions URL from project settings and
+                            append <span className="font-mono">/retell-webhook</span> or{" "}
+                            <span className="font-mono">/integration-webhook?integration=retell</span>.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </Card>
-                  <Card className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-5 text-center">
-                    <Plug className="mx-auto mb-2 size-5 text-muted-foreground" />
-                    <div className="text-sm font-medium">Additional webhooks</div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Add more webhooks to receive real-time events from Retell.
-                    </p>
-                    <Button size="sm" className="mt-3 h-8 rounded-xl">
-                      Add webhook
-                    </Button>
+                )}
+                {integrationWebhookEvents.length > 0 ? (
+                  <Card className="rounded-2xl border-border/60 p-4">
+                    <div className="mb-2 text-sm font-medium">Recent webhook events</div>
+                    <div className="space-y-1.5">
+                      {integrationWebhookEvents.slice(0, 10).map((e) => (
+                        <div key={e.id} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2 text-xs">
+                          <div>
+                            <div className="text-foreground">{e.event_type ?? "(no type)"}</div>
+                            <div className="text-muted-foreground">{new Date(e.received_at).toLocaleString()}</div>
+                          </div>
+                          <Badge variant="secondary" className="rounded-full text-[10px]">
+                            {e.verification_status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
                   </Card>
-                </div>
-              ) : (
-                <Card className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
-                  <Plug className="mx-auto mb-2 size-5 text-muted-foreground" />
-                  <div className="text-sm font-medium">No webhooks configured</div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Add a webhook to receive real-time events from {integration.name}.
-                  </p>
-                  <Button size="sm" className="mt-3 h-8 rounded-xl">
-                    Add webhook
-                  </Button>
-                </Card>
-              )}
+                ) : (
+                  <Card className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
+                    <Plug className="mx-auto mb-2 size-5 text-muted-foreground" />
+                    <div className="text-sm font-medium">No webhook events received yet</div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Once your provider sends an event to the URL above, it will appear here.
+                    </p>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="advanced" className="mt-6 space-y-3">
