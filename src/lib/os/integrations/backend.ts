@@ -205,3 +205,69 @@ export async function startOutlookOAuth(): Promise<{ authorizeUrl?: string; erro
   if (error) return { error: error.message };
   return data as any;
 }
+
+// ============================================================
+// Pass 4 — normalized records staging
+// ============================================================
+export interface IntegrationNormalizedRecordRow {
+  id: string;
+  integration_id: string;
+  provider_record_id: string | null;
+  record_kind: string;
+  record_status: string | null;
+  display_title: string | null;
+  occurred_at: string | null;
+  person_email: string | null;
+  person_phone: string | null;
+  person_name: string | null;
+  external_url: string | null;
+  source_label: string | null;
+  metadata: Record<string, unknown>;
+  raw_event_id: string | null;
+  sync_run_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function listNormalizedRecords(
+  integrationId?: string,
+  limit = 50,
+): Promise<IntegrationNormalizedRecordRow[]> {
+  let q = (supabase as any)
+    .from("integration_normalized_records")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (integrationId) q = q.eq("integration_id", integrationId);
+  const { data, error } = await q;
+  if (error) return [];
+  return (data ?? []) as IntegrationNormalizedRecordRow[];
+}
+
+export async function countNormalizedRecordsByKind(
+  integrationId: string,
+): Promise<Record<string, number>> {
+  const { data, error } = await (supabase as any)
+    .from("integration_normalized_records")
+    .select("record_kind")
+    .eq("integration_id", integrationId)
+    .limit(1000);
+  if (error || !data) return {};
+  const counts: Record<string, number> = {};
+  for (const row of data as { record_kind: string }[]) {
+    counts[row.record_kind] = (counts[row.record_kind] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export async function runMicrosoftCalendarSync(): Promise<{ ok: boolean; received?: number; created?: number; error?: string }> {
+  const { data, error } = await (supabase as any).functions.invoke("microsoft-calendar-sync", { body: {} });
+  if (error) return { ok: false, error: error.message };
+  return data as any;
+}
+
+export async function runMicrosoftMailActivitySync(): Promise<{ ok: boolean; received?: number; created?: number; error?: string }> {
+  const { data, error } = await (supabase as any).functions.invoke("microsoft-mail-activity-sync", { body: {} });
+  if (error) return { ok: false, error: error.message };
+  return data as any;
+}
