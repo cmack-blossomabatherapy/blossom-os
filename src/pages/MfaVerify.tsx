@@ -339,7 +339,7 @@ export default function MfaVerify() {
                 onClick={handlePasskey}
                 disabled={passkeyBusy}
                 aria-label="Use security key instead"
-                className="h-[48px] w-full rounded-xl border-slate-200 bg-white text-[14px] font-medium text-[#0c2340] hover:border-slate-300 hover:bg-slate-50"
+                className="h-[48px] w-full rounded-xl border-slate-200 bg-white text-[14px] font-medium text-[#0c2340] hover:border-slate-300 hover:bg-slate-50 hover:text-[#0c2340]"
               >
                 {passkeyBusy ? (
                   <>
