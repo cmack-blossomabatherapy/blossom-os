@@ -298,7 +298,7 @@ export default function MfaVerify() {
             </div>
           )}
 
-          <p className="text-center text-xs text-slate-500">
+          <p className="text-center text-xs text-slate-400 leading-relaxed">
             Lost your phone? Ask an admin to reset your two-factor at{" "}
             <a
               href="mailto:hr@blossomabatherapy.com?subject=Reset%20my%20Blossom%202FA"
@@ -306,7 +306,6 @@ export default function MfaVerify() {
             >
               hr@blossomabatherapy.com
             </a>
-            .
           </p>
         </form>
       )}
