@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   buildPathJourney, findDay, firstIncompleteModule, moduleStatus,
+  parseAcademyModuleId,
 } from "@/lib/academy/journeyContent";
+import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
 
 /**
  * Day Overview — what the learner will do for a single day inside a journey.
@@ -38,10 +40,18 @@ export default function TrainingPathDayDetail() {
   const next = firstIncompleteModule(day);
   const startHref = next ? journey.runtimeRouteFor(next.id) : journey.runtimeRouteFor(day.modules[0]?.id ?? "");
 
-  // Aggregate resources attached to modules in this day.
-  const dayResources = day.modules.flatMap((m) =>
-    (m.resources ?? []).map((r) => ({ ...r, moduleId: m.id, moduleTitle: m.title })),
-  );
+  // Aggregate resources for this day via the unified resolver
+  // (module-hardcoded + RBT seeded + admin attachments).
+  const dayResources = day.modules.flatMap((m) => {
+    const parsed = parseAcademyModuleId(m.id);
+    return getAcademyResourcesForScope({
+      journeySlug: slug,
+      dayId: day.id,
+      moduleId: m.id,
+      sourceModuleId: parsed.sourceModuleId,
+      moduleResources: m.resources,
+    }).map((r) => ({ ...r, moduleId: m.id, moduleTitle: m.title }));
+  });
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">

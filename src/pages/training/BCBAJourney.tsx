@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils";
 // the BCBA-facing Blossom OS surface. NOT a corporate LMS.
 // =============================================================================
 
-type LessonKind = "Overview" | "SOP" | "Workflow" | "Tango" | "Checklist" | "Shadowing" | "Knowledge Check";
+export type LessonKind = "Overview" | "SOP" | "Workflow" | "Tango" | "Checklist" | "Shadowing" | "Knowledge Check";
 
-interface Lesson {
+export interface Lesson {
   id: string;
   title: string;
   kind: LessonKind;
@@ -31,9 +31,9 @@ interface Lesson {
   summary: string;
 }
 
-type Phase = "Observe" | "Practice" | "Assisted" | "Independent";
+export type Phase = "Observe" | "Practice" | "Assisted" | "Independent";
 
-interface Module {
+export interface Module {
   id: string;
   number: number;
   phase: Phase;
@@ -50,7 +50,7 @@ interface Module {
   knowledgeCheck?: { q: string; a: string };
 }
 
-const modules: Module[] = [
+export const modules: Module[] = [
   {
     id: "m1",
     number: 1,

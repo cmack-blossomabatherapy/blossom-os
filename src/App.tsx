@@ -150,6 +150,7 @@ import OperationsAcademy from "./pages/blossom/OperationsAcademy";
 import TrainingAcademyHome from "./pages/academy/TrainingAcademyHome";
 import TrainingPathDetail from "./pages/academy/TrainingPathDetail";
 import TrainingPathDayDetail from "./pages/academy/TrainingPathDayDetail";
+import TrainingModuleRuntime from "./pages/academy/TrainingModuleRuntime";
 import TrackDetail from "./pages/blossom/TrackDetail";
 import Departments from "./pages/blossom/Departments";
 import DepartmentDetail from "./pages/blossom/DepartmentDetail";
@@ -897,6 +898,7 @@ const App = () => (
                   <Route path="/academy" element={<OSShellPage><TrainingAcademyHome /></OSShellPage>} />
                   <Route path="/academy/path/:slug" element={<OSShellPage><TrainingPathDetail /></OSShellPage>} />
                   <Route path="/academy/path/:slug/day/:dayId" element={<OSShellPage><TrainingPathDayDetail /></OSShellPage>} />
+                  <Route path="/academy/path/:slug/module/:moduleId" element={<OSShellPage><TrainingModuleRuntime /></OSShellPage>} />
                   <Route path="/my-learning" element={<OSShellPage><MyLearning /></OSShellPage>} />
                   <Route path="/catalog" element={<OSShellPage><TrainingCatalog /></OSShellPage>} />
                 </Route>

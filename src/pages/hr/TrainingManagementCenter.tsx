@@ -76,6 +76,7 @@ import { useJourneyOverrides, applyOverridesToPhase } from "@/hooks/useJourneyOv
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { LayoutDashboard } from "lucide-react";
+import { ResourceAttachmentManager } from "@/components/training/ResourceAttachmentManager";
 import {
   SDLaunchReadinessPanel,
   SDDayOneAdminGuide,
@@ -201,6 +202,7 @@ type NavId =
   | "onboarding"
   | "sops"
   | "resources"
+  | "attachments"
   | "assignments"
   | "categories"
   | "drafts"
@@ -214,6 +216,7 @@ const NAV: { id: NavId; label: string; icon: typeof FileText }[] = [
   { id: "onboarding", label: "Welcome to Blossom", icon: Heart },
   { id: "sops", label: "SOPs", icon: FileText },
   { id: "resources", label: "Resource Library", icon: Library },
+  { id: "attachments", label: "Resource Attachments", icon: Library },
   { id: "assignments", label: "Assignments", icon: Users },
   { id: "categories", label: "Categories", icon: FolderOpen },
   { id: "drafts", label: "Drafts", icon: PenSquare },
@@ -512,6 +515,7 @@ export default function TrainingManagementCenter() {
           {nav === "onboarding" && <OnboardingView />}
           {nav === "sops" && <SopsList />}
           {nav === "resources" && <ResourceLibraryView />}
+          {nav === "attachments" && <ResourceAttachmentManager />}
           {nav === "assignments" && <AssignmentsTable />}
           {nav === "categories" && <CategoriesGrid modules={allModules} />}
           {nav === "drafts" && (
