@@ -78,7 +78,12 @@ Pass 1 establishes the secure backend rails every Blossom OS integration will us
 ## Search QA
 
 - No raw API keys, OAuth client secrets, or service-role keys appear in frontend code (`src/`). Verified by grep: only `import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY` style references exist.
-- No hardcoded Retell agent id remains in code (`rg "agent_fb8aaca447d2a6c6703d40d77a" src supabase/functions` returns 0 matches).
+- Pass 2 correction: Pass 1 removed the hardcoded Retell agent id from
+  `supabase/functions/retell-sync`, but it still remained in
+  `src/pages/admin/Integrations.tsx` (the Retell webhooks drawer). Pass 2
+  removes that and removes the hardcoded Supabase functions URL from the same
+  page. The Pass 2 test now scans `src/**` and `supabase/functions/**` for
+  both strings.
 - Admin Integrations page no longer presents fabricated "all systems operational" rollups — backend status is shown when present, otherwise the registry status is shown with the registry as the labeled source.
 
 ## Tests
