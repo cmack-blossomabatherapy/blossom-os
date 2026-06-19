@@ -215,6 +215,28 @@ export default function TrainingModuleRuntime() {
             )}
           </div>
 
+          {rbtTrack && rbtTrack.signoffs.length > 0 && (
+            <div className="rounded-2xl border border-border/70 bg-card p-5">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-amber-600" />
+                <h3 className="text-[13px] font-semibold">Readiness requirements</h3>
+              </div>
+              <p className="mt-1 text-[11.5px] text-muted-foreground">{rbtTrack.label}</p>
+              <ul className="mt-3 space-y-1.5 text-[12px]">
+                {rbtTrack.signoffs.map((s) => (
+                  <li key={s.id} className="flex items-start gap-2">
+                    <CheckCircle2 className={`mt-0.5 h-3.5 w-3.5 ${s.status === "signed" ? "text-emerald-600" : "text-muted-foreground"}`} />
+                    <span className="min-w-0 flex-1">
+                      <span className="font-medium">{s.label}</span>
+                      <br />
+                      <span className="text-[10.5px] text-muted-foreground">{s.owner} · {s.required ? "required" : "optional"} · {s.status}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {record.startedAt && (
             <div className="rounded-2xl border border-border/70 bg-muted/30 p-4 text-[11.5px] text-muted-foreground">
               <p>Started {new Date(record.startedAt).toLocaleString()}</p>
