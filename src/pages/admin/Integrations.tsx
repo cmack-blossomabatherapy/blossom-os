@@ -1034,6 +1034,40 @@ export default function Integrations() {
   const [selected, setSelected] = useState<Integration | null>(null);
   const [marketplaceOpen, setMarketplaceOpen] = useState(false);
 
+  // Backend data (real integration_* tables).
+  const [connections, setConnections] = useState<IntegrationConnectionRow[]>([]);
+  const [syncRuns, setSyncRuns] = useState<IntegrationSyncRunRow[]>([]);
+  const [webhookEvents, setWebhookEvents] = useState<IntegrationWebhookEventRow[]>([]);
+  const [oauthConnections, setOauthConnections] = useState<OAuthConnectionRow[]>([]);
+  const [backendLoading, setBackendLoading] = useState(true);
+  const [backendReachable, setBackendReachable] = useState(true);
+
+  async function loadBackend() {
+    setBackendLoading(true);
+    try {
+      const [cat, conns, runs, events, oauth] = await Promise.all([
+        listIntegrationCatalog(),
+        listIntegrationConnections(),
+        listIntegrationSyncRuns(undefined, 100),
+        listIntegrationWebhookEvents(undefined, 100),
+        listUserOAuthConnections(),
+      ]);
+      setConnections(conns);
+      setSyncRuns(runs);
+      setWebhookEvents(events);
+      setOauthConnections(oauth);
+      setBackendReachable(cat.length > 0 || conns.length > 0);
+    } catch (e) {
+      setBackendReachable(false);
+    } finally {
+      setBackendLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadBackend();
+  }, []);
+
   const list = useMemo(() => {
     return INTEGRATIONS.map((i) => ({ ...i, enabled: enabledMap[i.id] ?? i.enabled }));
   }, [enabledMap]);
@@ -1073,14 +1107,40 @@ export default function Integrations() {
     return map;
   }, [filtered]);
 
-  const totals = useMemo(() => {
-    const connected = list.filter(
-      (i) => i.status === "connected" || i.status === "syncing",
+  const backendStats = useMemo(() => {
+    const connected = connections.filter((c) => c.status === "connected").length;
+    const needsAttention = connections.filter((c) =>
+      ["needs_attention", "error", "not_configured"].includes(c.status),
     ).length;
-    const syncing = list.filter((i) => i.status === "syncing").length;
-    const failed = list.filter((i) => i.status === "error").length;
-    return { connected, syncing, failed };
-  }, [list]);
+    const recentFailures = syncRuns.filter((r) =>
+      ["error", "failed"].includes(r.status),
+    ).length;
+    const lastEvent = [...webhookEvents]
+      .sort((a, b) => +new Date(b.received_at) - +new Date(a.received_at))[0]
+      ?.received_at;
+    const ms365Users = oauthConnections.filter(
+      (o) => o.integration_id === "ms365" && o.status === "connected",
+    ).length;
+    return {
+      configured: connections.length,
+      connected,
+      needsAttention,
+      recentFailures,
+      webhookEvents: webhookEvents.length,
+      ms365Users,
+      lastEvent,
+    };
+  }, [connections, syncRuns, webhookEvents, oauthConnections]);
+
+  const connectionByIntegration = useMemo(() => {
+    const m = new Map<string, IntegrationConnectionRow>();
+    for (const c of connections) {
+      if (c.environment === "production" || !m.has(c.integration_id)) {
+        m.set(c.integration_id, c);
+      }
+    }
+    return m;
+  }, [connections]);
 
   return (
     <div className="min-h-full bg-background">
