@@ -76,6 +76,7 @@ import { useJourneyOverrides, applyOverridesToPhase } from "@/hooks/useJourneyOv
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { LayoutDashboard } from "lucide-react";
+import { ResourceAttachmentManager } from "@/components/training/ResourceAttachmentManager";
 import {
   SDLaunchReadinessPanel,
   SDDayOneAdminGuide,
