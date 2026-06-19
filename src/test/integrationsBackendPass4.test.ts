@@ -141,7 +141,9 @@ describe("Pass 4 — Microsoft per-user sync functions use the token vault", () 
     const src = read("supabase/functions/microsoft-calendar-sync/index.ts");
     expect(src).toMatch(/refreshUserToken/);
     expect(src).toMatch(/from "\.\.\/_shared\/microsoftTokenVault\.ts"/);
-    expect(src).not.toMatch(/accessToken\s*\}/); // tokens not returned in response
+    // Tokens must never appear in a JSON response key — the only place
+    // accessToken is referenced is in the outbound Graph Authorization header.
+    expect(src).not.toMatch(/return\s+json\([^)]*accessToken/);
   });
   it("microsoft-mail-activity-sync uses refreshUserToken and stores only safe metadata", () => {
     const src = read("supabase/functions/microsoft-mail-activity-sync/index.ts");

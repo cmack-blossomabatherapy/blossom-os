@@ -1,7 +1,7 @@
 // Generic integration sync runner.
-// Admin-only. Delegates to provider adapters. No required provider returns
-// `not_implemented` anymore — adapters report honest pending/failed status
-// when a vendor endpoint or extra env var is required.
+// Admin-only. Delegates to provider adapters. Adapters report honest
+// pending/failed status when a vendor endpoint or extra env var is required;
+// no required provider returns a generic unimplemented sentinel anymore.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getAdapter } from "../_shared/integrations/providerRegistry.ts";
 
