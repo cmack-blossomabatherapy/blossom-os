@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -67,6 +67,20 @@ import {
   BLOSSOM_INTEGRATIONS,
 } from "@/lib/os/integrations/integrationRegistry";
 import type { BlossomIntegration } from "@/lib/os/integrations/types";
+import {
+  listIntegrationCatalog,
+  listIntegrationConnections,
+  listIntegrationSyncRuns,
+  listIntegrationWebhookEvents,
+  listUserOAuthConnections,
+  testIntegrationConnection,
+  runIntegrationSync,
+  type IntegrationConnectionRow,
+  type IntegrationSyncRunRow,
+  type IntegrationWebhookEventRow,
+  type OAuthConnectionRow,
+} from "@/lib/os/integrations/backend";
+import { toast } from "sonner";
 
 /**
  * Admin > Integrations renders directly from the shared registry
