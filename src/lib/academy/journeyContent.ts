@@ -350,7 +350,7 @@ export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }
   return assembleJourney({
     slug, path,
     weekGroups: chunk(academyDayGroups, DAYS_PER_WEEK),
-    dayTitles: academyDayGroups.flat().map((d) => d[0]?.title ?? "Operational learning"),
+    dayTitles: academyDayGroups.map((day) => day[0]?.title ?? "Operational learning"),
     source: "academyData",
   });
 }
