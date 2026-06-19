@@ -72,15 +72,6 @@ export function MfaBrandShell({
                   "0 1px 0 rgba(255,255,255,0.7) inset, 0 24px 60px -32px rgba(12,35,64,0.18)",
               }}
             >
-              {/* Layered accent panels — intentional, not decorative noise */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-[40px] bg-[#2d8a9e]/8"
-              />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-[40px] bg-[#0c2340]/5"
-              />
 
               <div className="relative flex items-center gap-2">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#2d8a9e]/10 text-[#2d8a9e]">
