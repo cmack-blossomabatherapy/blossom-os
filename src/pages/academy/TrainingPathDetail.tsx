@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, BookOpen, Clock, GraduationCap, ArrowRight, Library,
   Target, Trophy, CheckCircle2, PlayCircle, Sparkles, ListChecks, FolderOpen,
@@ -11,6 +11,7 @@ import {
   type JourneyDay,
 } from "@/lib/academy/journeyContent";
 import { RBT_BUCKETS } from "@/lib/academy/trainingPaths";
+import type { RBTPathId } from "@/lib/training/rbtAcademy";
 
 /**
  * Real Journey Detail for /academy/path/:slug.
@@ -23,7 +24,12 @@ export default function TrainingPathDetail() {
   const { slug = "" } = useParams();
   if (slug === "state-director") return <Navigate to="/training" replace />;
 
-  const journey = useMemo(() => buildPathJourney(slug), [slug]);
+  const [params, setParams] = useSearchParams();
+  const rbtTrackId = (params.get("track") as RBTPathId | null) ?? undefined;
+  const journey = useMemo(
+    () => buildPathJourney(slug, rbtTrackId ? { rbtTrackId } : undefined),
+    [slug, rbtTrackId],
+  );
   if (!journey) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-20 text-center">
@@ -89,6 +95,37 @@ export default function TrainingPathDetail() {
       </header>
 
       {/* RBT experience buckets (preserved) */}
+      {isRbt && journey.rbtTracks && (
+        <section className="mt-10">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">RBT track</p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight md:text-2xl">Choose your experience level</h2>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {journey.rbtTracks.map((t) => {
+              const active = (journey.rbtActiveTrackId ?? "not_certified") === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    const next = new URLSearchParams(params);
+                    next.set("track", t.id);
+                    setParams(next, { replace: true });
+                  }}
+                  className={
+                    "rounded-full border px-3 py-1.5 text-[12px] font-medium transition " +
+                    (active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-foreground hover:bg-muted")
+                  }
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {isRbt && (
         <section className="mt-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">RBT learning paths</p>
