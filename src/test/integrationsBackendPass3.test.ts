@@ -42,7 +42,25 @@ describe("Pass 3 — required secrets map covers every tracked integration", () 
   ];
   for (const id of required) {
     it(`maps required secrets for ${id}`, () => {
-      expect(src).toMatch(new RegExp(`["']${id}["']\\s*:`));
+      // The key in REQUIRED_SECRETS is either a bare identifier (e.g. `mailchimp:`)
+      // or a quoted string (e.g. `"go-integrate-nava":`).
+      const escaped = id.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+      const re = new RegExp(`(?:^|\\n)\\s*(?:["']${escaped}["']|${escaped})\\s*:`);
+      expect(src).toMatch(re);
+    });
+  }
+});
+
+describe("Pass 3 — solom alias still accepted", () => {
+  it("integration-test-connection still accepts SOLOM_API_KEY alias", () => {
+    const src = read("supabase/functions/integration-test-connection/index.ts");
+    expect(src).toMatch(/SOLOM_API_KEY/);
+  });
+});
+
+describe("__pad__", () => {
+  it("keeps the closing of the previous describe block balanced", () => {
+    expect(true).toBe(true);
     });
   }
 });
