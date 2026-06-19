@@ -540,6 +540,22 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     sourceOfTruthFor: ["L10 meeting cadence"],
     notes: "Leadership meeting operating system (EOS / L10).",
   },
+  {
+    id: "go-integrate-nava",
+    name: "Go Integrate Nava",
+    displayName: "Go Integrate Nava",
+    category: "eligibility",
+    ownerDepartment: "Intake / Authorizations / Operations",
+    criticality: "standard",
+    status: "not_configured",
+    methods: ["planned"],
+    inboundData: [],
+    outboundData: [],
+    dependentModules: [],
+    sourceOfTruthFor: [],
+    notes:
+      "Vendor details pending confirmation. Added as a required integration placeholder so Blossom OS has a backend-ready connection record once credentials and API documentation are available.",
+  },
 ];
 
 /** Lookup helper. */
