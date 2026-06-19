@@ -347,7 +347,6 @@ export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }
   const trainings = sourceTrainingsForSlug(slug, all);
   const academyDayGroups: AcademyJourneyModule[][] = chunk(trainings, MODULES_PER_DAY)
     .map((day) => day.map((t) => ({ ...t, sourceKind: "academyData" as const, sourceModuleId: t.id })));
-  const weekGroups = chunk(dayGroups, DAYS_PER_WEEK);
   return assembleJourney({
     slug, path,
     weekGroups: chunk(academyDayGroups, DAYS_PER_WEEK),
