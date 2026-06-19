@@ -112,14 +112,31 @@ Deno.serve(async (req) => {
         active: true,
       }));
 
-      // Insert with ON CONFLICT DO NOTHING via upsert on row_hash unique index.
-      // The partial unique index uq_bcba_prod_rows_hash_active makes duplicate
-      // active hashes silently skipped — exactly the dedupe behavior we want.
-      const { error, count } = await admin
+      // Client already dedupes against existing active row_hashes and within
+      // the file itself before sending. If a race against another concurrent
+      // upload trips the partial unique index, drop offending rows and retry
+      // once so the rest of the chunk still lands.
+      let attempt = await admin
         .from("bcba_productivity_billing_rows")
-        .upsert(payload, { onConflict: "row_hash", ignoreDuplicates: true, count: "exact" });
-      if (error) return json({ error: error.message }, 500);
-      return json({ inserted: count ?? payload.length, attempted: payload.length });
+        .insert(payload)
+        .select("id");
+      if (attempt.error && /duplicate key|unique constraint/i.test(attempt.error.message)) {
+        const hashes = payload.map((p) => p.row_hash);
+        const { data: existing } = await admin
+          .from("bcba_productivity_billing_rows")
+          .select("row_hash")
+          .eq("active", true)
+          .in("row_hash", hashes);
+        const dropped = new Set((existing ?? []).map((d: any) => d.row_hash));
+        const filtered = payload.filter((p) => !dropped.has(p.row_hash));
+        if (filtered.length === 0) return json({ inserted: 0, attempted: payload.length });
+        attempt = await admin
+          .from("bcba_productivity_billing_rows")
+          .insert(filtered)
+          .select("id");
+      }
+      if (attempt.error) return json({ error: attempt.error.message }, 500);
+      return json({ inserted: attempt.data?.length ?? 0, attempted: payload.length });
     }
 
     if (action === "finalize_batch") {
