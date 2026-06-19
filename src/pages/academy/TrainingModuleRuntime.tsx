@@ -62,7 +62,7 @@ export default function TrainingModuleRuntime() {
     return (
       <div className="mx-auto max-w-2xl px-6 py-20 text-center">
         <p className="text-sm text-muted-foreground">Module not found.</p>
-        <Link to={`/academy/path/${slug}`} className="mt-4 inline-flex items-center gap-1 text-sm text-primary">
+        <Link to={`/academy/path/${slug}${trackSuffix}`} className="mt-4 inline-flex items-center gap-1 text-sm text-primary">
           <ArrowLeft className="h-4 w-4" /> Back to journey
         </Link>
       </div>
@@ -73,14 +73,19 @@ export default function TrainingModuleRuntime() {
     journeySlug: slug,
     moduleId: decodedId,
     sourceModuleId: parsed.sourceModuleId,
+    sourceKind: parsed.kind,
   });
+
+  const rbtTrack = parsed.kind === "rbt"
+    ? RBT_PATHS.find((p) => p.id === (rbtTrackId ?? "not_certified"))
+    : undefined;
 
   const elapsedLabel = formatElapsed(record.elapsedSeconds);
   const status = record.status;
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
-      <Link to={`/academy/path/${slug}`} className="inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">
+      <Link to={`/academy/path/${slug}${trackSuffix}`} className="inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> {path.title}
       </Link>
 
