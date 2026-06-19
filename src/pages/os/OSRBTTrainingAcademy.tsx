@@ -59,6 +59,11 @@ export default function OSRBTTrainingAcademy() {
           <Link to="/rbt" className="hover:text-foreground transition-colors">RBT</Link>
           <ChevronRight className="size-3" />
           <span>Training Academy</span>
+          <span className="ml-auto inline-flex items-center gap-1">
+            <Link to="/academy" className="text-primary hover:underline">Training Academy home</Link>
+            <ChevronRight className="size-3" />
+            <Link to="/academy/path/rbt" className="text-primary hover:underline">Unified LMS view</Link>
+          </span>
         </div>
 
         <header className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/5 via-card to-card p-6 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
