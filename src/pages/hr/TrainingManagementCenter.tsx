@@ -1527,9 +1527,11 @@ function EmptyState({ label }: { label: string }) {
 function AIGenerateDialog({
   open,
   onOpenChange,
+  onCreated,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onCreated?: (t: Training) => void;
 }) {
   const [input, setInput] = useState("");
   const [generated, setGenerated] = useState<null | {
@@ -1571,7 +1573,27 @@ function AIGenerateDialog({
   };
 
   const handleSave = () => {
-    toast.success("Module draft saved to library.");
+    if (!generated) return;
+    const t = createTraining({
+      title: generated.title,
+      description: generated.summary,
+      type: "SOP",
+      estimatedMinutes: 15,
+      category: "role",
+      overview: generated.summary,
+      sopMarkdown:
+        `## Overview\n${generated.summary}\n\n## Learning objectives\n` +
+        generated.objectives.map((o) => `- ${o}`).join("\n") +
+        `\n\n## Operational steps\n` +
+        generated.checklist.map((c, i) => `${i + 1}. ${c}`).join("\n"),
+      checklist: generated.checklist.map((item, i) => ({
+        id: `ai-${i}-${Math.random().toString(36).slice(2, 6)}`,
+        item,
+        required: true,
+      })),
+    });
+    toast.success(`AI draft created: "${t.title}"`);
+    onCreated?.(t);
     onOpenChange(false);
     setInput("");
     setGenerated(null);
