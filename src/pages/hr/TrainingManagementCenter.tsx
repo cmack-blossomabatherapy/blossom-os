@@ -202,6 +202,7 @@ type NavId =
   | "onboarding"
   | "sops"
   | "resources"
+  | "attachments"
   | "assignments"
   | "categories"
   | "drafts"
@@ -215,6 +216,7 @@ const NAV: { id: NavId; label: string; icon: typeof FileText }[] = [
   { id: "onboarding", label: "Welcome to Blossom", icon: Heart },
   { id: "sops", label: "SOPs", icon: FileText },
   { id: "resources", label: "Resource Library", icon: Library },
+  { id: "attachments", label: "Resource Attachments", icon: Library },
   { id: "assignments", label: "Assignments", icon: Users },
   { id: "categories", label: "Categories", icon: FolderOpen },
   { id: "drafts", label: "Drafts", icon: PenSquare },
