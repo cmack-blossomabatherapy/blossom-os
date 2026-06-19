@@ -68,6 +68,7 @@ import {
   addModuleToJourney,
   removeModuleFromJourney,
   reorderJourneyModule,
+  createTraining,
   type Training,
   type RoleJourney,
 } from "@/lib/training/academyData";
