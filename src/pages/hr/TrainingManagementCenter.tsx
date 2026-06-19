@@ -872,9 +872,11 @@ function JourneyBuilderView({
 function ModulesGrid({
   modules,
   emptyLabel,
+  onEdit,
 }: {
   modules: ViewModule[];
   emptyLabel?: string;
+  onEdit?: (id: string) => void;
 }) {
   if (!modules.length) {
     return (
@@ -886,9 +888,11 @@ function ModulesGrid({
       {modules.map((m) => {
         const Icon = TYPE_ICON[m.type] ?? FileText;
         return (
-          <div
+          <button
             key={m.id}
-            className="rounded-2xl border border-border/70 bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary/40"
+            type="button"
+            onClick={() => onEdit?.(m.id)}
+            className="rounded-2xl border border-border/70 bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40"
           >
             <div className="flex items-start justify-between">
               <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -914,7 +918,12 @@ function ModulesGrid({
               <span>{m.category}</span>
               <span>Updated {formatRelative(m.updatedAt)}</span>
             </div>
-          </div>
+            {onEdit && (
+              <div className="mt-3 flex items-center gap-1.5 text-[11.5px] font-medium text-primary">
+                <PenSquare className="h-3 w-3" /> Edit module
+              </div>
+            )}
+          </button>
         );
       })}
     </div>
