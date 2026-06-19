@@ -15,6 +15,7 @@ import {
 import { TRAINING_PATHS } from "@/lib/academy/trainingPaths";
 import { buildPathJourney } from "@/lib/academy/journeyContent";
 import { useAdminResources } from "@/hooks/useAdminResources";
+import { RBT_PATHS, type RBTPathId } from "@/lib/training/rbtAcademy";
 
 /**
  * Admin panel: attach Resource Library items to a journey, day, or module.
@@ -25,6 +26,7 @@ export function ResourceAttachmentManager() {
   const { resources: libraryResources = [] } = useAdminResources();
 
   const [journeySlug, setJourneySlug] = useState<string>(TRAINING_PATHS[0]?.slug ?? "");
+  const [rbtTrackId, setRbtTrackId] = useState<RBTPathId>("not_certified");
   const [scope, setScope] = useState<AttachmentScope>("journey");
   const [dayId, setDayId] = useState<string>("");
   const [moduleId, setModuleId] = useState<string>("");
@@ -32,7 +34,10 @@ export function ResourceAttachmentManager() {
   const [instructions, setInstructions] = useState("");
   const [query, setQuery] = useState("");
 
-  const journey = useMemo(() => buildPathJourney(journeySlug), [journeySlug]);
+  const journey = useMemo(
+    () => buildPathJourney(journeySlug, journeySlug === "rbt" ? { rbtTrackId } : undefined),
+    [journeySlug, rbtTrackId],
+  );
   const days = journey?.weeks.flatMap((w) => w.days) ?? [];
   const modules = days.flatMap((d) => d.modules);
 
@@ -86,6 +91,17 @@ export function ResourceAttachmentManager() {
             </SelectContent>
           </Select>
         </div>
+        {journeySlug === "rbt" && (
+          <div>
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">RBT track</label>
+            <Select value={rbtTrackId} onValueChange={(v) => { setRbtTrackId(v as RBTPathId); setDayId(""); setModuleId(""); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {RBT_PATHS.map((p) => (<SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div>
           <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Scope</label>
           <Select value={scope} onValueChange={(v) => setScope(v as AttachmentScope)}>
@@ -170,7 +186,12 @@ export function ResourceAttachmentManager() {
       <div className="rounded-2xl border border-border/70 bg-card p-4">
         <div className="mb-3 flex items-center gap-2">
           <Layers className="h-4 w-4 text-primary" />
-          <h3 className="text-[13px] font-semibold">Existing attachments · {journey?.path.title ?? journeySlug}</h3>
+          <h3 className="text-[13px] font-semibold">
+            Existing attachments · {journey?.path.title ?? journeySlug}
+            {journeySlug === "rbt" && (
+              <span className="ml-1 text-muted-foreground">· {RBT_PATHS.find((p) => p.id === rbtTrackId)?.label}</span>
+            )}
+          </h3>
         </div>
         {journeyAttachments.length === 0 ? (
           <p className="px-3 py-6 text-center text-[12.5px] text-muted-foreground">Nothing attached yet.</p>

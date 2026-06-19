@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Clock, PlayCircle, FileText,
   ListChecks, BookOpen, ShieldCheck, Sparkles, Library, ExternalLink,
@@ -7,7 +7,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { parseAcademyModuleId } from "@/lib/academy/journeyContent";
-import { RBT_PATHS, type RBTModule } from "@/lib/training/rbtAcademy";
+import { RBT_PATHS, type RBTModule, type RBTPathId } from "@/lib/training/rbtAcademy";
 import { BCBA_MODULES, type BCBAModule } from "@/lib/training/bcbaAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime,
@@ -26,6 +26,9 @@ import { getTrainingPath } from "@/lib/academy/trainingPaths";
  */
 export default function TrainingModuleRuntime() {
   const { slug = "", moduleId = "" } = useParams();
+  const [params] = useSearchParams();
+  const rbtTrackId = (params.get("track") as RBTPathId | null) ?? undefined;
+  const trackSuffix = slug === "rbt" && rbtTrackId ? `?track=${rbtTrackId}` : "";
   const decodedId = decodeURIComponent(moduleId);
   const parsed = parseAcademyModuleId(decodedId);
 
@@ -59,7 +62,7 @@ export default function TrainingModuleRuntime() {
     return (
       <div className="mx-auto max-w-2xl px-6 py-20 text-center">
         <p className="text-sm text-muted-foreground">Module not found.</p>
-        <Link to={`/academy/path/${slug}`} className="mt-4 inline-flex items-center gap-1 text-sm text-primary">
+        <Link to={`/academy/path/${slug}${trackSuffix}`} className="mt-4 inline-flex items-center gap-1 text-sm text-primary">
           <ArrowLeft className="h-4 w-4" /> Back to journey
         </Link>
       </div>
@@ -70,14 +73,19 @@ export default function TrainingModuleRuntime() {
     journeySlug: slug,
     moduleId: decodedId,
     sourceModuleId: parsed.sourceModuleId,
+    sourceKind: parsed.kind,
   });
+
+  const rbtTrack = parsed.kind === "rbt"
+    ? RBT_PATHS.find((p) => p.id === (rbtTrackId ?? "not_certified"))
+    : undefined;
 
   const elapsedLabel = formatElapsed(record.elapsedSeconds);
   const status = record.status;
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
-      <Link to={`/academy/path/${slug}`} className="inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">
+      <Link to={`/academy/path/${slug}${trackSuffix}`} className="inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> {path.title}
       </Link>
 
@@ -206,6 +214,28 @@ export default function TrainingModuleRuntime() {
               </ul>
             )}
           </div>
+
+          {rbtTrack && rbtTrack.signoffs.length > 0 && (
+            <div className="rounded-2xl border border-border/70 bg-card p-5">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-amber-600" />
+                <h3 className="text-[13px] font-semibold">Readiness requirements</h3>
+              </div>
+              <p className="mt-1 text-[11.5px] text-muted-foreground">{rbtTrack.label}</p>
+              <ul className="mt-3 space-y-1.5 text-[12px]">
+                {rbtTrack.signoffs.map((s) => (
+                  <li key={s.id} className="flex items-start gap-2">
+                    <CheckCircle2 className={`mt-0.5 h-3.5 w-3.5 ${s.status === "signed" ? "text-emerald-600" : "text-muted-foreground"}`} />
+                    <span className="min-w-0 flex-1">
+                      <span className="font-medium">{s.label}</span>
+                      <br />
+                      <span className="text-[10.5px] text-muted-foreground">{s.owner} · {s.required ? "required" : "optional"} · {s.status}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {record.startedAt && (
             <div className="rounded-2xl border border-border/70 bg-muted/30 p-4 text-[11.5px] text-muted-foreground">
