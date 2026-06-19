@@ -192,7 +192,7 @@ export default function MfaVerify() {
         </div>
       ) : (
         <form
-          className="space-y-6"
+          className="space-y-5"
           onSubmit={(e) => {
             e.preventDefault();
             if (code.length === 6) handleVerify();
