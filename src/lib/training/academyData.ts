@@ -1411,7 +1411,7 @@ export function deleteJourney(id: string) {
   emit();
 }
 
-export function updateJourney(id: string, patch: Partial<Omit<RoleJourney, "id" | "role">>) {
+export function updateJourney(id: string, patch: Partial<Omit<RoleJourney, "id">>) {
   state = {
     ...state,
     journeys: state.journeys.map((j) => (j.id === id ? { ...j, ...patch } : j)),

@@ -68,6 +68,7 @@ import {
   addModuleToJourney,
   removeModuleFromJourney,
   reorderJourneyModule,
+  createTraining,
   type Training,
   type RoleJourney,
 } from "@/lib/training/academyData";
@@ -320,6 +321,9 @@ export default function TrainingManagementCenter() {
   const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(search.get("action") === "create");
   const [createModuleOpen, setCreateModuleOpen] = useState(false);
+  const [createModulePrefill, setCreateModulePrefill] = useState<
+    Partial<Pick<Training, "title" | "description" | "type" | "category">> | undefined
+  >(undefined);
   const [createJourneyOpen, setCreateJourneyOpen] = useState(
     search.get("action") === "journey",
   );
@@ -572,7 +576,12 @@ export default function TrainingManagementCenter() {
                 <button
                   key={t.id}
                   onClick={() => {
-                    toast.success(`Started new ${t.title}`);
+                    setCreateModulePrefill({
+                      title: "",
+                      description: t.description,
+                      type: t.type as Training["type"],
+                      category: "role",
+                    });
                     setCreateModuleOpen(true);
                   }}
                   className="rounded-xl border border-border/60 bg-background px-3 py-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40"
@@ -600,11 +609,19 @@ export default function TrainingManagementCenter() {
         )}
       </div>
 
-      <AIGenerateDialog open={aiOpen} onOpenChange={setAiOpen} />
+      <AIGenerateDialog
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        onCreated={(t) => setEditingModuleId(t.id)}
+      />
       <CreateModuleDialogReal
         open={createModuleOpen}
-        onOpenChange={setCreateModuleOpen}
+        onOpenChange={(v) => {
+          setCreateModuleOpen(v);
+          if (!v) setCreateModulePrefill(undefined);
+        }}
         journeyId={selectedJourneyId}
+        initial={createModulePrefill}
         onCreated={(t) => {
           // If we're inside a journey, the helper already added it.
           // Open editor for the newly-created module to encourage deep editing.
@@ -1510,9 +1527,11 @@ function EmptyState({ label }: { label: string }) {
 function AIGenerateDialog({
   open,
   onOpenChange,
+  onCreated,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onCreated?: (t: Training) => void;
 }) {
   const [input, setInput] = useState("");
   const [generated, setGenerated] = useState<null | {
@@ -1554,7 +1573,27 @@ function AIGenerateDialog({
   };
 
   const handleSave = () => {
-    toast.success("Module draft saved to library.");
+    if (!generated) return;
+    const t = createTraining({
+      title: generated.title,
+      description: generated.summary,
+      type: "SOP",
+      estimatedMinutes: 15,
+      category: "role",
+      overview: generated.summary,
+      sopMarkdown:
+        `## Overview\n${generated.summary}\n\n## Learning objectives\n` +
+        generated.objectives.map((o) => `- ${o}`).join("\n") +
+        `\n\n## Operational steps\n` +
+        generated.checklist.map((c, i) => `${i + 1}. ${c}`).join("\n"),
+      checklist: generated.checklist.map((item, i) => ({
+        id: `ai-${i}-${Math.random().toString(36).slice(2, 6)}`,
+        item,
+        required: true,
+      })),
+    });
+    toast.success(`AI draft created: "${t.title}"`);
+    onCreated?.(t);
     onOpenChange(false);
     setInput("");
     setGenerated(null);
@@ -1742,107 +1781,6 @@ function AddModuleToJourneyDialog({
             </ul>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function CreateModuleDialog({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-}) {
-  const [title, setTitle] = useState("");
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create training module</DialogTitle>
-          <DialogDescription>
-            Start a new module — pick a type and add sections in the builder.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <label className="text-[12px] font-medium text-muted-foreground">
-              Title
-            </label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Running a Clean VOB"
-              className="mt-1 rounded-xl"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {(["SOP", "Workflow", "Tango", "Video", "Letter", "Checklist", "Quick Guide"] as ModuleType[]).map(
-              (t) => (
-                <button
-                  key={t}
-                  className="rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-left text-[12.5px] hover:border-primary/40"
-                >
-                  {t}
-                </button>
-              ),
-            )}
-          </div>
-        </div>
-        <DialogFooter>
-          <Button
-            className="rounded-xl"
-            onClick={() => {
-              if (!title.trim()) return toast.error("Add a title");
-              toast.success("Module created as draft");
-              onOpenChange(false);
-              setTitle("");
-            }}
-          >
-            Create draft
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function CreateJourneyDialog({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-}) {
-  const [title, setTitle] = useState("");
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create role journey</DialogTitle>
-          <DialogDescription>
-            Journeys group modules into a learning path for one role.
-          </DialogDescription>
-        </DialogHeader>
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Authorizations Journey"
-          className="rounded-xl"
-        />
-        <DialogFooter>
-          <Button
-            className="rounded-xl"
-            onClick={() => {
-              if (!title.trim()) return toast.error("Add a title");
-              toast.success("Journey created as draft");
-              onOpenChange(false);
-              setTitle("");
-            }}
-          >
-            Create
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
