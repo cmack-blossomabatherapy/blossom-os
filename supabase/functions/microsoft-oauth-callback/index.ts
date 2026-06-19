@@ -5,6 +5,7 @@
 // `integration_oauth_connections` row.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { encryptToken } from "../_shared/oauthTokenCrypto.ts";
+import { hashOauthState } from "../_shared/microsoftTokenVault.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,21 +37,38 @@ Deno.serve(async (req) => {
     return html("<h1>Outlook connection failed</h1><p>Missing code or state.</p>", 400);
   }
 
-  let userId: string | undefined;
-  try {
-    const decoded = JSON.parse(atob(stateParam));
-    userId = decoded?.u;
-  } catch (_) {
-    return html("<h1>Outlook connection failed</h1><p>Invalid state.</p>", 400);
-  }
-  if (!userId) return html("<h1>Outlook connection failed</h1><p>Invalid state.</p>", 400);
-
   if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
     return html(
       "<h1>Outlook OAuth not configured</h1><p>MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, and MICROSOFT_REDIRECT_URI must be set.</p>",
       500,
     );
   }
+
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+  // 0. Validate OAuth state against the server-side `integration_oauth_states`
+  //    table. Never trust any user id encoded in the state parameter itself.
+  const stateHash = await hashOauthState(stateParam);
+  const { data: stateRow } = await supabase
+    .from("integration_oauth_states")
+    .select("id, user_id, expires_at, used_at")
+    .eq("integration_id", "ms365")
+    .eq("state_hash", stateHash)
+    .maybeSingle();
+  if (!stateRow) {
+    return html("<h1>Outlook connection failed</h1><p>Invalid or unknown state.</p>", 400);
+  }
+  if (stateRow.used_at) {
+    return html("<h1>Outlook connection failed</h1><p>State already used.</p>", 400);
+  }
+  if (new Date(stateRow.expires_at).getTime() < Date.now()) {
+    return html("<h1>Outlook connection failed</h1><p>State expired. Please try again.</p>", 400);
+  }
+  const userId: string = stateRow.user_id;
+  await supabase
+    .from("integration_oauth_states")
+    .update({ used_at: new Date().toISOString() })
+    .eq("id", stateRow.id);
 
   // Exchange code for tokens.
   const tokenRes = await fetch(
@@ -69,33 +87,60 @@ Deno.serve(async (req) => {
   );
   const tokenData = await tokenRes.json();
   if (!tokenRes.ok) {
-    return html(
-      `<h1>Outlook token exchange failed</h1><pre>${JSON.stringify(tokenData, null, 2)}</pre>`,
-      502,
-    );
+    await supabase
+      .from("integration_oauth_connections")
+      .upsert(
+        {
+          integration_id: "ms365",
+          user_id: userId,
+          status: "needs_attention",
+          last_error: `token_exchange_failed:${tokenRes.status}`,
+        },
+        { onConflict: "integration_id,user_id" },
+      );
+    return html("<h1>Outlook token exchange failed</h1><p>Please try again.</p>", 502);
   }
 
-  // Probe user identity.
+  // Identity confirmation: Graph /me MUST succeed before we mark the
+  // connection as connected or persist any encrypted tokens.
   let providerEmail: string | null = null;
   let providerName: string | null = null;
   let providerUserId: string | null = null;
+  let meStatus = 0;
   try {
     const meRes = await fetch("https://graph.microsoft.com/v1.0/me", {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
+    meStatus = meRes.status;
     if (meRes.ok) {
       const me = await meRes.json();
       providerEmail = me?.mail ?? me?.userPrincipalName ?? null;
       providerName = me?.displayName ?? null;
       providerUserId = me?.id ?? null;
     }
-  } catch (_) {
-    /* non-fatal */
+  } catch (e) {
+    meStatus = 0;
+  }
+  if (meStatus < 200 || meStatus >= 300) {
+    await supabase
+      .from("integration_oauth_connections")
+      .upsert(
+        {
+          integration_id: "ms365",
+          user_id: userId,
+          status: "needs_attention",
+          last_error: `graph_me_failed:${meStatus || "network"}`,
+          metadata: { token_persistence: "skipped_identity_unconfirmed" },
+        },
+        { onConflict: "integration_id,user_id" },
+      );
+    return html(
+      "<h1>Outlook identity check failed</h1><p>We could not confirm your Microsoft account. No tokens were stored. Please try again.</p>",
+      400,
+    );
   }
 
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
-
-  // 1. Encrypt tokens BEFORE we touch the database. If this fails, do not
+  // 1. Encrypt tokens BEFORE we touch the vault. If this fails, do not
   //    mark the connection as connected — surface needs_attention instead.
   let accessCipher: string | null = null;
   let refreshCipher: string | null = null;
@@ -112,7 +157,8 @@ Deno.serve(async (req) => {
     ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
     : null;
   const scopes = (tokenData.scope ?? "").split(" ").filter(Boolean);
-  const connectionStatus = vaultError ? "needs_attention" : "connected";
+  // Connection only becomes `connected` after token+graph_me+vault all succeed.
+  const provisionalStatus = vaultError ? "needs_attention" : "pending";
 
   const { data: connRow, error: connErr } = await supabase
     .from("integration_oauth_connections")
@@ -124,7 +170,7 @@ Deno.serve(async (req) => {
       provider_user_id: providerUserId,
       display_name: providerName,
         scopes,
-        status: connectionStatus,
+        status: provisionalStatus,
         expires_at: expiresAt,
       last_connected_at: new Date().toISOString(),
         last_error: vaultError ? `token_storage_failed: ${vaultError}` : null,
@@ -148,8 +194,13 @@ Deno.serve(async (req) => {
   }
 
   // 2. Upsert the encrypted token row into the vault (service-role-only table).
-  if (!vaultError) {
-    const { error: vaultErr } = await supabase
+  if (vaultError) {
+    return html(
+      `<h1>Outlook connection partially completed</h1><p>Tokens could not be encrypted. Please try again.</p>`,
+      500,
+    );
+  }
+  const { error: vaultErr } = await supabase
       .from("integration_oauth_token_vault")
       .upsert(
         {
@@ -167,21 +218,26 @@ Deno.serve(async (req) => {
         },
         { onConflict: "oauth_connection_id" },
       );
-    if (vaultErr) {
-      await supabase
-        .from("integration_oauth_connections")
-        .update({
-          status: "needs_attention",
-          last_error: `vault_write_failed: ${vaultErr.message}`,
-          metadata: { token_persistence: "failed" },
-        })
-        .eq("id", connRow.id);
-      return html(
-        `<h1>Outlook connection partially completed</h1><p>Tokens could not be stored securely. Please try again.</p>`,
-        500,
-      );
-    }
+  if (vaultErr) {
+    await supabase
+      .from("integration_oauth_connections")
+      .update({
+        status: "needs_attention",
+        last_error: `vault_write_failed: ${vaultErr.message}`,
+        metadata: { token_persistence: "failed" },
+      })
+      .eq("id", connRow.id);
+    return html(
+      `<h1>Outlook connection partially completed</h1><p>Tokens could not be stored securely. Please try again.</p>`,
+      500,
+    );
   }
+
+  // 3. Only now flip status to `connected`.
+  await supabase
+    .from("integration_oauth_connections")
+    .update({ status: "connected", last_error: null })
+    .eq("id", connRow.id);
 
   return html(
     `<!doctype html><html><body style="font-family: -apple-system, system-ui, sans-serif; max-width:480px; margin:80px auto; text-align:center;">

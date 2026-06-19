@@ -48,7 +48,7 @@ Pass 1 establishes the secure backend rails every Blossom OS integration will us
 ## Retell changes
 
 - `supabase/functions/retell-sync/index.ts`
-  - Removed hardcoded `AGENT_ID = 'agent_fb8aaca447d2a6c6703d40d77a'`. Agent id now reads from `RETELL_AGENT_ID` env or optional request body `agent_id`; if neither is set, no agent filter is applied.
+  - Removed hardcoded `AGENT_ID = 'agent_<historical-id-redacted>'`. Agent id now reads from `RETELL_AGENT_ID` env or optional request body `agent_id`; if neither is set, no agent filter is applied.
   - `MAX_CALLS_PER_SYNC` is now configurable via `RETELL_MAX_CALLS_PER_SYNC` or request body `limit`.
   - Every invocation opens an `integration_sync_runs` row and closes it with `success` / `partial` / `failed` plus counts and error message.
   - Existing `phone_ai_calls` upsert + after-hours flow preserved.

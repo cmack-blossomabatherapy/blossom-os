@@ -48,7 +48,7 @@
   activity", "42% API usage", "Last full sync · 4 min ago") removed. Retell
   drawer now generates the function URL from `VITE_SUPABASE_URL` and offers
   both the dedicated and the generic webhook endpoints. Hardcoded
-  `agent_fb8aaca447d2a6c6703d40d77a` removed. Test connection and Run sync
+  `agent_<historical-id-redacted>` removed. Test connection and Run sync
   buttons wired to the corresponding edge functions with toast feedback.
 - `src/lib/os/integrations/backend.ts` — added `probeOutlookConnection` and
   `startOutlookOAuth` helpers.

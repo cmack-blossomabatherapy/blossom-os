@@ -14,6 +14,7 @@ export type IntegrationStatus =
   | "configured"
   | "planned"
   | "maybe"
+  | "not_configured"
   | "needs_attention"
   | "error"
   | "disabled";

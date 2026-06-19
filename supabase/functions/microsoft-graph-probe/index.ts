@@ -4,7 +4,7 @@
 // (provider email, display name, scopes, expiry, status). Never returns tokens.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decryptToken } from "../_shared/oauthTokenCrypto.ts";
-import { refreshUserToken } from "../microsoft-refresh-token/index.ts";
+import { refreshUserToken } from "../_shared/microsoftTokenVault.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
