@@ -576,7 +576,12 @@ export default function TrainingManagementCenter() {
                 <button
                   key={t.id}
                   onClick={() => {
-                    toast.success(`Started new ${t.title}`);
+                    setCreateModulePrefill({
+                      title: "",
+                      description: t.description,
+                      type: t.type as Training["type"],
+                      category: "role",
+                    });
                     setCreateModuleOpen(true);
                   }}
                   className="rounded-xl border border-border/60 bg-background px-3 py-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40"
