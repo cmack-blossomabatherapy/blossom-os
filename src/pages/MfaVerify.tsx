@@ -176,11 +176,11 @@ export default function MfaVerify() {
     <MfaBrandShell
       eyebrow="Two-factor required"
       title="Enter your authenticator code"
-      description="Open your authenticator app and enter the 6-digit code for Blossom OS. After verifying, you'll stay signed in on this device for 30 days."
+      description="Open your authenticator app and enter the 6-digit code for Blossom OS."
       footer={
         <button
           onClick={handleSignOut}
-          className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
         >
           <LogOut className="h-3 w-3" /> Sign in as someone else
         </button>
