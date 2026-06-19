@@ -1391,8 +1391,6 @@ export function deleteTraining(id: string) {
   emit();
 }
 
-export function updateJourney(id: string, patch: Partial<Omit<RoleJourney, "id" | "role">>) {
-
 export function createJourney(partial: Partial<RoleJourney> & { title: string; role: string }): RoleJourney {
   const j: RoleJourney = {
     id: partial.id ?? genId("j"),
