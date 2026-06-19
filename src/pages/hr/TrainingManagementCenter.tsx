@@ -321,6 +321,9 @@ export default function TrainingManagementCenter() {
   const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(search.get("action") === "create");
   const [createModuleOpen, setCreateModuleOpen] = useState(false);
+  const [createModulePrefill, setCreateModulePrefill] = useState<
+    Partial<Pick<Training, "title" | "description" | "type" | "category">> | undefined
+  >(undefined);
   const [createJourneyOpen, setCreateJourneyOpen] = useState(
     search.get("action") === "journey",
   );
