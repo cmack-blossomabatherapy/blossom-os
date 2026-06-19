@@ -9,9 +9,24 @@
  * BCBA content stay sourced from their existing files.
  */
 import {
-  getTrainings, getProgress, type Training, type TrainingProgress,
+  getTrainings, getProgress, type Training, type TrainingProgress, type TrainingType,
 } from "@/lib/training/academyData";
 import { getTrainingPath, type TrainingPath } from "@/lib/academy/trainingPaths";
+import { RBT_PATHS, type RBTPathId, type RBTModule, type ModuleType as RbtModuleType } from "@/lib/training/rbtAcademy";
+import { BCBA_MODULES, type BCBAModule } from "@/lib/training/bcbaAcademy";
+import { getRuntimeStatus } from "@/lib/academy/runtimeStore";
+
+export type AcademyModuleSource = "academyData" | "rbt" | "bcba";
+
+/** Training-shaped record that carries the original source for routing & resource lookup. */
+export type AcademyJourneyModule = Training & {
+  /** Origin curriculum. Set to "academyData" for academy/department modules. */
+  sourceKind?: AcademyModuleSource;
+  /** Original module id inside the source curriculum (e.g. "nc-c1", "m1"). */
+  sourceModuleId?: string;
+  /** For RBT only: the originating track id. */
+  sourceTrackId?: RBTPathId;
+};
 
 export interface JourneyDay {
   id: string;            // path-slug:w{week}:d{day}
@@ -20,7 +35,7 @@ export interface JourneyDay {
   dayInJourney: number;  // 1-based across the whole journey
   title: string;
   objective: string;
-  modules: Training[];
+  modules: AcademyJourneyModule[];
   estimatedMinutes: number;
   requiredCount: number;
   completedCount: number;
@@ -47,12 +62,18 @@ export interface PathJourney {
   completedModules: number;
   inProgressModules: number;
   estimatedMinutes: number;
-  nextModule?: Training;
+  nextModule?: AcademyJourneyModule;
   nextDay?: JourneyDay;
   currentWeek?: JourneyWeek;
+  /** Source curriculum this journey is built from. */
+  source: AcademyModuleSource;
+  /** Optional RBT track tabs (only set for slug "rbt"). */
+  rbtTracks?: { id: RBTPathId; label: string }[];
+  /** Active RBT track id for this build. */
+  rbtActiveTrackId?: RBTPathId;
 }
 
-/** How many modules group into a "day" inside the day-based timeline. */
+/** How many modules group into a "day" inside the academy-data timeline. */
 const MODULES_PER_DAY = 4;
 /** How many days group into a "week" in the timeline. */
 const DAYS_PER_WEEK = 5;
@@ -82,7 +103,6 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
     case "staffing":             return byDept("staffing");
     case "marketing":            return byDept("marketing");
     case "business-development": return byDept("business_development");
-    case "bcba":                 return byDept("bcba");
     case "clinical-director":   return byDept("clinical_director");
     case "behavioral-support":   return byDept("behavioral_support");
     case "blossom-os-basics":    return all.filter((t) => t.category === "systems");
@@ -90,10 +110,23 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
   }
 }
 
-/** Live runtime route per slug. RBT and BCBA use their existing role academy
- *  surfaces; everything else opens /training/:id. */
+/** Build the live runtime route for a module id, source-aware. */
 function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
-  return (id: string) => `/training/${id}`;
+  return (id: string) => {
+    if (id.startsWith("rbt::") || id.startsWith("bcba::")) {
+      return `/academy/path/${slug}/module/${encodeURIComponent(id)}`;
+    }
+    return `/training/${id}`;
+  };
+}
+
+/** Unified per-module status: runtime store for rbt/bcba, academyData for everything else. */
+function unifiedStatus(id: string): "completed" | "in_progress" | "overdue" | "not_started" {
+  if (id.startsWith("rbt::") || id.startsWith("bcba::")) {
+    const s = getRuntimeStatus(id);
+    return s === "completed" ? "completed" : s === "in_progress" ? "in_progress" : "not_started";
+  }
+  return getProgress(id).status;
 }
 
 /** Group an array into chunks of `size`. */
@@ -108,7 +141,7 @@ function pct(part: number, whole: number): number {
   return Math.round((part / whole) * 100);
 }
 
-function dayObjective(modules: Training[], weekNumber: number, dayNumber: number): string {
+function dayObjective(modules: AcademyJourneyModule[], weekNumber: number, dayNumber: number): string {
   const required = modules.filter((m) => m.required).length;
   const types = Array.from(new Set(modules.map((m) => m.type))).slice(0, 3).join(" · ");
   return `Week ${weekNumber} · Day ${dayNumber} focuses on ${modules.length} ${
@@ -116,25 +149,109 @@ function dayObjective(modules: Training[], weekNumber: number, dayNumber: number
   }${required ? ` (${required} required)` : ""}${types ? ` — ${types}` : ""}.`;
 }
 
-function dayTitle(modules: Training[]): string {
+function dayTitle(modules: AcademyJourneyModule[]): string {
   return modules[0]?.title ?? "Operational learning";
 }
 
-export function buildPathJourney(slug: string): PathJourney | null {
-  const path = getTrainingPath(slug);
-  if (!path) return null;
+/* ------------------- RBT source adapter ------------------- */
 
-  const all = getTrainings();
-  const trainings = sourceTrainingsForSlug(slug, all);
+function mapRbtType(t: RbtModuleType): TrainingType {
+  switch (t) {
+    case "SOP": return "SOP";
+    case "Video": return "Video";
+    case "Walkthrough": return "Workflow";
+    case "Checklist": return "Checklist";
+    case "Shadowing": return "Shadowing";
+    case "Assessment": return "Quiz";
+    case "Role Play": return "Workflow";
+    case "Evaluation": return "Workflow";
+    case "Signoff": return "Checklist";
+    case "Overview":
+    default: return "Training";
+  }
+}
 
-  const dayGroups = chunk(trainings, MODULES_PER_DAY);
+function synthesizeRbtModule(m: RBTModule, trackId: RBTPathId): AcademyJourneyModule {
+  return {
+    id: `rbt::${m.id}`,
+    title: m.title,
+    description: m.summary,
+    type: mapRbtType(m.type),
+    estimatedMinutes: m.minutes,
+    required: !!m.required,
+    category: "role",
+    department: "rbt",
+    sourceKind: "rbt",
+    sourceModuleId: m.id,
+    sourceTrackId: trackId,
+    resources: [],
+  };
+}
+
+function buildRbtJourney(slug: string, path: TrainingPath, trackId: RBTPathId): PathJourney {
+  const track = RBT_PATHS.find((p) => p.id === trackId) ?? RBT_PATHS[0];
+  // Each phase = one day. Group DAYS_PER_WEEK phases per week.
+  const dayGroups: AcademyJourneyModule[][] = track.phases.map((phase) =>
+    phase.modules.map((m) => synthesizeRbtModule(m, track.id)),
+  );
+  const phaseTitles = track.phases.map((p) => p.title);
   const weekGroups = chunk(dayGroups, DAYS_PER_WEEK);
+  return assembleJourney({
+    slug, path, weekGroups, dayTitles: phaseTitles,
+    source: "rbt",
+    rbtTracks: RBT_PATHS.map((p) => ({ id: p.id, label: p.label })),
+    rbtActiveTrackId: track.id,
+  });
+}
+
+/* ------------------- BCBA source adapter ------------------- */
+
+function synthesizeBcbaModule(m: BCBAModule): AcademyJourneyModule {
+  const minutes = m.lessons.reduce((s, l) => s + l.minutes, 0);
+  return {
+    id: `bcba::${m.id}`,
+    title: m.title,
+    description: m.subtitle,
+    type: "Training",
+    estimatedMinutes: minutes,
+    required: true,
+    category: "role",
+    department: "bcba",
+    sourceKind: "bcba",
+    sourceModuleId: m.id,
+    resources: [],
+  };
+}
+
+function buildBcbaJourney(slug: string, path: TrainingPath): PathJourney {
+  // One module per "day". 4 days per week.
+  const dayGroups: AcademyJourneyModule[][] = BCBA_MODULES.map((m) => [synthesizeBcbaModule(m)]);
+  const dayTitles = BCBA_MODULES.map((m) => m.title);
+  const weekGroups = chunk(dayGroups, 4);
+  return assembleJourney({
+    slug, path, weekGroups, dayTitles, source: "bcba",
+  });
+}
+
+/* ------------------- Shared assembler ------------------- */
+
+function assembleJourney(opts: {
+  slug: string;
+  path: TrainingPath;
+  weekGroups: AcademyJourneyModule[][][];
+  dayTitles: string[];
+  source: AcademyModuleSource;
+  rbtTracks?: { id: RBTPathId; label: string }[];
+  rbtActiveTrackId?: RBTPathId;
+}): PathJourney {
+  const { slug, path, weekGroups, dayTitles, source } = opts;
 
   let runningDay = 0;
+  let totalModules = 0;
   let totalCompleted = 0;
   let totalInProgress = 0;
   let totalMinutes = 0;
-  let nextModule: Training | undefined;
+  let nextModule: AcademyJourneyModule | undefined;
   let nextDay: JourneyDay | undefined;
   let currentWeek: JourneyWeek | undefined;
 
@@ -151,26 +268,28 @@ export function buildPathJourney(slug: string): PathJourney | null {
       let completedCount = 0;
       let inProgressCount = 0;
       for (const m of mods) {
-        const p = getProgress(m.id);
-        if (p.status === "completed") completedCount += 1;
-        else if (p.status === "in_progress" || p.status === "overdue") inProgressCount += 1;
-        if (!nextModule && p.status !== "completed") {
-          nextModule = m;
-        }
+        const st = unifiedStatus(m.id);
+        if (st === "completed") completedCount += 1;
+        else if (st === "in_progress" || st === "overdue") inProgressCount += 1;
+        if (!nextModule && st !== "completed") nextModule = m;
       }
       totalCompleted += completedCount;
       totalInProgress += inProgressCount;
       totalMinutes += minutes;
+      totalModules += mods.length;
       weekMinutes += minutes;
       weekCompleted += completedCount;
       weekModules += mods.length;
+
+      const titleIdx = (wi * 1000) + di; // unused — keep separate dayTitles list
+      const title = dayTitles[runningDay - 1] ?? dayTitle(mods);
 
       const day: JourneyDay = {
         id: `${slug}:w${weekNumber}:d${dayNumber}`,
         weekNumber,
         dayNumber,
         dayInJourney: runningDay,
-        title: dayTitle(mods),
+        title,
         objective: dayObjective(mods, weekNumber, dayNumber),
         modules: mods,
         estimatedMinutes: minutes,
@@ -178,9 +297,8 @@ export function buildPathJourney(slug: string): PathJourney | null {
         completedCount,
         inProgressCount,
       };
-      if (!nextDay && completedCount < mods.length) {
-        nextDay = day;
-      }
+      if (!nextDay && completedCount < mods.length) nextDay = day;
+      void titleIdx;
       return day;
     });
 
@@ -198,17 +316,44 @@ export function buildPathJourney(slug: string): PathJourney | null {
 
   return {
     path,
-    hasContent: trainings.length > 0,
+    hasContent: totalModules > 0,
     runtimeRouteFor: runtimeRouteForSlug(slug),
     weeks,
-    totalModules: trainings.length,
+    totalModules,
     completedModules: totalCompleted,
     inProgressModules: totalInProgress,
     estimatedMinutes: totalMinutes,
     nextModule,
     nextDay,
     currentWeek: currentWeek ?? weeks[0],
+    source,
+    rbtTracks: opts.rbtTracks,
+    rbtActiveTrackId: opts.rbtActiveTrackId,
   };
+}
+
+export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }): PathJourney | null {
+  const path = getTrainingPath(slug);
+  if (!path) return null;
+
+  if (slug === "rbt") {
+    return buildRbtJourney(slug, path, opts?.rbtTrackId ?? "not_certified");
+  }
+  if (slug === "bcba") {
+    return buildBcbaJourney(slug, path);
+  }
+
+  const all = getTrainings();
+  const trainings = sourceTrainingsForSlug(slug, all);
+  const academyDayGroups: AcademyJourneyModule[][] = chunk(trainings, MODULES_PER_DAY)
+    .map((day) => day.map((t) => ({ ...t, sourceKind: "academyData" as const, sourceModuleId: t.id })));
+  const weekGroups = chunk(dayGroups, DAYS_PER_WEEK);
+  return assembleJourney({
+    slug, path,
+    weekGroups: chunk(academyDayGroups, DAYS_PER_WEEK),
+    dayTitles: academyDayGroups.flat().map((d) => d[0]?.title ?? "Operational learning"),
+    source: "academyData",
+  });
 }
 
 export function findDay(j: PathJourney, dayId: string): JourneyDay | undefined {
@@ -220,15 +365,24 @@ export function journeyProgressPct(j: PathJourney): number {
   return pct(j.completedModules, j.totalModules);
 }
 
-export function firstIncompleteModule(day: JourneyDay): Training | undefined {
+export function firstIncompleteModule(day: JourneyDay): AcademyJourneyModule | undefined {
   for (const m of day.modules) {
-    const p: TrainingProgress = getProgress(m.id);
-    if (p.status !== "completed") return m;
+    if (unifiedStatus(m.id) !== "completed") return m;
   }
   return day.modules[0];
 }
 
 /** Display helper for module status badge colors. */
 export function moduleStatus(moduleId: string): "completed" | "in_progress" | "overdue" | "not_started" {
-  return getProgress(moduleId).status;
+  return unifiedStatus(moduleId);
+}
+
+/** Parse a synthesized module id like "rbt::nc-c1" → { kind, sourceModuleId }. */
+export function parseAcademyModuleId(id: string): {
+  kind: AcademyModuleSource;
+  sourceModuleId: string;
+} {
+  if (id.startsWith("rbt::")) return { kind: "rbt", sourceModuleId: id.slice("rbt::".length) };
+  if (id.startsWith("bcba::")) return { kind: "bcba", sourceModuleId: id.slice("bcba::".length) };
+  return { kind: "academyData", sourceModuleId: id };
 }
