@@ -697,10 +697,18 @@ function JourneyBuilderView({
   journey,
   allModules,
   onBack,
+  onEditModule,
+  onCreateModule,
+  onAssign,
+  rawJourney,
 }: {
   journey: ViewJourney;
   allModules: ViewModule[];
   onBack: () => void;
+  onEditModule: (id: string) => void;
+  onCreateModule: () => void;
+  onAssign: () => void;
+  rawJourney: RoleJourney | null;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const moduleMap = useMemo(() => {
@@ -724,14 +732,19 @@ function JourneyBuilderView({
           ← All journeys
         </button>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="rounded-xl">
+          <Button variant="outline" size="sm" className="rounded-xl" onClick={onAssign}>
             <Users className="mr-1.5 h-3.5 w-3.5" /> Assign
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-xl" onClick={onCreateModule}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> New module
           </Button>
           <Button size="sm" className="rounded-xl" onClick={() => setPickerOpen(true)}>
             <Plus className="mr-1.5 h-3.5 w-3.5" /> Add module
           </Button>
         </div>
       </div>
+
+      {rawJourney && <JourneyMetaEditor journey={rawJourney} />}
 
       <div className="rounded-2xl border border-border/70 bg-card p-6">
         <div className="flex items-start justify-between">
