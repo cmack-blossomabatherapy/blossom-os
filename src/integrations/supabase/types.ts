@@ -5517,6 +5517,59 @@ export type Database = {
           },
         ]
       }
+      external_identity_links: {
+        Row: {
+          blossom_id: string | null
+          blossom_text_id: string | null
+          created_at: string
+          display_label: string | null
+          entity_type: string
+          external_id: string
+          external_url: string | null
+          id: string
+          integration_id: string
+          last_verified_at: string | null
+          metadata: Json
+          updated_at: string
+        }
+        Insert: {
+          blossom_id?: string | null
+          blossom_text_id?: string | null
+          created_at?: string
+          display_label?: string | null
+          entity_type: string
+          external_id: string
+          external_url?: string | null
+          id?: string
+          integration_id: string
+          last_verified_at?: string | null
+          metadata?: Json
+          updated_at?: string
+        }
+        Update: {
+          blossom_id?: string | null
+          blossom_text_id?: string | null
+          created_at?: string
+          display_label?: string | null
+          entity_type?: string
+          external_id?: string
+          external_url?: string | null
+          id?: string
+          integration_id?: string
+          last_verified_at?: string | null
+          metadata?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_identity_links_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integration_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hours_timesheet_entries: {
         Row: {
           category: string | null
@@ -6454,6 +6507,388 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_catalog: {
+        Row: {
+          category: string
+          created_at: string
+          criticality: string
+          dependent_modules: string[]
+          display_name: string
+          id: string
+          methods: string[]
+          notes: string | null
+          owner_department: string | null
+          source_of_truth_for: string[]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          criticality?: string
+          dependent_modules?: string[]
+          display_name: string
+          id: string
+          methods?: string[]
+          notes?: string | null
+          owner_department?: string | null
+          source_of_truth_for?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          criticality?: string
+          dependent_modules?: string[]
+          display_name?: string
+          id?: string
+          methods?: string[]
+          notes?: string | null
+          owner_department?: string | null
+          source_of_truth_for?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      integration_connections: {
+        Row: {
+          config: Json
+          connection_type: string
+          created_at: string
+          created_by: string | null
+          credential_mode: string
+          enabled: boolean
+          environment: string
+          id: string
+          integration_id: string
+          last_error: string | null
+          last_error_at: string | null
+          last_success_at: string | null
+          last_tested_at: string | null
+          masked_account: string | null
+          secret_names: string[]
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          connection_type: string
+          created_at?: string
+          created_by?: string | null
+          credential_mode?: string
+          enabled?: boolean
+          environment?: string
+          id?: string
+          integration_id: string
+          last_error?: string | null
+          last_error_at?: string | null
+          last_success_at?: string | null
+          last_tested_at?: string | null
+          masked_account?: string | null
+          secret_names?: string[]
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          connection_type?: string
+          created_at?: string
+          created_by?: string | null
+          credential_mode?: string
+          enabled?: boolean
+          environment?: string
+          id?: string
+          integration_id?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          last_success_at?: string | null
+          last_tested_at?: string | null
+          masked_account?: string | null
+          secret_names?: string[]
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_connections_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integration_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_events: {
+        Row: {
+          actor_name: string | null
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_text_id: string | null
+          entity_type: string | null
+          event_type: string
+          external_url: string | null
+          id: string
+          integration_id: string
+          metadata: Json
+          occurred_at: string
+          source_event_id: string | null
+          title: string
+        }
+        Insert: {
+          actor_name?: string | null
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_text_id?: string | null
+          entity_type?: string | null
+          event_type: string
+          external_url?: string | null
+          id?: string
+          integration_id: string
+          metadata?: Json
+          occurred_at?: string
+          source_event_id?: string | null
+          title: string
+        }
+        Update: {
+          actor_name?: string | null
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_text_id?: string | null
+          entity_type?: string | null
+          event_type?: string
+          external_url?: string | null
+          id?: string
+          integration_id?: string
+          metadata?: Json
+          occurred_at?: string
+          source_event_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_events_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integration_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_events_source_event_id_fkey"
+            columns: ["source_event_id"]
+            isOneToOne: false
+            referencedRelation: "integration_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_oauth_connections: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          expires_at: string | null
+          id: string
+          integration_id: string
+          last_connected_at: string | null
+          last_error: string | null
+          last_refresh_at: string | null
+          metadata: Json
+          provider_email: string | null
+          provider_user_id: string | null
+          refresh_secret_name: string | null
+          scopes: string[]
+          status: string
+          token_secret_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string | null
+          id?: string
+          integration_id: string
+          last_connected_at?: string | null
+          last_error?: string | null
+          last_refresh_at?: string | null
+          metadata?: Json
+          provider_email?: string | null
+          provider_user_id?: string | null
+          refresh_secret_name?: string | null
+          scopes?: string[]
+          status?: string
+          token_secret_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string | null
+          id?: string
+          integration_id?: string
+          last_connected_at?: string | null
+          last_error?: string | null
+          last_refresh_at?: string | null
+          metadata?: Json
+          provider_email?: string | null
+          provider_user_id?: string | null
+          refresh_secret_name?: string | null
+          scopes?: string[]
+          status?: string
+          token_secret_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_oauth_connections_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integration_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_sync_runs: {
+        Row: {
+          completed_at: string | null
+          connection_id: string | null
+          created_by: string | null
+          direction: string
+          error_message: string | null
+          id: string
+          integration_id: string
+          metadata: Json
+          records_created: number
+          records_failed: number
+          records_received: number
+          records_updated: number
+          run_type: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          connection_id?: string | null
+          created_by?: string | null
+          direction?: string
+          error_message?: string | null
+          id?: string
+          integration_id: string
+          metadata?: Json
+          records_created?: number
+          records_failed?: number
+          records_received?: number
+          records_updated?: number
+          run_type: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          connection_id?: string | null
+          created_by?: string | null
+          direction?: string
+          error_message?: string | null
+          id?: string
+          integration_id?: string
+          metadata?: Json
+          records_created?: number
+          records_failed?: number
+          records_received?: number
+          records_updated?: number
+          run_type?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_sync_runs_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_sync_runs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integration_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_webhook_events: {
+        Row: {
+          connection_id: string | null
+          error_message: string | null
+          event_type: string | null
+          headers: Json
+          id: string
+          integration_id: string
+          payload: Json
+          processed_at: string | null
+          processing_status: string
+          provider_event_id: string | null
+          received_at: string
+          source_ip: string | null
+          verification_status: string
+        }
+        Insert: {
+          connection_id?: string | null
+          error_message?: string | null
+          event_type?: string | null
+          headers?: Json
+          id?: string
+          integration_id: string
+          payload?: Json
+          processed_at?: string | null
+          processing_status?: string
+          provider_event_id?: string | null
+          received_at?: string
+          source_ip?: string | null
+          verification_status?: string
+        }
+        Update: {
+          connection_id?: string | null
+          error_message?: string | null
+          event_type?: string | null
+          headers?: Json
+          id?: string
+          integration_id?: string
+          payload?: Json
+          processed_at?: string | null
+          processing_status?: string
+          provider_event_id?: string | null
+          received_at?: string
+          source_ip?: string | null
+          verification_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_webhook_events_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_webhook_events_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integration_catalog"
             referencedColumns: ["id"]
           },
         ]
