@@ -39,7 +39,9 @@ const ROTATE: Accent[] = ["orchid", "sky", "mint", "citrus", "coral", "teal"];
  * Super Admin sees a Training Management quick-access panel at the bottom.
  */
 export default function TrainingAcademyHome() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, roles } = useAuth();
+  const isRbt = roles.includes("rbt" as never);
+  const isBcba = roles.includes("bcba" as never);
   const [home, setHome] = useState<LearnerHome>(() => emptyLearnerHome());
   useEffect(() => {
     let cancelled = false;
@@ -48,12 +50,20 @@ export default function TrainingAcademyHome() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  const myTraining = TRAINING_PATHS.slice(0, 3).map((p, i) => ({
+  // Role-aware "My Training": surface the learner's own role path first.
+  const primarySlug = isRbt ? "rbt" : isBcba ? "bcba" : null;
+  const orderedPaths = primarySlug
+    ? [
+        ...TRAINING_PATHS.filter((p) => p.slug === primarySlug),
+        ...TRAINING_PATHS.filter((p) => p.slug !== primarySlug),
+      ]
+    : TRAINING_PATHS;
+  const myTraining = orderedPaths.slice(0, 3).map((p, i) => ({
     ...p,
     progress: [62, 28, 10][i] ?? 0,
     lastOpened: ["Today", "Yesterday", "3 days ago"][i] ?? "—",
   }));
-  const required = TRAINING_PATHS.filter((p) => p.category !== "Role").slice(0, 4);
+  const required = orderedPaths.filter((p) => p.category !== "Role" || p.slug === primarySlug).slice(0, 4);
   const rolePaths = TRAINING_PATHS.filter((p) => p.category === "Role");
   const departmentPaths = TRAINING_PATHS.filter((p) => p.category === "Department");
 
@@ -68,9 +78,12 @@ export default function TrainingAcademyHome() {
     return "Good evening";
   })();
 
-  const hasJourney = !!home.enrollment && home.weeks.length > 0;
+  // For RBT/BCBA, the "journey" is their academy path — always available.
+  const hasJourney = primarySlug ? true : (!!home.enrollment && home.weeks.length > 0);
   const next = home.nextAction;
   const launchPct = home.launchProgress.pct;
+  const primaryPath = primarySlug ? TRAINING_PATHS.find((p) => p.slug === primarySlug) : null;
+  const continueTo = primarySlug ? `/academy/path/${primarySlug}` : (hasJourney ? "/training" : "#paths");
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10">
@@ -92,15 +105,19 @@ export default function TrainingAcademyHome() {
           <TodayCard
             accent="orchid"
             icon={Target}
-            eyebrow={hasJourney ? "Today" : "Get started"}
-            title={hasJourney && next
-              ? next.module.title
-              : "No active journey yet"}
-            body={hasJourney && next
-              ? `Week ${next.week.week_number} · ${next.week.title}`
-              : "Pick a role path below to start your training."}
-            to={hasJourney ? "/training" : "#paths"}
-            cta={hasJourney ? "Continue today" : "Browse paths"}
+            eyebrow={primarySlug ? "Your journey" : hasJourney ? "Today" : "Get started"}
+            title={primaryPath
+              ? primaryPath.title
+              : hasJourney && next
+                ? next.module.title
+                : "No active journey yet"}
+            body={primaryPath
+              ? primaryPath.description
+              : hasJourney && next
+                ? `Week ${next.week.week_number} · ${next.week.title}`
+                : "Pick a role path below to start your training."}
+            to={continueTo}
+            cta={primarySlug ? "Open my journey" : hasJourney ? "Continue today" : "Browse paths"}
           />
           <TodayCard
             accent="mint"
