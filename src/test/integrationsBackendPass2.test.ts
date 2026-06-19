@@ -9,6 +9,8 @@ const exists = (p: string) => existsSync(join(ROOT, p));
 function readAll(dir: string): string {
   let out = "";
   for (const f of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
+    // Skip the test directory itself so self-references in regex don't trip the scan.
+    if (f.name === "test" || f.name === "__tests__") continue;
     const p = join(dir, f.name);
     if (f.isDirectory()) out += readAll(p);
     else if (/\.(ts|tsx|js|jsx)$/.test(f.name)) out += "\n" + readFileSync(join(ROOT, p), "utf8");
