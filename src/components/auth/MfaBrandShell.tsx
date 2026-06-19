@@ -52,19 +52,20 @@ export function MfaBrandShell({
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-300/60 to-transparent"
       />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-[1200px] flex-col lg:grid lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:px-12 lg:py-10">
-        {/* ── Brand / security panel ─────────────────────────── */}
-        <aside className="relative flex flex-col px-6 pt-6 sm:px-10 sm:pt-10 lg:px-0 lg:pt-0">
-          <div className="flex items-center gap-2.5">
-            <img
-              src={logoWordmark}
-              alt="Blossom ABA Therapy"
-              className="h-8 w-auto object-contain"
-            />
-          </div>
+      <div className="relative mx-auto flex min-h-screen w-full max-w-[1200px] flex-col px-6 pt-6 sm:px-10 sm:pt-10 lg:px-12 lg:pt-10">
+        {/* ── Logo header (shared across both columns) ───────── */}
+        <div className="flex items-center gap-2.5">
+          <img
+            src={logoWordmark}
+            alt="Blossom ABA Therapy"
+            className="h-8 w-auto object-contain"
+          />
+        </div>
 
-          {/* Desktop-only: framed security panel that gives the page depth */}
-          <div className="mt-10 hidden lg:flex lg:flex-1 lg:flex-col">
+        <div className="mt-8 flex flex-1 flex-col lg:grid lg:grid-cols-[1.05fr_1fr] lg:items-stretch lg:gap-12 lg:pb-10">
+        {/* ── Brand / security panel ─────────────────────────── */}
+        <aside className="relative hidden lg:flex lg:flex-col">
+          <div className="flex flex-1 flex-col">
             <div
               className="relative flex flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white/60 p-10 backdrop-blur-xl"
               style={{
@@ -117,9 +118,9 @@ export function MfaBrandShell({
         </aside>
 
         {/* ── MFA card column ────────────────────────────────── */}
-        <main className="relative flex flex-1 items-center justify-center px-6 py-10 sm:px-10 lg:px-0 lg:py-0">
+        <main className="relative flex flex-1 items-stretch justify-center pb-10 lg:py-0">
           <div
-            className="w-full max-w-[460px] rounded-3xl border border-slate-200/80 bg-white p-7 animate-in fade-in slide-in-from-bottom-4 duration-500 sm:p-9"
+            className="flex w-full max-w-[460px] flex-col rounded-3xl border border-slate-200/80 bg-white p-7 animate-in fade-in slide-in-from-bottom-4 duration-500 sm:p-9"
             style={{
               boxShadow:
                 "0 1px 0 rgba(255,255,255,0.9) inset, 0 24px 60px -28px rgba(12,35,64,0.22), 0 6px 18px -10px rgba(12,35,64,0.12)",
@@ -149,6 +150,7 @@ export function MfaBrandShell({
             )}
           </div>
         </main>
+        </div>
       </div>
 
       <div className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] text-slate-400">
