@@ -200,7 +200,7 @@ export async function probeOutlookConnection(): Promise<{
   return data as any;
 }
 
-export async function startOutlookOAuth(): Promise<{ url?: string; error?: string }> {
+export async function startOutlookOAuth(): Promise<{ authorizeUrl?: string; error?: string }> {
   const { data, error } = await (supabase as any).functions.invoke("microsoft-oauth-start", { body: {} });
   if (error) return { error: error.message };
   return data as any;
