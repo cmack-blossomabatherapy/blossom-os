@@ -18,7 +18,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   useAcademy, getTraining, getSectionsFor, getChecklistFor, getResourcesFor, getProgress,
-  markTrainingStarted, trainingQuiz, type TrainingSection, type TrainingResource, type Training,
+  markTrainingStarted, markTrainingComplete, setTrainingProgress, trainingQuiz,
+  type TrainingSection, type TrainingResource, type Training,
 } from "@/lib/training/academyData";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -165,6 +166,28 @@ export default function OSTrainingDetail() {
     );
   }
 
+  // Non-SD module runtime: wire Start / Mark complete to real progress
+  // helpers and drive the per-module timer so the buttons stop being dead.
+  const completed = progress.status === "completed";
+  const timer = useModuleTimer(training.id, completed);
+  useEffect(() => {
+    if (completed) return;
+    if (timer.startedAt) return;
+    if (progress.status === "in_progress") timer.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progress.status, completed]);
+
+  function handleStart() {
+    timer.start();
+    markTrainingStarted(training.id);
+    toast.success("Started — your progress is being tracked.");
+  }
+
+  function handleComplete() {
+    markTrainingComplete(training.id);
+    toast.success("Module marked complete.");
+  }
+
   return (
     <OSShell>
       <div className="os-rise">
@@ -196,13 +219,21 @@ export default function OSTrainingDetail() {
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">
-              <Button onClick={() => toast.success("Marked as in progress")} className="rounded-full">
+              <Button
+                onClick={completed ? () => setActiveSectionId(sections[0]?.id) : handleStart}
+                className="rounded-full"
+              >
                 <Play className="mr-1.5 h-3.5 w-3.5" />
-                {progress.status === "completed" ? "Review" : progress.status === "not_started" ? "Start" : "Continue"}
+                {completed ? "Review" : progress.status === "not_started" ? "Start" : "Continue"}
               </Button>
               <div className="w-56">
                 <Progress value={progress.progressPercent} className="h-1.5" />
-                <p className="mt-1 text-right text-[11px] text-muted-foreground">{progress.progressPercent}% complete</p>
+                <p className="mt-1 text-right text-[11px] text-muted-foreground">
+                  {progress.progressPercent}% complete
+                  {timer.startedAt && !completed && (
+                    <span className="ml-2 tabular-nums">· {formatElapsed(timer.elapsedSeconds)}</span>
+                  )}
+                </p>
               </div>
             </div>
           </div>
@@ -314,8 +345,14 @@ export default function OSTrainingDetail() {
             <Button variant="ghost" size="sm" onClick={() => toast.success("Notes saved (local)")}>
               <BookOpen className="mr-1.5 h-3.5 w-3.5" /> My notes
             </Button>
-            <Button size="sm" className="rounded-full" onClick={() => toast.success("Marked complete")}>
-              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Mark section complete
+            <Button
+              size="sm"
+              className="rounded-full"
+              onClick={handleComplete}
+              disabled={completed}
+            >
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+              {completed ? "Completed" : "Mark module complete"}
             </Button>
           </div>
         </main>

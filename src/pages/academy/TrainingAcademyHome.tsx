@@ -1,12 +1,17 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  GraduationCap, Clock, ArrowRight, BookOpen, CheckCircle2, Compass,
+  GraduationCap, Clock, ArrowRight, BookOpen, CheckCircle2,
   PlayCircle, ClipboardList, Users, Settings2, FileText, BarChart3,
+  Sparkles, Flame, Library, Target, Trophy,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { TRAINING_PATHS, type TrainingPath } from "@/lib/academy/trainingPaths";
+import {
+  loadLearnerHome, emptyLearnerHome, type LearnerHome,
+} from "@/lib/academy/learnerHome";
 
 const TONE = {
   Foundations: "bg-primary/10 text-primary",
@@ -14,13 +19,34 @@ const TONE = {
   Department: "bg-muted text-muted-foreground",
 } as const;
 
+/** Warm, color-coded accents for the LMS home. Used sparingly on icon
+ *  tiles and status chips so the page feels alive without losing the
+ *  Blossom OS calm-Apple feel. */
+const ACCENTS = {
+  mint:    { bg: "bg-emerald-50",  fg: "text-emerald-700", ring: "ring-emerald-200" },
+  sky:     { bg: "bg-sky-50",      fg: "text-sky-700",     ring: "ring-sky-200" },
+  citrus:  { bg: "bg-amber-50",    fg: "text-amber-700",   ring: "ring-amber-200" },
+  coral:   { bg: "bg-rose-50",     fg: "text-rose-700",    ring: "ring-rose-200" },
+  orchid:  { bg: "bg-violet-50",   fg: "text-violet-700",  ring: "ring-violet-200" },
+  teal:    { bg: "bg-teal-50",     fg: "text-teal-700",    ring: "ring-teal-200" },
+} as const;
+type Accent = keyof typeof ACCENTS;
+const ROTATE: Accent[] = ["orchid", "sky", "mint", "citrus", "coral", "teal"];
+
 /**
  * Training Academy landing — universal home for every role.
  * Sections: My Training · Required · Role Paths · Department · Completed.
  * Super Admin sees a Training Management quick-access panel at the bottom.
  */
 export default function TrainingAcademyHome() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
+  const [home, setHome] = useState<LearnerHome>(() => emptyLearnerHome());
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) { setHome(emptyLearnerHome()); return; }
+    loadLearnerHome(user.id).then((h) => { if (!cancelled) setHome(h); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const myTraining = TRAINING_PATHS.slice(0, 3).map((p, i) => ({
     ...p,
@@ -31,6 +57,21 @@ export default function TrainingAcademyHome() {
   const rolePaths = TRAINING_PATHS.filter((p) => p.category === "Role");
   const departmentPaths = TRAINING_PATHS.filter((p) => p.category === "Department");
 
+  const firstName =
+    home.employee?.first_name ||
+    (user?.email?.split("@")[0]) ||
+    "there";
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  })();
+
+  const hasJourney = !!home.enrollment && home.weeks.length > 0;
+  const next = home.nextAction;
+  const launchPct = home.launchProgress.pct;
+
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10">
       {/* ---------- Hero ---------- */}
@@ -39,12 +80,50 @@ export default function TrainingAcademyHome() {
           <GraduationCap className="h-3 w-3" /> Training Academy
         </div>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
-          Training Academy
+          {greeting}, {firstName}.
         </h1>
         <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
-          Role-based training paths for onboarding, department readiness, continued
-          education, and Blossom OS adoption.
+          Your central place to learn the way Blossom runs — role-based journeys,
+          SOPs, walkthroughs, and quick checks, all in one place.
         </p>
+
+        {/* Today / Continue strip — colorful, live when enrolled */}
+        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+          <TodayCard
+            accent="orchid"
+            icon={Target}
+            eyebrow={hasJourney ? "Today" : "Get started"}
+            title={hasJourney && next
+              ? next.module.title
+              : "No active journey yet"}
+            body={hasJourney && next
+              ? `Week ${next.week.week_number} · ${next.week.title}`
+              : "Pick a role path below to start your training."}
+            to={hasJourney ? "/training" : "#paths"}
+            cta={hasJourney ? "Continue today" : "Browse paths"}
+          />
+          <TodayCard
+            accent="mint"
+            icon={Trophy}
+            eyebrow="Journey progress"
+            title={hasJourney ? `${launchPct}% complete` : "—"}
+            body={hasJourney
+              ? `${home.launchProgress.requiredCompleted} of ${home.launchProgress.requiredTotal} required modules`
+              : "Progress will appear once you're enrolled in a journey."}
+            to="/training"
+            cta={hasJourney ? "Open journey" : "Learn more"}
+            meter={hasJourney ? launchPct : null}
+          />
+          <TodayCard
+            accent="sky"
+            icon={Library}
+            eyebrow="Resources"
+            title="Resource Library"
+            body="Find SOPs, walkthroughs, and policy documents you need."
+            to="/hr/resources"
+            cta="Open library"
+          />
+        </div>
       </header>
 
       {/* ---------- My Training (Continue) ---------- */}
@@ -54,14 +133,14 @@ export default function TrainingAcademyHome() {
         description="Pick up where you left off."
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {myTraining.map((t) => (
+          {myTraining.map((t, i) => (
             <Link
               key={t.slug}
               to={t.slug === "state-director" ? "/training" : `/academy/path/${t.slug}`}
               className="group flex flex-col rounded-2xl border border-border/70 bg-card p-5 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)] transition-all hover:-translate-y-0.5 hover:border-border"
             >
               <div className="flex items-start justify-between">
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
+                <div className={`grid h-10 w-10 place-items-center rounded-xl ${ACCENTS[ROTATE[i % ROTATE.length]].bg} ${ACCENTS[ROTATE[i % ROTATE.length]].fg}`}>
                   <t.icon className="h-5 w-5" />
                 </div>
                 <Badge variant="outline" className="text-[10px]">{t.audience}</Badge>
@@ -103,6 +182,7 @@ export default function TrainingAcademyHome() {
 
       {/* ---------- Role Training Paths ---------- */}
       <Section
+        anchorId="paths"
         eyebrow="By role"
         title="Role Training Paths"
         description="Structured learning for every Blossom role."
@@ -156,10 +236,10 @@ export default function TrainingAcademyHome() {
 /* ============================== components ============================== */
 
 function Section({
-  eyebrow, title, description, children,
-}: { eyebrow: string; title: string; description: string; children: React.ReactNode }) {
+  eyebrow, title, description, children, anchorId,
+}: { eyebrow: string; title: string; description: string; children: React.ReactNode; anchorId?: string }) {
   return (
-    <section className="mt-12 first:mt-0">
+    <section id={anchorId} className="mt-12 first:mt-0 scroll-mt-24">
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{eyebrow}</p>
@@ -169,6 +249,46 @@ function Section({
       </div>
       {children}
     </section>
+  );
+}
+
+function TodayCard({
+  accent, icon: Icon, eyebrow, title, body, to, cta, meter,
+}: {
+  accent: Accent;
+  icon: typeof Target;
+  eyebrow: string;
+  title: string;
+  body: string;
+  to: string;
+  cta: string;
+  meter?: number | null;
+}) {
+  const a = ACCENTS[accent];
+  return (
+    <Link
+      to={to}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)] transition-all hover:-translate-y-0.5 hover:border-border`}
+    >
+      <div className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full ${a.bg} opacity-60`} />
+      <div className="relative flex items-start justify-between">
+        <div className={`grid h-10 w-10 place-items-center rounded-xl ${a.bg} ${a.fg} ring-1 ${a.ring}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{eyebrow}</p>
+      </div>
+      <h3 className="relative mt-4 line-clamp-2 text-base font-semibold tracking-tight">{title}</h3>
+      <p className="relative mt-1 line-clamp-2 text-[13px] text-muted-foreground">{body}</p>
+      {typeof meter === "number" && (
+        <div className="relative mt-3">
+          <Progress value={meter} className="h-1.5" />
+        </div>
+      )}
+      <div className="relative mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-primary">
+        {cta}
+        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+      </div>
+    </Link>
   );
 }
 

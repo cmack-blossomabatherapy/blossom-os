@@ -624,45 +624,57 @@ export type Database = {
       }
       academy_progress: {
         Row: {
+          checklist_state: Json
           completed_at: string | null
           created_at: string
           enrollment_id: string
           id: string
+          last_active_at: string | null
           module_id: string
           reflection: string | null
+          resources_viewed: Json
           score: number | null
           started_at: string | null
           status: Database["public"]["Enums"]["academy_module_status"]
+          time_elapsed_seconds: number
           updated_at: string
           verified_at: string | null
           verified_by: string | null
           verified_by_name: string | null
         }
         Insert: {
+          checklist_state?: Json
           completed_at?: string | null
           created_at?: string
           enrollment_id: string
           id?: string
+          last_active_at?: string | null
           module_id: string
           reflection?: string | null
+          resources_viewed?: Json
           score?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["academy_module_status"]
+          time_elapsed_seconds?: number
           updated_at?: string
           verified_at?: string | null
           verified_by?: string | null
           verified_by_name?: string | null
         }
         Update: {
+          checklist_state?: Json
           completed_at?: string | null
           created_at?: string
           enrollment_id?: string
           id?: string
+          last_active_at?: string | null
           module_id?: string
           reflection?: string | null
+          resources_viewed?: Json
           score?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["academy_module_status"]
+          time_elapsed_seconds?: number
           updated_at?: string
           verified_at?: string | null
           verified_by?: string | null
