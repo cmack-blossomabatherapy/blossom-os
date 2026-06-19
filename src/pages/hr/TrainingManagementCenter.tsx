@@ -592,15 +592,41 @@ export default function TrainingManagementCenter() {
       </div>
 
       <AIGenerateDialog open={aiOpen} onOpenChange={setAiOpen} />
-      <CreateModuleDialog
+      <CreateModuleDialogReal
         open={createModuleOpen}
         onOpenChange={setCreateModuleOpen}
+        journeyId={selectedJourneyId}
+        onCreated={(t) => {
+          // If we're inside a journey, the helper already added it.
+          // Open editor for the newly-created module to encourage deep editing.
+          setEditingModuleId(t.id);
+        }}
       />
-      <CreateJourneyDialog
+      <CreateJourneyDialogReal
         open={createJourneyOpen}
         onOpenChange={setCreateJourneyOpen}
+        onCreated={(j) => {
+          setNav("journeys");
+          setSelectedJourneyId(j.id);
+        }}
       />
       <AssignDialog open={assignOpen} onOpenChange={setAssignOpen} />
+      {editingModuleId && (
+        <ModuleEditDialog
+          key={editingModuleId}
+          training={
+            academy.trainings.find((t) => t.id === editingModuleId) ?? {
+              id: editingModuleId,
+              title: "(deleted)",
+              description: "",
+              type: "SOP",
+              estimatedMinutes: 10,
+              category: "role",
+            } as Training
+          }
+          onClose={() => setEditingModuleId(null)}
+        />
+      )}
     </OSShell>
   );
 }
