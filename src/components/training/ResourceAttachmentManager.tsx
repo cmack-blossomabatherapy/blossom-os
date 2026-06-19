@@ -186,7 +186,12 @@ export function ResourceAttachmentManager() {
       <div className="rounded-2xl border border-border/70 bg-card p-4">
         <div className="mb-3 flex items-center gap-2">
           <Layers className="h-4 w-4 text-primary" />
-          <h3 className="text-[13px] font-semibold">Existing attachments · {journey?.path.title ?? journeySlug}</h3>
+          <h3 className="text-[13px] font-semibold">
+            Existing attachments · {journey?.path.title ?? journeySlug}
+            {journeySlug === "rbt" && (
+              <span className="ml-1 text-muted-foreground">· {RBT_PATHS.find((p) => p.id === rbtTrackId)?.label}</span>
+            )}
+          </h3>
         </div>
         {journeyAttachments.length === 0 ? (
           <p className="px-3 py-6 text-center text-[12.5px] text-muted-foreground">Nothing attached yet.</p>
