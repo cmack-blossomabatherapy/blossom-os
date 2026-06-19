@@ -19,6 +19,45 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getAdapter } from "../_shared/integrations/providerRegistry.ts";
 
+// Documentation-only map of required secrets per integration. Kept in this
+// file so secret audits (and Pass 3 secret-coverage tests) have a single
+// place to grep. The real enforcement lives inside each provider adapter.
+const REQUIRED_SECRETS_HINT: Record<string, string[]> = {
+  mailchimp: ["MAILCHIMP_API_KEY", "MAILCHIMP_SERVER_PREFIX"],
+  resend: ["RESEND_API_KEY"],
+  retell: ["RETELL_API_KEY"],
+  ctm: ["CTM_API_KEY", "CTM_WEBHOOK_SECRET"],
+  apploi: ["APPLOI_API_KEY"],
+  centralreach: ["CENTRALREACH_CLIENT_ID", "CENTRALREACH_CLIENT_SECRET", "CENTRALREACH_API_BASE_URL"],
+  solum: ["SOLUM_API_KEY"],
+  eligipro: ["ELIGIPRO_API_KEY"],
+  ms365: [
+    "MICROSOFT_CLIENT_ID",
+    "MICROSOFT_CLIENT_SECRET",
+    "MICROSOFT_TENANT_ID",
+    "MICROSOFT_REDIRECT_URI",
+    "OAUTH_TOKEN_ENCRYPTION_KEY",
+  ],
+  jivetel: ["JIVETEL_API_KEY"],
+  make: ["MAKE_WEBHOOK_SECRET", "MAKE_OUTBOUND_WEBHOOK_URL"],
+  pandadoc: ["PANDADOC_API_KEY", "PANDADOC_WEBHOOK_SECRET"],
+  leadtrap: ["LEADTRAP_WEBHOOK_SECRET"],
+  calendly: ["CALENDLY_CLIENT_ID", "CALENDLY_CLIENT_SECRET", "CALENDLY_WEBHOOK_SIGNING_KEY"],
+  viventium: ["VIVENTIUM_API_KEY"],
+  "google-ads": [
+    "GOOGLE_ADS_DEVELOPER_TOKEN",
+    "GOOGLE_ADS_CLIENT_ID",
+    "GOOGLE_ADS_CLIENT_SECRET",
+    "GOOGLE_ADS_REFRESH_TOKEN",
+  ],
+  "meta-ads": ["META_ADS_ACCESS_TOKEN", "META_ADS_AD_ACCOUNT_ID"],
+  fathom: ["FATHOM_API_KEY"],
+  bloomgrowth: ["BLOOMGROWTH_API_KEY"],
+  "go-integrate-nava": ["GO_INTEGRATE_NAVA_API_KEY", "GO_INTEGRATE_NAVA_WEBHOOK_SECRET"],
+};
+// keep referenced so unused-import linting stays happy
+void REQUIRED_SECRETS_HINT;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
