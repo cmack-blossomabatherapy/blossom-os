@@ -476,8 +476,7 @@ export function CreateModuleDialogReal({
                 department: department.trim() || undefined,
               });
               if (journeyId) {
-                // Defer to avoid double-emit before reset.
-                import("@/lib/training/academyData").then((m) => m.addModuleToJourney(journeyId, t.id));
+                addModuleToJourney(journeyId, t.id);
               }
               toast.success(`Created "${t.title}"`);
               onCreated?.(t);
