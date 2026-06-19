@@ -58,6 +58,7 @@ export default function TrainingPathDayDetail() {
       moduleId: m.id,
       sourceModuleId: parsed.sourceModuleId,
       sourceKind: parsed.kind,
+      rbtTrackId: slug === "rbt" ? (rbtTrackId ?? "not_certified") : undefined,
       moduleResources: m.resources,
     }).map((r) => ({ ...r, moduleId: m.id, moduleTitle: m.title }));
   });
@@ -71,6 +72,7 @@ export default function TrainingPathDayDetail() {
       moduleId: m.id,
       sourceModuleId: parsed.sourceModuleId,
       sourceKind: parsed.kind,
+      rbtTrackId: slug === "rbt" ? (rbtTrackId ?? "not_certified") : undefined,
       moduleResources: m.resources,
     }).length;
   };

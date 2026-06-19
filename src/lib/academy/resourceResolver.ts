@@ -13,6 +13,7 @@
 import { STARTER_RBT_RESOURCES, getResourcesForModule as getRbtResourcesForModule, type RBTResource } from "@/lib/training/rbtResources";
 import { listAttachmentsForScope, type TrainingResourceAttachment } from "./resourceAttachments";
 import type { TrainingResource } from "@/lib/training/academyData";
+import type { RBTPathId } from "@/lib/training/rbtAcademy";
 
 export interface AcademyResolvedResource {
   id: string;             // attachment id or resource id, unique in the merged list
@@ -35,6 +36,9 @@ export interface AcademyResourceScope {
   /** Origin curriculum kind. Used to gate RBT seeded resource lookups so a
    * BCBA/academyData module id is never matched against the RBT library. */
   sourceKind?: "rbt" | "bcba" | "academyData";
+  /** Active RBT track on the learner page. Used to filter RBT attachments so
+   * a resource attached to one track never bleeds into another. */
+  rbtTrackId?: RBTPathId;
   /** Optional module-hardcoded resources from a Training record. */
   moduleResources?: TrainingResource[];
 }
@@ -102,6 +106,7 @@ export function getAcademyResourcesForScope(scope: AcademyResourceScope): Academ
     journeySlug: scope.journeySlug,
     dayId: scope.dayId,
     moduleId: scope.moduleId,
+    rbtTrackId: scope.rbtTrackId,
   })) {
     push(fromAttachment(a));
   }

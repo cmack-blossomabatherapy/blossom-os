@@ -57,6 +57,7 @@ export default function TrainingPathDetail() {
   const journeyResources = getAcademyResourcesForScope({
     journeySlug: slug,
     sourceKind: journey.source,
+    rbtTrackId: isRbt ? (journey.rbtActiveTrackId ?? "not_certified") : undefined,
   });
 
   const activeRbtTrack = isRbt

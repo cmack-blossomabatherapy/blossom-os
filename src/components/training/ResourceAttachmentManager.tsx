@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import {
-  Library, Plus, Trash2, Search, FileText, FolderOpen, Layers,
+  Library, Plus, Trash2, Search, FileText, FolderOpen, Layers, Globe2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,12 +62,28 @@ export function ResourceAttachmentManager() {
       journeySlug,
       dayId: scope === "day" ? dayId : scope === "module" ? days.find((d) => d.modules.some((m) => m.id === moduleId))?.id : undefined,
       moduleId: scope === "module" ? moduleId : undefined,
+      rbtTrackId: journeySlug === "rbt" && !attachGlobalRbt ? rbtTrackId : undefined,
       requiredness,
       instructions: instructions.trim() || undefined,
       source: "resource-library",
     });
     setInstructions("");
   };
+
+  // When true, RBT attachments are saved without a track id and therefore
+  // appear on every RBT track. Defaults to track-scoped (false).
+  const [attachGlobalRbt, setAttachGlobalRbt] = useState(false);
+
+  // Group RBT attachments by track scope so admins can clearly see what
+  // applies to the currently selected track vs. other tracks vs. global.
+  const isRbt = journeySlug === "rbt";
+  const trackScopedAttachments = isRbt
+    ? journeyAttachments.filter((a) => a.rbtTrackId === rbtTrackId)
+    : journeyAttachments;
+  const globalRbtAttachments = isRbt ? journeyAttachments.filter((a) => !a.rbtTrackId) : [];
+  const otherTrackAttachments = isRbt
+    ? journeyAttachments.filter((a) => a.rbtTrackId && a.rbtTrackId !== rbtTrackId)
+    : [];
 
   return (
     <section className="space-y-6">
@@ -100,6 +116,15 @@ export function ResourceAttachmentManager() {
                 {RBT_PATHS.map((p) => (<SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>))}
               </SelectContent>
             </Select>
+            <label className="mt-2 flex items-center gap-2 text-[11.5px] text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={attachGlobalRbt}
+                onChange={(e) => setAttachGlobalRbt(e.target.checked)}
+                className="h-3.5 w-3.5"
+              />
+              Apply to all RBT tracks (global)
+            </label>
           </div>
         )}
         <div>
@@ -183,21 +208,70 @@ export function ResourceAttachmentManager() {
       </div>
 
       {/* Existing attachments */}
-      <div className="rounded-2xl border border-border/70 bg-card p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <Layers className="h-4 w-4 text-primary" />
-          <h3 className="text-[13px] font-semibold">
-            Existing attachments · {journey?.path.title ?? journeySlug}
-            {journeySlug === "rbt" && (
-              <span className="ml-1 text-muted-foreground">· {RBT_PATHS.find((p) => p.id === rbtTrackId)?.label}</span>
-            )}
-          </h3>
-        </div>
-        {journeyAttachments.length === 0 ? (
-          <p className="px-3 py-6 text-center text-[12.5px] text-muted-foreground">Nothing attached yet.</p>
-        ) : (
-          <ul className="divide-y divide-border/60">
-            {journeyAttachments.map((a) => (
+      <div className="space-y-4">
+        <AttachmentGroup
+          title={
+            isRbt
+              ? `For ${RBT_PATHS.find((p) => p.id === rbtTrackId)?.label}`
+              : `Existing attachments · ${journey?.path.title ?? journeySlug}`
+          }
+          icon={Layers}
+          attachments={trackScopedAttachments}
+          emptyText="Nothing attached to this track yet."
+          onRemove={removeAttachment}
+        />
+        {isRbt && (
+          <AttachmentGroup
+            title="Global RBT attachments (all tracks)"
+            icon={Globe2}
+            attachments={globalRbtAttachments}
+            emptyText="No global RBT attachments."
+            onRemove={removeAttachment}
+            muted
+          />
+        )}
+        {isRbt && otherTrackAttachments.length > 0 && (
+          <AttachmentGroup
+            title="On other RBT tracks"
+            icon={Layers}
+            attachments={otherTrackAttachments}
+            emptyText=""
+            onRemove={removeAttachment}
+            muted
+            showTrack
+          />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AttachmentGroup({
+  title, icon: Icon, attachments, emptyText, onRemove, muted, showTrack,
+}: {
+  title: string;
+  icon: typeof Layers;
+  attachments: ReturnType<typeof useResourceAttachments>;
+  emptyText: string;
+  onRemove: (id: string) => void;
+  muted?: boolean;
+  showTrack?: boolean;
+}) {
+  if (attachments.length === 0 && !emptyText) return null;
+  return (
+    <div className={`rounded-2xl border border-border/70 ${muted ? "bg-muted/30" : "bg-card"} p-4`}>
+      <div className="mb-3 flex items-center gap-2">
+        <Icon className="h-4 w-4 text-primary" />
+        <h3 className="text-[13px] font-semibold">{title}</h3>
+        <Badge variant="outline" className="text-[10px]">{attachments.length}</Badge>
+      </div>
+      {attachments.length === 0 ? (
+        <p className="px-3 py-6 text-center text-[12.5px] text-muted-foreground">{emptyText}</p>
+      ) : (
+        <ul className="divide-y divide-border/60">
+          {attachments.map((a) => {
+            const trackLabel = a.rbtTrackId ? RBT_PATHS.find((p) => p.id === a.rbtTrackId)?.label : "All tracks";
+            return (
               <li key={a.id} className="flex items-center gap-3 py-2">
                 <Badge variant="outline" className="text-[10px] capitalize">{a.scope}</Badge>
                 <div className="min-w-0 flex-1">
@@ -206,16 +280,17 @@ export function ResourceAttachmentManager() {
                     {a.resourceType} · {a.requiredness}
                     {a.moduleId ? ` · module ${a.moduleId}` : ""}
                     {a.dayId ? ` · day ${a.dayId}` : ""}
+                    {showTrack && a.journeySlug === "rbt" ? ` · ${trackLabel}` : ""}
                   </p>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => removeAttachment(a.id)}>
+                <Button size="sm" variant="ghost" onClick={() => onRemove(a.id)}>
                   <Trash2 className="h-3.5 w-3.5 text-rose-600" />
                 </Button>
               </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </section>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
