@@ -312,9 +312,12 @@ function useUserAssignments(): TrainingAssignment[] {
 export default function TrainingManagementCenter() {
   const [search] = useSearchParams();
   const navigate = useNavigate();
-  const [nav, setNav] = useState<NavId>("control-room");
+  const navParam = (search.get("nav") as NavId | null);
+  const validNav = navParam && NAV.some((n) => n.id === navParam) ? navParam : null;
+  const [nav, setNav] = useState<NavId>(validNav ?? "control-room");
   const [query, setQuery] = useState("");
   const [selectedJourneyId, setSelectedJourneyId] = useState<string | null>(null);
+  const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(search.get("action") === "create");
   const [createModuleOpen, setCreateModuleOpen] = useState(false);
   const [createJourneyOpen, setCreateJourneyOpen] = useState(
@@ -322,6 +325,11 @@ export default function TrainingManagementCenter() {
   );
   const [assignOpen, setAssignOpen] = useState(search.get("action") === "assign");
   const canUploadResources = useCanUploadResources();
+
+  // Keep `?nav=` in URL in sync when the user changes tabs.
+  useEffect(() => {
+    if (validNav && validNav !== nav) setNav(validNav);
+  }, [validNav]); // eslint-disable-line
 
   // Legacy `?action=upload` used to open an inline upload dialog that
   // could white-screen on failure. Redirect to the canonical Resource
