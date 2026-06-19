@@ -29,6 +29,14 @@ const REQUIRED_SECRETS: Record<string, string[]> = {
   calendly: ["CALENDLY_CLIENT_ID", "CALENDLY_CLIENT_SECRET"],
 };
 
+// Some installations historically used SOLOM_API_KEY (typo). Accept either.
+function readSecretWithAlias(name: string): string | undefined {
+  const v = Deno.env.get(name);
+  if (v) return v;
+  if (name === "SOLUM_API_KEY") return Deno.env.get("SOLOM_API_KEY") ?? undefined;
+  return undefined;
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -70,14 +78,24 @@ Deno.serve(async (req) => {
   if (!integrationId) return json({ error: "integrationId required" }, 400);
 
   const required = REQUIRED_SECRETS[integrationId] ?? [];
-  const missing = required.filter((name) => !Deno.env.get(name));
+  const missing = required.filter((name) => !readSecretWithAlias(name));
 
   const now = new Date().toISOString();
-  const baseUpdate = {
-    last_tested_at: now,
-  };
+
+  async function persist(update: Record<string, unknown>) {
+    await supabase
+      .from("integration_connections")
+      .update({ last_tested_at: now, ...update })
+      .eq("integration_id", integrationId)
+      .eq("environment", "production");
+  }
 
   if (missing.length > 0) {
+    await persist({
+      status: "not_configured",
+      last_error_at: now,
+      last_error: `Missing required secret(s): ${missing.join(", ")}`,
+    });
     return json({
       ok: false,
       integrationId,
@@ -87,37 +105,64 @@ Deno.serve(async (req) => {
     });
   }
 
-  // For Retell we can do a real lightweight ping.
-  if (integrationId === "retell") {
-    try {
+  // Real lightweight provider probes.
+  try {
+    if (integrationId === "retell") {
       const res = await fetch("https://api.retellai.com/list-agents", {
         headers: { Authorization: `Bearer ${Deno.env.get("RETELL_API_KEY")}` },
       });
-      return json({
-        ok: res.ok,
-        integrationId,
-        status: res.ok ? "connected" : "error",
-        message: res.ok ? "Retell API reachable" : `Retell API ${res.status}`,
-        details: { httpStatus: res.status },
+      const ok = res.ok;
+      await persist({
+        status: ok ? "connected" : "error",
+        last_success_at: ok ? now : null,
+        last_error_at: ok ? null : now,
+        last_error: ok ? null : `Retell API ${res.status}`,
       });
-    } catch (e) {
-      return json({
-        ok: false,
-        integrationId,
-        status: "error",
-        message: e instanceof Error ? e.message : String(e),
-      });
+      return json({ ok, integrationId, status: ok ? "connected" : "error", message: ok ? "Retell API reachable" : `Retell API ${res.status}`, details: { httpStatus: res.status } });
     }
+    if (integrationId === "resend") {
+      const res = await fetch("https://api.resend.com/domains", {
+        headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}` },
+      });
+      const ok = res.ok;
+      await persist({
+        status: ok ? "connected" : "error",
+        last_success_at: ok ? now : null,
+        last_error_at: ok ? null : now,
+        last_error: ok ? null : `Resend API ${res.status}`,
+      });
+      return json({ ok, integrationId, status: ok ? "connected" : "error", message: ok ? "Resend API reachable" : `Resend API ${res.status}`, details: { httpStatus: res.status } });
+    }
+    if (integrationId === "mailchimp") {
+      const prefix = Deno.env.get("MAILCHIMP_SERVER_PREFIX");
+      const res = await fetch(`https://${prefix}.api.mailchimp.com/3.0/ping`, {
+        headers: { Authorization: `Basic ${btoa(`anystring:${Deno.env.get("MAILCHIMP_API_KEY")}`)}` },
+      });
+      const ok = res.ok;
+      await persist({
+        status: ok ? "connected" : "error",
+        last_success_at: ok ? now : null,
+        last_error_at: ok ? null : now,
+        last_error: ok ? null : `Mailchimp API ${res.status}`,
+      });
+      return json({ ok, integrationId, status: ok ? "connected" : "error", message: ok ? "Mailchimp API reachable" : `Mailchimp API ${res.status}`, details: { httpStatus: res.status } });
+    }
+    if (integrationId === "ms365") {
+      // ms365 user-specific test is via microsoft-graph-probe; here just confirm config.
+      await persist({ status: "configured", last_success_at: now, last_error: null, last_error_at: null });
+      return json({ ok: true, integrationId, status: "configured", message: "Microsoft 365 config present. Each user connects via /microsoft-oauth-start, tested via /microsoft-graph-probe.", details: { requiredSecrets: required } });
+    }
+  } catch (e) {
+    await persist({ status: "error", last_error_at: now, last_error: e instanceof Error ? e.message : String(e) });
+    return json({ ok: false, integrationId, status: "error", message: e instanceof Error ? e.message : String(e) });
   }
 
+  await persist({ status: "configured_pending_probe", last_success_at: null, last_error: null, last_error_at: null });
   return json({
     ok: true,
     integrationId,
-    status: required.length > 0 ? "configured" : "not_implemented",
-    message:
-      required.length > 0
-        ? "Required secrets present. Deep provider probe not yet implemented."
-        : "No provider probe implemented for this integration yet.",
-    details: { requiredSecrets: required, ...baseUpdate },
+    status: "configured_pending_probe",
+    message: "Required secrets present. Deep provider probe not yet implemented.",
+    details: { requiredSecrets: required },
   });
 });
