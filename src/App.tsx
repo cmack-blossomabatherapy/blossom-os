@@ -729,7 +729,7 @@ const App = () => (
                   {/* Canonical Welcome to Blossom route — renders inside the OS shell,
                       not the legacy AppLayout. */}
                   <Route path="/training/welcome" element={<OSWelcomeToBlossom />} />
-                  <Route path="/training/manage" element={<OSTrainingManage />} />
+                  <Route path="/training/manage" element={<Navigate to="/hr/training-center?nav=journeys" replace />} />
                   <Route path="/training/:id" element={<OSTrainingDetail />} />
                   <Route path="/billing" element={<Navigate to="/billing-finance" replace />} />
                   <Route path="/payroll" element={<Navigate to="/payroll/workspace" replace />} />

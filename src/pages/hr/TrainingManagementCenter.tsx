@@ -78,6 +78,12 @@ import { Heart } from "lucide-react";
 import { LayoutDashboard } from "lucide-react";
 import { ResourceAttachmentManager } from "@/components/training/ResourceAttachmentManager";
 import {
+  JourneyMetaEditor,
+  ModuleEditDialog,
+  CreateModuleDialogReal,
+  CreateJourneyDialogReal,
+} from "@/components/training/management/JourneyEditors";
+import {
   SDLaunchReadinessPanel,
   SDDayOneAdminGuide,
   SDMentorCheckInGuide,
@@ -306,9 +312,12 @@ function useUserAssignments(): TrainingAssignment[] {
 export default function TrainingManagementCenter() {
   const [search] = useSearchParams();
   const navigate = useNavigate();
-  const [nav, setNav] = useState<NavId>("control-room");
+  const navParam = (search.get("nav") as NavId | null);
+  const validNav = navParam && NAV.some((n) => n.id === navParam) ? navParam : null;
+  const [nav, setNav] = useState<NavId>(validNav ?? "control-room");
   const [query, setQuery] = useState("");
   const [selectedJourneyId, setSelectedJourneyId] = useState<string | null>(null);
+  const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(search.get("action") === "create");
   const [createModuleOpen, setCreateModuleOpen] = useState(false);
   const [createJourneyOpen, setCreateJourneyOpen] = useState(
@@ -316,6 +325,11 @@ export default function TrainingManagementCenter() {
   );
   const [assignOpen, setAssignOpen] = useState(search.get("action") === "assign");
   const canUploadResources = useCanUploadResources();
+
+  // Keep `?nav=` in URL in sync when the user changes tabs.
+  useEffect(() => {
+    if (validNav && validNav !== nav) setNav(validNav);
+  }, [validNav]); // eslint-disable-line
 
   // Legacy `?action=upload` used to open an inline upload dialog that
   // could white-screen on failure. Redirect to the canonical Resource
@@ -509,9 +523,18 @@ export default function TrainingManagementCenter() {
               journey={selectedJourney}
               allModules={allModules}
               onBack={() => setSelectedJourneyId(null)}
+              onEditModule={(id) => setEditingModuleId(id)}
+              onCreateModule={() => setCreateModuleOpen(true)}
+              onAssign={() => setAssignOpen(true)}
+              rawJourney={academy.journeys.find((j) => j.id === selectedJourney.id) ?? null}
             />
           )}
-          {nav === "modules" && <ModulesGrid modules={filteredModules} />}
+          {nav === "modules" && (
+            <ModulesGrid
+              modules={filteredModules}
+              onEdit={(id) => setEditingModuleId(id)}
+            />
+          )}
           {nav === "onboarding" && <OnboardingView />}
           {nav === "sops" && <SopsList />}
           {nav === "resources" && <ResourceLibraryView />}
@@ -578,15 +601,41 @@ export default function TrainingManagementCenter() {
       </div>
 
       <AIGenerateDialog open={aiOpen} onOpenChange={setAiOpen} />
-      <CreateModuleDialog
+      <CreateModuleDialogReal
         open={createModuleOpen}
         onOpenChange={setCreateModuleOpen}
+        journeyId={selectedJourneyId}
+        onCreated={(t) => {
+          // If we're inside a journey, the helper already added it.
+          // Open editor for the newly-created module to encourage deep editing.
+          setEditingModuleId(t.id);
+        }}
       />
-      <CreateJourneyDialog
+      <CreateJourneyDialogReal
         open={createJourneyOpen}
         onOpenChange={setCreateJourneyOpen}
+        onCreated={(j) => {
+          setNav("journeys");
+          setSelectedJourneyId(j.id);
+        }}
       />
       <AssignDialog open={assignOpen} onOpenChange={setAssignOpen} />
+      {editingModuleId && (
+        <ModuleEditDialog
+          key={editingModuleId}
+          training={
+            academy.trainings.find((t) => t.id === editingModuleId) ?? {
+              id: editingModuleId,
+              title: "(deleted)",
+              description: "",
+              type: "SOP",
+              estimatedMinutes: 10,
+              category: "role",
+            } as Training
+          }
+          onClose={() => setEditingModuleId(null)}
+        />
+      )}
     </OSShell>
   );
 }
@@ -648,10 +697,18 @@ function JourneyBuilderView({
   journey,
   allModules,
   onBack,
+  onEditModule,
+  onCreateModule,
+  onAssign,
+  rawJourney,
 }: {
   journey: ViewJourney;
   allModules: ViewModule[];
   onBack: () => void;
+  onEditModule: (id: string) => void;
+  onCreateModule: () => void;
+  onAssign: () => void;
+  rawJourney: RoleJourney | null;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const moduleMap = useMemo(() => {
@@ -675,14 +732,19 @@ function JourneyBuilderView({
           ← All journeys
         </button>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="rounded-xl">
+          <Button variant="outline" size="sm" className="rounded-xl" onClick={onAssign}>
             <Users className="mr-1.5 h-3.5 w-3.5" /> Assign
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-xl" onClick={onCreateModule}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> New module
           </Button>
           <Button size="sm" className="rounded-xl" onClick={() => setPickerOpen(true)}>
             <Plus className="mr-1.5 h-3.5 w-3.5" /> Add module
           </Button>
         </div>
       </div>
+
+      {rawJourney && <JourneyMetaEditor journey={rawJourney} />}
 
       <div className="rounded-2xl border border-border/70 bg-card p-6">
         <div className="flex items-start justify-between">
@@ -770,6 +832,15 @@ function JourneyBuilderView({
                   </button>
                   <button
                     type="button"
+                    onClick={() => onEditModule(m.id)}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted"
+                    aria-label="Edit module"
+                    title="Edit module content"
+                  >
+                    <PenSquare className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => {
                       removeModuleFromJourney(journey.id, m.id);
                       toast.success(`Removed "${m.title}" from journey`);
@@ -810,9 +881,11 @@ function JourneyBuilderView({
 function ModulesGrid({
   modules,
   emptyLabel,
+  onEdit,
 }: {
   modules: ViewModule[];
   emptyLabel?: string;
+  onEdit?: (id: string) => void;
 }) {
   if (!modules.length) {
     return (
@@ -824,9 +897,11 @@ function ModulesGrid({
       {modules.map((m) => {
         const Icon = TYPE_ICON[m.type] ?? FileText;
         return (
-          <div
+          <button
             key={m.id}
-            className="rounded-2xl border border-border/70 bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary/40"
+            type="button"
+            onClick={() => onEdit?.(m.id)}
+            className="rounded-2xl border border-border/70 bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40"
           >
             <div className="flex items-start justify-between">
               <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -852,7 +927,12 @@ function ModulesGrid({
               <span>{m.category}</span>
               <span>Updated {formatRelative(m.updatedAt)}</span>
             </div>
-          </div>
+            {onEdit && (
+              <div className="mt-3 flex items-center gap-1.5 text-[11.5px] font-medium text-primary">
+                <PenSquare className="h-3 w-3" /> Edit module
+              </div>
+            )}
+          </button>
         );
       })}
     </div>

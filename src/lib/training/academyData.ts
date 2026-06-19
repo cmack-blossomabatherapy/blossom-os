@@ -1391,6 +1391,26 @@ export function deleteTraining(id: string) {
   emit();
 }
 
+export function createJourney(partial: Partial<RoleJourney> & { title: string; role: string }): RoleJourney {
+  const j: RoleJourney = {
+    id: partial.id ?? genId("j"),
+    role: partial.role,
+    title: partial.title,
+    tagline: partial.tagline ?? "",
+    icon: partial.icon ?? "BookOpen",
+    tone: partial.tone ?? "violet",
+    moduleIds: partial.moduleIds ?? [],
+  };
+  state = { ...state, journeys: [...state.journeys, j] };
+  emit();
+  return j;
+}
+
+export function deleteJourney(id: string) {
+  state = { ...state, journeys: state.journeys.filter((j) => j.id !== id) };
+  emit();
+}
+
 export function updateJourney(id: string, patch: Partial<Omit<RoleJourney, "id" | "role">>) {
   state = {
     ...state,
