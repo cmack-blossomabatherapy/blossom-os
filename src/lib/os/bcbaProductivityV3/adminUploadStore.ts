@@ -386,28 +386,36 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
   // Insert rows in chunks.
   if (toInsert.length > 0) {
     const INSERT_CHUNK = 500;
-    for (let i = 0; i < toInsert.length; i += INSERT_CHUNK) {
-      const slice = toInsert.slice(i, i + INSERT_CHUNK).map((p) => ({
-        batch_id: batchRow.id,
-        row_hash: p.rowHash,
-        source_system: "centralreach",
-        service_date: p.row.date || null,
-        client_id: p.row.clientId || null,
-        client_name: p.row.clientName || null,
-        provider_id: p.providerId || null,
-        provider_name: p.row.renderingProvider || null,
-        procedure_code: p.row.code || null,
-        hours: p.row.hours,
-        units: p.units,
-        raw: p.raw as any,
-        normalized: p.row as any,
-        active: true,
-      }));
-      const { error: rowsErr } = await supabase
-        .from("bcba_productivity_billing_rows")
-        .insert(slice);
-      if (rowsErr) throw rowsErr;
-    }
+    const insertAll = async () => {
+      for (let i = 0; i < toInsert.length; i += INSERT_CHUNK) {
+        const slice = toInsert.slice(i, i + INSERT_CHUNK).map((p) => ({
+          batch_id: batchRow.id,
+          row_hash: p.rowHash,
+          source_system: "centralreach",
+          service_date: p.row.date || null,
+          client_id: p.row.clientId || null,
+          client_name: p.row.clientName || null,
+          provider_id: p.providerId || null,
+          provider_name: p.row.renderingProvider || null,
+          procedure_code: p.row.code || null,
+          hours: p.row.hours,
+          units: p.units,
+          raw: p.raw as any,
+          normalized: p.row as any,
+          active: true,
+        }));
+        const { error: rowsErr } = await supabase
+          .from("bcba_productivity_billing_rows")
+          .insert(slice);
+        if (rowsErr) throw rowsErr;
+      }
+    };
+
+    // Race the insert loop against a poll that watches the server-side row
+    // count for this batch. If the supabase-js insert promise hangs (large
+    // payloads occasionally never resolve client-side even after PostgREST
+    // commits), the poll resolves the upload as soon as rows are visible.
+    await raceInsertWithPoll(insertAll(), batchRow.id, toInsert.length);
   }
 
   return {
@@ -418,6 +426,52 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
     serviceDateMin: parsed.serviceDateMin,
     serviceDateMax: parsed.serviceDateMax,
   };
+}
+
+/**
+ * Resolves when EITHER the insert promise resolves OR a poll confirms the
+ * expected number of rows for the batch are visible. Rejects only if the
+ * insert promise errors before the poll succeeds.
+ */
+async function raceInsertWithPoll(
+  insertPromise: Promise<void>,
+  batchId: string,
+  expectedRows: number,
+  opts: { pollIntervalMs?: number; maxWaitMs?: number } = {},
+): Promise<void> {
+  const pollIntervalMs = opts.pollIntervalMs ?? 1500;
+  const maxWaitMs = opts.maxWaitMs ?? 120_000;
+
+  let insertDone = false;
+  let insertError: unknown = null;
+  const insertTracked = insertPromise.then(
+    () => { insertDone = true; },
+    (e) => { insertError = e; },
+  );
+
+  const start = Date.now();
+  // Small initial delay so we don't poll before the first chunk has a chance.
+  await new Promise((r) => setTimeout(r, 400));
+  while (Date.now() - start < maxWaitMs) {
+    if (insertDone) return;
+    if (insertError) throw insertError;
+    const { count } = await supabase
+      .from("bcba_productivity_billing_rows")
+      .select("id", { count: "exact", head: true })
+      .eq("batch_id", batchId);
+    if ((count ?? 0) >= expectedRows) return;
+    await new Promise((r) => setTimeout(r, pollIntervalMs));
+  }
+
+  // Timed out waiting. Surface whichever signal we have.
+  if (insertError) throw insertError;
+  // Give the insert one last micro-await in case it resolved between polls.
+  await Promise.race([insertTracked, new Promise((r) => setTimeout(r, 50))]);
+  if (insertError) throw insertError;
+  if (insertDone) return;
+  throw new Error(
+    `Upload still processing — ${expectedRows.toLocaleString()} rows expected. Refresh in a moment to see the latest state.`,
+  );
 }
 
 /* ----- queries ----- */
