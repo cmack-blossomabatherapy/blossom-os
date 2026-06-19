@@ -176,11 +176,11 @@ export default function MfaVerify() {
     <MfaBrandShell
       eyebrow="Two-factor required"
       title="Enter your authenticator code"
-      description="Open your authenticator app and enter the 6-digit code for Blossom OS. After verifying, you'll stay signed in on this device for 30 days."
+      description="Open your authenticator app and enter the 6-digit code for Blossom OS."
       footer={
         <button
           onClick={handleSignOut}
-          className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
         >
           <LogOut className="h-3 w-3" /> Sign in as someone else
         </button>
@@ -192,7 +192,7 @@ export default function MfaVerify() {
         </div>
       ) : (
         <form
-          className="space-y-6"
+          className="space-y-5"
           onSubmit={(e) => {
             e.preventDefault();
             if (code.length === 6) handleVerify();
@@ -223,9 +223,9 @@ export default function MfaVerify() {
             </div>
           )}
 
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2d8a9e]/10 text-[#2d8a9e]">
-              <ShieldCheck className="h-5 w-5" />
+          <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2d8a9e]/10 text-[#2d8a9e]">
+              <ShieldCheck className="h-4 w-4" />
             </div>
             <div className="text-xs text-slate-500">
               Signed in as <span className="font-medium text-[#0c2340]">{user?.email}</span>
@@ -245,7 +245,7 @@ export default function MfaVerify() {
             </Button>
           )}
 
-          <div className="flex justify-center">
+          <div className="flex justify-center py-2">
             <InputOTP
               maxLength={6}
               value={code}
@@ -255,7 +255,7 @@ export default function MfaVerify() {
             >
               <InputOTPGroup>
                 {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <InputOTPSlot key={i} index={i} className="h-12 w-11 text-lg" />
+                  <InputOTPSlot key={i} index={i} />
                 ))}
               </InputOTPGroup>
             </InputOTP>
@@ -298,7 +298,7 @@ export default function MfaVerify() {
             </div>
           )}
 
-          <p className="text-center text-xs text-slate-500">
+          <p className="text-center text-xs text-slate-400 leading-relaxed">
             Lost your phone? Ask an admin to reset your two-factor at{" "}
             <a
               href="mailto:hr@blossomabatherapy.com?subject=Reset%20my%20Blossom%202FA"
@@ -306,7 +306,6 @@ export default function MfaVerify() {
             >
               hr@blossomabatherapy.com
             </a>
-            .
           </p>
         </form>
       )}

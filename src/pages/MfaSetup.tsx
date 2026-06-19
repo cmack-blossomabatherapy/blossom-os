@@ -247,12 +247,14 @@ export default function MfaSetup() {
           </div>
 
           <div className="space-y-3">
-            <div className="text-xs font-medium text-foreground/80">Enter the 6-digit code from your email</div>
-            <div className="flex justify-center sm:justify-start">
+            <div className="text-xs font-medium text-foreground/80">
+              Enter the 6-digit code from your email
+            </div>
+            <div className="flex justify-center sm:justify-start py-1">
               <InputOTP maxLength={6} value={code} onChange={setCode}>
                 <InputOTPGroup>
                   {[0, 1, 2, 3, 4, 5].map((i) => (
-                    <InputOTPSlot key={i} index={i} className="h-12 w-11 text-lg" />
+                    <InputOTPSlot key={i} index={i} />
                   ))}
                 </InputOTPGroup>
               </InputOTP>
@@ -313,11 +315,11 @@ export default function MfaSetup() {
             <div className="text-xs font-medium text-foreground/80">
               Enter the 6-digit code from your app
             </div>
-            <div className="flex justify-center sm:justify-start">
+            <div className="flex justify-center sm:justify-start py-1">
               <InputOTP maxLength={6} value={code} onChange={setCode}>
                 <InputOTPGroup>
                   {[0, 1, 2, 3, 4, 5].map((i) => (
-                    <InputOTPSlot key={i} index={i} className="h-12 w-11 text-lg" />
+                    <InputOTPSlot key={i} index={i} />
                   ))}
                 </InputOTPGroup>
               </InputOTP>

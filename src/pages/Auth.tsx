@@ -398,7 +398,7 @@ export default function Auth() {
                       <InputOTP maxLength={6} value={code} onChange={setCode}>
                         <InputOTPGroup>
                           {[0,1,2,3,4,5].map((i) => (
-                            <InputOTPSlot key={i} index={i} className="h-12 w-11 text-lg border-slate-200" />
+                            <InputOTPSlot key={i} index={i} />
                           ))}
                         </InputOTPGroup>
                       </InputOTP>
