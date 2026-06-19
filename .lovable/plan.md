@@ -1,83 +1,75 @@
-## Goal
+## Integrations Backend Pass 4 — Plan
 
-Finish the RBT Training Academy as a real role-based LMS journey inside the universal `/academy` surface, fit in the 4 experience-based tracks from the meeting notes, and represent the official 2026 BACB Initial Competency Assessment as a structured, validated workflow — without breaking State Director or BCBA training, or any existing OS module.
+Build provider adapter layer, normalized sync staging, and webhook normalization on top of the existing Pass 1–3 foundation. No fake success; honest statuses everywhere.
 
-## Current baseline (confirmed by reading the codebase)
+### 1. Shared adapter framework (`supabase/functions/_shared/integrations/`)
+- `types.ts` — `ProviderProbeResult`, `ProviderSyncResult`, `ProviderWebhookNormalizeResult`, `ProviderAdapter` interface (`probe`, `sync`, `normalizeWebhook`, optional `verifySignature`).
+- `secrets.ts` — typed `getEnv()` / `requireEnv()` helpers with masked logging.
+- `http.ts` — `fetchJson()` wrapper with timeout, status handling, structured error envelope.
+- `normalizers.ts` — helpers to upsert into `integration_normalized_records` (service role), build `integration_events` rows.
+- `providerRegistry.ts` — maps integration id → adapter for all 15 required providers.
 
-- Universal LMS runtime exists: `TrainingAcademyHome`, `TrainingPathDetail`, `TrainingPathDayDetail`, `TrainingModuleRuntime`.
-- RBT journey content lives in `src/lib/training/rbtAcademy.ts` (~370 lines).
-- RBT readiness store: `src/lib/training/rbtReadiness.ts`.
-- RBT resources: `src/lib/training/rbtResources.ts`.
-- RBT-specific surfaces: `OSRBTTrainingAcademy`, `OSRBTAcademyAdmin`, `OSRBTReadinessBoard`.
-- Universal journey content / resource resolver in `src/lib/academy/`.
+### 2. Provider adapters (`_shared/integrations/providers/*.ts`)
+One module per: mailchimp, resend, retell, ctm, apploi, centralreach, solum, eligipro, ms365, jivetel, make, pandadoc, leadtrap, calendly, goIntegrateNava.
 
-## Scope (this pass)
+Status policy per adapter:
+- Real probe when endpoint is documented and creds present → `connected`.
+- Webhook-only providers → `webhook_ready` when secret present.
+- Missing base URL/probe path env → `configured_pending_probe_path`.
+- Missing vendor docs/endpoint → `configured_pending_vendor_endpoint`.
+- Missing required secret → `not_configured`.
 
-### 1. Source-of-truth data layer
-- Rewrite/extend `src/lib/training/rbtAcademy.ts` so the 4 tracks (`not_certified`, `certified_no_experience`, `certified_under_2yrs`, `certified_2yrs_plus`) match the meeting-notes structure (phases 1–6 + branching for under-2yrs).
-- Create `src/lib/training/rbtCompetency.ts` with: 19 BACB tasks (with allowed assessment types), trainee record, responsible/assistant assessor fields, validation rules (40-hour complete, 90-day window, items 1–19 done, ≥3 of items 6–14 with-client). LocalStorage-backed, shaped so a Supabase swap is trivial.
-- Extend `src/lib/training/rbtReadiness.ts` so "Ready for Independent Assignment" requires the per-track checklist from the spec (sec. 7).
-- Extend `src/lib/training/rbtResources.ts` to add: official 2026 Competency Packet, ABA Explained pack, Data Collection guide, Session Notes guide, Assistance Test placeholder. Mark unmapped links as "resource pending" in the UI.
+Highlights:
+- **mailchimp** — keep `/ping`, add small recent-campaigns sync → `email_marketing` records.
+- **resend** — preserve current `/domains` probe; sync is report-only; do not touch invite/MFA flows.
+- **retell** — real probe (list-agents endpoint), recent calls sync → normalized `call` records + `integration_events`; structured error logging.
+- **ctm** — env-driven base URL/account; webhook normalizer for inbound call → `call`/`lead`.
+- **apploi** — env-driven; candidate sync → `candidate`.
+- **centralreach** — OAuth client-credentials probe; sync modes (`clients|schedules|authorizations|sessions|billing_export`); honest pending status; never touches BCBA Productivity uploads.
+- **solum** — accept `SOLOM_API_KEY` alias; eligibility/VOB normalization.
+- **eligipro** — eligibility events.
+- **ms365** — reuses `microsoftTokenVault.refreshUserToken`; calendar list + safe mail-activity metadata only; per-user.
+- **jivetel** — phone extensions/routing.
+- **make** — verifies `MAKE_WEBHOOK_SECRET` + outbound URL; labeled `migration_bridge`; webhook → `automation_event`.
+- **pandadoc** — labeled `esignature_only`; templates probe; webhook → `document`.
+- **leadtrap** — webhook-first; `webhook_ready`; lead normalization.
+- **calendly** — OAuth/token probe; webhook → `calendar_event`.
+- **goIntegrateNava** — keep registered; `configured_pending_vendor_endpoint` until docs.
 
-### 2. Universal LMS wiring
-- Ensure `/academy/path/rbt` renders and accepts `?track=` query string; track persists from path → day → module routes.
-- `OSRBTTrainingAcademy` becomes an RBT-flavored landing that deep-links into `/academy/path/rbt?track=...` (does not re-render its own runtime).
-- Wire each RBT module in `src/lib/academy/journeyContent.ts` so the module runtime returns real content (objectives, lessons, resources, checklist, trainer notes, reflection, knowledge-check placeholder, signoff requirement, estimated time) for the 25 modules listed in spec sec. 5.
+Plus two new MS365 functions: `microsoft-calendar-sync`, `microsoft-mail-activity-sync` (admin-callable, per-user, token via vault).
 
-### 3. Competency UI
-- **Learner view** inside the Not Certified path: an "Initial Competency Assessment" day/module that shows status, prep resources, scheduled assessments, and a read-only task list (no self-signoff).
-- **Admin/clinical view**: new `CompetencyPanel` component embedded into `OSRBTAcademyAdmin` (trainee detail drawer) and into `OSRBTReadinessBoard`. Supports filters (All / Needs Reassessment / With Client Required / Interview / Complete), per-task status/type/initials/notes/reassessment, evidence upload placeholder, final validation checklist, and a clear "Blocked because…" banner.
-- **Training Management Center**: add an RBT roll-up card (counts by track, in training, needs coaching, awaiting BCBA signoff, competency incomplete, ready). Keep State Director launch readiness intact.
+### 3. Refactor existing edge functions
+- `integration-test-connection` → look up adapter in `providerRegistry`, call `probe()`. Keep admin-only auth.
+- `integration-run-sync` → call adapter `sync()` with body `{mode, since, limit, dryRun}`; update sync run counts; insert normalized records with `sync_run_id`; no more `not_implemented` for required providers.
+- `integration-webhook` → after raw insert + signature verify, call adapter `normalizeWebhook()`, upsert normalized record, insert `integration_events`, set `processing_status` ∈ {`received`,`normalized`,`normalized_unknown`,`rejected`,`failed`} and `processed_at` / `error_message`.
+- `retell-webhook` — keep, but route normalization through the new retell adapter for consistency.
 
-### 4. Module runtime content upgrade
-- Expand `src/lib/academy/journeyContent.ts` (and a new `src/lib/training/rbtModuleContent.ts` if it keeps `journeyContent` lean) so all 25 RBT modules in spec sec. 5 return real content blocks. Display Hannah/Anju as label text only (no user IDs).
+### 4. Migration (new file)
+`integration_normalized_records` with columns specified, partial unique index on `(integration_id, provider_record_id, record_kind) where provider_record_id is not null`, FK to catalog/webhook_events/sync_runs, `updated_at` trigger.
 
-### 5. Tests and QA
-- Add `src/test/rbtTrainingAcademyPass5.test.ts` covering the verification list in spec sec. 10 (route renders, all 4 tracks, query-string preservation through path→day→module, Not Certified phase coverage, Under-2yrs branching, module runtime content, 19 competency tasks, ≥3 with-client items 6–14 rule, 40-hour gate, 90-day window, readiness gating, SD/BCBA routes still resolve).
-- Create `docs/rbt-training-academy-pass-5-qa.md` listing changes, files touched, learner walkthrough, admin walkthrough, placeholder resources, and what remains for the Supabase persistence pass.
+GRANTs: `service_role` ALL; `authenticated` SELECT gated by admin role via RLS (`has_role(auth.uid(),'admin')`); no anon.
 
-## Out of scope (this pass)
+Also extend `integration_webhook_events.processing_status` allowed values if currently constrained; add index on `(integration_id, processing_status, created_at desc)`.
 
-- Supabase persistence for competency/readiness — left as localStorage with a clear migration shape.
-- Real file uploads for evidence — placeholder UI only.
-- New NFC / Login Vault / unrelated admin pages.
-- Any change to State Director content (`sdWeek*Content.ts`, `stateDirector*.ts`) or BCBA training files.
+### 5. Admin UI (`src/pages/admin/Integrations.tsx` + small additions in `src/lib/os/integrations/backend.ts`)
+- Add helpers: `listNormalizedRecords(integrationId, limit)`, counts by `record_kind`.
+- Per-integration detail surfaces: live connection status, last tested/success/error, recent sync runs, recent webhook events w/ processing_status, normalized records count by kind.
+- Webhook-only providers show "Webhook ready" badge instead of pull-sync controls.
+- No secret editor, no secret values shown.
 
-## Technical notes
+### 6. Tests
+`src/test/integrationsBackendPass4.test.ts` — assertions per spec (adapter registry coverage, no hardcoded provider branching in `integration-test-connection`/`integration-run-sync`, no `not_implemented` literal for required ids, webhook calls normalizer, migration creates table + RLS + index, Retell probe/sync path exists, Resend untouched, MS365 uses `refreshUserToken`, Solum accepts `SOLOM_API_KEY`, Make labeled bridge, PandaDoc labeled esign, CentralReach labeled EMR).
 
-- All four tracks share the universal runtime; track selection lives in URL params and is mirrored into `rbtReadiness` for the trainee record.
-- Competency validation is a pure function (`validateCompetency(record): { ok, blockers[] }`) so the same rules drive learner banners, admin badges, and readiness gating.
-- `OSRBTTrainingAcademy` keeps its name and route but its body is replaced by a thin "Pick your path" landing + recommended-track CTA that links into `/academy/path/rbt?track=…`. Old static tabs are removed only if they are duplicated by the universal runtime.
-- No edits to `supabase/migrations/`, edge functions, or unrelated OS modules.
+Re-run existing Pass 1–3 tests.
 
-## File map (planned)
+### 7. QA doc
+`docs/integrations-backend-pass-4-qa-manifest.md` — change log, adapter list, migration, per-provider status table (live probe / webhook-only / pending), env var matrix, admin test steps, known limitations, preservation confirmations (Resend, BCBA Productivity, MS user OAuth, Retell improvement).
 
-```text
-new   src/lib/training/rbtCompetency.ts
-new   src/lib/training/rbtModuleContent.ts
-new   src/components/training/CompetencyPanel.tsx
-new   src/test/rbtTrainingAcademyPass5.test.ts
-new   docs/rbt-training-academy-pass-5-qa.md
-edit  src/lib/training/rbtAcademy.ts            (4 tracks, phases, branching)
-edit  src/lib/training/rbtReadiness.ts          (per-track checklist gating)
-edit  src/lib/training/rbtResources.ts          (add required resources)
-edit  src/lib/academy/journeyContent.ts         (resolve RBT modules to real content)
-edit  src/pages/os/OSRBTTrainingAcademy.tsx     (landing → deep-link into /academy/path/rbt)
-edit  src/pages/os/OSRBTAcademyAdmin.tsx        (embed CompetencyPanel)
-edit  src/pages/os/OSRBTReadinessBoard.tsx      (embed CompetencyPanel + roll-up)
-edit  src/pages/hr/TrainingManagementCenter.tsx (RBT roll-up card)
-edit  src/pages/academy/TrainingPathDetail.tsx  (track param + RBT track switcher)
-edit  src/pages/academy/TrainingPathDayDetail.tsx (preserve ?track=)
-edit  src/pages/academy/TrainingModuleRuntime.tsx (preserve ?track=)
-```
+### Out of scope
+- No new operational UI modules consuming normalized records (staging only).
+- No PHI-heavy MS mail body storage.
+- No new OAuth providers beyond MS365 / Calendly / CentralReach client-creds.
+- No rebuild of Resend delivery, MFA, welcome emails, or BCBA Productivity upload pipeline.
 
-## Suggested delivery order
-
-1. Data layer (`rbtCompetency`, `rbtAcademy` rewrite, `rbtReadiness` gating, resources).
-2. Module runtime content for the 25 RBT modules.
-3. Universal LMS routing (track query string end-to-end).
-4. `CompetencyPanel` + embed into admin/readiness/management.
-5. `OSRBTTrainingAcademy` landing refactor.
-6. Tests + QA doc.
-
-This is a large pass and will require many parallel file writes. Confirm scope and I will start with step 1 in the next turn.
+### File count estimate
+~21 new files (16 adapters + registry + 2 MS365 functions + migration + test + QA doc), ~5 edited (3 edge functions, backend.ts, Integrations.tsx).
