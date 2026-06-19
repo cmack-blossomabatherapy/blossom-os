@@ -3,6 +3,7 @@ import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, BookOpen, Clock, GraduationCap, ArrowRight, Library,
   Target, Trophy, CheckCircle2, PlayCircle, Sparkles, ListChecks, FolderOpen,
+  ShieldCheck, ExternalLink, Clock3,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -11,7 +12,8 @@ import {
   type JourneyDay,
 } from "@/lib/academy/journeyContent";
 import { RBT_BUCKETS } from "@/lib/academy/trainingPaths";
-import type { RBTPathId } from "@/lib/training/rbtAcademy";
+import { RBT_PATHS, type RBTPathId } from "@/lib/training/rbtAcademy";
+import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
 
 /**
  * Real Journey Detail for /academy/path/:slug.
