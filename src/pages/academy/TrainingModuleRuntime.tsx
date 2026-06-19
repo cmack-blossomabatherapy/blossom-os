@@ -3,11 +3,12 @@ import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Clock, PlayCircle, FileText,
   ListChecks, BookOpen, ShieldCheck, Sparkles, Library, ExternalLink,
+  Link2, Wand2, Copy, Map,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { parseAcademyModuleId } from "@/lib/academy/journeyContent";
-import { RBT_PATHS, type RBTModule, type RBTPathId } from "@/lib/training/rbtAcademy";
+import { RBT_PATHS, type RBTModule, type RBTPath, type RBTPhase, type RBTPathId } from "@/lib/training/rbtAcademy";
 import { BCBA_MODULES, type BCBAModule } from "@/lib/training/bcbaAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime,
@@ -74,11 +75,16 @@ export default function TrainingModuleRuntime() {
     moduleId: decodedId,
     sourceModuleId: parsed.sourceModuleId,
     sourceKind: parsed.kind,
+    rbtTrackId: slug === "rbt" ? (rbtTrackId ?? "not_certified") : undefined,
   });
 
-  const rbtTrack = parsed.kind === "rbt"
+  const rbtTrack: RBTPath | undefined = parsed.kind === "rbt"
     ? RBT_PATHS.find((p) => p.id === (rbtTrackId ?? "not_certified"))
     : undefined;
+  const rbtPhase: RBTPhase | undefined = rbtTrack?.phases.find((ph) =>
+    ph.modules.some((mm) => mm.id === parsed.sourceModuleId),
+  );
+  const rbtModuleRequired = !!rbtPhase?.modules.find((mm) => mm.id === parsed.sourceModuleId)?.required;
 
   const elapsedLabel = formatElapsed(record.elapsedSeconds);
   const status = record.status;
@@ -94,6 +100,21 @@ export default function TrainingModuleRuntime() {
           <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             <Sparkles className="h-3 w-3" /> {parsed.kind.toUpperCase()} module · {ctx.type}
           </div>
+          {parsed.kind === "rbt" && rbtTrack && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+              <Badge variant="outline" className="border-primary/30 bg-primary/5 text-[10px] text-primary">
+                Track · {rbtTrack.label}
+              </Badge>
+              {rbtPhase && (
+                <Badge variant="outline" className="text-[10px]">{rbtPhase.title}</Badge>
+              )}
+              {rbtModuleRequired && (
+                <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[10px] text-amber-700">
+                  Required for readiness
+                </Badge>
+              )}
+            </div>
+          )}
           <h1 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">{ctx.title}</h1>
           <p className="mt-2 max-w-2xl text-[14px] text-muted-foreground">{ctx.description}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
@@ -181,6 +202,64 @@ export default function TrainingModuleRuntime() {
               <p className="mt-2 text-[12.5px] text-muted-foreground">Expected: {ctx.knowledgeCheck.a}</p>
             </Card>
           )}
+
+          {ctx.sopLinks && ctx.sopLinks.length > 0 && (
+            <Card title="SOPs and references" icon={Link2}>
+              <ul className="space-y-2 text-[13px]">
+                {ctx.sopLinks.map((s, i) => {
+                  const external = /^https?:\/\//i.test(s.href);
+                  const inner = (
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card px-3 py-2 hover:border-primary/40 hover:bg-muted/40">
+                      <span className="min-w-0 truncate font-medium">{s.label}</span>
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    </div>
+                  );
+                  return (
+                    <li key={i}>
+                      {external ? (
+                        <a href={s.href} target="_blank" rel="noreferrer">{inner}</a>
+                      ) : (
+                        <Link to={s.href}>{inner}</Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          )}
+
+          {ctx.tangos && ctx.tangos.length > 0 && (
+            <Card title="Tango walkthroughs" icon={Map}>
+              <ul className="space-y-2 text-[13px]">
+                {ctx.tangos.map((t, i) => (
+                  <li key={i} className="rounded-lg border border-border/60 bg-card px-3 py-2">
+                    <p className="font-medium">{t.label}</p>
+                    <p className="mt-0.5 text-[12px] text-muted-foreground">{t.note}</p>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
+          {ctx.aiPrompts && ctx.aiPrompts.length > 0 && (
+            <Card title="Ask Blossom AI prompts" icon={Wand2}>
+              <ul className="space-y-2 text-[13px]">
+                {ctx.aiPrompts.map((p, i) => (
+                  <li key={i} className="group flex items-start justify-between gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
+                    <code className="min-w-0 flex-1 whitespace-pre-wrap break-words font-mono text-[12px] text-foreground/90">{p}</code>
+                    <button
+                      type="button"
+                      onClick={() => { try { navigator.clipboard?.writeText(p); } catch { /* ignore */ } }}
+                      title="Copy prompt"
+                      className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-1 text-[11px] text-muted-foreground opacity-0 transition group-hover:opacity-100 hover:bg-muted"
+                    >
+                      <Copy className="h-3 w-3" /> Copy
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
         </section>
 
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
@@ -263,6 +342,9 @@ interface ModuleCtx {
   checklist?: string[];
   shadowing?: string[];
   knowledgeCheck?: { q: string; a: string };
+  sopLinks?: { label: string; href: string }[];
+  tangos?: { label: string; note: string }[];
+  aiPrompts?: string[];
 }
 
 function resolveRbt(sourceModuleId: string): ModuleCtx | null {
@@ -301,6 +383,9 @@ function resolveBcba(sourceModuleId: string): ModuleCtx | null {
     checklist: m.checklist,
     shadowing: m.shadowing,
     knowledgeCheck: m.knowledgeCheck,
+    sopLinks: m.sopLinks,
+    tangos: m.tangos,
+    aiPrompts: m.aiPrompts,
   };
 }
 
