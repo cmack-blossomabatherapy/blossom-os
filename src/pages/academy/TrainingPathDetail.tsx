@@ -192,7 +192,7 @@ export default function TrainingPathDetail() {
                     </div>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {w.days.map((d) => <DayCard key={d.id} slug={slug} day={d} />)}
+                    {w.days.map((d) => <DayCard key={d.id} slug={slug} day={d} trackSuffix={trackSuffix} />)}
                   </div>
                 </div>
               );
@@ -200,6 +200,79 @@ export default function TrainingPathDetail() {
           </div>
         )}
       </section>
+
+      {journeyResources.length > 0 && (
+        <section className="mt-12">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Journey resources</p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight md:text-2xl">Apply across the entire journey</h2>
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {journeyResources.map((r) => {
+              const pending = !r.url || r.url === "#";
+              const tone = r.required ? "border-amber-300 bg-amber-50 text-amber-700" : "border-border bg-muted text-muted-foreground";
+              const inner = (
+                <>
+                  <div className="flex items-start justify-between">
+                    <div className="grid h-9 w-9 place-items-center rounded-xl bg-sky-50 text-sky-700 ring-1 ring-sky-200"><Library className="h-4 w-4" /></div>
+                    <Badge variant="outline" className={`text-[10px] ${tone}`}>{r.required ? "Required" : "Recommended"}</Badge>
+                  </div>
+                  <h4 className="mt-3 text-[14px] font-semibold tracking-tight line-clamp-2">{r.title}</h4>
+                  {r.instructions && <p className="mt-1 text-[12.5px] text-muted-foreground line-clamp-2">{r.instructions}</p>}
+                  <div className="mt-3 flex items-center gap-3 text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><BookOpen className="h-3 w-3" />{r.type}</span>
+                    {pending && <span className="text-amber-700">Resource pending</span>}
+                  </div>
+                  {!pending && (
+                    <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-primary">
+                      Open resource <ExternalLink className="h-3 w-3" />
+                    </div>
+                  )}
+                </>
+              );
+              return pending ? (
+                <div key={r.id} className="flex flex-col rounded-2xl border border-dashed border-border/70 bg-card p-5">{inner}</div>
+              ) : (
+                <a key={r.id} href={r.url} target="_blank" rel="noreferrer" className="group flex flex-col rounded-2xl border border-border/70 bg-card p-5 transition hover:border-border">{inner}</a>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {isRbt && activeRbtTrack && activeRbtTrack.signoffs.length > 0 && (
+        <section className="mt-12">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Readiness and signoffs</p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight md:text-2xl">{activeRbtTrack.label} — field readiness</h2>
+          <p className="mt-1 text-[13px] text-muted-foreground">{activeRbtTrack.tagline}</p>
+          <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {activeRbtTrack.signoffs.map((s) => {
+              const tone =
+                s.status === "signed" ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                : s.status === "scheduled" ? "border-sky-300 bg-sky-50 text-sky-700"
+                : "border-border bg-muted text-muted-foreground";
+              const Icon = s.status === "signed" ? CheckCircle2 : s.status === "scheduled" ? Clock3 : ShieldCheck;
+              return (
+                <li key={s.id} className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card p-4">
+                  <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${tone}`}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-[13.5px] font-semibold tracking-tight">{s.label}</p>
+                      {s.required ? (
+                        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[10px] text-amber-700">Required</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">Optional</Badge>
+                      )}
+                    </div>
+                    <p className="mt-1 text-[12px] text-muted-foreground">Owner: {s.owner}</p>
+                    <p className="mt-0.5 text-[11px] capitalize text-muted-foreground">Status: {s.status}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
@@ -234,7 +307,7 @@ function HeroStat({
   );
 }
 
-function DayCard({ slug, day }: { slug: string; day: JourneyDay }) {
+function DayCard({ slug, day, trackSuffix = "" }: { slug: string; day: JourneyDay; trackSuffix?: string }) {
   const isComplete = day.completedCount === day.modules.length && day.modules.length > 0;
   const isActive = !isComplete && day.completedCount + day.inProgressCount > 0;
   const statusAccent: Accent = isComplete ? "mint" : isActive ? "citrus" : "orchid";
@@ -242,7 +315,7 @@ function DayCard({ slug, day }: { slug: string; day: JourneyDay }) {
   const next = firstIncompleteModule(day);
   return (
     <Link
-      to={`/academy/path/${slug}/day/${encodeURIComponent(day.id)}`}
+      to={`/academy/path/${slug}/day/${encodeURIComponent(day.id)}${trackSuffix}`}
       className="group flex flex-col rounded-2xl border border-border/70 bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-border"
     >
       <div className="flex items-start justify-between">
