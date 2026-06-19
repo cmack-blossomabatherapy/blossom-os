@@ -61,8 +61,7 @@ describe("Pass 3 — solom alias still accepted", () => {
 describe("__pad__", () => {
   it("keeps the closing of the previous describe block balanced", () => {
     expect(true).toBe(true);
-    });
-  }
+  });
 });
 
 describe("Pass 3 — Microsoft OAuth state hardening", () => {
