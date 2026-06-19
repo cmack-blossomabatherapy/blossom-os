@@ -14,7 +14,7 @@ import {
 import { Plus, Settings2, Trash2 } from "lucide-react";
 import {
   ICONS, TONES,
-  updateJourney, createJourney, deleteJourney,
+  updateJourney, createJourney, deleteJourney, addModuleToJourney,
   createTraining, upsertTraining, deleteTraining,
   type RoleJourney, type Training, type TrainingType, type JourneyTone, type IconKey,
   type TrainingChecklistItem, type TrainingResource,
@@ -23,23 +23,45 @@ import {
 const TYPES: TrainingType[] = ["SOP", "Workflow", "Tango", "Video", "Letter", "Checklist", "Quick Guide", "Training", "Task", "Meeting", "Shadowing", "Quiz", "Reflection"];
 const ICON_KEYS = Object.keys(ICONS) as IconKey[];
 
+const ROLE_OPTIONS = [
+  { value: "shared", label: "Shared / All roles" },
+  { value: "intake", label: "Intake" },
+  { value: "scheduling", label: "Scheduling" },
+  { value: "authorizations", label: "Authorizations" },
+  { value: "qa_team", label: "QA" },
+  { value: "recruiting_team", label: "Recruiting" },
+  { value: "hr_team", label: "HR" },
+  { value: "billing_finance", label: "Billing & Finance" },
+  { value: "bcba", label: "BCBA" },
+  { value: "rbt", label: "RBT" },
+  { value: "state_director", label: "State Director" },
+  { value: "operations_leadership", label: "Operations Leadership" },
+  { value: "executive_leadership", label: "Executive Leadership" },
+];
+
+function roleLabel(value: string): string {
+  return ROLE_OPTIONS.find((r) => r.value === value)?.label ?? value;
+}
+
 /* ---------------- Journey meta editor (inline) ---------------- */
 export function JourneyMetaEditor({ journey }: { journey: RoleJourney }) {
   const [title, setTitle] = useState(journey.title);
   const [tagline, setTagline] = useState(journey.tagline);
   const [tone, setTone] = useState<JourneyTone>(journey.tone);
   const [icon, setIcon] = useState<IconKey>(journey.icon);
+  const [role, setRole] = useState<string>(journey.role);
 
   useEffect(() => {
     setTitle(journey.title); setTagline(journey.tagline);
-    setTone(journey.tone); setIcon(journey.icon);
+    setTone(journey.tone); setIcon(journey.icon); setRole(journey.role);
   }, [journey.id]); // eslint-disable-line
 
   const dirty =
     title !== journey.title ||
     tagline !== journey.tagline ||
     tone !== journey.tone ||
-    icon !== journey.icon;
+    icon !== journey.icon ||
+    role !== journey.role;
   const Icon = ICONS[icon];
 
   return (
@@ -98,18 +120,34 @@ export function JourneyMetaEditor({ journey }: { journey: RoleJourney }) {
         <Input value={tagline} onChange={(e) => setTagline(e.target.value)} className="mt-1" />
       </div>
 
+      <div className="mt-4">
+        <Label className="text-[11.5px]">Role / audience</Label>
+        <Select value={role} onValueChange={setRole}>
+          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {ROLE_OPTIONS.map((r) => (
+              <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center gap-3 text-[12px] text-muted-foreground">
           <span className={`grid h-9 w-9 place-items-center rounded-xl os-tone-${tone}`}>
             <Icon className="h-4 w-4" />
           </span>
-          <span>Role: <span className="font-mono text-foreground">{journey.role}</span></span>
+          <span>
+            Role:{" "}
+            <span className="font-medium text-foreground">{roleLabel(role)}</span>
+            <span className="ml-2 font-mono text-[11px] text-muted-foreground">({role})</span>
+          </span>
         </div>
         <Button
           size="sm"
           disabled={!dirty}
           onClick={() => {
-            updateJourney(journey.id, { title, tagline, tone, icon });
+            updateJourney(journey.id, { title, tagline, role, tone, icon });
             toast.success("Journey updated");
           }}
         >
@@ -343,22 +381,6 @@ export function ModuleEditDialog({
 }
 
 /* ---------------- Real create-module dialog ---------------- */
-
-const ROLE_OPTIONS = [
-  { value: "shared", label: "Shared / All roles" },
-  { value: "intake", label: "Intake" },
-  { value: "scheduling", label: "Scheduling" },
-  { value: "authorizations", label: "Authorizations" },
-  { value: "qa_team", label: "QA" },
-  { value: "recruiting_team", label: "Recruiting" },
-  { value: "hr_team", label: "HR" },
-  { value: "billing_finance", label: "Billing & Finance" },
-  { value: "bcba", label: "BCBA" },
-  { value: "rbt", label: "RBT" },
-  { value: "state_director", label: "State Director" },
-  { value: "operations_leadership", label: "Operations Leadership" },
-  { value: "executive_leadership", label: "Executive Leadership" },
-];
 
 export function CreateModuleDialogReal({
   open,
