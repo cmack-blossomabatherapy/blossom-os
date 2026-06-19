@@ -10,6 +10,7 @@
  * the consumer API.
  */
 import { useSyncExternalStore } from "react";
+import type { RBTPathId } from "@/lib/training/rbtAcademy";
 
 export type AttachmentScope = "journey" | "day" | "module";
 export type AttachmentRequiredness = "required" | "recommended" | "optional";
@@ -24,6 +25,10 @@ export interface TrainingResourceAttachment {
   journeySlug: string;
   dayId?: string;
   moduleId?: string;
+  /** For RBT journey only — restricts the attachment to a single experience
+   * track. When omitted on an RBT attachment, the attachment is treated as
+   * global across all RBT tracks. Ignored for non-RBT journeys. */
+  rbtTrackId?: RBTPathId;
   requiredness: AttachmentRequiredness;
   instructions?: string;
   source?: "resource-library" | "rbt-seeded" | "academy-module" | "sd-sop" | "manual";
@@ -65,9 +70,16 @@ export function listAttachmentsForScope(opts: {
   journeySlug: string;
   dayId?: string;
   moduleId?: string;
+  rbtTrackId?: RBTPathId;
 }): TrainingResourceAttachment[] {
   return listAttachments().filter((a) => {
     if (a.journeySlug !== opts.journeySlug) return false;
+    // RBT track gating: a track-scoped attachment only matches when the
+    // resolver scope is on that exact track. Global RBT attachments (no
+    // rbtTrackId) always match. Non-RBT journeys ignore rbtTrackId entirely.
+    if (opts.journeySlug === "rbt" && a.rbtTrackId && a.rbtTrackId !== opts.rbtTrackId) {
+      return false;
+    }
     if (a.scope === "module") return a.moduleId === opts.moduleId;
     if (a.scope === "day") return a.dayId === opts.dayId;
     if (a.scope === "journey") return true;
