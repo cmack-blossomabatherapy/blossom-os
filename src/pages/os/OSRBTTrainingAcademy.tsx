@@ -98,6 +98,23 @@ export default function OSRBTTrainingAcademy() {
           <ReadinessBanner ready={stats.fieldReady} />
         </header>
 
+        {/* Deep link into the universal LMS, preserving the selected RBT track. */}
+        <Link
+          to={`/academy/path/rbt?track=${assignedId}`}
+          className="group flex items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-5 py-4 transition hover:border-primary hover:bg-primary/10"
+        >
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Universal Training Academy</p>
+            <p className="mt-0.5 text-[13.5px] font-medium text-foreground">
+              Open the full LMS journey for <span className="font-semibold">{path.label}</span>
+            </p>
+            <p className="mt-0.5 text-[12px] text-muted-foreground">
+              Days, modules, runtime timer, attached resources, and the Initial Competency Assessment all live there.
+            </p>
+          </div>
+          <ChevronRight className="size-5 shrink-0 text-primary transition group-hover:translate-x-0.5" />
+        </Link>
+
         {stats.nextModule && <NextActionCard module={stats.nextModule} />}
 
         <Ownership />
