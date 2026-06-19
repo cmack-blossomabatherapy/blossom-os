@@ -39,7 +39,7 @@ const ROTATE: Accent[] = ["orchid", "sky", "mint", "citrus", "coral", "teal"];
  * Super Admin sees a Training Management quick-access panel at the bottom.
  */
 export default function TrainingAcademyHome() {
-  const { isAdmin, user, profile } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [home, setHome] = useState<LearnerHome>(() => emptyLearnerHome());
   useEffect(() => {
     let cancelled = false;
@@ -59,8 +59,8 @@ export default function TrainingAcademyHome() {
 
   const firstName =
     home.employee?.first_name ||
-    (profile as any)?.first_name ||
-    (user?.email?.split("@")[0]) || "there";
+    (user?.email?.split("@")[0]) ||
+    "there";
   const greeting = (() => {
     const h = new Date().getHours();
     if (h < 12) return "Good morning";
