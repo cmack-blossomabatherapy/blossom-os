@@ -284,6 +284,58 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     notes: "Marketing email + nurture activity feeding patient journey events.",
   },
   {
+    id: "resend",
+    name: "Resend",
+    displayName: "Resend",
+    category: "communications",
+    ownerDepartment: "Operations / Platform",
+    criticality: "critical",
+    status: "connected",
+    methods: ["api"],
+    inboundData: [
+      "Email delivery status",
+      "Bounce / complaint signals",
+    ],
+    outboundData: [
+      "Welcome / invite emails",
+      "Email MFA codes",
+      "Evaluation emails",
+      "Transactional notifications",
+    ],
+    dependentModules: [
+      "User Management invites",
+      "Welcome emails",
+      "Email MFA",
+      "Evaluation emails",
+    ],
+    sourceOfTruthFor: ["Transactional email delivery"],
+    notes:
+      "Already in production for invite/welcome/MFA flows. Do not rebuild — Pass 1 only registers it as a first-class integration.",
+  },
+  {
+    id: "make",
+    name: "Make.com",
+    displayName: "Make.com",
+    category: "marketing",
+    ownerDepartment: "Operations / Platform",
+    criticality: "standard",
+    status: "configured",
+    methods: ["webhook", "api"],
+    inboundData: [
+      "Automation bridge events",
+      "Migration-era event payloads",
+    ],
+    outboundData: ["Outbound automation events"],
+    dependentModules: [
+      "Lead Sources",
+      "Patient Lifetime Journey",
+      "Operational automations",
+    ],
+    sourceOfTruthFor: [],
+    notes:
+      "Automation / migration bridge ONLY. Blossom OS must not depend on Make for core operational state long-term.",
+  },
+  {
     id: "google-ads",
     name: "Google Ads",
     displayName: "Google Ads",
