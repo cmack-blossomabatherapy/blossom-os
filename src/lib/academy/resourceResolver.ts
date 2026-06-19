@@ -32,6 +32,9 @@ export interface AcademyResourceScope {
   moduleId?: string;
   /** Original source-module id used for RBT seeded lookup (e.g. "nc-c2"). */
   sourceModuleId?: string;
+  /** Origin curriculum kind. Used to gate RBT seeded resource lookups so a
+   * BCBA/academyData module id is never matched against the RBT library. */
+  sourceKind?: "rbt" | "bcba" | "academyData";
   /** Optional module-hardcoded resources from a Training record. */
   moduleResources?: TrainingResource[];
 }
@@ -85,8 +88,10 @@ export function getAcademyResourcesForScope(scope: AcademyResourceScope): Academ
   // 1. Module-hardcoded resources.
   for (const r of scope.moduleResources ?? []) push(fromModule(r));
 
-  // 2. RBT seeded resources matched by source module id.
-  if (scope.sourceModuleId) {
+  // 2. RBT seeded resources matched by source module id —
+  // only when the module actually comes from the RBT curriculum.
+  const isRbtScope = scope.sourceKind === "rbt" || scope.journeySlug === "rbt";
+  if (isRbtScope && scope.sourceModuleId) {
     for (const r of getRbtResourcesForModule(STARTER_RBT_RESOURCES, scope.sourceModuleId)) {
       push(fromRbt(r));
     }
