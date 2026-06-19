@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Clock, PlayCircle, FileText,
   ListChecks, BookOpen, ShieldCheck, Sparkles, Library, ExternalLink,
@@ -7,7 +7,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { parseAcademyModuleId } from "@/lib/academy/journeyContent";
-import { RBT_PATHS, type RBTModule } from "@/lib/training/rbtAcademy";
+import { RBT_PATHS, type RBTModule, type RBTPathId } from "@/lib/training/rbtAcademy";
 import { BCBA_MODULES, type BCBAModule } from "@/lib/training/bcbaAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime,
@@ -26,6 +26,9 @@ import { getTrainingPath } from "@/lib/academy/trainingPaths";
  */
 export default function TrainingModuleRuntime() {
   const { slug = "", moduleId = "" } = useParams();
+  const [params] = useSearchParams();
+  const rbtTrackId = (params.get("track") as RBTPathId | null) ?? undefined;
+  const trackSuffix = slug === "rbt" && rbtTrackId ? `?track=${rbtTrackId}` : "";
   const decodedId = decodeURIComponent(moduleId);
   const parsed = parseAcademyModuleId(decodedId);
 
