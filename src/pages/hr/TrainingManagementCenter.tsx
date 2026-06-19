@@ -523,9 +523,18 @@ export default function TrainingManagementCenter() {
               journey={selectedJourney}
               allModules={allModules}
               onBack={() => setSelectedJourneyId(null)}
+              onEditModule={(id) => setEditingModuleId(id)}
+              onCreateModule={() => setCreateModuleOpen(true)}
+              onAssign={() => setAssignOpen(true)}
+              rawJourney={academy.journeys.find((j) => j.id === selectedJourney.id) ?? null}
             />
           )}
-          {nav === "modules" && <ModulesGrid modules={filteredModules} />}
+          {nav === "modules" && (
+            <ModulesGrid
+              modules={filteredModules}
+              onEdit={(id) => setEditingModuleId(id)}
+            />
+          )}
           {nav === "onboarding" && <OnboardingView />}
           {nav === "sops" && <SopsList />}
           {nav === "resources" && <ResourceLibraryView />}
