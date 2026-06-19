@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, Clock, CheckCircle2, PlayCircle, ListChecks,
   FileText, Library, BookOpen, Target,
@@ -11,6 +11,7 @@ import {
   parseAcademyModuleId,
 } from "@/lib/academy/journeyContent";
 import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
+import type { RBTPathId } from "@/lib/training/rbtAcademy";
 
 /**
  * Day Overview — what the learner will do for a single day inside a journey.
@@ -20,14 +21,20 @@ import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
 export default function TrainingPathDayDetail() {
   const { slug = "", dayId = "" } = useParams();
   const navigate = useNavigate();
-  const journey = useMemo(() => buildPathJourney(slug), [slug]);
+  const [params] = useSearchParams();
+  const rbtTrackId = (params.get("track") as RBTPathId | null) ?? undefined;
+  const trackSuffix = slug === "rbt" && rbtTrackId ? `?track=${rbtTrackId}` : "";
+  const journey = useMemo(
+    () => buildPathJourney(slug, slug === "rbt" && rbtTrackId ? { rbtTrackId } : undefined),
+    [slug, rbtTrackId],
+  );
   const day = useMemo(() => (journey ? findDay(journey, decodeURIComponent(dayId)) : undefined), [journey, dayId]);
 
   if (!journey || !day) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-20 text-center">
         <p className="text-sm text-muted-foreground">Day not found.</p>
-        <Link to={`/academy/path/${slug}`} className="mt-4 inline-flex items-center gap-1 text-sm text-primary">
+        <Link to={`/academy/path/${slug}${trackSuffix}`} className="mt-4 inline-flex items-center gap-1 text-sm text-primary">
           <ArrowLeft className="h-4 w-4" /> Back to journey
         </Link>
       </div>
@@ -38,7 +45,8 @@ export default function TrainingPathDayDetail() {
   const isComplete = completedCount === day.modules.length;
   const dayPct = day.modules.length === 0 ? 0 : Math.round((completedCount / day.modules.length) * 100);
   const next = firstIncompleteModule(day);
-  const startHref = next ? journey.runtimeRouteFor(next.id) : journey.runtimeRouteFor(day.modules[0]?.id ?? "");
+  const runtimeHref = (id: string) => `${journey.runtimeRouteFor(id)}${trackSuffix}`;
+  const startHref = next ? runtimeHref(next.id) : runtimeHref(day.modules[0]?.id ?? "");
 
   // Aggregate resources for this day via the unified resolver
   // (module-hardcoded + RBT seeded + admin attachments).
@@ -49,13 +57,27 @@ export default function TrainingPathDayDetail() {
       dayId: day.id,
       moduleId: m.id,
       sourceModuleId: parsed.sourceModuleId,
+      sourceKind: parsed.kind,
       moduleResources: m.resources,
     }).map((r) => ({ ...r, moduleId: m.id, moduleTitle: m.title }));
   });
 
+  // Resolved per-module counts so cards reflect attachments + seeded resources.
+  const moduleResourceCount = (m: typeof day.modules[number]): number => {
+    const parsed = parseAcademyModuleId(m.id);
+    return getAcademyResourcesForScope({
+      journeySlug: slug,
+      dayId: day.id,
+      moduleId: m.id,
+      sourceModuleId: parsed.sourceModuleId,
+      sourceKind: parsed.kind,
+      moduleResources: m.resources,
+    }).length;
+  };
+
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
-      <Link to={`/academy/path/${slug}`} className="inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">
+      <Link to={`/academy/path/${slug}${trackSuffix}`} className="inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> {journey.path.title}
       </Link>
 
@@ -101,10 +123,11 @@ export default function TrainingPathDayDetail() {
               const st = moduleStatus(m.id);
               const done = st === "completed";
               const active = st === "in_progress" || st === "overdue";
+              const resCount = moduleResourceCount(m);
               return (
                 <li key={m.id}>
                   <Link
-                    to={journey.runtimeRouteFor(m.id)}
+                    to={runtimeHref(m.id)}
                     className="group flex items-start gap-4 rounded-2xl border border-border/70 bg-card p-5 transition hover:border-border"
                   >
                     <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[12px] font-semibold ${done ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : active ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-muted text-muted-foreground"}`}>
@@ -120,8 +143,8 @@ export default function TrainingPathDayDetail() {
                       <p className="mt-1 text-[12.5px] text-muted-foreground line-clamp-2">{m.description}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
                         <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{m.estimatedMinutes} min</span>
-                        {(m.resources?.length ?? 0) > 0 && (
-                          <span className="inline-flex items-center gap-1"><FileText className="h-3 w-3" />{m.resources!.length} resource{m.resources!.length === 1 ? "" : "s"}</span>
+                        {resCount > 0 && (
+                          <span className="inline-flex items-center gap-1"><FileText className="h-3 w-3" />{resCount} resource{resCount === 1 ? "" : "s"}</span>
                         )}
                       </div>
                     </div>
