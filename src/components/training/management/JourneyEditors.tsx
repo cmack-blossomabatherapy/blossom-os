@@ -387,20 +387,35 @@ export function CreateModuleDialogReal({
   onOpenChange,
   journeyId,
   onCreated,
+  initial,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   /** If provided, the new module is also added to this journey on create. */
   journeyId?: string | null;
   onCreated?: (t: Training) => void;
+  /** Prefill the create form (e.g. from a template). */
+  initial?: Partial<Pick<Training, "title" | "description" | "type" | "estimatedMinutes" | "category" | "department" | "required">>;
 }) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [type, setType] = useState<TrainingType>("SOP");
-  const [minutes, setMinutes] = useState(10);
-  const [required, setRequired] = useState(false);
-  const [category, setCategory] = useState<Training["category"]>("role");
-  const [department, setDepartment] = useState("");
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [type, setType] = useState<TrainingType>(initial?.type ?? "SOP");
+  const [minutes, setMinutes] = useState(initial?.estimatedMinutes ?? 10);
+  const [required, setRequired] = useState(initial?.required ?? false);
+  const [category, setCategory] = useState<Training["category"]>(initial?.category ?? "role");
+  const [department, setDepartment] = useState(initial?.department ?? "");
+
+  // Re-seed when initial changes while dialog is open (e.g. picking another template).
+  useEffect(() => {
+    if (!open) return;
+    setTitle(initial?.title ?? "");
+    setDescription(initial?.description ?? "");
+    setType(initial?.type ?? "SOP");
+    setMinutes(initial?.estimatedMinutes ?? 10);
+    setRequired(initial?.required ?? false);
+    setCategory(initial?.category ?? "role");
+    setDepartment(initial?.department ?? "");
+  }, [open, initial?.title, initial?.description, initial?.type, initial?.estimatedMinutes, initial?.required, initial?.category, initial?.department]);
 
   const reset = () => {
     setTitle(""); setDescription(""); setType("SOP"); setMinutes(10);
