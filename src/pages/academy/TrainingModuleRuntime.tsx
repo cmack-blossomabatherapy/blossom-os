@@ -204,6 +204,24 @@ export default function TrainingModuleRuntime() {
             </Card>
           )}
 
+          {ctx.trainerNotes && (
+            <Card title="Trainer notes" icon={ShieldCheck}>
+              <p className="text-[13px] text-foreground/90">{ctx.trainerNotes}</p>
+            </Card>
+          )}
+
+          {ctx.reflectionPrompt && (
+            <Card title="Reflection prompt" icon={BookOpen}>
+              <p className="text-[13px] text-foreground/90">{ctx.reflectionPrompt}</p>
+            </Card>
+          )}
+
+          {ctx.signoffRequired && (
+            <Card title="Signoff required" icon={ShieldCheck}>
+              <p className="text-[13px] text-foreground/90">{ctx.signoffRequired}</p>
+            </Card>
+          )}
+
           {ctx.sopLinks && ctx.sopLinks.length > 0 && (
             <Card title="SOPs and references" icon={Link2}>
               <ul className="space-y-2 text-[13px]">
