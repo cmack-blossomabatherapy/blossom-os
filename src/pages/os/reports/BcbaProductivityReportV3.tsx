@@ -92,6 +92,7 @@ interface BillingRow {
 interface OwnedRow extends BillingRow {
   bcbaOwner: string | null;
   assignmentId: string | null;
+  assignmentSource: "saved" | "inferred" | "unassigned";
   is97153: boolean;
 }
 interface ValidationSummary {
@@ -394,18 +395,70 @@ export default function BcbaProductivityReportV3() {
   }
 
   /* ----- ownership-resolved rows ----- */
-  /* If no permanent Assignment History exists yet, infer one from the uploaded
-   * Billing Report so productivity is never left fully unassigned. */
+  /* Always compute inferred ownership from the Billing Report itself so that
+   * clients without saved Assignment History still get correct BCBA attribution.
+   *
+   * Critical: partial / stale saved Assignment History must NOT silently
+   * disable inference for unrelated clients. We merge per-client:
+   *   - if the client has any saved assignment, use ONLY saved assignments for that client
+   *   - otherwise, fall back to inferred assignments for that client
+   *
+   * This preserves the month-aware inference rule for the vast majority of
+   * clients while letting admins manually override ownership where needed. */
   const inferred = useMemo(() => inferAssignmentHistory(rows), [rows]);
-  const usingInferred = rows.length > 0 && assignments.length === 0 && inferred.assignments.length > 0;
-  const effectiveAssignments = usingInferred ? inferred.assignments : assignments;
+
+  const savedClientKeys = useMemo(() => {
+    const s = new Set<string>();
+    for (const a of assignments) {
+      const k = (a.clientId && a.clientId.trim()) || normalizeName(a.clientName);
+      if (k) s.add(k);
+    }
+    return s;
+  }, [assignments]);
+
+  const effectiveAssignments = useMemo(() => {
+    if (assignments.length === 0) return inferred.assignments;
+    const filteredInferred = inferred.assignments.filter(a => {
+      const k = (a.clientId && a.clientId.trim()) || normalizeName(a.clientName);
+      return !savedClientKeys.has(k);
+    });
+    return [...assignments, ...filteredInferred];
+  }, [assignments, inferred.assignments, savedClientKeys]);
+
+  const inferredAssignmentIds = useMemo(
+    () => new Set(inferred.assignments.map(a => a.id)),
+    [inferred.assignments],
+  );
+
+  const usingInferred =
+    rows.length > 0 && assignments.length === 0 && inferred.assignments.length > 0;
+  const inferredClientCount = useMemo(() => {
+    if (assignments.length === 0) return inferred.clientsWithAnchors;
+    const seen = new Set<string>();
+    for (const a of inferred.assignments) {
+      const k = (a.clientId && a.clientId.trim()) || normalizeName(a.clientName);
+      if (k && !savedClientKeys.has(k)) seen.add(k);
+    }
+    return seen.size;
+  }, [assignments.length, inferred, savedClientKeys]);
+  const usingMixedSources =
+    rows.length > 0 && assignments.length > 0 && inferredClientCount > 0;
 
   const ownedRows: OwnedRow[] = useMemo(() => {
     return rows.map(r => {
       const owner = ownerForClientAtDateV3(effectiveAssignments, r.clientId, r.clientName, r.date);
-      return { ...r, bcbaOwner: owner?.bcba ?? null, assignmentId: owner?.assignmentId ?? null, is97153: isRbt97153(r.code) };
+      const source: OwnedRow["assignmentSource"] = !owner
+        ? "unassigned"
+        : inferredAssignmentIds.has(owner.assignmentId) ? "inferred" : "saved";
+      return {
+        ...r,
+        bcbaOwner: owner?.bcba ?? null,
+        assignmentId: owner?.assignmentId ?? null,
+        assignmentSource: source,
+        is97153: isRbt97153(r.code),
+      };
     });
-  }, [rows, effectiveAssignments]);
+  }, [rows, effectiveAssignments, inferredAssignmentIds]);
 
   const setupIncomplete = rows.length > 0 && effectiveAssignments.length === 0;
   const unassignedAudit: UnassignedAuditRow[] = useMemo(() => (
@@ -748,6 +801,14 @@ export default function BcbaProductivityReportV3() {
                 </Button>
               </div>
             </div>
+          </div>
+        )}
+        {usingMixedSources && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+            <Database className="mr-1.5 inline h-4 w-4 text-primary" />
+            Mixed ownership sources — {assignments.length} saved assignments are used for clients with manual history,
+            and {inferredClientCount} additional clients fall back to month-aware inference from the Billing Report.
+            Saved Assignment History for one client no longer disables inference for other clients.
           </div>
         )}
         {kpis.unassigned > 0 && (

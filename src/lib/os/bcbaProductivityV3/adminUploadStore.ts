@@ -164,6 +164,11 @@ export async function parseBcbaProductivityUpload(file: File): Promise<BcbaUploa
   const endH = findH(h, ["EndTime", "End Time", "TimeOut"]);
   const unitsH = findH(h, ["Units", "BilledUnits", "Billed Units"]);
   const apptIdH = findH(h, [
+    // CentralReach billing exports include an `Id` column that is the
+    // strongest unique row identifier — prefer it above all other ids so
+    // cumulative daily uploads dedupe reliably without removing legitimate
+    // distinct rows that happen to share date/client/provider/code/hours.
+    "Id", "CentralReachId", "CentralReach Id", "Row Id", "RowId",
     "AppointmentId", "Appointment ID", "SessionId", "Session ID", "BillingId", "Billing ID",
   ]);
 
