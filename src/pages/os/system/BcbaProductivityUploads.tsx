@@ -127,7 +127,12 @@ export default function BcbaProductivityUploads() {
       if (fileInputRef.current) fileInputRef.current.value = "";
       await refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to append upload");
+      // eslint-disable-next-line no-console
+      console.error("[bcba-upload] append failed", e);
+      toast.error(e?.message ?? "Failed to append upload", {
+        description: "Check the browser console for the full error. If this persists, sign out and back in to refresh your session.",
+        duration: 10000,
+      });
     } finally {
       setAppending(false);
     }

@@ -336,6 +336,11 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
     throw new Error(`Missing required columns: ${parsed.missingColumns.join(", ")}`);
   }
 
+  // Refresh the auth session so the edge function sees a current JWT.
+  // Without this, an expired access token causes a silent 401 on the very
+  // first create_batch call and the upload appears to "do nothing".
+  try { await supabase.auth.refreshSession(); } catch { /* non-fatal */ }
+
   // Pre-check duplicates (against current active rows).
   const hashes = parsed.parsedRows.map((r) => r.rowHash);
   const existing = await fetchExistingHashes(hashes);
@@ -445,10 +450,15 @@ async function callUploadFn(body: Record<string, unknown>): Promise<Record<strin
   if (error) {
     const detail = (data && typeof data === "object" && "error" in (data as any))
       ? (data as any).error
-      : error.message;
-    throw new Error(detail || "Upload service error");
+      : (error as any)?.message;
+    // Surface full error context so failed uploads aren't silent.
+    // eslint-disable-next-line no-console
+    console.error("[bcba-upload] edge function error", { action: body?.action, error, data });
+    throw new Error(detail || `Upload service error (action: ${String(body?.action ?? "?")})`);
   }
   if (data && typeof data === "object" && "error" in data) {
+    // eslint-disable-next-line no-console
+    console.error("[bcba-upload] edge function returned error payload", { action: body?.action, data });
     throw new Error(String((data as any).error));
   }
   return (data ?? {}) as Record<string, unknown>;
