@@ -803,6 +803,14 @@ export default function BcbaProductivityReportV3() {
             </div>
           </div>
         )}
+        {usingMixedSources && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+            <Database className="mr-1.5 inline h-4 w-4 text-primary" />
+            Mixed ownership sources — {assignments.length} saved assignments are used for clients with manual history,
+            and {inferredClientCount} additional clients fall back to month-aware inference from the Billing Report.
+            Saved Assignment History for one client no longer disables inference for other clients.
+          </div>
+        )}
         {kpis.unassigned > 0 && (
           <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
             <AlertTriangle className="mr-1.5 inline h-3.5 w-3.5" />
