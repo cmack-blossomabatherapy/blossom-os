@@ -666,6 +666,177 @@ export default function BcbaProductivityReportV3() {
       })
     );
   }
+
+  async function exportBcbaPdf() {
+    if (!bcbaTable.length) { toast.error("Nothing to export"); return; }
+    try {
+      const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "letter" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+
+      // Brand palette (Blossom soft blossom pink + slate)
+      const brand: [number, number, number] = [232, 121, 145];
+      const ink: [number, number, number] = [30, 33, 48];
+      const sub: [number, number, number] = [120, 124, 140];
+      const surface: [number, number, number] = [248, 246, 247];
+
+      // Load logo as data URL (best effort — skip silently if it fails)
+      let logoDataUrl: string | null = null;
+      try {
+        const res = await fetch(blossomLogo);
+        const blob = await res.blob();
+        logoDataUrl = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result));
+          r.onerror = reject;
+          r.readAsDataURL(blob);
+        });
+      } catch { /* ignore */ }
+
+      // ---------- Header band ----------
+      doc.setFillColor(...surface);
+      doc.rect(0, 0, pageW, 96, "F");
+      doc.setDrawColor(...brand);
+      doc.setLineWidth(2);
+      doc.line(0, 96, pageW, 96);
+
+      if (logoDataUrl) {
+        try { doc.addImage(logoDataUrl, "PNG", 36, 24, 48, 48); } catch { /* ignore */ }
+      }
+
+      doc.setTextColor(...ink);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("BCBA Productivity Report", 100, 48);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(...sub);
+      const periodLabel = (validation && validation.dateMin && validation.dateMax)
+        ? `Period ${validation.dateMin} — ${validation.dateMax}`
+        : "Current dataset";
+      doc.text(periodLabel, 100, 64);
+      doc.text(
+        `Generated ${new Date().toLocaleString()}${fileName ? `  •  Source: ${fileName}` : ""}`,
+        100, 78,
+      );
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...brand);
+      doc.text("BLOSSOM ABA THERAPY", pageW - 36, 48, { align: "right" });
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...sub);
+      doc.text("Operational Intelligence", pageW - 36, 62, { align: "right" });
+
+      // ---------- KPI cards ----------
+      const cards: { label: string; value: string }[] = [
+        { label: "Total hours", value: fmt1(kpis.totalHours) },
+        { label: "97153 (Direct RBT)", value: fmt1(kpis.h97153) },
+        { label: "Supervision (97155)", value: fmt1(kpis.supervisionHours) },
+        { label: "Supervision %", value: fmtPct(kpis.supervisionHours, kpis.h97153) },
+        { label: "BCBAs", value: fmt0(kpis.bcbas) },
+        { label: "Clients", value: fmt0(kpis.clients) },
+        { label: "Unassigned hrs", value: fmt1(kpis.unassigned) },
+      ];
+      const cardsY = 116;
+      const cardsX = 36;
+      const cardsW = pageW - 72;
+      const gap = 10;
+      const cardW = (cardsW - gap * (cards.length - 1)) / cards.length;
+      const cardH = 56;
+      cards.forEach((c, i) => {
+        const x = cardsX + i * (cardW + gap);
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(232, 230, 232);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(x, cardsY, cardW, cardH, 6, 6, "FD");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(...sub);
+        doc.text(c.label.toUpperCase(), x + 10, cardsY + 16);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(15);
+        doc.setTextColor(...ink);
+        doc.text(c.value, x + 10, cardsY + 40);
+      });
+
+      // ---------- BCBA summary table ----------
+      const head = [[
+        "BCBA", "Total hrs", "97153 hrs", "Direct hrs", "Supervision hrs",
+        "Sup %", "Clients", "RBTs",
+      ]];
+      const body = bcbaTable.map(b => {
+        const pct = supervisionPctValue(b.supervisionHours, b.h97153);
+        return [
+          b.isUnassigned ? "— Unassigned —" : b.bcba,
+          fmt1(b.totalHours),
+          fmt1(b.h97153),
+          fmt1(b.directHours),
+          fmt1(b.supervisionHours),
+          pct === null ? "—" : `${pct.toFixed(1)}%`,
+          String(b.clients.size),
+          String(b.rbts.size),
+        ];
+      });
+
+      autoTable(doc, {
+        startY: cardsY + cardH + 22,
+        head,
+        body,
+        theme: "plain",
+        styles: {
+          font: "helvetica",
+          fontSize: 9,
+          cellPadding: { top: 7, right: 8, bottom: 7, left: 8 },
+          textColor: ink,
+          lineColor: [232, 230, 232],
+          lineWidth: 0.4,
+        },
+        headStyles: {
+          fillColor: brand,
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 9,
+          halign: "left",
+        },
+        alternateRowStyles: { fillColor: surface },
+        columnStyles: {
+          0: { cellWidth: "auto", fontStyle: "bold" },
+          1: { halign: "right" },
+          2: { halign: "right" },
+          3: { halign: "right" },
+          4: { halign: "right" },
+          5: { halign: "right" },
+          6: { halign: "right" },
+          7: { halign: "right" },
+        },
+        margin: { left: 36, right: 36 },
+        didDrawPage: () => {
+          // Footer
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.setTextColor(...sub);
+          doc.text(
+            "Confidential — Blossom ABA Therapy Operational Report",
+            36, pageH - 18,
+          );
+          const pageNum = doc.getNumberOfPages();
+          doc.text(
+            `Page ${doc.getCurrentPageInfo().pageNumber} of ${pageNum}`,
+            pageW - 36, pageH - 18, { align: "right" },
+          );
+        },
+      });
+
+      const stamp = new Date().toISOString().slice(0, 10);
+      doc.save(`blossom-bcba-productivity-${stamp}.pdf`);
+      toast.success("PDF exported");
+    } catch (e: any) {
+      console.error("[bcba v3] pdf export failed", e);
+      toast.error(e?.message ?? "Failed to export PDF");
+    }
+  }
   function exportTransfersCsv() {
     downloadCsv(`bcba-transfers-v3-${Date.now()}.csv`,
       ["Client", "Previous BCBA", "New BCBA", "Transfer Date"],
