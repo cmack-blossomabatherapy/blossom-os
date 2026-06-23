@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Upload, X as XIcon, FileText as FileTextIcon } from "lucide-react";
 import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ResponsiveSheet, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/responsive-sheet";
@@ -28,6 +29,27 @@ const LEAD_SOURCES = LEAD_SOURCE_OPTIONS.map((o) => o.value);
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const PRIORITIES = ["Hot", "Warm", "Cold"] as const;
 const CONTACT_METHODS = ["Phone", "Cell", "Text", "Email"] as const;
+
+/** Document categories Intake commonly uploads when creating a lead. */
+export const LEAD_DOCUMENT_TYPES = [
+  "Insurance Card",
+  "Diagnosis",
+  "Referral",
+  "Intake Packet",
+  "Consent Form",
+  "Parent Provided Document",
+  "Other",
+] as const;
+export type LeadDocumentType = typeof LEAD_DOCUMENT_TYPES[number];
+
+/** Pending document metadata captured during manual lead creation. */
+export interface PendingLeadDocument {
+  name: string;
+  type: LeadDocumentType;
+  size?: number;
+  uploadedAt: string;
+  storageStatus: "pending_storage_connection" | "uploaded";
+}
 
 const schema = z
   .object({
@@ -132,11 +154,15 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
   const [form, setForm] = useState<FormShape>({ ...EMPTY, ...defaults });
   // Re-seed when opening so each launch reflects the latest defaults.
   useEffect(() => {
-    if (open) setForm({ ...EMPTY, ...defaults });
+    if (open) {
+      setForm({ ...EMPTY, ...defaults });
+      setDocuments([]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [documents, setDocuments] = useState<PendingLeadDocument[]>([]);
 
   const update = <K extends keyof FormShape>(k: K, v: FormShape[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -202,12 +228,15 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
         notes: v.notes || undefined,
         tags:  tags.length ? tags : undefined,
 
+        documents: documents.length ? documents : undefined,
+
         sourceMetadata: {
           ...(defaults?.sourceMetadata as Record<string, unknown> | undefined),
           created_via:
             (defaults?.sourceMetadata as Record<string, unknown> | undefined)?.created_via ??
             "manual",
           created_at_client: new Date().toISOString(),
+          attached_documents: documents.length,
         } as Record<string, unknown>,
       });
       toast.success(`Lead created: ${lead.childName}`, {
@@ -216,6 +245,7 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
       onCreated?.(lead);
       onOpenChange(false);
       setForm(EMPTY);
+      setDocuments([]);
     } catch (e: any) {
       toast.error("Could not save lead", { description: e?.message ?? "Unknown error" });
     } finally {
@@ -223,7 +253,15 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
     }
   };
 
-  const body = <FormTabs form={form} update={update} errors={errors} />;
+  const body = (
+    <FormTabs
+      form={form}
+      update={update}
+      errors={errors}
+      documents={documents}
+      setDocuments={setDocuments}
+    />
+  );
   const footer = (
     <>
       <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
