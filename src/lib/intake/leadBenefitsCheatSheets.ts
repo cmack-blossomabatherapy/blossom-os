@@ -35,21 +35,18 @@ export interface LeadBenefitsCheatSheet {
   insuranceCategory: CheatSheetCategory;
   intakeStatus: CheatSheetStatus;
   notes: string;
-  mondayItemId?: string;
+  mondayItemId: string;
 }
 
 /**
- * Source rows — mirrors the cleaned Lead Benefits Cheat Sheet workbook.
+ * Source rows — exact mirror of the cleaned Lead Benefits Cheat Sheet
+ * workbook (Monday board id 1782177836). Every row carries the real
+ * Monday item id from the source board.
  *
- * Georgia rows (11) carry real Monday item IDs from the source board.
- * Other-state rows reflect the operational guidance currently in use;
- * their `mondayItemId` is intentionally left undefined until the full
- * cleaned CSV is loaded so we never display fabricated IDs.
- *
- * Total length is enforced at 48 rows.
+ * Total length is fixed at 48 rows. Do not add, remove, or fabricate.
  */
 export const leadBenefitsCheatSheets: LeadBenefitsCheatSheet[] = [
-  // -- Georgia (11) — real Monday item IDs --------------------------------
+  // -- Georgia (15) --------------------------------------------------------
   { state: "Georgia", payer: "Amerigroup Real Solutions", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active", mondayItemId: "12250880354" },
   { state: "Georgia", payer: "Care Source", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active", mondayItemId: "12250786311" },
   { state: "Georgia", payer: "PeachState", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active", mondayItemId: "12250869832" },
@@ -61,51 +58,51 @@ export const leadBenefitsCheatSheets: LeadBenefitsCheatSheet[] = [
   { state: "Georgia", payer: "Anthem", insuranceCategory: "OON Commercial", intakeStatus: "CONDITIONAL", notes: "Check plans below - Can be found on Card", mondayItemId: "12250909159" },
   { state: "Georgia", payer: "HSA", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Bad", mondayItemId: "12250908877" },
   { state: "Georgia", payer: "Credence", insuranceCategory: "OON Commercial", intakeStatus: "TAKE", notes: "Push Through", mondayItemId: "12250922409" },
+  { state: "Georgia", payer: "National Benefits Fund", insuranceCategory: "OON Commercial", intakeStatus: "TAKE", notes: "Push Through", mondayItemId: "12250922361" },
+  { state: "Georgia", payer: "Empire", insuranceCategory: "OON Commercial", intakeStatus: "TAKE", notes: "Push Through", mondayItemId: "12250918440" },
+  { state: "Georgia", payer: "Anthem- No specific Plan", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad", mondayItemId: "12250916964" },
+  { state: "Georgia", payer: "Anthem- Through a Corp...", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad", mondayItemId: "12250909247" },
 
-  // -- Tennessee (9) — Monday IDs pending CSV upload ----------------------
-  { state: "Tennessee", payer: "TennCare Blue Care", insuranceCategory: "MCO", intakeStatus: "DON'T TAKE", notes: "Not contracted. Refer to in-network provider." },
-  { state: "Tennessee", payer: "United Health Care (TennCare)", insuranceCategory: "MCO", intakeStatus: "DON'T TAKE", notes: "Not contracted with TennCare UHC line. Refer family elsewhere." },
-  { state: "Tennessee", payer: "Well Point-Amerigroup", insuranceCategory: "MCO", intakeStatus: "TAKE-CONDITIONAL", notes: "As long as insurance is active" },
-  { state: "Tennessee", payer: "BlueCare Tennessee", insuranceCategory: "MCO", intakeStatus: "DON'T TAKE", notes: "Not contracted." },
-  { state: "Tennessee", payer: "BCBS Tennessee (Commercial)", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Verify ABA benefits - some self-funded plans exclude." },
-  { state: "Tennessee", payer: "Cigna", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad" },
-  { state: "Tennessee", payer: "UHC-Optum-UBH (Commercial)", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Commercial UHC only - TennCare line is DON'T TAKE." },
-  { state: "Tennessee", payer: "Aetna", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "OON. Verify benefits before scheduling." },
-  { state: "Tennessee", payer: "Tricare East", insuranceCategory: "Misc", intakeStatus: "TAKE-CONDITIONAL", notes: "ACD/ECHO enrollment required." },
+  // -- Tennessee (8) -------------------------------------------------------
+  { state: "Tennessee", payer: "Well Point- Amerigroup", insuranceCategory: "MCO", intakeStatus: "TAKE-CONDITIONAL", notes: "As long as insurance is active", mondayItemId: "12250787607" },
+  { state: "Tennessee", payer: "TennCare Blue Care", insuranceCategory: "MCO", intakeStatus: "DON'T TAKE", notes: "", mondayItemId: "12250924302" },
+  { state: "Tennessee", payer: "United Health Care", insuranceCategory: "MCO", intakeStatus: "DON'T TAKE", notes: "", mondayItemId: "12250899920" },
+  { state: "Tennessee", payer: "BCBS", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad", mondayItemId: "12250923551" },
+  { state: "Tennessee", payer: "UHC", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad", mondayItemId: "12250927315" },
+  { state: "Tennessee", payer: "ChampVA", insuranceCategory: "Misc", intakeStatus: "TAKE", notes: "", mondayItemId: "12250923576" },
+  { state: "Tennessee", payer: "Aetna", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad- PUSH THROUGH", mondayItemId: "12250923561" },
+  { state: "Tennessee", payer: "Cigna", insuranceCategory: "OON Commercial", intakeStatus: "DON'T TAKE", notes: "", mondayItemId: "12250937519" },
 
-  // -- North Carolina (11) — Monday IDs pending CSV upload ----------------
-  { state: "North Carolina", payer: "NC Medicaid Direct", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active. Diagnostic report < 3 years required." },
-  { state: "North Carolina", payer: "Healthy Blue NC", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active." },
-  { state: "North Carolina", payer: "AmeriHealth Caritas NC", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active." },
-  { state: "North Carolina", payer: "WellCare NC (Medicaid)", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active." },
-  { state: "North Carolina", payer: "UHC Community Plan NC", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active." },
-  { state: "North Carolina", payer: "Carolina Complete Health", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active." },
-  { state: "North Carolina", payer: "BCBS NC (Commercial)", insuranceCategory: "INN Commercials", intakeStatus: "TAKE", notes: "ABA covered with prior auth. 20 hrs/wk typical approval." },
-  { state: "North Carolina", payer: "Cigna", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad" },
-  { state: "North Carolina", payer: "UHC-Optum-UBH", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad" },
-  { state: "North Carolina", payer: "Aetna", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "OON. Verify benefits and deductible before scheduling." },
-  { state: "North Carolina", payer: "Tricare East", insuranceCategory: "Misc", intakeStatus: "TAKE-CONDITIONAL", notes: "ACD/ECHO enrollment required." },
+  // -- Virginia (10) -------------------------------------------------------
+  { state: "Virginia", payer: "Aetna Better Health", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active", mondayItemId: "12250944008" },
+  { state: "Virginia", payer: "Anthem Healthkeepers", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active", mondayItemId: "12250921735" },
+  { state: "Virginia", payer: "Setara Health Plans Medicaid", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active", mondayItemId: "12250946565" },
+  { state: "Virginia", payer: "UHC Community", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active", mondayItemId: "12250938058" },
+  { state: "Virginia", payer: "BCBS/ Anthem VA", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad", mondayItemId: "12250946240" },
+  { state: "Virginia", payer: "Care First Blue Choice", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad", mondayItemId: "12250956369" },
+  { state: "Virginia", payer: "Sentara", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad", mondayItemId: "12250924958" },
+  { state: "Virginia", payer: "Aetna", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad- PUSH THROUGH", mondayItemId: "12250944290" },
+  { state: "Virginia", payer: "UHC", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad", mondayItemId: "12250950237" },
+  { state: "Virginia", payer: "Cigna", insuranceCategory: "OON Commercial", intakeStatus: "DON'T TAKE", notes: "Especially if benefits are bad", mondayItemId: "12250944300" },
 
-  // -- Virginia (10) — Monday IDs pending CSV upload ----------------------
-  { state: "Virginia", payer: "Anthem HealthKeepers Plus", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Cardinal Care managed Medicaid. Check Active." },
-  { state: "Virginia", payer: "Aetna Better Health of VA", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Cardinal Care managed Medicaid. Check Active." },
-  { state: "Virginia", payer: "Molina Complete Care", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Cardinal Care managed Medicaid. Check Active." },
-  { state: "Virginia", payer: "Sentara Community Plan", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Cardinal Care managed Medicaid. Check Active." },
-  { state: "Virginia", payer: "UHC Community Plan VA", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Cardinal Care managed Medicaid. Check Active." },
-  { state: "Virginia", payer: "Anthem BCBS VA (Commercial)", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Verify ABA rider on plan." },
-  { state: "Virginia", payer: "Cigna", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad" },
-  { state: "Virginia", payer: "UHC-Optum-UBH", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad" },
-  { state: "Virginia", payer: "Aetna", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "OON. Verify benefits before scheduling." },
-  { state: "Virginia", payer: "Tricare East", insuranceCategory: "Misc", intakeStatus: "TAKE-CONDITIONAL", notes: "ACD/ECHO enrollment required." },
+  // -- North Carolina (13) -------------------------------------------------
+  { state: "North Carolina", payer: "Alliance - NC Medicaid", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "", mondayItemId: "12250962541" },
+  { state: "North Carolina", payer: "Carolina Complete Health - NC Medicaid", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "", mondayItemId: "12250925685" },
+  { state: "North Carolina", payer: "Healthy Blue - NC Medicaid", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "", mondayItemId: "12250962293" },
+  { state: "North Carolina", payer: "Partners Behavioral Health Management - NC Medicaid", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "", mondayItemId: "12250962298" },
+  { state: "North Carolina", payer: "Trillium Health Resources", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "", mondayItemId: "12250947274" },
+  { state: "North Carolina", payer: "Vaya Health", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "", mondayItemId: "12250925179" },
+  { state: "North Carolina", payer: "BCBS", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad", mondayItemId: "12250962781" },
+  { state: "North Carolina", payer: "ChampVA", insuranceCategory: "Misc", intakeStatus: "TAKE", notes: "", mondayItemId: "12250925857" },
+  { state: "North Carolina", payer: "Aetna", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad- PUSH THROUGH IF UCR", mondayItemId: "12250957292" },
+  { state: "North Carolina", payer: "United Behavioral Health", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Does not seem to pay well", mondayItemId: "12250962835" },
+  { state: "North Carolina", payer: "UMR", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad- PUSH THROUGH", mondayItemId: "12250947193" },
+  { state: "North Carolina", payer: "Vaya Health", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Does not seem to pay well", mondayItemId: "12250947821" },
+  { state: "North Carolina", payer: "Cigna", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad", mondayItemId: "12250947867" },
 
-  // -- Maryland (7) — Monday IDs pending CSV upload -----------------------
-  { state: "Maryland", payer: "Maryland Medical Assistance (Medicaid FFS)", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active." },
-  { state: "Maryland", payer: "Priority Partners MCO", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active." },
-  { state: "Maryland", payer: "Maryland Physicians Care", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active." },
-  { state: "Maryland", payer: "CareFirst BCBS Community Health Plan MD", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Check Active." },
-  { state: "Maryland", payer: "CareFirst BCBS (Commercial)", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Verify ABA rider on plan." },
-  { state: "Maryland", payer: "Cigna", insuranceCategory: "INN Commercials", intakeStatus: "TAKE-CONDITIONAL", notes: "Unless Benefits are Very Bad" },
-  { state: "Maryland", payer: "Aetna", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "OON. Verify benefits before scheduling." },
+  // -- Maryland (2) --------------------------------------------------------
+  { state: "Maryland", payer: "-", insuranceCategory: "MCO", intakeStatus: "TAKE", notes: "Take All", mondayItemId: "12250963311" },
+  { state: "Maryland", payer: "-", insuranceCategory: "OON Commercial", intakeStatus: "TAKE-CONDITIONAL", notes: "Take All unless extremely bad benefits", mondayItemId: "12250970422" },
 ];
 
 /* ---------------------------------------------------------------------- */
