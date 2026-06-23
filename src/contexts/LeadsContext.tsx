@@ -392,7 +392,25 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       throw insErr ?? new Error("Failed to create lead");
     }
     const row = data as unknown as IntakeLeadRow;
-    const lead = intakeLeadRowToLead(row);
+    const baseLead = intakeLeadRowToLead(row);
+    const lead: Lead = input.documents && input.documents.length
+      ? {
+          ...baseLead,
+          documents: [
+            ...(baseLead.documents ?? []),
+            ...input.documents.map((d) => ({
+              name: d.name,
+              type: d.type,
+              uploadedAt: d.uploadedAt,
+              // url is omitted until Cloud Storage is connected.
+            })),
+          ],
+          automationLog: [
+            ...baseLead.automationLog,
+            ...input.documents.map((d) => `Document attached: ${d.name} (${d.type})`),
+          ],
+        }
+      : baseLead;
 
     // Best-effort first task + communication. These are optional — RLS errors
     // shouldn't block the new lead from showing up.
