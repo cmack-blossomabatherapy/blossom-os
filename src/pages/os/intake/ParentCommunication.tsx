@@ -1,21 +1,72 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { MessageSquare, Phone, Mail, Plus, Copy } from "lucide-react";
+import { MessageSquare, Phone, Mail, Plus, Copy, Send, FileText, AlertCircle, ShieldCheck } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { useIntakeCommsLive } from "@/hooks/useIntakeCommsLive";
 import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
 import { Button } from "@/components/ui/button";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import type { Lead } from "@/data/leads";
+import {
+  sendLeadEmail,
+  sendLeadSms,
+  sendIntakePacket,
+  sendMissingInfoReminder,
+  sendVobUpdate,
+  notifyCommunicationResult,
+} from "@/lib/integrations/communications/communicationAdapters";
 import { toast } from "sonner";
 
 const TEMPLATES: { id: string; label: string; body: string }[] = [
-  { id: "first-contact", label: "First contact", body: "Hi {{parent}}, this is {{coordinator}} from Blossom ABA Therapy. Thanks for reaching out about {{child}} — I'd love to learn a bit more so we can get started. When is a good time for a quick 10-minute call today or tomorrow?" },
-  { id: "packet-sent", label: "Intake packet sent", body: "Hi {{parent}}, I've just sent the intake packet to {{email}}. It takes about 10 minutes to complete. Reply here if anything's unclear — happy to walk you through it." },
-  { id: "missing-info", label: "Missing information reminder", body: "Hi {{parent}}, quick follow-up: we still need {{missing}} before we can move {{child}}'s file to verification. Want me to send the form again or jump on a quick call?" },
-  { id: "vob-update", label: "VOB update", body: "Hi {{parent}}, your benefits verification is in progress. We're checking with {{payer}} and expect to hear back within a few business days. I'll reach out the moment we have an answer." },
-  { id: "non-qualified", label: "Non-qualified message", body: "Hi {{parent}}, thanks for trusting us with {{child}}'s care. Unfortunately {{reason}} means we aren't able to start services right now. If anything changes — coverage, location, or otherwise — please reach back out. We're rooting for you." },
-  { id: "handoff", label: "Handoff to scheduling / clinical", body: "Hi {{parent}}, great news — {{child}} is approved and ready to begin. I'm handing your file to our scheduling and clinical team. {{nextOwner}} will reach out within 1 business day to schedule the first assessment." },
+type TemplateAction =
+  | { kind: "email" }
+  | { kind: "sms" }
+  | { kind: "intake-packet" }
+  | { kind: "missing-info" }
+  | { kind: "vob-update" };
+
+const TEMPLATES: { id: string; label: string; body: string; actions: TemplateAction[] }[] = [
+  { id: "first-contact", label: "First contact", body: "Hi {{parent}}, this is {{coordinator}} from Blossom ABA Therapy. Thanks for reaching out about {{child}} - I'd love to learn a bit more so we can get started. When is a good time for a quick 10-minute call today or tomorrow?", actions: [{ kind: "sms" }, { kind: "email" }] },
+  { id: "packet-sent", label: "Intake packet", body: "Hi {{parent}}, sending over the intake packet now. It takes about 10 minutes to complete. Reply here if anything's unclear - happy to walk you through it.", actions: [{ kind: "intake-packet" }, { kind: "sms" }] },
+  { id: "missing-info", label: "Missing information reminder", body: "Hi {{parent}}, quick follow-up: we still need {{missing}} before we can move {{child}}'s file to verification. Want me to send the form again or jump on a quick call?", actions: [{ kind: "missing-info" }, { kind: "email" }] },
+  { id: "vob-update", label: "VOB update", body: "Hi {{parent}}, your benefits verification is in progress. We're checking with {{payer}} and expect to hear back within a few business days. I'll reach out the moment we have an answer.", actions: [{ kind: "vob-update" }, { kind: "sms" }] },
+  { id: "non-qualified", label: "Non-qualified message", body: "Hi {{parent}}, thanks for trusting us with {{child}}'s care. Unfortunately {{reason}} means we aren't able to start services right now. If anything changes - coverage, location, or otherwise - please reach back out. We're rooting for you.", actions: [{ kind: "email" }] },
+  { id: "handoff", label: "Handoff to scheduling / clinical", body: "Hi {{parent}}, great news - {{child}} is approved and ready to begin. I'm handing your file to our scheduling and clinical team. {{nextOwner}} will reach out within 1 business day to schedule the first assessment.", actions: [{ kind: "email" }, { kind: "sms" }] },
 ];
+
+function leadToContext(lead: Lead) {
+  return {
+    leadId: lead.id,
+    phone: lead.phone,
+    email: lead.email,
+    parentName: lead.parentName,
+    childName: lead.childName,
+    state: lead.state,
+    insurance: lead.primaryInsurance ?? lead.insurance ?? null,
+  };
+}
+
+async function runTemplateAction(action: TemplateAction, lead: Lead) {
+  const ctx = leadToContext(lead);
+  switch (action.kind) {
+    case "email": return notifyCommunicationResult(await sendLeadEmail(ctx));
+    case "sms": return notifyCommunicationResult(await sendLeadSms(ctx));
+    case "intake-packet": return notifyCommunicationResult(await sendIntakePacket(ctx));
+    case "missing-info": return notifyCommunicationResult(await sendMissingInfoReminder(ctx));
+    case "vob-update": return notifyCommunicationResult(await sendVobUpdate(ctx));
+  }
+}
+
+const ACTION_META: Record<TemplateAction["kind"], { label: string; icon: typeof Send }> = {
+  email: { label: "Send Email", icon: Mail },
+  sms: { label: "Send SMS", icon: MessageSquare },
+  "intake-packet": { label: "Send Intake Packet", icon: FileText },
+  "missing-info": { label: "Send Missing Info Reminder", icon: AlertCircle },
+  "vob-update": { label: "Send VOB Update", icon: ShieldCheck },
+};
 
 interface CommRow {
   leadId: string;
@@ -31,6 +82,11 @@ const ICONS = { call: Phone, sms: MessageSquare, email: Mail, note: MessageSquar
 export default function ParentCommunication() {
   const { leads, loading } = useLeads();
   const { comms } = useIntakeCommsLive(100);
+  const [selectedLeadId, setSelectedLeadId] = useState<string>("");
+  const selectedLead = useMemo(
+    () => leads.find((l) => l.id === selectedLeadId) ?? null,
+    [leads, selectedLeadId],
+  );
 
   const leadNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -57,8 +113,8 @@ export default function ParentCommunication() {
   return (
     <GrowthPageShell
       eyebrow="Intake"
-      title="Parent Communication"
-      description="Recent family communication across phone, SMS, email, and notes — and the leads that need a follow-up."
+      title="Intake Communications"
+      description="Send calls, SMS, and email to families through Blossom OS - powered by CTM, Jivetel, and Mailchimp adapters."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
         { label: "Open Leads", icon: MessageSquare, to: "/leads" },
@@ -66,7 +122,7 @@ export default function ParentCommunication() {
     >
       <Section title={`Recent communications (${recent.length})`}>
         {recent.length === 0 ? (
-          <ReadyForDataNotice message={loading ? "Loading communications…" : "No communications logged yet. Logged calls, SMS, and emails will appear here."} />
+          <ReadyForDataNotice message={loading ? "Loading communications..." : "Calls, SMS, and emails sent from Blossom OS or synced from CTM/Jivetel/Mailchimp will appear here."} />
         ) : (
           <div className="rounded-2xl border border-border/70 bg-card divide-y divide-border/60">
             {recent.map((r, i) => {
@@ -80,7 +136,7 @@ export default function ParentCommunication() {
                       <span className="text-[11px] text-muted-foreground">{new Date(r.timestamp).toLocaleString()}</span>
                     </div>
                     <div className="text-xs text-muted-foreground truncate">{r.preview}</div>
-                    {r.user && <div className="text-[10px] text-muted-foreground mt-0.5">by {r.user}</div>}
+                    {r.user && <div className="text-[10px] text-muted-foreground mt-0.5">sent by {r.user} via Blossom OS</div>}
                   </div>
                 </div>
               );
@@ -89,7 +145,27 @@ export default function ParentCommunication() {
         )}
       </Section>
 
-      <Section title="Templates" description="Copy and personalize. Variables in {{double_braces}}.">
+      <Section
+        title="Send from template"
+        description="Pick a lead, then send through Blossom OS. Variables in {{double_braces}} are personalized server-side."
+      >
+        <div className="mb-3 flex items-center gap-2">
+          <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
+            <SelectTrigger className="w-full max-w-sm h-9 text-sm">
+              <SelectValue placeholder="Select a lead to enable sending" />
+            </SelectTrigger>
+            <SelectContent>
+              {leads.slice(0, 100).map((l) => (
+                <SelectItem key={l.id} value={l.id}>
+                  {l.childName}{l.parentName ? ` - ${l.parentName}` : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {!selectedLead && (
+            <span className="text-[11px] text-muted-foreground">Select a lead to enable send actions.</span>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {TEMPLATES.map((t) => (
             <article key={t.id} className="rounded-2xl border border-border/70 bg-card p-4">
@@ -98,11 +174,30 @@ export default function ParentCommunication() {
                 <Button
                   size="sm" variant="ghost" className="h-7"
                   onClick={() => { navigator.clipboard.writeText(t.body); toast.success("Template copied"); }}
+                  title="Copy template text for reference"
                 >
                   <Copy className="h-3 w-3 mr-1" /> Copy
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap">{t.body}</p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {t.actions.map((a, idx) => {
+                  const meta = ACTION_META[a.kind];
+                  const Icon = meta.icon;
+                  return (
+                    <Button
+                      key={idx}
+                      size="sm"
+                      variant="default"
+                      className="h-7 text-[11px]"
+                      disabled={!selectedLead}
+                      onClick={() => selectedLead && runTemplateAction(a, selectedLead)}
+                    >
+                      <Icon className="h-3 w-3 mr-1" /> {meta.label}
+                    </Button>
+                  );
+                })}
+              </div>
             </article>
           ))}
         </div>
@@ -120,6 +215,20 @@ export default function ParentCommunication() {
                   <span className="text-[11px] text-muted-foreground shrink-0">{l.status}</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{l.nextAction}</div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <Button size="sm" variant="outline" className="h-7 text-[11px]"
+                    onClick={async () => notifyCommunicationResult(await sendLeadSms(leadToContext(l)))}>
+                    <MessageSquare className="h-3 w-3 mr-1" /> Send SMS
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-[11px]"
+                    onClick={async () => notifyCommunicationResult(await sendLeadEmail(leadToContext(l)))}>
+                    <Mail className="h-3 w-3 mr-1" /> Send Email
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-[11px]"
+                    onClick={async () => notifyCommunicationResult(await sendMissingInfoReminder(leadToContext(l)))}>
+                    <AlertCircle className="h-3 w-3 mr-1" /> Missing Info
+                  </Button>
+                </div>
                 <div className="mt-2">
                   <LeadActionPanel lead={l} compact sourcePage="parent-communication" />
                 </div>
