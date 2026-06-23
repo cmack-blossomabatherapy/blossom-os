@@ -2338,12 +2338,51 @@ export default function EmployeeProfilePage() {
                 {creatingLink ? <RefreshCw className="size-3.5 animate-spin" /> : <Link2 className="size-3.5" />} Copy invite link
               </Button>
               <Button size="sm" variant="outline" className="text-xs"
+                onClick={checkInviteDelivery}
+                disabled={checkingDelivery || !member.email || !member.uuid}>
+                {checkingDelivery ? <RefreshCw className="size-3.5 animate-spin" /> : <MailCheck className="size-3.5" />} Check delivery
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs"
+                onClick={resendWelcome}
+                disabled={resendingWelcome || !member.email || !member.uuid}>
+                {resendingWelcome ? <RefreshCw className="size-3.5 animate-spin" /> : <Mail className="size-3.5" />} Resend welcome
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs"
                 onClick={() => { setTab("devices"); setOpenAssignDevice(true); }}>
                 <Smartphone className="size-3.5" /> Assign device
               </Button>
             </div>
           </div>
         </Card>
+
+        {delivery && (
+          <Card className="mb-8 border-border/70 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold">Welcome email delivery</p>
+              <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={() => setDelivery(null)}>
+                Dismiss
+              </Button>
+            </div>
+            <div className="mt-2 grid gap-1 text-[12px] text-muted-foreground">
+              {delivery.log ? (
+                <>
+                  <div>Status: <span className="text-foreground font-medium">{delivery.log.status}</span></div>
+                  <div>Sent at: {new Date(delivery.log.created_at).toLocaleString()}</div>
+                  <div>To: {delivery.log.recipient_email}</div>
+                  {delivery.log.error_message && <div className="text-destructive">Error: {delivery.log.error_message}</div>}
+                </>
+              ) : (
+                <div>No welcome email has been sent yet for this user.</div>
+              )}
+              {delivery.provider?.last_event && (
+                <div>Provider last_event: <span className="text-foreground font-medium">{delivery.provider.last_event}</span></div>
+              )}
+              {delivery.providerError && (
+                <div className="text-destructive">Provider error: {delivery.providerError}</div>
+              )}
+            </div>
+          </Card>
+        )}
 
         {inviteLink && (
           <Card className="mb-8 border-primary/30 bg-primary/[0.04] p-4">
