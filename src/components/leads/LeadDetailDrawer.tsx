@@ -439,12 +439,21 @@ export function LeadDetailDrawer({
               <ActionButton
                 icon={AlertCircle}
                 label="Flag Packet Follow Up / Missing Info"
-                onClick={() => { updateLead(lead.id, { formReviewStatus: "Missing Information" }); toast("Lead moved to Missing Info"); }}
+                onClick={() => {
+                  updateLead(lead.id, {
+                    status: "Intake Packet Follow Up",
+                    formReviewStatus: "Missing Information",
+                  });
+                  toast.success("Moved to Intake Packet Follow Up");
+                }}
               />
               <ActionButton
                 icon={CheckCircle2}
                 label="Move to Benefits Verification"
-                onClick={() => { updateLead(lead.id, { status: "Sent to VOB" }); toast.success("Moved to VOB"); }}
+                onClick={() => {
+                  updateLead(lead.id, { status: "Benefits Verification" });
+                  toast.success("Moved to Benefits Verification");
+                }}
               />
               <ActionButton
                 icon={UserX}

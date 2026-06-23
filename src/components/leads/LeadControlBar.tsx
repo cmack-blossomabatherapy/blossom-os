@@ -18,9 +18,9 @@ const savedViews: SavedView[] = [
   { label: "New Today", id: "today" },
   { label: "Needs Attention", id: "attention" },
   { label: "Stuck Leads", id: "stuck" },
-  { label: "Ready for VOB", id: "vob" },
+  { label: "Ready for Benefits Verification", id: "vob" },
   { label: "Can't Reach", id: "cantReach" },
-  { label: "VOB Completed", id: "vobDone" },
+  { label: "Benefits Verification Completed", id: "vobDone" },
 ];
 
 interface LeadControlBarProps {

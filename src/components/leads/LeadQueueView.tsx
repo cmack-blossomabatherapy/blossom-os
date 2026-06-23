@@ -1,6 +1,11 @@
 import { Lead, statusVariant, getInlineAlert } from "@/data/leads";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { AlertCircle, Phone, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  canonicalFamilyLeadStage,
+  isCannotReachStatus,
+  isNonQualifiedStatus,
+} from "@/lib/intake/intakeWorkflow";
 
 interface LeadQueueViewProps {
   leads: Lead[];
@@ -20,25 +25,34 @@ export function LeadQueueView({ leads, onSelectLead }: LeadQueueViewProps) {
       title: "Contact Now",
       icon: <Phone className="h-4 w-4 text-destructive" />,
       color: "border-l-destructive",
-      leads: leads.filter((l) => l.status === "New Lead" || (l.status === "In Contact" && l.daysInStage >= 1)),
+      leads: leads.filter((l) => {
+        const stage = canonicalFamilyLeadStage(l.status);
+        return stage === "Lead Captured" || stage === "First Contact Attempt" || stage === "Engagement Track";
+      }),
     },
     {
       title: "Follow Up",
       icon: <Clock className="h-4 w-4 text-warning" />,
       color: "border-l-warning",
-      leads: leads.filter((l) => ["Sent Form", "Missing Information"].includes(l.status)),
+      leads: leads.filter((l) => {
+        const stage = canonicalFamilyLeadStage(l.status);
+        return stage === "Intake Packet Sent" || stage === "Intake Packet Follow Up";
+      }),
     },
     {
       title: "Ready to Process",
       icon: <CheckCircle2 className="h-4 w-4 text-success" />,
       color: "border-l-success",
-      leads: leads.filter((l) => ["Form Received", "Sent to VOB", "VOB Completed"].includes(l.status) || l.financialStatus === "Approved" || l.paymentPlanSigned),
+      leads: leads.filter((l) => {
+        const stage = canonicalFamilyLeadStage(l.status);
+        return stage === "Intake Complete" || stage === "Benefits Verification" || stage === "Assessment Scheduling";
+      }),
     },
     {
       title: "Problem Leads",
       icon: <AlertTriangle className="h-4 w-4 text-destructive" />,
       color: "border-l-destructive",
-      leads: leads.filter((l) => ["Can't Reach", "Can Not Submit Auth"].includes(l.status)),
+      leads: leads.filter((l) => isCannotReachStatus(l.status) || isNonQualifiedStatus(l.status)),
     },
   ];
 

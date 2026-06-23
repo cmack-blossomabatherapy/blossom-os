@@ -178,9 +178,9 @@ export function LeadDetailPanel({ lead, open, onClose }: LeadDetailPanelProps) {
 
         <Separator />
 
-        {/* Insurance / VOB */}
+        {/* Insurance / Benefits */}
         <div className="p-4">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Insurance / VOB</h4>
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Insurance / Benefits</h4>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
               <span className="text-muted-foreground">Payor</span>
@@ -191,7 +191,7 @@ export function LeadDetailPanel({ lead, open, onClose }: LeadDetailPanelProps) {
               <p className="text-foreground font-medium">{lead.coverageType}</p>
             </div>
             <div>
-              <span className="text-muted-foreground">VOB Status</span>
+              <span className="text-muted-foreground">Benefits Status</span>
               <p><StatusBadge status={lead.vobStatus} variant={lead.vobStatus === "Completed" ? "success" : lead.vobStatus === "Issue" ? "destructive" : "muted"} /></p>
             </div>
             <div>

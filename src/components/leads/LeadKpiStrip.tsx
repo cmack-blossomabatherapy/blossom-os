@@ -14,13 +14,13 @@ export function LeadKpiStrip({ leads, activeKpi, onKpiClick }: LeadKpiStripProps
   const cards: { key: KpiKey | "avgContact" | "avgVob"; label: string; value: number | string; icon: typeof Sparkles; tone: string; clickable: boolean }[] = [
     { key: "newToday", label: "New Today", value: kpis.newToday, icon: Sparkles, tone: "text-info bg-info/10", clickable: true },
     { key: "notContacted", label: "Not Contacted", value: kpis.notContacted, icon: PhoneOff, tone: "text-destructive bg-destructive/10", clickable: true },
-    { key: "sentForm", label: "Sent Form", value: kpis.sentForm, icon: Send, tone: "text-primary bg-primary/10", clickable: true },
-    { key: "missingInfo", label: "Missing Info", value: kpis.missingInfo, icon: AlertTriangle, tone: "text-warning bg-warning/10", clickable: true },
-    { key: "sentVob", label: "Sent to VOB", value: kpis.sentVob, icon: FileCheck2, tone: "text-primary bg-primary/10", clickable: true },
-    { key: "vobCompleted", label: "VOB Completed", value: kpis.vobCompleted, icon: CheckCircle2, tone: "text-success bg-success/10", clickable: true },
+    { key: "sentForm", label: "Intake Packet Sent", value: kpis.sentForm, icon: Send, tone: "text-primary bg-primary/10", clickable: true },
+    { key: "missingInfo", label: "Packet Follow Up / Missing Info", value: kpis.missingInfo, icon: AlertTriangle, tone: "text-warning bg-warning/10", clickable: true },
+    { key: "sentVob", label: "Benefits Verification", value: kpis.sentVob, icon: FileCheck2, tone: "text-primary bg-primary/10", clickable: true },
+    { key: "vobCompleted", label: "Assessment Scheduling", value: kpis.vobCompleted, icon: CheckCircle2, tone: "text-success bg-success/10", clickable: true },
     { key: "cantReach", label: "Can't Reach", value: kpis.cantReach, icon: PhoneMissed, tone: "text-destructive bg-destructive/10", clickable: true },
     { key: "avgContact", label: "Avg Time to Contact", value: kpis.avgTimeToContact + "h", icon: Clock, tone: "text-muted-foreground bg-muted", clickable: false },
-    { key: "avgVob", label: "Avg Time to VOB", value: kpis.avgTimeToVob + "d", icon: Timer, tone: "text-muted-foreground bg-muted", clickable: false },
+    { key: "avgVob", label: "Avg Time to Benefits Verification", value: kpis.avgTimeToVob + "d", icon: Timer, tone: "text-muted-foreground bg-muted", clickable: false },
   ];
 
   return (

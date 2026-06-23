@@ -13,8 +13,7 @@ import { Unauthorized } from "@/components/auth/Unauthorized";
 import { canAccessRouteForRoles, hasFullNavigationAccess, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, COURSE_AUTHOR_ROLES, AUTOMATIONS_ROLES } from "@/lib/navigationAccess";
 import { ROLE_HOME } from "@/lib/os/roleHome";
 import { Loader2 } from "lucide-react";
-import Leads from "./pages/Leads";
-import LeadDetail from "./pages/LeadDetail";
+import LeadIdRedirect from "./components/leads/LeadIdRedirect";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Pipeline from "./pages/Pipeline";
@@ -728,7 +727,7 @@ const App = () => (
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />
                   <Route path="/leads/operations" element={<OSIntakeOperations />} />
-                  <Route path="/leads/:id" element={<LeadDetail />} />
+                  <Route path="/leads/:id" element={<LeadIdRedirect />} />
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<ClientsRouter />} />
                   <Route path="/intake/clients" element={<OSIntakeClients />} />
