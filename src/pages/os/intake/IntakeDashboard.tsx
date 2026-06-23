@@ -136,7 +136,7 @@ export default function IntakeDashboard() {
           <LinkCard title="New Referral Queue" description="Inbound referrals awaiting first contact." to="/intake/referral-queue" status="live" icon={ClipboardList} />
           <LinkCard title="Lead To Active Pipeline" description="Stage-by-stage view from lead through active care." to="/intake/lead-to-active" status="live" icon={TrendingUp} />
           <LinkCard title="Missing Information" description="Leads blocked by missing documents or details." to="/intake/missing-information" status="live" icon={AlertCircle} />
-          <LinkCard title="Parent Communication" description="Open conversations and required follow-ups with families." to="/intake/parent-communication" status="live" icon={MessageSquare} />
+          <LinkCard title="Intake Communications" description="Send calls, SMS, and email to families through Blossom OS adapters." to="/intake/parent-communication" status="live" icon={MessageSquare} />
           <LinkCard title="Intake Tasks" description="Personal task list for the intake team." to="/intake/tasks" status="live" icon={FileText} />
           <LinkCard title="Lead Benefits Cheat Sheets" description="Payer guidance to support eligibility and qualification." to="/intake/benefits-cheat-sheets" status="live" icon={ShieldCheck} />
         </div>

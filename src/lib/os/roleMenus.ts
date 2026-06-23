@@ -258,7 +258,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "New Referral Queue",         path: "/intake/referral-queue",         icon: ClipboardList },
           { label: "Lead To Active Pipeline",    path: "/intake/lead-to-active",         icon: TrendingUp },
           { label: "Missing Information",        path: "/intake/missing-information",    icon: ShieldCheck },
-          { label: "Parent Communication",       path: "/intake/parent-communication",   icon: MessageSquare },
+          { label: "Intake Communications",      path: "/intake/parent-communication",   icon: MessageSquare },
           { label: "Intake Tasks",               path: "/intake/tasks",                  icon: ClipboardList },
           { label: "Lead Benefits Cheat Sheets", path: "/intake/benefits-cheat-sheets",  icon: ShieldCheck },
           { label: "After-Hours AI Calls",       path: "/phone/ai-calls",                icon: PhoneCall },

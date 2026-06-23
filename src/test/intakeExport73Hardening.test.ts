@@ -6,7 +6,7 @@ import { ROLE_MENUS } from "@/lib/os/roleMenus";
 
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
-describe("Export 73 — Intake hardening", () => {
+describe("Export 73 - Intake hardening", () => {
   describe("Lead Benefits Cheat Sheets dataset", () => {
     it("contains exactly 48 rows", () => {
       expect(leadBenefitsCheatSheets.length).toBe(48);
@@ -78,5 +78,72 @@ describe("Export 73 — Intake hardening", () => {
     it("does not assign window.location.href = tel:/sms:/mailto:", () => {
       expect(src).not.toMatch(/window\.location\.href\s*=\s*[`'"](?:tel|sms|mailto):/);
     });
+  });
+});
+
+describe("Export 74 - Intake Communications polish", () => {
+  it("Intake role menu label is Intake Communications", () => {
+    const intake = ROLE_MENUS.intake_coordinator!;
+    const labels = intake.sections.flatMap((s) => s.items.map((i) => i.label));
+    expect(labels).toContain("Intake Communications");
+    expect(labels).not.toContain("Parent Communication");
+  });
+
+  it("Intake Dashboard link card says Intake Communications", () => {
+    const src = read("src/pages/os/intake/IntakeDashboard.tsx");
+    expect(src).toContain('title="Intake Communications"');
+    expect(src).not.toContain('title="Parent Communication"');
+  });
+
+  it("Intake Communications page uses adapter send functions", () => {
+    const src = read("src/pages/os/intake/ParentCommunication.tsx");
+    expect(src).toContain('title="Intake Communications"');
+    expect(src).toContain("sendLeadEmail");
+    expect(src).toContain("sendLeadSms");
+    expect(src).toContain("sendIntakePacket");
+    expect(src).toContain("sendMissingInfoReminder");
+    expect(src).toContain("sendVobUpdate");
+    expect(src).toContain("notifyCommunicationResult");
+  });
+
+  it("Admin Integrations shows Intake Communication Setup", () => {
+    const src = read("src/pages/admin/Integrations.tsx");
+    expect(src).toContain("IntakeCommunicationSetupPanel");
+    const panel = read("src/components/settings/IntakeCommunicationSetupPanel.tsx");
+    for (const label of [
+      "Account ID",
+      "Outbound caller ID",
+      "Audience / list ID",
+      "SMS program / campaign ID",
+      "Consent / opt-out mapping",
+      "Template mapping",
+      "Needs configuration",
+    ]) {
+      expect(panel).toContain(label);
+    }
+  });
+
+  it("Touched files do not contain mojibake sequences", () => {
+    const files = [
+      "src/components/intake/IntakeModals.tsx",
+      "src/components/leads/LeadDetailDrawer.tsx",
+      "src/pages/os/intake/ParentCommunication.tsx",
+      "src/pages/admin/Integrations.tsx",
+      "src/test/intakeExport73Hardening.test.ts",
+    ];
+    // Mojibake byte sequences expressed via escapes so this test file itself
+    // does not contain the literal sequences.
+    const badSequences = [
+      "\u00c2",
+      "\u00e2\u20ac\u201d",
+      "\u00e2\u20ac\u00a6",
+      "\u00e2\u201d\u20ac",
+    ];
+    for (const f of files) {
+      const src = read(f);
+      for (const bad of badSequences) {
+        expect(src.includes(bad), `${f} contains mojibake`).toBe(false);
+      }
+    }
   });
 });

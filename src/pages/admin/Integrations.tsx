@@ -81,6 +81,7 @@ import {
   type OAuthConnectionRow,
 } from "@/lib/os/integrations/backend";
 import { toast } from "sonner";
+import { IntakeCommunicationSetupPanel } from "@/components/settings/IntakeCommunicationSetupPanel";
 
 /**
  * Admin > Integrations renders directly from the shared registry
@@ -1247,6 +1248,11 @@ export default function Integrations() {
               : "No webhook events received yet · static cards below show registry metadata only"}
           </p>
         </Card>
+
+        {/* Intake Communication Setup - CTM / Jivetel / Mailchimp Email / Mailchimp SMS */}
+        <div className="mt-8">
+          <IntakeCommunicationSetupPanel />
+        </div>
 
         {/* Search & filters */}
         <div className="mt-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
