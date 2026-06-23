@@ -426,7 +426,10 @@ export type KpiKey = "newToday" | "notContacted" | "sentForm" | "missingInfo" | 
 
 export const kpiFilters: Record<KpiKey, (l: Lead) => boolean> = {
   all: () => true,
-  newToday: (l) => l.status === "New Lead" && l.daysInStage === 0,
+  // Export 86 — canonical "Lead Captured" is the primary new-lead stage.
+  // Legacy "New Lead" still recognized for back-compat reads.
+  newToday: (l) =>
+    (l.status === "Lead Captured" || l.status === "New Lead") && l.daysInStage === 0,
   notContacted: (l) => !l.lastContacted,
   sentForm: (l) => l.status === "Sent Form",
   missingInfo: (l) => l.status === "Missing Information",
