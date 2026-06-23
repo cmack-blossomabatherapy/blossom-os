@@ -238,6 +238,7 @@ function buildSections(args: {
         items: [
           { label: "Settings",     path: "/settings",            icon: SettingsIcon },
           { label: "Integrations", path: "/admin/integrations",  icon: Plug },
+          { label: "Automated Emails", path: "/admin/automated-emails", icon: Mail },
         ],
       },
       {
