@@ -19,10 +19,22 @@ import type { Lead } from "@/data/leads";
 
 const read = (p: string) => fs.readFileSync(p, "utf8");
 
+// Export 86 — INTAKE_STAGES is now the canonical 13-stage Family / Lead
+// pipeline. Legacy Monday-era stages live on LEGACY_INTAKE_STAGES.
 const REQUIRED_STAGES = [
-  "New Lead", "In Contact", "Sent Form", "Missing Information",
-  "Form Received", "Sent to VOB", "VOB Completed",
-  "Needs DX", "Can't Reach", "Non-Qualified",
+  "Lead Captured",
+  "First Contact Attempt",
+  "Engagement Track",
+  "Qualification",
+  "Intake Packet Sent",
+  "Intake Packet Follow Up",
+  "Intake Complete",
+  "Benefits Verification",
+  "Assessment Scheduling",
+  "QA / Treatment Plan Authorization",
+  "Authorization Pending",
+  "Staffing Match",
+  "Ready to Start Services",
 ];
 
 function mockLead(overrides: Partial<Lead> = {}): Lead {
@@ -92,19 +104,23 @@ describe("Sprint 08 — Intake workflow action engine", () => {
   });
 
   it("getNextIntakeStage / getPreviousIntakeStage walk the happy path", () => {
-    expect(getNextIntakeStage("New Lead")).toBe("In Contact");
-    expect(getNextIntakeStage("Form Received")).toBe("Sent to VOB");
-    expect(getNextIntakeStage("VOB Completed")).toBeNull();
-    expect(getPreviousIntakeStage("In Contact")).toBe("New Lead");
-    expect(getPreviousIntakeStage("New Lead")).toBeNull();
+    expect(getNextIntakeStage("Lead Captured")).toBe("First Contact Attempt");
+    expect(getNextIntakeStage("Intake Complete")).toBe("Benefits Verification");
+    expect(getNextIntakeStage("Ready to Start Services")).toBeNull();
+    expect(getPreviousIntakeStage("First Contact Attempt")).toBe("Lead Captured");
+    expect(getPreviousIntakeStage("Lead Captured")).toBeNull();
+    // Legacy aliases still walk the canonical pipeline
+    expect(getNextIntakeStage("New Lead")).toBe("First Contact Attempt");
   });
 
   it("stage helpers expose blocked / VOB-ready / converted states", () => {
     expect(isStageBlocked("Missing Information")).toBe(true);
-    expect(isStageBlocked("New Lead")).toBe(false);
-    expect(isStageReadyForVob("Form Received")).toBe(true);
-    expect(isStageConverted("VOB Completed")).toBe(true);
-    expect(getStageSlaDays("New Lead")).toBeGreaterThan(0);
+    expect(isStageBlocked("Lead Captured")).toBe(false);
+    expect(isStageReadyForVob("Intake Complete")).toBe(true);
+    expect(isStageConverted("Ready to Start Services")).toBe(true);
+    // VOB Completed now maps to Assessment Scheduling — NOT converted.
+    expect(isStageConverted("VOB Completed")).toBe(false);
+    expect(getStageSlaDays("Lead Captured")).toBeGreaterThan(0);
   });
 
   it("missing-info + risk helpers detect operational gaps", () => {
