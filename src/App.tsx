@@ -364,7 +364,6 @@ import OSReportBcbaPerformance from "./pages/os/OSReportBcbaPerformance";
 import OSTraining from "./pages/os/OSTraining";
 import OSTrainingDetail from "./pages/os/OSTrainingDetail";
 import OSTrainingManage from "./pages/os/OSTrainingManage";
-import OSUserManagement from "./pages/os/OSUserManagement";
 import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
 import IdentityDashboard from "./pages/admin/IdentityDashboard";
