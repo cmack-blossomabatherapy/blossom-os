@@ -32,31 +32,25 @@ describe("Export 81 — Access, Naming, Communication Actions", () => {
   /* ---------------- role menu cleanup ---------------- */
   it("Patient Lifetime Journey does not appear in restricted role menus", () => {
     const src = read("src/lib/os/roleMenus.ts");
-    // Pull each role block by header comment & verify no PLJ entry inside it.
-    const restricted = [
-      "Intake Team",
-      "Recruiting Team",
-      "Scheduling",
-      "Authorizations",
-      "QA",
-      "Payroll",
-      "Clinical",
-      "Case Manager",
-      "RBT",
-      "BCBA",
-      "State Director",
-      "Assistant State Director",
-      "HR",
-    ];
-    for (const label of restricted) {
-      const idx = src.indexOf(label);
-      if (idx === -1) continue;
-      // Inspect the next ~3500 chars of the role block.
-      const block = src.slice(idx, idx + 3500);
-      expect(
-        block.includes("/patient-journey"),
-        `Patient Lifetime Journey leaked into ${label} menu`,
-      ).toBe(false);
+    // Allow-list: only these role keys may include /patient-journey in their menu.
+    const allowed = new Set([
+      "marketing_team",
+      "marketing_growth_lead",
+      "business_development",
+    ]);
+    // Slice the file at each top-level role key declaration (e.g. `intake_coordinator: {`).
+    const headerRe = /^\s{2}([a-z_]+):\s*\{$/gm;
+    const headers: { key: string; idx: number }[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = headerRe.exec(src))) headers.push({ key: m[1], idx: m.index });
+    expect(headers.length).toBeGreaterThan(10);
+    for (let i = 0; i < headers.length; i++) {
+      const { key, idx } = headers[i];
+      const end = headers[i + 1]?.idx ?? src.length;
+      const block = src.slice(idx, end);
+      if (block.includes("/patient-journey") && !allowed.has(key)) {
+        throw new Error(`Patient Lifetime Journey leaked into role menu: ${key}`);
+      }
     }
   });
 
