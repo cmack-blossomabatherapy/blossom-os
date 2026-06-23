@@ -37,7 +37,7 @@ async function fetchIntakeStaff(): Promise<IntakeStaffMember[]> {
     supabase
       .from("employees")
       .select("id,first_name,last_name,email,job_title,state,user_id,status")
-      .in("status", ["active", "onboarding"]),
+      .in("status", ["active", "pending_start"]),
     supabase.from("user_roles").select("user_id,role"),
   ]);
   if (empRes.error) throw empRes.error;
