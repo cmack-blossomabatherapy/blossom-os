@@ -227,7 +227,7 @@ export default function IntakeDashboard() {
         </Section>
       </div>
 
-      <Section title={`Handoff readiness (${handoffReady.length})`} description="VOB Completed - ready to hand off to Authorizations, Scheduling, and Clinical.">
+      <Section title={`Handoff readiness (${handoffReady.length})`} description="Ready to Start Services - active patient operations begin here.">
         {handoffReady.length === 0 ? (
           <div className="text-xs text-muted-foreground">No families currently ready for handoff.</div>
         ) : (
