@@ -10,28 +10,40 @@ import type { LeadStatus } from "@/data/leads";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
-import { getLeadWorkflowRisk } from "@/lib/intake/intakeWorkflow";
+import {
+  getLeadWorkflowRisk,
+  FAMILY_LEAD_PIPELINE_STAGES,
+  canonicalFamilyLeadStage,
+  type FamilyLeadPipelineStage,
+} from "@/lib/intake/intakeWorkflow";
 
-const STAGES: LeadStatus[] = [
-  "New Lead",
-  "In Contact",
-  "Sent Form",
-  "Missing Information",
-  "Form Received",
-  "Sent to VOB",
-  "VOB Completed",
-  "Non-Qualified",
-];
+// Export 78 — Canonical Family / Lead Workflow (13 stages).
+const STAGES: readonly FamilyLeadPipelineStage[] = FAMILY_LEAD_PIPELINE_STAGES;
+
+// Reverse map for stage movement. Stages without a backing LeadStatus are
+// display-only in this pass (no automation added).
+const STAGE_TO_LEAD_STATUS: Partial<Record<FamilyLeadPipelineStage, LeadStatus>> = {
+  "Lead Captured": "New Lead",
+  "First Contact Attempt": "In Contact",
+  "Engagement Track": "Can't Reach",
+  "Qualification": "Non-Qualified",
+  "Intake Packet Sent": "Sent Form",
+  "Intake Packet Follow Up": "Missing Information",
+  "Intake Complete": "Form Received",
+  "Benefits Verification": "Sent to VOB",
+  "Assessment Scheduling": "VOB Completed",
+  "QA / Treatment Plan Authorization": "Can Not Submit Auth",
+};
 
 export default function LeadToActivePipeline() {
   const { leads, loading, moveStage, revertStage } = useLeads();
   const [addOpen, setAddOpen] = useState(false);
 
   const byStage = useMemo(() => {
-    const map = new Map<LeadStatus, typeof leads>();
+    const map = new Map<FamilyLeadPipelineStage, typeof leads>();
     STAGES.forEach((s) => map.set(s, []));
     leads.forEach((l) => {
-      const arr = map.get(l.status as LeadStatus);
+      const arr = map.get(canonicalFamilyLeadStage(l.status));
       if (arr) arr.push(l);
     });
     return map;
@@ -56,13 +68,13 @@ export default function LeadToActivePipeline() {
     <GrowthPageShell
       eyebrow="Growth & Admissions"
       title="Lead To Active Pipeline"
-      description="Track every lead through the journey from first contact to active care."
+      description="Family lead workflow from lead capture through ready to start services. Active patient operations begin in a separate workflow after Ready to Start Services."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
         { label: "Open Leads", to: "/leads?view=pipeline" },
       ]}
     >
-      <Section title="Pipeline stages" description="Counts and recent leads per stage.">
+      <Section title="Pipeline stages" description="Canonical 13-stage family lead workflow. Existing leads with legacy statuses appear under their mapped canonical stage.">
         <div className="overflow-x-auto">
           <div className="flex items-stretch gap-3 min-w-max pb-2">
             {STAGES.map((stage) => {
@@ -71,6 +83,8 @@ export default function LeadToActivePipeline() {
               const oldest = oldestForStage(items);
               const atRisk = atRiskForStage(items);
               const stageIdx = STAGES.indexOf(stage);
+              const prevStatus = stageIdx > 0 ? STAGE_TO_LEAD_STATUS[STAGES[stageIdx - 1]] : undefined;
+              const nextStatus = stageIdx < STAGES.length - 1 ? STAGE_TO_LEAD_STATUS[STAGES[stageIdx + 1]] : undefined;
               return (
                 <div key={stage} className="rounded-2xl border border-border/70 bg-card p-4 w-64 shrink-0">
                   <div className="flex items-center justify-between">
@@ -101,15 +115,15 @@ export default function LeadToActivePipeline() {
                           );
                         })()}
                         <div className="mt-1 flex gap-1">
-                          {stageIdx > 0 && (
+                          {stageIdx > 0 && prevStatus && (
                             <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
-                              onClick={() => { revertStage(l.id, STAGES[stageIdx - 1], 0, "Move back"); toast.success(`Moved back to ${STAGES[stageIdx - 1]}`); }}>
+                              onClick={() => { revertStage(l.id, prevStatus, 0, "Move back"); toast.success(`Moved back to ${STAGES[stageIdx - 1]}`); }}>
                               <ChevronLeft className="h-3 w-3" /> Back
                             </Button>
                           )}
-                          {stageIdx < STAGES.length - 1 && (
+                          {stageIdx < STAGES.length - 1 && nextStatus && (
                             <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
-                              onClick={() => { moveStage([l.id], STAGES[stageIdx + 1]); toast.success(`Moved to ${STAGES[stageIdx + 1]}`); }}>
+                              onClick={() => { moveStage([l.id], nextStatus); toast.success(`Moved to ${STAGES[stageIdx + 1]}`); }}>
                               Forward <ChevronRight className="h-3 w-3" />
                             </Button>
                           )}
@@ -133,6 +147,9 @@ export default function LeadToActivePipeline() {
               );
             })}
           </div>
+        </div>
+        <div className="mt-3 rounded-xl border border-dashed border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+          Pipeline ends at <strong>Ready to Start Services</strong>. Active patient operations (Services Started, Active Treatment, Reauthorization, Discharge) live in a separate workflow.
         </div>
       </Section>
 
