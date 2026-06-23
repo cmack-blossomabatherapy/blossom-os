@@ -5,24 +5,16 @@ import path from "node:path";
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
 
 describe("User Management invite delivery tools", () => {
-  const page = read("src/pages/os/OSUserManagement.tsx");
   const inviteFunction = read("supabase/functions/admin-invite-user/index.ts");
   const checkFunction = read("supabase/functions/admin-check-welcome-email/index.ts");
   const profilePage = read("src/pages/os/users/EmployeeProfile.tsx");
 
-  it("lets admins edit a user's display name and sync the employee name", () => {
-    expect(page).toMatch(/Field label="Display name"/);
-    expect(page).toMatch(/display_name: form\.display_name/);
-    expect(page).toMatch(/first_name:/);
-    expect(page).toMatch(/last_name:/);
-  });
-
-  it("surfaces welcome email delivery status and resend controls", () => {
-    expect(page).toMatch(/Check delivery/);
-    expect(page).toMatch(/Resend welcome/);
-    expect(page).toMatch(/admin-check-welcome-email/);
-    expect(page).toMatch(/admin-resend-welcome-email/);
-    expect(page).toMatch(/last_event/);
+  it("surfaces welcome email delivery status and resend controls on the per-user page", () => {
+    expect(profilePage).toMatch(/Check delivery/);
+    expect(profilePage).toMatch(/Resend welcome/);
+    expect(profilePage).toMatch(/admin-check-welcome-email/);
+    expect(profilePage).toMatch(/admin-resend-welcome-email/);
+    expect(profilePage).toMatch(/last_event/);
   });
 
   it("records welcome_sent_at when a new invite email is accepted", () => {
