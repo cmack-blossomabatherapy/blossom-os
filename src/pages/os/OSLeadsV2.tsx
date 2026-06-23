@@ -821,16 +821,30 @@ function FollowUpView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) =
   const oneDay = 24 * 60 * 60 * 1000;
   const ageDays = (iso: string | null) => iso ? Math.floor((Date.now() - new Date(iso).getTime()) / oneDay) : 999;
 
+  // Export 85 — follow-up queues now recognize the canonical Family / Lead
+  // Workflow stages while still tolerating legacy Monday-era values for
+  // imported records.
+  const isEngagement = (s: string) =>
+    s === "First Contact Attempt" || s === "Engagement Track" || s === "In Contact";
   const queues = [
     { key: "due",  label: "Due Today",      items: leads.filter((l) => ageDays(l.lastContacted) === 2) },
     { key: "over", label: "Overdue",        items: leads.filter((l) => l.status !== "Can't Reach" && l.status !== "Non-Qualified" && ageDays(l.lastContacted) > 3) },
-    { key: "a1",   label: "Attempt 1",      items: leads.filter((l) => !l.lastContacted && l.status === "New Lead") },
-    { key: "a2",   label: "Attempt 2",      items: leads.filter((l) => l.status === "In Contact" && ageDays(l.lastContacted) >= 1 && ageDays(l.lastContacted) <= 2) },
-    { key: "a3",   label: "Attempt 3",      items: leads.filter((l) => l.status === "In Contact" && ageDays(l.lastContacted) >= 3 && ageDays(l.lastContacted) <= 5) },
-    { key: "a4",   label: "Attempt 4",      items: leads.filter((l) => l.status === "In Contact" && ageDays(l.lastContacted) >= 6 && ageDays(l.lastContacted) <= 8) },
-    { key: "fin",  label: "Final Attempt",  items: leads.filter((l) => l.status === "In Contact" && ageDays(l.lastContacted) >= 9) },
+    { key: "a1",   label: "Attempt 1",      items: leads.filter((l) => !l.lastContacted && (l.status === "Lead Captured" || l.status === "First Contact Attempt" || l.status === "New Lead")) },
+    { key: "a2",   label: "Attempt 2",      items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 1 && ageDays(l.lastContacted) <= 2) },
+    { key: "a3",   label: "Attempt 3",      items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 3 && ageDays(l.lastContacted) <= 5) },
+    { key: "a4",   label: "Attempt 4",      items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 6 && ageDays(l.lastContacted) <= 8) },
+    { key: "fin",  label: "Final Attempt",  items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 9) },
     { key: "cr",   label: "Cannot Reach",   items: leads.filter((l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach") },
-    { key: "wait", label: "Waiting Parent", items: leads.filter((l) => l.status === "Sent Form" || l.status === "Missing Information") },
+    { key: "wait", label: "Waiting Parent", items: leads.filter((l) =>
+        l.status === "Intake Packet Sent" ||
+        l.status === "Intake Packet Follow Up" ||
+        l.status === "Sent Form" ||
+        l.status === "Missing Information") },
+    { key: "bv",   label: "Benefits / Auth", items: leads.filter((l) =>
+        l.status === "Benefits Verification" ||
+        l.status === "Authorization Pending" ||
+        l.status === "QA / Treatment Plan Authorization" ||
+        l.status === "Sent to VOB") },
   ];
 
   return (
