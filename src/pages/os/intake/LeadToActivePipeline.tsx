@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { TrendingUp, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { TrendingUp, ChevronLeft, ChevronRight, Plus, Ban } from "lucide-react";
 import { GrowthPageShell, Section, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
@@ -72,10 +72,14 @@ export default function LeadToActivePipeline() {
               const atRisk = atRiskForStage(items);
               const stageIdx = STAGES.indexOf(stage);
               const owner = FAMILY_LEAD_STAGE_OWNERS[stage];
+              const isPipelineEnd = stage === "Ready to Start Services";
               return (
-                <div key={stage} className="rounded-2xl border border-border/70 bg-card p-4 w-64 shrink-0">
+                <div key={stage} className={`rounded-2xl border p-4 w-64 shrink-0 ${isPipelineEnd ? "border-amber-500/40 bg-amber-500/5" : "border-border/70 bg-card"}`}>
                   <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground">{stage}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      {stage}
+                      {isPipelineEnd && <Ban className="h-3 w-3 text-amber-600" aria-hidden="true" />}
+                    </div>
                     <div className="text-lg font-semibold tabular-nums text-foreground">{items.length}</div>
                   </div>
                   <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/80">
@@ -116,7 +120,11 @@ export default function LeadToActivePipeline() {
                                     <ChevronLeft className="h-3 w-3" /> Back
                                   </Button>
                                 )}
-                                {next && (
+                                {isPipelineEnd ? (
+                                  <Button size="sm" variant="ghost" disabled className="h-6 px-1.5 text-[10px] text-muted-foreground" title="Active patient operations start after this point. Use the active patient workflow to continue.">
+                                    <Ban className="h-3 w-3 mr-1" /> Pipeline end
+                                  </Button>
+                                ) : next && (
                                   <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
                                     onClick={() => { moveStage([l.id], next as LeadStatus); toast.success(`Moved to ${next}`); }}>
                                     Forward <ChevronRight className="h-3 w-3" />
@@ -146,8 +154,11 @@ export default function LeadToActivePipeline() {
             })}
           </div>
         </div>
-        <div className="mt-3 rounded-xl border border-dashed border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-          Pipeline ends at <strong>Ready to Start Services</strong>. Active patient operations start after this point and are managed separately (Services Started, Active Treatment, Reauthorization, Discharge).
+        <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-900 dark:text-amber-100">
+          <Ban className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-700 dark:text-amber-300" aria-hidden="true" />
+          <span>
+            <strong>Hard stop:</strong> this pipeline ends at <strong>Ready to Start Services</strong>. Active patient operations start after this point and are managed in a separate workflow.
+          </span>
         </div>
       </Section>
 
