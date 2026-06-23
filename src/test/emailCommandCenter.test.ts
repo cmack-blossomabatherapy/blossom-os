@@ -21,7 +21,7 @@ describe("Email Command Center — routing rules", () => {
     expect(r.workflowTag).toBe("Intake");
   });
   it("routes scheduling cancellations", () => {
-    const r = classifyEmail({ subject: "Need to reschedule session — call-out coverage" });
+    const r = classifyEmail({ subject: "Need to reschedule session — RBT call-out" });
     expect(r.workflowTag).toBe("Scheduling");
   });
   it("routes payroll/Viventium to Payroll/HR", () => {
