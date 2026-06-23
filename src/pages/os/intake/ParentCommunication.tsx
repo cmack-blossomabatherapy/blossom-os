@@ -19,6 +19,7 @@ import {
   notifyCommunicationResult,
 } from "@/lib/integrations/communications/communicationAdapters";
 import { toast } from "sonner";
+import { isReadyToStartStage, canonicalFamilyLeadStage } from "@/lib/intake/intakeWorkflow";
 
 type TemplateAction =
   | { kind: "email" }
@@ -105,7 +106,17 @@ export default function ParentCommunication() {
   }, [comms, leadNameById]);
 
   const followUps = useMemo(
-    () => leads.filter((l) => !!l.nextAction && l.status !== "VOB Completed").slice(0, 30),
+    // Export 87 — exclude ready-to-start and non-qualified leads via the
+    // canonical helper. Do NOT rely on the legacy "VOB Completed" label.
+    () => leads.filter((l) => {
+      if (!l.nextAction) return false;
+      if (isReadyToStartStage(l.status)) return false;
+      const canon = canonicalFamilyLeadStage(l.status);
+      const isNQ = l.status === "Non-Qualified" || l.status === "Non-qualified Lead";
+      if (isNQ) return false;
+      void canon;
+      return true;
+    }).slice(0, 30),
     [leads],
   );
 
