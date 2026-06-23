@@ -6,7 +6,7 @@ import {
   KeyRound, ScanLine, Mail, Phone, Building2, MapPin, CalendarDays, Briefcase,
   CheckCircle2, Clock, AlertTriangle, Download, ExternalLink, Plus, Lock,
   Sparkles, History, BadgeCheck, MonitorSmartphone, Wifi, Tablet, Laptop,
-  RefreshCw, Copy, EyeOff, UserCircle2, Trash2,
+  RefreshCw, Copy, EyeOff, UserCircle2, Trash2, Link2,
 } from "lucide-react";
 import { OSShell } from "../OSShell";
 import { cn } from "@/lib/utils";
@@ -2134,11 +2134,50 @@ export default function EmployeeProfilePage() {
   const [openAssignTraining, setOpenAssignTraining] = useState(false);
   const [openAssignDevice, setOpenAssignDevice] = useState(false);
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [inviteLink, setInviteLink] = useState<{ loginUrl: string; tempPassword: string; email: string } | null>(null);
 
   const member = useMemo(
     () => members.find((m) => m.id === employeeId || m.uuid === employeeId) ?? null,
     [members, employeeId],
   );
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error("Copy failed — select the text manually.");
+    }
+  };
+
+  const createInviteLink = async () => {
+    if (!member?.email) {
+      toast.error("Add an email to this user before creating an invite link.");
+      return;
+    }
+    setCreatingLink(true);
+    const { data, error } = await supabase.functions.invoke("admin-create-invite-link", {
+      body: {
+        userId: member.uuid ?? null,
+        email: member.email,
+        siteUrl: window.location.origin,
+      },
+    });
+    setCreatingLink(false);
+    if (error || !data?.ok) {
+      toast.error(data?.error ?? error?.message ?? "Could not create invite link.");
+      return;
+    }
+    setInviteLink({ loginUrl: data.loginUrl, tempPassword: data.tempPassword, email: data.email });
+    toast.success("Invite link ready — copy the link and temporary password below.");
+  };
+
+  const copyCredentialsBlock = () => {
+    if (!inviteLink) return;
+    const block = `Blossom OS sign-in\n\nEmail: ${inviteLink.email}\nTemporary password: ${inviteLink.tempPassword}\nSign-in link: ${inviteLink.loginUrl}\n\nYou'll be asked to set a new password on first sign-in.`;
+    void copyToClipboard(block, "Invite details");
+  };
 
   const sendInvite = async () => {
     if (!member?.uuid) {
