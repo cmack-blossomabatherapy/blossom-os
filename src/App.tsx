@@ -470,7 +470,15 @@ import { LeadsProvider } from "@/contexts/LeadsContext";
 import { ClientsProvider } from "@/contexts/ClientsContext";
 
 function RoleDashboardRedirect() {
-  const { roles, isAdmin, hasPerm } = useAuth();
+  const { user, loading, roles, isAdmin, hasPerm } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/auth" replace />;
   const hasTrainingAdminAccess = roles.some((role) => TRAINING_ADMIN_ROLES.includes(role));
   const primaryRoleHome =
     isAdmin ? ROLE_HOME.super_admin
