@@ -4,6 +4,7 @@ import { SettingsPanel } from "./SettingsPanel";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { mockIntegrations, integrationStatusVariant, formatRelative } from "@/data/settings";
 import { cn } from "@/lib/utils";
+import { IntakeCommunicationSetupPanel } from "./IntakeCommunicationSetupPanel";
 
 export function IntegrationsPanel() {
   return (
@@ -53,6 +54,9 @@ export function IntegrationsPanel() {
             </div>
           );
         })}
+      </div>
+      <div className="mt-6">
+        <IntakeCommunicationSetupPanel />
       </div>
     </SettingsPanel>
   );
