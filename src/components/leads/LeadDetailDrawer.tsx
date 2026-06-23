@@ -499,7 +499,7 @@ export function BenefitsCheatSheetMatchPanel({
   const markNeedsBenefitsReview = () => {
     if (resolvedLead) {
       updateLead(resolvedLead.id, {
-        vobStatus: "Needs Review",
+        vobStatus: "Issue",
         automationLog: [
           `Intake: flagged for benefits review (cheat sheet match)`,
           ...resolvedLead.automationLog,
