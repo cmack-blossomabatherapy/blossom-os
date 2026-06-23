@@ -28,6 +28,28 @@ const PIPELINE_STAGES = FAMILY_LEAD_PIPELINE_STAGES;
 
 const LEAD_SOURCES = LEAD_SOURCE_OPTIONS.map((o) => o.value);
 
+/** Lead sources where a named referring person/partner should be captured. */
+const REFERRAL_PARTNER_SOURCES = new Set([
+  "Referral",
+  "Referral Partner",
+  "Pediatrician",
+  "BCBA Referral",
+  "Insurance",
+  "Business Development",
+  "Community Outreach",
+]);
+
+/** Lead sources where UTM / campaign attribution is meaningful. */
+const UTM_SOURCES = new Set([
+  "Website",
+  "Google Ads",
+  "Facebook Ads",
+  "Mailchimp",
+  "LeadTrap",
+  "Organic",
+  "Other",
+]);
+
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const PRIORITIES = ["Hot", "Warm", "Cold"] as const;
 const CONTACT_METHODS = ["Phone", "Cell", "Text", "Email"] as const;
@@ -281,7 +303,9 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
               Manually create a lead. Saved to Blossom OS intake.
             </SheetDescription>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto border-t border-border/60 px-5 py-4">{body}</div>
+          <div className="flex-1 overflow-y-auto border-t border-border/60 px-5 py-4">
+            <div className="min-h-[420px]">{body}</div>
+          </div>
           <SheetFooter className="flex-row gap-2 border-t border-border/60 bg-background px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
             {footer}
           </SheetFooter>
@@ -292,14 +316,14 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[760px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[760px] h-[82vh] max-h-[820px] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>New lead</DialogTitle>
           <DialogDescription>
-            Captures Monday Leads board fields. Persists to Blossom OS intake.
+            Captures full lead attribution. Persists to Blossom OS intake.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto py-2">{body}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto py-2 pr-1">{body}</div>
         <DialogFooter>{footer}</DialogFooter>
       </DialogContent>
     </Dialog>
@@ -343,12 +367,32 @@ function FormTabs({ form, update, errors, documents, setDocuments }: FormBodyPro
           <Field label="Priority"><SelectInput value={form.priority} onChange={(v) => update("priority", v as FormShape["priority"])} options={PRIORITIES as unknown as string[]} /></Field>
           <Field label="Origination Date"><Input type="date" className="h-9" value={form.originationDate || ""} onChange={(e) => update("originationDate", e.target.value)} /></Field>
           <Field label="Assigned Intake Coordinator"><Input className="h-9" value={form.assignedIntakeCoordinator || ""} onChange={(e) => update("assignedIntakeCoordinator", e.target.value)} placeholder="e.g. Sarah M." /></Field>
-          <Field label="Referral Source"><Input className="h-9" value={form.referralSource || ""} onChange={(e) => update("referralSource", e.target.value)} /></Field>
-          <Field label="Referral Partner"><Input className="h-9" value={form.referralPartner || ""} onChange={(e) => update("referralPartner", e.target.value)} /></Field>
-          <Field label="UTM Source"><Input className="h-9" value={form.utmSource || ""} onChange={(e) => update("utmSource", e.target.value)} /></Field>
-          <Field label="UTM Medium"><Input className="h-9" value={form.utmMedium || ""} onChange={(e) => update("utmMedium", e.target.value)} /></Field>
-          <Field label="UTM Campaign" colSpan2><Input className="h-9" value={form.utmCampaign || ""} onChange={(e) => update("utmCampaign", e.target.value)} /></Field>
         </Grid>
+
+        {REFERRAL_PARTNER_SOURCES.has(form.leadSource) && (
+          <div className="mt-4">
+            <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Referral attribution</div>
+            <Grid>
+              <Field label="Referral Partner / Practice">
+                <Input className="h-9" value={form.referralPartner || ""} onChange={(e) => update("referralPartner", e.target.value)} placeholder="e.g. Atlanta Pediatrics" />
+              </Field>
+              <Field label="Referring Contact Name">
+                <Input className="h-9" value={form.referralSource || ""} onChange={(e) => update("referralSource", e.target.value)} placeholder="e.g. Dr. Smith" />
+              </Field>
+            </Grid>
+          </div>
+        )}
+
+        {UTM_SOURCES.has(form.leadSource) && (
+          <div className="mt-4">
+            <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Campaign attribution (UTM)</div>
+            <Grid>
+              <Field label="UTM Source"><Input className="h-9" value={form.utmSource || ""} onChange={(e) => update("utmSource", e.target.value)} placeholder="google, facebook, mailchimp…" /></Field>
+              <Field label="UTM Medium"><Input className="h-9" value={form.utmMedium || ""} onChange={(e) => update("utmMedium", e.target.value)} placeholder="cpc, paid_social, email…" /></Field>
+              <Field label="UTM Campaign" colSpan2><Input className="h-9" value={form.utmCampaign || ""} onChange={(e) => update("utmCampaign", e.target.value)} placeholder="spring-2026-georgia" /></Field>
+            </Grid>
+          </div>
+        )}
       </TabsContent>
 
       <TabsContent value="patient" className="mt-4">
