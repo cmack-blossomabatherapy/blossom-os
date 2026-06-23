@@ -1,7 +1,7 @@
 import { Lead, statusVariant, priorityVariant, getInlineAlert } from "@/data/leads";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, Phone } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { LeadContactIconActions } from "@/components/leads/LeadContactActions";
