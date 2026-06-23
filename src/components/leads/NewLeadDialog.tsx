@@ -18,6 +18,7 @@ import {
   getLeadSourceOption,
 } from "@/lib/leads/leadSourceConfig";
 import { FAMILY_LEAD_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
+import { IntakeCoordinatorPicker } from "@/components/leads/IntakeCoordinatorPicker";
 
 /**
  * Export 85 — manual lead creation uses the canonical Family / Lead Workflow
@@ -366,7 +367,12 @@ function FormTabs({ form, update, errors, documents, setDocuments }: FormBodyPro
           </Field>
           <Field label="Priority"><SelectInput value={form.priority} onChange={(v) => update("priority", v as FormShape["priority"])} options={PRIORITIES as unknown as string[]} /></Field>
           <Field label="Origination Date"><Input type="date" className="h-9" value={form.originationDate || ""} onChange={(e) => update("originationDate", e.target.value)} /></Field>
-          <Field label="Assigned Intake Coordinator"><Input className="h-9" value={form.assignedIntakeCoordinator || ""} onChange={(e) => update("assignedIntakeCoordinator", e.target.value)} placeholder="e.g. Sarah M." /></Field>
+          <Field label="Assigned Intake Coordinator">
+            <IntakeCoordinatorPicker
+              value={form.assignedIntakeCoordinator || ""}
+              onChange={(name) => update("assignedIntakeCoordinator", name)}
+            />
+          </Field>
         </Grid>
 
         {REFERRAL_PARTNER_SOURCES.has(form.leadSource) && (
