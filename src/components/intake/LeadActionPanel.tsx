@@ -107,7 +107,7 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
   const btnSize = compact ? "sm" : "sm";
 
   // Export 81 — adapter-driven family contact actions. These replace the old
-  // "Log parent contact" pattern as the primary communication workflow.
+  // logging-only pattern as the primary communication workflow.
   const leadContext = {
     leadId: lead.id,
     phone: lead.phone,
