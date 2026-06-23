@@ -160,14 +160,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user?.id) return;
-    const refreshAccess = () => {
-      void Promise.all([loadRolesAndAccess(user.id), loadProfileFlag(user.id)]);
+    // Quiet, throttled background refresh. Returning to the tab must not
+    // visibly reload the app, reset menus, or flash a loading state.
+    // Real auth state changes still flow through supabase.auth.onAuthStateChange
+    // and the "profile:updated" event below.
+    let lastBackgroundRefreshAt = 0;
+    let backgroundRefreshInFlight = false;
+    const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+    const refreshAccessQuietly = () => {
+      if (!user?.id || backgroundRefreshInFlight) return;
+      const now = Date.now();
+      if (now - lastBackgroundRefreshAt < REFRESH_INTERVAL_MS) return;
+      backgroundRefreshInFlight = true;
+      void Promise.all([loadRolesAndAccess(user.id), loadProfileFlag(user.id)])
+        .then(() => { lastBackgroundRefreshAt = now; })
+        .catch(() => { /* transient: keep current session/state */ })
+        .finally(() => { backgroundRefreshInFlight = false; });
     };
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === "visible") refreshAccess();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshAccessQuietly();
     };
-    window.addEventListener("focus", refreshAccess);
-    document.addEventListener("visibilitychange", refreshWhenVisible);
+    document.addEventListener("visibilitychange", onVisible);
     const onProfileUpdated = (e: Event) => {
       const detail = (e as CustomEvent).detail as { userId?: string; avatarUrl?: string | null } | undefined;
       if (detail && detail.userId && detail.userId !== user.id) return;
@@ -176,8 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener("profile:updated", onProfileUpdated as EventListener);
     return () => {
-      window.removeEventListener("focus", refreshAccess);
-      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("profile:updated", onProfileUpdated as EventListener);
     };
   }, [user?.id]);
