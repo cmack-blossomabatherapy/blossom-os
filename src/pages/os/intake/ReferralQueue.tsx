@@ -10,8 +10,19 @@ import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
 import { getLeadWorkflowRisk } from "@/lib/intake/intakeWorkflow";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { canonicalFamilyLeadStage, type FamilyLeadPipelineStage } from "@/lib/intake/intakeWorkflow";
 
-const QUEUE_STAGES = new Set(["New Lead", "In Contact"]);
+/**
+ * Export 87 — Referral Queue surfaces the canonical pre-packet stages:
+ * Lead Captured, First Contact Attempt, and Engagement Track. Legacy
+ * Monday-era statuses ("New Lead", "In Contact", "Can't Reach", etc.) are
+ * aliased through `canonicalFamilyLeadStage` so old records still appear.
+ */
+const QUEUE_CANONICAL_STAGES = new Set<FamilyLeadPipelineStage>([
+  "Lead Captured",
+  "First Contact Attempt",
+  "Engagement Track",
+]);
 type SortKey = "newest" | "oldest" | "highest_risk" | "unassigned";
 
 export default function ReferralQueue() {
@@ -26,7 +37,7 @@ export default function ReferralQueue() {
   const [sort, setSort] = useState<SortKey>("newest");
 
   const baseQueue = useMemo(
-    () => leads.filter((l) => QUEUE_STAGES.has(l.status)),
+    () => leads.filter((l) => QUEUE_CANONICAL_STAGES.has(canonicalFamilyLeadStage(l.status))),
     [leads],
   );
 
@@ -139,7 +150,7 @@ export default function ReferralQueue() {
         </div>
       </div>
 
-      <Section title={`Awaiting contact (${queue.length})`} description="Leads in New Lead or In Contact, newest first.">
+      <Section title={`Awaiting contact (${queue.length})`} description="Leads in Lead Captured, First Contact Attempt, or Engagement Track — newest first.">
         {queue.length === 0 ? (
           <ReadyForDataNotice message={loading ? "Loading leads…" : "No referrals waiting. Add a lead or connect a source to populate this queue."} />
         ) : (

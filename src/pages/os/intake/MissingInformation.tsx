@@ -5,7 +5,7 @@ import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/gr
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
 import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
-import { getMissingInfoFlags } from "@/lib/intake/intakeWorkflow";
+import { getMissingInfoFlags, canonicalFamilyLeadStage } from "@/lib/intake/intakeWorkflow";
 
 export default function MissingInformation() {
   const { leads, loading } = useLeads();
@@ -14,7 +14,10 @@ export default function MissingInformation() {
     () =>
       leads
         .filter((l) => {
-          if (l.status === "Missing Information") return true;
+          // Export 87 — canonical Intake Packet Follow Up is the operational
+          // "missing information" stage. Legacy "Missing Information" still
+          // counts via the canonical aliasing.
+          if (canonicalFamilyLeadStage(l.status) === "Intake Packet Follow Up") return true;
           if (l.formReviewStatus === "Missing Info" || l.formReviewStatus === "Missing Information") return true;
           const flags = getMissingInfoFlags(l);
           return flags.any || (l.tags ?? []).some((t) => /missing|blocker/i.test(t));

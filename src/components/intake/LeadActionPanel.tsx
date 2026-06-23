@@ -308,11 +308,14 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
           const tags = selected.map((s) => s.tag);
           tags.forEach((t) => addTag([lead.id], t));
           const isBlockedAlready =
+            lead.status === "Intake Packet Follow Up" ||
             lead.status === "Missing Information" ||
             lead.status === "Non-Qualified" ||
             lead.status === "Can't Reach";
           if (!isBlockedAlready) {
-            moveStage([lead.id], "Missing Information");
+            // Export 87 — canonical Family / Lead Workflow uses
+            // "Intake Packet Follow Up" as the missing-info stage.
+            moveStage([lead.id], "Intake Packet Follow Up");
           }
           if (isPersistable) {
             try {

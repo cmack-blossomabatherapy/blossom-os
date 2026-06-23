@@ -22,39 +22,45 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { INTAKE_COORDINATORS, type Lead, type LeadStatus } from "@/data/leads";
 import { toast } from "sonner";
+import {
+  FAMILY_LEAD_PIPELINE_STAGES,
+  canonicalFamilyLeadStage,
+  isReadyToStartStage,
+  type FamilyLeadPipelineStage,
+} from "@/lib/intake/intakeWorkflow";
 
 type ViewMode = "list" | "pipeline" | "followup";
 
 /**
- * SOP-aligned intake status tabs. Each tab filters the active leads dataset.
- * "All" + "Stuck/Aging" are operational meta-views; the rest mirror Blossom's
- * canonical intake stages.
+ * Export 87 — Canonical Family / Lead Workflow tabs. Every tab groups leads
+ * via `canonicalFamilyLeadStage` so legacy Monday-era statuses (e.g.
+ * "VOB Completed", "Missing Information", "New Lead") are mapped to their
+ * canonical equivalent before bucketing. No hand-built legacy matchers.
  */
-/**
- * Canonical Family / Lead Workflow tabs. Each tab filters the active leads
- * dataset against the new pipeline stages. Legacy statuses are mapped so the
- * existing dataset still surfaces under the right tab while the data model
- * catches up.
- */
+const isNonQualified = (l: Lead) =>
+  l.status === "Non-Qualified" ||
+  l.status === "Non-qualified Lead" ||
+  Boolean(l.notQualifiedReason && l.notQualifiedReason.trim());
+
+const inCanonical = (l: Lead, stages: FamilyLeadPipelineStage[]) =>
+  !isNonQualified(l) && stages.includes(canonicalFamilyLeadStage(l.status));
+
 const STATUS_TABS: { key: string; label: string; match: (l: Lead) => boolean }[] = [
-  { key: "all",          label: "All Leads",      match: () => true },
-  { key: "contact",      label: "Contact Needed", match: (l) =>
-      l.status === "Lead Captured" || l.status === "First Contact Attempt" || l.status === "New Lead" || l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
-  { key: "engagement",   label: "Engagement",     match: (l) => l.status === "Engagement Track" || l.status === "In Contact" },
-  { key: "packets",      label: "Packets",        match: (l) =>
-      l.status === "Intake Packet Sent" || l.status === "Intake Packet Follow Up" || l.status === "Sent Form" || l.formStatus === "Sent" },
-  { key: "missing",      label: "Missing Info",   match: (l) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
-  { key: "benefits",     label: "Benefits",       match: (l) =>
-      l.status === "Benefits Verification" || l.status === "Sent to VOB" || l.status === "VOB Completed" || l.vobStatus === "Sent" || l.vobStatus === "Approved" || l.vobStatus === "Completed" },
-  { key: "assessment",   label: "Assessment",     match: (l) => l.status === "Assessment Scheduling" || l.status === "QA / Treatment Plan Authorization" },
-  { key: "authorization",label: "Authorization",  match: (l) => l.status === "Authorization Pending" || l.status === "Can Not Submit Auth" },
-  { key: "staffing",     label: "Staffing",       match: (l) => l.status === "Staffing Match" },
-  { key: "ready",        label: "Ready to Start", match: (l) => l.status === "Ready to Start Services" },
-  { key: "nq",           label: "Not Qualified",  match: (l) =>
-      l.status === "Non-Qualified" || l.status === "Non-qualified Lead"
-      || Boolean(l.notQualifiedReason && l.notQualifiedReason.trim()) },
-  { key: "stuck",        label: "Stuck / Aging",  match: (l) => {
-      if (l.status === "Non-qualified Lead" || l.status === "Non-Qualified") return false;
+  { key: "all",           label: "All Leads",       match: () => true },
+  { key: "contact",       label: "Contact Needed",  match: (l) => inCanonical(l, ["Lead Captured", "First Contact Attempt"]) },
+  { key: "engagement",    label: "Engagement",      match: (l) => inCanonical(l, ["Engagement Track"]) },
+  { key: "qualification", label: "Qualification",   match: (l) => inCanonical(l, ["Qualification"]) },
+  { key: "packets",       label: "Packets",         match: (l) => inCanonical(l, ["Intake Packet Sent", "Intake Packet Follow Up"]) },
+  { key: "intake_complete", label: "Intake Complete", match: (l) => inCanonical(l, ["Intake Complete"]) },
+  { key: "benefits",      label: "Benefits",        match: (l) => inCanonical(l, ["Benefits Verification"]) },
+  { key: "assessment",    label: "Assessment",      match: (l) => inCanonical(l, ["Assessment Scheduling"]) },
+  { key: "qa_auth",       label: "QA / Auth",       match: (l) => inCanonical(l, ["QA / Treatment Plan Authorization", "Authorization Pending"]) },
+  { key: "staffing",      label: "Staffing",        match: (l) => inCanonical(l, ["Staffing Match"]) },
+  { key: "ready",         label: "Ready to Start",  match: (l) => isReadyToStartStage(l.status) },
+  { key: "nq",            label: "Not Qualified",   match: (l) => isNonQualified(l) },
+  { key: "stuck",         label: "Stuck / Aging",   match: (l) => {
+      if (isNonQualified(l)) return false;
+      if (isReadyToStartStage(l.status)) return false;
       const last = l.lastContacted ? new Date(l.lastContacted).getTime() : 0;
       const days = last ? Math.floor((Date.now() - last) / (24 * 60 * 60 * 1000)) : 999;
       return days > 5;
@@ -72,45 +78,31 @@ function agingFor(l: Lead): { tone: string; label: string; days: number } {
 }
 
 /**
- * Operational Readiness Pipeline — 14 stages.
- * Mirrors the spec; falls back to status/vob/form fields where the underlying mock data
- * doesn't yet carry a dedicated status. Empty stages are still useful scaffolding.
+ * Export 87 — Pipeline columns are generated from the canonical 13-stage
+ * Family / Lead Workflow. Leads are bucketed by `canonicalFamilyLeadStage`
+ * so legacy statuses surface under the right canonical column. Notably,
+ * "VOB Completed" maps to Assessment Scheduling (NOT Benefits Verification).
  */
-/**
- * Canonical 13-stage Family / Lead Workflow. Visible column labels match the
- * Blossom OS Lead-to-Ready-to-Start Pipeline. Legacy statuses are mapped onto
- * the closest canonical stage so existing data still renders.
- */
-const PIPELINE_STAGES: { key: string; label: string; match: (l: Lead) => boolean }[] = [
-  { key: "lead_captured",   label: "Lead Captured",                       match: (l) => l.status === "Lead Captured" || l.status === "New Lead" },
-  { key: "first_contact",   label: "First Contact Attempt",               match: (l) => l.status === "First Contact Attempt" },
-  { key: "engagement",      label: "Engagement Track",                    match: (l) => l.status === "Engagement Track" || l.status === "In Contact" },
-  { key: "qualification",   label: "Qualification",                       match: (l) => l.status === "Qualification" },
-  { key: "packet_sent",     label: "Intake Packet Sent",                  match: (l) => l.status === "Intake Packet Sent" || l.status === "Sent Form" || l.formStatus === "Sent" },
-  { key: "packet_followup", label: "Intake Packet Follow up",             match: (l) => l.status === "Intake Packet Follow Up" || l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
-  { key: "intake_complete", label: "Intake Complete",                     match: (l) => l.status === "Intake Complete" || l.status === "Form Received" || l.formStatus === "Completed" || l.formStatus === "Complete" },
-  { key: "benefits",        label: "Benefits Verification",               match: (l) => l.status === "Benefits Verification" || l.status === "Sent to VOB" || l.vobStatus === "Sent" || l.vobStatus === "Received" || l.status === "VOB Completed" || l.vobStatus === "Approved" || l.vobStatus === "Completed" },
-  { key: "assessment",      label: "Assessment Scheduling",               match: (l) => l.status === "Assessment Scheduling" },
-  { key: "qa_tp_auth",      label: "QA / Treatment Plan Authorization",   match: (l) => l.status === "QA / Treatment Plan Authorization" },
-  { key: "auth_pending",    label: "Authorization Pending",               match: (l) => l.status === "Authorization Pending" || l.status === "Can Not Submit Auth" },
-  { key: "staffing_match",  label: "Staffing Match",                      match: (l) => l.status === "Staffing Match" },
-  { key: "ready_to_start",  label: "Ready to Start Services",             match: (l) => l.status === "Ready to Start Services" },
-];
+const PIPELINE_STAGES: { key: string; label: FamilyLeadPipelineStage; match: (l: Lead) => boolean }[] =
+  FAMILY_LEAD_PIPELINE_STAGES.map((stage) => ({
+    key: stage,
+    label: stage,
+    match: (l: Lead) => canonicalFamilyLeadStage(l.status) === stage,
+  }));
 
 /**
  * Operational Intake Pulse — the 6 cards from the spec.
  * Kept lightweight and clickable; each filters the active view.
  */
 const KPI_DEFS = [
-  { key: "new_leads",        label: "New Leads",              test: (l: Lead) => l.status === "Lead Captured" || l.status === "New Lead" },
-  { key: "contact_needed",   label: "Contact Needed",         test: (l: Lead) => l.status === "First Contact Attempt" || !l.lastContacted },
-  { key: "packet_followup",  label: "Packet Follow Up",       test: (l: Lead) => l.status === "Intake Packet Follow Up" },
-  { key: "missing_info",     label: "Missing Info",           test: (l: Lead) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
-  { key: "benefits_pending", label: "Benefits Pending",       test: (l: Lead) => l.status === "Benefits Verification" || l.status === "Sent to VOB" || l.vobStatus === "Sent" || l.vobStatus === "Received" },
-  { key: "assessment",       label: "Assessment Scheduling",  test: (l: Lead) => l.status === "Assessment Scheduling" || Boolean(l.nextAction?.toLowerCase().includes("assessment")) },
-  { key: "auth_pending",     label: "Authorization Pending",  test: (l: Lead) => l.status === "Authorization Pending" || l.status === "Can Not Submit Auth" },
-  { key: "staffing_match",   label: "Staffing Match",         test: (l: Lead) => l.status === "Staffing Match" },
-  { key: "ready_to_start",   label: "Ready to Start",         test: (l: Lead) => l.status === "Ready to Start Services" },
+  { key: "lead_captured",    label: "Lead Captured",         test: (l: Lead) => canonicalFamilyLeadStage(l.status) === "Lead Captured" },
+  { key: "contact_needed",   label: "Contact Needed",        test: (l: Lead) => canonicalFamilyLeadStage(l.status) === "First Contact Attempt" || !l.lastContacted },
+  { key: "packet_followup",  label: "Packet Follow Up",      test: (l: Lead) => canonicalFamilyLeadStage(l.status) === "Intake Packet Follow Up" },
+  { key: "benefits_pending", label: "Benefits Verification", test: (l: Lead) => canonicalFamilyLeadStage(l.status) === "Benefits Verification" },
+  { key: "assessment",       label: "Assessment Scheduling", test: (l: Lead) => canonicalFamilyLeadStage(l.status) === "Assessment Scheduling" },
+  { key: "auth_pending",     label: "Authorization Pending", test: (l: Lead) => canonicalFamilyLeadStage(l.status) === "Authorization Pending" },
+  { key: "staffing_match",   label: "Staffing Match",        test: (l: Lead) => canonicalFamilyLeadStage(l.status) === "Staffing Match" },
+  { key: "ready_to_start",   label: "Ready to Start",        test: (l: Lead) => isReadyToStartStage(l.status) },
 ];
 
 function StateBadge({ state }: { state: string }) {
@@ -1012,17 +1004,15 @@ function AIRail() {
 
 /* ─────────────────────── Bulk Action Bar ─────────────────────── */
 
-const BULK_STATUS_OPTIONS: LeadStatus[] = [
-  "New Lead",
-  "In Contact",
-  "Sent Form",
-  "Form Received",
-  "Missing Information",
-  "Sent to VOB",
-  "VOB Completed",
-  "Can't Reach",
-  "Non-qualified Lead",
-];
+/**
+ * Export 87 — Bulk stage move options are the canonical Family / Lead
+ * Workflow stages. Old Monday-era labels (New Lead, Sent Form, VOB
+ * Completed, etc.) are NOT shown here. Non-qualified / cannot-reach are
+ * outcome actions, not pipeline destinations.
+ */
+const BULK_STATUS_OPTIONS: LeadStatus[] =
+  [...FAMILY_LEAD_PIPELINE_STAGES] as LeadStatus[];
+const BULK_OUTCOME_OPTIONS: LeadStatus[] = ["Non-qualified Lead", "Can't Reach"];
 
 const FOLLOWUP_PRESETS: { label: string; days: number }[] = [
   { label: "Tomorrow", days: 1 },
@@ -1098,6 +1088,18 @@ function BulkActionBar({
                 key={s}
                 onClick={() => onMove(s)}
                 className="w-full text-left text-sm rounded-lg px-2 py-1.5 hover:bg-muted"
+              >
+                {s}
+              </button>
+            ))}
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 pt-2 pb-1 border-t border-border/60 mt-1">
+              Outcome
+            </p>
+            {BULK_OUTCOME_OPTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => onMove(s)}
+                className="w-full text-left text-sm rounded-lg px-2 py-1.5 hover:bg-muted text-muted-foreground"
               >
                 {s}
               </button>

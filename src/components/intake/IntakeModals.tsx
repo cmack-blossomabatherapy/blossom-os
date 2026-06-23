@@ -402,7 +402,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
       <Dialog open onOpenChange={(o) => !o && close()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New inquiry</DialogTitle>
+            <DialogTitle>Add Lead</DialogTitle>
             <DialogDescription>Add a family to the intake pipeline.</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">
@@ -435,7 +435,9 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
                   email: "",
                   state: select1 || "GA",
                   source: "Website",
-                  status: "New Lead",
+                  // Export 87 — manually added leads start at the canonical
+                  // "Lead Captured" stage, not the legacy "New Lead" status.
+                  status: "Lead Captured",
                   owner: "",
                   priority: "Warm",
                   childAge: "-",
@@ -444,7 +446,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
                   daysInStage: 0,
                   nextAction: "Make first contact",
                   nextTaskDue: new Date().toISOString().slice(0, 10),
-                  lastActivity: "Manual inquiry added",
+                  lastActivity: "Manual lead added",
                   payor: select2 || "",
                   coverageType: "",
                   paymentPlanNeeded: false,
@@ -452,11 +454,11 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
                   insuranceType: "",
                   tasks: [],
                 } as unknown as Lead);
-                toast.success(`Inquiry added (${id})`);
+                toast.success(`Lead added (${id})`);
                 close();
               }}
             >
-              Add inquiry
+              Add Lead
             </Button>
           </DialogFooter>
         </DialogContent>
