@@ -341,10 +341,15 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
     throw new Error(`Missing required columns: ${parsed.missingColumns.join(", ")}`);
   }
 
-  // Refresh the auth session so the edge function sees a current JWT.
-  // Without this, an expired access token causes a silent 401 on the very
-  // first create_batch call and the upload appears to "do nothing".
-  try { await supabase.auth.refreshSession(); } catch { /* non-fatal */ }
+  // Hard preflight: confirm we have a usable access token *before* we touch
+  // the edge function. Without this, an expired/missing JWT used to bubble
+  // up as a vague invoke() failure and the user just saw "nothing happened".
+  let accessToken = await getFreshAccessToken();
+  if (!accessToken) {
+    throw new Error(
+      "Your session expired before the upload could start. Please sign out and back in, then try the Append again.",
+    );
+  }
 
   // Pre-check duplicates (against current active rows).
   const hashes = parsed.parsedRows.map((r) => r.rowHash);
@@ -363,7 +368,9 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
 
   // Create batch row via Edge Function (service-role, reliable).
   const fileHash = await sha256Hex(`${input.file.name}|${input.file.size}|${parsed.rawRowCount}`);
-  const createRes = await callUploadFn({
+  const onProgress = input.onProgress;
+  onProgress?.({ phase: "create_batch" });
+  const createRes = await callUploadFn(accessToken, {
     action: "create_batch",
     batch: {
       file_name: input.file.name,
@@ -414,8 +421,13 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
           raw: p.raw,
           normalized: p.row,
         }));
-        const res = await callUploadFn({ action: "append_rows", batchId, rows: payload });
+        const res = await callUploadFn(accessToken!, { action: "append_rows", batchId, rows: payload });
         actuallyInserted += Number(res.inserted ?? 0);
+        onProgress?.({
+          phase: "append_rows",
+          inserted: actuallyInserted,
+          total: toInsert.length,
+        });
       }
     }
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, chunks.length) }, worker));
@@ -423,7 +435,10 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
 
   // Finalize: server verifies actual row count and updates the batch row
   // with honest counters (no more "42707 appended" while only 6000 landed).
-  const fin = await callUploadFn({
+  onProgress?.({ phase: "finalize_batch" });
+  // Refresh the token once for finalize in case the long upload outlived it.
+  accessToken = (await getFreshAccessToken()) || accessToken;
+  const fin = await callUploadFn(accessToken!, {
     action: "finalize_batch",
     batchId,
     expectedNew: toInsert.length,
@@ -449,24 +464,96 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
   };
 }
 
-/** Invoke the bcba-productivity-upload Edge Function. */
-async function callUploadFn(body: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const { data, error } = await supabase.functions.invoke("bcba-productivity-upload", { body });
-  if (error) {
-    const detail = (data && typeof data === "object" && "error" in (data as any))
-      ? (data as any).error
-      : (error as any)?.message;
-    // Surface full error context so failed uploads aren't silent.
-    // eslint-disable-next-line no-console
-    console.error("[bcba-upload] edge function error", { action: body?.action, error, data });
-    throw new Error(detail || `Upload service error (action: ${String(body?.action ?? "?")})`);
+/**
+ * Get a fresh access token. Tries `refreshSession()` first; falls back to
+ * `getSession()`. Returns null only if the user is truly not signed in.
+ */
+async function getFreshAccessToken(): Promise<string | null> {
+  try {
+    const refreshed = await supabase.auth.refreshSession();
+    const t = refreshed?.data?.session?.access_token;
+    if (t) return t;
+  } catch { /* fall through */ }
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+}
+
+/**
+ * Invoke the bcba-productivity-upload Edge Function via direct fetch.
+ *
+ * `supabase.functions.invoke` has been observed to silently hang or
+ * return inconsistent error shapes for large multi-step flows like this
+ * upload, so we hit the function URL ourselves with an explicit timeout
+ * and surface real HTTP status codes / response bodies on failure.
+ */
+async function callUploadFn(
+  accessToken: string,
+  body: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+  if (!SUPABASE_URL || !ANON) {
+    throw new Error("Supabase client is not configured (missing VITE_SUPABASE_URL).");
   }
-  if (data && typeof data === "object" && "error" in data) {
+  const url = `${SUPABASE_URL}/functions/v1/bcba-productivity-upload`;
+  const action = String(body?.action ?? "?");
+
+  // 90s per request — generous enough for a 500-row chunk insert but small
+  // enough that a wedged request fails loudly instead of hanging forever.
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 90_000);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      signal: ac.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        apikey: ANON,
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
     // eslint-disable-next-line no-console
-    console.error("[bcba-upload] edge function returned error payload", { action: body?.action, data });
-    throw new Error(String((data as any).error));
+    console.error("[bcba-upload] network error", { action, error: e });
+    throw new Error(
+      `Network error contacting upload service (action: ${action}). ` +
+        `Check your internet connection and try again.`,
+    );
+  } finally {
+    clearTimeout(timer);
   }
-  return (data ?? {}) as Record<string, unknown>;
+
+  const text = await res.text();
+  let parsed: any = null;
+  try { parsed = text ? JSON.parse(text) : {}; } catch { parsed = { raw: text }; }
+
+  if (!res.ok) {
+    const detail = parsed?.error || parsed?.message || text || res.statusText;
+    // eslint-disable-next-line no-console
+    console.error("[bcba-upload] http error", { action, status: res.status, detail, parsed });
+    if (res.status === 401) {
+      throw new Error(
+        "Upload service rejected your session (401). Please sign out and back in, then try again.",
+      );
+    }
+    if (res.status === 403) {
+      throw new Error(
+        "You do not have admin access to upload BCBA productivity data (403). " +
+          "Ask a super admin to grant you the role.",
+      );
+    }
+    throw new Error(
+      `Upload service error (${res.status}, action: ${action}): ${detail}`,
+    );
+  }
+  if (parsed && typeof parsed === "object" && "error" in parsed) {
+    // eslint-disable-next-line no-console
+    console.error("[bcba-upload] payload error", { action, parsed });
+    throw new Error(String(parsed.error));
+  }
+  return (parsed ?? {}) as Record<string, unknown>;
 }
 
 /* ----- queries ----- */
