@@ -41,14 +41,14 @@ const INTAKE_ROLES = new Set(["intake_coordinator", "intake_lead"]);
  * staff and tag them with an "Onboarding" badge so it's obvious in the picker.
  * Inactive / on_leave / on_hold / resigned / terminated are excluded.
  */
-const ACTIVE_STATUSES = ["active", "pending_start"] as const;
+const ACTIVE_STATUSES: ReadonlyArray<"active" | "pending_start"> = ["active", "pending_start"];
 
 async function fetchIntakeStaff(): Promise<IntakeStaffMember[]> {
   const [empRes, rolesRes] = await Promise.all([
     supabase
       .from("employees")
       .select("id,first_name,last_name,email,job_title,state,user_id,status")
-      .in("status", ACTIVE_STATUSES as unknown as string[]),
+      .in("status", [...ACTIVE_STATUSES]),
     supabase.from("user_roles").select("user_id,role"),
   ]);
   if (empRes.error) throw empRes.error;
