@@ -369,6 +369,7 @@ import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
 import IdentityDashboard from "./pages/admin/IdentityDashboard";
 import { AdminRoute } from "./components/auth/AdminRoute";
+import { BlockIntakeRoute } from "./components/auth/BlockIntakeRoute";
 import {
   RoleManagementPage, EmployeeDirectoryPage, UserLoginsVaultPage,
   NFCBadgeManagementPage, DeviceRequestsPage,
@@ -839,14 +840,14 @@ const App = () => (
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/permissions" element={<AdminRoute><OSPermissions /></AdminRoute>} />
                   <Route path="/integrations" element={<AdminRoute><Integrations /></AdminRoute>} />
-                  <Route path="/phone" element={<PhoneDashboard />} />
-                  <Route path="/phone/lookup" element={<PhoneLookup />} />
-                  <Route path="/phone/shared" element={<PhoneShared />} />
-                  <Route path="/phone/directory" element={<PhoneDirectory />} />
-                  <Route path="/phone/requests" element={<PhoneRequestList />} />
-                  <Route path="/phone/requests/new" element={<PhoneRequestNew />} />
-                  <Route path="/phone/requests/:id" element={<PhoneRequestDetail />} />
-                  <Route path="/phone/admin" element={<PhoneAdmin />} />
+                  <Route path="/phone" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneDashboard /></BlockIntakeRoute>} />
+                  <Route path="/phone/lookup" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneLookup /></BlockIntakeRoute>} />
+                  <Route path="/phone/shared" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneShared /></BlockIntakeRoute>} />
+                  <Route path="/phone/directory" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneDirectory /></BlockIntakeRoute>} />
+                  <Route path="/phone/requests" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneRequestList /></BlockIntakeRoute>} />
+                  <Route path="/phone/requests/new" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneRequestNew /></BlockIntakeRoute>} />
+                  <Route path="/phone/requests/:id" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneRequestDetail /></BlockIntakeRoute>} />
+                  <Route path="/phone/admin" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneAdmin /></BlockIntakeRoute>} />
                   <Route path="/phone/ai-calls" element={<PhoneAfterHoursAI />} />
                   <Route path="/phone/ai-calls/audit" element={<PhoneAiCallAudit />} />
                   {/* Marketing Team */}
@@ -875,7 +876,7 @@ const App = () => (
                   <Route path="/marketing/leadtrap" element={<LeadTrap />} />
                   <Route path="/marketing/facebook-ads" element={<FacebookAds />} />
                   <Route path="/marketing/google-ads" element={<GoogleAds />} />
-                  <Route path="/patient-journey" element={<PatientLifetimeJourney />} />
+                  <Route path="/patient-journey" element={<BlockIntakeRoute><PatientLifetimeJourney /></BlockIntakeRoute>} />
                   <Route path="/intake/dashboard" element={<IntakeWorkspaceLanding />} />
                   <Route path="/intake/lead-to-active" element={<LeadToActivePipeline />} />
                   <Route path="/intake/referral-queue" element={<ReferralQueue />} />
