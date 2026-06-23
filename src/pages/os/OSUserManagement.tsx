@@ -394,6 +394,44 @@ function EditUserSheet({
     toast({ title: "Welcome email resent" });
   };
 
+  const createInviteLink = async () => {
+    if (!form || form.isWorkforce || !form.email) return;
+    setCreatingLink(true);
+    const { data, error } = await supabase.functions.invoke("admin-create-invite-link", {
+      body: {
+        userId: form.user_id,
+        email: form.email,
+        siteUrl: window.location.origin,
+      },
+    });
+    setCreatingLink(false);
+    if (error || !data?.ok) {
+      toast({
+        title: "Could not create invite link",
+        description: data?.error ?? error?.message ?? "Unknown error",
+        variant: "destructive",
+      });
+      return;
+    }
+    setInviteLink({ loginUrl: data.loginUrl, tempPassword: data.tempPassword, email: data.email });
+    toast({ title: "Invite link ready", description: "Copy the link and temporary password below." });
+  };
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: `${label} copied` });
+    } catch {
+      toast({ title: "Copy failed", description: "Select the text manually to copy.", variant: "destructive" });
+    }
+  };
+
+  const copyCredentialsBlock = () => {
+    if (!inviteLink) return;
+    const block = `Blossom OS sign-in\n\nEmail: ${inviteLink.email}\nTemporary password: ${inviteLink.tempPassword}\nSign-in link: ${inviteLink.loginUrl}\n\nYou'll be asked to set a new password on first sign-in.`;
+    void copyToClipboard(block, "Invite details");
+  };
+
   const grouped = ROLE_GROUPS.map((g) => ({
     group: g,
     roles: ROLE_META.filter((m) => m.group === g),
