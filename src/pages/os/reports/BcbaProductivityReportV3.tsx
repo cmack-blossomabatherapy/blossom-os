@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   Upload, FileSpreadsheet, Download, Search, ChevronRight, ChevronDown,
   Stethoscope, Plus, Trash2, Save, History, ArrowLeftRight, X, Pencil, Database, AlertTriangle,
-  UserPlus, RefreshCw, HelpCircle,
+  UserPlus, RefreshCw, HelpCircle, FileText,
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell,
@@ -33,6 +33,9 @@ import {
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
 import { normalizeUsState, resolveRowState } from "@/lib/os/bcbaProductivityV3/stateNormalization";
 import { Link } from "react-router-dom";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import blossomLogo from "@/assets/blossom-logo-color.png";
 
 /* ----- helpers ----- */
 const normH = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
