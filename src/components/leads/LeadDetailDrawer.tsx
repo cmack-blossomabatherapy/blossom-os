@@ -10,6 +10,11 @@ import { useLeadUpdates } from "@/hooks/useLeadUpdates";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import {
+  findBenefitsCheatSheetForLead,
+  mapCheatSheetStatusToTone,
+} from "@/lib/intake/leadBenefitsCheatSheets";
 
 type Tab = "overview" | "insurance" | "documents" | "activity" | "actions";
 
@@ -293,6 +298,15 @@ export function LeadDetailDrawer({
                 <Field label="Diagnosis status" value={i.diagnosisStatus} />
                 <Field label="DX needed" value={i.dxNeeded == null ? undefined : i.dxNeeded ? "Yes" : "No"} />
               </div>
+              <BenefitsCheatSheetMatchPanel
+                insurance={
+                  lead.primaryInsurance ||
+                  (lead as unknown as { insurance?: string }).insurance ||
+                  str("Primary Insurance") ||
+                  str("Insurance")
+                }
+                state={lead.state || str("State")}
+              />
               <div className="rounded-2xl bg-muted/60 border border-border/60 p-4 space-y-3">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">VOB</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
