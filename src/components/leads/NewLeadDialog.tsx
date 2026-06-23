@@ -18,7 +18,12 @@ import {
   getLeadSourceOption,
 } from "@/lib/leads/leadSourceConfig";
 import { FAMILY_LEAD_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
+import {
+  getRecommendedNextActionForStage,
+  getStageDueOffsetDays,
+} from "@/lib/intake/intakeWorkflow";
 import { IntakeCoordinatorPicker } from "@/components/leads/IntakeCoordinatorPicker";
+import { uploadLeadDocument } from "@/lib/leads/leadDocumentStorage";
 
 /**
  * Export 85 — manual lead creation uses the canonical Family / Lead Workflow
@@ -26,6 +31,14 @@ import { IntakeCoordinatorPicker } from "@/components/leads/IntakeCoordinatorPic
  * are no longer offered as primary creation options.
  */
 const PIPELINE_STAGES = FAMILY_LEAD_PIPELINE_STAGES;
+
+/** ISO yyyy-mm-dd for `today + offsetDays`, local time. */
+function offsetDateISO(offsetDays: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().split("T")[0];
+}
+const TODAY_ISO = () => new Date().toISOString().split("T")[0];
 
 const LEAD_SOURCES = LEAD_SOURCE_OPTIONS.map((o) => o.value);
 
@@ -73,7 +86,10 @@ export interface PendingLeadDocument {
   type: LeadDocumentType;
   size?: number;
   uploadedAt: string;
-  storageStatus: "pending_storage_connection" | "uploaded";
+  storageStatus: "pending_storage_connection" | "uploading" | "uploaded" | "failed";
+  storagePath?: string;
+  signedUrl?: string;
+  errorMessage?: string;
 }
 
 const schema = z
@@ -161,8 +177,11 @@ export const EMPTY: FormShape = {
   assignedIntakeCoordinatorEmployeeId: "",
   priority: "Warm",
   insurance: "", insuranceType: "", secondaryInsurance: "",
-  pipelineStage: "Lead Captured", nextAction: "Contact Lead", nextTaskDue: "",
-  regularCallLog: "", etCallLog: "", messageComments: "", lastContactDate: "",
+  pipelineStage: "Lead Captured",
+  nextAction: getRecommendedNextActionForStage("Lead Captured"),
+  nextTaskDue: offsetDateISO(getStageDueOffsetDays("Lead Captured")),
+  regularCallLog: "", etCallLog: "", messageComments: "",
+  lastContactDate: TODAY_ISO(),
   notes: "", tags: "",
 };
 
@@ -195,6 +214,28 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
 
   const update = <K extends keyof FormShape>(k: K, v: FormShape[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  /**
+   * When the pipeline stage changes, auto-fill Next Action and Next Task Due
+   * from the canonical workflow — but only if the user hasn't manually edited
+   * those fields away from the previous stage's auto values.
+   */
+  const updateStage = (nextStage: string) => {
+    setForm((f) => {
+      const prevAutoAction = getRecommendedNextActionForStage(f.pipelineStage);
+      const prevAutoDue = offsetDateISO(getStageDueOffsetDays(f.pipelineStage));
+      const nextAutoAction = getRecommendedNextActionForStage(nextStage);
+      const nextAutoDue = offsetDateISO(getStageDueOffsetDays(nextStage));
+      const actionIsAuto = !f.nextAction || f.nextAction === prevAutoAction;
+      const dueIsAuto = !f.nextTaskDue || f.nextTaskDue === prevAutoDue;
+      return {
+        ...f,
+        pipelineStage: nextStage,
+        nextAction: actionIsAuto ? nextAutoAction : f.nextAction,
+        nextTaskDue: dueIsAuto ? nextAutoDue : f.nextTaskDue,
+      };
+    });
+  };
 
   const submit = async () => {
     const parsed = schema.safeParse(form);
@@ -288,6 +329,7 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
     <FormTabs
       form={form}
       update={update}
+      updateStage={updateStage}
       errors={errors}
       documents={documents}
       setDocuments={setDocuments}
@@ -342,12 +384,13 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
 interface FormBodyProps {
   form: FormShape;
   update: <K extends keyof FormShape>(k: K, v: FormShape[K]) => void;
+  updateStage: (stage: string) => void;
   errors: Record<string, string>;
   documents: PendingLeadDocument[];
   setDocuments: (updater: (prev: PendingLeadDocument[]) => PendingLeadDocument[]) => void;
 }
 
-function FormTabs({ form, update, errors, documents, setDocuments }: FormBodyProps) {
+function FormTabs({ form, update, updateStage, errors, documents, setDocuments }: FormBodyProps) {
   return (
     <Tabs defaultValue="source" className="w-full">
       <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 h-auto">
@@ -452,13 +495,57 @@ function FormTabs({ form, update, errors, documents, setDocuments }: FormBodyPro
       </TabsContent>
 
       <TabsContent value="workflow" className="mt-4">
+        <div className="mb-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+          Next Action and Next Task Due auto-fill from the pipeline stage. Edit either field to override.
+        </div>
         <Grid>
           <Field label="Pipeline Stage *" error={errors.pipelineStage}>
-            <SelectInput value={form.pipelineStage} onChange={(v) => update("pipelineStage", v)} options={PIPELINE_STAGES as unknown as string[]} />
+            <SelectInput
+              value={form.pipelineStage}
+              onChange={(v) => updateStage(v)}
+              options={PIPELINE_STAGES as unknown as string[]}
+            />
           </Field>
-          <Field label="Next Action"><Input className="h-9" value={form.nextAction || ""} onChange={(e) => update("nextAction", e.target.value)} placeholder="Contact Lead" /></Field>
-          <Field label="Next Task Due"><Input type="date" className="h-9" value={form.nextTaskDue || ""} onChange={(e) => update("nextTaskDue", e.target.value)} /></Field>
-          <Field label="Last Contact Date"><Input type="date" className="h-9" value={form.lastContactDate || ""} onChange={(e) => update("lastContactDate", e.target.value)} /></Field>
+          <Field
+            label="Next Action"
+            badge={
+              form.nextAction === getRecommendedNextActionForStage(form.pipelineStage) ? "Auto" : undefined
+            }
+          >
+            <Input
+              className="h-9"
+              value={form.nextAction || ""}
+              onChange={(e) => update("nextAction", e.target.value)}
+              placeholder={getRecommendedNextActionForStage(form.pipelineStage)}
+            />
+          </Field>
+          <Field
+            label="Next Task Due"
+            badge={
+              form.nextTaskDue === offsetDateISO(getStageDueOffsetDays(form.pipelineStage))
+                ? `Auto · ${getStageDueOffsetDays(form.pipelineStage)}d SLA`
+                : undefined
+            }
+          >
+            <Input
+              type="date"
+              className="h-9"
+              value={form.nextTaskDue || ""}
+              onChange={(e) => update("nextTaskDue", e.target.value)}
+            />
+          </Field>
+          <Field label="Last Contact Date" badge="Auto">
+            <Input
+              type="date"
+              className="h-9 bg-muted/40 cursor-not-allowed"
+              value={form.lastContactDate || TODAY_ISO()}
+              disabled
+              readOnly
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Set automatically — this is the contact being created.
+            </p>
+          </Field>
         </Grid>
       </TabsContent>
 
@@ -490,10 +577,29 @@ function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>;
 }
 
-function Field({ label, children, error, colSpan2 }: { label: string; children: React.ReactNode; error?: string; colSpan2?: boolean }) {
+function Field({
+  label,
+  children,
+  error,
+  colSpan2,
+  badge,
+}: {
+  label: string;
+  children: React.ReactNode;
+  error?: string;
+  colSpan2?: boolean;
+  badge?: string;
+}) {
   return (
     <div className={colSpan2 ? "sm:col-span-2" : ""}>
-      <Label className="text-xs">{label}</Label>
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-xs">{label}</Label>
+        {badge && (
+          <span className="text-[10px] uppercase tracking-wide font-medium text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded">
+            {badge}
+          </span>
+        )}
+      </div>
       <div className="mt-1">{children}</div>
       {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
     </div>
@@ -545,18 +651,56 @@ function DocumentsTab({
   const inputRef = useRef<HTMLInputElement>(null);
   const [stagedType, setStagedType] = useState<LeadDocumentType>("Insurance Card");
 
-  const handleFiles = (files: FileList | null) => {
+  const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const now = new Date().toISOString();
-    const next: PendingLeadDocument[] = Array.from(files).map((f) => ({
+    const queued: PendingLeadDocument[] = Array.from(files).map((f) => ({
       name: f.name,
       type: stagedType,
       size: f.size,
       uploadedAt: now,
-      storageStatus: "pending_storage_connection",
+      storageStatus: "uploading",
     }));
-    setDocuments((prev) => [...prev, ...next]);
+    let baseIndex = 0;
+    setDocuments((prev) => {
+      baseIndex = prev.length;
+      return [...prev, ...queued];
+    });
     if (inputRef.current) inputRef.current.value = "";
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const idx = baseIndex + i;
+      try {
+        const result = await uploadLeadDocument(file, {
+          leadId: "pending",
+          type: stagedType,
+        });
+        setDocuments((prev) =>
+          prev.map((d, k) =>
+            k === idx
+              ? {
+                  ...d,
+                  storageStatus: "uploaded",
+                  storagePath: result.storagePath,
+                  signedUrl: result.signedUrl,
+                }
+              : d,
+          ),
+        );
+      } catch (e: any) {
+        setDocuments((prev) =>
+          prev.map((d, k) =>
+            k === idx
+              ? { ...d, storageStatus: "failed", errorMessage: e?.message ?? "Upload failed" }
+              : d,
+          ),
+        );
+        toast.error(`Could not upload ${file.name}`, {
+          description: e?.message ?? "Try again.",
+        });
+      }
+    }
   };
 
   return (
@@ -613,7 +757,14 @@ function DocumentsTab({
                 <div className="min-w-0">
                   <p className="truncate text-xs font-medium text-foreground" title={d.name}>{d.name}</p>
                   <p className="text-[10.5px] text-muted-foreground">
-                    {d.type}{d.size ? ` · ${formatBytes(d.size)}` : ""} · {d.storageStatus === "uploaded" ? "Uploaded" : "Pending storage"}
+                    {d.type}{d.size ? ` · ${formatBytes(d.size)}` : ""} ·{" "}
+                    {d.storageStatus === "uploaded"
+                      ? "Stored securely"
+                      : d.storageStatus === "uploading"
+                        ? "Uploading…"
+                        : d.storageStatus === "failed"
+                          ? <span className="text-destructive">Upload failed{d.errorMessage ? ` — ${d.errorMessage}` : ""}</span>
+                          : "Pending"}
                   </p>
                 </div>
               </div>

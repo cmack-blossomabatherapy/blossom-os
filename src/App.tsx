@@ -366,6 +366,7 @@ import OSTrainingManage from "./pages/os/OSTrainingManage";
 import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
 import IdentityDashboard from "./pages/admin/IdentityDashboard";
+import AutomatedEmailsPage from "./pages/admin/AutomatedEmails";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { BlockIntakeRoute } from "./components/auth/BlockIntakeRoute";
 import {

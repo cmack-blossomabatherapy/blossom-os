@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   X, Phone, Mail, MapPin, Calendar, FileText, Activity, Sparkles,
   CheckCircle2, AlertCircle, ChevronRight, ExternalLink, StickyNote,
-  Send, ShieldCheck, Ban, UserX, ListChecks, Plus,
+  Send, ShieldCheck, Ban, UserX, ListChecks, Plus, MailPlus,
 } from "lucide-react";
 import type { Lead } from "@/data/leads";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -15,6 +15,11 @@ import {
   findBenefitsCheatSheetForLead,
   mapCheatSheetStatusToTone,
 } from "@/lib/intake/leadBenefitsCheatSheets";
+import {
+  notifyCommunicationResult,
+  sendLeadEmail,
+} from "@/lib/integrations/communications/communicationAdapters";
+import type { EmailTemplateKey } from "@/lib/integrations/communications/communicationTypes";
 
 type Tab = "overview" | "insurance" | "documents" | "activity" | "actions";
 
@@ -394,6 +399,7 @@ export function LeadDetailDrawer({
                   </div>
                 );
               })}
+              <DocumentRequestsBlock lead={lead} existingLabels={documents.map((d) => d.label.toLowerCase())} />
             </section>
           )}
 
@@ -690,6 +696,98 @@ export function BenefitsCheatSheetMatchPanel({
           <ExternalLink className="h-3 w-3" /> Open full cheat sheet
         </Link>
       </div>
+    </div>
+  );
+}
+/* ------------------------ Document follow-up requests ----------------------- */
+
+interface DocRequestOption {
+  label: string;
+  template: EmailTemplateKey;
+  matchTokens: string[];
+}
+
+const DOC_REQUEST_OPTIONS: DocRequestOption[] = [
+  { label: "Insurance Card", template: "document-request-insurance-card", matchTokens: ["insurance card", "insurance"] },
+  { label: "Diagnosis", template: "document-request-diagnosis", matchTokens: ["diagnosis", "dx"] },
+  { label: "Consent Form", template: "document-request-consent-form", matchTokens: ["consent"] },
+  { label: "Intake Packet", template: "document-request-intake-packet", matchTokens: ["intake packet"] },
+];
+
+function DocumentRequestsBlock({
+  lead,
+  existingLabels,
+}: {
+  lead: Lead;
+  existingLabels: string[];
+}) {
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+
+  const handleRequest = async (opt: DocRequestOption) => {
+    setPendingKey(opt.template);
+    try {
+      const result = await sendLeadEmail(
+        {
+          leadId: lead.id,
+          email: lead.email ?? null,
+          phone: lead.phone ?? null,
+          parentName: lead.parentName ?? null,
+          childName: lead.childName ?? null,
+          state: lead.state ?? null,
+          insurance: lead.insurance ?? null,
+        },
+        opt.template,
+      );
+      notifyCommunicationResult(result);
+      if (result.success) {
+        try {
+          await supabase.from("intake_communications").insert({
+            lead_id: lead.id,
+            channel: "email",
+            direction: "outbound",
+            subject: `Requested ${opt.label} from parent`,
+            body: `Sent automated request for ${opt.label} via template "${opt.template}".`,
+          } as never);
+        } catch {
+          /* non-fatal — toast already shown */
+        }
+      }
+    } finally {
+      setPendingKey(null);
+    }
+  };
+
+  const missing = DOC_REQUEST_OPTIONS.filter(
+    (o) => !existingLabels.some((l) => o.matchTokens.some((t) => l.includes(t))),
+  );
+
+  return (
+    <div className="mt-4 rounded-xl border border-border/60 bg-muted/20 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-foreground">Request a document from parent</p>
+        <span className="text-[10px] text-muted-foreground">Sends a human-sounding email</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+        {(missing.length ? missing : DOC_REQUEST_OPTIONS).map((opt) => (
+          <button
+            key={opt.template}
+            onClick={() => handleRequest(opt)}
+            disabled={pendingKey === opt.template}
+            className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-card px-3 h-9 text-xs hover:bg-muted transition disabled:opacity-60"
+          >
+            <span className="inline-flex items-center gap-2">
+              <MailPlus className="h-3.5 w-3.5 text-primary" />
+              Request {opt.label}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {pendingKey === opt.template ? "Sending…" : "Send"}
+            </span>
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-[10.5px] text-muted-foreground">
+        Templates live under Admin → Automated Emails.
+      </p>
     </div>
   );
 }
