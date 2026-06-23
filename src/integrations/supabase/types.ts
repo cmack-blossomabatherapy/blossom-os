@@ -2924,6 +2924,192 @@ export type Database = {
         }
         Relationships: []
       }
+      email_action_audit: {
+        Row: {
+          action_queue_id: string | null
+          action_type: string
+          actor_user_id: string
+          created_at: string
+          email_command_item_id: string | null
+          error_message: string | null
+          id: string
+          payload_summary: string | null
+          provider: string | null
+          status: string
+        }
+        Insert: {
+          action_queue_id?: string | null
+          action_type: string
+          actor_user_id: string
+          created_at?: string
+          email_command_item_id?: string | null
+          error_message?: string | null
+          id?: string
+          payload_summary?: string | null
+          provider?: string | null
+          status: string
+        }
+        Update: {
+          action_queue_id?: string | null
+          action_type?: string
+          actor_user_id?: string
+          created_at?: string
+          email_command_item_id?: string | null
+          error_message?: string | null
+          id?: string
+          payload_summary?: string | null
+          provider?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_action_audit_action_queue_id_fkey"
+            columns: ["action_queue_id"]
+            isOneToOne: false
+            referencedRelation: "email_action_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_action_audit_email_command_item_id_fkey"
+            columns: ["email_command_item_id"]
+            isOneToOne: false
+            referencedRelation: "email_command_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_action_queue: {
+        Row: {
+          action_payload: Json
+          action_type: string
+          approved_at: string | null
+          approved_by: string | null
+          completed_at: string | null
+          created_at: string
+          email_command_item_id: string
+          error_message: string | null
+          id: string
+          recommendation_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_payload?: Json
+          action_type: string
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          email_command_item_id: string
+          error_message?: string | null
+          id?: string
+          recommendation_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_payload?: Json
+          action_type?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          email_command_item_id?: string
+          error_message?: string | null
+          id?: string
+          recommendation_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_action_queue_email_command_item_id_fkey"
+            columns: ["email_command_item_id"]
+            isOneToOne: false
+            referencedRelation: "email_command_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_action_queue_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "email_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_command_items: {
+        Row: {
+          category: string | null
+          conversation_id: string | null
+          created_at: string
+          external_message_id: string
+          id: string
+          importance: string | null
+          is_unread: boolean | null
+          provider: string
+          received_at: string | null
+          risk_level: string | null
+          sender_email: string | null
+          sender_name: string | null
+          status: string
+          subject: string | null
+          suggested_owner: string | null
+          updated_at: string
+          urgency: string | null
+          user_id: string
+          web_link: string | null
+          workflow_tag: string | null
+        }
+        Insert: {
+          category?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          external_message_id: string
+          id?: string
+          importance?: string | null
+          is_unread?: boolean | null
+          provider?: string
+          received_at?: string | null
+          risk_level?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          status?: string
+          subject?: string | null
+          suggested_owner?: string | null
+          updated_at?: string
+          urgency?: string | null
+          user_id: string
+          web_link?: string | null
+          workflow_tag?: string | null
+        }
+        Update: {
+          category?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          external_message_id?: string
+          id?: string
+          importance?: string | null
+          is_unread?: boolean | null
+          provider?: string
+          received_at?: string | null
+          risk_level?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          status?: string
+          subject?: string | null
+          suggested_owner?: string | null
+          updated_at?: string
+          urgency?: string | null
+          user_id?: string
+          web_link?: string | null
+          workflow_tag?: string | null
+        }
+        Relationships: []
+      }
       email_mfa_codes: {
         Row: {
           attempts: number
@@ -2959,6 +3145,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      email_recommendations: {
+        Row: {
+          ai_summary: string | null
+          confidence: number | null
+          created_at: string
+          draft_text: string | null
+          email_command_item_id: string
+          id: string
+          reason: string | null
+          recommended_action: string | null
+          recommended_channel: string | null
+          suggested_owner: string | null
+          updated_at: string
+          user_id: string
+          workflow_tag: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          confidence?: number | null
+          created_at?: string
+          draft_text?: string | null
+          email_command_item_id: string
+          id?: string
+          reason?: string | null
+          recommended_action?: string | null
+          recommended_channel?: string | null
+          suggested_owner?: string | null
+          updated_at?: string
+          user_id: string
+          workflow_tag?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          confidence?: number | null
+          created_at?: string
+          draft_text?: string | null
+          email_command_item_id?: string
+          id?: string
+          reason?: string | null
+          recommended_action?: string | null
+          recommended_channel?: string | null
+          suggested_owner?: string | null
+          updated_at?: string
+          user_id?: string
+          workflow_tag?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_recommendations_email_command_item_id_fkey"
+            columns: ["email_command_item_id"]
+            isOneToOne: false
+            referencedRelation: "email_command_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employee_bonuses: {
         Row: {
