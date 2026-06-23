@@ -38,6 +38,7 @@ import {
 import { hydrateFromSupabase, installSupabaseSync } from "@/lib/os/referralCrm/bridge";
 import { parseReferralsCsv, type ParsedCsv } from "@/lib/os/referrals/csv";
 import { importReferralRows, failedRowsToCsv } from "@/lib/os/referrals/importer";
+import { REFERRAL_PARTNER_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
 import { supabase } from "@/integrations/supabase/client";
 
 type ModuleId =
@@ -136,6 +137,21 @@ function DashboardModule() {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-2xl border bg-card p-4">
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Referral Partner Workflow</div>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          {REFERRAL_PARTNER_PIPELINE_STAGES.map((stage, i) => (
+            <span key={stage} className="flex items-center gap-1.5">
+              <span className="rounded-full border border-border/70 bg-background px-2 py-0.5">{stage}</span>
+              {i < REFERRAL_PARTNER_PIPELINE_STAGES.length - 1 && <span className="text-muted-foreground">-&gt;</span>}
+            </span>
+          ))}
+        </div>
+        <div className="mt-2 text-[11px] text-muted-foreground">
+          Marketing / Business Development owns referral partner relationships. Family contact and intake execution live in the separate Family Lead Pipeline.
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Kpi label="Contacts" value={ct.length} icon={Users} />
         <Kpi label="Companies" value={co.length} icon={Building2} />
