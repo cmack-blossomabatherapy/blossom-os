@@ -364,7 +364,6 @@ import OSReportBcbaPerformance from "./pages/os/OSReportBcbaPerformance";
 import OSTraining from "./pages/os/OSTraining";
 import OSTrainingDetail from "./pages/os/OSTrainingDetail";
 import OSTrainingManage from "./pages/os/OSTrainingManage";
-import OSUserManagement from "./pages/os/OSUserManagement";
 import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
 import IdentityDashboard from "./pages/admin/IdentityDashboard";
@@ -791,7 +790,7 @@ const App = () => (
                   <Route path="/resource-management" element={<Navigate to="/hr/resource-management" replace />} />
                   <Route path="/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/user-management" element={<UsersHome />} />
-                  <Route path="/user-management/admin" element={<OSUserManagement />} />
+                  <Route path="/user-management/admin" element={<Navigate to="/user-management" replace />} />
                   <Route path="/user-management/:employeeId" element={<EmployeeProfilePage />} />
                   <Route path="/admin/device-inventory" element={<AdminRoute><DeviceInventory /></AdminRoute>} />
                   {/* Phase 5 — People & Access */}

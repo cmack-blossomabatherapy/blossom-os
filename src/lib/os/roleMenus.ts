@@ -433,7 +433,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
         id: "hr", label: "HR Leadership", items: [
           { label: "HR Dashboard",          path: "/hr-team",                icon: LayoutDashboard },
           { label: "User Management",       path: "/user-management",        icon: Users },
-          { label: "User Management Admin", path: "/user-management/admin",  icon: ShieldCheck },
           { label: "HR Requests",           path: "/hr/requests",            icon: ClipboardList },
           { label: "Compliance Items",      path: "/hr/compliance",          icon: ShieldCheck },
           { label: "Evaluations",           path: "/evaluations",            icon: ClipboardCheck },
