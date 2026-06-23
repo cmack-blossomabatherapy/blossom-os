@@ -26,6 +26,19 @@ function generateTempPassword(len = 14) {
   return Array.from(bytes).map((b) => alphabet[b % alphabet.length]).join("");
 }
 
+async function findAuthUserByEmail(admin: ReturnType<typeof createClient>, email: string) {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return null;
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) throw error;
+    const found = data?.users?.find((u) => (u.email ?? "").toLowerCase() === normalized);
+    if (found) return found;
+    if ((data?.users?.length ?? 0) < 200) break;
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -50,24 +63,47 @@ Deno.serve(async (req) => {
   if (!isAdmin && !isHrAdmin) return json({ error: "Admin access required" }, 403);
 
   const body = await req.json().catch(() => ({}));
+  const employeeId: string = typeof body.employeeId === "string" ? body.employeeId : "";
   const userId: string = typeof body.userId === "string" ? body.userId : "";
   const emailIn: string = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const siteUrl: string = typeof body.siteUrl === "string" && body.siteUrl.startsWith("http")
     ? body.siteUrl.replace(/\/$/, "")
     : "https://blossom.abacommandcenter.com";
 
-  if (!userId && !emailIn) {
-    return json({ error: "userId or email is required" }, 400);
+  if (!employeeId && !userId && !emailIn) {
+    return json({ error: "employeeId, userId, or email is required" }, 400);
   }
 
-  // Try to resolve an existing auth user by id, then by email. If neither
-  // exists (employee record was created without ever provisioning a login),
-  // mint a fresh auth user so the admin still gets a working invite link.
-  let resolvedUserId: string | null = null;
-  let resolvedEmail = emailIn;
+  let employee: {
+    id: string;
+    user_id: string | null;
+    email: string | null;
+    first_name: string | null;
+    last_name: string | null;
+  } | null = null;
 
-  if (userId) {
-    const { data: existing } = await admin.auth.admin.getUserById(userId);
+  if (employeeId) {
+    const { data: employeeRow, error: employeeErr } = await admin
+      .from("employees")
+      .select("id,user_id,email,first_name,last_name")
+      .eq("id", employeeId)
+      .maybeSingle();
+
+    if (employeeErr || !employeeRow) {
+      return json({ error: employeeErr?.message ?? "Employee not found" }, 404);
+    }
+    employee = employeeRow;
+  }
+
+  // The User Management page is keyed by employees.id, which is NOT the auth
+  // user id. Resolve through the employee row first so a stale/missing
+  // employees.user_id never causes a user-not-found failure.
+  let resolvedUserId: string | null = null;
+  let resolvedEmail = (employee?.email ?? emailIn).trim().toLowerCase();
+  const candidateUserId = employee?.user_id ?? userId;
+
+  if (candidateUserId) {
+    const { data: existing } = await admin.auth.admin.getUserById(candidateUserId);
     if (existing?.user) {
       resolvedUserId = existing.user.id;
       if (!resolvedEmail) resolvedEmail = (existing.user.email ?? "").toLowerCase();
@@ -75,13 +111,11 @@ Deno.serve(async (req) => {
   }
 
   if (!resolvedUserId && resolvedEmail) {
-    // Fallback: lookup by email across paginated admin list.
-    for (let page = 1; page <= 20 && !resolvedUserId; page++) {
-      const { data: list, error: listErr } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-      if (listErr) break;
-      const match = list?.users?.find((u) => (u.email ?? "").toLowerCase() === resolvedEmail);
-      if (match) resolvedUserId = match.id;
-      if (!list || (list.users?.length ?? 0) < 200) break;
+    try {
+      const found = await findAuthUserByEmail(admin, resolvedEmail);
+      if (found) resolvedUserId = found.id;
+    } catch (e) {
+      return json({ error: `Could not look up login by email: ${(e as Error).message}` }, 400);
     }
   }
 
@@ -100,22 +134,21 @@ Deno.serve(async (req) => {
       return json({ error: `Could not create auth user: ${createErr?.message ?? "unknown"}` }, 400);
     }
     resolvedUserId = created.user.id;
-    // Link this fresh auth user back to the employee profile row if the
-    // original userId pointed at a stale/missing profile.
-    if (userId && userId !== resolvedUserId) {
-      await admin.from("profiles").update({ user_id: resolvedUserId }).eq("user_id", userId);
-      await admin.from("employees").update({ user_id: resolvedUserId }).eq("user_id", userId);
-    }
   } else {
     // Sync email if admin passed a different one, then rotate password.
     const { data: current } = await admin.auth.admin.getUserById(resolvedUserId);
     const currentEmail = (current?.user?.email ?? "").toLowerCase();
-    if (emailIn && emailIn !== currentEmail) {
-      const { error: emailErr } = await admin.auth.admin.updateUserById(resolvedUserId, {
-        email: resolvedEmail,
-        email_confirm: true,
-      });
-      if (emailErr) return json({ error: `Could not sync login email: ${emailErr.message}` }, 400);
+    if (resolvedEmail && resolvedEmail !== currentEmail) {
+      const existingForEmail = await findAuthUserByEmail(admin, resolvedEmail);
+      if (existingForEmail && existingForEmail.id !== resolvedUserId) {
+        resolvedUserId = existingForEmail.id;
+      } else {
+        const { error: emailErr } = await admin.auth.admin.updateUserById(resolvedUserId, {
+          email: resolvedEmail,
+          email_confirm: true,
+        });
+        if (emailErr) return json({ error: `Could not sync login email: ${emailErr.message}` }, 400);
+      }
     }
     const { error: pwErr } = await admin.auth.admin.updateUserById(resolvedUserId, {
       password: tempPassword,
@@ -126,8 +159,37 @@ Deno.serve(async (req) => {
 
   const email = resolvedEmail;
 
+  if (employee) {
+    const { data: conflict } = await admin
+      .from("employees")
+      .select("id,first_name,last_name")
+      .eq("user_id", resolvedUserId)
+      .neq("id", employee.id)
+      .maybeSingle();
+
+    if (conflict) {
+      return json({
+        error: `That login is already linked to ${conflict.first_name ?? ""} ${conflict.last_name ?? ""}.`.trim(),
+      }, 409);
+    }
+
+    const { error: employeeUpdateErr } = await admin
+      .from("employees")
+      .update({ user_id: resolvedUserId, email })
+      .eq("id", employee.id);
+    if (employeeUpdateErr) return json({ error: `Could not link employee login: ${employeeUpdateErr.message}` }, 400);
+  } else if (userId && userId !== resolvedUserId) {
+    await admin.from("employees").update({ user_id: resolvedUserId, email }).eq("user_id", userId);
+  }
+
   // Force a password reset on first sign-in.
-  await admin.from("profiles").update({ must_change_password: true }).eq("user_id", resolvedUserId);
+  const displayName = employee ? `${employee.first_name ?? ""} ${employee.last_name ?? ""}`.trim() : undefined;
+  await admin.from("profiles").upsert({
+    user_id: resolvedUserId,
+    display_name: displayName || email.split("@")[0],
+    email,
+    must_change_password: true,
+  }, { onConflict: "user_id" });
 
   const loginUrl = `${siteUrl}/auth?email=${encodeURIComponent(email)}&welcome=1`;
 
