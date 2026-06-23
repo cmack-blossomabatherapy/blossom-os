@@ -8,7 +8,7 @@ import type { OSRole } from "./permissions";
  * land in the legacy WorkspaceShell — that's a separate UI system.
  */
 const ROLE_HOME_MAP: Partial<Record<OSRole, string>> = {
-  super_admin:                "/",
+  super_admin:                "/dashboard/legacy",
   systems_admin:              "/admin",
 
   executive:                  "/executive",
