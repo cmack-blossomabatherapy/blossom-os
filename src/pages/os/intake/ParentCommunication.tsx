@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { MessageSquare, Phone, Mail, Plus, Copy, Send, FileText, AlertCircle, ShieldCheck } from "lucide-react";
+import { MessageSquare, Phone, Mail, Plus, Copy, Send, FileText, AlertCircle, ShieldCheck, List } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { useIntakeCommsLive } from "@/hooks/useIntakeCommsLive";
@@ -116,7 +116,7 @@ export default function ParentCommunication() {
       description="Send calls, SMS, and email to families through Blossom OS - powered by CTM, Jivetel, and Mailchimp adapters."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
-        { label: "Open Leads", icon: MessageSquare, to: "/leads" },
+        { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
       <Section title={`Recent communications (${recent.length})`}>
