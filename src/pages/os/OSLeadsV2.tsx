@@ -840,30 +840,38 @@ function FollowUpView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) =
   const oneDay = 24 * 60 * 60 * 1000;
   const ageDays = (iso: string | null) => iso ? Math.floor((Date.now() - new Date(iso).getTime()) / oneDay) : 999;
 
-  // Export 85 — follow-up queues now recognize the canonical Family / Lead
-  // Workflow stages while still tolerating legacy Monday-era values for
-  // imported records.
-  const isEngagement = (s: string) =>
-    s === "First Contact Attempt" || s === "Engagement Track" || s === "In Contact";
+  // Export 88 — follow-up queues are built ENTIRELY on the canonical Family /
+  // Lead Workflow. Legacy Monday-era labels (New Lead, In Contact, Sent Form,
+  // Missing Information, Sent to VOB, VOB Completed) are only honored via
+  // canonicalFamilyLeadStage, never via direct equality checks.
+  const canonical = (l: Lead) => canonicalFamilyLeadStage(l.status);
+  const dueIso = (l: Lead) => l.nextTaskDue ?? l.lastContacted ?? null;
+  const dueAge = (l: Lead) => ageDays(dueIso(l));
+  const isEngagement = (l: Lead) => {
+    const c = canonical(l);
+    return c === "First Contact Attempt" || c === "Engagement Track";
+  };
+  const inOpenPipeline = (l: Lead) => !isLeadOutOfPipeline(l.status);
+
   const queues = [
-    { key: "due",  label: "Due Today",      items: leads.filter((l) => ageDays(l.lastContacted) === 2) },
-    { key: "over", label: "Overdue",        items: leads.filter((l) => l.status !== "Can't Reach" && l.status !== "Non-Qualified" && ageDays(l.lastContacted) > 3) },
-    { key: "a1",   label: "Attempt 1",      items: leads.filter((l) => !l.lastContacted && (l.status === "Lead Captured" || l.status === "First Contact Attempt" || l.status === "New Lead")) },
-    { key: "a2",   label: "Attempt 2",      items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 1 && ageDays(l.lastContacted) <= 2) },
-    { key: "a3",   label: "Attempt 3",      items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 3 && ageDays(l.lastContacted) <= 5) },
-    { key: "a4",   label: "Attempt 4",      items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 6 && ageDays(l.lastContacted) <= 8) },
-    { key: "fin",  label: "Final Attempt",  items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 9) },
-    { key: "cr",   label: "Cannot Reach",   items: leads.filter((l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach") },
-    { key: "wait", label: "Waiting Parent", items: leads.filter((l) =>
-        l.status === "Intake Packet Sent" ||
-        l.status === "Intake Packet Follow Up" ||
-        l.status === "Sent Form" ||
-        l.status === "Missing Information") },
-    { key: "bv",   label: "Benefits / Auth", items: leads.filter((l) =>
-        l.status === "Benefits Verification" ||
-        l.status === "Authorization Pending" ||
-        l.status === "QA / Treatment Plan Authorization" ||
-        l.status === "Sent to VOB") },
+    { key: "due",   label: "Due Today",       items: leads.filter((l) => inOpenPipeline(l) && dueAge(l) === 0) },
+    { key: "over",  label: "Overdue",         items: leads.filter((l) => inOpenPipeline(l) && dueAge(l) > 0 && dueAge(l) < 999) },
+    { key: "a1",    label: "Attempt 1",       items: leads.filter((l) => {
+      const c = canonical(l);
+      return !l.lastContacted && (c === "Lead Captured" || c === "First Contact Attempt");
+    }) },
+    { key: "a2",    label: "Attempt 2",       items: leads.filter((l) => isEngagement(l) && ageDays(l.lastContacted) >= 1 && ageDays(l.lastContacted) <= 2) },
+    { key: "a3",    label: "Attempt 3",       items: leads.filter((l) => canonical(l) === "Engagement Track" && ageDays(l.lastContacted) >= 3 && ageDays(l.lastContacted) <= 5) },
+    { key: "fin",   label: "Final Attempt",   items: leads.filter((l) => canonical(l) === "Engagement Track" && ageDays(l.lastContacted) >= 6) },
+    { key: "cr",    label: "Cannot Reach",    items: leads.filter((l) => isCannotReachStatus(l.status)) },
+    { key: "wait",  label: "Waiting Parent",  items: leads.filter((l) => {
+      const c = canonical(l);
+      return c === "Intake Packet Sent" || c === "Intake Packet Follow Up";
+    }) },
+    { key: "bv",    label: "Benefits / Auth", items: leads.filter((l) => {
+      const c = canonical(l);
+      return c === "Benefits Verification" || c === "QA / Treatment Plan Authorization" || c === "Authorization Pending";
+    }) },
   ];
 
   return (
