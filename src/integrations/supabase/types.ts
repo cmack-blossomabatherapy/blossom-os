@@ -6469,6 +6469,8 @@ export type Database = {
       intake_leads: {
         Row: {
           assigned_intake_coordinator: string | null
+          assigned_intake_coordinator_employee_id: string | null
+          assigned_intake_coordinator_user_id: string | null
           blockers: string[]
           call_status: Database["public"]["Enums"]["intake_call_status"]
           child_name: string
@@ -6555,6 +6557,8 @@ export type Database = {
         }
         Insert: {
           assigned_intake_coordinator?: string | null
+          assigned_intake_coordinator_employee_id?: string | null
+          assigned_intake_coordinator_user_id?: string | null
           blockers?: string[]
           call_status?: Database["public"]["Enums"]["intake_call_status"]
           child_name: string
@@ -6641,6 +6645,8 @@ export type Database = {
         }
         Update: {
           assigned_intake_coordinator?: string | null
+          assigned_intake_coordinator_employee_id?: string | null
+          assigned_intake_coordinator_user_id?: string | null
           blockers?: string[]
           call_status?: Database["public"]["Enums"]["intake_call_status"]
           child_name?: string
@@ -6725,7 +6731,36 @@ export type Database = {
           vob_file_path?: string | null
           vob_status?: Database["public"]["Enums"]["intake_vob_status"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "intake_leads_assigned_intake_coordinator_employee_id_fkey"
+            columns: ["assigned_intake_coordinator_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_leads_assigned_intake_coordinator_employee_id_fkey"
+            columns: ["assigned_intake_coordinator_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "intake_leads_assigned_intake_coordinator_employee_id_fkey"
+            columns: ["assigned_intake_coordinator_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_leads_assigned_intake_coordinator_employee_id_fkey"
+            columns: ["assigned_intake_coordinator_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       intake_tasks: {
         Row: {
