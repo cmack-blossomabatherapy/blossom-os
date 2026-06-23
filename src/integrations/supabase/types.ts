@@ -13361,6 +13361,19 @@ export type Database = {
         | "Sent Packet - Can't Reach"
         | "Non-Qualified"
         | "Needs DX"
+        | "Lead Captured"
+        | "First Contact Attempt"
+        | "Engagement Track"
+        | "Qualification"
+        | "Intake Packet Sent"
+        | "Intake Packet Follow Up"
+        | "Intake Complete"
+        | "Benefits Verification"
+        | "Assessment Scheduling"
+        | "QA / Treatment Plan Authorization"
+        | "Authorization Pending"
+        | "Staffing Match"
+        | "Ready to Start Services"
       intake_priority: "Hot" | "Warm" | "Cold"
       intake_task_status: "Open" | "In Progress" | "Completed" | "Blocked"
       intake_task_type:
@@ -14076,6 +14089,19 @@ export const Constants = {
         "Sent Packet - Can't Reach",
         "Non-Qualified",
         "Needs DX",
+        "Lead Captured",
+        "First Contact Attempt",
+        "Engagement Track",
+        "Qualification",
+        "Intake Packet Sent",
+        "Intake Packet Follow Up",
+        "Intake Complete",
+        "Benefits Verification",
+        "Assessment Scheduling",
+        "QA / Treatment Plan Authorization",
+        "Authorization Pending",
+        "Staffing Match",
+        "Ready to Start Services",
       ],
       intake_priority: ["Hot", "Warm", "Cold"],
       intake_task_status: ["Open", "In Progress", "Completed", "Blocked"],
