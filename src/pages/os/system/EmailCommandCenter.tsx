@@ -165,7 +165,7 @@ function EmptyState({ msg }: { msg: string }) {
 export default function EmailCommandCenter() {
   const { user } = useAuth();
   const { role } = useOSRole();
-  const isAdmin = role === "super_admin" || role === "admin";
+  const isAdmin = role === "super_admin";
   const [conn, setConn] = useState<OAuthConnectionRow | null>(null);
   const [connBusy, setConnBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
