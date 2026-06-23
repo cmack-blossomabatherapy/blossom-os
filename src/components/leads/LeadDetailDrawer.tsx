@@ -183,7 +183,7 @@ export function LeadDetailDrawer({
               Form: {lead.formStatus}
             </span>
             <span className="text-[11px] px-2 py-1 rounded-full bg-muted text-muted-foreground">
-              VOB: {lead.vobStatus}
+              Benefits: {lead.vobStatus}
             </span>
             {lead.notQualifiedReason && (
               <span className="text-[11px] px-2 py-1 rounded-full bg-destructive/10 text-destructive">
@@ -219,7 +219,7 @@ export function LeadDetailDrawer({
         <nav className="px-6 pt-3 border-b border-border/60 flex items-center gap-1 overflow-x-auto">
           {([
             ["overview", "Overview"],
-            ["insurance", "Insurance / VOB"],
+            ["insurance", "Insurance / Benefits"],
             ["documents", "Documents"],
             ["activity", "Activity"],
             ["actions", "Actions"],
@@ -326,9 +326,9 @@ export function LeadDetailDrawer({
                 state={lead.state || str("State")}
               />
               <div className="rounded-2xl bg-muted/60 border border-border/60 p-4 space-y-3">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">VOB</p>
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Benefits Verification</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <Field label="VOB status" value={lead.vobStatus} />
+                  <Field label="Benefits status" value={lead.vobStatus} />
                   <Field label="Payment plan" value={lead.paymentPlanNeeded ? "Required" : "Not required"} />
                   <Field label="Form status" value={lead.formStatus} />
                   <Field label="Form review" value={lead.formReviewStatus} />
@@ -338,7 +338,7 @@ export function LeadDetailDrawer({
                 {str("Missing Information") && (
                   <div className="mt-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-sm text-amber-900 dark:text-amber-200 flex gap-2">
                     <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                    <span><span className="font-medium">Missing:</span> {str("Missing Information")}</span>
+                    <span><span className="font-medium">Packet follow up / missing info:</span> {str("Missing Information")}</span>
                   </div>
                 )}
                 {lead.notQualifiedReason && (
@@ -438,12 +438,12 @@ export function LeadDetailDrawer({
               />
               <ActionButton
                 icon={AlertCircle}
-                label="Request Missing Info"
+                label="Flag Packet Follow Up / Missing Info"
                 onClick={() => { updateLead(lead.id, { formReviewStatus: "Missing Information" }); toast("Lead moved to Missing Info"); }}
               />
               <ActionButton
                 icon={CheckCircle2}
-                label="Move to VOB"
+                label="Move to Benefits Verification"
                 onClick={() => { updateLead(lead.id, { status: "Sent to VOB" }); toast.success("Moved to VOB"); }}
               />
               <ActionButton

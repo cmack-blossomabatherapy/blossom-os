@@ -14,6 +14,8 @@ const INTAKE_WORKFLOW = read("src/lib/intake/intakeWorkflow.ts");
 const NEW_LEAD_DIALOG = read("src/components/leads/NewLeadDialog.tsx");
 const LEAD_DETAIL_DRAWER = read("src/components/leads/LeadDetailDrawer.tsx");
 const LEADS_CONTEXT = read("src/contexts/LeadsContext.tsx");
+const REPORTS = read("src/pages/Reports.tsx");
+const RESOURCE_LIBRARY = read("src/pages/os/OSResourceLibrary.tsx");
 
 /**
  * Export 88 — full Intake department launch. These assertions guard against
@@ -184,6 +186,35 @@ describe("Intake Export 88 — full department launch", () => {
 
     it("appends the shared Training / Resources / Reports section", () => {
       expect(intakeBlock).toMatch(/TRAINING_AND_RESOURCES/);
+    });
+  });
+
+  /* ----------------------- 8. Phase 2 drawer + surfaces ------------------ */
+  describe("Lead Detail Drawer canonical labels (Phase 2)", () => {
+    it("uses Benefits Verification language, not raw VOB chrome", () => {
+      expect(LEAD_DETAIL_DRAWER).toMatch(/Insurance \/ Benefits/);
+      expect(LEAD_DETAIL_DRAWER).toMatch(/Benefits Verification/);
+      expect(LEAD_DETAIL_DRAWER).toMatch(/Benefits status/);
+      expect(LEAD_DETAIL_DRAWER).toMatch(/Move to Benefits Verification/);
+      expect(LEAD_DETAIL_DRAWER).not.toMatch(/"Insurance \/ VOB"/);
+      expect(LEAD_DETAIL_DRAWER).not.toMatch(/label="Move to VOB"/);
+    });
+    it("uses Packet Follow Up / Missing Info language for the missing-info action", () => {
+      expect(LEAD_DETAIL_DRAWER).toMatch(/Flag Packet Follow Up \/ Missing Info/);
+      expect(LEAD_DETAIL_DRAWER).not.toMatch(/label="Request Missing Info"/);
+    });
+  });
+
+  describe("Intake-aware Reports + Resource Library", () => {
+    it("Reports exposes an Intake view with per-coordinator and per-state breakdowns", () => {
+      expect(REPORTS).toMatch(/activeView === "intake"/);
+      expect(REPORTS).toMatch(/intakeKpis/);
+      expect(REPORTS).toMatch(/leadSourcePerformance/);
+      expect(REPORTS).toMatch(/intakeByState/);
+      expect(REPORTS).toMatch(/intakeCoordinatorPerf/);
+    });
+    it("Resource Library page renders role-aware smart collections (Intake learners see role guides)", () => {
+      expect(RESOURCE_LIBRARY).toMatch(/smartCollections|SmartCollection|my-role-guides|MY_ROLE|roleVisible/);
     });
   });
 });
