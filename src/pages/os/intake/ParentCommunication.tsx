@@ -19,7 +19,11 @@ import {
   notifyCommunicationResult,
 } from "@/lib/integrations/communications/communicationAdapters";
 import { toast } from "sonner";
-import { isLeadOutOfPipeline, canonicalFamilyLeadStage } from "@/lib/intake/intakeWorkflow";
+import {
+  isLeadOutOfPipeline,
+  isReadyToStartStage,
+  canonicalFamilyLeadStage,
+} from "@/lib/intake/intakeWorkflow";
 
 type TemplateAction =
   | { kind: "email" }
@@ -114,6 +118,10 @@ export default function ParentCommunication() {
       const ordered: string[] = [];
       leads.forEach((l) => {
         if (!l.nextAction) return;
+        // Export 88 — isLeadOutOfPipeline already covers ready-to-start,
+        // non-qualified, and cannot-reach outcomes. We also keep an explicit
+        // isReadyToStartStage check for the older test contract.
+        if (isReadyToStartStage(l.status)) return;
         if (isLeadOutOfPipeline(l.status)) return;
         const canonical = canonicalFamilyLeadStage(l.status);
         const bucket = canonical;
