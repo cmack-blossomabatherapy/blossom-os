@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeLeadsForUser } from "@/lib/leads/scoping";
 import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
+import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { IntakeModalsProvider, useIntakeModals } from "@/components/intake/IntakeModals";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,23 +30,30 @@ type ViewMode = "list" | "pipeline" | "followup";
  * "All" + "Stuck/Aging" are operational meta-views; the rest mirror Blossom's
  * canonical intake stages.
  */
+/**
+ * Canonical Family / Lead Workflow tabs. Each tab filters the active leads
+ * dataset against the new pipeline stages. Legacy statuses are mapped so the
+ * existing dataset still surfaces under the right tab while the data model
+ * catches up.
+ */
 const STATUS_TABS: { key: string; label: string; match: (l: Lead) => boolean }[] = [
-  { key: "all",            label: "All Leads",           match: () => true },
-  { key: "new",            label: "New Lead",            match: (l) => l.status === "New Lead" },
-  { key: "in_contact",     label: "In Contact",          match: (l) => l.status === "In Contact" },
-  { key: "sent_form",      label: "Sent Form",           match: (l) => l.status === "Sent Form" || l.formStatus === "Sent" },
-  { key: "form_received",  label: "Form Received",       match: (l) => l.status === "Form Received" || l.formStatus === "Completed" || l.formStatus === "Complete" },
-  { key: "missing",        label: "Missing Info",        match: (l) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
-  { key: "sent_vob",       label: "Sent to VOB",         match: (l) => l.status === "Sent to VOB" || l.vobStatus === "Sent" },
-  { key: "vob_done",       label: "VOB Completed",       match: (l) => l.status === "VOB Completed" || l.vobStatus === "Approved" || l.vobStatus === "Completed" },
-  { key: "cant_reach",     label: "Can't Reach",         match: (l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
-  { key: "cant_auth",      label: "Can't Submit Auth",   match: (l) => l.status === "Can Not Submit Auth" },
-  { key: "nq",             label: "Nonqualified",        match: (l) =>
-      l.status === "Non-Qualified"
-      || l.status === "Non-qualified Lead"
+  { key: "all",          label: "All Leads",      match: () => true },
+  { key: "contact",      label: "Contact Needed", match: (l) =>
+      l.status === "Lead Captured" || l.status === "First Contact Attempt" || l.status === "New Lead" || l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
+  { key: "engagement",   label: "Engagement",     match: (l) => l.status === "Engagement Track" || l.status === "In Contact" },
+  { key: "packets",      label: "Packets",        match: (l) =>
+      l.status === "Intake Packet Sent" || l.status === "Intake Packet Follow Up" || l.status === "Sent Form" || l.formStatus === "Sent" },
+  { key: "missing",      label: "Missing Info",   match: (l) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
+  { key: "benefits",     label: "Benefits",       match: (l) =>
+      l.status === "Benefits Verification" || l.status === "Sent to VOB" || l.status === "VOB Completed" || l.vobStatus === "Sent" || l.vobStatus === "Approved" || l.vobStatus === "Completed" },
+  { key: "assessment",   label: "Assessment",     match: (l) => l.status === "Assessment Scheduling" || l.status === "QA / Treatment Plan Authorization" },
+  { key: "authorization",label: "Authorization",  match: (l) => l.status === "Authorization Pending" || l.status === "Can Not Submit Auth" },
+  { key: "staffing",     label: "Staffing",       match: (l) => l.status === "Staffing Match" },
+  { key: "ready",        label: "Ready to Start", match: (l) => l.status === "Ready to Start Services" },
+  { key: "nq",           label: "Not Qualified",  match: (l) =>
+      l.status === "Non-Qualified" || l.status === "Non-qualified Lead"
       || Boolean(l.notQualifiedReason && l.notQualifiedReason.trim()) },
-  { key: "needs_dx",       label: "Needs DX",            match: (l) => l.status === "Needs DX" || l.status === "Getting DX" },
-  { key: "stuck",          label: "Stuck / Aging",       match: (l) => {
+  { key: "stuck",        label: "Stuck / Aging",  match: (l) => {
       if (l.status === "Non-qualified Lead" || l.status === "Non-Qualified") return false;
       const last = l.lastContacted ? new Date(l.lastContacted).getTime() : 0;
       const days = last ? Math.floor((Date.now() - last) / (24 * 60 * 60 * 1000)) : 999;
@@ -68,21 +76,25 @@ function agingFor(l: Lead): { tone: string; label: string; days: number } {
  * Mirrors the spec; falls back to status/vob/form fields where the underlying mock data
  * doesn't yet carry a dedicated status. Empty stages are still useful scaffolding.
  */
+/**
+ * Canonical 13-stage Family / Lead Workflow. Visible column labels match the
+ * Blossom OS Lead-to-Ready-to-Start Pipeline. Legacy statuses are mapped onto
+ * the closest canonical stage so existing data still renders.
+ */
 const PIPELINE_STAGES: { key: string; label: string; match: (l: Lead) => boolean }[] = [
-  { key: "new_inquiry",     label: "New Inquiry",            match: (l) => l.status === "New Lead" },
-  { key: "initial_contact", label: "Initial Contact",        match: (l) => l.status === "In Contact" },
-  { key: "packet_sent",     label: "Intake Packet Sent",     match: (l) => l.status === "Sent Form" || l.formStatus === "Sent" },
-  { key: "forms_received",  label: "Forms Received",         match: (l) => l.status === "Form Received" || l.formStatus === "Completed" || l.formStatus === "Complete" },
-  { key: "missing_info",    label: "Missing Information",    match: (l) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
-  { key: "ins_verified",    label: "Insurance Verified",     match: (l) => l.vobStatus === "Received" },
-  { key: "sent_vob",        label: "Sent to VOB",            match: (l) => l.status === "Sent to VOB" || l.vobStatus === "Sent" },
-  { key: "fin_cleared",     label: "Financially Cleared",    match: (l) => l.vobStatus === "Approved" || l.vobStatus === "Completed" || l.status === "VOB Completed" },
-  { key: "assessment",      label: "Assessment Coordination", match: (l) => (l as any).assessmentCoordination === true },
-  { key: "ready_setup",     label: "Ready for Client Setup", match: (l) => (l as any).readiness === "Ready for Setup" },
-  { key: "ready_auth",      label: "Ready for Authorization", match: (l) => (l as any).readiness === "Ready for Auth" },
-  { key: "ready_staffing",  label: "Ready for Staffing",     match: (l) => (l as any).readiness === "Ready for Staffing" },
-  { key: "cant_reach",      label: "Cannot Reach",           match: (l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
-  { key: "nq",              label: "Non Qualified",          match: (l) => l.status === "Non-Qualified" },
+  { key: "lead_captured",   label: "Lead Captured",                       match: (l) => l.status === "Lead Captured" || l.status === "New Lead" },
+  { key: "first_contact",   label: "First Contact Attempt",               match: (l) => l.status === "First Contact Attempt" },
+  { key: "engagement",      label: "Engagement Track",                    match: (l) => l.status === "Engagement Track" || l.status === "In Contact" },
+  { key: "qualification",   label: "Qualification",                       match: (l) => l.status === "Qualification" },
+  { key: "packet_sent",     label: "Intake Packet Sent",                  match: (l) => l.status === "Intake Packet Sent" || l.status === "Sent Form" || l.formStatus === "Sent" },
+  { key: "packet_followup", label: "Intake Packet Follow up",             match: (l) => l.status === "Intake Packet Follow Up" || l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
+  { key: "intake_complete", label: "Intake Complete",                     match: (l) => l.status === "Intake Complete" || l.status === "Form Received" || l.formStatus === "Completed" || l.formStatus === "Complete" },
+  { key: "benefits",        label: "Benefits Verification",               match: (l) => l.status === "Benefits Verification" || l.status === "Sent to VOB" || l.vobStatus === "Sent" || l.vobStatus === "Received" || l.status === "VOB Completed" || l.vobStatus === "Approved" || l.vobStatus === "Completed" },
+  { key: "assessment",      label: "Assessment Scheduling",               match: (l) => l.status === "Assessment Scheduling" },
+  { key: "qa_tp_auth",      label: "QA / Treatment Plan Authorization",   match: (l) => l.status === "QA / Treatment Plan Authorization" },
+  { key: "auth_pending",    label: "Authorization Pending",               match: (l) => l.status === "Authorization Pending" || l.status === "Can Not Submit Auth" },
+  { key: "staffing_match",  label: "Staffing Match",                      match: (l) => l.status === "Staffing Match" },
+  { key: "ready_to_start",  label: "Ready to Start Services",             match: (l) => l.status === "Ready to Start Services" },
 ];
 
 /**
@@ -90,12 +102,15 @@ const PIPELINE_STAGES: { key: string; label: string; match: (l: Lead) => boolean
  * Kept lightweight and clickable; each filters the active view.
  */
 const KPI_DEFS = [
-  { key: "new_inquiries",   label: "New Inquiries",          test: (l: Lead) => l.status === "New Lead" },
-  { key: "awaiting_contact",label: "Awaiting Contact",       test: (l: Lead) => !l.lastContacted || (l.status === "New Lead" && l.daysInStage > 0) },
-  { key: "missing_info",    label: "Missing Information",    test: (l: Lead) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
-  { key: "vob_pending",     label: "VOB Pending",            test: (l: Lead) => l.status === "Sent to VOB" || l.vobStatus === "Sent" || l.vobStatus === "Received" },
-  { key: "assessment",      label: "Assessment Coordination", test: (l: Lead) => (l as any).assessmentCoordination === true || l.nextAction?.toLowerCase().includes("assessment") },
-  { key: "ready_next",      label: "Ready for Next Step",    test: (l: Lead) => l.status === "VOB Completed" || l.vobStatus === "Approved" || l.vobStatus === "Completed" },
+  { key: "new_leads",        label: "New Leads",              test: (l: Lead) => l.status === "Lead Captured" || l.status === "New Lead" },
+  { key: "contact_needed",   label: "Contact Needed",         test: (l: Lead) => l.status === "First Contact Attempt" || !l.lastContacted },
+  { key: "packet_followup",  label: "Packet Follow Up",       test: (l: Lead) => l.status === "Intake Packet Follow Up" },
+  { key: "missing_info",     label: "Missing Info",           test: (l: Lead) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
+  { key: "benefits_pending", label: "Benefits Pending",       test: (l: Lead) => l.status === "Benefits Verification" || l.status === "Sent to VOB" || l.vobStatus === "Sent" || l.vobStatus === "Received" },
+  { key: "assessment",       label: "Assessment Scheduling",  test: (l: Lead) => l.status === "Assessment Scheduling" || Boolean(l.nextAction?.toLowerCase().includes("assessment")) },
+  { key: "auth_pending",     label: "Authorization Pending",  test: (l: Lead) => l.status === "Authorization Pending" || l.status === "Can Not Submit Auth" },
+  { key: "staffing_match",   label: "Staffing Match",         test: (l: Lead) => l.status === "Staffing Match" },
+  { key: "ready_to_start",   label: "Ready to Start",         test: (l: Lead) => l.status === "Ready to Start Services" },
 ];
 
 function StateBadge({ state }: { state: string }) {
@@ -220,6 +235,21 @@ function OSLeadsV2Inner() {
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+
+  // Manual lead creation (Add Lead button + ?new=1 deep link).
+  const [newLeadOpen, setNewLeadOpen] = useState<boolean>(() => searchParams.get("new") === "1");
+  useEffect(() => {
+    if (searchParams.get("new") === "1") setNewLeadOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+  const handleNewLeadOpenChange = (next: boolean) => {
+    setNewLeadOpen(next);
+    if (!next && searchParams.get("new") === "1") {
+      const params = new URLSearchParams(searchParams);
+      params.delete("new");
+      setSearchParams(params, { replace: true });
+    }
+  };
 
   // Mirror state → URL. Uses replace so filter tweaks don't pollute history.
   useEffect(() => {
@@ -394,8 +424,8 @@ function OSLeadsV2Inner() {
             <Button variant="outline" size="sm" onClick={() => { setView("followup"); toast("Showing follow-up queue"); }}>
               <PhoneCall className="mr-1.5 h-4 w-4" /> Create Follow-Up
             </Button>
-            <Button size="sm" onClick={() => toast("Add Lead form coming soon")}>
-              <Plus className="mr-1.5 h-4 w-4" /> Add Inquiry
+            <Button size="sm" onClick={() => setNewLeadOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" /> Add Lead
             </Button>
           </div>
         </header>
@@ -545,6 +575,15 @@ function OSLeadsV2Inner() {
       {openLeadId && (
         <LeadDetailDrawer leadId={openLeadId} onClose={() => setOpenLeadId(null)} />
       )}
+
+      <NewLeadDialog
+        open={newLeadOpen}
+        onOpenChange={handleNewLeadOpenChange}
+        onCreated={(lead) => {
+          setOpenLeadId(lead.id);
+          handleNewLeadOpenChange(false);
+        }}
+      />
 
       {selectedIds.size > 0 && (
         <BulkActionBar

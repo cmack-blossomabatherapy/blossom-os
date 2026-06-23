@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Upload, X as XIcon, FileText as FileTextIcon } from "lucide-react";
 import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ResponsiveSheet, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/responsive-sheet";
@@ -28,6 +29,27 @@ const LEAD_SOURCES = LEAD_SOURCE_OPTIONS.map((o) => o.value);
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const PRIORITIES = ["Hot", "Warm", "Cold"] as const;
 const CONTACT_METHODS = ["Phone", "Cell", "Text", "Email"] as const;
+
+/** Document categories Intake commonly uploads when creating a lead. */
+export const LEAD_DOCUMENT_TYPES = [
+  "Insurance Card",
+  "Diagnosis",
+  "Referral",
+  "Intake Packet",
+  "Consent Form",
+  "Parent Provided Document",
+  "Other",
+] as const;
+export type LeadDocumentType = typeof LEAD_DOCUMENT_TYPES[number];
+
+/** Pending document metadata captured during manual lead creation. */
+export interface PendingLeadDocument {
+  name: string;
+  type: LeadDocumentType;
+  size?: number;
+  uploadedAt: string;
+  storageStatus: "pending_storage_connection" | "uploaded";
+}
 
 const schema = z
   .object({
@@ -132,11 +154,15 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
   const [form, setForm] = useState<FormShape>({ ...EMPTY, ...defaults });
   // Re-seed when opening so each launch reflects the latest defaults.
   useEffect(() => {
-    if (open) setForm({ ...EMPTY, ...defaults });
+    if (open) {
+      setForm({ ...EMPTY, ...defaults });
+      setDocuments([]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [documents, setDocuments] = useState<PendingLeadDocument[]>([]);
 
   const update = <K extends keyof FormShape>(k: K, v: FormShape[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -202,12 +228,15 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
         notes: v.notes || undefined,
         tags:  tags.length ? tags : undefined,
 
+        documents: documents.length ? documents : undefined,
+
         sourceMetadata: {
           ...(defaults?.sourceMetadata as Record<string, unknown> | undefined),
           created_via:
             (defaults?.sourceMetadata as Record<string, unknown> | undefined)?.created_via ??
             "manual",
           created_at_client: new Date().toISOString(),
+          attached_documents: documents.length,
         } as Record<string, unknown>,
       });
       toast.success(`Lead created: ${lead.childName}`, {
@@ -216,6 +245,7 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
       onCreated?.(lead);
       onOpenChange(false);
       setForm(EMPTY);
+      setDocuments([]);
     } catch (e: any) {
       toast.error("Could not save lead", { description: e?.message ?? "Unknown error" });
     } finally {
@@ -223,7 +253,15 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
     }
   };
 
-  const body = <FormTabs form={form} update={update} errors={errors} />;
+  const body = (
+    <FormTabs
+      form={form}
+      update={update}
+      errors={errors}
+      documents={documents}
+      setDocuments={setDocuments}
+    />
+  );
   const footer = (
     <>
       <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
@@ -272,9 +310,11 @@ interface FormBodyProps {
   form: FormShape;
   update: <K extends keyof FormShape>(k: K, v: FormShape[K]) => void;
   errors: Record<string, string>;
+  documents: PendingLeadDocument[];
+  setDocuments: (updater: (prev: PendingLeadDocument[]) => PendingLeadDocument[]) => void;
 }
 
-function FormTabs({ form, update, errors }: FormBodyProps) {
+function FormTabs({ form, update, errors, documents, setDocuments }: FormBodyProps) {
   return (
     <Tabs defaultValue="source" className="w-full">
       <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 h-auto">
@@ -363,9 +403,7 @@ function FormTabs({ form, update, errors }: FormBodyProps) {
       </TabsContent>
 
       <TabsContent value="documents" className="mt-4">
-        <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 px-6 py-10 text-center text-sm text-muted-foreground">
-          Document uploads will open here in a follow-up build. For now, capture document context in <strong>Notes</strong>.
-        </div>
+        <DocumentsTab documents={documents} setDocuments={setDocuments} />
       </TabsContent>
 
       <TabsContent value="notes" className="mt-4">
@@ -416,6 +454,115 @@ function SourceAttributionSummary({ value }: { value: string }) {
       <span className="mx-2">·</span>
       <span>Patient Lifetime Journey origin: {origin}</span>
       {opt.description && <div className="mt-1 text-[11px]">{opt.description}</div>}
+    </div>
+  );
+}
+
+/* ------------------------- Document upload (Docs tab) ------------------------- */
+
+function formatBytes(n?: number) {
+  if (!n && n !== 0) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function DocumentsTab({
+  documents,
+  setDocuments,
+}: {
+  documents: PendingLeadDocument[];
+  setDocuments: (updater: (prev: PendingLeadDocument[]) => PendingLeadDocument[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [stagedType, setStagedType] = useState<LeadDocumentType>("Insurance Card");
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const now = new Date().toISOString();
+    const next: PendingLeadDocument[] = Array.from(files).map((f) => ({
+      name: f.name,
+      type: stagedType,
+      size: f.size,
+      uploadedAt: now,
+      storageStatus: "pending_storage_connection",
+    }));
+    setDocuments((prev) => [...prev, ...next]);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-[11px] text-muted-foreground">
+        Files are recorded against this lead now. Permanent storage will activate
+        once the document storage connection is enabled — current status: <strong>pending storage connection</strong>.
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[200px_1fr]">
+        <div>
+          <Label className="text-xs">Document type</Label>
+          <Select value={stagedType} onValueChange={(v) => setStagedType(v as LeadDocumentType)}>
+            <SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {LEAD_DOCUMENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Files</Label>
+          <div
+            className="mt-1 flex h-9 cursor-pointer items-center justify-between gap-2 rounded-md border border-dashed border-border/70 bg-card px-3 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground"
+            onClick={() => inputRef.current?.click()}
+          >
+            <span className="inline-flex items-center gap-1.5"><Upload className="h-3.5 w-3.5" /> Add files</span>
+            <span className="text-[10px]">PDF, JPG, PNG, DOCX…</span>
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFiles(e.target.files)}
+          />
+        </div>
+      </div>
+
+      {documents.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 px-4 py-6 text-center text-xs text-muted-foreground">
+          No documents attached yet. Pick a document type and add files above.
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {documents.map((d, i) => (
+            <li
+              key={`${d.name}-${i}`}
+              className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card px-3 py-2"
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="grid h-8 w-8 place-items-center rounded-md bg-primary/10 text-primary">
+                  <FileTextIcon className="h-3.5 w-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-medium text-foreground" title={d.name}>{d.name}</p>
+                  <p className="text-[10.5px] text-muted-foreground">
+                    {d.type}{d.size ? ` · ${formatBytes(d.size)}` : ""} · {d.storageStatus === "uploaded" ? "Uploaded" : "Pending storage"}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0"
+                onClick={() => setDocuments((prev) => prev.filter((_, idx) => idx !== i))}
+                aria-label={`Remove ${d.name}`}
+              >
+                <XIcon className="h-3.5 w-3.5" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

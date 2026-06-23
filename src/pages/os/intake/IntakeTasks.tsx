@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Plus, Clock, AlertCircle, CheckCircle2, ExternalLink } from "lucide-react";
+import { FileText, Plus, Clock, AlertCircle, CheckCircle2, ExternalLink, List } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import type { Lead } from "@/data/leads";
@@ -116,7 +116,7 @@ export default function IntakeTasks() {
       description="Your personal intake task list — follow-ups, missing information, and lead actions."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
-        { label: "Open Leads", icon: FileText, to: "/leads" },
+        { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
       {openTotal === 0 ? (
