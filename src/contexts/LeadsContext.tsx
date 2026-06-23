@@ -73,6 +73,19 @@ export interface CreateLeadInput {
   notes?: string;
   tags?: string[];
 
+  /**
+   * Optional documents captured during manual lead creation. These are
+   * front-end metadata only until Cloud Storage is connected — see
+   * `storageStatus: "pending_storage_connection"`.
+   */
+  documents?: Array<{
+    name: string;
+    type: string;
+    size?: number;
+    uploadedAt: string;
+    storageStatus?: "pending_storage_connection" | "uploaded";
+  }>;
+
   // Source attribution payload for future integrations.
   sourceMetadata?: Record<string, unknown>;
   originalColumnData?: Record<string, unknown>;
