@@ -3,7 +3,7 @@ import { OSShell } from "./OSShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, UserPlus, Users2, Pencil, Loader2, ExternalLink, Check, MailCheck, RefreshCw, AlertTriangle } from "lucide-react";
+import { Search, UserPlus, Users2, Pencil, Loader2, ExternalLink, Check, MailCheck, RefreshCw, AlertTriangle, Link2, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole } from "@/lib/roles";
 import { ROLE_META } from "@/lib/roles";
@@ -262,11 +262,14 @@ function EditUserSheet({
   const [delivery, setDelivery] = useState<InviteDeliveryStatus | null>(null);
   const [checkingDelivery, setCheckingDelivery] = useState(false);
   const [resending, setResending] = useState(false);
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [inviteLink, setInviteLink] = useState<{ loginUrl: string; tempPassword: string; email: string } | null>(null);
 
   useEffect(() => {
     setForm(user);
     setSelectedRoles(new Set(user?.roles ?? []));
     setDelivery(null);
+    setInviteLink(null);
   }, [user]);
 
   if (!form) return null;
