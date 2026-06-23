@@ -169,52 +169,55 @@ const withIntakeAutomation = (lead: Lead, patch: Partial<Lead>): Lead => {
   const tasks = [...next.tasks];
   const log: string[] = [];
 
+  // Export 85 — push canonical Family / Lead Workflow stages, not legacy
+  // Monday-era ones, when user actions trigger stage moves.
   if (patch.formStatus === "Sent") {
-    next.status = "Sent Form";
+    next.status = "Intake Packet Sent";
     next.nextAction = "Follow up on intake packet";
-    log.push("PandaDoc intake form sent");
+    log.push("Intake packet sent");
   }
   if (patch.formStatus === "Complete" || patch.formStatus === "Completed") {
-    next.status = "Form Received";
+    next.status = "Intake Complete";
     next.nextAction = "Review intake packet";
     ["Review Intake Packet", "Set Insurance", "Set Form Review Status"].forEach((title) => tasks.push(createIntakeTask(title, next.owner)));
     log.push("Intake form completed — review tasks created");
   }
   if (patch.formReviewStatus === "Missing Info" || patch.formReviewStatus === "Missing Information") {
-    next.status = "Missing Information";
+    next.status = "Intake Packet Follow Up";
     next.nextAction = "Collect missing info";
     tasks.push(createIntakeTask("Collect Missing Info", next.owner, 1));
     log.push("Missing information loop started");
   }
-  if (patch.formReviewStatus === "Complete" && next.status === "Form Received") {
-    next.status = "Sent to VOB";
+  if (patch.formReviewStatus === "Complete" && (next.status === "Form Received" || next.status === "Intake Complete")) {
+    next.status = "Benefits Verification";
     next.vobStatus = next.vobStatus === "Not Started" ? "Sent" : next.vobStatus;
     next.nextAction = "Add to Eligipro and CentralReach";
     tasks.push(createIntakeTask("Add to Eligipro", next.owner), createIntakeTask("Add to CentralReach", next.owner));
-    log.push("Form review complete — sent to VOB");
+    log.push("Form review complete — sent to Benefits Verification");
   }
   if (patch.vobStatus === "Received") {
-    next.status = "VOB Completed";
+    next.status = "Benefits Verification";
     next.nextAction = "Review VOB decision";
     log.push("VOB received");
   }
   if (patch.vobStatus === "Approved" || patch.vobStatus === "Payment Plan Required") {
-    next.status = "VOB Completed";
+    next.status = "Assessment Scheduling";
     next.paymentPlanNeeded = patch.vobStatus === "Payment Plan Required";
-    next.nextAction = "Ready for client conversion";
-    log.push("Ready for client conversion");
+    next.nextAction = "Schedule assessment";
+    log.push("Benefits approved — moving to Assessment Scheduling");
   }
   if (patch.status === "Can Not Submit Auth") {
     tasks.push(createIntakeTask("Collect Missing Documentation", next.owner, 1));
     next.nextAction = "Collect missing documentation";
   }
 
-  if (patch.status === "Sent to VOB") {
+  if (patch.status === "Sent to VOB" || patch.status === "Benefits Verification") {
+    next.status = "Benefits Verification";
     next.vobStatus = "Sent";
     next.financialOwner = FINANCIAL_OWNER;
     next.nextAction = "Submit to Solum, Eligipro, and CentralReach";
     tasks.push(createIntakeTask("Submit to Solum", FINANCIAL_OWNER), createIntakeTask("Add to Eligipro", FINANCIAL_OWNER), createIntakeTask("Add to CentralReach", FINANCIAL_OWNER));
-    log.push("VOB sent — financial gate tasks created");
+    log.push("Benefits Verification — financial gate tasks created");
   }
   if (patch.vobStatus === "Received" || patch.vobFile) {
     next.vobStatus = "Received";
@@ -223,12 +226,12 @@ const withIntakeAutomation = (lead: Lead, patch: Partial<Lead>): Lead => {
     log.push("VOB received — moved to financial review");
   }
   if (patch.financialStatus === "Approved") {
-    next.status = "VOB Completed";
+    next.status = "Assessment Scheduling";
     next.vobStatus = next.vobStatus === "Not Started" ? "Received" : next.vobStatus;
     next.paymentPlanNeeded = false;
     next.paymentPlanStatus = "Not Required";
-    next.nextAction = "Move to Client Pipeline";
-    log.push("Financial decision approved — ready for client pipeline");
+    next.nextAction = "Schedule assessment";
+    log.push("Financial decision approved — moving to Assessment Scheduling");
   }
   if (patch.financialStatus === "Payment Plan Required") {
     next.paymentPlanNeeded = true;
@@ -250,9 +253,9 @@ const withIntakeAutomation = (lead: Lead, patch: Partial<Lead>): Lead => {
   if (patch.paymentPlanSigned) {
     next.paymentPlanStatus = "Signed";
     next.financialStatus = "Approved";
-    next.status = "VOB Completed";
-    next.nextAction = "Move to Client Pipeline";
-    log.push("Payment plan signed — ready for client pipeline");
+    next.status = "Assessment Scheduling";
+    next.nextAction = "Schedule assessment";
+    log.push("Payment plan signed — moving to Assessment Scheduling");
   }
 
   if (patch.status && patch.status !== lead.status) next.daysInStage = 0;
