@@ -836,7 +836,6 @@ function PipelineView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) =
 /* ─────────────────────── Follow-Up View ─────────────────────── */
 
 function FollowUpView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
   const oneDay = 24 * 60 * 60 * 1000;
   const ageDays = (iso: string | null) => iso ? Math.floor((Date.now() - new Date(iso).getTime()) / oneDay) : 999;
 
