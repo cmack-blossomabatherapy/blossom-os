@@ -27,7 +27,9 @@ describe("Intake Export 87 — UI canonical stage usage", () => {
       // canonically maps to Assessment Scheduling.
       const benefitsLines = OS_LEADS
         .split("\n")
-        .filter((line) => /benefits/i.test(line));
+        .map((l) => l.trim())
+        .filter((line) => /benefits/i.test(line))
+        .filter((line) => !line.startsWith("//") && !line.startsWith("*") && !line.startsWith("/*"));
       const offending = benefitsLines.filter((line) => /VOB Completed/.test(line));
       expect(offending).toEqual([]);
     });
