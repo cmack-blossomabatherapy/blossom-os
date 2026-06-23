@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { TrendingUp, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { TrendingUp, ChevronLeft, ChevronRight, Plus, Ban } from "lucide-react";
 import { GrowthPageShell, Section, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
