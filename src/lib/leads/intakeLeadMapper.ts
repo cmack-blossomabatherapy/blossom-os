@@ -59,7 +59,26 @@ export interface IntakeLeadRow {
 function mapStage(stage: string | null): LeadStatus {
   const s = (stage || "").trim();
   // intake_pipeline_stage enum values map 1:1 to LeadStatus where possible.
+  // Export 85 — every canonical Family / Lead Workflow stage is preserved
+  // 1:1 alongside the legacy Monday-era stages. Unknown/null values default
+  // to the canonical entry point "Lead Captured" (NOT "New Lead").
   switch (s) {
+    // Canonical Family / Lead Workflow stages (Export 78+).
+    case "Lead Captured":                       return "Lead Captured";
+    case "First Contact Attempt":               return "First Contact Attempt";
+    case "Engagement Track":                    return "Engagement Track";
+    case "Qualification":                       return "Qualification";
+    case "Intake Packet Sent":                  return "Intake Packet Sent";
+    case "Intake Packet Follow Up":             return "Intake Packet Follow Up";
+    case "Intake Packet Follow up":             return "Intake Packet Follow Up";
+    case "Intake Complete":                     return "Intake Complete";
+    case "Benefits Verification":               return "Benefits Verification";
+    case "Assessment Scheduling":               return "Assessment Scheduling";
+    case "QA / Treatment Plan Authorization":   return "QA / Treatment Plan Authorization";
+    case "Authorization Pending":               return "Authorization Pending";
+    case "Staffing Match":                      return "Staffing Match";
+    case "Ready to Start Services":             return "Ready to Start Services";
+    // Legacy Monday-era stages (preserved for imported records).
     case "New Lead":               return "New Lead";
     case "In Contact":             return "In Contact";
     case "Sent Form":              return "Sent Form";
@@ -73,7 +92,7 @@ function mapStage(stage: string | null): LeadStatus {
     case "Non-Qualified":          return "Non-Qualified";
     case "Getting DX":             return "Getting DX";
     case "Needs DX":               return "Needs DX";
-    default:                       return "New Lead";
+    default:                       return "Lead Captured";
   }
 }
 
