@@ -407,7 +407,7 @@ function FamiliesNeedingAction({
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-1">
-                <QuickAction icon={Phone} label="Call" onClick={() => window.location.href = `tel:${lead.phone}`} disabled={!lead.phone} />
+                <QuickAction icon={Phone} label="Call Parent" onClick={() => { void import("@/lib/integrations/communications/communicationAdapters").then(async (m) => m.notifyCommunicationResult(await m.callParent({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state }))); }} disabled={!lead.phone} />
                 <QuickAction icon={MessageSquare} label="Text" onClick={() => modals.open({ kind: "comm", channel: "text", lead })} />
                 <QuickAction icon={Mail} label="Email" onClick={() => modals.open({ kind: "comm", channel: "email", lead })} disabled={!lead.email} />
                 <QuickAction icon={Send} label="Packet" onClick={() => onMarkPacketSent(lead.id)} />
@@ -522,7 +522,7 @@ function DailyFollowUps({
                   {getReadinessStatus(l)}
                 </span>
                 <div className="hidden md:flex items-center gap-0.5">
-                  <IconBtn icon={Phone} onClick={(e) => { e.stopPropagation(); if (l.phone) window.location.href = `tel:${l.phone}`; }} />
+                  <IconBtn icon={Phone} onClick={(e) => { e.stopPropagation(); void import("@/lib/integrations/communications/communicationAdapters").then(async (m) => m.notifyCommunicationResult(await m.callParent({ leadId: l.id, phone: l.phone, email: l.email, parentName: l.parentName, childName: l.childName, state: l.state }))); }} />
                   <IconBtn icon={MessageSquare} onClick={(e) => { e.stopPropagation(); modals.open({ kind: "comm", channel: "text", lead: l }); }} />
                   <IconBtn icon={Mail} onClick={(e) => { e.stopPropagation(); modals.open({ kind: "comm", channel: "email", lead: l }); }} />
                   <IconBtn icon={StickyNote} onClick={(e) => { e.stopPropagation(); modals.open({ kind: "note", lead: l }); }} />

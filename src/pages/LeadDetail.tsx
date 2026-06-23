@@ -19,6 +19,15 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { toast } from "sonner";
 import { OSShell } from "@/pages/os/OSShell";
 import { BenefitsCheatSheetMatchPanel } from "@/components/leads/LeadDetailDrawer";
+import {
+  callParent,
+  sendLeadEmail,
+  sendLeadSms,
+  sendIntakePacket,
+  sendMissingInfoReminder,
+  sendVobUpdate,
+  notifyCommunicationResult,
+} from "@/lib/integrations/communications/communicationAdapters";
 
 const COORDINATORS = ["Sarah M.", "James R.", "Maya P."];
 
@@ -163,27 +172,35 @@ export default function LeadDetail() {
 
       {/* Quick Actions bar */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => { window.location.href = `tel:${lead.phone}`; toast.success("Calling " + lead.phone); }}>
-          <Phone className="h-3.5 w-3.5" /> Call
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={async () => {
+          notifyCommunicationResult(await callParent({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state, insurance: lead.insurance }));
+        }}>
+          <Phone className="h-3.5 w-3.5" /> Call Parent
         </Button>
-        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => { window.location.href = `sms:${lead.phone}`; toast.success("Opening SMS"); }}>
-          <MessageSquare className="h-3.5 w-3.5" /> Text
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={async () => {
+          notifyCommunicationResult(await sendLeadSms({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state, insurance: lead.insurance }));
+        }}>
+          <MessageSquare className="h-3.5 w-3.5" /> Send SMS
         </Button>
-        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => { window.location.href = `mailto:${lead.email}`; toast.success("Opening email"); }}>
-          <Mail className="h-3.5 w-3.5" /> Email
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={async () => {
+          notifyCommunicationResult(await sendLeadEmail({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state, insurance: lead.insurance }));
+        }}>
+          <Mail className="h-3.5 w-3.5" /> Send Email
         </Button>
         <Button
           variant="outline" size="sm" className="gap-1.5 text-xs h-8"
-          onClick={() => {
+          onClick={async () => {
+            const res = await sendIntakePacket({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state, insurance: lead.insurance });
+            notifyCommunicationResult(res);
+            if (!res.success) return;
             updateLead(lead.id, {
               formStatus: "Sent",
               status: lead.status === "In Contact" || lead.status === "New Lead" ? "Sent Form" : lead.status,
-              automationLog: [...lead.automationLog, "Intake form sent via PandaDoc"],
+              automationLog: [...lead.automationLog, "Intake packet sent via Mailchimp Email"],
             });
-            toast.success("Intake form sent", { description: "Lead moved to Sent Form" });
           }}
         >
-          <FileText className="h-3.5 w-3.5" /> Send Form
+          <FileText className="h-3.5 w-3.5" /> Send Intake Packet
         </Button>
         <Button
           variant="outline" size="sm" className="gap-1.5 text-xs h-8"
@@ -313,9 +330,11 @@ export default function LeadDetail() {
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border/60">
                   <h4 className="text-sm font-semibold">Communication log</h4>
                   <div className="flex items-center gap-1.5">
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.location.href = `tel:${lead.phone}`; toast.success("Logging call to " + lead.phone); }}><PhoneCall className="h-3 w-3" /> Log call</Button>
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.location.href = `sms:${lead.phone}`; }}><MessageSquare className="h-3 w-3" /> Send SMS</Button>
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.location.href = `mailto:${lead.email}`; }}><Mail className="h-3 w-3" /> Email</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={async () => { notifyCommunicationResult(await callParent({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state, insurance: lead.insurance })); }}><PhoneCall className="h-3 w-3" /> Call Parent</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={async () => { notifyCommunicationResult(await sendLeadSms({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state, insurance: lead.insurance })); }}><MessageSquare className="h-3 w-3" /> Send SMS</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={async () => { notifyCommunicationResult(await sendLeadEmail({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state, insurance: lead.insurance })); }}><Mail className="h-3 w-3" /> Send Email</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={async () => { notifyCommunicationResult(await sendMissingInfoReminder({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state, insurance: lead.insurance })); }}><AlertCircle className="h-3 w-3" /> Missing Info</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={async () => { notifyCommunicationResult(await sendVobUpdate({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state, insurance: lead.insurance })); }}><Shield className="h-3 w-3" /> VOB Update</Button>
                     <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { const note = window.prompt("Add note:"); if (note) { updateLead(lead.id, { notes: (lead.notes ? lead.notes + "\n" : "") + note }); toast.success("Note added"); } }}><StickyNote className="h-3 w-3" /> Note</Button>
                   </div>
                 </div>

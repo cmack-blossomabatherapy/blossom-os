@@ -348,8 +348,11 @@ function LeadDetailWorkspace({ lead, onBack }: { lead: Lead; onBack: () => void 
   const nba = nextBestAction(lead);
   const pipeIdx = currentPipelineIndex(lead);
 
-  const callTo = lead.phone ? `tel:${lead.phone.replace(/\D/g, "")}` : undefined;
-  const mailTo = lead.email ? `mailto:${lead.email}` : undefined;
+  // Direct tel:/mailto: handoffs have been removed for Intake — communication
+  // actions route through the Intake communications adapter. Kept as undefined
+  // so any remaining downstream reference is a no-op anchor.
+  const callTo = undefined;
+  const mailTo = undefined;
 
   const missing = (lead.formReviewStatus === "Missing Info" || lead.formReviewStatus === "Missing Information");
 
