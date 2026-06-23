@@ -12,20 +12,17 @@ import {
   isReadyToStartStage,
   canonicalFamilyLeadStage,
   FAMILY_LEAD_PIPELINE_STAGES,
+  isLeadOutOfPipeline,
 } from "@/lib/intake/intakeWorkflow";
 
-// Family / Lead Workflow open-pipeline check — every canonical stage except
-// the terminal "Ready to Start Services" (active patient ops start there).
-const DISQUALIFIED_STATUSES = new Set<string>([
-  "Non-Qualified", "Non-qualified Lead",
-]);
-const isOpenFamilyPipeline = (status: string) =>
-  !isReadyToStartStage(status) &&
-  !DISQUALIFIED_STATUSES.has(status);
-const MISSING_STAGES = new Set(["Missing Information", "Intake Packet Follow Up"]);
-const AWAITING_VOB_STAGES = new Set(["Sent to VOB", "Benefits Verification"]);
-const LEAD_CAPTURED_STAGES = new Set(["New Lead", "Lead Captured"]);
-// Export 80 — aging uses the canonical 13-stage Family / Lead Workflow.
+// Export 88 — every dashboard count is computed off the canonical Family /
+// Lead Workflow via `canonicalFamilyLeadStage`. We do NOT keep
+// MISSING_STAGES / AWAITING_VOB_STAGES / LEAD_CAPTURED_STAGES sets here,
+// because those sets were silently re-introducing legacy Monday-era labels
+// (e.g. "Missing Information", "Sent to VOB", "New Lead") as live stages.
+// Open-pipeline = any canonical stage that isn't a Ready-to-Start, Cannot
+// Reach, or Non-Qualified outcome.
+const isOpenFamilyPipeline = (status: string) => !isLeadOutOfPipeline(status);
 const AGING_STAGES = FAMILY_LEAD_PIPELINE_STAGES;
 
 export default function IntakeDashboard() {
@@ -35,11 +32,11 @@ export default function IntakeDashboard() {
   const counts = useMemo(() => {
     const now = Date.now();
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-    const newReferrals = leads.filter((l) => LEAD_CAPTURED_STAGES.has(l.status)).length;
+    const newReferrals = leads.filter((l) => canonicalFamilyLeadStage(l.status) === "Lead Captured").length;
     const inPipeline = leads.filter((l) => isOpenFamilyPipeline(l.status)).length;
-    const missing = leads.filter((l) => MISSING_STAGES.has(l.status)).length;
+    const missing = leads.filter((l) => canonicalFamilyLeadStage(l.status) === "Intake Packet Follow Up").length;
     const followUps = leads.filter((l) => l.tasks?.some((t) => !t.completed)).length;
-    const awaiting = leads.filter((l) => AWAITING_VOB_STAGES.has(l.status)).length;
+    const awaiting = leads.filter((l) => canonicalFamilyLeadStage(l.status) === "Benefits Verification").length;
     const converted = leads.filter((l) => {
       if (!isReadyToStartStage(l.status)) return false;
       const d = new Date(l.updatedAt).getTime();
@@ -128,10 +125,10 @@ export default function IntakeDashboard() {
     >
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard label="Lead Captured" value={fmt(counts.newReferrals)} hint="New family leads" status={counts.newReferrals ? "live" : "ready"} icon={ClipboardList} />
-        <StatCard label="Open Family Pipeline" value={fmt(counts.inPipeline)} hint="Lead Captured -> Benefits Verification" status={counts.inPipeline ? "live" : "ready"} icon={TrendingUp} />
-        <StatCard label="Intake Packet Follow Up" value={fmt(counts.missing)} hint="Blocked / missing info" status={counts.missing ? "live" : "ready"} icon={AlertCircle} />
+        <StatCard label="Open Family Pipeline" value={fmt(counts.inPipeline)} hint="Lead Captured -> Ready to Start Services" status={counts.inPipeline ? "live" : "ready"} icon={TrendingUp} />
+        <StatCard label="Packet Follow Up / Missing Info" value={fmt(counts.missing)} hint="Blocked on packet, docs, or family follow-up" status={counts.missing ? "live" : "ready"} icon={AlertCircle} />
         <StatCard label="Open follow-ups" value={fmt(counts.followUps)} hint="Tasks open" status={counts.followUps ? "live" : "ready"} icon={MessageSquare} />
-        <StatCard label="Benefits Verification" value={fmt(counts.awaiting)} hint="Awaiting VOB" status={counts.awaiting ? "live" : "ready"} icon={ShieldCheck} />
+        <StatCard label="Benefits Verification" value={fmt(counts.awaiting)} hint="Eligibility and payer review" status={counts.awaiting ? "live" : "ready"} icon={ShieldCheck} />
         <StatCard label="Ready to Start (30d)" value={fmt(counts.converted)} hint="Reached handoff for active services" status={counts.converted ? "live" : "ready"} icon={ArrowRightLeft} />
       </div>
 
@@ -139,7 +136,7 @@ export default function IntakeDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           <LinkCard title="New Referral Queue" description="Inbound referrals awaiting first contact." to="/intake/referral-queue" status="live" icon={ClipboardList} />
           <LinkCard title="Lead to Ready-to-Start Pipeline" description="Stage-by-stage view from lead through ready to start services." to="/intake/lead-to-active" status="live" icon={TrendingUp} />
-          <LinkCard title="Missing Information" description="Leads blocked by missing documents or details." to="/intake/missing-information" status="live" icon={AlertCircle} />
+          <LinkCard title="Packet Follow Up / Missing Info" description="Leads waiting on packet corrections, documents, or family follow-up." to="/intake/missing-information" status="live" icon={AlertCircle} />
           <LinkCard title="Intake Communications" description="Send calls, SMS, and email to families through Blossom OS adapters." to="/intake/parent-communication" status="live" icon={MessageSquare} />
           <LinkCard title="Intake Tasks" description="Personal task list for the intake team." to="/intake/tasks" status="live" icon={FileText} />
           <LinkCard title="Lead Benefits Cheat Sheets" description="Payer guidance to support eligibility and qualification." to="/intake/benefits-cheat-sheets" status="live" icon={ShieldCheck} />
