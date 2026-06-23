@@ -394,7 +394,16 @@ export const priorityVariant = (p: Priority): "destructive" | "warning" | "muted
 };
 
 export const getInlineAlert = (lead: Lead): { type: "red" | "yellow"; message: string } | null => {
-  if (lead.status === "New Lead" && !lead.lastContacted) return { type: "red", message: "No contact yet" };
+  // Export 86 — treat canonical "Lead Captured" as the primary new-lead stage
+  // while still tolerating legacy "New Lead" records.
+  if ((lead.status === "Lead Captured" || lead.status === "New Lead") && !lead.lastContacted)
+    return { type: "red", message: "No contact yet" };
+  if (lead.status === "First Contact Attempt" && lead.daysInStage >= 2)
+    return { type: "yellow", message: "Awaiting first contact" };
+  if (lead.status === "Intake Packet Sent" && lead.daysInStage >= 3)
+    return { type: "yellow", message: "Intake packet not completed in " + lead.daysInStage + "d" };
+  if (lead.status === "Intake Packet Follow Up" && lead.daysInStage >= 3)
+    return { type: "red", message: "Missing info blocking benefits verification" };
   if (lead.status === "Missing Information" && lead.daysInStage >= 3) return { type: "red", message: "Missing info blocking VOB" };
   if (lead.status === "Sent Form" && lead.daysInStage >= 3) return { type: "yellow", message: "Form not completed in " + lead.daysInStage + "d" };
   if (lead.status === "Form Received" && lead.vobStatus === "Not Sent") return { type: "red", message: "VOB not sent" };
@@ -417,7 +426,10 @@ export type KpiKey = "newToday" | "notContacted" | "sentForm" | "missingInfo" | 
 
 export const kpiFilters: Record<KpiKey, (l: Lead) => boolean> = {
   all: () => true,
-  newToday: (l) => l.status === "New Lead" && l.daysInStage === 0,
+  // Export 86 — canonical "Lead Captured" is the primary new-lead stage.
+  // Legacy "New Lead" still recognized for back-compat reads.
+  newToday: (l) =>
+    (l.status === "Lead Captured" || l.status === "New Lead") && l.daysInStage === 0,
   notContacted: (l) => !l.lastContacted,
   sentForm: (l) => l.status === "Sent Form",
   missingInfo: (l) => l.status === "Missing Information",

@@ -10,7 +10,12 @@
  */
 import type { Lead, LeadStatus } from "@/data/leads";
 
-export const INTAKE_STAGES = [
+/**
+ * Export 86 — legacy Monday-era intake stages. Kept exported so older code,
+ * inbound payloads, and historical records continue to deserialize. NOT the
+ * primary forward-path for the operational pipeline.
+ */
+export const LEGACY_INTAKE_STAGES = [
   "New Lead",
   "In Contact",
   "Sent Form",
@@ -26,7 +31,10 @@ export const INTAKE_STAGES = [
   "Non-Qualified",
 ] as const;
 
-export type IntakeStage = (typeof INTAKE_STAGES)[number];
+export type LegacyIntakeStage = (typeof LEGACY_INTAKE_STAGES)[number];
+
+// Re-exported below after FAMILY_LEAD_PIPELINE_STAGES is declared so the
+// canonical 13-stage pipeline is the primary `INTAKE_STAGES` export.
 
 /* -------------------------------------------------------------------------- */
 /* Export 78 — Canonical Pipelines                                            */
@@ -56,6 +64,14 @@ export const FAMILY_LEAD_PIPELINE_STAGES = [
 ] as const;
 
 export type FamilyLeadPipelineStage = (typeof FAMILY_LEAD_PIPELINE_STAGES)[number];
+
+/**
+ * Export 86 — canonical Family / Lead pipeline is now the primary
+ * `INTAKE_STAGES` value. Old Monday-era values are preserved in
+ * `LEGACY_INTAKE_STAGES` for back-compat reads only.
+ */
+export const INTAKE_STAGES = FAMILY_LEAD_PIPELINE_STAGES;
+export type IntakeStage = FamilyLeadPipelineStage;
 
 /**
  * Canonical Referral Partner Workflow — relationship pipeline owned by
@@ -179,17 +195,19 @@ export const FAMILY_LEAD_STAGE_OWNERS: Record<FamilyLeadPipelineStage, string> =
   "Ready to Start Services": "Scheduling / Operations",
 };
 
-/** Forward path through the operational happy-path. */
-const FORWARD_PATH: LeadStatus[] = [
-  "New Lead",
-  "In Contact",
-  "Sent Form",
-  "Form Received",
-  "Sent to VOB",
-  "VOB Completed",
-];
+/**
+ * Export 86 — canonical 13-stage Family / Lead pipeline is the operational
+ * happy-path. Legacy Monday-era statuses are aliased through
+ * `canonicalFamilyLeadStage` before walking the path.
+ */
+const FORWARD_PATH: readonly FamilyLeadPipelineStage[] = FAMILY_LEAD_PIPELINE_STAGES;
 
-const BLOCKED_STAGES = new Set<LeadStatus>([
+const BLOCKED_STAGES = new Set<string>([
+  // Canonical
+  "Intake Packet Follow Up",
+  "Engagement Track",
+  "Qualification",
+  // Legacy aliases preserved for old records
   "Missing Information",
   "Can't Reach",
   "Sent Packet - Can't Reach",
@@ -198,11 +216,41 @@ const BLOCKED_STAGES = new Set<LeadStatus>([
   "Getting DX",
 ]);
 
-const CONVERTED_STAGES = new Set<LeadStatus>(["VOB Completed"]);
+/**
+ * "Converted" now means the canonical terminal stage. VOB Completed is NOT
+ * converted — it maps to Assessment Scheduling further down the pipeline.
+ */
+const CONVERTED_STAGES = new Set<string>([
+  "Ready to Start Services",
+  "Ready for Start",
+  "Pending Start",
+]);
 
-const VOB_READY_STAGES = new Set<LeadStatus>(["Form Received", "Sent Form"]);
+const VOB_READY_STAGES = new Set<string>([
+  // Canonical
+  "Intake Complete",
+  // Legacy
+  "Form Received",
+  "Sent Form",
+  "Intake Packet Sent",
+]);
 
 const STAGE_SLA_DAYS: Record<string, number> = {
+  // Canonical
+  "Lead Captured": 1,
+  "First Contact Attempt": 2,
+  "Engagement Track": 3,
+  "Qualification": 3,
+  "Intake Packet Sent": 5,
+  "Intake Packet Follow Up": 3,
+  "Intake Complete": 2,
+  "Benefits Verification": 5,
+  "Assessment Scheduling": 5,
+  "QA / Treatment Plan Authorization": 5,
+  "Authorization Pending": 7,
+  "Staffing Match": 5,
+  "Ready to Start Services": 3,
+  // Legacy
   "New Lead": 1,
   "In Contact": 2,
   "Sent Form": 5,
@@ -218,16 +266,21 @@ const STAGE_SLA_DAYS: Record<string, number> = {
   "Non-Qualified": 0,
 };
 
-export function getNextIntakeStage(currentStage: LeadStatus | string): LeadStatus | null {
-  const idx = FORWARD_PATH.indexOf(currentStage as LeadStatus);
-  if (idx < 0 || idx >= FORWARD_PATH.length - 1) return null;
-  return FORWARD_PATH[idx + 1];
+/**
+ * Export 86 — walk the canonical 13-stage pipeline. Legacy statuses are
+ * aliased to their canonical equivalent first so old records still move
+ * forward through the same path.
+ */
+export function getNextIntakeStage(
+  currentStage: LeadStatus | string,
+): FamilyLeadPipelineStage | null {
+  return getNextFamilyLeadStage(currentStage);
 }
 
-export function getPreviousIntakeStage(currentStage: LeadStatus | string): LeadStatus | null {
-  const idx = FORWARD_PATH.indexOf(currentStage as LeadStatus);
-  if (idx <= 0) return null;
-  return FORWARD_PATH[idx - 1];
+export function getPreviousIntakeStage(
+  currentStage: LeadStatus | string,
+): FamilyLeadPipelineStage | null {
+  return getPreviousFamilyLeadStage(currentStage);
 }
 
 export function getStageSlaDays(stage: LeadStatus | string): number {
@@ -235,15 +288,15 @@ export function getStageSlaDays(stage: LeadStatus | string): number {
 }
 
 export function isStageBlocked(stage: LeadStatus | string): boolean {
-  return BLOCKED_STAGES.has(stage as LeadStatus);
+  return BLOCKED_STAGES.has(stage as string);
 }
 
 export function isStageReadyForVob(stage: LeadStatus | string): boolean {
-  return VOB_READY_STAGES.has(stage as LeadStatus);
+  return VOB_READY_STAGES.has(stage as string);
 }
 
 export function isStageConverted(stage: LeadStatus | string): boolean {
-  return CONVERTED_STAGES.has(stage as LeadStatus);
+  return CONVERTED_STAGES.has(stage as string);
 }
 
 /** Flags describing what intake information is currently missing on the lead. */
