@@ -20,6 +20,7 @@ import {
   sendLeadEmail,
 } from "@/lib/integrations/communications/communicationAdapters";
 import type { EmailTemplateKey } from "@/lib/integrations/communications/communicationTypes";
+import { LeadContactActions } from "@/components/leads/LeadContactActions";
 
 type Tab = "overview" | "insurance" | "documents" | "activity" | "actions";
 
@@ -139,10 +140,6 @@ export function LeadDetailDrawer({
     storageStatus: d.url ? "uploaded" : "pending_storage_connection",
   }));
   const documents: DrawerDoc[] = [...mondayDocs, ...attachedDocs];
-
-  const callPhone = lead.phone;
-  const callTo = callPhone ? `tel:${callPhone.replace(/\D/g, "")}` : undefined;
-  const mailTo = lead.email ? `mailto:${lead.email}` : undefined;
 
   return (
     <>
