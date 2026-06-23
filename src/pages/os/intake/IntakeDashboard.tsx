@@ -238,7 +238,7 @@ export default function IntakeDashboard() {
                   <Link to="/ops/authorizations" className="text-[11px] text-primary hover:underline">→ Authorizations</Link>
                   <Link to="/ops/scheduling" className="text-[11px] text-primary hover:underline">→ Scheduling</Link>
                   <Link to="/qa-team" className="text-[11px] text-primary hover:underline">→ Clinical</Link>
-                  <Link to={`/patient-journey?lead=${lead.id}`} className="text-[11px] text-primary hover:underline">→ Journey</Link>
+                  <Link to={`/patient-journey?leadId=${lead.id}`} className="text-[11px] text-primary hover:underline">→ Journey</Link>
                 </div>
               </div>
             ))}
