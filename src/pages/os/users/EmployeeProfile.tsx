@@ -6,7 +6,7 @@ import {
   KeyRound, ScanLine, Mail, Phone, Building2, MapPin, CalendarDays, Briefcase,
   CheckCircle2, Clock, AlertTriangle, Download, ExternalLink, Plus, Lock,
   Sparkles, History, BadgeCheck, MonitorSmartphone, Wifi, Tablet, Laptop,
-  RefreshCw, Copy, EyeOff, UserCircle2, Trash2, Link2,
+  RefreshCw, Copy, EyeOff, UserCircle2, Trash2, Link2, MailCheck,
 } from "lucide-react";
 import { OSShell } from "../OSShell";
 import { cn } from "@/lib/utils";
