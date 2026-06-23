@@ -131,10 +131,18 @@ describe("Export 74 - Intake Communications polish", () => {
       "src/pages/admin/Integrations.tsx",
       "src/test/intakeExport73Hardening.test.ts",
     ];
+    // Mojibake byte sequences expressed via escapes so this test file itself
+    // does not contain the literal sequences.
+    const badSequences = [
+      "\u00c2",         // Â
+      "\u00e2\u20ac\u201d", // â€”
+      "\u00e2\u20ac\u00a6", // â€¦
+      "\u00e2\u201d\u20ac", // â”€
+    ];
     for (const f of files) {
       const src = read(f);
-      for (const bad of ["Â", "â€”", "â€¦", "â”€"]) {
-        expect(src.includes(bad), `${f} contains ${bad}`).toBe(false);
+      for (const bad of badSequences) {
+        expect(src.includes(bad), `${f} contains mojibake`).toBe(false);
       }
     }
   });
