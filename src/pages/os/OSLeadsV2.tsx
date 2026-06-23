@@ -576,6 +576,15 @@ function OSLeadsV2Inner() {
         <LeadDetailDrawer leadId={openLeadId} onClose={() => setOpenLeadId(null)} />
       )}
 
+      <NewLeadDialog
+        open={newLeadOpen}
+        onOpenChange={handleNewLeadOpenChange}
+        onCreated={(lead) => {
+          setOpenLeadId(lead.id);
+          handleNewLeadOpenChange(false);
+        }}
+      />
+
       {selectedIds.size > 0 && (
         <BulkActionBar
           ids={[...selectedIds]}
