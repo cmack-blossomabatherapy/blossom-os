@@ -1,85 +1,64 @@
-# Intake Department Launch — Implementation Plan
+## Goal
 
-This is a focused, in-place upgrade of the existing Intake module. Nothing is rebuilt from scratch. All current routes, contexts, and live hooks stay. The work is grouped into 6 passes so it can be verified end-to-end.
+Right now Teams write and Outlook Calendar write are gated by env secrets (`EMAIL_CC_TEAMS_WRITE`, `EMAIL_CC_CALENDAR_WRITE`). Those can only be flipped by editing project secrets. We'll move them to a database-backed settings row so a Super Admin / Admin can toggle them directly from **System Tools → Email Command Center → Microsoft Integrations** and have them take effect on the next action — no redeploy, no secret juggling.
 
-## Pass 1 — Foundation & menu
+We'll also surface the current OAuth scope state (Mail / Calendar / Teams) so an admin can see at a glance what's actually granted and reconnect if needed.
 
-- Audit `ROLE_MENUS.intake_coordinator` in `src/lib/os/roleMenus.ts`. Ensure the menu shows exactly:
-  - Intake Workspace: Intake Dashboard, Referral Queue, Lead To Active Pipeline, Missing Information, Parent Communication, Intake Tasks, Lead Benefits Cheat Sheets, Patient Lifetime Journey
-  - Training And Resources: Training Academy, Resource Library, Reports
-  - No AI items, no Coming Soon items for intake_coordinator
-- Verify all paths are mounted in `src/App.tsx` (they already are). No new routes.
-- Add a shared `IntakeWorkspaceShell` (glass header + sticky command bar + segmented filters) under `src/components/os/intake/` to avoid duplicate chrome on every page.
-- Add a shared `GlassPanel`/`GlassStat` variant tuned for Intake (depth, hairline borders, translucent layered surfaces) using existing semantic tokens — no hardcoded colors.
-- Sweep Intake pages for mojibake (`â€”`, `â†'`, etc.) and replace with proper em dash / arrow glyphs.
+## What gets added
 
-## Pass 2 — Intake Dashboard (`/intake/dashboard`)
+1. **DB-backed feature flags** (replaces env reads)
+   - New table `public.email_cc_settings` (single-row, `id text primary key default 'global'`):
+     - `teams_write_enabled boolean not null default false`
+     - `calendar_write_enabled boolean not null default false`
+     - `updated_at timestamptz`, `updated_by uuid`
+   - GRANTs + RLS: `authenticated` can SELECT; only `has_role(auth.uid(),'admin')` / `'super_admin'` can UPDATE. `service_role` ALL.
+   - Seed one row with `id = 'global'`.
 
-Rebuild the body of `OSIntakeOperations` (shared with `OSIntakeCoordinator`) around the new shell, keeping all existing data hooks (`useLeads`, `useIntakeTasksLive`, `useIntakeCommsLive`, `getLeadWorkflowRisk`):
+2. **`mail-action` edge function**
+   - Stop reading `Deno.env.get("EMAIL_CC_TEAMS_WRITE" / "EMAIL_CC_CALENDAR_WRITE")`.
+   - Read flags from `email_cc_settings` (via service role). Env values, if set, act as a fallback override only (so existing secret-based deployments don't break).
+   - Same `Needs Teams configuration` / `Needs Calendar configuration` audit messages when disabled.
 
-- Top metric row: New referrals, In pipeline, Missing info, Open follow-ups, Awaiting VOB, Converted (30d)
-- Risk strip: urgent / aged / unassigned leads from `getLeadWorkflowRisk`
-- Two-column grid: Owner workload + State breakdown / Lead source breakdown + Aging by stage
-- Handoff readiness panel (VOB Completed → ready for Auth/Scheduling)
-- Quick actions row: Add Lead (NewLeadDialog), Log contact, Request missing info, Move forward, Open Patient Journey
+3. **Admin UI: "Microsoft Integrations" card** on `/system/email-command-center`
+   - Visible only to Super Admin / Admin (we already gate the page that way).
+   - Shows three rows:
+     - **Outlook Mail** — green/connected pill if `Mail.ReadWrite` + `Mail.Send` scopes present on the linked MS365 connection.
+     - **Outlook Calendar** — scope pill (`Calendars.ReadWrite`) + a **Calendar write** toggle that writes to `email_cc_settings.calendar_write_enabled`. If scope missing, toggle is disabled with a "Reconnect Microsoft 365 with Calendars.ReadWrite" hint and a Reconnect button.
+     - **Microsoft Teams** — scope pill (`ChannelMessage.Send`) + a **Teams write** toggle. If scope missing, toggle is disabled with the same reconnect pattern. Admin note explains Teams requires per-user `ChannelMessage.Send` (admin-consent Graph permission).
+   - Each toggle calls a small RPC (`set_email_cc_setting(key text, value boolean)`) that re-checks the admin role server-side and updates the row.
+   - "Last changed by … at …" line under each toggle.
 
-## Pass 3 — Workflow pages
+4. **Client helpers** in `src/lib/os/emailCommand/settings.ts`
+   - `getEmailCcSettings()` and `setEmailCcSetting(key, value)`.
+   - Used by the new card; cached in component state and refetched on save.
 
-All keep existing hooks; only UI + interactions upgraded.
+5. **Tests**
+   - Migration sanity: row exists, GRANTs present, only admins can UPDATE.
+   - Edge function: when `teams_write_enabled = false` → returns `Needs Teams configuration`; when `true` and scope present → proceeds.
+   - UI gating: non-admin user does not see the toggles; admin sees them and toggling persists.
 
-- **Referral Queue** — search, filters (state/owner/source/priority/risk/days waiting), 4 sort modes, inline actions (assign, contact, send packet, mark unable to reach, move stage), reuse `LeadActionPanel`, open existing lead detail.
-- **Lead To Active Pipeline** — 8-stage kanban with per-stage count / avg age / oldest / at-risk; use existing `moveStage` / `revertStage`; card actions for forward/back/open/add task/log comm/handoff.
-- **Missing Information** — leverage `getMissingInfoFlags`; per-lead checklist (forms, DX, insurance, parent info, payer, consent), owner, due, last contact, attempts, follow-up + mark-received + return-to-pipeline actions.
-- **Parent Communication** — recent comms from `useIntakeCommsLive`, open follow-ups, cadence indicator, status (call/email/text), template picker (6 templates listed in prompt), log action, link to lead + Patient Journey.
-- **Intake Tasks** — `useIntakeTasksLive` driven. Tabs: My / Team / Overdue / Due today. Group by owner / lead / stage. Complete, reassign, add, tie-to-lead.
-- **Lead Benefits Cheat Sheets** — keep existing seed; add state filter, insurance type filter, OON guidance, blockers, required info, ask-family list, send-to-VOB checklist, escalation rules, copy-to-clipboard scripts, last reviewed/owner. Data-ready UI for future payer table.
+## What this does NOT change
 
-## Pass 4 — Patient Lifetime Journey linkage
-
-- Keep `/patient-journey` route. From Intake pages (lead card menu + dashboard quick action), deep-link with `?leadId=...` so the journey view can scope to the selected lead. No structural rewrite — just ensure entry points exist.
-
-## Pass 5 — Intake Training Academy
-
-- In `src/pages/os/academy/TrainingAcademyHome.tsx` (already department-aware for intake_coordinator), ensure the Intake journey renders with the 24 modules listed in the prompt.
-- Add/extend the Intake journey in `src/lib/academy/journeyContent.ts` (or `trainingPaths.ts` — wherever current journeys live) with the full module list. Each module has: what it teaches, why it matters, steps, completion evidence, checklist, knowledge check (where applicable), resource links to relevant `/intake/*` pages and Resource Library items.
-- Do not create a separate training app. Existing Academy shell only.
-
-## Pass 6 — Reports + QA
-
-- Ensure `/reports` exposes an Intake report view (or filter) covering: lead volume, conversion by stage/state/source, avg time to first contact, avg days in stage, missing-info rate, VOB sent/completed, coordinator workload, aging risks. Reuse existing report engine; add Intake report definitions if missing.
-- Run targeted tests: `intakeRoleMenuSprint15`, `intakeShellHotfixSprint15A`, `intakeSprint09`, `sprint07LeadIntakeEngine`, `sprint08IntakeWorkflowActions`, `canonicalRoutes`, `placeholderRoutes`, `roleMenuLiveRoutes`.
-- Mojibake sweep across `src/pages/os/intake/**` and `src/components/intake/**`.
-- Verify build passes and no TS errors.
+- OAuth scope set in `microsoft-oauth-start` already requests `Calendars.ReadWrite`. Adding `ChannelMessage.Send` to that scope list is a one-line follow-up; in this pass the UI just exposes the gap and prompts reconnect.
+- No new automations. All Teams / Calendar sends still require human approval in the action queue.
 
 ## Technical details
 
-- New files (estimated):
-  - `src/components/os/intake/IntakeWorkspaceShell.tsx`
-  - `src/components/os/intake/GlassMetric.tsx`
-  - `src/lib/intake/parentCommTemplates.ts`
-  - `src/lib/intake/benefitsCheatSheetSeed.ts` (extracted/expanded)
-  - Intake journey content additions in existing academy content module
-- Edited files:
-  - `src/pages/os/intake/*.tsx` (all 7)
-  - `src/pages/os/OSIntakeOperations.tsx`
-  - `src/lib/os/roleMenus.ts` (menu verification only)
-  - Academy content module for Intake journey
-- Non-goals: no new routes, no schema migrations, no edge functions, no auth changes, no AI menu, no Monday/CTM/Solum integration code beyond UI-ready states.
+```text
+DB
+  └─ public.email_cc_settings (single row 'global')
+      ├─ teams_write_enabled    bool
+      ├─ calendar_write_enabled bool
+      └─ updated_at / updated_by
+  └─ RPC public.set_email_cc_setting(text, bool)  -- SECURITY DEFINER, admin-only
 
-## Risk & guardrails
+Edge function (mail-action)
+  └─ reads flags from email_cc_settings instead of env
+  └─ env vars still honored as override for back-compat
 
-- All live hooks preserved; no swap to static arrays.
-- Super Admin retains full access (role menu logic untouched outside intake_coordinator entries).
-- Non-Intake roles keep their current Coming Soon for Intake modules — no accidental privilege grant.
-- Design uses semantic tokens only; no `bg-white` / `text-black` / hex colors in components.
+UI (src/pages/os/system/EmailCommandCenter.tsx)
+  └─ new <MicrosoftIntegrationsCard/> rendered above the queue
+  └─ uses src/lib/os/emailCommand/settings.ts
+```
 
-## Acceptance check (will run before handoff)
-
-- Every Intake menu item opens a working page for intake_coordinator.
-- Dashboard, queue, pipeline, missing info, comms, tasks all read live data.
-- Cheat sheets filter and copy actions work.
-- Academy shows the Intake journey with 24 modules for intake_coordinator.
-- No mojibake remains in Intake pages.
-- Build + targeted tests pass.
-
-Approve this plan and I will execute the 6 passes in order.
+After this, the only thing that still requires *Microsoft-side* configuration is granting the `ChannelMessage.Send` admin-consent scope in Entra (and reconnecting). Everything else — turning Teams or Calendar write on/off — happens in the admin UI immediately.
