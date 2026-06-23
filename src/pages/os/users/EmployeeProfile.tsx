@@ -6,7 +6,7 @@ import {
   KeyRound, ScanLine, Mail, Phone, Building2, MapPin, CalendarDays, Briefcase,
   CheckCircle2, Clock, AlertTriangle, Download, ExternalLink, Plus, Lock,
   Sparkles, History, BadgeCheck, MonitorSmartphone, Wifi, Tablet, Laptop,
-  RefreshCw, Copy, EyeOff, UserCircle2, Trash2,
+  RefreshCw, Copy, EyeOff, UserCircle2, Trash2, Link2,
 } from "lucide-react";
 import { OSShell } from "../OSShell";
 import { cn } from "@/lib/utils";
@@ -2134,11 +2134,50 @@ export default function EmployeeProfilePage() {
   const [openAssignTraining, setOpenAssignTraining] = useState(false);
   const [openAssignDevice, setOpenAssignDevice] = useState(false);
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [inviteLink, setInviteLink] = useState<{ loginUrl: string; tempPassword: string; email: string } | null>(null);
 
   const member = useMemo(
     () => members.find((m) => m.id === employeeId || m.uuid === employeeId) ?? null,
     [members, employeeId],
   );
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error("Copy failed — select the text manually.");
+    }
+  };
+
+  const createInviteLink = async () => {
+    if (!member?.email) {
+      toast.error("Add an email to this user before creating an invite link.");
+      return;
+    }
+    setCreatingLink(true);
+    const { data, error } = await supabase.functions.invoke("admin-create-invite-link", {
+      body: {
+        userId: member.uuid ?? null,
+        email: member.email,
+        siteUrl: window.location.origin,
+      },
+    });
+    setCreatingLink(false);
+    if (error || !data?.ok) {
+      toast.error(data?.error ?? error?.message ?? "Could not create invite link.");
+      return;
+    }
+    setInviteLink({ loginUrl: data.loginUrl, tempPassword: data.tempPassword, email: data.email });
+    toast.success("Invite link ready — copy the link and temporary password below.");
+  };
+
+  const copyCredentialsBlock = () => {
+    if (!inviteLink) return;
+    const block = `Blossom OS sign-in\n\nEmail: ${inviteLink.email}\nTemporary password: ${inviteLink.tempPassword}\nSign-in link: ${inviteLink.loginUrl}\n\nYou'll be asked to set a new password on first sign-in.`;
+    void copyToClipboard(block, "Invite details");
+  };
 
   const sendInvite = async () => {
     if (!member?.uuid) {
@@ -2245,12 +2284,38 @@ export default function EmployeeProfilePage() {
                 {sendingInvite ? <RefreshCw className="size-3.5 animate-spin" /> : <Mail className="size-3.5" />} Invite to Blossom OS
               </Button>
               <Button size="sm" variant="outline" className="text-xs"
+                onClick={createInviteLink}
+                disabled={creatingLink || !member.email}>
+                {creatingLink ? <RefreshCw className="size-3.5 animate-spin" /> : <Link2 className="size-3.5" />} Copy invite link
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs"
                 onClick={() => { setTab("devices"); setOpenAssignDevice(true); }}>
                 <Smartphone className="size-3.5" /> Assign device
               </Button>
             </div>
           </div>
         </Card>
+
+        {inviteLink && (
+          <Card className="mb-8 border-primary/30 bg-primary/[0.04] p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Share with {inviteLink.email}</p>
+                <p className="text-[12px] text-muted-foreground">
+                  A new temporary password was generated. The user will be required to set their own password on first sign-in. Send these to them however works best (text, Slack, in person).
+                </p>
+              </div>
+              <Button type="button" size="sm" variant="ghost" className="h-7 gap-1.5 px-2 text-[11px]" onClick={copyCredentialsBlock}>
+                <Copy className="size-3" /> Copy all
+              </Button>
+            </div>
+            <div className="mt-3 space-y-1.5">
+              <CopyRow label="Sign-in link" value={inviteLink.loginUrl} onCopy={(v) => copyToClipboard(v, "Sign-in link")} />
+              <CopyRow label="Email" value={inviteLink.email} onCopy={(v) => copyToClipboard(v, "Email")} />
+              <CopyRow label="Temporary password" value={inviteLink.tempPassword} onCopy={(v) => copyToClipboard(v, "Temporary password")} mono />
+            </div>
+          </Card>
+        )}
 
         {/* Tabs */}
         <nav className="sticky top-0 z-10 mb-8 -mx-1 overflow-x-auto rounded-2xl border border-border/70 bg-card/80 px-2 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -2292,5 +2357,20 @@ export default function EmployeeProfilePage() {
         </div>
       </div>
     </OSShell>
+  );
+}
+function CopyRow({
+  label, value, onCopy, mono,
+}: { label: string; value: string; onCopy: (v: string) => void; mono?: boolean }) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-foreground/[0.06] bg-background px-2 py-1.5">
+      <span className="w-32 shrink-0 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className={`min-w-0 flex-1 truncate text-[11.5px] text-foreground ${mono ? "font-mono" : ""}`} title={value}>
+        {value}
+      </span>
+      <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => onCopy(value)}>
+        <Copy className="size-3" />
+      </Button>
+    </div>
   );
 }
