@@ -111,8 +111,8 @@ describe("Sprint 07 — Lead intake & patient journey engine", () => {
   it("Intake follow-up pages deep-link to Patient Lifetime Journey", () => {
     const a = read("src/pages/os/intake/MissingInformation.tsx");
     const b = read("src/pages/os/intake/ParentCommunication.tsx");
-    expect(a).toMatch(/\/patient-journey\?lead=/);
-    expect(b).toMatch(/\/patient-journey\?lead=/);
+    expect(a).toMatch(/\/patient-journey\?leadId=/);
+    expect(b).toMatch(/\/patient-journey\?leadId=/);
   });
 
   it("State Director Training Academy stays at /training", () => {

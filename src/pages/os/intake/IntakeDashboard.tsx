@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardList, TrendingUp, MessageSquare, AlertCircle, FileText, ShieldCheck, Plus, ArrowRightLeft, Flame } from "lucide-react";
+import { ClipboardList, TrendingUp, MessageSquare, AlertCircle, FileText, ShieldCheck, Plus, ArrowRightLeft, Flame, Users, MapPin, Signal, Clock, HeartHandshake } from "lucide-react";
 import { GrowthPageShell, Section, StatCard, LinkCard, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
 import { getLeadWorkflowRisk } from "@/lib/intake/intakeWorkflow";
+import type { LeadStatus } from "@/data/leads";
 
 const PIPELINE_STAGES = new Set([
   "New Lead", "In Contact", "Sent Form", "Missing Information",
@@ -16,6 +17,10 @@ const PIPELINE_STAGES = new Set([
 const MISSING_STAGES = new Set(["Missing Information"]);
 const AWAITING_VOB_STAGES = new Set(["Sent to VOB"]);
 const CONVERTED_STAGES = new Set(["VOB Completed"]);
+const AGING_STAGES: LeadStatus[] = [
+  "New Lead", "In Contact", "Sent Form", "Missing Information",
+  "Form Received", "Sent to VOB", "VOB Completed",
+];
 
 export default function IntakeDashboard() {
   const { leads, loading } = useLeads();
@@ -47,6 +52,64 @@ export default function IntakeDashboard() {
       .slice(0, 6);
   }, [leads]);
 
+  // Owner workload — count of in-pipeline leads per owner.
+  const ownerWorkload = useMemo(() => {
+    const map = new Map<string, { total: number; risk: number }>();
+    leads.forEach((l) => {
+      if (!PIPELINE_STAGES.has(l.status)) return;
+      const k = l.owner || "Unassigned";
+      const r = getLeadWorkflowRisk(l).level;
+      const cur = map.get(k) ?? { total: 0, risk: 0 };
+      cur.total += 1;
+      if (r === "risk" || r === "urgent") cur.risk += 1;
+      map.set(k, cur);
+    });
+    return [...map.entries()]
+      .map(([owner, v]) => ({ owner, ...v }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8);
+  }, [leads]);
+
+  const stateBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    leads.forEach((l) => {
+      if (!PIPELINE_STAGES.has(l.status)) return;
+      const k = l.state || "—";
+      map.set(k, (map.get(k) ?? 0) + 1);
+    });
+    return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  }, [leads]);
+
+  const sourceBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    leads.forEach((l) => {
+      if (!PIPELINE_STAGES.has(l.status)) return;
+      const k = l.source || "Unknown";
+      map.set(k, (map.get(k) ?? 0) + 1);
+    });
+    return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  }, [leads]);
+
+  const agingByStage = useMemo(() => {
+    return AGING_STAGES.map((stage) => {
+      const inStage = leads.filter((l) => l.status === stage);
+      const oldest = inStage.reduce((m, l) => Math.max(m, l.daysInStage ?? 0), 0);
+      const avg = inStage.length
+        ? Math.round(inStage.reduce((s, l) => s + (l.daysInStage ?? 0), 0) / inStage.length)
+        : 0;
+      return { stage, count: inStage.length, avg, oldest };
+    });
+  }, [leads]);
+
+  const handoffReady = useMemo(
+    () => leads.filter((l) => l.status === "VOB Completed").slice(0, 6),
+    [leads],
+  );
+
+  const maxOwner = Math.max(1, ...ownerWorkload.map((o) => o.total));
+  const maxState = Math.max(1, ...stateBreakdown.map(([, n]) => n));
+  const maxSource = Math.max(1, ...sourceBreakdown.map(([, n]) => n));
+
   return (
     <GrowthPageShell
       eyebrow="Growth & Admissions"
@@ -57,6 +120,7 @@ export default function IntakeDashboard() {
         { label: "Log parent contact", icon: MessageSquare, to: "/intake/parent-communication" },
         { label: "Request missing info", icon: AlertCircle, to: "/intake/missing-information" },
         { label: "Convert lead", icon: ArrowRightLeft, to: "/intake/lead-to-active" },
+        { label: "Patient Lifetime Journey", icon: HeartHandshake, to: "/patient-journey" },
       ]}
     >
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -77,6 +141,109 @@ export default function IntakeDashboard() {
           <LinkCard title="Intake Tasks" description="Personal task list for the intake team." to="/intake/tasks" status="live" icon={FileText} />
           <LinkCard title="Lead Benefits Cheat Sheets" description="Payer guidance to support eligibility and qualification." to="/intake/benefits-cheat-sheets" status="live" icon={ShieldCheck} />
         </div>
+      </Section>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Section title="Owner workload" description="In-pipeline leads per owner.">
+          {ownerWorkload.length === 0 ? (
+            <div className="text-xs text-muted-foreground">No active leads in pipeline.</div>
+          ) : (
+            <div className="space-y-2">
+              {ownerWorkload.map((o) => (
+                <div key={o.owner} className="rounded-xl border border-border/60 bg-card p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2 truncate"><Users className="h-3.5 w-3.5 text-muted-foreground" /> {o.owner}</span>
+                    <span className="tabular-nums text-xs text-muted-foreground">
+                      {o.total} {o.risk > 0 && <span className="text-amber-600">· {o.risk} at risk</span>}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-primary/70" style={{ width: `${(o.total / maxOwner) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        <Section title="Aging by stage" description="Average and oldest days in each stage.">
+          <div className="space-y-1.5">
+            {agingByStage.map((s) => (
+              <div key={s.stage} className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-3 py-2 text-sm">
+                <span className="flex items-center gap-2 min-w-0"><Clock className="h-3.5 w-3.5 text-muted-foreground" /> <span className="truncate">{s.stage}</span></span>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {s.count} · avg {s.avg}d · oldest {s.oldest}d
+                </span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Section title="State breakdown" description="Active in-pipeline leads by state.">
+          {stateBreakdown.length === 0 ? (
+            <div className="text-xs text-muted-foreground">No data yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {stateBreakdown.map(([state, n]) => (
+                <div key={state} className="rounded-xl border border-border/60 bg-card p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-muted-foreground" /> {state}</span>
+                    <span className="tabular-nums text-xs text-muted-foreground">{n}</span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-primary/60" style={{ width: `${(n / maxState) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        <Section title="Lead source breakdown" description="Where active leads are coming from.">
+          {sourceBreakdown.length === 0 ? (
+            <div className="text-xs text-muted-foreground">No data yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {sourceBreakdown.map(([src, n]) => (
+                <div key={src} className="rounded-xl border border-border/60 bg-card p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2"><Signal className="h-3.5 w-3.5 text-muted-foreground" /> {src}</span>
+                    <span className="tabular-nums text-xs text-muted-foreground">{n}</span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-primary/60" style={{ width: `${(n / maxSource) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+      </div>
+
+      <Section title={`Handoff readiness (${handoffReady.length})`} description="VOB Completed — ready to hand off to Authorizations, Scheduling, and Clinical.">
+        {handoffReady.length === 0 ? (
+          <div className="text-xs text-muted-foreground">No families currently ready for handoff.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {handoffReady.map((lead) => (
+              <div key={lead.id} className="rounded-2xl border border-border/70 bg-card p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <Link to={`/leads/${lead.id}`} className="font-semibold hover:underline truncate">{lead.childName}</Link>
+                  <Badge variant="outline" className="text-[10px]"><HeartHandshake className="h-3 w-3 mr-1" /> Ready</Badge>
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">{lead.state || "—"} · {lead.owner || "Unassigned"}</div>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  <Link to="/ops/authorizations" className="text-[11px] text-primary hover:underline">→ Authorizations</Link>
+                  <Link to="/ops/scheduling" className="text-[11px] text-primary hover:underline">→ Scheduling</Link>
+                  <Link to="/qa-team" className="text-[11px] text-primary hover:underline">→ Clinical</Link>
+                  <Link to={`/patient-journey?leadId=${lead.id}`} className="text-[11px] text-primary hover:underline">→ Journey</Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Section>
 
       {actionRequired.length > 0 && (
