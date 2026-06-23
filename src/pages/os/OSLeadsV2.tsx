@@ -42,7 +42,7 @@ const STATUS_TABS: { key: string; label: string; match: (l: Lead) => boolean }[]
       l.status === "Lead Captured" || l.status === "First Contact Attempt" || l.status === "New Lead" || l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
   { key: "engagement",   label: "Engagement",     match: (l) => l.status === "Engagement Track" || l.status === "In Contact" },
   { key: "packets",      label: "Packets",        match: (l) =>
-      l.status === "Intake Packet Sent" || l.status === "Intake Packet Follow up" || l.status === "Sent Form" || l.formStatus === "Sent" },
+      l.status === "Intake Packet Sent" || l.status === "Intake Packet Follow Up" || l.status === "Sent Form" || l.formStatus === "Sent" },
   { key: "missing",      label: "Missing Info",   match: (l) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
   { key: "benefits",     label: "Benefits",       match: (l) =>
       l.status === "Benefits Verification" || l.status === "Sent to VOB" || l.status === "VOB Completed" || l.vobStatus === "Sent" || l.vobStatus === "Approved" || l.vobStatus === "Completed" },
@@ -87,7 +87,7 @@ const PIPELINE_STAGES: { key: string; label: string; match: (l: Lead) => boolean
   { key: "engagement",      label: "Engagement Track",                    match: (l) => l.status === "Engagement Track" || l.status === "In Contact" },
   { key: "qualification",   label: "Qualification",                       match: (l) => l.status === "Qualification" },
   { key: "packet_sent",     label: "Intake Packet Sent",                  match: (l) => l.status === "Intake Packet Sent" || l.status === "Sent Form" || l.formStatus === "Sent" },
-  { key: "packet_followup", label: "Intake Packet Follow up",             match: (l) => l.status === "Intake Packet Follow up" || l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
+  { key: "packet_followup", label: "Intake Packet Follow up",             match: (l) => l.status === "Intake Packet Follow Up" || l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
   { key: "intake_complete", label: "Intake Complete",                     match: (l) => l.status === "Intake Complete" || l.status === "Form Received" || l.formStatus === "Completed" || l.formStatus === "Complete" },
   { key: "benefits",        label: "Benefits Verification",               match: (l) => l.status === "Benefits Verification" || l.status === "Sent to VOB" || l.vobStatus === "Sent" || l.vobStatus === "Received" || l.status === "VOB Completed" || l.vobStatus === "Approved" || l.vobStatus === "Completed" },
   { key: "assessment",      label: "Assessment Scheduling",               match: (l) => l.status === "Assessment Scheduling" },
@@ -104,7 +104,7 @@ const PIPELINE_STAGES: { key: string; label: string; match: (l: Lead) => boolean
 const KPI_DEFS = [
   { key: "new_leads",        label: "New Leads",              test: (l: Lead) => l.status === "Lead Captured" || l.status === "New Lead" },
   { key: "contact_needed",   label: "Contact Needed",         test: (l: Lead) => l.status === "First Contact Attempt" || !l.lastContacted },
-  { key: "packet_followup",  label: "Packet Follow Up",       test: (l: Lead) => l.status === "Intake Packet Follow up" },
+  { key: "packet_followup",  label: "Packet Follow Up",       test: (l: Lead) => l.status === "Intake Packet Follow Up" },
   { key: "missing_info",     label: "Missing Info",           test: (l: Lead) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
   { key: "benefits_pending", label: "Benefits Pending",       test: (l: Lead) => l.status === "Benefits Verification" || l.status === "Sent to VOB" || l.vobStatus === "Sent" || l.vobStatus === "Received" },
   { key: "assessment",       label: "Assessment Scheduling",  test: (l: Lead) => l.status === "Assessment Scheduling" || Boolean(l.nextAction?.toLowerCase().includes("assessment")) },
