@@ -17,12 +17,14 @@ import {
   LEAD_SOURCE_OPTIONS,
   getLeadSourceOption,
 } from "@/lib/leads/leadSourceConfig";
+import { FAMILY_LEAD_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
 
-const PIPELINE_STAGES = [
-  "New Lead", "In Contact", "Sent Form", "Missing Information", "Form Received",
-  "Sent to VOB", "VOB Completed", "Can't Reach", "Sent Packet - Can't Reach",
-  "Can Not Submit Auth", "Getting DX", "Needs DX", "Non-Qualified",
-] as const;
+/**
+ * Export 85 — manual lead creation uses the canonical Family / Lead Workflow
+ * stages. Legacy Monday-era stages remain readable for imported records but
+ * are no longer offered as primary creation options.
+ */
+const PIPELINE_STAGES = FAMILY_LEAD_PIPELINE_STAGES;
 
 const LEAD_SOURCES = LEAD_SOURCE_OPTIONS.map((o) => o.value);
 
@@ -118,7 +120,7 @@ const schema = z
 
 type FormShape = z.input<typeof schema>;
 
-const EMPTY: FormShape = {
+export const EMPTY: FormShape = {
   patientFirstName: "", patientLastName: "", childName: "", dob: "",
   diagnosisStatus: "", dxNeeded: false,
   parentFirstName: "", parentLastName: "", parentName: "",
@@ -132,7 +134,7 @@ const EMPTY: FormShape = {
   assignedIntakeCoordinator: "",
   priority: "Warm",
   insurance: "", insuranceType: "", secondaryInsurance: "",
-  pipelineStage: "New Lead", nextAction: "Contact Lead", nextTaskDue: "",
+  pipelineStage: "Lead Captured", nextAction: "Contact Lead", nextTaskDue: "",
   regularCallLog: "", etCallLog: "", messageComments: "", lastContactDate: "",
   notes: "", tags: "",
 };
