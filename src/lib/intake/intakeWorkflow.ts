@@ -28,6 +28,100 @@ export const INTAKE_STAGES = [
 
 export type IntakeStage = (typeof INTAKE_STAGES)[number];
 
+/* -------------------------------------------------------------------------- */
+/* Export 78 — Canonical Pipelines                                            */
+/* -------------------------------------------------------------------------- */
+/**
+ * Canonical Family / Lead Workflow — the 13-stage operational pipeline from
+ * lead capture through ready-to-start services. Owned across Intake, VOB,
+ * Scheduling, Clinical/BCBA, QA, Authorizations, and Staffing.
+ *
+ * This is the user-facing pipeline. Legacy Monday-style LeadStatus values
+ * still exist on records and are mapped via `canonicalFamilyLeadStage`.
+ */
+export const FAMILY_LEAD_PIPELINE_STAGES = [
+  "Lead Captured",
+  "First Contact Attempt",
+  "Engagement Track",
+  "Qualification",
+  "Intake Packet Sent",
+  "Intake Packet Follow Up",
+  "Intake Complete",
+  "Benefits Verification",
+  "Assessment Scheduling",
+  "QA / Treatment Plan Authorization",
+  "Authorization Pending",
+  "Staffing Match",
+  "Ready to Start Services",
+] as const;
+
+export type FamilyLeadPipelineStage = (typeof FAMILY_LEAD_PIPELINE_STAGES)[number];
+
+/**
+ * Canonical Referral Partner Workflow — relationship pipeline owned by
+ * Marketing / Business Development. This is intentionally separate from the
+ * family lead workflow above.
+ */
+export const REFERRAL_PARTNER_PIPELINE_STAGES = [
+  "Referral Submitted",
+  "Family Contacted",
+  "Assessment Scheduled",
+  "Authorization Pending",
+  "Services Started",
+  "Referral Partner Success Update",
+  "Marketing Nurture",
+] as const;
+
+export type ReferralPartnerPipelineStage = (typeof REFERRAL_PARTNER_PIPELINE_STAGES)[number];
+
+/**
+ * Map legacy / Monday-era LeadStatus values to the canonical Family / Lead
+ * pipeline stage. Unknown values fall back to "Lead Captured" so nothing
+ * disappears from the pipeline view.
+ */
+const LEGACY_FAMILY_LEAD_ALIASES: Record<string, FamilyLeadPipelineStage> = {
+  "New Lead": "Lead Captured",
+  "Lead Captured": "Lead Captured",
+  "In Contact": "First Contact Attempt",
+  "First Contact Attempt": "First Contact Attempt",
+  "Can't Reach": "Engagement Track",
+  "Sent Packet - Can't Reach": "Engagement Track",
+  "Engagement Track": "Engagement Track",
+  "Non-Qualified": "Qualification",
+  "Non-qualified Lead": "Qualification",
+  "Needs DX": "Qualification",
+  "Getting DX": "Qualification",
+  "Qualification": "Qualification",
+  "Sent Form": "Intake Packet Sent",
+  "Intake Packet Sent": "Intake Packet Sent",
+  "Missing Information": "Intake Packet Follow Up",
+  "Intake Packet Follow Up": "Intake Packet Follow Up",
+  "Form Received": "Intake Complete",
+  "Intake Complete": "Intake Complete",
+  "Sent to VOB": "Benefits Verification",
+  "Benefits Verification": "Benefits Verification",
+  "VOB Completed": "Assessment Scheduling",
+  "Schedule Assessment": "Assessment Scheduling",
+  "Assessment Scheduled": "Assessment Scheduling",
+  "Assessment Scheduling": "Assessment Scheduling",
+  "QA Review": "QA / Treatment Plan Authorization",
+  "Can Not Submit Auth": "QA / Treatment Plan Authorization",
+  "QA / Treatment Plan Authorization": "QA / Treatment Plan Authorization",
+  "Authorization Pending": "Authorization Pending",
+  "Staffing Needed": "Staffing Match",
+  "Staffing Match": "Staffing Match",
+  "Ready for Start": "Ready to Start Services",
+  "Pending Start": "Ready to Start Services",
+  "Ready to Start Services": "Ready to Start Services",
+};
+
+export function canonicalFamilyLeadStage(
+  stage: string | null | undefined,
+): FamilyLeadPipelineStage {
+  if (!stage) return "Lead Captured";
+  return LEGACY_FAMILY_LEAD_ALIASES[stage] ?? "Lead Captured";
+}
+
 /** Forward path through the operational happy-path. */
 const FORWARD_PATH: LeadStatus[] = [
   "New Lead",

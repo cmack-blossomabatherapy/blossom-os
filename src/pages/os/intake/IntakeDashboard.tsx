@@ -121,12 +121,12 @@ export default function IntakeDashboard() {
       ]}
     >
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="New referrals" value={fmt(counts.newReferrals)} hint="Status: New Lead" status={counts.newReferrals ? "live" : "ready"} icon={ClipboardList} />
-        <StatCard label="In pipeline" value={fmt(counts.inPipeline)} hint="New -> Sent to VOB" status={counts.inPipeline ? "live" : "ready"} icon={TrendingUp} />
-        <StatCard label="Missing info" value={fmt(counts.missing)} hint="Blocked leads" status={counts.missing ? "live" : "ready"} icon={AlertCircle} />
+        <StatCard label="Lead Captured" value={fmt(counts.newReferrals)} hint="New family leads" status={counts.newReferrals ? "live" : "ready"} icon={ClipboardList} />
+        <StatCard label="Open Family Pipeline" value={fmt(counts.inPipeline)} hint="Lead Captured -> Benefits Verification" status={counts.inPipeline ? "live" : "ready"} icon={TrendingUp} />
+        <StatCard label="Intake Packet Follow Up" value={fmt(counts.missing)} hint="Blocked / missing info" status={counts.missing ? "live" : "ready"} icon={AlertCircle} />
         <StatCard label="Open follow-ups" value={fmt(counts.followUps)} hint="Tasks open" status={counts.followUps ? "live" : "ready"} icon={MessageSquare} />
-        <StatCard label="Awaiting benefits" value={fmt(counts.awaiting)} hint="Sent to VOB" status={counts.awaiting ? "live" : "ready"} icon={ShieldCheck} />
-        <StatCard label="Converted (30d)" value={fmt(counts.converted)} hint="VOB Completed" status={counts.converted ? "live" : "ready"} icon={ArrowRightLeft} />
+        <StatCard label="Benefits Verification" value={fmt(counts.awaiting)} hint="Awaiting VOB" status={counts.awaiting ? "live" : "ready"} icon={ShieldCheck} />
+        <StatCard label="Ready to Start (30d)" value={fmt(counts.converted)} hint="Reached handoff for active services" status={counts.converted ? "live" : "ready"} icon={ArrowRightLeft} />
       </div>
 
       <Section title="Intake workspaces" description="Open any area to manage that part of intake.">
