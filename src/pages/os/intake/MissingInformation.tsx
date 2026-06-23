@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ArrowRight, Plus } from "lucide-react";
+import { AlertCircle, ArrowRight, List, Plus } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ export default function MissingInformation() {
       description="Leads blocked by missing intake or insurance details. Action follow-ups appear here so nothing slips."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
+        { label: "Open Leads", icon: List, to: "/leads" },
         { label: "Open Ready-to-Start Pipeline", icon: ArrowRight, to: "/intake/lead-to-active" },
       ]}
     >
