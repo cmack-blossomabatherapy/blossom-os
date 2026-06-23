@@ -6,6 +6,7 @@ const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), "utf8")
 
 describe("User Management invite delivery tools", () => {
   const inviteFunction = read("supabase/functions/admin-invite-user/index.ts");
+  const inviteLinkFunction = read("supabase/functions/admin-create-invite-link/index.ts");
   const checkFunction = read("supabase/functions/admin-check-welcome-email/index.ts");
   const profilePage = read("src/pages/os/users/EmployeeProfile.tsx");
 
@@ -30,8 +31,19 @@ describe("User Management invite delivery tools", () => {
 
   it("exposes Copy invite link on the per-user details page", () => {
     expect(profilePage).toMatch(/admin-create-invite-link/);
+    expect(profilePage).toMatch(/employeeId: member\.uuid/);
     expect(profilePage).toMatch(/Copy invite link/);
     expect(profilePage).toMatch(/Sign-in link/);
     expect(profilePage).toMatch(/Temporary password/);
+  });
+
+  it("creates manual invite links from employee records, not stale employee ids as auth user ids", () => {
+    expect(inviteLinkFunction).toMatch(/employeeId/);
+    expect(inviteLinkFunction).toMatch(/\.from\("employees"\)/);
+    expect(inviteLinkFunction).toMatch(/\.eq\("id", employeeId\)/);
+    expect(inviteLinkFunction).toMatch(/employee\.user_id/);
+    expect(inviteLinkFunction).toMatch(/findAuthUserByEmail/);
+    expect(inviteLinkFunction).toMatch(/createUser/);
+    expect(inviteLinkFunction).toMatch(/upsert\(\{/);
   });
 });

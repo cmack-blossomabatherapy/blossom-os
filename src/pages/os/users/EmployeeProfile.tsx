@@ -2166,7 +2166,7 @@ export default function EmployeeProfilePage() {
     setCreatingLink(true);
     const { data, error } = await supabase.functions.invoke("admin-create-invite-link", {
       body: {
-        userId: member.uuid ?? null,
+        employeeId: member.uuid ?? undefined,
         email: member.email,
         siteUrl: window.location.origin,
       },
