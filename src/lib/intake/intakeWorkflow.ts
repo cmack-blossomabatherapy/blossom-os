@@ -10,7 +10,12 @@
  */
 import type { Lead, LeadStatus } from "@/data/leads";
 
-export const INTAKE_STAGES = [
+/**
+ * Export 86 — legacy Monday-era intake stages. Kept exported so older code,
+ * inbound payloads, and historical records continue to deserialize. NOT the
+ * primary forward-path for the operational pipeline.
+ */
+export const LEGACY_INTAKE_STAGES = [
   "New Lead",
   "In Contact",
   "Sent Form",
@@ -26,7 +31,7 @@ export const INTAKE_STAGES = [
   "Non-Qualified",
 ] as const;
 
-export type IntakeStage = (typeof INTAKE_STAGES)[number];
+export type LegacyIntakeStage = (typeof LEGACY_INTAKE_STAGES)[number];
 
 /* -------------------------------------------------------------------------- */
 /* Export 78 — Canonical Pipelines                                            */
