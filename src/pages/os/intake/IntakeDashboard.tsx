@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardList, TrendingUp, MessageSquare, AlertCircle, FileText, ShieldCheck, Plus, ArrowRightLeft, Flame, Users, MapPin, Signal, Clock, HeartHandshake } from "lucide-react";
+import { ClipboardList, TrendingUp, MessageSquare, AlertCircle, FileText, ShieldCheck, Plus, ArrowRightLeft, Flame, Users, MapPin, Signal, Clock, HeartHandshake, Send, Phone } from "lucide-react";
 import { GrowthPageShell, Section, StatCard, LinkCard, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
@@ -117,8 +117,8 @@ export default function IntakeDashboard() {
       description="Manage new referrals, parent communication, missing information, insurance checks, and movement from lead to active care."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
-        { label: "Log parent contact", icon: MessageSquare, to: "/intake/parent-communication" },
-        { label: "Request missing info", icon: AlertCircle, to: "/intake/missing-information" },
+        { label: "Intake Communications", icon: MessageSquare, to: "/intake/parent-communication" },
+        { label: "Send Missing Info Reminder", icon: Send, to: "/intake/missing-information" },
         { label: "Convert lead", icon: ArrowRightLeft, to: "/intake/lead-to-active" },
       ]}
     >

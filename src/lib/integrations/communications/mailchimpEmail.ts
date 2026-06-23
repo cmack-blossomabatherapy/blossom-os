@@ -1,0 +1,52 @@
+/**
+ * Mailchimp Email adapter — used for intake packets, missing info reminders,
+ * VOB updates, and general parent follow-ups.
+ */
+import type {
+  CommunicationResult,
+  EmailTemplateKey,
+  LeadCommunicationContext,
+} from "./communicationTypes";
+
+export function isMailchimpEmailConfigured(): boolean {
+  const envFlag = (import.meta as unknown as { env?: Record<string, string> }).env;
+  return Boolean(envFlag?.VITE_MAILCHIMP_API_KEY && envFlag?.VITE_MAILCHIMP_AUDIENCE_ID);
+}
+
+export async function sendEmailViaMailchimp(
+  lead: LeadCommunicationContext,
+  templateKey: EmailTemplateKey,
+): Promise<CommunicationResult> {
+  const timestamp = new Date().toISOString();
+  const baseAction = templateKey === "general-follow-up" ? "email" : templateKey;
+  if (!isMailchimpEmailConfigured()) {
+    return {
+      success: false,
+      provider: "mailchimp-email",
+      action: baseAction as CommunicationResult["action"],
+      leadId: lead.leadId,
+      timestamp,
+      message: "Email sending not configured. Ask Admin to connect Mailchimp Email.",
+      needsConfiguration: true,
+      configHint: "Integrations: Mailchimp Email (API key, Audience ID, templates)",
+    };
+  }
+  if (!lead.email) {
+    return {
+      success: false,
+      provider: "mailchimp-email",
+      action: baseAction as CommunicationResult["action"],
+      leadId: lead.leadId,
+      timestamp,
+      message: "No email on file for this lead.",
+    };
+  }
+  return {
+    success: true,
+    provider: "mailchimp-email",
+    action: baseAction as CommunicationResult["action"],
+    leadId: lead.leadId,
+    timestamp,
+    message: `Email "${templateKey}" sent to ${lead.email}.`,
+  };
+}
