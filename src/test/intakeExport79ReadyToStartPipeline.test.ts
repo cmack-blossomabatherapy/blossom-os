@@ -80,7 +80,14 @@ describe("Export 79 — Operationalize Ready-To-Start pipeline", () => {
     expect(src).toMatch(/managed in a separate workflow/);
   });
 
-  it("IntakeDashboard uses isReadyToStartStage for the Ready to Start (30d) metric", () => {
+  it("LeadToActivePipeline hard-stops forward movement at Ready to Start Services", () => {
+    const src = read("src/pages/os/intake/LeadToActivePipeline.tsx");
+    expect(src).toMatch(/isPipelineEnd/);
+    expect(src).toMatch(/Hard stop/);
+    expect(src).toMatch(/Pipeline end/);
+    expect(src).toMatch(/Active patient operations start after this point/);
+    expect(src).toMatch(/<Ban /);
+  });
     const src = read("src/pages/os/intake/IntakeDashboard.tsx");
     expect(src).toMatch(/isReadyToStartStage/);
     expect(src).toMatch(/Ready to Start \(30d\)/);
