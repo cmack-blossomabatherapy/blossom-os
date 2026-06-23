@@ -1,45 +1,36 @@
-## Why the button is missing
+## Intake Export 88 — Phase 2 Plan
 
-The "Copy invite link" button was added to the **admin roster page** at `/user-management/admin` (`src/pages/os/OSUserManagement.tsx`), not to the **per-user details page** at `/user-management/:employeeId` (`src/pages/os/users/EmployeeProfile.tsx`).
+Phase 1 already shipped the canonical pipeline cleanup across `/leads`, IntakeDashboard, LeadActionPanel, ParentCommunication, MissingInformation, and the role menu. Phase 2 finishes the surfaces that still reference legacy stages and adds Intake-specific Training, Resource Library, and Reports cards.
 
-On the user details page today, the header only has:
-- Edit
-- Assign training
-- **Invite to Blossom OS** (sends a magic-link email via `admin-employee-magic-link`)
-- Assign device
+### Scope (in order)
 
-There's no button that generates a shareable temp-password + sign-in link with copy rows. That's what's missing.
+1. **Lead Detail drawer + page audit** (`src/components/leads/LeadDetailDrawer.tsx`, `LeadDetailPanel.tsx`, `src/pages/LeadDetail.tsx`)
+   - Replace any remaining legacy stage strings with `canonicalFamilyLeadStage` + the helpers added in Phase 1 (`isNonQualifiedStatus`, `isCannotReachStatus`, `isLeadOutOfPipeline`, `hasMissingFormReview`).
+   - Rename "Missing Information" badges/sections to "Packet Follow Up / Missing Info" and "VOB" wording to "Benefits Verification".
+   - Ensure stage selectors only offer canonical stages; bulk move and quick actions go through `intakeWorkflow` helpers.
 
-## Plan — add "Copy invite link" to the user details page
+2. **Training Academy — Intake role view** (`src/pages/os/OSTraining.tsx` + supporting data)
+   - Add an Intake learner section listing the existing Intake SOPs / workflows already in the resource collections (no new modules invented).
+   - Surface "Continue Learning" cards filtered to the Intake role using the existing role-aware filter; no LMS bloat.
 
-Surface the same invite-link flow that already works on the admin tab, scoped to the currently viewed employee. No new edge functions or DB changes — `admin-create-invite-link` already exists and is used by `OSUserManagement.tsx`.
+3. **Resource Library — Intake collection surface** (`src/lib/resources/resourceCollections.ts`, `src/pages/os/OSResourceLibrary.tsx`)
+   - Make sure the Intake collection is selectable and that Intake-tagged resources show up for Intake roles. Fix any miscategorized "VOB" → "Benefits Verification" labels in the collection metadata only.
 
-### Changes
+4. **Reports — Intake report cards** (`src/pages/Reports.tsx` or the live reports catalog)
+   - Add Intake-specific report cards (Lead volume by source, Stage aging, Packet follow-up backlog, Conversion to Ready to Start). Cards route to existing report views; no new analytics engine.
 
-1. **`src/pages/os/users/EmployeeProfile.tsx`**
-   - Add state: `creatingLink`, `inviteLink ({ loginUrl, tempPassword, email })`.
-   - Add `createInviteLink()` that calls `supabase.functions.invoke("admin-create-invite-link", { body: { email: member.email } })`, mirroring the implementation in `OSUserManagement.tsx`. Toast on error, set `inviteLink` on success.
-   - Add a header button next to "Invite to Blossom OS":
-     - Label: **Copy invite link**
-     - Icon: `Link2`
-     - Disabled when no email, no uuid, or while creating.
-   - When `inviteLink` is set, render a result panel below the header card with:
-     - Sign-in link (copy)
-     - Email (copy)
-     - Temporary password (copy, mono)
-     - "Copy all" button that copies a formatted credentials block (same template as `OSUserManagement.copyCredentialsBlock`).
-   - Reuse a small `CopyRow` helper inside this file (same shape as the one in `OSUserManagement.tsx`).
-   - Restrict the button to admin/super_admin via the existing auth context (match the gating used elsewhere on this page; if no gating is enforced in the header today, gate only this new button with `isAdmin`).
+5. **Tests** — extend `src/test/intakeExport88FullDepartmentLaunch.test.ts` with assertions covering:
+   - LeadDetailDrawer no longer contains legacy stage labels.
+   - Training page renders the Intake section for the intake role.
+   - Resource Library exposes the Intake collection.
+   - Reports page lists the four Intake report cards.
 
-2. **No backend changes.** `admin-create-invite-link` already enforces admin-only access server-side.
+### Out of scope (per the original Export 88 directives)
+- No active patient workflow.
+- No automations.
+- No new AI menu sections.
+- No new unrelated department pages.
+- No Phone System / Patient Lifetime Journey access additions.
 
-3. **Test** — extend `src/test/userManagementInviteDelivery.test.ts` (or add a small new test file) to assert that `EmployeeProfile.tsx`:
-   - imports/uses `admin-create-invite-link`
-   - renders a "Copy invite link" button
-   - renders the three copy rows (Sign-in link / Email / Temporary password) when an invite link is present.
-
-### Out of scope
-
-- No changes to the admin roster page (already has this button).
-- No changes to `admin-create-invite-link` edge function.
-- No styling overhaul of the header — just an additional outline button matching the existing ones.
+### Risk / sequencing
+Phase 2 touches presentation surfaces only — no schema changes. After each step I'll run the existing canonical-pipeline tests plus the new assertions to make sure legacy stage drift cannot return.
