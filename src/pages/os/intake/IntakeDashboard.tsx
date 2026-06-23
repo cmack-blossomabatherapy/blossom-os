@@ -11,8 +11,8 @@ import {
   getLeadWorkflowRisk,
   isReadyToStartStage,
   canonicalFamilyLeadStage,
+  FAMILY_LEAD_PIPELINE_STAGES,
 } from "@/lib/intake/intakeWorkflow";
-import type { LeadStatus } from "@/data/leads";
 
 // Family / Lead Workflow open-pipeline check — every canonical stage except
 // the terminal "Ready to Start Services" (active patient ops start there).
@@ -25,10 +25,8 @@ const isOpenFamilyPipeline = (status: string) =>
 const MISSING_STAGES = new Set(["Missing Information", "Intake Packet Follow Up"]);
 const AWAITING_VOB_STAGES = new Set(["Sent to VOB", "Benefits Verification"]);
 const LEAD_CAPTURED_STAGES = new Set(["New Lead", "Lead Captured"]);
-const AGING_STAGES: LeadStatus[] = [
-  "New Lead", "In Contact", "Sent Form", "Missing Information",
-  "Form Received", "Sent to VOB", "VOB Completed",
-];
+// Export 80 — aging uses the canonical 13-stage Family / Lead Workflow.
+const AGING_STAGES = FAMILY_LEAD_PIPELINE_STAGES;
 
 export default function IntakeDashboard() {
   const { leads, loading } = useLeads();
@@ -100,7 +98,7 @@ export default function IntakeDashboard() {
 
   const agingByStage = useMemo(() => {
     return AGING_STAGES.map((stage) => {
-      const inStage = leads.filter((l) => l.status === stage);
+      const inStage = leads.filter((l) => canonicalFamilyLeadStage(l.status) === stage);
       const oldest = inStage.reduce((m, l) => Math.max(m, l.daysInStage ?? 0), 0);
       const avg = inStage.length
         ? Math.round(inStage.reduce((s, l) => s + (l.daysInStage ?? 0), 0) / inStage.length)
