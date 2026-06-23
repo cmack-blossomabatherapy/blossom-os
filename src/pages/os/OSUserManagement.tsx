@@ -3,7 +3,7 @@ import { OSShell } from "./OSShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, UserPlus, Users2, Pencil, Loader2, ExternalLink, Check, MailCheck, RefreshCw, AlertTriangle } from "lucide-react";
+import { Search, UserPlus, Users2, Pencil, Loader2, ExternalLink, Check, MailCheck, RefreshCw, AlertTriangle, Link2, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole } from "@/lib/roles";
 import { ROLE_META } from "@/lib/roles";
@@ -262,11 +262,14 @@ function EditUserSheet({
   const [delivery, setDelivery] = useState<InviteDeliveryStatus | null>(null);
   const [checkingDelivery, setCheckingDelivery] = useState(false);
   const [resending, setResending] = useState(false);
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [inviteLink, setInviteLink] = useState<{ loginUrl: string; tempPassword: string; email: string } | null>(null);
 
   useEffect(() => {
     setForm(user);
     setSelectedRoles(new Set(user?.roles ?? []));
     setDelivery(null);
+    setInviteLink(null);
   }, [user]);
 
   if (!form) return null;
@@ -391,6 +394,44 @@ function EditUserSheet({
     toast({ title: "Welcome email resent" });
   };
 
+  const createInviteLink = async () => {
+    if (!form || form.isWorkforce || !form.email) return;
+    setCreatingLink(true);
+    const { data, error } = await supabase.functions.invoke("admin-create-invite-link", {
+      body: {
+        userId: form.user_id,
+        email: form.email,
+        siteUrl: window.location.origin,
+      },
+    });
+    setCreatingLink(false);
+    if (error || !data?.ok) {
+      toast({
+        title: "Could not create invite link",
+        description: data?.error ?? error?.message ?? "Unknown error",
+        variant: "destructive",
+      });
+      return;
+    }
+    setInviteLink({ loginUrl: data.loginUrl, tempPassword: data.tempPassword, email: data.email });
+    toast({ title: "Invite link ready", description: "Copy the link and temporary password below." });
+  };
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: `${label} copied` });
+    } catch {
+      toast({ title: "Copy failed", description: "Select the text manually to copy.", variant: "destructive" });
+    }
+  };
+
+  const copyCredentialsBlock = () => {
+    if (!inviteLink) return;
+    const block = `Blossom OS sign-in\n\nEmail: ${inviteLink.email}\nTemporary password: ${inviteLink.tempPassword}\nSign-in link: ${inviteLink.loginUrl}\n\nYou'll be asked to set a new password on first sign-in.`;
+    void copyToClipboard(block, "Invite details");
+  };
+
   const grouped = ROLE_GROUPS.map((g) => ({
     group: g,
     roles: ROLE_META.filter((m) => m.group === g),
@@ -490,7 +531,29 @@ function EditUserSheet({
                 {resending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MailCheck className="h-3.5 w-3.5" />}
                 Resend welcome
               </Button>
+              <Button type="button" variant="default" size="sm" onClick={createInviteLink} disabled={creatingLink || !form.email} className="gap-2">
+                {creatingLink ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+                Copy invite link
+              </Button>
             </div>
+            {inviteLink && (
+              <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/[0.04] p-3 text-[12px]">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-foreground">Share with {inviteLink.email}</p>
+                  <Button type="button" size="sm" variant="ghost" className="h-7 gap-1.5 px-2 text-[11px]" onClick={copyCredentialsBlock}>
+                    <Copy className="h-3 w-3" /> Copy all
+                  </Button>
+                </div>
+                <p className="text-muted-foreground">
+                  A new temporary password was generated. The user will be required to set their own password on first sign-in. Send these to them however works best (text, Slack, in person).
+                </p>
+                <div className="space-y-1.5">
+                  <CopyRow label="Sign-in link" value={inviteLink.loginUrl} onCopy={(v) => copyToClipboard(v, "Sign-in link")} />
+                  <CopyRow label="Email" value={inviteLink.email} onCopy={(v) => copyToClipboard(v, "Email")} />
+                  <CopyRow label="Temporary password" value={inviteLink.tempPassword} onCopy={(v) => copyToClipboard(v, "Temporary password")} mono />
+                </div>
+              </div>
+            )}
           </section>
           )}
 
@@ -572,6 +635,22 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div className="space-y-1">
       <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</Label>
       {children}
+    </div>
+  );
+}
+
+function CopyRow({
+  label, value, onCopy, mono,
+}: { label: string; value: string; onCopy: (v: string) => void; mono?: boolean }) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-foreground/[0.06] bg-background px-2 py-1.5">
+      <span className="w-32 shrink-0 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className={`min-w-0 flex-1 truncate text-[11.5px] text-foreground ${mono ? "font-mono" : ""}`} title={value}>
+        {value}
+      </span>
+      <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => onCopy(value)}>
+        <Copy className="h-3 w-3" />
+      </Button>
     </div>
   );
 }
