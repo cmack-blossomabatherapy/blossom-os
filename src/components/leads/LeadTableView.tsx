@@ -1,9 +1,10 @@
 import { Lead, statusVariant, priorityVariant, getInlineAlert } from "@/data/leads";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, Phone } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { LeadContactIconActions } from "@/components/leads/LeadContactActions";
 
 export type SortField = "id" | "childName" | "state" | "status" | "owner" | "priority" | "daysInStage" | "lastContacted" | null;
 export type SortDir = "asc" | "desc";
@@ -126,9 +127,8 @@ export function LeadTableView({
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone</div>
-                      <a href={`tel:${lead.phone}`} className="inline-flex items-center gap-1 font-medium text-primary">
-                        <Phone className="h-3 w-3" />{lead.phone}
-                      </a>
+                      <div className="font-medium text-foreground">{lead.phone || "-"}</div>
+                      <LeadContactIconActions className="mt-1" lead={lead} />
                     </div>
                     <div>
                       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Coordinator</div>
@@ -239,7 +239,12 @@ export function LeadTableView({
                     <div className="font-medium text-foreground text-sm leading-tight">{lead.childName}</div>
                     <div className="text-muted-foreground text-xs">{lead.parentName}</div>
                   </td>
-                  <td className="px-3 py-2.5 text-muted-foreground text-xs whitespace-nowrap">{lead.phone}</td>
+                  <td className="px-3 py-2.5 text-xs whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">{lead.phone}</span>
+                      <LeadContactIconActions lead={lead} size="xs" />
+                    </div>
+                  </td>
                   <td className="px-3 py-2.5"><StatusBadge status={lead.state} variant="muted" /></td>
                   <td className="px-3 py-2.5 text-xs text-muted-foreground">{lead.source}</td>
                   <td className="px-3 py-2.5"><StatusBadge status={lead.status} variant={statusVariant(lead.status)} /></td>
