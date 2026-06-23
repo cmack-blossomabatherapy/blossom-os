@@ -43,6 +43,15 @@ export default function LeadToActivePipeline() {
     return Math.round(total / items.length);
   };
 
+  const oldestForStage = (items: typeof leads) =>
+    items.reduce((m, l) => Math.max(m, l.daysInStage ?? 0), 0);
+
+  const atRiskForStage = (items: typeof leads) =>
+    items.filter((l) => {
+      const r = getLeadWorkflowRisk(l);
+      return r.level === "risk" || r.level === "urgent";
+    }).length;
+
   return (
     <GrowthPageShell
       eyebrow="Growth & Admissions"
@@ -60,6 +69,8 @@ export default function LeadToActivePipeline() {
             {STAGES.map((stage) => {
               const items = byStage.get(stage) ?? [];
               const avgAge = avgAgeForStage(items);
+              const oldest = oldestForStage(items);
+              const atRisk = atRiskForStage(items);
               const stageIdx = STAGES.indexOf(stage);
               return (
                 <div key={stage} className="rounded-2xl border border-border/70 bg-card p-4 w-64 shrink-0">
@@ -68,7 +79,11 @@ export default function LeadToActivePipeline() {
                     <div className="text-lg font-semibold tabular-nums text-foreground">{items.length}</div>
                   </div>
                   {avgAge !== null && (
-                    <div className="text-[10px] text-muted-foreground">Avg age: {avgAge}d</div>
+                    <div className="text-[10px] text-muted-foreground flex items-center gap-2">
+                      <span>Avg {avgAge}d</span>
+                      <span>· Oldest {oldest}d</span>
+                      {atRisk > 0 && <span className="text-amber-600">· {atRisk} at risk</span>}
+                    </div>
                   )}
                   <div className="mt-3 space-y-1.5">
                     {items.slice(0, 6).map((l) => (
