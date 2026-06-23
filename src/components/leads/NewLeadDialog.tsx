@@ -107,6 +107,8 @@ const schema = z
     utmCampaign:  z.string().max(160).optional().or(z.literal("")),
     originationDate: z.string().optional().or(z.literal("")),
     assignedIntakeCoordinator: z.string().max(160).optional().or(z.literal("")),
+    assignedIntakeCoordinatorUserId:     z.string().uuid().optional().or(z.literal("")),
+    assignedIntakeCoordinatorEmployeeId: z.string().uuid().optional().or(z.literal("")),
     priority: z.enum(PRIORITIES),
     // Insurance
     insurance:        z.string().max(120).optional().or(z.literal("")),
@@ -155,6 +157,8 @@ export const EMPTY: FormShape = {
   utmSource: "", utmMedium: "", utmCampaign: "",
   originationDate: new Date().toISOString().split("T")[0],
   assignedIntakeCoordinator: "",
+  assignedIntakeCoordinatorUserId: "",
+  assignedIntakeCoordinatorEmployeeId: "",
   priority: "Warm",
   insurance: "", insuranceType: "", secondaryInsurance: "",
   pipelineStage: "Lead Captured", nextAction: "Contact Lead", nextTaskDue: "",
@@ -235,6 +239,8 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
         utmCampaign:  v.utmCampaign     || undefined,
         originationDate: v.originationDate || undefined,
         assignedIntakeCoordinator: v.assignedIntakeCoordinator || undefined,
+        assignedIntakeCoordinatorUserId:     v.assignedIntakeCoordinatorUserId     || undefined,
+        assignedIntakeCoordinatorEmployeeId: v.assignedIntakeCoordinatorEmployeeId || undefined,
         priority: v.priority,
 
         insurance:        v.insurance         || undefined,
@@ -370,8 +376,18 @@ function FormTabs({ form, update, errors, documents, setDocuments }: FormBodyPro
           <Field label="Assigned Intake Coordinator">
             <IntakeCoordinatorPicker
               value={form.assignedIntakeCoordinator || ""}
-              onChange={(name) => update("assignedIntakeCoordinator", name)}
+              onChange={(name, member) => {
+                update("assignedIntakeCoordinator", name);
+                update("assignedIntakeCoordinatorUserId",     (member?.userId ?? "") as any);
+                update("assignedIntakeCoordinatorEmployeeId", (member?.id ?? "") as any);
+              }}
+              invalid={!!errors.assignedIntakeCoordinator}
             />
+            {form.assignedIntakeCoordinator && !form.assignedIntakeCoordinatorEmployeeId && (
+              <p className="mt-1 text-[11px] text-amber-600">
+                Pick a result from the list so the lead links to the staff member’s user record.
+              </p>
+            )}
           </Field>
         </Grid>
 
