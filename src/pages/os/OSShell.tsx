@@ -98,7 +98,7 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
       { to: "/marketing/google-ads", label: "Google Ads", icon: TrendingUp },
       { to: "/patient-journey", label: "Patient Lifetime Journey", icon: Workflow },
       { to: "/intake/dashboard", label: "Intake Dashboard", icon: Briefcase },
-      { to: "/intake/lead-to-active", label: "Lead To Active Pipeline", icon: TrendingUp },
+      { to: "/intake/lead-to-active", label: "Lead to Ready-to-Start Pipeline", icon: TrendingUp },
       { to: "/intake/referral-queue", label: "Referral Queue", icon: ClipboardCheck },
       { to: "/intake/tasks", label: "Intake Tasks", icon: ListTodo },
       { to: "/intake/benefits-cheat-sheets", label: "Lead Benefits Cheat Sheets", icon: ShieldCheck },

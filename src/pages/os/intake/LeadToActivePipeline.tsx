@@ -55,7 +55,7 @@ export default function LeadToActivePipeline() {
   return (
     <GrowthPageShell
       eyebrow="Growth & Admissions"
-      title="Lead To Active Pipeline"
+      title="Lead to Ready-to-Start Pipeline"
       description="Family lead workflow from lead capture through ready to start services. Active patient operations begin in a separate workflow after Ready to Start Services."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },

@@ -889,7 +889,14 @@ const App = () => (
                   <Route path="/marketing/leadtrap" element={<LeadTrap />} />
                   <Route path="/marketing/facebook-ads" element={<FacebookAds />} />
                   <Route path="/marketing/google-ads" element={<GoogleAds />} />
-                  <Route path="/patient-journey" element={<BlockIntakeRoute><PatientLifetimeJourney /></BlockIntakeRoute>} />
+                  <Route
+                    path="/patient-journey"
+                    element={
+                      <PermissionRoute allowedRoles={["admin", "marketing", "marketing_team", "marketing_growth_lead", "business_development"]}>
+                        <PatientLifetimeJourney />
+                      </PermissionRoute>
+                    }
+                  />
                   <Route path="/intake/dashboard" element={<IntakeWorkspaceLanding />} />
                   <Route path="/intake/lead-to-active" element={<LeadToActivePipeline />} />
                   <Route path="/intake/referral-queue" element={<ReferralQueue />} />
