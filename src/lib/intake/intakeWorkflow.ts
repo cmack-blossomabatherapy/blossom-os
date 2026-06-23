@@ -153,8 +153,10 @@ export function getPreviousFamilyLeadStage(
  */
 export function isReadyToStartStage(stage: string | null | undefined): boolean {
   if (!stage) return false;
-  return canonicalFamilyLeadStage(stage) === "Ready to Start Services" &&
-    LEGACY_FAMILY_LEAD_ALIASES[stage] === "Ready to Start Services";
+  // Only true for explicit canonical "Ready to Start Services" or its known
+  // legacy aliases. VOB Completed maps to Assessment Scheduling and must NOT
+  // be treated as ready-to-start.
+  return LEGACY_FAMILY_LEAD_ALIASES[stage] === "Ready to Start Services";
 }
 
 /**
