@@ -95,9 +95,18 @@ Deno.serve(async (req) => {
       return json({ ok: true, status: "completed" });
     }
 
-    // Teams + calendar write support is opt-in via env flag.
-    const teamsEnabled = (Deno.env.get("EMAIL_CC_TEAMS_WRITE") ?? "") === "1";
-    const calendarEnabled = (Deno.env.get("EMAIL_CC_CALENDAR_WRITE") ?? "") === "1";
+    // Teams + calendar write support is admin-controlled via the
+    // email_cc_settings table. Env vars stay supported as an override for
+    // back-compat with deployments that previously used secrets.
+    const envTeams = (Deno.env.get("EMAIL_CC_TEAMS_WRITE") ?? "") === "1";
+    const envCalendar = (Deno.env.get("EMAIL_CC_CALENDAR_WRITE") ?? "") === "1";
+    const { data: settings } = await supabase
+      .from("email_cc_settings")
+      .select("teams_write_enabled, calendar_write_enabled")
+      .eq("id", "global")
+      .maybeSingle();
+    const teamsEnabled = envTeams || !!settings?.teams_write_enabled;
+    const calendarEnabled = envCalendar || !!settings?.calendar_write_enabled;
 
     if (queue.action_type.startsWith("teams") && !teamsEnabled) {
       await recordAudit("needs_configuration", "Teams write not configured", "EMAIL_CC_TEAMS_WRITE not set");
