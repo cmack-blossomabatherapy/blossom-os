@@ -68,12 +68,12 @@ export function MicrosoftIntegrationsCard({ conn, isAdmin, onReconnect, reconnec
     setSavingKey(key);
     const res = await setEmailCcSetting(key, next);
     setSavingKey(null);
-    if (!res.ok) {
+    if (res.ok) {
+      setSettings(res.row);
+      toast.success(next ? "Enabled" : "Disabled");
+    } else {
       toast.error(`Could not update: ${res.error}`);
-      return;
     }
-    setSettings(res.row);
-    toast.success(next ? "Enabled" : "Disabled");
   }
 
   const teamsOn = !!settings?.teams_write_enabled;
