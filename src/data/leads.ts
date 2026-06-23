@@ -427,10 +427,10 @@ export const kpiFilters: Record<KpiKey, (l: Lead) => boolean> = {
   // Export 80 — only the canonical terminal stage (and its legacy aliases)
   // counts as ready-to-start. VOB Completed is NOT ready-to-start; it maps to
   // Assessment Scheduling.
-  readyToStart: (l) =>
-    l.status === "Ready to Start Services" ||
-    l.status === "Ready for Start" as LeadStatus ||
-    l.status === "Pending Start" as LeadStatus,
+  readyToStart: (l) => {
+    const s = l.status as string;
+    return s === "Ready to Start Services" || s === "Ready for Start" || s === "Pending Start";
+  },
 };
 
 export const calculateKpis = (leads: Lead[]) => {
