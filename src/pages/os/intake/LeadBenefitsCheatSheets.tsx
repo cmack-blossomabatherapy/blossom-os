@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search, ShieldCheck, Copy, MapPin, Tag } from "lucide-react";
+import { Search, ShieldCheck, Copy, MapPin, Tag, List, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,10 @@ export default function LeadBenefitsCheatSheets() {
       eyebrow="Growth & Admissions"
       title="Lead Benefits Cheat Sheets"
       description="Real payer-by-payer intake guidance synced from the Monday source board. Use to qualify leads quickly and route safely."
+      actions={[
+        { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
+        { label: "Open Leads", icon: List, to: "/leads" },
+      ]}
     >
       <div className="flex flex-col md:flex-row md:items-center gap-3 p-3 rounded-2xl border border-border/60 bg-card/50">
         <div className="relative flex-1">
