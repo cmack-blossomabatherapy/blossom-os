@@ -57,18 +57,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
-      // Defer Supabase calls outside the callback to avoid deadlocks
+      // Defer Supabase calls outside the callback to avoid deadlocks.
+      // IMPORTANT: TOKEN_REFRESHED fires whenever the tab regains focus and
+      // Supabase silently rotates the access token. We must NOT flip the
+      // global `loading` state or re-fetch roles on those events, otherwise
+      // the whole app shell remounts and the user loses their place.
       if (s?.user) {
         touchSessionMarker();
-        setLoading(true);
-        setTimeout(() => {
-          Promise.all([loadRolesAndAccess(s.user.id), loadProfileFlag(s.user.id)]).finally(() =>
-            setLoading(false),
-          );
-          if (event === "SIGNED_IN") {
-            void supabase.rpc("log_sign_in").then(() => undefined, () => undefined);
-          }
-        }, 0);
+        const isMeaningful =
+          event === "SIGNED_IN" || event === "USER_UPDATED" || event === "PASSWORD_RECOVERY";
+        if (isMeaningful) {
+          setLoading(true);
+          setTimeout(() => {
+            Promise.all([loadRolesAndAccess(s.user.id), loadProfileFlag(s.user.id)]).finally(() =>
+              setLoading(false),
+            );
+            if (event === "SIGNED_IN") {
+              void supabase.rpc("log_sign_in").then(() => undefined, () => undefined);
+            }
+          }, 0);
+        }
+        // TOKEN_REFRESHED / INITIAL_SESSION: session/user already updated above; do nothing else.
       } else {
         setRoles([]);
         setPermissions(new Set());
