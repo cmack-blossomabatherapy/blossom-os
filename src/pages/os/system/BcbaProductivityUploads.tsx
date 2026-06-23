@@ -62,6 +62,7 @@ export default function BcbaProductivityUploads() {
   const [previewing, setPreviewing] = useState(false);
   const [preview, setPreview] = useState<BcbaUploadPreview | null>(null);
   const [appending, setAppending] = useState(false);
+  const [appendPhase, setAppendPhase] = useState<string>("");
 
   const [batches, setBatches] = useState<BcbaUploadBatch[]>([]);
   const [status, setStatus] = useState<BcbaDatasetStatus | null>(null);
@@ -112,11 +113,30 @@ export default function BcbaProductivityUploads() {
       return;
     }
     setAppending(true);
+    setAppendPhase("Starting upload…");
+    const startedAt = Date.now();
+    // eslint-disable-next-line no-console
+    console.info("[bcba-upload] append starting", {
+      fileName: file.name, fileSize: file.size,
+      parsedRows: preview.parsedRows.length,
+      newRows: preview.newRowCount,
+      duplicates: preview.duplicateRowCount,
+    });
     try {
       const res = await appendBcbaProductivityUpload({
         file, uploadLabel, notes,
         parsed: preview,
+        onProgress: (ev) => {
+          if (ev.phase === "create_batch") setAppendPhase("Creating upload batch…");
+          else if (ev.phase === "finalize_batch") setAppendPhase("Finalizing batch…");
+          else if (ev.phase === "append_rows") {
+            const pct = ev.total > 0 ? Math.round((ev.inserted / ev.total) * 100) : 0;
+            setAppendPhase(`Uploading rows — ${ev.inserted.toLocaleString()} / ${ev.total.toLocaleString()} (${pct}%)`);
+          }
+        },
       });
+      // eslint-disable-next-line no-console
+      console.info("[bcba-upload] append done", { ...res, ms: Date.now() - startedAt });
       toast.success(
         `Appended ${res.appendedRowCount.toLocaleString()} rows · ${res.duplicateRowCount.toLocaleString()} duplicates skipped`,
       );
@@ -130,11 +150,13 @@ export default function BcbaProductivityUploads() {
       // eslint-disable-next-line no-console
       console.error("[bcba-upload] append failed", e);
       toast.error(e?.message ?? "Failed to append upload", {
-        description: "Check the browser console for the full error. If this persists, sign out and back in to refresh your session.",
+        description:
+          "Check the browser console for the full error. If this persists, sign out and back in to refresh your session.",
         duration: 10000,
       });
     } finally {
       setAppending(false);
+      setAppendPhase("");
     }
   }
 
@@ -326,6 +348,11 @@ export default function BcbaProductivityUploads() {
                 <UploadCloud className="mr-2 h-4 w-4" />
                 {appending ? "Appending…" : "Append Upload"}
               </Button>
+              {appending && appendPhase && (
+                <p className="text-[11px] text-muted-foreground text-center tabular-nums">
+                  {appendPhase}
+                </p>
+              )}
               <p className="text-[11px] text-muted-foreground">
                 Re-uploading the same file is safe — duplicate rows are skipped.
               </p>
