@@ -8,6 +8,7 @@ describe("User Management invite delivery tools", () => {
   const page = read("src/pages/os/OSUserManagement.tsx");
   const inviteFunction = read("supabase/functions/admin-invite-user/index.ts");
   const checkFunction = read("supabase/functions/admin-check-welcome-email/index.ts");
+  const profilePage = read("src/pages/os/users/EmployeeProfile.tsx");
 
   it("lets admins edit a user's display name and sync the employee name", () => {
     expect(page).toMatch(/Field label="Display name"/);
@@ -33,5 +34,12 @@ describe("User Management invite delivery tools", () => {
     expect(checkFunction).toMatch(/has_role/);
     expect(checkFunction).toMatch(/connector-gateway\.lovable\.dev\/resend\/emails/);
     expect(checkFunction).toMatch(/last_event/);
+  });
+
+  it("exposes Copy invite link on the per-user details page", () => {
+    expect(profilePage).toMatch(/admin-create-invite-link/);
+    expect(profilePage).toMatch(/Copy invite link/);
+    expect(profilePage).toMatch(/Sign-in link/);
+    expect(profilePage).toMatch(/Temporary password/);
   });
 });
