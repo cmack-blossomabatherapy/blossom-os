@@ -28,9 +28,9 @@ describe("Sprint 21 — HR Team menu + role mapping", () => {
     expect(um?.path).toBe("/user-management");
   });
 
-  it("hr_lead menu includes User Management Admin at /user-management/admin", () => {
-    const admin = hrLeadItems.find((i) => i.path === "/user-management/admin");
-    expect(admin).toBeDefined();
+  it("hr_lead menu no longer exposes the legacy /user-management/admin page", () => {
+    expect(hrLeadItems.find((i) => i.path === "/user-management/admin")).toBeUndefined();
+    expect(hrLeadItems.find((i) => i.path === "/user-management")).toBeDefined();
   });
 
   it("hr_team and hr_lead home is /hr-team", () => {
@@ -47,8 +47,9 @@ describe("Sprint 21 — HR Team menu + role mapping", () => {
     expect(live.has("/nfc-badges")).toBe(false);
   });
 
-  it("hr_lead live paths include /user-management/admin", () => {
-    expect(ROLE_SPECIFIC_LIVE_PATHS.hr_lead!.has("/user-management/admin")).toBe(true);
+  it("hr_lead live paths drop the legacy /user-management/admin entry", () => {
+    expect(ROLE_SPECIFIC_LIVE_PATHS.hr_lead!.has("/user-management/admin")).toBe(false);
+    expect(ROLE_SPECIFIC_LIVE_PATHS.hr_lead!.has("/user-management")).toBe(true);
     expect(ROLE_SPECIFIC_LIVE_PATHS.hr_team!.has("/user-management/admin")).toBe(false);
   });
 });
