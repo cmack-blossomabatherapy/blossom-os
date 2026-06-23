@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   MessageSquare, Plus, ArrowRight, ArrowLeft, UserPlus, AlertCircle,
   ShieldCheck, ShieldAlert, Flame, ExternalLink,
+  Phone, Send, Mail, FileText, BellRing,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,14 @@ import {
   ESCALATION_SEVERITIES,
   type EscalationSeverity,
 } from "@/lib/intake/intakeWorkflow";
+import {
+  callParent,
+  sendLeadEmail,
+  sendLeadSms,
+  sendIntakePacket,
+  sendMissingInfoReminder,
+  notifyCommunicationResult,
+} from "@/lib/integrations/communications/communicationAdapters";
 
 export type LeadActionPanelProps = {
   lead: Lead;
@@ -97,6 +106,20 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
 
   const btnSize = compact ? "sm" : "sm";
 
+  // Export 81 — adapter-driven family contact actions. These replace the old
+  // logging-only pattern as the primary communication workflow.
+  const leadContext = {
+    leadId: lead.id,
+    phone: lead.phone,
+    email: lead.email,
+    parentName: lead.parentName,
+    childName: lead.childName,
+    state: lead.state,
+    insurance: lead.insurance,
+  };
+  const hasPhone = Boolean(lead.phone && lead.phone.trim());
+  const hasEmail = Boolean(lead.email && lead.email.trim());
+
   return (
     <div
       className={cn(
@@ -105,6 +128,53 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
       )}
       data-source-page={sourcePage}
     >
+      {/* Primary family-contact actions — adapter-driven (Jivetel / CTM / Mailchimp). */}
+      <Button
+        size={btnSize}
+        variant="default"
+        disabled={!hasPhone}
+        title={hasPhone ? undefined : "No phone on file"}
+        onClick={async () => notifyCommunicationResult(await callParent(leadContext))}
+      >
+        <Phone className="h-3.5 w-3.5 mr-1" /> Call Parent
+      </Button>
+      <Button
+        size={btnSize}
+        variant="outline"
+        disabled={!hasPhone}
+        title={hasPhone ? undefined : "No phone on file"}
+        onClick={async () => notifyCommunicationResult(await sendLeadSms(leadContext))}
+      >
+        <Send className="h-3.5 w-3.5 mr-1" /> Send SMS
+      </Button>
+      <Button
+        size={btnSize}
+        variant="outline"
+        disabled={!hasEmail}
+        title={hasEmail ? undefined : "No email on file"}
+        onClick={async () => notifyCommunicationResult(await sendLeadEmail(leadContext))}
+      >
+        <Mail className="h-3.5 w-3.5 mr-1" /> Send Email
+      </Button>
+      <Button
+        size={btnSize}
+        variant="outline"
+        disabled={!hasEmail}
+        title={hasEmail ? undefined : "No email on file"}
+        onClick={async () => notifyCommunicationResult(await sendIntakePacket(leadContext))}
+      >
+        <FileText className="h-3.5 w-3.5 mr-1" /> Send Intake Packet
+      </Button>
+      <Button
+        size={btnSize}
+        variant="outline"
+        disabled={!hasPhone && !hasEmail}
+        title={hasPhone || hasEmail ? undefined : "No phone or email on file"}
+        onClick={async () => notifyCommunicationResult(await sendMissingInfoReminder(leadContext))}
+      >
+        <BellRing className="h-3.5 w-3.5 mr-1" /> Missing Info Reminder
+      </Button>
+
       <Button size={btnSize} variant="outline" onClick={() => setFollowOpen(true)}>
         <Plus className="h-3.5 w-3.5 mr-1" /> Follow-Up
       </Button>

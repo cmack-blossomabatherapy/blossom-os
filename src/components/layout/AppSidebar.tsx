@@ -179,7 +179,7 @@ function buildSections(args: {
           { label: "Google Ads",                   path: "/marketing/google-ads",      icon: TrendingUp },
           { label: "Patient Lifetime Journey",     path: "/patient-journey",           icon: Workflow },
           { label: "Intake Dashboard",             path: "/intake/dashboard",          icon: Briefcase },
-          { label: "Lead To Active Pipeline",      path: "/intake/lead-to-active",     icon: TrendingUp },
+          { label: "Lead to Ready-to-Start Pipeline", path: "/intake/lead-to-active", icon: TrendingUp },
           { label: "Referral Queue",               path: "/intake/referral-queue",     icon: ClipboardCheck },
           { label: "Intake Tasks",                 path: "/intake/tasks",              icon: ClipboardCheck },
           { label: "Lead Benefits Cheat Sheets",   path: "/intake/benefits-cheat-sheets", icon: ShieldCheck },

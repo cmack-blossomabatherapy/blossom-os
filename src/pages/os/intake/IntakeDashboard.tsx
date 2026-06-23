@@ -138,7 +138,7 @@ export default function IntakeDashboard() {
       <Section title="Intake workspaces" description="Open any area to manage that part of intake.">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           <LinkCard title="New Referral Queue" description="Inbound referrals awaiting first contact." to="/intake/referral-queue" status="live" icon={ClipboardList} />
-          <LinkCard title="Lead To Active Pipeline" description="Stage-by-stage view from lead through ready to start services." to="/intake/lead-to-active" status="live" icon={TrendingUp} />
+          <LinkCard title="Lead to Ready-to-Start Pipeline" description="Stage-by-stage view from lead through ready to start services." to="/intake/lead-to-active" status="live" icon={TrendingUp} />
           <LinkCard title="Missing Information" description="Leads blocked by missing documents or details." to="/intake/missing-information" status="live" icon={AlertCircle} />
           <LinkCard title="Intake Communications" description="Send calls, SMS, and email to families through Blossom OS adapters." to="/intake/parent-communication" status="live" icon={MessageSquare} />
           <LinkCard title="Intake Tasks" description="Personal task list for the intake team." to="/intake/tasks" status="live" icon={FileText} />

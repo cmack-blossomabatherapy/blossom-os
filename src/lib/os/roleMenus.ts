@@ -256,7 +256,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
         id: "intake", label: "Intake", items: [
           { label: "Intake Dashboard",           path: "/intake/dashboard",              icon: LayoutDashboard },
           { label: "New Referral Queue",         path: "/intake/referral-queue",         icon: ClipboardList },
-          { label: "Lead To Active Pipeline",    path: "/intake/lead-to-active",         icon: TrendingUp },
+          { label: "Lead to Ready-to-Start Pipeline", path: "/intake/lead-to-active",    icon: TrendingUp },
           { label: "Missing Information",        path: "/intake/missing-information",    icon: ShieldCheck },
           { label: "Intake Communications",      path: "/intake/parent-communication",   icon: MessageSquare },
           { label: "Intake Tasks",               path: "/intake/tasks",                  icon: ClipboardList },
