@@ -7,16 +7,24 @@ import { Badge } from "@/components/ui/badge";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
-import { getLeadWorkflowRisk } from "@/lib/intake/intakeWorkflow";
+import {
+  getLeadWorkflowRisk,
+  isReadyToStartStage,
+  canonicalFamilyLeadStage,
+} from "@/lib/intake/intakeWorkflow";
 import type { LeadStatus } from "@/data/leads";
 
-const PIPELINE_STAGES = new Set([
-  "New Lead", "In Contact", "Sent Form", "Missing Information",
-  "Form Received", "Sent to VOB",
+// Family / Lead Workflow open-pipeline check — every canonical stage except
+// the terminal "Ready to Start Services" (active patient ops start there).
+const DISQUALIFIED_STATUSES = new Set<string>([
+  "Non-Qualified", "Non-qualified Lead",
 ]);
-const MISSING_STAGES = new Set(["Missing Information"]);
-const AWAITING_VOB_STAGES = new Set(["Sent to VOB"]);
-const CONVERTED_STAGES = new Set(["VOB Completed"]);
+const isOpenFamilyPipeline = (status: string) =>
+  !isReadyToStartStage(status) &&
+  !DISQUALIFIED_STATUSES.has(status);
+const MISSING_STAGES = new Set(["Missing Information", "Intake Packet Follow Up"]);
+const AWAITING_VOB_STAGES = new Set(["Sent to VOB", "Benefits Verification"]);
+const LEAD_CAPTURED_STAGES = new Set(["New Lead", "Lead Captured"]);
 const AGING_STAGES: LeadStatus[] = [
   "New Lead", "In Contact", "Sent Form", "Missing Information",
   "Form Received", "Sent to VOB", "VOB Completed",
@@ -29,13 +37,13 @@ export default function IntakeDashboard() {
   const counts = useMemo(() => {
     const now = Date.now();
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-    const newReferrals = leads.filter((l) => l.status === "New Lead").length;
-    const inPipeline = leads.filter((l) => PIPELINE_STAGES.has(l.status)).length;
+    const newReferrals = leads.filter((l) => LEAD_CAPTURED_STAGES.has(l.status)).length;
+    const inPipeline = leads.filter((l) => isOpenFamilyPipeline(l.status)).length;
     const missing = leads.filter((l) => MISSING_STAGES.has(l.status)).length;
     const followUps = leads.filter((l) => l.tasks?.some((t) => !t.completed)).length;
     const awaiting = leads.filter((l) => AWAITING_VOB_STAGES.has(l.status)).length;
     const converted = leads.filter((l) => {
-      if (!CONVERTED_STAGES.has(l.status)) return false;
+      if (!isReadyToStartStage(l.status)) return false;
       const d = new Date(l.updatedAt).getTime();
       return Number.isFinite(d) && now - d <= thirtyDays;
     }).length;
@@ -56,7 +64,7 @@ export default function IntakeDashboard() {
   const ownerWorkload = useMemo(() => {
     const map = new Map<string, { total: number; risk: number }>();
     leads.forEach((l) => {
-      if (!PIPELINE_STAGES.has(l.status)) return;
+      if (!isOpenFamilyPipeline(l.status)) return;
       const k = l.owner || "Unassigned";
       const r = getLeadWorkflowRisk(l).level;
       const cur = map.get(k) ?? { total: 0, risk: 0 };
@@ -73,7 +81,7 @@ export default function IntakeDashboard() {
   const stateBreakdown = useMemo(() => {
     const map = new Map<string, number>();
     leads.forEach((l) => {
-      if (!PIPELINE_STAGES.has(l.status)) return;
+      if (!isOpenFamilyPipeline(l.status)) return;
       const k = l.state || "-";
       map.set(k, (map.get(k) ?? 0) + 1);
     });
@@ -83,7 +91,7 @@ export default function IntakeDashboard() {
   const sourceBreakdown = useMemo(() => {
     const map = new Map<string, number>();
     leads.forEach((l) => {
-      if (!PIPELINE_STAGES.has(l.status)) return;
+      if (!isOpenFamilyPipeline(l.status)) return;
       const k = l.source || "Unknown";
       map.set(k, (map.get(k) ?? 0) + 1);
     });
@@ -102,7 +110,7 @@ export default function IntakeDashboard() {
   }, [leads]);
 
   const handoffReady = useMemo(
-    () => leads.filter((l) => l.status === "VOB Completed").slice(0, 6),
+    () => leads.filter((l) => isReadyToStartStage(l.status)).slice(0, 6),
     [leads],
   );
 
@@ -114,7 +122,7 @@ export default function IntakeDashboard() {
     <GrowthPageShell
       eyebrow="Growth & Admissions"
       title="Intake Dashboard"
-      description="Manage new referrals, parent communication, missing information, insurance checks, and movement from lead to active care."
+      description="Manage new referrals, parent communication, missing information, insurance checks, and movement from lead capture to ready to start services."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
         { label: "Open Leads", icon: List, to: "/leads" },
@@ -132,7 +140,7 @@ export default function IntakeDashboard() {
       <Section title="Intake workspaces" description="Open any area to manage that part of intake.">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           <LinkCard title="New Referral Queue" description="Inbound referrals awaiting first contact." to="/intake/referral-queue" status="live" icon={ClipboardList} />
-          <LinkCard title="Lead To Active Pipeline" description="Stage-by-stage view from lead through active care." to="/intake/lead-to-active" status="live" icon={TrendingUp} />
+          <LinkCard title="Lead To Active Pipeline" description="Stage-by-stage view from lead through ready to start services." to="/intake/lead-to-active" status="live" icon={TrendingUp} />
           <LinkCard title="Missing Information" description="Leads blocked by missing documents or details." to="/intake/missing-information" status="live" icon={AlertCircle} />
           <LinkCard title="Intake Communications" description="Send calls, SMS, and email to families through Blossom OS adapters." to="/intake/parent-communication" status="live" icon={MessageSquare} />
           <LinkCard title="Intake Tasks" description="Personal task list for the intake team." to="/intake/tasks" status="live" icon={FileText} />
