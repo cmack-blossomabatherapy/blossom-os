@@ -181,12 +181,6 @@ export default function ReferralQueue() {
                 <div className="mt-3">
                   <LeadActionPanel lead={lead} compact sourcePage="referral-queue" />
                 </div>
-                <Link
-                  to={`/patient-journey?leadId=${lead.id}`}
-                  className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
-                >
-                  <HeartHandshake className="h-3 w-3" /> Patient Lifetime Journey
-                </Link>
               </div>
             ))}
           </div>
