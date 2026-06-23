@@ -88,6 +88,8 @@ describe("Export 79 — Operationalize Ready-To-Start pipeline", () => {
     expect(src).toMatch(/Active patient operations start after this point/);
     expect(src).toMatch(/<Ban /);
   });
+
+  it("IntakeDashboard uses isReadyToStartStage for the Ready to Start (30d) metric", () => {
     const src = read("src/pages/os/intake/IntakeDashboard.tsx");
     expect(src).toMatch(/isReadyToStartStage/);
     expect(src).toMatch(/Ready to Start \(30d\)/);
