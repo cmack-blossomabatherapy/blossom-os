@@ -202,8 +202,8 @@ export const resources: Resource[] = [
   },
   {
     id: "r-vob-guide",
-    title: "VOB Decision Guide",
-    description: "Step-by-step guide for verifying benefits and decisioning new referrals.",
+    title: "Benefits Verification Decision Guide",
+    description: "Step-by-step guide for benefits verification and decisioning new referrals.",
     type: "SOP", category: "insurance", status: "Published",
     roles: INTAKE_ROLES, departments: ["Intake"], states: [],
     tags: ["vob","benefits","verification"], uploadedBy: "Alex Chen",
@@ -211,8 +211,8 @@ export const resources: Resource[] = [
   },
   {
     id: "r-missing-info-checklist",
-    title: "Missing Information Checklist",
-    description: "Checklist for following up on incomplete intake submissions.",
+    title: "Packet Follow Up / Missing Info Checklist",
+    description: "Checklist for following up on incomplete intake packets and missing info.",
     type: "Checklist", category: "workflows", status: "Published",
     roles: INTAKE_ROLES, departments: ["Intake"], states: [],
     tags: ["checklist","followup","intake"], uploadedBy: "Jordan Pierce",
@@ -441,7 +441,7 @@ const AUTH_DOCS: Resource[] = [
 
 // ---- Intake / VOB / EOB / Leads ----
 const INTAKE_DOCS_EXTRA: Resource[] = [
-  pending({ id: "r-intake-vob-eob-workflow", title: "VOB / EOB Workflow", description: "Workflow for verifying benefits and reading EOBs for new clients.",
+  pending({ id: "r-intake-vob-eob-workflow", title: "Benefits Verification / EOB Workflow", description: "Workflow for benefits verification and reading EOBs for new clients.",
     type: "Workflow", category: "workflows", roles: INTAKE_ROLES, departments: ["Intake","Billing"], states: [],
     tags: ["vob","eob","insurance","workflow"], uploadedBy: "Intake", resourceType: "workflow" }),
   pending({ id: "r-intake-lead-workflow", title: "Lead Lifecycle Workflow", description: "Lead capture through intake conversion.",

@@ -247,6 +247,14 @@ function OSLeadsV2Inner() {
   const [activeKpi, setActiveKpi] = useState<string | null>(() => searchParams.get("kpi"));
   const [activeTab, setActiveTab] = useState<string>(() => searchParams.get("tab") || "all");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+  // Export 89: open the drawer when navigated to /leads?lead=<id>.
+  useEffect(() => {
+    const id = searchParams.get("lead");
+    if (id) {
+      setOpenLeadId(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [page, setPage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
@@ -971,7 +979,7 @@ function FiltersButton({
         <Section title="Intake Person" items={opts.owners} k="owners" />
         <Section title="Status" items={opts.statuses} k="statuses" />
         <Section title="Form Status" items={opts.formStatuses} k="formStatuses" />
-        <Section title="VOB Status" items={opts.vobStatuses} k="vobStatuses" />
+        <Section title="Benefits Status" items={opts.vobStatuses} k="vobStatuses" />
         <Section title="Insurance" items={opts.insurances} k="insurances" />
         <label className="flex items-center gap-2 text-sm pt-1">
           <input
@@ -1007,7 +1015,7 @@ const AI_PROMPTS = [
   "Find leads missing information",
   "Which leads are stuck?",
   "Draft a parent follow-up message",
-  "Summarize VOB pipeline health",
+  "Summarize benefits verification pipeline health",
 ];
 
 function AIRail() {

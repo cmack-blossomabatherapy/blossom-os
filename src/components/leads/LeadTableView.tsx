@@ -60,7 +60,7 @@ export function LeadTableView({
     { label: "Form", field: null },
     { label: "Consent", field: null },
     { label: "Review", field: null },
-    { label: "VOB", field: null },
+    { label: "Benefits", field: null },
     { label: "Priority", field: "priority", w: "w-[70px]" },
     { label: "Days", field: "daysInStage", w: "w-[55px]" },
     { label: "Last Contact", field: "lastContacted", w: "w-[90px]" },
