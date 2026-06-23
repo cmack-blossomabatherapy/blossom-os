@@ -232,9 +232,9 @@ export default function IntakeDashboard() {
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground">{lead.state || "-"} - {lead.owner || "Unassigned"}</div>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  <Link to="/ops/authorizations" className="text-[11px] text-primary hover:underline">-> Authorizations</Link>
-                  <Link to="/ops/scheduling" className="text-[11px] text-primary hover:underline">-> Scheduling</Link>
-                  <Link to="/qa-team" className="text-[11px] text-primary hover:underline">-> Clinical</Link>
+                  <Link to="/ops/authorizations" className="text-[11px] text-primary hover:underline">{"-> Authorizations"}</Link>
+                  <Link to="/ops/scheduling" className="text-[11px] text-primary hover:underline">{"-> Scheduling"}</Link>
+                  <Link to="/qa-team" className="text-[11px] text-primary hover:underline">{"-> Clinical"}</Link>
                 </div>
               </div>
             ))}
