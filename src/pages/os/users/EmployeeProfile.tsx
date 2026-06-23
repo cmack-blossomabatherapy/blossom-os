@@ -2284,12 +2284,38 @@ export default function EmployeeProfilePage() {
                 {sendingInvite ? <RefreshCw className="size-3.5 animate-spin" /> : <Mail className="size-3.5" />} Invite to Blossom OS
               </Button>
               <Button size="sm" variant="outline" className="text-xs"
+                onClick={createInviteLink}
+                disabled={creatingLink || !member.email}>
+                {creatingLink ? <RefreshCw className="size-3.5 animate-spin" /> : <Link2 className="size-3.5" />} Copy invite link
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs"
                 onClick={() => { setTab("devices"); setOpenAssignDevice(true); }}>
                 <Smartphone className="size-3.5" /> Assign device
               </Button>
             </div>
           </div>
         </Card>
+
+        {inviteLink && (
+          <Card className="mb-8 border-primary/30 bg-primary/[0.04] p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Share with {inviteLink.email}</p>
+                <p className="text-[12px] text-muted-foreground">
+                  A new temporary password was generated. The user will be required to set their own password on first sign-in. Send these to them however works best (text, Slack, in person).
+                </p>
+              </div>
+              <Button type="button" size="sm" variant="ghost" className="h-7 gap-1.5 px-2 text-[11px]" onClick={copyCredentialsBlock}>
+                <Copy className="size-3" /> Copy all
+              </Button>
+            </div>
+            <div className="mt-3 space-y-1.5">
+              <CopyRow label="Sign-in link" value={inviteLink.loginUrl} onCopy={(v) => copyToClipboard(v, "Sign-in link")} />
+              <CopyRow label="Email" value={inviteLink.email} onCopy={(v) => copyToClipboard(v, "Email")} />
+              <CopyRow label="Temporary password" value={inviteLink.tempPassword} onCopy={(v) => copyToClipboard(v, "Temporary password")} mono />
+            </div>
+          </Card>
+        )}
 
         {/* Tabs */}
         <nav className="sticky top-0 z-10 mb-8 -mx-1 overflow-x-auto rounded-2xl border border-border/70 bg-card/80 px-2 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/60">
