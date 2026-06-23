@@ -209,6 +209,21 @@ export interface LeadIntakeFields {
 }
 
 export const pipelineStages: { name: LeadStatus; color: string }[] = [
+  // Canonical Family / Lead Workflow (Export 78+) — source of truth.
+  { name: "Lead Captured", color: "info" },
+  { name: "First Contact Attempt", color: "default" },
+  { name: "Engagement Track", color: "default" },
+  { name: "Qualification", color: "default" },
+  { name: "Intake Packet Sent", color: "default" },
+  { name: "Intake Packet Follow Up", color: "warning" },
+  { name: "Intake Complete", color: "success" },
+  { name: "Benefits Verification", color: "default" },
+  { name: "Assessment Scheduling", color: "default" },
+  { name: "QA / Treatment Plan Authorization", color: "default" },
+  { name: "Authorization Pending", color: "default" },
+  { name: "Staffing Match", color: "default" },
+  { name: "Ready to Start Services", color: "success" },
+  // Legacy Monday-era statuses kept for backward compatibility on imported records.
   { name: "New Lead", color: "info" },
   { name: "In Contact", color: "default" },
   { name: "Sent Form", color: "default" },
@@ -341,6 +356,21 @@ export const mockLeads: Lead[] = [];
 
 export const statusVariant = (status: string): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
   const map: Record<string, "default" | "success" | "warning" | "destructive" | "info" | "muted"> = {
+    // Canonical Family / Lead Workflow
+    "Lead Captured": "info",
+    "First Contact Attempt": "default",
+    "Engagement Track": "default",
+    "Qualification": "default",
+    "Intake Packet Sent": "default",
+    "Intake Packet Follow Up": "warning",
+    "Intake Complete": "success",
+    "Benefits Verification": "default",
+    "Assessment Scheduling": "default",
+    "QA / Treatment Plan Authorization": "default",
+    "Authorization Pending": "default",
+    "Staffing Match": "default",
+    "Ready to Start Services": "success",
+    // Legacy
     "New Lead": "info",
     "In Contact": "default",
     "Sent Form": "default",
@@ -371,13 +401,19 @@ export const getInlineAlert = (lead: Lead): { type: "red" | "yellow"; message: s
   if (lead.status === "Sent to VOB" && lead.daysInStage >= 3) return { type: "yellow", message: "VOB pending " + lead.daysInStage + "d" };
   if (lead.status === "Can't Reach" && lead.daysInStage >= 5) return { type: "red", message: "Can't reach — " + lead.daysInStage + "d" };
   if (lead.status === "Can Not Submit Auth") return { type: "red", message: "Auth blocked — missing docs" };
-  if (lead.status === "VOB Completed" && (lead.vobStatus === "Approved" || lead.vobStatus === "Payment Plan Required")) return { type: "yellow", message: "Ready to move to Clients" };
-  if (lead.daysInStage > 5 && !["VOB Completed", "Non-Qualified", "Non-qualified Lead"].includes(lead.status)) return { type: "red", message: `Stuck in stage ${lead.daysInStage}d` };
+  if (lead.status === "VOB Completed" && (lead.vobStatus === "Approved" || lead.vobStatus === "Payment Plan Required")) return { type: "yellow", message: "Benefits verified - schedule assessment" };
+  if (lead.status === "Benefits Verification" && (lead.vobStatus === "Approved" || lead.vobStatus === "Completed")) return { type: "yellow", message: "Benefits verified - schedule assessment" };
+  if (lead.status === "Assessment Scheduling") return { type: "yellow", message: "Assessment scheduling needed" };
+  if (lead.status === "QA / Treatment Plan Authorization") return { type: "yellow", message: "Treatment plan / QA review" };
+  if (lead.status === "Authorization Pending") return { type: "yellow", message: "Authorization pending" };
+  if (lead.status === "Staffing Match") return { type: "yellow", message: "Staffing match needed" };
+  if (lead.status === "Ready to Start Services") return { type: "yellow", message: "Ready to start services" };
+  if (lead.daysInStage > 5 && !["VOB Completed", "Ready to Start Services", "Non-Qualified", "Non-qualified Lead"].includes(lead.status)) return { type: "red", message: `Stuck in stage ${lead.daysInStage}d` };
   return null;
 };
 
 // KPI calculators
-export type KpiKey = "newToday" | "notContacted" | "sentForm" | "missingInfo" | "sentVob" | "vobCompleted" | "cantReach" | "all";
+export type KpiKey = "newToday" | "notContacted" | "sentForm" | "missingInfo" | "sentVob" | "vobCompleted" | "cantReach" | "readyToStart" | "all";
 
 export const kpiFilters: Record<KpiKey, (l: Lead) => boolean> = {
   all: () => true,
@@ -388,6 +424,13 @@ export const kpiFilters: Record<KpiKey, (l: Lead) => boolean> = {
   sentVob: (l) => l.status === "Sent to VOB",
   vobCompleted: (l) => l.status === "VOB Completed",
   cantReach: (l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach",
+  // Export 80 — only the canonical terminal stage (and its legacy aliases)
+  // counts as ready-to-start. VOB Completed is NOT ready-to-start; it maps to
+  // Assessment Scheduling.
+  readyToStart: (l) =>
+    l.status === "Ready to Start Services" ||
+    l.status === "Ready for Start" as LeadStatus ||
+    l.status === "Pending Start" as LeadStatus,
 };
 
 export const calculateKpis = (leads: Lead[]) => {
@@ -418,6 +461,7 @@ export const calculateKpis = (leads: Lead[]) => {
     sentVob: leads.filter(kpiFilters.sentVob).length,
     vobCompleted: leads.filter(kpiFilters.vobCompleted).length,
     cantReach: leads.filter(kpiFilters.cantReach).length,
+    readyToStart: leads.filter(kpiFilters.readyToStart).length,
     avgTimeToContact,
     avgTimeToVob,
   };
