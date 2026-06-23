@@ -849,7 +849,7 @@ const App = () => (
                   <Route path="/phone/requests/:id" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneRequestDetail /></BlockIntakeRoute>} />
                   <Route path="/phone/admin" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneAdmin /></BlockIntakeRoute>} />
                   <Route path="/phone/ai-calls" element={<PhoneAfterHoursAI />} />
-                  <Route path="/phone/ai-calls/audit" element={<PhoneAiCallAudit />} />
+                  <Route path="/phone/ai-calls/audit" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneAiCallAudit /></BlockIntakeRoute>} />
                   {/* Marketing Team */}
                   <Route path="/marketing-dashboard" element={<Navigate to="/marketing" replace />} />
                   <Route path="/marketing" element={<MarketingDashboard />} />

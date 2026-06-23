@@ -9,6 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLeads } from "@/contexts/LeadsContext";
 import type { Lead } from "@/data/leads";
+import {
+  callParent,
+  sendLeadEmail,
+  sendLeadSms,
+  notifyCommunicationResult,
+} from "@/lib/integrations/communications/communicationAdapters";
 
 type ModalKind =
   | { kind: "note"; lead?: Lead }
@@ -225,12 +231,8 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
   if (active.kind === "comm") {
     const isEmail = active.channel === "email";
     const isCall = active.channel === "call";
-    const channelLabel = isCall ? "call" : isEmail ? "email" : "text";
-    const dialogTitle = isCall
-      ? "Log call"
-      : isEmail
-      ? "Draft email"
-      : "Draft text message";
+    const actionLabel = isCall ? "Call Parent" : isEmail ? "Send Email" : "Send SMS";
+    const dialogTitle = actionLabel;
     const toField = isCall
       ? resolvedLead?.phone || "—"
       : isEmail
@@ -252,7 +254,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
             </div>
           )}
           <div>
-            <Label className="text-xs">{isCall ? "Call notes" : "Message"}</Label>
+            <Label className="text-xs">{isCall ? "Optional internal note" : "Message"}</Label>
             <Textarea
               autoFocus
               rows={6}
@@ -260,7 +262,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
               onChange={(e) => setText(e.target.value)}
               placeholder={
                 isCall
-                  ? "Summary of the call, outcome, next step…"
+                  ? "Optional internal note. Outbound call is placed via CTM/Jivetel."
                   : isEmail
                   ? "Hi, just checking in…"
                   : "Hi! Just checking in on your intake forms."
@@ -270,27 +272,36 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
           <DialogFooter>
             <Button variant="ghost" onClick={close}>Cancel</Button>
             <Button
-              disabled={!text.trim() || !resolvedLead}
-              onClick={() => {
+              disabled={!resolvedLead}
+              onClick={async () => {
                 if (!resolvedLead) return;
+                const ctx = {
+                  leadId: resolvedLead.id,
+                  phone: resolvedLead.phone,
+                  email: resolvedLead.email,
+                  parentName: resolvedLead.parentName,
+                  childName: resolvedLead.childName,
+                  state: resolvedLead.state,
+                  insurance: (resolvedLead as unknown as { insurance?: string }).insurance,
+                };
+                const result = isCall
+                  ? await callParent(ctx)
+                  : isEmail
+                  ? await sendLeadEmail(ctx)
+                  : await sendLeadSms(ctx);
+                notifyCommunicationResult(result);
+                const note = text.trim();
                 updateLead(resolvedLead.id, {
                   lastContacted: new Date().toISOString(),
                   automationLog: [
-                    `${
-                      isCall ? "Call logged" : isEmail ? "Email drafted" : "SMS drafted"
-                    }: ${text.trim().slice(0, 80)}`,
+                    `${actionLabel} via Blossom OS${note ? ` — note: ${note.slice(0, 80)}` : ""}`,
                     ...resolvedLead.automationLog,
                   ],
                 });
-                toast.success(
-                  isCall
-                    ? "Call logged"
-                    : `${isEmail ? "Email" : "SMS"} logged (preview only)`
-                );
                 close();
               }}
             >
-              Log {channelLabel}
+              {actionLabel}
             </Button>
           </DialogFooter>
         </DialogContent>

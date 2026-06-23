@@ -520,7 +520,7 @@ function LeadDetailWorkspace({ lead, onBack }: { lead: Lead; onBack: () => void 
       {/* Sticky action bar (mobile-friendly) */}
       <div className="sticky bottom-0 -mx-6 px-6 py-3 bg-background/95 backdrop-blur border-t border-border">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <ActionBtn icon={Phone} label="Log call" onClick={() => modals.open({ kind: "comm", lead, channel: "text" })} />
+          <ActionBtn icon={Phone} label="Call Parent" onClick={() => modals.open({ kind: "comm", lead, channel: "call" })} />
           <ActionBtn icon={Send} label="Send form" onClick={() => { updateLead(lead.id, { formStatus: "Sent" }); toast.success("Intake form sent"); }} />
           <ActionBtn icon={AlertCircle} label="Missing info" onClick={() => { updateLead(lead.id, { formReviewStatus: "Missing Information" }); toast("Marked missing info"); }} />
           <ActionBtn icon={ShieldCheck} label="Send to VOB" onClick={() => { updateLead(lead.id, { status: "Sent to VOB" }); toast.success("Sent to VOB"); }} />

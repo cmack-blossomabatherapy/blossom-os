@@ -443,9 +443,71 @@ const CONFIDENCE_LABEL = {
 export function BenefitsCheatSheetMatchPanel({
   insurance,
   state,
-}: { insurance?: string | null; state?: string | null }) {
-  const hasInsurance = !!(insurance && String(insurance).trim());
-  const match = findBenefitsCheatSheetForLead({ insurance, state });
+  leadId,
+  secondaryInsurance,
+  rawInsurance,
+}: {
+  insurance?: string | null;
+  state?: string | null;
+  leadId?: string;
+  secondaryInsurance?: string | null;
+  rawInsurance?: string | null;
+}) {
+  const { updateLead, leads } = useLeads();
+  const resolvedLead = leadId ? leads.find((l) => l.id === leadId) : undefined;
+  const candidates = [insurance, secondaryInsurance, rawInsurance].filter(
+    (v) => v && String(v).trim(),
+  ) as string[];
+  const hasInsurance = candidates.length > 0;
+  // Try each candidate; keep the best confidence.
+  const match = candidates.length === 0
+    ? findBenefitsCheatSheetForLead({ insurance: null, state })
+    : candidates
+        .map((ins) => findBenefitsCheatSheetForLead({ insurance: ins, state }))
+        .sort((a, b) => {
+          const order = { exact: 0, strong: 1, possible: 2, none: 3 } as const;
+          return order[a.confidence] - order[b.confidence];
+        })[0];
+
+  const requestMissingInfo = () => {
+    if (resolvedLead) {
+      updateLead(resolvedLead.id, {
+        formReviewStatus: "Missing Information",
+        automationLog: [
+          `Intake: requested missing insurance info from parent`,
+          ...resolvedLead.automationLog,
+        ],
+      });
+    }
+    toast.success("Requested missing insurance info from parent");
+  };
+
+  const createBenefitsReviewTask = () => {
+    if (resolvedLead) {
+      updateLead(resolvedLead.id, {
+        nextAction: "Review benefits cheat sheet",
+        nextTaskDue: new Date().toISOString().slice(0, 10),
+        automationLog: [
+          `Intake Task: Review benefits cheat sheet`,
+          ...resolvedLead.automationLog,
+        ],
+      });
+    }
+    toast.success("Intake task created: Review benefits cheat sheet");
+  };
+
+  const markNeedsBenefitsReview = () => {
+    if (resolvedLead) {
+      updateLead(resolvedLead.id, {
+        vobStatus: "Issue",
+        automationLog: [
+          `Intake: flagged for benefits review (cheat sheet match)`,
+          ...resolvedLead.automationLog,
+        ],
+      });
+    }
+    toast.success("Flagged: needs benefits review");
+  };
 
   if (!hasInsurance) {
     return (
@@ -457,11 +519,20 @@ export function BenefitsCheatSheetMatchPanel({
         <p className="text-xs text-muted-foreground">
           No insurance listed yet. Add insurance to see payer guidance.
         </p>
+        <div className="mt-3">
+          <button
+            onClick={requestMissingInfo}
+            className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition"
+          >
+            Request missing insurance info
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!match.sheet) {
+    const searchTerm = candidates[0] ?? "";
     return (
       <div className="rounded-2xl border border-border/70 bg-card p-4">
         <div className="flex items-center gap-2 mb-1">
@@ -469,15 +540,29 @@ export function BenefitsCheatSheetMatchPanel({
           <p className="text-sm font-medium text-foreground">Benefits Cheat Sheet Match</p>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          No payer match found for <span className="font-medium text-foreground">{insurance}</span>
+          No payer match found for <span className="font-medium text-foreground">{searchTerm}</span>
           {state ? <> in <span className="font-medium text-foreground">{state}</span></> : null}.
         </p>
-        <Link
-          to={`/intake/benefits-cheat-sheets?q=${encodeURIComponent(String(insurance))}`}
-          className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
-        >
-          <ExternalLink className="h-3 w-3" /> Open full cheat sheet
-        </Link>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            onClick={requestMissingInfo}
+            className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition"
+          >
+            Request missing insurance info
+          </button>
+          <button
+            onClick={createBenefitsReviewTask}
+            className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition"
+          >
+            Create Intake Task: Review benefits cheat sheet
+          </button>
+          <Link
+            to={`/intake/benefits-cheat-sheets?q=${encodeURIComponent(searchTerm)}`}
+            className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition inline-flex items-center gap-1"
+          >
+            <ExternalLink className="h-3 w-3" /> Open full cheat sheet
+          </Link>
+        </div>
       </div>
     );
   }
@@ -528,6 +613,24 @@ export function BenefitsCheatSheetMatchPanel({
           className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition"
         >
           Copy guidance
+        </button>
+        <button
+          onClick={markNeedsBenefitsReview}
+          className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition"
+        >
+          Mark needs benefits review
+        </button>
+        <button
+          onClick={createBenefitsReviewTask}
+          className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition"
+        >
+          Create Intake Task: Review benefits cheat sheet
+        </button>
+        <button
+          onClick={requestMissingInfo}
+          className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition"
+        >
+          Request missing insurance info
         </button>
         <Link
           to={`/intake/benefits-cheat-sheets?q=${encodeURIComponent(match.sheet.payer)}`}

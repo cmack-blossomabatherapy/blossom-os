@@ -710,7 +710,7 @@ function RowQuickActions({ lead }: { lead: Lead }) {
     <div className="inline-flex items-center gap-0.5">
       <Btn
         icon={PhoneCall}
-        label="Log call"
+        label="Call Parent"
         onClick={() => open({ kind: "comm", lead, channel: "call" })}
       />
       <Btn
