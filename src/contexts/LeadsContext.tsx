@@ -51,6 +51,10 @@ export interface CreateLeadInput {
   utmCampaign?: string;
   originationDate?: string;
   assignedIntakeCoordinator?: string;
+  /** Auth user id for the assigned intake coordinator (from user management). */
+  assignedIntakeCoordinatorUserId?: string;
+  /** Employee record id for the assigned intake coordinator. */
+  assignedIntakeCoordinatorEmployeeId?: string;
   priority?: "Hot" | "Warm" | "Cold";
 
   // Insurance
@@ -354,6 +358,15 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       ...(sanitizedAttachedDocs.length
         ? { attached_documents: sanitizedAttachedDocs }
         : {}),
+      ...(input.assignedIntakeCoordinatorUserId || input.assignedIntakeCoordinatorEmployeeId
+        ? {
+            assigned_intake_coordinator: {
+              name: input.assignedIntakeCoordinator ?? null,
+              user_id: input.assignedIntakeCoordinatorUserId ?? null,
+              employee_id: input.assignedIntakeCoordinatorEmployeeId ?? null,
+            },
+          }
+        : {}),
     };
     const insertPayload: Record<string, unknown> = {
       child_name:  input.childName.trim(),
@@ -365,6 +378,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       pipeline_stage: input.pipelineStage,
       priority:    input.priority ?? "Warm",
       assigned_intake_coordinator: input.assignedIntakeCoordinator ?? null,
+      assigned_intake_coordinator_user_id:     input.assignedIntakeCoordinatorUserId     ?? null,
+      assigned_intake_coordinator_employee_id: input.assignedIntakeCoordinatorEmployeeId ?? null,
       insurance:      input.insurance ?? null,
       insurance_type: input.insuranceType ?? null,
       notes:          input.notes ?? null,

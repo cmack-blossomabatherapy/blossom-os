@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronsUpDown, Search } from "lucide-react";
+import { AlertCircle, Check, ChevronsUpDown, Loader2, RefreshCw, Search, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -28,16 +28,27 @@ export interface IntakeStaffMember {
   jobTitle: string | null;
   role: string | null;   // user_roles.role (intake_coordinator | intake_lead | …)
   state: string | null;
+  userId: string | null; // auth user id — written to the lead for joins
+  isOnboarding: boolean; // employees.status === 'pending_start'
 }
 
 const INTAKE_ROLES = new Set(["intake_coordinator", "intake_lead"]);
+
+/**
+ * Employees with status 'active' are obviously current intake staff.
+ * 'pending_start' is the schema's onboarding bucket (employee hired but
+ * before their first active day) — we treat these as active current intake
+ * staff and tag them with an "Onboarding" badge so it's obvious in the picker.
+ * Inactive / on_leave / on_hold / resigned / terminated are excluded.
+ */
+const ACTIVE_STATUSES: ReadonlyArray<"active" | "pending_start"> = ["active", "pending_start"];
 
 async function fetchIntakeStaff(): Promise<IntakeStaffMember[]> {
   const [empRes, rolesRes] = await Promise.all([
     supabase
       .from("employees")
       .select("id,first_name,last_name,email,job_title,state,user_id,status")
-      .in("status", ["active", "pending_start"]),
+      .in("status", [...ACTIVE_STATUSES]),
     supabase.from("user_roles").select("user_id,role"),
   ]);
   if (empRes.error) throw empRes.error;
@@ -63,6 +74,8 @@ async function fetchIntakeStaff(): Promise<IntakeStaffMember[]> {
       jobTitle: e.job_title ?? null,
       role: roles.find((r) => INTAKE_ROLES.has(r)) ?? null,
       state: e.state ?? null,
+      userId: e.user_id ?? null,
+      isOnboarding: e.status === "pending_start",
     });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
@@ -79,23 +92,27 @@ interface Props {
   onChange: (name: string, member?: IntakeStaffMember) => void;
   placeholder?: string;
   className?: string;
+  /** Show a red ring + helper message when the field is invalid. */
+  invalid?: boolean;
 }
 
-export function IntakeCoordinatorPicker({ value, onChange, placeholder = "Search intake staff…", className }: Props) {
+export function IntakeCoordinatorPicker({ value, onChange, placeholder = "Search intake staff…", className, invalid }: Props) {
   const [open, setOpen] = useState(false);
   const [staff, setStaff] = useState<IntakeStaffMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setError(null);
     fetchIntakeStaff()
       .then((rows) => { if (!cancelled) setStaff(rows); })
       .catch((e) => { if (!cancelled) setError(e?.message ?? "Failed to load intake staff"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [reloadKey]);
 
   const selected = useMemo(
     () => staff.find((s) => s.name === value),
@@ -110,11 +127,21 @@ export function IntakeCoordinatorPicker({ value, onChange, placeholder = "Search
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("h-9 w-full justify-between font-normal", !value && "text-muted-foreground", className)}
+          className={cn(
+            "h-9 w-full justify-between font-normal",
+            !value && "text-muted-foreground",
+            invalid && "border-destructive ring-1 ring-destructive/40",
+            className,
+          )}
         >
           <span className="flex min-w-0 items-center gap-2 truncate">
-            <Search className="h-3.5 w-3.5 shrink-0 opacity-60" />
+            {loading
+              ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin opacity-60" />
+              : <Search className="h-3.5 w-3.5 shrink-0 opacity-60" />}
             <span className="truncate">{value || placeholder}</span>
+            {selected?.isOnboarding && (
+              <span className="ml-1 rounded-full bg-amber-500/15 px-1.5 py-px text-[10px] font-medium text-amber-700 dark:text-amber-300">Onboarding</span>
+            )}
           </span>
           <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
         </Button>
@@ -123,11 +150,42 @@ export function IntakeCoordinatorPicker({ value, onChange, placeholder = "Search
         <Command>
           <CommandInput placeholder="Search by name, email, role…" />
           <CommandList>
-            {loading && <div className="px-3 py-4 text-xs text-muted-foreground">Loading intake staff…</div>}
-            {error && <div className="px-3 py-4 text-xs text-destructive">{error}</div>}
+            {loading && (
+              <div className="flex items-center gap-2 px-3 py-6 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading active intake staff…
+              </div>
+            )}
+            {error && !loading && (
+              <div className="flex flex-col gap-2 px-3 py-4 text-xs">
+                <div className="flex items-start gap-2 text-destructive">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <div>
+                    <div className="font-medium">Couldn’t load intake staff</div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">{error}</div>
+                  </div>
+                </div>
+                <Button type="button" size="sm" variant="outline" className="h-7 self-start text-[11px]" onClick={() => setReloadKey((k) => k + 1)}>
+                  <RefreshCw className="mr-1.5 h-3 w-3" /> Try again
+                </Button>
+              </div>
+            )}
             {!loading && !error && (
               <>
-                <CommandEmpty>No active intake staff found.</CommandEmpty>
+                <CommandEmpty>
+                  <div className="flex flex-col items-center gap-1 py-2 text-center text-xs text-muted-foreground">
+                    <UserX className="h-4 w-4 opacity-60" />
+                    <div>No matching intake staff</div>
+                    <div className="text-[10.5px]">Try a different name, email, or role.</div>
+                  </div>
+                </CommandEmpty>
+                {staff.length === 0 ? (
+                  <div className="flex flex-col items-center gap-1 px-3 py-6 text-center text-xs text-muted-foreground">
+                    <UserX className="h-4 w-4 opacity-60" />
+                    <div>No active intake staff in user management.</div>
+                    <div className="text-[10.5px]">Add or assign the Intake Coordinator role to an employee.</div>
+                  </div>
+                ) : (
                 <CommandGroup heading={`Active intake staff (${staff.length})`}>
                   {value && (
                     <CommandItem
@@ -146,7 +204,12 @@ export function IntakeCoordinatorPicker({ value, onChange, placeholder = "Search
                     >
                       <Check className={cn("mr-2 h-3.5 w-3.5", selected?.id === m.id ? "opacity-100" : "opacity-0")} />
                       <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate text-sm">{m.name}</span>
+                        <span className="flex items-center gap-1.5 truncate text-sm">
+                          {m.name}
+                          {m.isOnboarding && (
+                            <span className="rounded-full bg-amber-500/15 px-1.5 py-px text-[9.5px] font-medium text-amber-700 dark:text-amber-300">Onboarding</span>
+                          )}
+                        </span>
                         <span className="truncate text-[11px] text-muted-foreground">
                           {roleLabel(m.role, m.jobTitle)}{m.state ? ` · ${m.state}` : ""}{m.email ? ` · ${m.email}` : ""}
                         </span>
@@ -154,6 +217,7 @@ export function IntakeCoordinatorPicker({ value, onChange, placeholder = "Search
                     </CommandItem>
                   ))}
                 </CommandGroup>
+                )}
               </>
             )}
           </CommandList>
