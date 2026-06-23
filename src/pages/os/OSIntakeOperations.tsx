@@ -193,8 +193,8 @@ function OSIntakeOperationsInner({ title, subtitle }: Required<OSIntakeOperation
             <Button variant="ghost" size="sm" onClick={() => modals.open({ kind: "note" })}>
               <StickyNote className="mr-1.5 h-4 w-4" /> Add Note
             </Button>
-            <Button size="sm" onClick={() => modals.open({ kind: "addLead" })}>
-              <Plus className="mr-1.5 h-4 w-4" /> Add Inquiry
+            <Button size="sm" asChild>
+              <Link to="/leads?new=1"><Plus className="mr-1.5 h-4 w-4" /> Add Lead</Link>
             </Button>
           </div>
         </header>

@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Sparkles, Download, ShieldCheck, Activity,
   AlertTriangle, CheckCircle2, Clock, ChevronRight, X, MessageSquare,
-  StickyNote, Users, ListChecks, FileWarning, ExternalLink, Heart,
+  StickyNote, Users, List, ListChecks, FileWarning, ExternalLink, Heart,
   ClipboardCheck, Send, PhoneCall, CalendarClock, Lightbulb,
   Bell, FileText, ShieldAlert, Upload, CheckCheck,
 } from "lucide-react";
@@ -513,7 +513,7 @@ export default function OSIntakeAuthorizations() {
               <Link to="/clients"><Users className="mr-1.5 h-4 w-4" /> Open Clients</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/leads"><Users className="mr-1.5 h-4 w-4" /> Open Leads</Link>
+              <Link to="/leads"><List className="mr-1.5 h-4 w-4" /> Open Leads</Link>
             </Button>
             <Button variant="ghost" size="sm" onClick={() => toast("Export — coming soon")}>
               <Download className="mr-1.5 h-4 w-4" /> Export

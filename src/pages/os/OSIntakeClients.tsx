@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Sparkles, Download, ShieldCheck, Activity,
   AlertTriangle, CheckCircle2, Clock, ChevronRight, X, MessageSquare,
-  StickyNote, ArrowUpRight, Users, ListChecks, PhoneCall, FileWarning,
+  StickyNote, ArrowUpRight, Users, List, ListChecks, PhoneCall, FileWarning,
   ExternalLink, Heart, ClipboardCheck, ArrowRightCircle,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
@@ -359,7 +359,7 @@ export default function OSIntakeClients() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/leads"><Users className="mr-1.5 h-4 w-4" /> Open Leads</Link>
+              <Link to="/leads"><List className="mr-1.5 h-4 w-4" /> Open Leads</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/authorizations"><ShieldCheck className="mr-1.5 h-4 w-4" /> Open Authorizations</Link>
