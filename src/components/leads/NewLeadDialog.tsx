@@ -367,12 +367,32 @@ function FormTabs({ form, update, errors, documents, setDocuments }: FormBodyPro
           <Field label="Priority"><SelectInput value={form.priority} onChange={(v) => update("priority", v as FormShape["priority"])} options={PRIORITIES as unknown as string[]} /></Field>
           <Field label="Origination Date"><Input type="date" className="h-9" value={form.originationDate || ""} onChange={(e) => update("originationDate", e.target.value)} /></Field>
           <Field label="Assigned Intake Coordinator"><Input className="h-9" value={form.assignedIntakeCoordinator || ""} onChange={(e) => update("assignedIntakeCoordinator", e.target.value)} placeholder="e.g. Sarah M." /></Field>
-          <Field label="Referral Source"><Input className="h-9" value={form.referralSource || ""} onChange={(e) => update("referralSource", e.target.value)} /></Field>
-          <Field label="Referral Partner"><Input className="h-9" value={form.referralPartner || ""} onChange={(e) => update("referralPartner", e.target.value)} /></Field>
-          <Field label="UTM Source"><Input className="h-9" value={form.utmSource || ""} onChange={(e) => update("utmSource", e.target.value)} /></Field>
-          <Field label="UTM Medium"><Input className="h-9" value={form.utmMedium || ""} onChange={(e) => update("utmMedium", e.target.value)} /></Field>
-          <Field label="UTM Campaign" colSpan2><Input className="h-9" value={form.utmCampaign || ""} onChange={(e) => update("utmCampaign", e.target.value)} /></Field>
         </Grid>
+
+        {REFERRAL_PARTNER_SOURCES.has(form.leadSource) && (
+          <div className="mt-4">
+            <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Referral attribution</div>
+            <Grid>
+              <Field label="Referral Partner / Practice">
+                <Input className="h-9" value={form.referralPartner || ""} onChange={(e) => update("referralPartner", e.target.value)} placeholder="e.g. Atlanta Pediatrics" />
+              </Field>
+              <Field label="Referring Contact Name">
+                <Input className="h-9" value={form.referralSource || ""} onChange={(e) => update("referralSource", e.target.value)} placeholder="e.g. Dr. Smith" />
+              </Field>
+            </Grid>
+          </div>
+        )}
+
+        {UTM_SOURCES.has(form.leadSource) && (
+          <div className="mt-4">
+            <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Campaign attribution (UTM)</div>
+            <Grid>
+              <Field label="UTM Source"><Input className="h-9" value={form.utmSource || ""} onChange={(e) => update("utmSource", e.target.value)} placeholder="google, facebook, mailchimp…" /></Field>
+              <Field label="UTM Medium"><Input className="h-9" value={form.utmMedium || ""} onChange={(e) => update("utmMedium", e.target.value)} placeholder="cpc, paid_social, email…" /></Field>
+              <Field label="UTM Campaign" colSpan2><Input className="h-9" value={form.utmCampaign || ""} onChange={(e) => update("utmCampaign", e.target.value)} placeholder="spring-2026-georgia" /></Field>
+            </Grid>
+          </div>
+        )}
       </TabsContent>
 
       <TabsContent value="patient" className="mt-4">
