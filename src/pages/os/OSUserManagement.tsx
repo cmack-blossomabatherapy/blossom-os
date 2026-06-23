@@ -638,3 +638,19 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
+
+function CopyRow({
+  label, value, onCopy, mono,
+}: { label: string; value: string; onCopy: (v: string) => void; mono?: boolean }) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-foreground/[0.06] bg-background px-2 py-1.5">
+      <span className="w-32 shrink-0 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className={`min-w-0 flex-1 truncate text-[11.5px] text-foreground ${mono ? "font-mono" : ""}`} title={value}>
+        {value}
+      </span>
+      <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => onCopy(value)}>
+        <Copy className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
