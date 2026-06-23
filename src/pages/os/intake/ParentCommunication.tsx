@@ -122,6 +122,9 @@ export default function ParentCommunication() {
                 <div className="text-xs text-muted-foreground mt-1">{l.nextAction}</div>
                 <div className="mt-2">
                   <LeadActionPanel lead={l} compact sourcePage="parent-communication" />
+                  <Link to={`/patient-journey?lead=${l.id}`} className="mt-2 inline-flex text-[11px] text-primary hover:underline">
+                    Open Patient Lifetime Journey
+                  </Link>
                 </div>
               </div>
             ))}
