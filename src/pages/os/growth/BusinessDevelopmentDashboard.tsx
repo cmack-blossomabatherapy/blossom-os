@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useReferralCompanies, useReferralActivities, useReferralTasks } from "@/lib/os/referrals/hooks";
+import { REFERRAL_PARTNER_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
 import {
   createCompany, createActivity, createTask, setTaskStatus, updateCompany,
   type ReferralCrmTask,
@@ -179,6 +180,21 @@ export default function BusinessDevelopmentDashboard() {
         <Button size="sm" variant="outline" onClick={() => { exportCsv(partners); toast.success("Partner list exported"); }}>
           <Download className="h-4 w-4 mr-1.5" /> Export CSV
         </Button>
+      </div>
+
+      <div className="rounded-xl border border-border/60 bg-card/60 p-3">
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Referral Partner Workflow</div>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          {REFERRAL_PARTNER_PIPELINE_STAGES.map((stage, i) => (
+            <span key={stage} className="flex items-center gap-1.5">
+              <span className="rounded-full border border-border/70 bg-background px-2 py-0.5">{stage}</span>
+              {i < REFERRAL_PARTNER_PIPELINE_STAGES.length - 1 && <span className="text-muted-foreground">-&gt;</span>}
+            </span>
+          ))}
+        </div>
+        <div className="mt-2 text-[11px] text-muted-foreground">
+          Marketing / Business Development owns the partner relationship. Family contact, intake, VOB, scheduling, QA/auth, and staffing are handled in the separate Family Lead Pipeline.
+        </div>
       </div>
 
       {partnersError && (
