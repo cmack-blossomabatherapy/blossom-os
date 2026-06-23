@@ -183,7 +183,7 @@ export function LeadDetailDrawer({
               Form: {lead.formStatus}
             </span>
             <span className="text-[11px] px-2 py-1 rounded-full bg-muted text-muted-foreground">
-              VOB: {lead.vobStatus}
+              Benefits: {lead.vobStatus}
             </span>
             {lead.notQualifiedReason && (
               <span className="text-[11px] px-2 py-1 rounded-full bg-destructive/10 text-destructive">
@@ -219,7 +219,7 @@ export function LeadDetailDrawer({
         <nav className="px-6 pt-3 border-b border-border/60 flex items-center gap-1 overflow-x-auto">
           {([
             ["overview", "Overview"],
-            ["insurance", "Insurance / VOB"],
+            ["insurance", "Insurance / Benefits"],
             ["documents", "Documents"],
             ["activity", "Activity"],
             ["actions", "Actions"],
