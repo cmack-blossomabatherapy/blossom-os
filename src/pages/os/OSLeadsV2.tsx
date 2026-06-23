@@ -26,6 +26,10 @@ import {
   FAMILY_LEAD_PIPELINE_STAGES,
   canonicalFamilyLeadStage,
   isReadyToStartStage,
+  isNonQualifiedStatus,
+  isCannotReachStatus,
+  isLeadOutOfPipeline,
+  hasMissingFormReview,
   type FamilyLeadPipelineStage,
 } from "@/lib/intake/intakeWorkflow";
 
@@ -115,11 +119,29 @@ function StateBadge({ state }: { state: string }) {
 }
 
 function StatusChip({ status }: { status: string }) {
-  const tone =
-    status === "VOB Completed" || status === "Form Received" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" :
-    status === "Missing Information" ? "bg-amber-500/10 text-amber-700 dark:text-amber-300" :
-    status === "Can't Reach" || status === "Non-Qualified" || status === "Sent Packet - Can't Reach" ? "bg-destructive/10 text-destructive" :
-    "bg-muted text-foreground";
+  // Export 88 — color by canonical Family / Lead pipeline stage first. The
+  // raw label still renders so imported records remain recognizable, but
+  // tone/grouping is driven by canonicalFamilyLeadStage. Non-canonical
+  // outcomes (Non-Qualified, Cannot Reach) keep their own destructive tone.
+  let tone = "bg-muted text-foreground";
+  if (isNonQualifiedStatus(status) || isCannotReachStatus(status)) {
+    tone = "bg-destructive/10 text-destructive";
+  } else if (isReadyToStartStage(status)) {
+    tone = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+  } else {
+    const canonical = canonicalFamilyLeadStage(status);
+    if (canonical === "Assessment Scheduling" || canonical === "Intake Complete" || canonical === "Staffing Match") {
+      tone = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+    } else if (canonical === "Intake Packet Follow Up") {
+      tone = "bg-amber-500/10 text-amber-700 dark:text-amber-300";
+    } else if (
+      canonical === "Benefits Verification" ||
+      canonical === "QA / Treatment Plan Authorization" ||
+      canonical === "Authorization Pending"
+    ) {
+      tone = "bg-sky-500/10 text-sky-700 dark:text-sky-300";
+    }
+  }
   return <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap", tone)}>{status}</span>;
 }
 
@@ -288,7 +310,12 @@ function OSLeadsV2Inner() {
       if (filters.formStatuses.size && !filters.formStatuses.has(l.formStatus)) return false;
       if (filters.vobStatuses.size && !filters.vobStatuses.has(l.vobStatus)) return false;
       if (filters.insurances.size && !filters.insurances.has(l.primaryInsurance || "—")) return false;
-      if (filters.missingOnly && l.status !== "Missing Information" && l.formReviewStatus !== "Missing Information") return false;
+      // Export 88 — canonical "Intake Packet Follow Up" is the missing-info
+      // stage. Form-review "Missing Info"/"Missing Information" also qualifies.
+      if (filters.missingOnly) {
+        const canonical = canonicalFamilyLeadStage(l.status);
+        if (canonical !== "Intake Packet Follow Up" && !hasMissingFormReview(l)) return false;
+      }
       if (activeKpi) {
         const k = KPI_DEFS.find((kk) => kk.key === activeKpi);
         if (k && !k.test(l)) return false;
