@@ -332,7 +332,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   const addLead = useCallback((lead: Lead) => {
     setLeads((prev) => {
       const owner = lead.owner || leastLoadedCoordinator(prev);
-      const created = withIntakeAutomation({ ...lead, owner, status: "New Lead", nextAction: "Contact Lead", tasks: lead.tasks.length ? lead.tasks : [createIntakeTask("Contact Lead", owner)] }, {});
+      const created = withIntakeAutomation({ ...lead, owner, status: "Lead Captured", nextAction: "Contact Lead", tasks: lead.tasks.length ? lead.tasks : [createIntakeTask("Contact Lead", owner)] }, {});
       return [created, ...prev];
     });
   }, []);
@@ -411,18 +411,28 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     }
     const row = data as unknown as IntakeLeadRow;
     const baseLead = intakeLeadRowToLead(row);
+    // Export 85 — single source of truth for attached documents. The inserted
+    // row already includes the sanitized attached_documents in
+    // source_metadata, so intakeLeadRowToLead → extractAttachedDocuments has
+    // already populated `baseLead.documents`. Merge by stable
+    // name+type+uploadedAt key so any uncovered cases never duplicate.
+    const dedupeKey = (d: { name: string; type: string; uploadedAt?: string }) =>
+      `${d.name}|${d.type}|${d.uploadedAt ?? ""}`;
+    const mergedDocs = (() => {
+      const seen = new Map<string, { name: string; type: string; url?: string; uploadedAt?: string }>();
+      for (const d of baseLead.documents ?? []) seen.set(dedupeKey(d), d);
+      for (const d of input.documents ?? []) {
+        const k = dedupeKey({ name: d.name, type: d.type, uploadedAt: d.uploadedAt });
+        if (!seen.has(k)) {
+          seen.set(k, { name: d.name, type: d.type, uploadedAt: d.uploadedAt });
+        }
+      }
+      return Array.from(seen.values());
+    })();
     const lead: Lead = input.documents && input.documents.length
       ? {
           ...baseLead,
-          documents: [
-            ...(baseLead.documents ?? []),
-            ...input.documents.map((d) => ({
-              name: d.name,
-              type: d.type,
-              uploadedAt: d.uploadedAt,
-              // url is omitted until Cloud Storage is connected.
-            })),
-          ],
+          documents: mergedDocs,
           automationLog: [
             ...baseLead.automationLog,
             ...input.documents.map((d) => `Document attached: ${d.name} (${d.type})`),
