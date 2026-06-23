@@ -107,7 +107,17 @@ export function LeadDetailDrawer({
     return v && /^https?:\/\//i.test(v) ? v : null;
   };
 
-  const documents: { label: string; url: string | null }[] = [
+  // Export 84 — merge legacy Monday URL fields with Blossom OS attached
+  // documents from `lead.documents` (which may not have a URL yet while
+  // Cloud Storage is still being wired in).
+  type DrawerDoc = {
+    label: string;
+    url: string | null;
+    type?: string | null;
+    uploadedAt?: string | null;
+    storageStatus?: "pending_storage_connection" | "uploaded" | null;
+  };
+  const mondayDocs: DrawerDoc[] = [
     { label: "Insurance card (front)", url: link("Primary Insurance Card - Front") },
     { label: "Insurance card (back)", url: link("Primary Insurance Card - Back") },
     { label: "Secondary card (front)", url: link("Secondary Insurance Card - Front") },
@@ -115,7 +125,15 @@ export function LeadDetailDrawer({
     { label: "Intake packet", url: link("Intake Packet") },
     { label: "Consent form", url: link("Consent Form Link") },
     { label: "VOB", url: link("VOB") },
-  ];
+  ].filter((d) => d.url);
+  const attachedDocs: DrawerDoc[] = (lead.documents ?? []).map((d) => ({
+    label: d.name,
+    url: d.url ?? null,
+    type: d.type,
+    uploadedAt: d.uploadedAt ?? null,
+    storageStatus: d.url ? "uploaded" : "pending_storage_connection",
+  }));
+  const documents: DrawerDoc[] = [...mondayDocs, ...attachedDocs];
 
   const callPhone = lead.phone;
   const callTo = callPhone ? `tel:${callPhone.replace(/\D/g, "")}` : undefined;
@@ -335,23 +353,47 @@ export function LeadDetailDrawer({
 
           {tab === "documents" && (
             <section className="space-y-2">
-              {documents.every((d) => !d.url) ? (
+              {documents.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-12 text-center">No documents on file.</p>
-              ) : documents.filter((d) => d.url).map((d) => (
-                <a
-                  key={d.label}
-                  href={d.url!}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card px-4 h-12 hover:bg-muted transition"
-                >
-                  <span className="flex items-center gap-2.5 text-sm">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    {d.label}
-                  </span>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                </a>
-              ))}
+              ) : documents.map((d, idx) => {
+                const meta = [
+                  d.type,
+                  d.uploadedAt ? `Uploaded ${new Date(d.uploadedAt).toLocaleDateString()}` : null,
+                ].filter(Boolean).join(" · ");
+                if (d.url) {
+                  return (
+                    <a
+                      key={`${d.label}-${idx}`}
+                      href={d.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card px-4 h-12 hover:bg-muted transition"
+                    >
+                      <span className="flex items-center gap-2.5 text-sm min-w-0">
+                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="truncate">{d.label}</span>
+                        {meta && <span className="text-[11px] text-muted-foreground truncate">· {meta}</span>}
+                      </span>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                    </a>
+                  );
+                }
+                return (
+                  <div
+                    key={`${d.label}-${idx}`}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card px-4 py-2.5"
+                  >
+                    <span className="flex items-center gap-2.5 text-sm min-w-0">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="truncate">{d.label}</span>
+                      {meta && <span className="text-[11px] text-muted-foreground truncate">· {meta}</span>}
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap">
+                      Storage pending
+                    </span>
+                  </div>
+                );
+              })}
             </section>
           )}
 
