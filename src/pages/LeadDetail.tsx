@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useLeads } from "@/contexts/LeadsContext";
 import { toast } from "sonner";
 import { OSShell } from "@/pages/os/OSShell";
+import { BenefitsCheatSheetMatchPanel } from "@/components/leads/LeadDetailDrawer";
 
 const COORDINATORS = ["Sarah M.", "James R.", "Maya P."];
 
@@ -459,6 +460,12 @@ export default function LeadDetail() {
             {/* Insurance / VOB */}
             <TabsContent value="insurance" className="mt-4">
               <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <BenefitsCheatSheetMatchPanel
+                    insurance={lead.insurance || (lead as unknown as { primaryInsurance?: string }).primaryInsurance}
+                    state={lead.state}
+                  />
+                </div>
                 <div className="bg-card rounded-xl border border-border/60 p-5 shadow-sm">
                   <div className="flex items-center gap-2 mb-3">
                     <CreditCard className="h-4 w-4 text-primary" />
