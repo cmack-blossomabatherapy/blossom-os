@@ -28,6 +28,28 @@ const PIPELINE_STAGES = FAMILY_LEAD_PIPELINE_STAGES;
 
 const LEAD_SOURCES = LEAD_SOURCE_OPTIONS.map((o) => o.value);
 
+/** Lead sources where a named referring person/partner should be captured. */
+const REFERRAL_PARTNER_SOURCES = new Set([
+  "Referral",
+  "Referral Partner",
+  "Pediatrician",
+  "BCBA Referral",
+  "Insurance",
+  "Business Development",
+  "Community Outreach",
+]);
+
+/** Lead sources where UTM / campaign attribution is meaningful. */
+const UTM_SOURCES = new Set([
+  "Website",
+  "Google Ads",
+  "Facebook Ads",
+  "Mailchimp",
+  "LeadTrap",
+  "Organic",
+  "Other",
+]);
+
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const PRIORITIES = ["Hot", "Warm", "Cold"] as const;
 const CONTACT_METHODS = ["Phone", "Cell", "Text", "Email"] as const;
@@ -281,7 +303,9 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
               Manually create a lead. Saved to Blossom OS intake.
             </SheetDescription>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto border-t border-border/60 px-5 py-4">{body}</div>
+          <div className="flex-1 overflow-y-auto border-t border-border/60 px-5 py-4">
+            <div className="min-h-[420px]">{body}</div>
+          </div>
           <SheetFooter className="flex-row gap-2 border-t border-border/60 bg-background px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
             {footer}
           </SheetFooter>
@@ -292,14 +316,14 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[760px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[760px] h-[82vh] max-h-[820px] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>New lead</DialogTitle>
           <DialogDescription>
-            Captures Monday Leads board fields. Persists to Blossom OS intake.
+            Captures full lead attribution. Persists to Blossom OS intake.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto py-2">{body}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto py-2 pr-1">{body}</div>
         <DialogFooter>{footer}</DialogFooter>
       </DialogContent>
     </Dialog>
