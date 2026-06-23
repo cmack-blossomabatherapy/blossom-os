@@ -143,11 +143,11 @@ Deno.serve(async (req) => {
       if (existingForEmail && existingForEmail.id !== resolvedUserId) {
         resolvedUserId = existingForEmail.id;
       } else {
-      const { error: emailErr } = await admin.auth.admin.updateUserById(resolvedUserId, {
-        email: resolvedEmail,
-        email_confirm: true,
-      });
-      if (emailErr) return json({ error: `Could not sync login email: ${emailErr.message}` }, 400);
+        const { error: emailErr } = await admin.auth.admin.updateUserById(resolvedUserId, {
+          email: resolvedEmail,
+          email_confirm: true,
+        });
+        if (emailErr) return json({ error: `Could not sync login email: ${emailErr.message}` }, 400);
       }
     }
     const { error: pwErr } = await admin.auth.admin.updateUserById(resolvedUserId, {

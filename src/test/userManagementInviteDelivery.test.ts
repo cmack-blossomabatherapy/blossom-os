@@ -41,7 +41,7 @@ describe("User Management invite delivery tools", () => {
     expect(inviteLinkFunction).toMatch(/employeeId/);
     expect(inviteLinkFunction).toMatch(/\.from\("employees"\)/);
     expect(inviteLinkFunction).toMatch(/\.eq\("id", employeeId\)/);
-    expect(inviteLinkFunction).toMatch(/employee\.user_id/);
+    expect(inviteLinkFunction).toMatch(/employee\?\.user_id/);
     expect(inviteLinkFunction).toMatch(/findAuthUserByEmail/);
     expect(inviteLinkFunction).toMatch(/createUser/);
     expect(inviteLinkFunction).toMatch(/upsert\(\{/);
