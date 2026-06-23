@@ -771,17 +771,21 @@ export default function BcbaProductivityReportV3() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowHelp(true)} title="How this report works">
-              <HelpCircle className="mr-2 h-4 w-4" /> How this works
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowHistory(true)}>
-              <History className="mr-2 h-4 w-4" /> Assignment History ({assignments.length})
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowHelp(true)}
+              title="How this report works"
+              aria-label="How this report works"
+              className="rounded-full"
+            >
+              <HelpCircle className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="sm" onClick={exportBcbaCsv} disabled={!bcbaTable.length}>
               <Download className="mr-2 h-4 w-4" /> Export CSV
             </Button>
-            <Button variant="outline" size="sm" onClick={handleResetUpload} disabled={!rows.length && !fileName && !validation}>
-              <RefreshCw className="mr-2 h-4 w-4" /> Reset
+            <Button variant="outline" size="sm" onClick={exportBcbaPdf} disabled={!bcbaTable.length}>
+              <FileText className="mr-2 h-4 w-4" /> Export PDF
             </Button>
             <Button size="sm" onClick={handleSaveReport} disabled={!rows.length}>
               <Save className="mr-2 h-4 w-4" /> Save Report
