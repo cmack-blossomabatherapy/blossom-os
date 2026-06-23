@@ -72,10 +72,14 @@ export default function LeadToActivePipeline() {
               const atRisk = atRiskForStage(items);
               const stageIdx = STAGES.indexOf(stage);
               const owner = FAMILY_LEAD_STAGE_OWNERS[stage];
+              const isPipelineEnd = stage === "Ready to Start Services";
               return (
-                <div key={stage} className="rounded-2xl border border-border/70 bg-card p-4 w-64 shrink-0">
+                <div key={stage} className={`rounded-2xl border p-4 w-64 shrink-0 ${isPipelineEnd ? "border-amber-500/40 bg-amber-500/5" : "border-border/70 bg-card"}`}>
                   <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground">{stage}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      {stage}
+                      {isPipelineEnd && <Ban className="h-3 w-3 text-amber-600" aria-hidden="true" />}
+                    </div>
                     <div className="text-lg font-semibold tabular-nums text-foreground">{items.length}</div>
                   </div>
                   <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/80">
