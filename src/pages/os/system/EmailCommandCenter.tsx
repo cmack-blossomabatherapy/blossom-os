@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { MicrosoftIntegrationsCard } from "@/components/os/system/MicrosoftIntegrationsCard";
 import {
   startOutlookOAuth, probeOutlookConnection, listUserOAuthConnections,
   type OAuthConnectionRow,
@@ -162,6 +164,8 @@ function EmptyState({ msg }: { msg: string }) {
 
 export default function EmailCommandCenter() {
   const { user } = useAuth();
+  const { role } = useOSRole();
+  const isAdmin = role === "super_admin" || role === "admin";
   const [conn, setConn] = useState<OAuthConnectionRow | null>(null);
   const [connBusy, setConnBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -286,6 +290,13 @@ export default function EmailCommandCenter() {
         </header>
 
         <ConnectionBanner conn={conn} onConnect={handleConnect} busy={connBusy} />
+
+        <MicrosoftIntegrationsCard
+          conn={conn}
+          isAdmin={isAdmin}
+          onReconnect={handleConnect}
+          reconnectBusy={connBusy}
+        />
 
         {/* Executive Summary */}
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
