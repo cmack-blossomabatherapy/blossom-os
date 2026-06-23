@@ -19,7 +19,7 @@ import {
 type Tab = "overview" | "insurance" | "documents" | "activity" | "actions";
 
 function relTime(iso: string | null | undefined) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
   const diff = Date.now() - d.getTime();
   const day = 24 * 60 * 60 * 1000;
@@ -34,7 +34,7 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="space-y-0.5">
       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-sm text-foreground">{value || <span className="text-muted-foreground">—</span>}</p>
+      <p className="text-sm text-foreground">{value || <span className="text-muted-foreground">-</span>}</p>
     </div>
   );
 }
@@ -149,7 +149,7 @@ export function LeadDetailDrawer({
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-semibold tracking-tight truncate">{lead.childName}</h2>
               <p className="text-xs text-muted-foreground truncate">
-                {lead.parentName || "—"} · {lead.state || "—"} · {lead.owner || "Unassigned"}
+                {lead.parentName || "-"} - {lead.state || "-"} - {lead.owner || "Unassigned"}
               </p>
             </div>
             <button onClick={onClose} className="rounded-full size-9 grid place-items-center hover:bg-muted transition">
@@ -225,7 +225,7 @@ export function LeadDetailDrawer({
             <>
               <section className="grid grid-cols-2 gap-4">
                 <Field label="Patient" value={lead.childName} />
-                <Field label="DOB / Age" value={`${fallback(i.dob, "DOB") || "—"}${lead.childAge && lead.childAge !== "—" ? ` · ${lead.childAge}` : ""}`} />
+                <Field label="DOB / Age" value={`${fallback(i.dob, "DOB") || "-"}${lead.childAge && lead.childAge !== "-" ? ` - ${lead.childAge}` : ""}`} />
                 <Field label="Gender" value={str("Gender")} />
                 <Field label="State" value={lead.state} />
                 <Field label="Parent name" value={lead.parentName} />
@@ -256,7 +256,7 @@ export function LeadDetailDrawer({
                   <Field label="UTM source" value={fallback(i.utmSource, "UTM Source")} />
                   <Field label="Intake person" value={lead.owner} />
                   <Field label="Origination" value={fallback(i.originationDate, "Origination Date")} />
-                  <Field label="Last contact" value={fallback(i.lastContactDate, "Last Contact") || (lead.lastContacted ? new Date(lead.lastContacted).toLocaleDateString() : "—")} />
+                  <Field label="Last contact" value={fallback(i.lastContactDate, "Last Contact") || (lead.lastContacted ? new Date(lead.lastContacted).toLocaleDateString() : "-")} />
                 </div>
                 <Field label="E/T Call Log" value={fallback(i.etCallLog, "E/T Call Log")} />
                 <Field label="Reg Call Log" value={fallback(i.regularCallLog, "Reg Call Log")} />
@@ -577,7 +577,7 @@ export function BenefitsCheatSheetMatchPanel({
             <p className="text-sm font-medium text-foreground">Benefits Cheat Sheet Match</p>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {match.sheet.payer} · {match.sheet.state} · {match.sheet.insuranceCategory}
+            {match.sheet.payer} - {match.sheet.state} - {match.sheet.insuranceCategory}
           </p>
         </div>
         <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap", tone.className)}>
@@ -604,7 +604,7 @@ export function BenefitsCheatSheetMatchPanel({
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => {
-            const text = `${match.sheet!.payer} (${match.sheet!.state}) — ${match.sheet!.intakeStatus}\n${match.sheet!.notes}\nRecommendation: ${tone.recommendation}`;
+            const text = `${match.sheet!.payer} (${match.sheet!.state}) - ${match.sheet!.intakeStatus}\n${match.sheet!.notes}\nRecommendation: ${tone.recommendation}`;
             navigator.clipboard.writeText(text).then(
               () => toast.success("Guidance copied"),
               () => toast.error("Could not copy"),

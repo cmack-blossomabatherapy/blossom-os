@@ -7,7 +7,7 @@ import { communicationsConfigStatus } from "@/lib/integrations/communications/co
 import { toast } from "sonner";
 
 /**
- * Intake Communication setup — exposes the integration-specific fields
+ * Intake Communication setup - exposes the integration-specific fields
  * Admin needs to configure CTM, Jivetel, Mailchimp Email, and Mailchimp
  * SMS for Intake-side parent communication. All fields are placeholders
  * (no live credentials) until backend integration is wired.
@@ -56,11 +56,11 @@ export function IntakeCommunicationSetupPanel() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <PlaceholderField label="Account ID" placeholder="CTM account ID" />
-          <PlaceholderField label="API key" placeholder="••••••••" />
-          <PlaceholderField label="Tracking number / source mapping" placeholder="e.g. (770) 555-0123 → Intake GA" />
+          <PlaceholderField label="API key" placeholder="********" />
+          <PlaceholderField label="Tracking number / source mapping" placeholder="e.g. (770) 555-0123 -> Intake GA" />
           <PlaceholderField label="Webhook URL" placeholder="https://blossom-os/webhooks/ctm" />
           <PlaceholderField label="Call recording status" placeholder="Enabled / Disabled" />
-          <PlaceholderField label="Lead source attribution mapping" placeholder="CTM source → Blossom lead source" />
+          <PlaceholderField label="Lead source attribution mapping" placeholder="CTM source -> Blossom lead source" />
         </div>
         <div className="flex justify-end">
           <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => toast("CTM test connection: Needs configuration")}>
@@ -79,10 +79,10 @@ export function IntakeCommunicationSetupPanel() {
           <StatusPill ok={status.jivetel} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <PlaceholderField label="API key" placeholder="••••••••" />
+          <PlaceholderField label="API key" placeholder="********" />
           <PlaceholderField label="Outbound caller ID" placeholder="e.g. (770) 555-0123" />
-          <PlaceholderField label="User / extension mapping" placeholder="Intake coordinator → ext 201" />
-          <PlaceholderField label="Call disposition mapping" placeholder="Jivetel disposition → Blossom outcome" />
+          <PlaceholderField label="User / extension mapping" placeholder="Intake coordinator -> ext 201" />
+          <PlaceholderField label="Call disposition mapping" placeholder="Jivetel disposition -> Blossom outcome" />
         </div>
         <div className="flex justify-end">
           <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => toast("Jivetel test outbound call: Needs configuration")}>
@@ -101,7 +101,7 @@ export function IntakeCommunicationSetupPanel() {
           <StatusPill ok={status.mailchimpEmail} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <PlaceholderField label="API key" placeholder="••••••••" />
+          <PlaceholderField label="API key" placeholder="********" />
           <PlaceholderField label="Audience / list ID" placeholder="Mailchimp list ID" />
           <PlaceholderField label="From name" placeholder="Blossom Intake" />
           <PlaceholderField label="From email" placeholder="intake@blossomaba.com" />
@@ -132,9 +132,9 @@ export function IntakeCommunicationSetupPanel() {
           <StatusPill ok={status.mailchimpSms} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <PlaceholderField label="API key" placeholder="••••••••" />
+          <PlaceholderField label="API key" placeholder="********" />
           <PlaceholderField label="SMS program / campaign ID" placeholder="Mailchimp SMS program" />
-          <PlaceholderField label="Consent / opt-out mapping" placeholder="Opt-out keyword → Blossom flag" />
+          <PlaceholderField label="Consent / opt-out mapping" placeholder="Opt-out keyword -> Blossom flag" />
         </div>
         <div className="space-y-2">
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Template mapping</p>

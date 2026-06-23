@@ -130,6 +130,8 @@ describe("Export 74 - Intake Communications polish", () => {
       "src/pages/os/intake/ParentCommunication.tsx",
       "src/pages/admin/Integrations.tsx",
       "src/test/intakeExport73Hardening.test.ts",
+      "src/components/settings/IntakeCommunicationSetupPanel.tsx",
+      "src/pages/os/intake/IntakeDashboard.tsx",
     ];
     // Mojibake byte sequences expressed via escapes so this test file itself
     // does not contain the literal sequences.
@@ -138,6 +140,9 @@ describe("Export 74 - Intake Communications polish", () => {
       "\u00e2\u20ac\u201d",
       "\u00e2\u20ac\u00a6",
       "\u00e2\u201d\u20ac",
+      "\u00e2",
+      "\u00e2\u2020",
+      "\u00e2\u20ac\u00a2",
     ];
     for (const f of files) {
       const src = read(f);
@@ -145,5 +150,31 @@ describe("Export 74 - Intake Communications polish", () => {
         expect(src.includes(bad), `${f} contains mojibake`).toBe(false);
       }
     }
+  });
+});
+
+describe("Export 75 - Intake Dashboard top actions", () => {
+  const src = readFileSync(
+    resolve(process.cwd(), "src/pages/os/intake/IntakeDashboard.tsx"),
+    "utf8",
+  );
+  // Extract the actions={[ ... ]} block from GrowthPageShell props.
+  const actionsMatch = src.match(/actions=\{\[([\s\S]*?)\]\}/);
+  const actionsBlock = actionsMatch?.[1] ?? "";
+
+  it("actions array exists on GrowthPageShell", () => {
+    expect(actionsBlock).toBeTruthy();
+  });
+  it("includes Add Lead", () => {
+    expect(actionsBlock).toContain('label: "Add Lead"');
+  });
+  it("includes Open Leads", () => {
+    expect(actionsBlock).toContain('label: "Open Leads"');
+  });
+  it("does not include Send Missing Info Reminder", () => {
+    expect(actionsBlock).not.toContain("Send Missing Info Reminder");
+  });
+  it("does not include Intake Communications in top actions", () => {
+    expect(actionsBlock).not.toContain("Intake Communications");
   });
 });

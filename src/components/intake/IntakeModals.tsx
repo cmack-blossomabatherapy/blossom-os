@@ -55,7 +55,7 @@ export function IntakeModalsProvider({ children }: { children: ReactNode }) {
 function Modals({ active, close }: { active: ModalKind; close: () => void }) {
   const navigate = useNavigate();
   const { updateLead, addLead, leads } = useLeads();
-  const leadLabel = (l?: Lead) => (l ? `${l.parentName || l.childName} — ${l.childName}` : "Select a family");
+  const leadLabel = (l?: Lead) => (l ? `${l.parentName || l.childName} - ${l.childName}` : "Select a family");
 
   // shared state holders per modal kind
   const [text, setText] = useState("");
@@ -69,7 +69,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
       ? active.lead ?? leads.find((l) => l.id === leadId)
       : undefined;
 
-  /* ─────────── NOTE ─────────── */
+  /* ----------- NOTE ----------- */
   if (active.kind === "note") {
     return (
       <Dialog open onOpenChange={(o) => !o && close()}>
@@ -96,7 +96,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
                 if (!resolvedLead) return;
                 const stamp = new Date().toLocaleString();
                 updateLead(resolvedLead.id, {
-                  notes: [`${stamp} — ${text.trim()}`, resolvedLead.notes].filter(Boolean).join("\n\n"),
+                  notes: [`${stamp} - ${text.trim()}`, resolvedLead.notes].filter(Boolean).join("\n\n"),
                 });
                 toast.success("Note saved");
                 close();
@@ -110,7 +110,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
     );
   }
 
-  /* ─────────── ESCALATE ─────────── */
+  /* ----------- ESCALATE ----------- */
   if (active.kind === "escalate") {
     return (
       <Dialog open onOpenChange={(o) => !o && close()}>
@@ -161,7 +161,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
                 if (!resolvedLead) return;
                 updateLead(resolvedLead.id, {
                   automationLog: [
-                    `Escalated → ${select2} (${select1}): ${text.trim()}`,
+                    `Escalated -> ${select2} (${select1}): ${text.trim()}`,
                     ...resolvedLead.automationLog,
                   ],
                 });
@@ -177,7 +177,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
     );
   }
 
-  /* ─────────── SNOOZE ─────────── */
+  /* ----------- SNOOZE ----------- */
   if (active.kind === "snooze") {
     return (
       <Dialog open onOpenChange={(o) => !o && close()}>
@@ -185,7 +185,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
           <DialogHeader>
             <DialogTitle>Snooze follow-up</DialogTitle>
             <DialogDescription>
-              {active.followUpLabel ? `${active.followUpLabel} · ` : ""}{leadLabel(resolvedLead)}
+              {active.followUpLabel ? `${active.followUpLabel} - ` : ""}{leadLabel(resolvedLead)}
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-2">
@@ -227,24 +227,24 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
     );
   }
 
-  /* ─────────── COMM (text / email preview) ─────────── */
+  /* ----------- COMM (text / email preview) ----------- */
   if (active.kind === "comm") {
     const isEmail = active.channel === "email";
     const isCall = active.channel === "call";
     const actionLabel = isCall ? "Call Parent" : isEmail ? "Send Email" : "Send SMS";
     const dialogTitle = actionLabel;
     const toField = isCall
-      ? resolvedLead?.phone || "—"
+      ? resolvedLead?.phone || "-"
       : isEmail
-      ? resolvedLead?.email || "—"
-      : resolvedLead?.phone || "—";
+      ? resolvedLead?.email || "-"
+      : resolvedLead?.phone || "-";
     return (
       <Dialog open onOpenChange={(o) => !o && close()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
             <DialogDescription>
-              {isCall ? "With" : "To"}: {toField} · {leadLabel(resolvedLead)}
+              {isCall ? "With" : "To"}: {toField} - {leadLabel(resolvedLead)}
             </DialogDescription>
           </DialogHeader>
           {isEmail && (
@@ -264,7 +264,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
                 isCall
                   ? "Optional internal note. Outbound call is placed via CTM/Jivetel."
                   : isEmail
-                  ? "Hi, just checking in…"
+                  ? "Hi, just checking in..."
                   : "Hi! Just checking in on your intake forms."
               }
             />
@@ -294,7 +294,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
                 updateLead(resolvedLead.id, {
                   lastContacted: new Date().toISOString(),
                   automationLog: [
-                    `${actionLabel} via Blossom OS${note ? ` — note: ${note.slice(0, 80)}` : ""}`,
+                    `${actionLabel} via Blossom OS${note ? ` - note: ${note.slice(0, 80)}` : ""}`,
                     ...resolvedLead.automationLog,
                   ],
                 });
@@ -309,7 +309,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
     );
   }
 
-  /* ─────────── SCHEDULE ASSESSMENT ─────────── */
+  /* ----------- SCHEDULE ASSESSMENT ----------- */
   if (active.kind === "schedule") {
     return (
       <Dialog open onOpenChange={(o) => !o && close()}>
@@ -354,7 +354,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
     );
   }
 
-  /* ─────────── ASSIGN BCBA ─────────── */
+  /* ----------- ASSIGN BCBA ----------- */
   if (active.kind === "assignBcba") {
     return (
       <Dialog open onOpenChange={(o) => !o && close()}>
@@ -395,7 +395,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
     );
   }
 
-  /* ─────────── ADD LEAD ─────────── */
+  /* ----------- ADD LEAD ----------- */
   if (active.kind === "addLead") {
     // text=parent, text2=child, select1=state, select2=insurance
     return (
@@ -438,7 +438,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
                   status: "New Lead",
                   owner: "",
                   priority: "Warm",
-                  childAge: "—",
+                  childAge: "-",
                   createdAt: new Date().toISOString(),
                   lastContacted: null,
                   daysInStage: 0,
@@ -464,7 +464,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
     );
   }
 
-  /* ─────────── FOLLOW-UP ─────────── */
+  /* ----------- FOLLOW-UP ----------- */
   if (active.kind === "followUp") {
     return (
       <Dialog open onOpenChange={(o) => !o && close()}>
@@ -515,7 +515,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
     );
   }
 
-  /* ─────────── SEND PACKET ─────────── */
+  /* ----------- SEND PACKET ----------- */
   if (active.kind === "sendPacket") {
     return (
       <Dialog open onOpenChange={(o) => !o && close()}>
@@ -569,7 +569,7 @@ function LeadPicker({
         <SelectContent className="max-h-72">
           {leads.slice(0, 80).map((l) => (
             <SelectItem key={l.id} value={l.id}>
-              {(l.parentName || l.childName)} — {l.childName}
+              {(l.parentName || l.childName)} - {l.childName}
             </SelectItem>
           ))}
         </SelectContent>
