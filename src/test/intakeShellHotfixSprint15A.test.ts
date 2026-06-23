@@ -52,10 +52,13 @@ describe("Sprint 15A — Intake Team shell hotfix", () => {
       "/intake/dashboard", "/intake/referral-queue", "/intake/lead-to-active",
       "/intake/missing-information", "/intake/parent-communication",
       "/intake/tasks", "/intake/benefits-cheat-sheets",
-      "/patient-journey", "/academy", "/resource-library", "/reports",
+      "/academy", "/resource-library", "/reports",
     ];
     for (const p of required) {
       expect(menu).toContain(`"${p}"`);
     }
+    // Export 81/82 — Patient Lifetime Journey is Marketing/Admin only.
+    const intakeBlock = menu.slice(intakeIdx, menu.indexOf("/* ", intakeIdx + 1));
+    expect(intakeBlock).not.toMatch(/\/patient-journey/);
   });
 });
