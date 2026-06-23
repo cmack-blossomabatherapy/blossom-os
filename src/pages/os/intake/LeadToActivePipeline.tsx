@@ -120,7 +120,11 @@ export default function LeadToActivePipeline() {
                                     <ChevronLeft className="h-3 w-3" /> Back
                                   </Button>
                                 )}
-                                {next && (
+                                {isPipelineEnd ? (
+                                  <Button size="sm" variant="ghost" disabled className="h-6 px-1.5 text-[10px] text-muted-foreground" title="Active patient operations start after this point. Use the active patient workflow to continue.">
+                                    <Ban className="h-3 w-3 mr-1" /> Pipeline end
+                                  </Button>
+                                ) : next && (
                                   <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
                                     onClick={() => { moveStage([l.id], next as LeadStatus); toast.success(`Moved to ${next}`); }}>
                                     Forward <ChevronRight className="h-3 w-3" />
