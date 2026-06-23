@@ -96,6 +96,25 @@ function mapPriority(p: string | null): Priority {
   return "Warm";
 }
 
+/**
+ * Export 84 — read sanitized attached-document metadata that
+ * `LeadsContext.createLead` stashes in `source_metadata.attached_documents`
+ * until Cloud Storage is connected. Returns documents in the Lead shape.
+ */
+export function extractAttachedDocuments(
+  sourceMetadata: Record<string, unknown> | null | undefined,
+): { name: string; type: string; url?: string; uploadedAt?: string }[] {
+  const raw = sourceMetadata && (sourceMetadata as Record<string, unknown>)["attached_documents"];
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((d): d is Record<string, unknown> => !!d && typeof d === "object")
+    .map((d) => ({
+      name: String(d.name ?? "Untitled document"),
+      type: String(d.type ?? "Other"),
+      uploadedAt: typeof d.uploadedAt === "string" ? d.uploadedAt : undefined,
+    }));
+}
+
 /** Convert a public.intake_leads row into the Lead shape the UI uses. */
 export function intakeLeadRowToLead(row: IntakeLeadRow): Lead {
   const now = new Date().toISOString();
@@ -178,7 +197,7 @@ export function intakeLeadRowToLead(row: IntakeLeadRow): Lead {
       user: owner,
     }],
     tasks: [],
-    documents: [],
+    documents: extractAttachedDocuments(row.source_metadata),
     communications: [],
     automationLog: [],
     intake,
