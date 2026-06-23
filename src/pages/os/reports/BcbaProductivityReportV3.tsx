@@ -92,7 +92,7 @@ interface BillingRow {
 interface OwnedRow extends BillingRow {
   bcbaOwner: string | null;
   assignmentId: string | null;
-  assignmentSource: "saved" | "inferred" | "unassigned";
+  assignmentSource: "saved" | "inferred" | "inferred_gap_fill" | "unassigned";
   is97153: boolean;
 }
 interface ValidationSummary {
@@ -395,16 +395,16 @@ export default function BcbaProductivityReportV3() {
   }
 
   /* ----- ownership-resolved rows ----- */
-  /* Always compute inferred ownership from the Billing Report itself so that
-   * clients without saved Assignment History still get correct BCBA attribution.
+  /* Ownership is resolved per client AND per date of service.
    *
-   * Critical: partial / stale saved Assignment History must NOT silently
-   * disable inference for unrelated clients. We merge per-client:
-   *   - if the client has any saved assignment, use ONLY saved assignments for that client
-   *   - otherwise, fall back to inferred assignments for that client
+   *   1. Try saved Assignment History for that client/DOS.
+   *   2. If saved doesn't cover the DOS, fall back to inferred ownership
+   *      from the Billing Report (BCBA anchor rows).
+   *   3. Only when neither covers the row do we mark it Unassigned.
    *
-   * This preserves the month-aware inference rule for the vast majority of
-   * clients while letting admins manually override ownership where needed. */
+   * This prevents partial saved Assignment History (e.g. records that end
+   * before June) from silently disabling inferred ownership and turning
+   * valid June rows into "No assignment covering DOS". */
   const inferred = useMemo(() => inferAssignmentHistory(rows), [rows]);
 
   const savedClientKeys = useMemo(() => {
@@ -416,14 +416,15 @@ export default function BcbaProductivityReportV3() {
     return s;
   }, [assignments]);
 
-  const effectiveAssignments = useMemo(() => {
-    if (assignments.length === 0) return inferred.assignments;
-    const filteredInferred = inferred.assignments.filter(a => {
-      const k = (a.clientId && a.clientId.trim()) || normalizeName(a.clientName);
-      return !savedClientKeys.has(k);
-    });
-    return [...assignments, ...filteredInferred];
-  }, [assignments, inferred.assignments, savedClientKeys]);
+  /* Effective assignment list (saved + inferred) is kept for downstream
+   * panels that need a flat list (issue detection, history view). Ownership
+   * resolution per row does NOT use this list directly; it consults saved
+   * and inferred independently so saved never blocks inferred for a date
+   * the saved list doesn't cover. */
+  const effectiveAssignments = useMemo(
+    () => [...assignments, ...inferred.assignments],
+    [assignments, inferred.assignments],
+  );
 
   const inferredAssignmentIds = useMemo(
     () => new Set(inferred.assignments.map(a => a.id)),
@@ -437,7 +438,7 @@ export default function BcbaProductivityReportV3() {
     const seen = new Set<string>();
     for (const a of inferred.assignments) {
       const k = (a.clientId && a.clientId.trim()) || normalizeName(a.clientName);
-      if (k && !savedClientKeys.has(k)) seen.add(k);
+      if (k) seen.add(k);
     }
     return seen.size;
   }, [assignments.length, inferred, savedClientKeys]);
@@ -446,10 +447,23 @@ export default function BcbaProductivityReportV3() {
 
   const ownedRows: OwnedRow[] = useMemo(() => {
     return rows.map(r => {
-      const owner = ownerForClientAtDateV3(effectiveAssignments, r.clientId, r.clientName, r.date);
+      // 1. Try saved Assignment History first.
+      const savedOwner = assignments.length
+        ? ownerForClientAtDateV3(assignments, r.clientId, r.clientName, r.date)
+        : null;
+      // 2. Fall back to inferred ownership for this client/DOS.
+      const inferredOwner = savedOwner
+        ? null
+        : ownerForClientAtDateV3(inferred.assignments, r.clientId, r.clientName, r.date);
+      const owner = savedOwner ?? inferredOwner;
+      // 3. Tag the row so the UI can show how the owner was resolved.
+      const clientKey = (r.clientId && r.clientId.trim()) || normalizeName(r.clientName);
+      const clientHasSaved = savedClientKeys.has(clientKey);
       const source: OwnedRow["assignmentSource"] = !owner
         ? "unassigned"
-        : inferredAssignmentIds.has(owner.assignmentId) ? "inferred" : "saved";
+        : savedOwner
+          ? "saved"
+          : clientHasSaved ? "inferred_gap_fill" : "inferred";
       return {
         ...r,
         bcbaOwner: owner?.bcba ?? null,
@@ -458,7 +472,7 @@ export default function BcbaProductivityReportV3() {
         is97153: isRbt97153(r.code),
       };
     });
-  }, [rows, effectiveAssignments, inferredAssignmentIds]);
+  }, [rows, assignments, inferred.assignments, savedClientKeys]);
 
   const setupIncomplete = rows.length > 0 && effectiveAssignments.length === 0;
   const unassignedAudit: UnassignedAuditRow[] = useMemo(() => (
