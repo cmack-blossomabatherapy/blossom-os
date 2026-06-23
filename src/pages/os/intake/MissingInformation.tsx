@@ -30,7 +30,7 @@ export default function MissingInformation() {
       description="Leads blocked by missing intake or insurance details. Action follow-ups appear here so nothing slips."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
-        { label: "Open Lead-to-Active", icon: ArrowRight, to: "/intake/lead-to-active" },
+        { label: "Open Ready-to-Start Pipeline", icon: ArrowRight, to: "/intake/lead-to-active" },
       ]}
     >
       <Section title={`Blocked leads (${blocked.length})`} description="Sorted by next task due date.">
