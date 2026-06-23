@@ -14,26 +14,14 @@ import {
   getLeadWorkflowRisk,
   FAMILY_LEAD_PIPELINE_STAGES,
   canonicalFamilyLeadStage,
+  getNextFamilyLeadStage,
+  getPreviousFamilyLeadStage,
+  FAMILY_LEAD_STAGE_OWNERS,
   type FamilyLeadPipelineStage,
 } from "@/lib/intake/intakeWorkflow";
 
 // Export 78 — Canonical Family / Lead Workflow (13 stages).
 const STAGES: readonly FamilyLeadPipelineStage[] = FAMILY_LEAD_PIPELINE_STAGES;
-
-// Reverse map for stage movement. Stages without a backing LeadStatus are
-// display-only in this pass (no automation added).
-const STAGE_TO_LEAD_STATUS: Partial<Record<FamilyLeadPipelineStage, LeadStatus>> = {
-  "Lead Captured": "New Lead",
-  "First Contact Attempt": "In Contact",
-  "Engagement Track": "Can't Reach",
-  "Qualification": "Non-Qualified",
-  "Intake Packet Sent": "Sent Form",
-  "Intake Packet Follow Up": "Missing Information",
-  "Intake Complete": "Form Received",
-  "Benefits Verification": "Sent to VOB",
-  "Assessment Scheduling": "VOB Completed",
-  "QA / Treatment Plan Authorization": "Can Not Submit Auth",
-};
 
 export default function LeadToActivePipeline() {
   const { leads, loading, moveStage, revertStage } = useLeads();
@@ -83,13 +71,15 @@ export default function LeadToActivePipeline() {
               const oldest = oldestForStage(items);
               const atRisk = atRiskForStage(items);
               const stageIdx = STAGES.indexOf(stage);
-              const prevStatus = stageIdx > 0 ? STAGE_TO_LEAD_STATUS[STAGES[stageIdx - 1]] : undefined;
-              const nextStatus = stageIdx < STAGES.length - 1 ? STAGE_TO_LEAD_STATUS[STAGES[stageIdx + 1]] : undefined;
+              const owner = FAMILY_LEAD_STAGE_OWNERS[stage];
               return (
                 <div key={stage} className="rounded-2xl border border-border/70 bg-card p-4 w-64 shrink-0">
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">{stage}</div>
                     <div className="text-lg font-semibold tabular-nums text-foreground">{items.length}</div>
+                  </div>
+                  <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                    Owner: {owner}
                   </div>
                   {avgAge !== null && (
                     <div className="text-[10px] text-muted-foreground flex items-center gap-2">
@@ -115,18 +105,26 @@ export default function LeadToActivePipeline() {
                           );
                         })()}
                         <div className="mt-1 flex gap-1">
-                          {stageIdx > 0 && prevStatus && (
-                            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
-                              onClick={() => { revertStage(l.id, prevStatus, 0, "Move back"); toast.success(`Moved back to ${STAGES[stageIdx - 1]}`); }}>
-                              <ChevronLeft className="h-3 w-3" /> Back
-                            </Button>
-                          )}
-                          {stageIdx < STAGES.length - 1 && nextStatus && (
-                            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
-                              onClick={() => { moveStage([l.id], nextStatus); toast.success(`Moved to ${STAGES[stageIdx + 1]}`); }}>
-                              Forward <ChevronRight className="h-3 w-3" />
-                            </Button>
-                          )}
+                          {(() => {
+                            const prev = getPreviousFamilyLeadStage(stage);
+                            const next = getNextFamilyLeadStage(stage);
+                            return (
+                              <>
+                                {prev && (
+                                  <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
+                                    onClick={() => { revertStage(l.id, prev as LeadStatus, 0, "Move back"); toast.success(`Moved back to ${prev}`); }}>
+                                    <ChevronLeft className="h-3 w-3" /> Back
+                                  </Button>
+                                )}
+                                {next && (
+                                  <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
+                                    onClick={() => { moveStage([l.id], next as LeadStatus); toast.success(`Moved to ${next}`); }}>
+                                    Forward <ChevronRight className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                         <details className="mt-1">
                           <summary className="text-[10px] text-muted-foreground cursor-pointer">Actions</summary>
@@ -149,7 +147,7 @@ export default function LeadToActivePipeline() {
           </div>
         </div>
         <div className="mt-3 rounded-xl border border-dashed border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-          Pipeline ends at <strong>Ready to Start Services</strong>. Active patient operations (Services Started, Active Treatment, Reauthorization, Discharge) live in a separate workflow.
+          Pipeline ends at <strong>Ready to Start Services</strong>. Active patient operations start after this point and are managed separately (Services Started, Active Treatment, Reauthorization, Discharge).
         </div>
       </Section>
 

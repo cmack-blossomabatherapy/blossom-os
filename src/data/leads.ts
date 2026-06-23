@@ -12,7 +12,22 @@ export type LeadStatus =
   | "Non-qualified Lead"
   | "Getting DX"
   | "Non-Qualified"
-  | "Needs DX";
+  | "Needs DX"
+  // Export 79 — canonical Family / Lead Workflow stages. Legacy values above
+  // remain for backward compatibility with Monday-imported records.
+  | "Lead Captured"
+  | "First Contact Attempt"
+  | "Engagement Track"
+  | "Qualification"
+  | "Intake Packet Sent"
+  | "Intake Packet Follow Up"
+  | "Intake Complete"
+  | "Benefits Verification"
+  | "Assessment Scheduling"
+  | "QA / Treatment Plan Authorization"
+  | "Authorization Pending"
+  | "Staffing Match"
+  | "Ready to Start Services";
 
 export type Priority = "Hot" | "Warm" | "Cold";
 export type LeadSource = "Website" | "Phone" | "Facebook" | "Referral" | "Ads" | "Organic" | "Digital" | "Insurance";

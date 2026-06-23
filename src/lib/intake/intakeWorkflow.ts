@@ -122,6 +122,63 @@ export function canonicalFamilyLeadStage(
   return LEGACY_FAMILY_LEAD_ALIASES[stage] ?? "Lead Captured";
 }
 
+/**
+ * Export 79 — canonical forward/back movement through the 13-stage Family /
+ * Lead Workflow. Operates on canonical stages after aliasing legacy statuses
+ * so a lead in "VOB Completed" (legacy) advances to "QA / Treatment Plan
+ * Authorization" (canonical next of Assessment Scheduling).
+ */
+export function getNextFamilyLeadStage(
+  stage: string | null | undefined,
+): FamilyLeadPipelineStage | null {
+  const canonical = canonicalFamilyLeadStage(stage);
+  const idx = FAMILY_LEAD_PIPELINE_STAGES.indexOf(canonical);
+  if (idx < 0 || idx >= FAMILY_LEAD_PIPELINE_STAGES.length - 1) return null;
+  return FAMILY_LEAD_PIPELINE_STAGES[idx + 1];
+}
+
+export function getPreviousFamilyLeadStage(
+  stage: string | null | undefined,
+): FamilyLeadPipelineStage | null {
+  const canonical = canonicalFamilyLeadStage(stage);
+  const idx = FAMILY_LEAD_PIPELINE_STAGES.indexOf(canonical);
+  if (idx <= 0) return null;
+  return FAMILY_LEAD_PIPELINE_STAGES[idx - 1];
+}
+
+/**
+ * True only for the canonical end-of-pipeline stage (or legacy aliases that
+ * map to it, such as "Ready for Start" / "Pending Start"). VOB Completed
+ * (legacy) maps to Assessment Scheduling — NOT ready-to-start.
+ */
+export function isReadyToStartStage(stage: string | null | undefined): boolean {
+  if (!stage) return false;
+  // Only true for explicit canonical "Ready to Start Services" or its known
+  // legacy aliases. VOB Completed maps to Assessment Scheduling and must NOT
+  // be treated as ready-to-start.
+  return LEGACY_FAMILY_LEAD_ALIASES[stage] === "Ready to Start Services";
+}
+
+/**
+ * Primary department owner per canonical Family / Lead Workflow stage. Used
+ * by the pipeline UI to make handoffs obvious — no automation attached.
+ */
+export const FAMILY_LEAD_STAGE_OWNERS: Record<FamilyLeadPipelineStage, string> = {
+  "Lead Captured": "Marketing / Intake",
+  "First Contact Attempt": "Intake",
+  "Engagement Track": "Intake",
+  "Qualification": "Intake",
+  "Intake Packet Sent": "Intake",
+  "Intake Packet Follow Up": "Intake",
+  "Intake Complete": "Intake",
+  "Benefits Verification": "VOB / Benefits",
+  "Assessment Scheduling": "Scheduling",
+  "QA / Treatment Plan Authorization": "Clinical / QA",
+  "Authorization Pending": "Authorizations",
+  "Staffing Match": "Staffing",
+  "Ready to Start Services": "Scheduling / Operations",
+};
+
 /** Forward path through the operational happy-path. */
 const FORWARD_PATH: LeadStatus[] = [
   "New Lead",
