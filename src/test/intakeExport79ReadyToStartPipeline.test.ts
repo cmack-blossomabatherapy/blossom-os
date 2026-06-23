@@ -77,7 +77,7 @@ describe("Export 79 — Operationalize Ready-To-Start pipeline", () => {
     expect(src).toMatch(/getNextFamilyLeadStage/);
     expect(src).toMatch(/getPreviousFamilyLeadStage/);
     expect(src).toMatch(/FAMILY_LEAD_STAGE_OWNERS/);
-    expect(src).toMatch(/managed separately/);
+    expect(src).toMatch(/managed in a separate workflow/);
   });
 
   it("IntakeDashboard uses isReadyToStartStage for the Ready to Start (30d) metric", () => {
