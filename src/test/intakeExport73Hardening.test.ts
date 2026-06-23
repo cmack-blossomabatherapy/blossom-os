@@ -134,10 +134,10 @@ describe("Export 74 - Intake Communications polish", () => {
     // Mojibake byte sequences expressed via escapes so this test file itself
     // does not contain the literal sequences.
     const badSequences = [
-      "\u00c2",         // Â
-      "\u00e2\u20ac\u201d", // â€”
-      "\u00e2\u20ac\u00a6", // â€¦
-      "\u00e2\u201d\u20ac", // â”€
+      "\u00c2",
+      "\u00e2\u20ac\u201d",
+      "\u00e2\u20ac\u00a6",
+      "\u00e2\u201d\u20ac",
     ];
     for (const f of files) {
       const src = read(f);
