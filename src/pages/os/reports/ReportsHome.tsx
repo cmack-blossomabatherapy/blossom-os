@@ -67,12 +67,10 @@ export default function ReportsHome() {
     window.addEventListener("cancellation-saved-reports-changed", refresh);
     window.addEventListener("bcba-prod-v3-saved-changed", refresh);
     window.addEventListener("storage", refresh);
-    window.addEventListener("focus", refresh);
     return () => {
       window.removeEventListener("cancellation-saved-reports-changed", refresh);
       window.removeEventListener("bcba-prod-v3-saved-changed", refresh);
       window.removeEventListener("storage", refresh);
-      window.removeEventListener("focus", refresh);
     };
   }, []);
   function handleDeleteCancelSaved(id: string) {

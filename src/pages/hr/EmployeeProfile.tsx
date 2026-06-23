@@ -168,7 +168,7 @@ export default function EmployeeProfile() {
         {showNotes && <TabsContent value="notes"><NotesTab employee={employee} /></TabsContent>}
         <TabsContent value="communication"><PlaceholderTab title="Communication Timeline" message="Linked emails, calls, meetings, follow-ups arrive in Phase 4." /></TabsContent>
         <TabsContent value="timeline"><TimelineTab employee={employee} /></TabsContent>
-        <TabsContent value="access"><AccessTab employee={employee} /></TabsContent>
+        <TabsContent value="access"><AccessTab employee={employee} onEmployeeChanged={() => id && void load(id)} /></TabsContent>
         <TabsContent value="logins"><LoginsTab employee={employee} /></TabsContent>
         {showCases && <TabsContent value="cases"><CasesTab employee={employee} /></TabsContent>}
       </Tabs>

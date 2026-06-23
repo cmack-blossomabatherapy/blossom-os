@@ -136,29 +136,30 @@ function useData() {
     onboarding: [] as Onboarding[],
     loading: true,
   });
+  const reload = async () => {
+    const [sl, cd, bc, em, ob] = await Promise.all([
+      supabase.from("recruiting_orientation_slots").select("*").order("scheduled_date"),
+      supabase.from("recruiting_candidates").select("id,first_name,last_name,email,role,state,city,pipeline_stage,recruiter,applied_date,next_action,next_action_due").eq("is_archived", false),
+      supabase.from("recruiting_background_checks").select("*"),
+      supabase.from("employees").select("id,first_name,last_name,job_title,state,status,start_date").in("status", ["pending_start", "active"]).order("last_name"),
+      supabase.from("employee_onboarding").select("id,employee_id,status,blockers"),
+    ]);
+    set({
+      slots: (sl.data ?? []) as Slot[],
+      candidates: (cd.data ?? []) as Candidate[],
+      bg: (bc.data ?? []) as BgCheck[],
+      employees: (em.data ?? []) as Employee[],
+      onboarding: (ob.data ?? []) as Onboarding[],
+      loading: false,
+    });
+  };
   useEffect(() => {
     let cancel = false;
-    (async () => {
-      const [sl, cd, bc, em, ob] = await Promise.all([
-        supabase.from("recruiting_orientation_slots").select("*").order("scheduled_date"),
-        supabase.from("recruiting_candidates").select("id,first_name,last_name,email,role,state,city,pipeline_stage,recruiter,applied_date,next_action,next_action_due").eq("is_archived", false),
-        supabase.from("recruiting_background_checks").select("*"),
-        supabase.from("employees").select("id,first_name,last_name,job_title,state,status,start_date").in("status", ["pending_start", "active"]).order("last_name"),
-        supabase.from("employee_onboarding").select("id,employee_id,status,blockers"),
-      ]);
-      if (cancel) return;
-      set({
-        slots: (sl.data ?? []) as Slot[],
-        candidates: (cd.data ?? []) as Candidate[],
-        bg: (bc.data ?? []) as BgCheck[],
-        employees: (em.data ?? []) as Employee[],
-        onboarding: (ob.data ?? []) as Onboarding[],
-        loading: false,
-      });
-    })();
+    void (async () => { if (!cancel) await reload(); })();
     return () => { cancel = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return s;
+  return { ...s, reload };
 }
 
 /* ---------------- page ---------------- */
@@ -666,7 +667,7 @@ export default function OSHROrientationQueue() {
           slot={openSlot}
           bg={openBg}
           onClose={() => setOpenCandId(null)}
-          onChanged={() => window.location.reload()}
+          onChanged={() => { void d.reload(); }}
           onMessage={() => navigate("/hr/messages")}
           toast={toast}
         />

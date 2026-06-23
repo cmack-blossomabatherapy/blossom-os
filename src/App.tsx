@@ -428,7 +428,18 @@ import {
   ShieldCheck, UserCheck, Eye, Calendar, FileText, Clock, UsersRound, CheckSquare, Flame, Library,
 } from "lucide-react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Returning to the tab should NOT refetch every query. That used to
+      // make Blossom OS feel like it was reloading on focus.
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      staleTime: 1000 * 60 * 2, // 2 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
+    },
+  },
+});
 
 function ClientsRouter() {
   const { role } = useOSRole();
