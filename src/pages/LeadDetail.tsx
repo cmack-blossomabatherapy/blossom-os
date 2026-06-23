@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDeepLink, useConsumeDeepLink, useDeepLinkHighlight } from "@/lib/deepLink";
 import { statusVariant, priorityVariant, getInlineAlert, pipelineStages, LeadStatus } from "@/data/leads";
@@ -36,6 +36,59 @@ export default function LeadDetail() {
   const navigate = useNavigate();
   const { getLead, updateLead, moveStage, assignOwner, deleteLeads } = useLeads();
   const lead = id ? getLead(id) : undefined;
+
+  // Hidden file inputs powering Upload document, VOB upload, and the empty-state dropzone.
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const vobInputRef = useRef<HTMLInputElement>(null);
+
+  const formatBytes = (n?: number) => {
+    if (!n && n !== 0) return "";
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+    return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleDocumentUpload = (files: FileList | null) => {
+    if (!lead || !files || files.length === 0) return;
+    const now = new Date().toISOString();
+    const newDocs = Array.from(files).map((f) => ({
+      name: f.name,
+      type: "Parent Provided Document",
+      uploadedAt: now,
+    }));
+    updateLead(lead.id, {
+      documents: [...(lead.documents ?? []), ...newDocs],
+      automationLog: [
+        ...(lead.automationLog ?? []),
+        ...newDocs.map((d) => `Document uploaded: ${d.name} (storage connection pending)`),
+      ],
+    });
+    toast.success(`Attached ${newDocs.length} document${newDocs.length === 1 ? "" : "s"}`, {
+      description: "Storage connection pending — metadata recorded against this lead.",
+    });
+    if (docInputRef.current) docInputRef.current.value = "";
+  };
+
+  const handleVobUpload = (files: FileList | null) => {
+    if (!lead || !files || files.length === 0) return;
+    const f = files[0];
+    const now = new Date().toISOString();
+    updateLead(lead.id, {
+      vobFile: { name: f.name, uploadedAt: now },
+      documents: [
+        ...(lead.documents ?? []),
+        { name: f.name, type: "VOB", uploadedAt: now },
+      ],
+      automationLog: [
+        ...(lead.automationLog ?? []),
+        `VOB uploaded: ${f.name} (storage connection pending)`,
+      ],
+    });
+    toast.success(`VOB uploaded: ${f.name}`, {
+      description: `${formatBytes(f.size)} · storage connection pending`,
+    });
+    if (vobInputRef.current) vobInputRef.current.value = "";
+  };
 
   // Deep-link: open a tab and highlight a task if requested via the URL.
   const deepLink = useDeepLink();
@@ -537,7 +590,20 @@ export default function LeadDetail() {
                   <Separator className="my-3" />
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" className="flex-1 text-xs">Update VOB Status</Button>
-                    <Button size="sm" variant="outline" className="flex-1 text-xs">Upload VOB</Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-xs"
+                      onClick={() => vobInputRef.current?.click()}
+                    >
+                      Upload VOB
+                    </Button>
+                    <input
+                      ref={vobInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => handleVobUpload(e.target.files)}
+                    />
                   </div>
                 </div>
 
@@ -559,11 +625,15 @@ export default function LeadDetail() {
             <TabsContent value="documents" className="mt-4">
               <div className="bg-card rounded-xl border border-border/60 p-5 shadow-sm">
                 {lead.documents.length === 0 ? (
-                  <div className="border border-dashed border-border rounded-lg p-8 text-center">
+                  <button
+                    type="button"
+                    onClick={() => docInputRef.current?.click()}
+                    className="w-full border border-dashed border-border rounded-lg p-8 text-center hover:border-primary/40 hover:bg-muted/30 transition-colors cursor-pointer"
+                  >
                     <Upload className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">No documents uploaded yet</p>
                     <p className="text-xs text-muted-foreground/70 mt-1">Drop files here or click to upload</p>
-                  </div>
+                  </button>
                 ) : (
                   <div className="space-y-2">
                     {lead.documents.map((doc, i) => (
@@ -583,7 +653,24 @@ export default function LeadDetail() {
                   </div>
                 )}
                 <Separator className="my-3" />
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs"><Upload className="h-3 w-3" /> Upload document</Button>
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    onClick={() => docInputRef.current?.click()}
+                  >
+                    <Upload className="h-3 w-3" /> Upload document
+                  </Button>
+                  <span className="text-[10.5px] text-muted-foreground">Storage connection pending</span>
+                </div>
+                <input
+                  ref={docInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleDocumentUpload(e.target.files)}
+                />
               </div>
             </TabsContent>
 
