@@ -81,6 +81,7 @@ import {
   type OAuthConnectionRow,
 } from "@/lib/os/integrations/backend";
 import { toast } from "sonner";
+import { IntakeCommunicationSetupPanel } from "@/components/settings/IntakeCommunicationSetupPanel";
 
 /**
  * Admin > Integrations renders directly from the shared registry
