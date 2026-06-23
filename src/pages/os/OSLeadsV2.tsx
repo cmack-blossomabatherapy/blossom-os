@@ -1092,6 +1092,18 @@ function BulkActionBar({
                 {s}
               </button>
             ))}
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 pt-2 pb-1 border-t border-border/60 mt-1">
+              Outcome
+            </p>
+            {BULK_OUTCOME_OPTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => onMove(s)}
+                className="w-full text-left text-sm rounded-lg px-2 py-1.5 hover:bg-muted text-muted-foreground"
+              >
+                {s}
+              </button>
+            ))}
           </PopoverContent>
         </Popover>
 
