@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   MessageSquare, Plus, ArrowRight, ArrowLeft, UserPlus, AlertCircle,
-  ShieldCheck, ShieldAlert, Flame, HeartHandshake, ExternalLink,
+  ShieldCheck, ShieldAlert, Flame, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +22,10 @@ import type { Lead, LeadStatus } from "@/data/leads";
 import { useLeads } from "@/contexts/LeadsContext";
 import { useLeadJourneyLive } from "@/hooks/useLeadJourneyLive";
 import {
-  getNextIntakeStage,
-  getPreviousIntakeStage,
-  isStageReadyForVob,
+  getNextFamilyLeadStage,
+  getPreviousFamilyLeadStage,
+  canonicalFamilyLeadStage,
+  isReadyToStartStage,
   getMissingInfoFlags,
   ESCALATION_SEVERITIES,
   type EscalationSeverity,
@@ -68,9 +69,15 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
   const [ownerOpen, setOwnerOpen] = useState(false);
   const [escalateOpen, setEscalateOpen] = useState(false);
 
-  const nextStage = useMemo(() => getNextIntakeStage(lead.status), [lead.status]);
-  const prevStage = useMemo(() => getPreviousIntakeStage(lead.status), [lead.status]);
-  const vobEligible = useMemo(() => isStageReadyForVob(lead.status), [lead.status]);
+  // Export 80 — canonical 13-stage Family / Lead Workflow movement. Legacy
+  // statuses are aliased via canonicalFamilyLeadStage so a record sitting in
+  // a Monday-era status still advances along the canonical pipeline.
+  const canonical = useMemo(() => canonicalFamilyLeadStage(lead.status), [lead.status]);
+  const nextStage = useMemo(() => getNextFamilyLeadStage(lead.status), [lead.status]);
+  const prevStage = useMemo(() => getPreviousFamilyLeadStage(lead.status), [lead.status]);
+  const atPipelineEnd = useMemo(() => isReadyToStartStage(lead.status), [lead.status]);
+  const vobEligible = canonical === "Intake Complete";
+  const benefitsInProgress = canonical === "Benefits Verification";
 
   const after = () => onAfterAction?.();
 
@@ -98,13 +105,10 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
       )}
       data-source-page={sourcePage}
     >
-      <Button size={btnSize} variant="outline" onClick={() => setLogOpen(true)}>
-        <MessageSquare className="h-3.5 w-3.5 mr-1" /> Log Contact
-      </Button>
       <Button size={btnSize} variant="outline" onClick={() => setFollowOpen(true)}>
         <Plus className="h-3.5 w-3.5 mr-1" /> Follow-Up
       </Button>
-      {nextStage && (
+      {nextStage && !atPipelineEnd && (
         <Button size={btnSize} variant="ghost" onClick={() => safeMove(nextStage, nextStage)}>
           Move Forward <ArrowRight className="h-3.5 w-3.5 ml-1" />
         </Button>
@@ -133,47 +137,46 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
           size={btnSize}
           variant="ghost"
           onClick={() => {
-            moveStage([lead.id], "Sent to VOB");
+            moveStage([lead.id], "Benefits Verification");
             void tryAddFollowUp({
               isPersistable, addFollowUp,
-              title: "Check VOB status",
+              title: "Start benefits verification",
             });
-            toast.success("Submitted to VOB");
+            toast.success("Started benefits verification");
             after();
           }}
         >
-          <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Submit To VOB
+          <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Start Benefits Verification
         </Button>
       )}
-      {lead.status === "Sent to VOB" && (
+      {benefitsInProgress && (
         <Button
           size={btnSize}
           variant="ghost"
           onClick={() => {
-            moveStage([lead.id], "VOB Completed");
+            moveStage([lead.id], "Assessment Scheduling");
             void tryAddFollowUp({
               isPersistable, addFollowUp,
-              title: "Prepare active-care handoff",
+              title: "Schedule assessment",
             });
-            toast.success("VOB completed");
+            toast.success("Benefits verified — moved to Assessment Scheduling");
             after();
           }}
         >
-          <ShieldCheck className="h-3.5 w-3.5 mr-1" /> VOB Complete
+          <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Mark Benefits Verified
         </Button>
       )}
       <Button size={btnSize} variant="ghost" onClick={() => setEscalateOpen(true)}>
         <Flame className="h-3.5 w-3.5 mr-1" /> Escalate
       </Button>
       <Button asChild size={btnSize} variant="ghost">
-        <Link to={`/patient-journey?leadId=${lead.id}`}>
-          <HeartHandshake className="h-3.5 w-3.5 mr-1" /> Journey
-        </Link>
-      </Button>
-      <Button asChild size={btnSize} variant="ghost">
         <Link to={`/leads/${lead.id}`}>
           <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open Lead
         </Link>
+      </Button>
+      {/* Secondary admin-style note action — not the primary family contact workflow. */}
+      <Button size={btnSize} variant="ghost" onClick={() => setLogOpen(true)}>
+        <MessageSquare className="h-3.5 w-3.5 mr-1" /> Add Note
       </Button>
 
       {!isPersistable && (
