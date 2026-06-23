@@ -20,7 +20,7 @@ export const KNOWLEDGE_BASE: KBEntry[] = [
     sourceType: "sop_library",
     content: "Tier 1: Scheduling Team attempts coverage from float pool. Tier 2: BCBA-of-record contacted within 2 hours. Tier 3: State Director escalation if coverage gap >24h. Document every escalation in the session note.",
     updatedAt: "2026-04-30", tags: ["scheduling","escalation","coverage","cancellations"] },
-  { id: "kb-intake-flow", category: "workflow", title: "Intake Lead to Active Client Flow",
+  { id: "kb-intake-flow", category: "workflow", title: "Intake Lead to Ready-to-Start Flow",
     sourceType: "sop_library",
     content: "Lead captured > contact within 24h > VOB > intake packet > diagnostic confirmed > auth submitted > schedule built > first session. Each stage has SLAs surfaced in the Intake dashboard.",
     updatedAt: "2026-05-05", tags: ["intake","lead","pipeline","client"] },
