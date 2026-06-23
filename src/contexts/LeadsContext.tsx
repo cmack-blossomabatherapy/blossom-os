@@ -337,6 +337,21 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   const createLead = useCallback(async (input: CreateLeadInput): Promise<Lead> => {
     // Compose the row exactly as the intake_leads schema expects.
     const today = new Date().toISOString().split("T")[0];
+    // Export 84 — sanitize attached-document metadata into source_metadata so
+    // it survives a page refresh until Cloud Storage / a docs table exists.
+    const sanitizedAttachedDocs = (input.documents ?? []).map((d) => ({
+      name: d.name,
+      type: d.type,
+      size: typeof d.size === "number" ? d.size : undefined,
+      uploadedAt: d.uploadedAt,
+      storageStatus: d.storageStatus ?? "pending_storage_connection",
+    }));
+    const mergedSourceMetadata: Record<string, unknown> = {
+      ...(input.sourceMetadata ?? {}),
+      ...(sanitizedAttachedDocs.length
+        ? { attached_documents: sanitizedAttachedDocs }
+        : {}),
+    };
     const insertPayload: Record<string, unknown> = {
       child_name:  input.childName.trim(),
       parent_name: input.parentName.trim(),
@@ -379,7 +394,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       diagnosis_status:   input.diagnosisStatus ?? null,
       dx_needed:          input.dxNeeded ?? false,
       tags:               input.tags && input.tags.length ? input.tags : ["Blossom OS"],
-      source_metadata:    input.sourceMetadata ?? {},
+      source_metadata:    mergedSourceMetadata,
       original_column_data: input.originalColumnData ?? {},
     };
 
