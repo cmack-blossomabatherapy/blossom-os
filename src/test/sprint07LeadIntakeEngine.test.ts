@@ -108,11 +108,13 @@ describe("Sprint 07 — Lead intake & patient journey engine", () => {
     }
   });
 
-  it("Intake follow-up pages deep-link to Patient Lifetime Journey", () => {
+  it("Intake follow-up pages do not deep-link to Patient Lifetime Journey (Export 81+)", () => {
+    // Patient Lifetime Journey is Marketing/Growth/BD only — Intake pages
+    // open the lead detail page instead.
     const a = read("src/pages/os/intake/MissingInformation.tsx");
     const b = read("src/pages/os/intake/ParentCommunication.tsx");
-    expect(a).toMatch(/\/patient-journey\?leadId=/);
-    expect(b).toMatch(/\/patient-journey\?leadId=/);
+    expect(a).not.toMatch(/\/patient-journey/);
+    expect(b).not.toMatch(/\/patient-journey/);
   });
 
   it("State Director Training Academy stays at /training", () => {
