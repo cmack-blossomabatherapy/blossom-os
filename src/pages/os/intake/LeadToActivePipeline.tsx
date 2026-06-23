@@ -154,8 +154,11 @@ export default function LeadToActivePipeline() {
             })}
           </div>
         </div>
-        <div className="mt-3 rounded-xl border border-dashed border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-          Pipeline ends at <strong>Ready to Start Services</strong>. Active patient operations start after this point and are managed separately (Services Started, Active Treatment, Reauthorization, Discharge).
+        <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-900 dark:text-amber-100">
+          <Ban className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-700 dark:text-amber-300" aria-hidden="true" />
+          <span>
+            <strong>Hard stop:</strong> this pipeline ends at <strong>Ready to Start Services</strong>. Active patient operations start after this point and are managed in a separate workflow.
+          </span>
         </div>
       </Section>
 
