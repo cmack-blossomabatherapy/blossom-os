@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-export function AccessTab({ employee }: { employee: Employee }) {
+export function AccessTab({ employee, onEmployeeChanged }: { employee: Employee; onEmployeeChanged?: () => void }) {
   const { isAdmin, hasPerm } = useAuth();
   const canManageRoles = isAdmin || hasPerm("settings.manage") || hasPerm("hr.employees.edit");
   const canSendLink = isAdmin || hasPerm("hr.employees.edit");
@@ -149,8 +149,9 @@ export function AccessTab({ employee }: { employee: Employee }) {
       toast.success(`Linked ${data?.email ?? email}.`);
     }
     setLinkLoginOpen(false);
-    // Force refresh of parent record
-    window.location.reload();
+    // Refresh the parent employee record in place instead of reloading the
+    // whole app — preserves route, scroll, and other tab state.
+    onEmployeeChanged?.();
   }
 
   async function unlinkLogin() {
@@ -164,7 +165,7 @@ export function AccessTab({ employee }: { employee: Employee }) {
     if (error) { toast.error(error.message); return; }
     toast.success("Login unlinked from this employee.");
     setUnlinkOpen(false);
-    window.location.reload();
+    onEmployeeChanged?.();
   }
 
   const roleToggles: { key: AppRole; title: string; desc: string; icon: typeof GraduationCap }[] = [
