@@ -3041,6 +3041,30 @@ export type Database = {
           },
         ]
       }
+      email_cc_settings: {
+        Row: {
+          calendar_write_enabled: boolean
+          id: string
+          teams_write_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          calendar_write_enabled?: boolean
+          id?: string
+          teams_write_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          calendar_write_enabled?: boolean
+          id?: string
+          teams_write_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       email_command_items: {
         Row: {
           category: string | null
@@ -12974,6 +12998,22 @@ export type Database = {
       search_eval_reviewers: {
         Args: { p_query: string; p_token: string }
         Returns: Json
+      }
+      set_email_cc_setting: {
+        Args: { _key: string; _value: boolean }
+        Returns: {
+          calendar_write_enabled: boolean
+          id: string
+          teams_write_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "email_cc_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       submit_eval_form_response:
         | {
