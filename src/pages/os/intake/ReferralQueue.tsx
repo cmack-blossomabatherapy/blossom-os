@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardList, Plus, Phone, Mail, MapPin, User, Flame, Search } from "lucide-react";
+import { ClipboardList, Plus, Phone, Mail, MapPin, User, Flame, Search, List } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
@@ -98,7 +98,7 @@ export default function ReferralQueue() {
       description="New referrals awaiting first contact, ownership, and intake action."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
-        { label: "Open Leads", icon: ClipboardList, to: "/leads" },
+        { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
       <div className="flex flex-col gap-2 md:flex-row md:items-center p-3 rounded-2xl border border-border/60 bg-card/50">
