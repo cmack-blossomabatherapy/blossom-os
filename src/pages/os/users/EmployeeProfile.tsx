@@ -2136,6 +2136,13 @@ export default function EmployeeProfilePage() {
   const [sendingInvite, setSendingInvite] = useState(false);
   const [creatingLink, setCreatingLink] = useState(false);
   const [inviteLink, setInviteLink] = useState<{ loginUrl: string; tempPassword: string; email: string } | null>(null);
+  const [checkingDelivery, setCheckingDelivery] = useState(false);
+  const [resendingWelcome, setResendingWelcome] = useState(false);
+  const [delivery, setDelivery] = useState<{
+    log: { created_at: string; status: string; error_message: string | null; recipient_email: string } | null;
+    provider: { last_event?: string; created_at?: string; subject?: string; to?: string[] } | null;
+    providerError?: string | null;
+  } | null>(null);
 
   const member = useMemo(
     () => members.find((m) => m.id === employeeId || m.uuid === employeeId) ?? null,
@@ -2209,6 +2216,48 @@ export default function EmployeeProfilePage() {
       return;
     }
     toast.error(data?.emailError ?? "Invite could not be sent.");
+  };
+
+  const checkInviteDelivery = async () => {
+    if (!member?.uuid || !member.email) {
+      toast.error("Missing user record or email.");
+      return;
+    }
+    setCheckingDelivery(true);
+    const { data, error } = await supabase.functions.invoke("admin-check-welcome-email", {
+      body: { userId: member.uuid, email: member.email },
+    });
+    setCheckingDelivery(false);
+    if (error || !data?.ok) {
+      toast.error(data?.error ?? error?.message ?? "Could not check the latest invite.");
+      return;
+    }
+    setDelivery(data);
+    toast.success("Delivery status updated");
+  };
+
+  const resendWelcome = async () => {
+    if (!member?.uuid || !member.email) {
+      toast.error("Missing user record or email.");
+      return;
+    }
+    setResendingWelcome(true);
+    const { data, error } = await supabase.functions.invoke("admin-resend-welcome-email", {
+      body: {
+        userId: member.uuid,
+        email: member.email,
+        displayName: member.name ?? undefined,
+        jobTitle: member.title ?? undefined,
+        siteUrl: window.location.origin,
+      },
+    });
+    setResendingWelcome(false);
+    if (error || !data?.ok) {
+      toast.error(data?.error ?? error?.message ?? "The welcome email could not be resent.");
+      return;
+    }
+    setDelivery(null);
+    toast.success("Welcome email resent");
   };
 
   if (loading && !member) {
