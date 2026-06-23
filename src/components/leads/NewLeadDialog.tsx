@@ -310,9 +310,11 @@ interface FormBodyProps {
   form: FormShape;
   update: <K extends keyof FormShape>(k: K, v: FormShape[K]) => void;
   errors: Record<string, string>;
+  documents: PendingLeadDocument[];
+  setDocuments: (updater: (prev: PendingLeadDocument[]) => PendingLeadDocument[]) => void;
 }
 
-function FormTabs({ form, update, errors }: FormBodyProps) {
+function FormTabs({ form, update, errors, documents, setDocuments }: FormBodyProps) {
   return (
     <Tabs defaultValue="source" className="w-full">
       <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 h-auto">
@@ -401,9 +403,7 @@ function FormTabs({ form, update, errors }: FormBodyProps) {
       </TabsContent>
 
       <TabsContent value="documents" className="mt-4">
-        <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 px-6 py-10 text-center text-sm text-muted-foreground">
-          Document uploads will open here in a follow-up build. For now, capture document context in <strong>Notes</strong>.
-        </div>
+        <DocumentsTab documents={documents} setDocuments={setDocuments} />
       </TabsContent>
 
       <TabsContent value="notes" className="mt-4">
