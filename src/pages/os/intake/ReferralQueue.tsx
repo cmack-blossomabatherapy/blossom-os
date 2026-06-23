@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardList, Plus, Phone, Mail, MapPin, User, Flame, Search, HeartHandshake } from "lucide-react";
+import { ClipboardList, Plus, Phone, Mail, MapPin, User, Flame, Search } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";

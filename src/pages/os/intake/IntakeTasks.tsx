@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Plus, Clock, AlertCircle, CheckCircle2, HeartHandshake, ExternalLink } from "lucide-react";
+import { FileText, Plus, Clock, AlertCircle, CheckCircle2, ExternalLink } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import type { Lead } from "@/data/leads";
