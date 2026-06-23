@@ -176,6 +176,51 @@ export function isReadyToStartStage(stage: string | null | undefined): boolean {
 }
 
 /**
+ * Export 88 — outcome statuses that sit OUTSIDE the canonical pipeline.
+ * These are surfaced as their own lanes (Not Qualified, Cannot Reach) and
+ * must be excluded from "open pipeline" math and follow-up queues.
+ */
+const NON_QUALIFIED_STATUSES: ReadonlySet<string> = new Set([
+  "Non-Qualified",
+  "Non-qualified Lead",
+  "Disqualified",
+]);
+const CANNOT_REACH_STATUSES: ReadonlySet<string> = new Set([
+  "Can't Reach",
+  "Cannot Reach",
+  "Sent Packet - Can't Reach",
+]);
+
+/** True for any lead status that represents a non-qualified outcome. */
+export function isNonQualifiedStatus(status: string | null | undefined): boolean {
+  return !!status && NON_QUALIFIED_STATUSES.has(status);
+}
+
+/** True for any lead status that represents a cannot-reach final outcome. */
+export function isCannotReachStatus(status: string | null | undefined): boolean {
+  return !!status && CANNOT_REACH_STATUSES.has(status);
+}
+
+/**
+ * Convenience for the Intake UI — true when a lead's status is any
+ * non-canonical outcome (non-qualified or cannot-reach). These leads should
+ * not appear in "open pipeline" follow-up math.
+ */
+export function isLeadOutOfPipeline(status: string | null | undefined): boolean {
+  return isNonQualifiedStatus(status) || isCannotReachStatus(status) || isReadyToStartStage(status);
+}
+
+/**
+ * True when the lead's form review explicitly flags missing information.
+ * Tolerates both legacy "Missing Information" and the canonical
+ * "Missing Info" label so reports/filters stay accurate during migration.
+ */
+export function hasMissingFormReview(lead: { formReviewStatus?: string | null }): boolean {
+  const s = (lead.formReviewStatus ?? "").toLowerCase();
+  return s === "missing info" || s === "missing information";
+}
+
+/**
  * Primary department owner per canonical Family / Lead Workflow stage. Used
  * by the pipeline UI to make handoffs obvious — no automation attached.
  */

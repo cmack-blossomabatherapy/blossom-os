@@ -26,6 +26,10 @@ import {
   FAMILY_LEAD_PIPELINE_STAGES,
   canonicalFamilyLeadStage,
   isReadyToStartStage,
+  isNonQualifiedStatus,
+  isCannotReachStatus,
+  isLeadOutOfPipeline,
+  hasMissingFormReview,
   type FamilyLeadPipelineStage,
 } from "@/lib/intake/intakeWorkflow";
 
@@ -115,11 +119,29 @@ function StateBadge({ state }: { state: string }) {
 }
 
 function StatusChip({ status }: { status: string }) {
-  const tone =
-    status === "VOB Completed" || status === "Form Received" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" :
-    status === "Missing Information" ? "bg-amber-500/10 text-amber-700 dark:text-amber-300" :
-    status === "Can't Reach" || status === "Non-Qualified" || status === "Sent Packet - Can't Reach" ? "bg-destructive/10 text-destructive" :
-    "bg-muted text-foreground";
+  // Export 88 — color by canonical Family / Lead pipeline stage first. The
+  // raw label still renders so imported records remain recognizable, but
+  // tone/grouping is driven by canonicalFamilyLeadStage. Non-canonical
+  // outcomes (Non-Qualified, Cannot Reach) keep their own destructive tone.
+  let tone = "bg-muted text-foreground";
+  if (isNonQualifiedStatus(status) || isCannotReachStatus(status)) {
+    tone = "bg-destructive/10 text-destructive";
+  } else if (isReadyToStartStage(status)) {
+    tone = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+  } else {
+    const canonical = canonicalFamilyLeadStage(status);
+    if (canonical === "Assessment Scheduling" || canonical === "Intake Complete" || canonical === "Staffing Match") {
+      tone = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+    } else if (canonical === "Intake Packet Follow Up") {
+      tone = "bg-amber-500/10 text-amber-700 dark:text-amber-300";
+    } else if (
+      canonical === "Benefits Verification" ||
+      canonical === "QA / Treatment Plan Authorization" ||
+      canonical === "Authorization Pending"
+    ) {
+      tone = "bg-sky-500/10 text-sky-700 dark:text-sky-300";
+    }
+  }
   return <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap", tone)}>{status}</span>;
 }
 
@@ -288,7 +310,12 @@ function OSLeadsV2Inner() {
       if (filters.formStatuses.size && !filters.formStatuses.has(l.formStatus)) return false;
       if (filters.vobStatuses.size && !filters.vobStatuses.has(l.vobStatus)) return false;
       if (filters.insurances.size && !filters.insurances.has(l.primaryInsurance || "—")) return false;
-      if (filters.missingOnly && l.status !== "Missing Information" && l.formReviewStatus !== "Missing Information") return false;
+      // Export 88 — canonical "Intake Packet Follow Up" is the missing-info
+      // stage. Form-review "Missing Info"/"Missing Information" also qualifies.
+      if (filters.missingOnly) {
+        const canonical = canonicalFamilyLeadStage(l.status);
+        if (canonical !== "Intake Packet Follow Up" && !hasMissingFormReview(l)) return false;
+      }
       if (activeKpi) {
         const k = KPI_DEFS.find((kk) => kk.key === activeKpi);
         if (k && !k.test(l)) return false;
@@ -809,34 +836,41 @@ function PipelineView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) =
 /* ─────────────────────── Follow-Up View ─────────────────────── */
 
 function FollowUpView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
   const oneDay = 24 * 60 * 60 * 1000;
   const ageDays = (iso: string | null) => iso ? Math.floor((Date.now() - new Date(iso).getTime()) / oneDay) : 999;
 
-  // Export 85 — follow-up queues now recognize the canonical Family / Lead
-  // Workflow stages while still tolerating legacy Monday-era values for
-  // imported records.
-  const isEngagement = (s: string) =>
-    s === "First Contact Attempt" || s === "Engagement Track" || s === "In Contact";
+  // Export 88 — follow-up queues are built ENTIRELY on the canonical Family /
+  // Lead Workflow. Legacy Monday-era labels (New Lead, In Contact, Sent Form,
+  // Missing Information, Sent to VOB, VOB Completed) are only honored via
+  // canonicalFamilyLeadStage, never via direct equality checks.
+  const canonical = (l: Lead) => canonicalFamilyLeadStage(l.status);
+  const dueIso = (l: Lead) => l.nextTaskDue ?? l.lastContacted ?? null;
+  const dueAge = (l: Lead) => ageDays(dueIso(l));
+  const isEngagement = (l: Lead) => {
+    const c = canonical(l);
+    return c === "First Contact Attempt" || c === "Engagement Track";
+  };
+  const inOpenPipeline = (l: Lead) => !isLeadOutOfPipeline(l.status);
+
   const queues = [
-    { key: "due",  label: "Due Today",      items: leads.filter((l) => ageDays(l.lastContacted) === 2) },
-    { key: "over", label: "Overdue",        items: leads.filter((l) => l.status !== "Can't Reach" && l.status !== "Non-Qualified" && ageDays(l.lastContacted) > 3) },
-    { key: "a1",   label: "Attempt 1",      items: leads.filter((l) => !l.lastContacted && (l.status === "Lead Captured" || l.status === "First Contact Attempt" || l.status === "New Lead")) },
-    { key: "a2",   label: "Attempt 2",      items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 1 && ageDays(l.lastContacted) <= 2) },
-    { key: "a3",   label: "Attempt 3",      items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 3 && ageDays(l.lastContacted) <= 5) },
-    { key: "a4",   label: "Attempt 4",      items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 6 && ageDays(l.lastContacted) <= 8) },
-    { key: "fin",  label: "Final Attempt",  items: leads.filter((l) => isEngagement(l.status) && ageDays(l.lastContacted) >= 9) },
-    { key: "cr",   label: "Cannot Reach",   items: leads.filter((l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach") },
-    { key: "wait", label: "Waiting Parent", items: leads.filter((l) =>
-        l.status === "Intake Packet Sent" ||
-        l.status === "Intake Packet Follow Up" ||
-        l.status === "Sent Form" ||
-        l.status === "Missing Information") },
-    { key: "bv",   label: "Benefits / Auth", items: leads.filter((l) =>
-        l.status === "Benefits Verification" ||
-        l.status === "Authorization Pending" ||
-        l.status === "QA / Treatment Plan Authorization" ||
-        l.status === "Sent to VOB") },
+    { key: "due",   label: "Due Today",       items: leads.filter((l) => inOpenPipeline(l) && dueAge(l) === 0) },
+    { key: "over",  label: "Overdue",         items: leads.filter((l) => inOpenPipeline(l) && dueAge(l) > 0 && dueAge(l) < 999) },
+    { key: "a1",    label: "Attempt 1",       items: leads.filter((l) => {
+      const c = canonical(l);
+      return !l.lastContacted && (c === "Lead Captured" || c === "First Contact Attempt");
+    }) },
+    { key: "a2",    label: "Attempt 2",       items: leads.filter((l) => isEngagement(l) && ageDays(l.lastContacted) >= 1 && ageDays(l.lastContacted) <= 2) },
+    { key: "a3",    label: "Attempt 3",       items: leads.filter((l) => canonical(l) === "Engagement Track" && ageDays(l.lastContacted) >= 3 && ageDays(l.lastContacted) <= 5) },
+    { key: "fin",   label: "Final Attempt",   items: leads.filter((l) => canonical(l) === "Engagement Track" && ageDays(l.lastContacted) >= 6) },
+    { key: "cr",    label: "Cannot Reach",    items: leads.filter((l) => isCannotReachStatus(l.status)) },
+    { key: "wait",  label: "Waiting Parent",  items: leads.filter((l) => {
+      const c = canonical(l);
+      return c === "Intake Packet Sent" || c === "Intake Packet Follow Up";
+    }) },
+    { key: "bv",    label: "Benefits / Auth", items: leads.filter((l) => {
+      const c = canonical(l);
+      return c === "Benefits Verification" || c === "QA / Treatment Plan Authorization" || c === "Authorization Pending";
+    }) },
   ];
 
   return (

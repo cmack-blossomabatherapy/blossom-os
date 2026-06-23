@@ -19,7 +19,11 @@ import {
   notifyCommunicationResult,
 } from "@/lib/integrations/communications/communicationAdapters";
 import { toast } from "sonner";
-import { isReadyToStartStage, canonicalFamilyLeadStage } from "@/lib/intake/intakeWorkflow";
+import {
+  isLeadOutOfPipeline,
+  isReadyToStartStage,
+  canonicalFamilyLeadStage,
+} from "@/lib/intake/intakeWorkflow";
 
 type TemplateAction =
   | { kind: "email" }
@@ -32,7 +36,7 @@ const TEMPLATES: { id: string; label: string; body: string; actions: TemplateAct
   { id: "first-contact", label: "First contact", body: "Hi {{parent}}, this is {{coordinator}} from Blossom ABA Therapy. Thanks for reaching out about {{child}} - I'd love to learn a bit more so we can get started. When is a good time for a quick 10-minute call today or tomorrow?", actions: [{ kind: "sms" }, { kind: "email" }] },
   { id: "packet-sent", label: "Intake packet", body: "Hi {{parent}}, sending over the intake packet now. It takes about 10 minutes to complete. Reply here if anything's unclear - happy to walk you through it.", actions: [{ kind: "intake-packet" }, { kind: "sms" }] },
   { id: "missing-info", label: "Missing information reminder", body: "Hi {{parent}}, quick follow-up: we still need {{missing}} before we can move {{child}}'s file to verification. Want me to send the form again or jump on a quick call?", actions: [{ kind: "missing-info" }, { kind: "email" }] },
-  { id: "vob-update", label: "VOB update", body: "Hi {{parent}}, your benefits verification is in progress. We're checking with {{payer}} and expect to hear back within a few business days. I'll reach out the moment we have an answer.", actions: [{ kind: "vob-update" }, { kind: "sms" }] },
+  { id: "vob-update", label: "Benefits Verification Update", body: "Hi {{parent}}, your benefits verification is in progress. We're checking with {{payer}} and expect to hear back within a few business days. I'll reach out the moment we have an answer.", actions: [{ kind: "vob-update" }, { kind: "sms" }] },
   { id: "non-qualified", label: "Non-qualified message", body: "Hi {{parent}}, thanks for trusting us with {{child}}'s care. Unfortunately {{reason}} means we aren't able to start services right now. If anything changes - coverage, location, or otherwise - please reach back out. We're rooting for you.", actions: [{ kind: "email" }] },
   { id: "handoff", label: "Handoff to scheduling / clinical", body: "Hi {{parent}}, great news - {{child}} is approved and ready to begin. I'm handing your file to our scheduling and clinical team. {{nextOwner}} will reach out within 1 business day to schedule the first assessment.", actions: [{ kind: "email" }, { kind: "sms" }] },
 ];
@@ -65,7 +69,7 @@ const ACTION_META: Record<TemplateAction["kind"], { label: string; icon: typeof 
   sms: { label: "Send SMS", icon: MessageSquare },
   "intake-packet": { label: "Send Intake Packet", icon: FileText },
   "missing-info": { label: "Send Missing Info Reminder", icon: AlertCircle },
-  "vob-update": { label: "Send VOB Update", icon: ShieldCheck },
+  "vob-update": { label: "Send Benefits Verification Update", icon: ShieldCheck },
 };
 
 interface CommRow {
@@ -106,17 +110,27 @@ export default function ParentCommunication() {
   }, [comms, leadNameById]);
 
   const followUps = useMemo(
-    // Export 87 — exclude ready-to-start and non-qualified leads via the
-    // canonical helper. Do NOT rely on the legacy "VOB Completed" label.
-    () => leads.filter((l) => {
-      if (!l.nextAction) return false;
-      if (isReadyToStartStage(l.status)) return false;
-      const canon = canonicalFamilyLeadStage(l.status);
-      const isNQ = l.status === "Non-Qualified" || l.status === "Non-qualified Lead";
-      if (isNQ) return false;
-      void canon;
-      return true;
-    }).slice(0, 30),
+    // Export 88 — required follow-ups must be open-pipeline intake leads
+    // with an active next action. Ready-to-Start, Non-Qualified, and
+    // Cannot Reach outcomes are excluded via the canonical helper.
+    () => {
+      const buckets = new Map<string, Lead[]>();
+      const ordered: string[] = [];
+      leads.forEach((l) => {
+        if (!l.nextAction) return;
+        // Export 88 — isLeadOutOfPipeline already covers ready-to-start,
+        // non-qualified, and cannot-reach outcomes. We also keep an explicit
+        // isReadyToStartStage check for the older test contract.
+        if (isReadyToStartStage(l.status)) return;
+        if (isLeadOutOfPipeline(l.status)) return;
+        const canonical = canonicalFamilyLeadStage(l.status);
+        const bucket = canonical;
+        if (!buckets.has(bucket)) { buckets.set(bucket, []); ordered.push(bucket); }
+        buckets.get(bucket)!.push(l);
+      });
+      // Flatten in canonical pipeline order so the queue reads top-to-bottom.
+      return ordered.flatMap((b) => buckets.get(b) ?? []).slice(0, 30);
+    },
     [leads],
   );
 

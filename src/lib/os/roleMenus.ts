@@ -6,7 +6,7 @@ import {
   Calendar, FileSignature, ClipboardList, UserCheck,
   LayoutDashboard, AlertTriangle, MapPin, Stethoscope, CheckCircle2,
   XCircle, Gauge, LineChart, Activity, Inbox, type LucideIcon,
-  FileCheck2, Clock, Eye, Flame, Library, UserPlus, Bell,
+  FileCheck2, Clock, Eye, Flame, Library, UserPlus, Bell, List,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
 
@@ -257,7 +257,8 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Intake Dashboard",           path: "/intake/dashboard",              icon: LayoutDashboard },
           { label: "New Referral Queue",         path: "/intake/referral-queue",         icon: ClipboardList },
           { label: "Lead to Ready-to-Start Pipeline", path: "/intake/lead-to-active",    icon: TrendingUp },
-          { label: "Missing Information",        path: "/intake/missing-information",    icon: ShieldCheck },
+          { label: "Open Leads",                 path: "/leads",                         icon: List },
+          { label: "Packet Follow Up / Missing Info", path: "/intake/missing-information", icon: ShieldCheck },
           { label: "Intake Communications",      path: "/intake/parent-communication",   icon: MessageSquare },
           { label: "Intake Tasks",               path: "/intake/tasks",                  icon: ClipboardList },
           { label: "Lead Benefits Cheat Sheets", path: "/intake/benefits-cheat-sheets",  icon: ShieldCheck },

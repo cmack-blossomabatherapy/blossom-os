@@ -307,11 +307,16 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
           if (selected.length === 0) return;
           const tags = selected.map((s) => s.tag);
           tags.forEach((t) => addTag([lead.id], t));
+          // Export 88 — decide "already blocked" via canonical stage so
+          // legacy "Missing Information" / "Sent Form" rows that map to
+          // Intake Packet Follow Up are not double-moved.
+          const canonicalCurrent = canonicalFamilyLeadStage(lead.status);
           const isBlockedAlready =
-            lead.status === "Intake Packet Follow Up" ||
-            lead.status === "Missing Information" ||
+            canonicalCurrent === "Intake Packet Follow Up" ||
             lead.status === "Non-Qualified" ||
-            lead.status === "Can't Reach";
+            lead.status === "Non-qualified Lead" ||
+            lead.status === "Can't Reach" ||
+            lead.status === "Sent Packet - Can't Reach";
           if (!isBlockedAlready) {
             // Export 87 — canonical Family / Lead Workflow uses
             // "Intake Packet Follow Up" as the missing-info stage.
@@ -334,7 +339,7 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
               /* non-fatal */
             }
           }
-          toast.success("Missing info flagged");
+          toast.success(isBlockedAlready ? "Packet follow-up flagged" : "Moved to Intake Packet Follow Up");
           after();
         }}
       />
@@ -514,7 +519,7 @@ function MissingInfoDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => { if (v) setPicked(new Set(initial)); onOpenChange(v); }}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Flag Missing Information</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Flag Packet Follow Up / Missing Info</DialogTitle></DialogHeader>
         <div className="space-y-2">
           {MISSING_OPTIONS.map((opt) => (
             <label key={opt.key} className="flex items-center gap-2 text-sm cursor-pointer">

@@ -29,17 +29,17 @@ export default function MissingInformation() {
   return (
     <GrowthPageShell
       eyebrow="Intake"
-      title="Missing Information"
-      description="Leads blocked by missing intake or insurance details. Action follow-ups appear here so nothing slips."
+      title="Packet Follow Up / Missing Info"
+      description="Leads waiting on packet corrections, documents, insurance details, or family follow-up."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
         { label: "Open Leads", icon: List, to: "/leads" },
         { label: "Open Ready-to-Start Pipeline", icon: ArrowRight, to: "/intake/lead-to-active" },
       ]}
     >
-      <Section title={`Blocked leads (${blocked.length})`} description="Sorted by next task due date.">
+      <Section title={`Packet follow-up queue (${blocked.length})`} description="Sorted by next task due date.">
         {blocked.length === 0 ? (
-          <ReadyForDataNotice message={loading ? "Loading leads…" : "No leads are blocked on missing information."} />
+          <ReadyForDataNotice message={loading ? "Loading leads…" : "No packet follow-up items are blocked right now."} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {blocked.map((lead) => (
