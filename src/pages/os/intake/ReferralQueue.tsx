@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardList, Plus, Phone, Mail, MapPin, User, Flame, Search } from "lucide-react";
+import { ClipboardList, Plus, Phone, Mail, MapPin, User, Flame, Search, HeartHandshake } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
@@ -181,6 +181,12 @@ export default function ReferralQueue() {
                 <div className="mt-3">
                   <LeadActionPanel lead={lead} compact sourcePage="referral-queue" />
                 </div>
+                <Link
+                  to={`/patient-journey?leadId=${lead.id}`}
+                  className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                >
+                  <HeartHandshake className="h-3 w-3" /> Patient Lifetime Journey
+                </Link>
               </div>
             ))}
           </div>
