@@ -446,7 +446,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
                   daysInStage: 0,
                   nextAction: "Make first contact",
                   nextTaskDue: new Date().toISOString().slice(0, 10),
-                  lastActivity: "Manual inquiry added",
+                  lastActivity: "Manual lead added",
                   payor: select2 || "",
                   coverageType: "",
                   paymentPlanNeeded: false,
