@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Plus, Clock, AlertCircle, CheckCircle2, HeartHandshake, ExternalLink } from "lucide-react";
+import { FileText, Plus, Clock, AlertCircle, CheckCircle2, ExternalLink } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import type { Lead } from "@/data/leads";
@@ -74,9 +74,6 @@ function TaskCard({ row, onComplete, onSnooze, onReassign }: {
         <Button size="sm" variant="outline" onClick={wrap("Completed", () => onComplete(row.task.id))}>Complete</Button>
         <Button size="sm" variant="ghost" onClick={wrap("Snoozed", () => onSnooze(row.task.id))}>Snooze</Button>
         <Button size="sm" variant="ghost" onClick={reassign}>Reassign</Button>
-        <Button asChild size="sm" variant="ghost">
-          <Link to={`/patient-journey?leadId=${leadId}`}><HeartHandshake className="h-3 w-3 mr-1" /> Journey</Link>
-        </Button>
         <Button asChild size="sm" variant="ghost">
           <Link to={`/leads/${leadId}`}><ExternalLink className="h-3 w-3 mr-1" /> Lead</Link>
         </Button>

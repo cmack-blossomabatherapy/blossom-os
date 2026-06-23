@@ -81,9 +81,6 @@ export default function MissingInformation() {
                 })()}
                 <div className="mt-3">
                   <LeadActionPanel lead={lead} compact sourcePage="missing-information" />
-                  <Link to={`/patient-journey?leadId=${lead.id}`} className="mt-2 inline-flex text-[11px] text-primary hover:underline">
-                    Open Patient Lifetime Journey
-                  </Link>
                 </div>
               </div>
             ))}

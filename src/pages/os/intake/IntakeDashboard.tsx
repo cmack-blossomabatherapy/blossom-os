@@ -120,7 +120,6 @@ export default function IntakeDashboard() {
         { label: "Log parent contact", icon: MessageSquare, to: "/intake/parent-communication" },
         { label: "Request missing info", icon: AlertCircle, to: "/intake/missing-information" },
         { label: "Convert lead", icon: ArrowRightLeft, to: "/intake/lead-to-active" },
-        { label: "Patient Lifetime Journey", icon: HeartHandshake, to: "/patient-journey" },
       ]}
     >
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -238,7 +237,6 @@ export default function IntakeDashboard() {
                   <Link to="/ops/authorizations" className="text-[11px] text-primary hover:underline">→ Authorizations</Link>
                   <Link to="/ops/scheduling" className="text-[11px] text-primary hover:underline">→ Scheduling</Link>
                   <Link to="/qa-team" className="text-[11px] text-primary hover:underline">→ Clinical</Link>
-                  <Link to={`/patient-journey?leadId=${lead.id}`} className="text-[11px] text-primary hover:underline">→ Journey</Link>
                 </div>
               </div>
             ))}

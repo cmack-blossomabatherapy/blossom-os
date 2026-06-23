@@ -261,7 +261,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Parent Communication",       path: "/intake/parent-communication",   icon: MessageSquare },
           { label: "Intake Tasks",               path: "/intake/tasks",                  icon: ClipboardList },
           { label: "Lead Benefits Cheat Sheets", path: "/intake/benefits-cheat-sheets",  icon: ShieldCheck },
-          { label: "Patient Lifetime Journey",   path: "/patient-journey",               icon: HeartHandshake },
+          { label: "After-Hours AI Calls",       path: "/phone/ai-calls",                icon: PhoneCall },
         ],
       },
       TRAINING_AND_RESOURCES,

@@ -59,7 +59,6 @@ export default function LeadToActivePipeline() {
       description="Track every lead through the journey from first contact to active care."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
-        { label: "Open Patient Lifetime Journey", to: "/patient-journey", icon: TrendingUp },
         { label: "Open Leads", to: "/leads?view=pipeline" },
       ]}
     >

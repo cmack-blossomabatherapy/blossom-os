@@ -10,6 +10,11 @@ import { useLeadUpdates } from "@/hooks/useLeadUpdates";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import {
+  findBenefitsCheatSheetForLead,
+  mapCheatSheetStatusToTone,
+} from "@/lib/intake/leadBenefitsCheatSheets";
 
 type Tab = "overview" | "insurance" | "documents" | "activity" | "actions";
 
@@ -293,6 +298,15 @@ export function LeadDetailDrawer({
                 <Field label="Diagnosis status" value={i.diagnosisStatus} />
                 <Field label="DX needed" value={i.dxNeeded == null ? undefined : i.dxNeeded ? "Yes" : "No"} />
               </div>
+              <BenefitsCheatSheetMatchPanel
+                insurance={
+                  lead.primaryInsurance ||
+                  (lead as unknown as { insurance?: string }).insurance ||
+                  str("Primary Insurance") ||
+                  str("Insurance")
+                }
+                state={lead.state || str("State")}
+              />
               <div className="rounded-2xl bg-muted/60 border border-border/60 p-4 space-y-3">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">VOB</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
@@ -412,5 +426,116 @@ export function LeadDetailDrawer({
         </div>
       </aside>
     </>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Benefits Cheat Sheet Match Panel                                            */
+/* -------------------------------------------------------------------------- */
+
+const CONFIDENCE_LABEL = {
+  exact: "Exact match",
+  strong: "Strong match",
+  possible: "Possible match",
+  none: "No match",
+} as const;
+
+export function BenefitsCheatSheetMatchPanel({
+  insurance,
+  state,
+}: { insurance?: string | null; state?: string | null }) {
+  const hasInsurance = !!(insurance && String(insurance).trim());
+  const match = findBenefitsCheatSheetForLead({ insurance, state });
+
+  if (!hasInsurance) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-medium text-foreground">Benefits Cheat Sheet Match</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          No insurance listed yet. Add insurance to see payer guidance.
+        </p>
+      </div>
+    );
+  }
+
+  if (!match.sheet) {
+    return (
+      <div className="rounded-2xl border border-border/70 bg-card p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-medium text-foreground">Benefits Cheat Sheet Match</p>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          No payer match found for <span className="font-medium text-foreground">{insurance}</span>
+          {state ? <> in <span className="font-medium text-foreground">{state}</span></> : null}.
+        </p>
+        <Link
+          to={`/intake/benefits-cheat-sheets?q=${encodeURIComponent(String(insurance))}`}
+          className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+        >
+          <ExternalLink className="h-3 w-3" /> Open full cheat sheet
+        </Link>
+      </div>
+    );
+  }
+
+  const tone = mapCheatSheetStatusToTone(match.sheet.intakeStatus);
+  return (
+    <div className="rounded-2xl border border-border/70 bg-card p-4 space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm font-medium text-foreground">Benefits Cheat Sheet Match</p>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {match.sheet.payer} · {match.sheet.state} · {match.sheet.insuranceCategory}
+          </p>
+        </div>
+        <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap", tone.className)}>
+          {tone.label}
+        </span>
+      </div>
+      {!match.sameState && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/60 text-amber-900 px-2.5 py-1.5 text-[11px] flex gap-1.5">
+          <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>{match.reason}</span>
+        </div>
+      )}
+      {match.sheet.notes && (
+        <p className="text-xs text-foreground/90">{match.sheet.notes}</p>
+      )}
+      <div className="rounded-lg bg-muted/40 border border-border/60 px-3 py-2">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Recommended action</p>
+        <p className="text-xs text-foreground/90">{tone.recommendation}</p>
+      </div>
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+        <span>Confidence: {CONFIDENCE_LABEL[match.confidence]}</span>
+        {match.sheet.mondayItemId && <span className="font-mono">#{match.sheet.mondayItemId}</span>}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => {
+            const text = `${match.sheet!.payer} (${match.sheet!.state}) — ${match.sheet!.intakeStatus}\n${match.sheet!.notes}\nRecommendation: ${tone.recommendation}`;
+            navigator.clipboard.writeText(text).then(
+              () => toast.success("Guidance copied"),
+              () => toast.error("Could not copy"),
+            );
+          }}
+          className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition"
+        >
+          Copy guidance
+        </button>
+        <Link
+          to={`/intake/benefits-cheat-sheets?q=${encodeURIComponent(match.sheet.payer)}`}
+          className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition inline-flex items-center gap-1"
+        >
+          <ExternalLink className="h-3 w-3" /> Open full cheat sheet
+        </Link>
+      </div>
+    </div>
   );
 }
