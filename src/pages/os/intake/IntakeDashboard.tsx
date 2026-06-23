@@ -42,7 +42,7 @@ export default function IntakeDashboard() {
     return { newReferrals, inPipeline, missing, followUps, awaiting, converted };
   }, [leads]);
 
-  const fmt = (n: number) => (loading ? "…" : n.toLocaleString());
+  const fmt = (n: number) => (loading ? "..." : n.toLocaleString());
 
   const actionRequired = useMemo(() => {
     return leads
@@ -52,7 +52,7 @@ export default function IntakeDashboard() {
       .slice(0, 6);
   }, [leads]);
 
-  // Owner workload — count of in-pipeline leads per owner.
+  // Owner workload - count of in-pipeline leads per owner.
   const ownerWorkload = useMemo(() => {
     const map = new Map<string, { total: number; risk: number }>();
     leads.forEach((l) => {
@@ -74,7 +74,7 @@ export default function IntakeDashboard() {
     const map = new Map<string, number>();
     leads.forEach((l) => {
       if (!PIPELINE_STAGES.has(l.status)) return;
-      const k = l.state || "—";
+      const k = l.state || "-";
       map.set(k, (map.get(k) ?? 0) + 1);
     });
     return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
@@ -124,7 +124,7 @@ export default function IntakeDashboard() {
     >
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard label="New referrals" value={fmt(counts.newReferrals)} hint="Status: New Lead" status={counts.newReferrals ? "live" : "ready"} icon={ClipboardList} />
-        <StatCard label="In pipeline" value={fmt(counts.inPipeline)} hint="New → Sent to VOB" status={counts.inPipeline ? "live" : "ready"} icon={TrendingUp} />
+        <StatCard label="In pipeline" value={fmt(counts.inPipeline)} hint="New -> Sent to VOB" status={counts.inPipeline ? "live" : "ready"} icon={TrendingUp} />
         <StatCard label="Missing info" value={fmt(counts.missing)} hint="Blocked leads" status={counts.missing ? "live" : "ready"} icon={AlertCircle} />
         <StatCard label="Open follow-ups" value={fmt(counts.followUps)} hint="Tasks open" status={counts.followUps ? "live" : "ready"} icon={MessageSquare} />
         <StatCard label="Awaiting benefits" value={fmt(counts.awaiting)} hint="Sent to VOB" status={counts.awaiting ? "live" : "ready"} icon={ShieldCheck} />
@@ -153,7 +153,7 @@ export default function IntakeDashboard() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2 truncate"><Users className="h-3.5 w-3.5 text-muted-foreground" /> {o.owner}</span>
                     <span className="tabular-nums text-xs text-muted-foreground">
-                      {o.total} {o.risk > 0 && <span className="text-amber-600">· {o.risk} at risk</span>}
+                      {o.total} {o.risk > 0 && <span className="text-amber-600">- {o.risk} at risk</span>}
                     </span>
                   </div>
                   <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
@@ -171,7 +171,7 @@ export default function IntakeDashboard() {
               <div key={s.stage} className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-3 py-2 text-sm">
                 <span className="flex items-center gap-2 min-w-0"><Clock className="h-3.5 w-3.5 text-muted-foreground" /> <span className="truncate">{s.stage}</span></span>
                 <span className="text-xs tabular-nums text-muted-foreground">
-                  {s.count} · avg {s.avg}d · oldest {s.oldest}d
+                  {s.count} - avg {s.avg}d - oldest {s.oldest}d
                 </span>
               </div>
             ))}
@@ -221,7 +221,7 @@ export default function IntakeDashboard() {
         </Section>
       </div>
 
-      <Section title={`Handoff readiness (${handoffReady.length})`} description="VOB Completed — ready to hand off to Authorizations, Scheduling, and Clinical.">
+      <Section title={`Handoff readiness (${handoffReady.length})`} description="VOB Completed - ready to hand off to Authorizations, Scheduling, and Clinical.">
         {handoffReady.length === 0 ? (
           <div className="text-xs text-muted-foreground">No families currently ready for handoff.</div>
         ) : (
@@ -232,11 +232,11 @@ export default function IntakeDashboard() {
                   <Link to={`/leads/${lead.id}`} className="font-semibold hover:underline truncate">{lead.childName}</Link>
                   <Badge variant="outline" className="text-[10px]"><HeartHandshake className="h-3 w-3 mr-1" /> Ready</Badge>
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground">{lead.state || "—"} · {lead.owner || "Unassigned"}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{lead.state || "-"} - {lead.owner || "Unassigned"}</div>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  <Link to="/ops/authorizations" className="text-[11px] text-primary hover:underline">→ Authorizations</Link>
-                  <Link to="/ops/scheduling" className="text-[11px] text-primary hover:underline">→ Scheduling</Link>
-                  <Link to="/qa-team" className="text-[11px] text-primary hover:underline">→ Clinical</Link>
+                  <Link to="/ops/authorizations" className="text-[11px] text-primary hover:underline">-> Authorizations</Link>
+                  <Link to="/ops/scheduling" className="text-[11px] text-primary hover:underline">-> Scheduling</Link>
+                  <Link to="/qa-team" className="text-[11px] text-primary hover:underline">-> Clinical</Link>
                 </div>
               </div>
             ))}
@@ -257,7 +257,7 @@ export default function IntakeDashboard() {
                     <Flame className="h-3 w-3 mr-1" /> {risk.level}
                   </Badge>
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground">{lead.status} · {lead.owner || "Unassigned"}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{lead.status} - {lead.owner || "Unassigned"}</div>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {risk.reasons.slice(0, 3).map((r) => (
                     <Badge key={r} variant="outline" className="text-[10px] py-0">{r}</Badge>

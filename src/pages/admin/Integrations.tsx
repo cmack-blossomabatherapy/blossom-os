@@ -90,9 +90,9 @@ import { IntakeCommunicationSetupPanel } from "@/components/settings/IntakeCommu
  * via small overlay tables below.
  */
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Types & mock data
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 type IntegrationStatus =
   | "connected"
@@ -144,7 +144,7 @@ const CATEGORIES: { id: IntegrationCategory; label: string; icon: typeof Plug }[
   { id: "ai", label: "AI & Automation", icon: Sparkles },
 ];
 
-// ── Visual overlay (icon + accent) by registry id ──
+// -- Visual overlay (icon + accent) by registry id --
 const ICON_BY_ID: Record<string, typeof Plug> = {
   centralreach: HeartPulse,
   viventium: Workflow,
@@ -245,7 +245,7 @@ function toIntegrationCard(reg: BlossomIntegration): Integration {
     id: reg.id,
     name: reg.displayName,
     category: mapRegistryCategory(reg.category),
-    description: reg.notes || reg.inboundData.slice(0, 3).join(" · "),
+    description: reg.notes || reg.inboundData.slice(0, 3).join(" - "),
     purpose: reg.inboundData.slice(0, 4),
     status,
     account: reg.ownerDepartment,
@@ -269,9 +269,9 @@ function toIntegrationCard(reg: BlossomIntegration): Integration {
 /** Source of truth: derived directly from `BLOSSOM_INTEGRATIONS`. */
 const INTEGRATIONS: Integration[] = BLOSSOM_INTEGRATIONS.map(toIntegrationCard);
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Small UI atoms
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function StatusPill({ status }: { status: IntegrationStatus }) {
   const config: Record<
@@ -361,9 +361,9 @@ function HealthStat({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Integration card
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function IntegrationCard({
   integration,
@@ -417,7 +417,7 @@ function IntegrationCard({
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <StatusPill status={integration.status} />
         {integration.account && !isComingSoon && (
-          <span className="text-xs text-muted-foreground">· {integration.account}</span>
+          <span className="text-xs text-muted-foreground">- {integration.account}</span>
         )}
       </div>
 
@@ -473,9 +473,9 @@ function IntegrationCard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Detail drawer
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function IntegrationDrawer({
   integration,
@@ -600,7 +600,7 @@ function IntegrationDrawer({
                 <HealthStat
                   icon={RefreshCw}
                   label="Last success"
-                  value={connection?.last_success_at ? new Date(connection.last_success_at).toLocaleString() : "—"}
+                  value={connection?.last_success_at ? new Date(connection.last_success_at).toLocaleString() : "-"}
                 />
                 <HealthStat icon={Activity} label="Sync runs" value={`${integrationSyncRuns.length} recent`} />
                 <HealthStat
@@ -621,7 +621,7 @@ function IntegrationDrawer({
                     ))}
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Names only — secret values are never shown in the browser.
+                    Names only - secret values are never shown in the browser.
                   </p>
                 </Card>
               )}
@@ -753,7 +753,7 @@ function IntegrationDrawer({
                           <span className={cn("size-1.5 rounded-full", ok ? "bg-emerald-500" : r.status === "error" || r.status === "failed" ? "bg-rose-500" : "bg-amber-500")} />
                           <div>
                             <div className="text-sm text-foreground">
-                              {r.run_type} · {r.direction} · {r.status}
+                              {r.run_type} - {r.direction} - {r.status}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {new Date(r.started_at).toLocaleString()}
@@ -766,7 +766,7 @@ function IntegrationDrawer({
                           </div>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {r.records_received} in · {r.records_created + r.records_updated} written
+                          {r.records_received} in - {r.records_created + r.records_updated} written
                         </div>
                       </div>
                     );
@@ -918,9 +918,9 @@ function IntegrationDrawer({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Marketplace modal
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function MarketplaceDialog({
   open,
@@ -984,7 +984,7 @@ function MarketplaceDialog({
               <div>
                 <div className="text-sm font-medium">Need a custom integration?</div>
                 <div className="text-xs text-muted-foreground">
-                  Request a new connector — our team will scope it within 48 hours.
+                  Request a new connector - our team will scope it within 48 hours.
                 </div>
               </div>
             </div>
@@ -998,9 +998,9 @@ function MarketplaceDialog({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Page
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 type FilterKey =
   | "all"
@@ -1151,7 +1151,7 @@ export default function Integrations() {
           <div className="max-w-2xl">
             <div className="mb-2 inline-flex items-center gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
               <Settings className="size-3.5" strokeWidth={1.75} />
-              System · Integrations
+              System - Integrations
             </div>
             <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
               Integrations
@@ -1192,14 +1192,14 @@ export default function Integrations() {
           </div>
         </div>
 
-        {/* System status bar — honest, derived from real backend tables only. */}
+        {/* System status bar - honest, derived from real backend tables only. */}
         <Card className="mt-8 rounded-2xl border-border/70 bg-card/60 p-5">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {backendLoading ? (
                 <>
                   <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-                  <span className="text-sm font-medium text-muted-foreground">Loading integration backend…</span>
+                  <span className="text-sm font-medium text-muted-foreground">Loading integration backend...</span>
                 </>
               ) : !backendReachable ? (
                 <>
@@ -1209,7 +1209,7 @@ export default function Integrations() {
               ) : backendStats.connected === 0 ? (
                 <>
                   <span className="size-2 rounded-full bg-muted-foreground/40" />
-                  <span className="text-sm font-medium">Integration backend ready · no live connections yet</span>
+                  <span className="text-sm font-medium">Integration backend ready - no live connections yet</span>
                 </>
               ) : (
                 <>
@@ -1244,8 +1244,8 @@ export default function Integrations() {
           </div>
           <p className="mt-3 text-[11px] text-muted-foreground">
             {backendStats.lastEvent
-              ? `Last backend event · ${new Date(backendStats.lastEvent).toLocaleString()}`
-              : "No webhook events received yet · static cards below show registry metadata only"}
+              ? `Last backend event - ${new Date(backendStats.lastEvent).toLocaleString()}`
+              : "No webhook events received yet - static cards below show registry metadata only"}
           </p>
         </Card>
 
@@ -1261,7 +1261,7 @@ export default function Integrations() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search integrations…"
+              placeholder="Search integrations..."
               className="h-10 rounded-xl bg-muted/40 pl-9"
             />
           </div>
