@@ -236,6 +236,21 @@ function OSLeadsV2Inner() {
   const [page, setPage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
+  // Manual lead creation (Add Lead button + ?new=1 deep link).
+  const [newLeadOpen, setNewLeadOpen] = useState<boolean>(() => searchParams.get("new") === "1");
+  useEffect(() => {
+    if (searchParams.get("new") === "1") setNewLeadOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+  const handleNewLeadOpenChange = (next: boolean) => {
+    setNewLeadOpen(next);
+    if (!next && searchParams.get("new") === "1") {
+      const params = new URLSearchParams(searchParams);
+      params.delete("new");
+      setSearchParams(params, { replace: true });
+    }
+  };
+
   // Mirror state → URL. Uses replace so filter tweaks don't pollute history.
   useEffect(() => {
     const next = applyStateToParams(searchParams, {
@@ -409,8 +424,8 @@ function OSLeadsV2Inner() {
             <Button variant="outline" size="sm" onClick={() => { setView("followup"); toast("Showing follow-up queue"); }}>
               <PhoneCall className="mr-1.5 h-4 w-4" /> Create Follow-Up
             </Button>
-            <Button size="sm" onClick={() => toast("Add Lead form coming soon")}>
-              <Plus className="mr-1.5 h-4 w-4" /> Add Inquiry
+            <Button size="sm" onClick={() => setNewLeadOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" /> Add Lead
             </Button>
           </div>
         </header>
