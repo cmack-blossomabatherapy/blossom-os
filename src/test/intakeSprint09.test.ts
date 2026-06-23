@@ -47,14 +47,16 @@ const baseLead = (overrides: Partial<Lead> = {}): Lead =>
 
 describe("Sprint 09 — intake workflow helpers", () => {
   it("exports all required stage helpers", () => {
-    expect(INTAKE_STAGES).toContain("New Lead");
-    expect(INTAKE_STAGES).toContain("VOB Completed");
-    expect(getNextIntakeStage("New Lead")).toBe("In Contact");
-    expect(getPreviousIntakeStage("In Contact")).toBe("New Lead");
-    expect(getStageSlaDays("New Lead")).toBeGreaterThan(0);
+    // Export 86 — canonical Family / Lead pipeline is now primary.
+    expect(INTAKE_STAGES).toContain("Lead Captured");
+    expect(INTAKE_STAGES).toContain("Ready to Start Services");
+    expect(getNextIntakeStage("Lead Captured")).toBe("First Contact Attempt");
+    expect(getPreviousIntakeStage("First Contact Attempt")).toBe("Lead Captured");
+    expect(getStageSlaDays("Lead Captured")).toBeGreaterThan(0);
     expect(isStageBlocked("Missing Information")).toBe(true);
-    expect(isStageReadyForVob("Form Received")).toBe(true);
-    expect(isStageConverted("VOB Completed")).toBe(true);
+    expect(isStageReadyForVob("Intake Complete")).toBe(true);
+    expect(isStageConverted("Ready to Start Services")).toBe(true);
+    expect(isStageConverted("VOB Completed")).toBe(false);
   });
 
   it("computes risk, missing info, escalation, age, days-in-stage, and priority", () => {
