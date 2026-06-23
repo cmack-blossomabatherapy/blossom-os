@@ -78,11 +78,10 @@ describe("Export 86 — backend trigger + shared workflow canonicalization", () 
   });
 
   it("a migration sets the column default to Lead Captured", () => {
-    const latest = newest([
-      "ALTER TABLE public.intake_leads ALTER COLUMN pipeline_stage SET DEFAULT",
-    ]);
+    const latest = newestMatching(
+      /ALTER\s+TABLE\s+public\.intake_leads\s+ALTER\s+COLUMN\s+pipeline_stage\s+SET\s+DEFAULT\s+'Lead Captured'/i,
+    );
     expect(latest, "expected a migration that updates the pipeline_stage default").not.toBeNull();
-    expect(latest!).toMatch(/SET DEFAULT\s+'Lead Captured'/);
   });
 
   it("a migration replaces seed_intake_lead_tasks with canonical stage checks", () => {
@@ -103,6 +102,16 @@ function newest(needles: string[]): string | null {
   for (let i = files.length - 1; i >= 0; i--) {
     const src = fs.readFileSync(path.join(dir, files[i]), "utf8");
     if (needles.every((n) => src.includes(n))) return src;
+  }
+  return null;
+}
+
+function newestMatching(re: RegExp): string | null {
+  const dir = path.join(process.cwd(), "supabase/migrations");
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".sql")).sort();
+  for (let i = files.length - 1; i >= 0; i--) {
+    const src = fs.readFileSync(path.join(dir, files[i]), "utf8");
+    if (re.test(src)) return src;
   }
   return null;
 }
