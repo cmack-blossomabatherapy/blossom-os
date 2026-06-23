@@ -6,6 +6,7 @@ import {
   isCannotReachStatus,
   isNonQualifiedStatus,
 } from "@/lib/intake/intakeWorkflow";
+import { LeadContactIconActions } from "@/components/leads/LeadContactActions";
 
 interface LeadQueueViewProps {
   leads: Lead[];
@@ -90,14 +91,17 @@ export function LeadQueueView({ leads, onSelectLead }: LeadQueueViewProps) {
                         <span className="text-xs text-muted-foreground">{lead.daysInStage}d</span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-muted-foreground">{lead.nextAction}</p>
-                      {alert && (
-                        <div className={`flex items-center gap-1 text-[10px] ${alert.type === "red" ? "text-destructive" : "text-warning"}`}>
-                          <AlertCircle className="h-3 w-3" />
-                          {alert.message}
-                        </div>
-                      )}
+                    <div className="flex items-center justify-between mt-2 gap-2">
+                      <p className="text-xs text-muted-foreground truncate flex-1">{lead.nextAction}</p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {alert && (
+                          <div className={`flex items-center gap-1 text-[10px] ${alert.type === "red" ? "text-destructive" : "text-warning"}`}>
+                            <AlertCircle className="h-3 w-3" />
+                            {alert.message}
+                          </div>
+                        )}
+                        <LeadContactIconActions lead={lead} size="xs" />
+                      </div>
                     </div>
                     <p className="mt-2 text-[11px] text-muted-foreground">
                       {lead.formStatus} form · {lead.vobStatus} VOB · {lead.financialStatus} · {lead.paymentPlanStatus}
