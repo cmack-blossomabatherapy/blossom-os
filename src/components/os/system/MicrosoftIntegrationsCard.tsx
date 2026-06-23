@@ -68,11 +68,12 @@ export function MicrosoftIntegrationsCard({ conn, isAdmin, onReconnect, reconnec
     setSavingKey(key);
     const res = await setEmailCcSetting(key, next);
     setSavingKey(null);
-    if (res.ok) {
+    if (res.ok === true) {
       setSettings(res.row);
       toast.success(next ? "Enabled" : "Disabled");
     } else {
-      toast.error(`Could not update: ${res.error}`);
+      const err = (res as { error: string }).error;
+      toast.error(`Could not update: ${err}`);
     }
   }
 
