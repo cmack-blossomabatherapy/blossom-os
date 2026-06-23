@@ -386,7 +386,6 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   hr_lead: new Set<string>([
     "/hr-team",
     "/user-management",
-    "/user-management/admin",
     "/hr/requests",
     "/hr/compliance",
     "/evaluations",
