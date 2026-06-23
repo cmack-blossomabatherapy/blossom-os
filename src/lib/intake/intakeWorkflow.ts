@@ -66,6 +66,14 @@ export const FAMILY_LEAD_PIPELINE_STAGES = [
 export type FamilyLeadPipelineStage = (typeof FAMILY_LEAD_PIPELINE_STAGES)[number];
 
 /**
+ * Export 86 — canonical Family / Lead pipeline is now the primary
+ * `INTAKE_STAGES` value. Old Monday-era values are preserved in
+ * `LEGACY_INTAKE_STAGES` for back-compat reads only.
+ */
+export const INTAKE_STAGES = FAMILY_LEAD_PIPELINE_STAGES;
+export type IntakeStage = FamilyLeadPipelineStage;
+
+/**
  * Canonical Referral Partner Workflow — relationship pipeline owned by
  * Marketing / Business Development. This is intentionally separate from the
  * family lead workflow above.
