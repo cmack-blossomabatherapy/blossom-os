@@ -92,7 +92,7 @@ interface BillingRow {
 interface OwnedRow extends BillingRow {
   bcbaOwner: string | null;
   assignmentId: string | null;
-  assignmentSource: "saved" | "inferred" | "unassigned";
+  assignmentSource: "saved" | "inferred" | "inferred_gap_fill" | "unassigned";
   is97153: boolean;
 }
 interface ValidationSummary {
