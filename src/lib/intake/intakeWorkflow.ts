@@ -33,6 +33,9 @@ export const LEGACY_INTAKE_STAGES = [
 
 export type LegacyIntakeStage = (typeof LEGACY_INTAKE_STAGES)[number];
 
+// Re-exported below after FAMILY_LEAD_PIPELINE_STAGES is declared so the
+// canonical 13-stage pipeline is the primary `INTAKE_STAGES` export.
+
 /* -------------------------------------------------------------------------- */
 /* Export 78 — Canonical Pipelines                                            */
 /* -------------------------------------------------------------------------- */
