@@ -20,10 +20,12 @@ describe("Sprint 15 — Intake Team live menu", () => {
       "/intake/parent-communication",
       "/intake/tasks",
       "/intake/benefits-cheat-sheets",
-      "/patient-journey",
     ]) {
       expect(paths).toContain(p);
     }
+    // Export 81 — Patient Lifetime Journey is Marketing/Admin only and must
+    // no longer appear in the Intake menu.
+    expect(paths).not.toContain("/patient-journey");
   });
 
   it("Intake menu does NOT include the generic /dashboard item", () => {
