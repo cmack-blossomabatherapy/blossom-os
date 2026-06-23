@@ -667,7 +667,7 @@ export default function OSHROrientationQueue() {
           slot={openSlot}
           bg={openBg}
           onClose={() => setOpenCandId(null)}
-          onChanged={() => window.location.reload()}
+          onChanged={() => { void d.reload(); }}
           onMessage={() => navigate("/hr/messages")}
           toast={toast}
         />
