@@ -11,7 +11,7 @@ import {
   Stethoscope, PhoneCall, BookUser, Activity, Bug, UserCheck,
   Plug, MonitorSmartphone, XCircle, CheckCircle2, ListTodo,
   Phone, FileText, LogOut,
-  UploadCloud, Sparkles,
+  UploadCloud, Sparkles, Mail,
   type LucideIcon,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
@@ -153,6 +153,7 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
   {
     id: "system_tools", label: "System Tools", items: [
       { to: "/admin/integrations", label: "Integrations", icon: Plug },
+      { to: "/system/email-command-center", label: "Email Command Center", icon: Mail },
       { to: "/system/bcba-productivity-uploads", label: "BCBA Productivity Uploads", icon: UploadCloud },
       { to: "/system/workflow-inventory", label: "Workflow Inventory", icon: Workflow },
       { to: "/system/request-intake", label: "Request Intake", icon: Inbox },
