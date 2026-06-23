@@ -333,6 +333,15 @@ export interface AppendInput {
   uploadLabel?: string;
   notes?: string;
   parsed?: BcbaUploadParseResult;
+  /**
+   * Optional progress callback so the UI can show per-phase status while a
+   * large upload runs. Phase order: create_batch → append_rows* → finalize_batch.
+   */
+  onProgress?: (event:
+    | { phase: "create_batch" }
+    | { phase: "append_rows"; inserted: number; total: number }
+    | { phase: "finalize_batch" }
+  ) => void;
 }
 
 export async function appendBcbaProductivityUpload(input: AppendInput): Promise<BcbaUploadAppendResult> {
