@@ -51,6 +51,10 @@ export interface CreateLeadInput {
   utmCampaign?: string;
   originationDate?: string;
   assignedIntakeCoordinator?: string;
+  /** Auth user id for the assigned intake coordinator (from user management). */
+  assignedIntakeCoordinatorUserId?: string;
+  /** Employee record id for the assigned intake coordinator. */
+  assignedIntakeCoordinatorEmployeeId?: string;
   priority?: "Hot" | "Warm" | "Cold";
 
   // Insurance
