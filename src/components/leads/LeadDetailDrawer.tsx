@@ -195,26 +195,17 @@ export function LeadDetailDrawer({
           </div>
 
           {/* Quick contact */}
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <a
-              href={callTo}
-              className={cn(
-                "flex items-center justify-center gap-2 h-10 rounded-xl border border-border/60 bg-card text-sm hover:bg-muted transition",
-                !callTo && "opacity-50 pointer-events-none",
-              )}
-            >
-              <Phone className="h-4 w-4" /> Call
-            </a>
-            <a
-              href={mailTo}
-              className={cn(
-                "flex items-center justify-center gap-2 h-10 rounded-xl border border-border/60 bg-card text-sm hover:bg-muted transition",
-                !mailTo && "opacity-50 pointer-events-none",
-              )}
-            >
-              <Mail className="h-4 w-4" /> Email
-            </a>
-          </div>
+          <LeadContactActions
+            className="mt-4"
+            lead={{
+              id: lead.id,
+              phone: lead.phone,
+              email: lead.email,
+              parentName: lead.parentName,
+              childName: lead.childName,
+              state: lead.state,
+            }}
+          />
         </header>
 
         {/* Tabs */}
