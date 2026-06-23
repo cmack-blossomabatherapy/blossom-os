@@ -1,75 +1,85 @@
-## Integrations Backend Pass 4 — Plan
+# Intake Department Launch — Implementation Plan
 
-Build provider adapter layer, normalized sync staging, and webhook normalization on top of the existing Pass 1–3 foundation. No fake success; honest statuses everywhere.
+This is a focused, in-place upgrade of the existing Intake module. Nothing is rebuilt from scratch. All current routes, contexts, and live hooks stay. The work is grouped into 6 passes so it can be verified end-to-end.
 
-### 1. Shared adapter framework (`supabase/functions/_shared/integrations/`)
-- `types.ts` — `ProviderProbeResult`, `ProviderSyncResult`, `ProviderWebhookNormalizeResult`, `ProviderAdapter` interface (`probe`, `sync`, `normalizeWebhook`, optional `verifySignature`).
-- `secrets.ts` — typed `getEnv()` / `requireEnv()` helpers with masked logging.
-- `http.ts` — `fetchJson()` wrapper with timeout, status handling, structured error envelope.
-- `normalizers.ts` — helpers to upsert into `integration_normalized_records` (service role), build `integration_events` rows.
-- `providerRegistry.ts` — maps integration id → adapter for all 15 required providers.
+## Pass 1 — Foundation & menu
 
-### 2. Provider adapters (`_shared/integrations/providers/*.ts`)
-One module per: mailchimp, resend, retell, ctm, apploi, centralreach, solum, eligipro, ms365, jivetel, make, pandadoc, leadtrap, calendly, goIntegrateNava.
+- Audit `ROLE_MENUS.intake_coordinator` in `src/lib/os/roleMenus.ts`. Ensure the menu shows exactly:
+  - Intake Workspace: Intake Dashboard, Referral Queue, Lead To Active Pipeline, Missing Information, Parent Communication, Intake Tasks, Lead Benefits Cheat Sheets, Patient Lifetime Journey
+  - Training And Resources: Training Academy, Resource Library, Reports
+  - No AI items, no Coming Soon items for intake_coordinator
+- Verify all paths are mounted in `src/App.tsx` (they already are). No new routes.
+- Add a shared `IntakeWorkspaceShell` (glass header + sticky command bar + segmented filters) under `src/components/os/intake/` to avoid duplicate chrome on every page.
+- Add a shared `GlassPanel`/`GlassStat` variant tuned for Intake (depth, hairline borders, translucent layered surfaces) using existing semantic tokens — no hardcoded colors.
+- Sweep Intake pages for mojibake (`â€”`, `â†'`, etc.) and replace with proper em dash / arrow glyphs.
 
-Status policy per adapter:
-- Real probe when endpoint is documented and creds present → `connected`.
-- Webhook-only providers → `webhook_ready` when secret present.
-- Missing base URL/probe path env → `configured_pending_probe_path`.
-- Missing vendor docs/endpoint → `configured_pending_vendor_endpoint`.
-- Missing required secret → `not_configured`.
+## Pass 2 — Intake Dashboard (`/intake/dashboard`)
 
-Highlights:
-- **mailchimp** — keep `/ping`, add small recent-campaigns sync → `email_marketing` records.
-- **resend** — preserve current `/domains` probe; sync is report-only; do not touch invite/MFA flows.
-- **retell** — real probe (list-agents endpoint), recent calls sync → normalized `call` records + `integration_events`; structured error logging.
-- **ctm** — env-driven base URL/account; webhook normalizer for inbound call → `call`/`lead`.
-- **apploi** — env-driven; candidate sync → `candidate`.
-- **centralreach** — OAuth client-credentials probe; sync modes (`clients|schedules|authorizations|sessions|billing_export`); honest pending status; never touches BCBA Productivity uploads.
-- **solum** — accept `SOLOM_API_KEY` alias; eligibility/VOB normalization.
-- **eligipro** — eligibility events.
-- **ms365** — reuses `microsoftTokenVault.refreshUserToken`; calendar list + safe mail-activity metadata only; per-user.
-- **jivetel** — phone extensions/routing.
-- **make** — verifies `MAKE_WEBHOOK_SECRET` + outbound URL; labeled `migration_bridge`; webhook → `automation_event`.
-- **pandadoc** — labeled `esignature_only`; templates probe; webhook → `document`.
-- **leadtrap** — webhook-first; `webhook_ready`; lead normalization.
-- **calendly** — OAuth/token probe; webhook → `calendar_event`.
-- **goIntegrateNava** — keep registered; `configured_pending_vendor_endpoint` until docs.
+Rebuild the body of `OSIntakeOperations` (shared with `OSIntakeCoordinator`) around the new shell, keeping all existing data hooks (`useLeads`, `useIntakeTasksLive`, `useIntakeCommsLive`, `getLeadWorkflowRisk`):
 
-Plus two new MS365 functions: `microsoft-calendar-sync`, `microsoft-mail-activity-sync` (admin-callable, per-user, token via vault).
+- Top metric row: New referrals, In pipeline, Missing info, Open follow-ups, Awaiting VOB, Converted (30d)
+- Risk strip: urgent / aged / unassigned leads from `getLeadWorkflowRisk`
+- Two-column grid: Owner workload + State breakdown / Lead source breakdown + Aging by stage
+- Handoff readiness panel (VOB Completed → ready for Auth/Scheduling)
+- Quick actions row: Add Lead (NewLeadDialog), Log contact, Request missing info, Move forward, Open Patient Journey
 
-### 3. Refactor existing edge functions
-- `integration-test-connection` → look up adapter in `providerRegistry`, call `probe()`. Keep admin-only auth.
-- `integration-run-sync` → call adapter `sync()` with body `{mode, since, limit, dryRun}`; update sync run counts; insert normalized records with `sync_run_id`; no more `not_implemented` for required providers.
-- `integration-webhook` → after raw insert + signature verify, call adapter `normalizeWebhook()`, upsert normalized record, insert `integration_events`, set `processing_status` ∈ {`received`,`normalized`,`normalized_unknown`,`rejected`,`failed`} and `processed_at` / `error_message`.
-- `retell-webhook` — keep, but route normalization through the new retell adapter for consistency.
+## Pass 3 — Workflow pages
 
-### 4. Migration (new file)
-`integration_normalized_records` with columns specified, partial unique index on `(integration_id, provider_record_id, record_kind) where provider_record_id is not null`, FK to catalog/webhook_events/sync_runs, `updated_at` trigger.
+All keep existing hooks; only UI + interactions upgraded.
 
-GRANTs: `service_role` ALL; `authenticated` SELECT gated by admin role via RLS (`has_role(auth.uid(),'admin')`); no anon.
+- **Referral Queue** — search, filters (state/owner/source/priority/risk/days waiting), 4 sort modes, inline actions (assign, contact, send packet, mark unable to reach, move stage), reuse `LeadActionPanel`, open existing lead detail.
+- **Lead To Active Pipeline** — 8-stage kanban with per-stage count / avg age / oldest / at-risk; use existing `moveStage` / `revertStage`; card actions for forward/back/open/add task/log comm/handoff.
+- **Missing Information** — leverage `getMissingInfoFlags`; per-lead checklist (forms, DX, insurance, parent info, payer, consent), owner, due, last contact, attempts, follow-up + mark-received + return-to-pipeline actions.
+- **Parent Communication** — recent comms from `useIntakeCommsLive`, open follow-ups, cadence indicator, status (call/email/text), template picker (6 templates listed in prompt), log action, link to lead + Patient Journey.
+- **Intake Tasks** — `useIntakeTasksLive` driven. Tabs: My / Team / Overdue / Due today. Group by owner / lead / stage. Complete, reassign, add, tie-to-lead.
+- **Lead Benefits Cheat Sheets** — keep existing seed; add state filter, insurance type filter, OON guidance, blockers, required info, ask-family list, send-to-VOB checklist, escalation rules, copy-to-clipboard scripts, last reviewed/owner. Data-ready UI for future payer table.
 
-Also extend `integration_webhook_events.processing_status` allowed values if currently constrained; add index on `(integration_id, processing_status, created_at desc)`.
+## Pass 4 — Patient Lifetime Journey linkage
 
-### 5. Admin UI (`src/pages/admin/Integrations.tsx` + small additions in `src/lib/os/integrations/backend.ts`)
-- Add helpers: `listNormalizedRecords(integrationId, limit)`, counts by `record_kind`.
-- Per-integration detail surfaces: live connection status, last tested/success/error, recent sync runs, recent webhook events w/ processing_status, normalized records count by kind.
-- Webhook-only providers show "Webhook ready" badge instead of pull-sync controls.
-- No secret editor, no secret values shown.
+- Keep `/patient-journey` route. From Intake pages (lead card menu + dashboard quick action), deep-link with `?leadId=...` so the journey view can scope to the selected lead. No structural rewrite — just ensure entry points exist.
 
-### 6. Tests
-`src/test/integrationsBackendPass4.test.ts` — assertions per spec (adapter registry coverage, no hardcoded provider branching in `integration-test-connection`/`integration-run-sync`, no `not_implemented` literal for required ids, webhook calls normalizer, migration creates table + RLS + index, Retell probe/sync path exists, Resend untouched, MS365 uses `refreshUserToken`, Solum accepts `SOLOM_API_KEY`, Make labeled bridge, PandaDoc labeled esign, CentralReach labeled EMR).
+## Pass 5 — Intake Training Academy
 
-Re-run existing Pass 1–3 tests.
+- In `src/pages/os/academy/TrainingAcademyHome.tsx` (already department-aware for intake_coordinator), ensure the Intake journey renders with the 24 modules listed in the prompt.
+- Add/extend the Intake journey in `src/lib/academy/journeyContent.ts` (or `trainingPaths.ts` — wherever current journeys live) with the full module list. Each module has: what it teaches, why it matters, steps, completion evidence, checklist, knowledge check (where applicable), resource links to relevant `/intake/*` pages and Resource Library items.
+- Do not create a separate training app. Existing Academy shell only.
 
-### 7. QA doc
-`docs/integrations-backend-pass-4-qa-manifest.md` — change log, adapter list, migration, per-provider status table (live probe / webhook-only / pending), env var matrix, admin test steps, known limitations, preservation confirmations (Resend, BCBA Productivity, MS user OAuth, Retell improvement).
+## Pass 6 — Reports + QA
 
-### Out of scope
-- No new operational UI modules consuming normalized records (staging only).
-- No PHI-heavy MS mail body storage.
-- No new OAuth providers beyond MS365 / Calendly / CentralReach client-creds.
-- No rebuild of Resend delivery, MFA, welcome emails, or BCBA Productivity upload pipeline.
+- Ensure `/reports` exposes an Intake report view (or filter) covering: lead volume, conversion by stage/state/source, avg time to first contact, avg days in stage, missing-info rate, VOB sent/completed, coordinator workload, aging risks. Reuse existing report engine; add Intake report definitions if missing.
+- Run targeted tests: `intakeRoleMenuSprint15`, `intakeShellHotfixSprint15A`, `intakeSprint09`, `sprint07LeadIntakeEngine`, `sprint08IntakeWorkflowActions`, `canonicalRoutes`, `placeholderRoutes`, `roleMenuLiveRoutes`.
+- Mojibake sweep across `src/pages/os/intake/**` and `src/components/intake/**`.
+- Verify build passes and no TS errors.
 
-### File count estimate
-~21 new files (16 adapters + registry + 2 MS365 functions + migration + test + QA doc), ~5 edited (3 edge functions, backend.ts, Integrations.tsx).
+## Technical details
+
+- New files (estimated):
+  - `src/components/os/intake/IntakeWorkspaceShell.tsx`
+  - `src/components/os/intake/GlassMetric.tsx`
+  - `src/lib/intake/parentCommTemplates.ts`
+  - `src/lib/intake/benefitsCheatSheetSeed.ts` (extracted/expanded)
+  - Intake journey content additions in existing academy content module
+- Edited files:
+  - `src/pages/os/intake/*.tsx` (all 7)
+  - `src/pages/os/OSIntakeOperations.tsx`
+  - `src/lib/os/roleMenus.ts` (menu verification only)
+  - Academy content module for Intake journey
+- Non-goals: no new routes, no schema migrations, no edge functions, no auth changes, no AI menu, no Monday/CTM/Solum integration code beyond UI-ready states.
+
+## Risk & guardrails
+
+- All live hooks preserved; no swap to static arrays.
+- Super Admin retains full access (role menu logic untouched outside intake_coordinator entries).
+- Non-Intake roles keep their current Coming Soon for Intake modules — no accidental privilege grant.
+- Design uses semantic tokens only; no `bg-white` / `text-black` / hex colors in components.
+
+## Acceptance check (will run before handoff)
+
+- Every Intake menu item opens a working page for intake_coordinator.
+- Dashboard, queue, pipeline, missing info, comms, tasks all read live data.
+- Cheat sheets filter and copy actions work.
+- Academy shows the Intake journey with 24 modules for intake_coordinator.
+- No mojibake remains in Intake pages.
+- Build + targeted tests pass.
+
+Approve this plan and I will execute the 6 passes in order.
