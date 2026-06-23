@@ -457,3 +457,112 @@ function SourceAttributionSummary({ value }: { value: string }) {
     </div>
   );
 }
+
+/* ------------------------- Document upload (Docs tab) ------------------------- */
+
+function formatBytes(n?: number) {
+  if (!n && n !== 0) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function DocumentsTab({
+  documents,
+  setDocuments,
+}: {
+  documents: PendingLeadDocument[];
+  setDocuments: (updater: (prev: PendingLeadDocument[]) => PendingLeadDocument[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [stagedType, setStagedType] = useState<LeadDocumentType>("Insurance Card");
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const now = new Date().toISOString();
+    const next: PendingLeadDocument[] = Array.from(files).map((f) => ({
+      name: f.name,
+      type: stagedType,
+      size: f.size,
+      uploadedAt: now,
+      storageStatus: "pending_storage_connection",
+    }));
+    setDocuments((prev) => [...prev, ...next]);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-[11px] text-muted-foreground">
+        Files are recorded against this lead now. Permanent storage will activate
+        once the document storage connection is enabled — current status: <strong>pending storage connection</strong>.
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[200px_1fr]">
+        <div>
+          <Label className="text-xs">Document type</Label>
+          <Select value={stagedType} onValueChange={(v) => setStagedType(v as LeadDocumentType)}>
+            <SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {LEAD_DOCUMENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Files</Label>
+          <div
+            className="mt-1 flex h-9 cursor-pointer items-center justify-between gap-2 rounded-md border border-dashed border-border/70 bg-card px-3 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground"
+            onClick={() => inputRef.current?.click()}
+          >
+            <span className="inline-flex items-center gap-1.5"><Upload className="h-3.5 w-3.5" /> Add files</span>
+            <span className="text-[10px]">PDF, JPG, PNG, DOCX…</span>
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFiles(e.target.files)}
+          />
+        </div>
+      </div>
+
+      {documents.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 px-4 py-6 text-center text-xs text-muted-foreground">
+          No documents attached yet. Pick a document type and add files above.
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {documents.map((d, i) => (
+            <li
+              key={`${d.name}-${i}`}
+              className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card px-3 py-2"
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="grid h-8 w-8 place-items-center rounded-md bg-primary/10 text-primary">
+                  <FileTextIcon className="h-3.5 w-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-medium text-foreground" title={d.name}>{d.name}</p>
+                  <p className="text-[10.5px] text-muted-foreground">
+                    {d.type}{d.size ? ` · ${formatBytes(d.size)}` : ""} · {d.storageStatus === "uploaded" ? "Uploaded" : "Pending storage"}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0"
+                onClick={() => setDocuments((prev) => prev.filter((_, idx) => idx !== i))}
+                aria-label={`Remove ${d.name}`}
+              >
+                <XIcon className="h-3.5 w-3.5" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
