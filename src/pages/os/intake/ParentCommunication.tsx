@@ -20,7 +20,6 @@ import {
 } from "@/lib/integrations/communications/communicationAdapters";
 import { toast } from "sonner";
 
-const TEMPLATES: { id: string; label: string; body: string }[] = [
 type TemplateAction =
   | { kind: "email" }
   | { kind: "sms" }
