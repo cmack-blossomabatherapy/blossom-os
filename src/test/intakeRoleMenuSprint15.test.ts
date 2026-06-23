@@ -61,11 +61,16 @@ describe("Sprint 15 — OSShell role-specific live paths", () => {
       "/intake/parent-communication",
       "/intake/tasks",
       "/intake/benefits-cheat-sheets",
-      "/patient-journey",
       "/leads",
     ]) {
       expect(shell).toContain(`"${p}"`);
     }
+    // Export 81/82 — Patient Lifetime Journey must not appear inside the
+    // intake_coordinator live-path block.
+    const start = shell.indexOf("intake_coordinator: new Set");
+    const end = shell.indexOf("])", start);
+    const block = shell.slice(start, end);
+    expect(block).not.toMatch(/\/patient-journey/);
   });
 
   it("uses isPathLiveForRole instead of bare STAGED_ROLE_LIVE_PATHS.has for menu gating", () => {

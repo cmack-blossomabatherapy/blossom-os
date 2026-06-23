@@ -153,7 +153,7 @@ const ALL: ModuleDefinition[] = [
     ],
     reports: [
       { name: "Patient Journey Touchpoints", description: "Every touchpoint across the journey." },
-      { name: "Lead To Active Conversion", description: "Conversion by source and state." },
+      { name: "Lead to Ready-to-Start Conversion", description: "Conversion by source and state." },
     ],
   }),
   generic({
@@ -180,7 +180,7 @@ const ALL: ModuleDefinition[] = [
   // --------- Intake ---------
   generic({
     id: "intake-dashboard",
-    matchNames: ["Intake Dashboard", "New Referral Queue", "Lead To Active Pipeline", "Missing Information", "Parent Communication", "Intake Tasks", "Lead Benefits Cheat Sheets"],
+    matchNames: ["Intake Dashboard", "New Referral Queue", "Lead to Ready-to-Start Pipeline", "Missing Information", "Parent Communication", "Intake Tasks", "Lead Benefits Cheat Sheets"],
     title: "Intake Workspace",
     description: "Owned by the Intake team. Moves leads from referral to ready-for-authorizations.",
     department: "Intake",
@@ -202,7 +202,7 @@ const ALL: ModuleDefinition[] = [
     reports: [
       { name: "Intake Pipeline", description: "Live pipeline view." },
       { name: "Missing Information", description: "Blockers across intake." },
-      { name: "Lead To Active Conversion", description: "Conversion by source and state." },
+      { name: "Lead to Ready-to-Start Conversion", description: "Conversion by source and state." },
     ],
   }),
 

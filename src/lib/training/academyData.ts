@@ -340,13 +340,13 @@ const SEED_TRAININGS: Training[] = [
   },
   {
     id: "intake-lead-to-active-pipeline",
-    title: "Lead To Active Pipeline",
+    title: "Lead to Ready-to-Start Pipeline",
     description: "Own every stage from New Lead to VOB Completed without leaks.",
     type: "Workflow", estimatedMinutes: 18, required: true,
     category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-06-23",
     sopMarkdown: "## Stages\nNew Lead → In Contact → Sent Form → Missing Information → Form Received → Sent to VOB → VOB Completed.",
     checklist: [{ id: "c1", item: "Walk one lead through every stage", required: true }],
-    resources: [{ id: "r1", type: "Link", title: "Lead To Active Pipeline", url: "/intake/lead-to-active" }],
+    resources: [{ id: "r1", type: "Link", title: "Lead to Ready-to-Start Pipeline", url: "/intake/lead-to-active" }],
   },
   {
     id: "intake-handoff-authorizations",
