@@ -87,7 +87,9 @@ export interface CreateLeadInput {
     type: string;
     size?: number;
     uploadedAt: string;
-    storageStatus?: "pending_storage_connection" | "uploaded";
+    storageStatus?: "pending_storage_connection" | "uploading" | "uploaded" | "failed";
+    storagePath?: string;
+    signedUrl?: string;
   }>;
 
   // Source attribution payload for future integrations.
@@ -352,6 +354,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       size: typeof d.size === "number" ? d.size : undefined,
       uploadedAt: d.uploadedAt,
       storageStatus: d.storageStatus ?? "pending_storage_connection",
+      storagePath: d.storagePath,
+      signedUrl: d.signedUrl,
     }));
     const mergedSourceMetadata: Record<string, unknown> = {
       ...(input.sourceMetadata ?? {}),

@@ -3226,6 +3226,51 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          provider: string | null
+          subject: string | null
+          template_key: string
+          updated_at: string
+          updated_by: string | null
+          used_in: string | null
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          provider?: string | null
+          subject?: string | null
+          template_key: string
+          updated_at?: string
+          updated_by?: string | null
+          used_in?: string | null
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          provider?: string | null
+          subject?: string | null
+          template_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          used_in?: string | null
+        }
+        Relationships: []
+      }
       employee_bonuses: {
         Row: {
           amount: number

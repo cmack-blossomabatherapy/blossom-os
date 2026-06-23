@@ -8,6 +8,7 @@ import {
   Plug, Briefcase, Building2, IdCard, KeyRound, Smartphone, Stethoscope,
   AlertTriangle, BarChart3, ClipboardList, ListTodo, MapPin, XCircle, CheckCircle2,
   PhoneCall, BookUser, Activity, Workflow as WorkflowIcon, Inbox, Bug,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -238,6 +239,7 @@ function buildSections(args: {
         items: [
           { label: "Settings",     path: "/settings",            icon: SettingsIcon },
           { label: "Integrations", path: "/admin/integrations",  icon: Plug },
+          { label: "Automated Emails", path: "/admin/automated-emails", icon: Mail },
         ],
       },
       {

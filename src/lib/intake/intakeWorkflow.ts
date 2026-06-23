@@ -241,6 +241,42 @@ export const FAMILY_LEAD_STAGE_OWNERS: Record<FamilyLeadPipelineStage, string> =
 };
 
 /**
+ * Recommended "next action" copy per canonical Family / Lead pipeline stage.
+ * Used by the New Lead dialog and any other surface that needs to suggest a
+ * sensible default next step when the user changes pipeline stage. These are
+ * intentionally short and operationally specific.
+ */
+export const FAMILY_LEAD_STAGE_NEXT_ACTIONS: Record<FamilyLeadPipelineStage, string> = {
+  "Lead Captured": "Log first contact attempt",
+  "First Contact Attempt": "Call parent and confirm interest",
+  "Engagement Track": "Schedule another contact attempt",
+  "Qualification": "Confirm diagnosis path & insurance",
+  "Intake Packet Sent": "Follow up on intake packet",
+  "Intake Packet Follow Up": "Collect missing information",
+  "Intake Complete": "Submit to Benefits Verification",
+  "Benefits Verification": "Check benefits verification status",
+  "Assessment Scheduling": "Schedule assessment with BCBA",
+  "QA / Treatment Plan Authorization": "Submit treatment plan for QA",
+  "Authorization Pending": "Monitor payer authorization",
+  "Staffing Match": "Assign RBT and confirm availability",
+  "Ready to Start Services": "Confirm start date with family",
+};
+
+/**
+ * Convenience: get the recommended next action for any stage value (legacy or
+ * canonical). Always returns a non-empty string.
+ */
+export function getRecommendedNextActionForStage(stage: string | null | undefined): string {
+  const canonical = canonicalFamilyLeadStage(stage);
+  return FAMILY_LEAD_STAGE_NEXT_ACTIONS[canonical] ?? "Review lead";
+}
+
+/** Days-from-today SLA for the given stage (canonical or legacy). */
+export function getStageDueOffsetDays(stage: string | null | undefined): number {
+  return getStageSlaDays(canonicalFamilyLeadStage(stage));
+}
+
+/**
  * Export 86 — canonical 13-stage Family / Lead pipeline is the operational
  * happy-path. Legacy Monday-era statuses are aliased through
  * `canonicalFamilyLeadStage` before walking the path.

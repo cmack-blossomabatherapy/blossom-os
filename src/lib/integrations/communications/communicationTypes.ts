@@ -50,7 +50,12 @@ export type EmailTemplateKey =
   | "intake-packet"
   | "missing-info-reminder"
   | "vob-update"
-  | "general-follow-up";
+  | "general-follow-up"
+  | "document-request-insurance-card"
+  | "document-request-diagnosis"
+  | "document-request-consent-form"
+  | "document-request-intake-packet"
+  | "document-request-generic";
 
 export type SmsTemplateKey =
   | "missing-info-reminder"
