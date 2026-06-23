@@ -531,7 +531,29 @@ function EditUserSheet({
                 {resending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MailCheck className="h-3.5 w-3.5" />}
                 Resend welcome
               </Button>
+              <Button type="button" variant="default" size="sm" onClick={createInviteLink} disabled={creatingLink || !form.email} className="gap-2">
+                {creatingLink ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+                Copy invite link
+              </Button>
             </div>
+            {inviteLink && (
+              <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/[0.04] p-3 text-[12px]">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-foreground">Share with {inviteLink.email}</p>
+                  <Button type="button" size="sm" variant="ghost" className="h-7 gap-1.5 px-2 text-[11px]" onClick={copyCredentialsBlock}>
+                    <Copy className="h-3 w-3" /> Copy all
+                  </Button>
+                </div>
+                <p className="text-muted-foreground">
+                  A new temporary password was generated. The user will be required to set their own password on first sign-in. Send these to them however works best (text, Slack, in person).
+                </p>
+                <div className="space-y-1.5">
+                  <CopyRow label="Sign-in link" value={inviteLink.loginUrl} onCopy={(v) => copyToClipboard(v, "Sign-in link")} />
+                  <CopyRow label="Email" value={inviteLink.email} onCopy={(v) => copyToClipboard(v, "Email")} />
+                  <CopyRow label="Temporary password" value={inviteLink.tempPassword} onCopy={(v) => copyToClipboard(v, "Temporary password")} mono />
+                </div>
+              </div>
+            )}
           </section>
           )}
 
