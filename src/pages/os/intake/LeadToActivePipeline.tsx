@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { TrendingUp, ChevronLeft, ChevronRight, Plus, Ban } from "lucide-react";
+import { TrendingUp, ChevronLeft, ChevronRight, Plus, Ban, List } from "lucide-react";
 import { GrowthPageShell, Section, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ export default function LeadToActivePipeline() {
       description="Family lead workflow from lead capture through ready to start services. Active patient operations begin in a separate workflow after Ready to Start Services."
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
-        { label: "Open Leads", to: "/leads?view=pipeline" },
+        { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
       <Section title="Pipeline stages" description="Canonical 13-stage family lead workflow. Existing leads with legacy statuses appear under their mapped canonical stage.">
