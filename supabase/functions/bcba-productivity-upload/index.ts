@@ -61,6 +61,21 @@ Deno.serve(async (req) => {
 
   try {
     if (action === "create_batch") {
+      // no-op: keep existing implementation
+    }
+    if (action === "check_hashes") {
+      const hashes = Array.isArray(body.hashes) ? (body.hashes as unknown[]).map(String) : [];
+      if (hashes.length === 0) return json({ existing: [] });
+      if (hashes.length > 5000) return json({ error: "Max 5000 hashes per call" }, 400);
+      const { data, error } = await admin
+        .from("bcba_productivity_billing_rows")
+        .select("row_hash")
+        .eq("active", true)
+        .in("row_hash", hashes);
+      if (error) return json({ error: error.message }, 500);
+      return json({ existing: (data ?? []).map((d: any) => d.row_hash) });
+    }
+    if (action === "create_batch") {
       const b = (body.batch ?? {}) as Record<string, unknown>;
       const { data, error } = await admin
         .from("bcba_productivity_upload_batches")
