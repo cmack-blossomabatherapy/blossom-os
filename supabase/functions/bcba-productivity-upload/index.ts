@@ -60,9 +60,6 @@ Deno.serve(async (req) => {
   const action = String(body.action ?? "");
 
   try {
-    if (action === "create_batch") {
-      // no-op: keep existing implementation
-    }
     if (action === "check_hashes") {
       const hashes = Array.isArray(body.hashes) ? (body.hashes as unknown[]).map(String) : [];
       if (hashes.length === 0) return json({ existing: [] });
