@@ -282,12 +282,22 @@ export async function parseBcbaProductivityUpload(file: File): Promise<BcbaUploa
 }
 
 export async function previewBcbaProductivityUpload(file: File): Promise<BcbaUploadPreview> {
+  // eslint-disable-next-line no-console
+  console.info("[bcba-upload] preview: parsing file", { name: file.name, size: file.size });
   const parsed = await parseBcbaProductivityUpload(file);
+  // eslint-disable-next-line no-console
+  console.info("[bcba-upload] preview: parsed rows", {
+    parsed: parsed.parsedRows.length, raw: parsed.rawRowCount, missing: parsed.missingColumns,
+  });
   if (parsed.missingColumns.length || parsed.parsedRows.length === 0) {
     return { ...parsed, duplicateRowCount: 0, newRowCount: parsed.parsedRows.length };
   }
   const hashes = parsed.parsedRows.map((r) => r.rowHash);
+  // eslint-disable-next-line no-console
+  console.info("[bcba-upload] preview: checking duplicates", { hashes: hashes.length });
   const existing = await fetchExistingHashes(hashes);
+  // eslint-disable-next-line no-console
+  console.info("[bcba-upload] preview: duplicate check done", { duplicates: existing.size });
   let duplicateRowCount = 0;
   for (const h of hashes) if (existing.has(h)) duplicateRowCount += 1;
   return {
