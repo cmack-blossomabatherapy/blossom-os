@@ -282,12 +282,22 @@ export async function parseBcbaProductivityUpload(file: File): Promise<BcbaUploa
 }
 
 export async function previewBcbaProductivityUpload(file: File): Promise<BcbaUploadPreview> {
+  // eslint-disable-next-line no-console
+  console.info("[bcba-upload] preview: parsing file", { name: file.name, size: file.size });
   const parsed = await parseBcbaProductivityUpload(file);
+  // eslint-disable-next-line no-console
+  console.info("[bcba-upload] preview: parsed rows", {
+    parsed: parsed.parsedRows.length, raw: parsed.rawRowCount, missing: parsed.missingColumns,
+  });
   if (parsed.missingColumns.length || parsed.parsedRows.length === 0) {
     return { ...parsed, duplicateRowCount: 0, newRowCount: parsed.parsedRows.length };
   }
   const hashes = parsed.parsedRows.map((r) => r.rowHash);
+  // eslint-disable-next-line no-console
+  console.info("[bcba-upload] preview: checking duplicates", { hashes: hashes.length });
   const existing = await fetchExistingHashes(hashes);
+  // eslint-disable-next-line no-console
+  console.info("[bcba-upload] preview: duplicate check done", { duplicates: existing.size });
   let duplicateRowCount = 0;
   for (const h of hashes) if (existing.has(h)) duplicateRowCount += 1;
   return {
@@ -300,29 +310,37 @@ export async function previewBcbaProductivityUpload(file: File): Promise<BcbaUpl
 async function fetchExistingHashes(hashes: string[]): Promise<Set<string>> {
   const existing = new Set<string>();
   if (hashes.length === 0) return existing;
-  const CHUNK = 250;
+  // Use the edge function with POST body so a huge IN-list never blows
+  // up the URL length (the old GET-based PostgREST query with
+  // ?row_hash=in.(...) silently 414'd or hung for large files, which is
+  // why uploads "just sat on Parsing").
+  const accessToken = await getFreshAccessToken();
+  if (!accessToken) {
+    throw new Error(
+      "Your session expired before the file could be parsed. Please sign out and back in, then try again.",
+    );
+  }
+  const CHUNK = 2000;
   const chunks: string[][] = [];
   for (let i = 0; i < hashes.length; i += CHUNK) {
     chunks.push(hashes.slice(i, i + CHUNK));
   }
-  // Run dup-check queries in parallel waves to avoid sequential round-trips.
-  const WAVE = 6;
-  for (let i = 0; i < chunks.length; i += WAVE) {
-    const wave = chunks.slice(i, i + WAVE);
-    const results = await Promise.all(
-      wave.map((chunk) =>
-        supabase
-          .from("bcba_productivity_billing_rows")
-          .select("row_hash")
-          .eq("active", true)
-          .in("row_hash", chunk),
-      ),
-    );
-    for (const { data, error } of results) {
-      if (error) throw error;
-      for (const d of data ?? []) existing.add((d as { row_hash: string }).row_hash);
+  const CONCURRENCY = 3;
+  let cursor = 0;
+  async function worker() {
+    while (cursor < chunks.length) {
+      const idx = cursor++;
+      const res = await callUploadFn(accessToken!, {
+        action: "check_hashes",
+        hashes: chunks[idx],
+      });
+      const arr = Array.isArray(res.existing) ? (res.existing as string[]) : [];
+      for (const h of arr) existing.add(h);
     }
   }
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, chunks.length) }, worker),
+  );
   return existing;
 }
 
