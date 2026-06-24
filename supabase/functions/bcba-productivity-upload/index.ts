@@ -64,13 +64,21 @@ Deno.serve(async (req) => {
       const hashes = Array.isArray(body.hashes) ? (body.hashes as unknown[]).map(String) : [];
       if (hashes.length === 0) return json({ existing: [] });
       if (hashes.length > 5000) return json({ error: "Max 5000 hashes per call" }, 400);
-      const { data, error } = await admin
-        .from("bcba_productivity_billing_rows")
-        .select("row_hash")
-        .eq("active", true)
-        .in("row_hash", hashes);
-      if (error) return json({ error: error.message }, 500);
-      return json({ existing: (data ?? []).map((d: any) => d.row_hash) });
+      // supabase-js .in() puts everything in the URL, which blows past URL
+      // length limits for big batches. Sub-chunk and union the results.
+      const SUB = 150;
+      const found = new Set<string>();
+      for (let i = 0; i < hashes.length; i += SUB) {
+        const slice = hashes.slice(i, i + SUB);
+        const { data, error } = await admin
+          .from("bcba_productivity_billing_rows")
+          .select("row_hash")
+          .eq("active", true)
+          .in("row_hash", slice);
+        if (error) return json({ error: error.message }, 500);
+        for (const d of (data ?? []) as Array<{ row_hash: string }>) found.add(d.row_hash);
+      }
+      return json({ existing: Array.from(found) });
     }
     if (action === "create_batch") {
       const b = (body.batch ?? {}) as Record<string, unknown>;
