@@ -4365,6 +4365,95 @@ export type Database = {
           },
         ]
       }
+      employee_role_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          department_key: string | null
+          employee_id: string | null
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          is_primary: boolean
+          os_role_key: string | null
+          responsibility_notes: string | null
+          role_key: string
+          scope: string
+          starts_at: string | null
+          state_code: string | null
+          title_override: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          department_key?: string | null
+          employee_id?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          os_role_key?: string | null
+          responsibility_notes?: string | null
+          role_key: string
+          scope?: string
+          starts_at?: string | null
+          state_code?: string | null
+          title_override?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          department_key?: string | null
+          employee_id?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          os_role_key?: string | null
+          responsibility_notes?: string | null
+          role_key?: string
+          scope?: string
+          starts_at?: string | null
+          state_code?: string | null
+          title_override?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_role_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_role_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "employee_role_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_role_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_timeline: {
         Row: {
           created_at: string
@@ -12930,7 +13019,15 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       can_access_referral_crm: { Args: { _uid: string }; Returns: boolean }
+      can_access_state_department: {
+        Args: { _department_key: string; _state_code: string; _user_id: string }
+        Returns: boolean
+      }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_role_assignments: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       can_read_all_states: { Args: never; Returns: boolean }
       classify_eval_role: { Args: { _job_title: string }; Returns: string }
       compute_profile_completion: {
@@ -12977,6 +13074,34 @@ export type Database = {
           state: string
           states: string[]
         }[]
+      }
+      get_user_role_assignments: {
+        Args: { _user_id: string }
+        Returns: {
+          assigned_by: string | null
+          created_at: string
+          department_key: string | null
+          employee_id: string | null
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          is_primary: boolean
+          os_role_key: string | null
+          responsibility_notes: string | null
+          role_key: string
+          scope: string
+          starts_at: string | null
+          state_code: string | null
+          title_override: string | null
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "employee_role_assignments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
@@ -13119,6 +13244,20 @@ export type Database = {
           _source_url: string
         }
         Returns: undefined
+      }
+      user_allowed_departments: {
+        Args: { _state_code: string; _user_id: string }
+        Returns: string[]
+      }
+      user_allowed_states: { Args: { _user_id: string }; Returns: string[] }
+      user_has_hat: {
+        Args: {
+          _department_key?: string
+          _role_key: string
+          _state_code?: string
+          _user_id: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

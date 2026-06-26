@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { OSNotificationsBell } from "@/components/os/OSNotificationsBell";
 import { RoleSwitcher } from "@/components/os/RoleSwitcher";
+import { WorkingAsSelector } from "@/components/os/WorkingAsSelector";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -997,6 +998,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             </div>
             <div className="flex-1 md:hidden" />
             <OSNotificationsBell />
+            <WorkingAsSelector />
             <RoleSwitcher />
             {rightRail && (
               <Tooltip delayDuration={120}>

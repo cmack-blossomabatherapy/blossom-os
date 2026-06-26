@@ -3,6 +3,17 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole } from "@/lib/roles";
 import {
+  loadAssignmentsForUser,
+  deriveAllowedStates,
+  deriveAllowedDepartmentsByState,
+  hasHat as hasHatHelper,
+  canAccessStateDepartment as canAccessHelper,
+  type RoleAssignment,
+  type StateCode,
+  type DepartmentKey,
+  type HasHatOptions,
+} from "@/lib/access/roleAssignments";
+import {
   clearRememberPreference,
   enforceRememberPolicyOnBoot,
   touchSessionMarker,
@@ -30,6 +41,20 @@ interface AuthContextValue {
   partOfLeadership: boolean;
   dashboardAccess: string | null;
   newStateEmployee: boolean;
+  /** Multi-hat: all assignment rows (active + inactive). */
+  roleAssignments: RoleAssignment[];
+  /** Multi-hat: active assignments only. */
+  activeAssignments: RoleAssignment[];
+  /** Multi-hat: the user's primary hat (or null). */
+  primaryAssignment: RoleAssignment | null;
+  /** Multi-hat: states the user is allowed to operate in. */
+  allowedStates: StateCode[];
+  /** Multi-hat: departments per state (key "__company__" for company-scope). */
+  allowedDepartmentsByState: Record<string, DepartmentKey[]>;
+  /** Multi-hat: does the user hold a specific hat? */
+  hasHat: (roleKey: string, opts?: HasHatOptions) => boolean;
+  /** Multi-hat: can the user access a specific state/department combo? */
+  canAccessStateDepartment: (state: StateCode, department: DepartmentKey) => boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
@@ -51,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [newStateEmployee, setNewStateEmployee] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string>("");
+  const [roleAssignments, setRoleAssignments] = useState<RoleAssignment[]>([]);
 
   useEffect(() => {
     // Subscribe FIRST to avoid missing the initial event
@@ -117,8 +143,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("user_id", userId);
     if (roleErr || !roleRows) return;
     const userRoles = roleRows.map((r) => r.role as AppRole);
+    // Load active hats in parallel; merge their role_keys into the role list so
+    // permission checks see them too.
+    const assignments = await loadAssignmentsForUser(userId);
+    setRoleAssignments(assignments);
+    const hatRoles = assignments
+      .filter((a) => a.is_active)
+      .map((a) => a.role_key as AppRole);
+    const merged = Array.from(new Set<AppRole>([...userRoles, ...hatRoles]));
     setRoles(userRoles);
-    if (userRoles.length === 0) {
+    if (merged.length === 0) {
       setPermissions(new Set());
       setOwnedClientStages(new Set());
       setOwnedLeadStages(new Set());
@@ -128,13 +162,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: permRows } = await supabase
       .from("role_permissions")
       .select("permission_key")
-      .in("role", userRoles);
+      .in("role", merged);
     setPermissions(new Set((permRows ?? []).map((r) => r.permission_key)));
 
     const { data: stageRows } = await supabase
       .from("stage_ownership")
       .select("stage_kind, stage_value")
-      .in("role", userRoles);
+      .in("role", merged);
     const clientStages = new Set<string>();
     const leadStages = new Set<string>();
     (stageRows ?? []).forEach((r) => {
@@ -143,6 +177,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setOwnedClientStages(clientStages);
     setOwnedLeadStages(leadStages);
+    // Expose merged role list so context consumers see hat-granted roles.
+    setRoles(merged);
   };
 
   const loadProfileFlag = async (userId: string) => {
@@ -267,8 +303,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles.includes("exec") ||
       roles.includes("ops_manager") ||
       ownedLeadStages.has(stage),
+    roleAssignments,
+    activeAssignments: roleAssignments.filter((a) => a.is_active),
+    primaryAssignment:
+      roleAssignments.find((a) => a.is_primary && a.is_active) ?? null,
+    allowedStates: deriveAllowedStates(roleAssignments),
+    allowedDepartmentsByState: deriveAllowedDepartmentsByState(roleAssignments),
+    hasHat: (roleKey, opts) => hasHatHelper(roleAssignments, roleKey, opts),
+    canAccessStateDepartment: (state, department) =>
+      canAccessHelper(roleAssignments, state, department, roles as string[]),
     signIn, signOut, updatePassword,
-  }), [session, user, loading, roles, permissions, ownedClientStages, ownedLeadStages, avatarUrl, displayName, mustChangePassword, partOfLeadership, dashboardAccess, newStateEmployee]);
+  }), [session, user, loading, roles, permissions, ownedClientStages, ownedLeadStages, avatarUrl, displayName, mustChangePassword, partOfLeadership, dashboardAccess, newStateEmployee, roleAssignments]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
