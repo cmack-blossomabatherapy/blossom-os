@@ -747,9 +747,12 @@ function DailyFollowUps({
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-xl font-semibold tracking-tight">Daily Follow-Ups</h2>
-      </div>
+      <SectionHeader
+        icon={CalendarClock}
+        tone="amber"
+        title="Daily Follow-Ups"
+        subtitle="Today's queues, by what's due."
+      />
 
       <div className="rounded-2xl border border-border/70 bg-card overflow-hidden">
         <div className="flex items-center gap-1 px-3 py-2 overflow-x-auto border-b border-border/60">
@@ -838,10 +841,13 @@ function AssessmentCoordination({ leads, onOpen }: { leads: Lead[]; onOpen: (id:
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-xl font-semibold tracking-tight">Assessment Coordination</h2>
-        <span className="text-xs text-muted-foreground">{total} families</span>
-      </div>
+      <SectionHeader
+        icon={Stethoscope}
+        tone="indigo"
+        title="Assessment Coordination"
+        subtitle="Diagnostic and assessment scheduling pipeline."
+        right={<span className="text-xs text-muted-foreground tabular-nums">{total} families</span>}
+      />
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {columns.map((col) => (
           <div key={col.key} className="rounded-2xl border border-border/70 bg-card p-4">
@@ -905,10 +911,12 @@ function MissingInfoCenter({
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-xl font-semibold tracking-tight">Missing Information Center</h2>
-        <p className="text-sm text-muted-foreground">What's preventing readiness</p>
-      </div>
+      <SectionHeader
+        icon={FileWarning}
+        tone="rose"
+        title="Missing Information Center"
+        subtitle="What's preventing readiness — tap a tile to drill in."
+      />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {tiles.map((t) => (
           <div
@@ -978,10 +986,12 @@ function ServiceReadinessPipeline({
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-xl font-semibold tracking-tight">Service Readiness Pipeline</h2>
-        <p className="text-sm text-muted-foreground">Operational progression from inquiry to staffing</p>
-      </div>
+      <SectionHeader
+        icon={TrendingUp}
+        tone="violet"
+        title="Service Readiness Pipeline"
+        subtitle="Operational progression from inquiry to staffing."
+      />
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
         {stages.map((s, i) => (
           <button
@@ -1053,10 +1063,12 @@ function RecentActivityFeed({ leads, onOpen }: { leads: Lead[]; onOpen: (id: str
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-xl font-semibold tracking-tight">Recent Activity</h2>
-        <p className="text-sm text-muted-foreground">Latest intake communication</p>
-      </div>
+      <SectionHeader
+        icon={Activity}
+        tone="sky"
+        title="Recent Activity"
+        subtitle="Latest intake communication and updates."
+      />
       <div className="rounded-2xl border border-border/70 bg-card divide-y divide-border/50">
         {loading ? (
           <div className="p-10 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" /></div>
