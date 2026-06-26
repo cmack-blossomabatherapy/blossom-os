@@ -233,9 +233,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       void loadProfileFlag(user.id);
     };
     window.addEventListener("profile:updated", onProfileUpdated as EventListener);
+    const onAssignmentsUpdated = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { userId?: string } | undefined;
+      if (detail?.userId && detail.userId !== user.id) return;
+      void loadRolesAndAccess(user.id);
+    };
+    window.addEventListener("role-assignments:updated", onAssignmentsUpdated as EventListener);
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("profile:updated", onProfileUpdated as EventListener);
+      window.removeEventListener("role-assignments:updated", onAssignmentsUpdated as EventListener);
     };
   }, [user?.id]);
 
@@ -287,19 +294,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     displayName: displayName || (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there",
     mustChangePassword, partOfLeadership, dashboardAccess,
     newStateEmployee,
-    isAdmin: roles.includes("admin"),
+    isAdmin:
+      (roles as string[]).includes("admin") ||
+      (roles as string[]).includes("super_admin") ||
+      (roles as string[]).includes("systems_admin"),
     canEdit:
-      roles.includes("admin") ||
-      roles.includes("ops_manager") ||
-      roles.includes("staff"),
-    hasPerm: (key: string) => roles.includes("admin") || permissions.has(key),
+      (roles as string[]).includes("admin") ||
+      (roles as string[]).includes("super_admin") ||
+      (roles as string[]).includes("systems_admin") ||
+      (roles as string[]).includes("ops_manager") ||
+      (roles as string[]).includes("staff"),
+    hasPerm: (key: string) =>
+      (roles as string[]).includes("admin") ||
+      (roles as string[]).includes("super_admin") ||
+      (roles as string[]).includes("systems_admin") ||
+      permissions.has(key),
     ownsClientStage: (stage: string) =>
-      roles.includes("admin") ||
+      (roles as string[]).includes("admin") ||
+      (roles as string[]).includes("super_admin") ||
+      (roles as string[]).includes("systems_admin") ||
       roles.includes("exec") ||
       roles.includes("ops_manager") ||
       ownedClientStages.has(stage),
     ownsLeadStage: (stage: string) =>
-      roles.includes("admin") ||
+      (roles as string[]).includes("admin") ||
+      (roles as string[]).includes("super_admin") ||
+      (roles as string[]).includes("systems_admin") ||
       roles.includes("exec") ||
       roles.includes("ops_manager") ||
       ownedLeadStages.has(stage),

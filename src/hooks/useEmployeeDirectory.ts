@@ -22,6 +22,8 @@ import {
 export type DirectoryEmployee = TeamMember & {
   /** Stable DB id (uuid) — used for org-chart edges + profile routing. */
   uuid?: string;
+  /** auth.users.id linked to this employee (null when no login yet). */
+  authUserId?: string | null;
   /** Manager's DB id (uuid). */
   managerId?: string | null;
   email?: string | null;
@@ -63,6 +65,7 @@ export function photoForCode(code: string | null | undefined): string | undefine
 
 interface ViewRow {
   id: string;
+  user_id: string | null;
   employee_code: string | null;
   display_name: string;
   preferred_name: string | null;
@@ -97,6 +100,7 @@ function mapRow(r: ViewRow): DirectoryEmployee {
   return {
     id: slugId,
     uuid: r.id,
+    authUserId: r.user_id ?? null,
     name: r.display_name,
     title: r.job_title,
     blurb: r.bio ?? "",
@@ -126,7 +130,7 @@ export function useEmployeeDirectory(): DirectoryResult {
     const { data, error } = await supabase
       .from("v_employee_directory")
       .select(
-        "id,employee_code,display_name,preferred_name,first_name,last_name,email,phone,photo_url,image_url,bio,job_title,credential,state,states_supported,leadership_level,leadership_badge,supports_onboarding,featured,manager_id,department_slug,department_id,department_name",
+        "id,user_id,employee_code,display_name,preferred_name,first_name,last_name,email,phone,photo_url,image_url,bio,job_title,credential,state,states_supported,leadership_level,leadership_badge,supports_onboarding,featured,manager_id,department_slug,department_id,department_name",
       )
       .order("last_name");
 
