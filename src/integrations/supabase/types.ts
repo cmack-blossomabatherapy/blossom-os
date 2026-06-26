@@ -13611,6 +13611,7 @@ export type Database = {
         | "Send Payment Plan"
         | "Follow Up with Family"
         | "Confirm Payment Plan Signed"
+        | "Run Benefits Verification"
       intake_vob_status:
         | "Not Sent"
         | "Sent"
@@ -14340,6 +14341,7 @@ export const Constants = {
         "Send Payment Plan",
         "Follow Up with Family",
         "Confirm Payment Plan Signed",
+        "Run Benefits Verification",
       ],
       intake_vob_status: [
         "Not Sent",
