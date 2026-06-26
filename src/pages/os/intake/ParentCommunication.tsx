@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import { MessageSquare, Phone, Mail, Plus, Copy, Send, FileText, AlertCircle, ShieldCheck, List } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -160,7 +161,7 @@ export default function ParentCommunication() {
                   <Icon className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-sm">
-                      <Link to={`/leads/${r.leadId}`} className="font-medium hover:underline truncate">{r.leadName}</Link>
+                      <LeadNameLink leadId={r.leadId} className="font-medium hover:underline truncate">{r.leadName}</Link>
                       <span className="text-[11px] text-muted-foreground">{new Date(r.timestamp).toLocaleString()}</span>
                     </div>
                     <div className="text-xs text-muted-foreground truncate">{r.preview}</div>
@@ -239,7 +240,7 @@ export default function ParentCommunication() {
             {followUps.map((l) => (
               <div key={l.id} className="rounded-xl border border-border/60 bg-card p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <Link to={`/leads/${l.id}`} className="font-medium text-sm truncate hover:underline">{l.childName}</Link>
+                  <LeadNameLink leadId={l.id} className="font-medium text-sm truncate hover:underline">{l.childName}</Link>
                   <span className="text-[11px] text-muted-foreground shrink-0">{l.status}</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{l.nextAction}</div>

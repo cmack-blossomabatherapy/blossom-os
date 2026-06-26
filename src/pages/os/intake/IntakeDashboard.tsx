@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import {
   ClipboardList, TrendingUp, MessageSquare, AlertCircle, ShieldCheck, Plus,
   ArrowRightLeft, Flame, Users, MapPin, Signal, Clock, HeartHandshake, List,
@@ -367,7 +368,7 @@ export default function IntakeDashboard() {
                   <span className={cn("absolute left-0 top-0 bottom-0 w-1.5", t.bar)} />
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <Link to={`/leads/${lead.id}`} className="font-semibold hover:underline truncate block">
+                      <LeadNameLink leadId={lead.id} className="font-semibold hover:underline truncate block">
                         {lead.childName}
                       </Link>
                       <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
@@ -416,7 +417,7 @@ export default function IntakeDashboard() {
             {handoffReady.map((lead) => (
               <article key={lead.id} className={cn("rounded-2xl border border-border/70 p-4", TONE.emerald.bg)}>
                 <div className="flex items-start justify-between gap-2">
-                  <Link to={`/leads/${lead.id}`} className="font-semibold hover:underline truncate">{lead.childName}</Link>
+                  <LeadNameLink leadId={lead.id} className="font-semibold hover:underline truncate">{lead.childName}</Link>
                   <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-transparent">
                     <HeartHandshake className="h-3 w-3 mr-1" /> Ready
                   </Badge>

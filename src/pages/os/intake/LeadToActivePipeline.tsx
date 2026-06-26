@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import { TrendingUp, ChevronLeft, ChevronRight, Plus, Ban, List } from "lucide-react";
 import { GrowthPageShell, Section, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -99,7 +100,7 @@ export default function LeadToActivePipeline() {
                   <div className="mt-3 space-y-1.5">
                     {items.slice(0, 6).map((l) => (
                       <div key={l.id} className="rounded-md border border-border/60 bg-background/60 px-2 py-1.5 text-xs">
-                        <Link to={`/leads/${l.id}`} className="font-medium truncate block hover:underline">{l.childName}</Link>
+                        <LeadNameLink leadId={l.id} className="font-medium truncate block hover:underline">{l.childName}</Link>
                         <div className="text-[10px] text-muted-foreground truncate">{l.owner || "Unassigned"} · {l.state}</div>
                         {(() => {
                           const risk = getLeadWorkflowRisk(l);
