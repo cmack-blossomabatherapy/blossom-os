@@ -357,7 +357,7 @@ export default function IntakeDashboard() {
             icon={AlertTriangle}
             tone="rose"
             title={`Action Required (${actionRequired.length})`}
-            subtitle="Highest-risk families in your queue right now." right
+            subtitle="Highest-risk families in your queue right now."
           />
           <div className="space-y-2">
             {actionRequired.map(({ lead, risk }) => {
