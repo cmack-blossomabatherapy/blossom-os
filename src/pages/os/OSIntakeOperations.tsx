@@ -5,7 +5,12 @@ import {
   MessageSquare, StickyNote, AlertTriangle, ChevronRight, Loader2, RefreshCw,
   CalendarClock, FileWarning, FileCheck2, UserCheck, Users, Activity,
   ArrowUpRight, CircleDot, BellRing, ListTodo, Wand2, X, Flag, BookOpen, Clock,
+  TrendingUp, Inbox, PhoneCall, FileText, Stethoscope, Heart, Zap,
 } from "lucide-react";
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
+  PieChart, Pie, Cell,
+} from "recharts";
 import { OSShell } from "./OSShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -237,6 +242,7 @@ function OSIntakeOperationsInner({ title, subtitle }: Required<OSIntakeOperation
         ) : (
           <>
             <IntakePulse leads={scopedLeads} onRefresh={refresh} loading={loading} onFilter={setFilter} active={filterKey} />
+            <IntakeCharts leads={scopedLeads} onFilter={setFilter} onStage={setStage} />
             <FamiliesNeedingAction
               leads={visibleLeads}
               onOpen={setOpenLeadId}
