@@ -24,6 +24,7 @@ import {
   isReadyToStartStage,
   canonicalFamilyLeadStage,
 } from "@/lib/intake/intakeWorkflow";
+import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 
 type TemplateAction =
   | { kind: "email" }
@@ -84,7 +85,9 @@ interface CommRow {
 const ICONS = { call: Phone, sms: MessageSquare, email: Mail, note: MessageSquare } as const;
 
 export default function ParentCommunication() {
-  const { leads, loading } = useLeads();
+  const { leads: allLeads, loading } = useLeads();
+  const { matches } = useIntakeStateFilter();
+  const leads = useMemo(() => allLeads.filter((l) => matches(l.state)), [allLeads, matches]);
   const { comms } = useIntakeCommsLive(100);
   const [selectedLeadId, setSelectedLeadId] = useState<string>("");
   const selectedLead = useMemo(
@@ -139,6 +142,7 @@ export default function ParentCommunication() {
       eyebrow="Intake"
       title="Intake Communications"
       description="Send calls, SMS, and email to families through Blossom OS - powered by CTM, Jivetel, and Mailchimp adapters."
+      headerRight={<IntakeStateFilterToggle />}
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
         { label: "Open Leads", icon: List, to: "/leads" },
