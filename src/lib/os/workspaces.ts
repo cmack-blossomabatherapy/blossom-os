@@ -121,22 +121,6 @@ export const WORKSPACES: Workspace[] = [
     ],
   },
   {
-    id: "intake",
-    label: "Intake",
-    description: "Leads, VOB, follow-ups",
-    icon: Users,
-    path: "/intake",
-    group: "workspaces",
-    roles: [...OPS, "intake", "intake_lead", "intake_coordinator"],
-    tabs: [
-      { label: "Intake Queue",     path: "/intake" },
-      { label: "Clients",          path: "/intake/clients" },
-      { label: "Authorizations",   path: "/intake/authorizations" },
-      { label: "VOB Decision",     path: "/vob-decision-center" },
-      { label: "Leads",            path: "/leads" },
-    ],
-  },
-  {
     id: "finance",
     label: "Finance / Benefits",
     description: "Revenue, benefits, billing",
