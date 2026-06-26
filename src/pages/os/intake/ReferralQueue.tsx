@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
-import { Inbox, Plus, Phone, Mail, MapPin, User, Flame, Search, List, UserX, AlertTriangle, Filter, Sparkles } from "lucide-react";
+import { Inbox, Plus, Phone, Mail, MapPin, User, Flame, Search, List, UserX, AlertTriangle, Filter, Sparkles, ClipboardList } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { IntakeSectionHeader, IntakePulseStrip, INTAKE_TONE, type PulseTileSpec } from "@/components/os/intake/IntakeVisuals";
 import { cn } from "@/lib/utils";
@@ -181,7 +181,7 @@ export default function ReferralQueue() {
       </div>
 
       <section>
-        <IntakeSectionHeader icon={ClipboardListIcon} tone="indigo" title={`Awaiting contact (${queue.length})`} subtitle="Lead Captured · First Contact Attempt · Engagement Track" />
+        <IntakeSectionHeader icon={ClipboardList} tone="indigo" title={`Awaiting contact (${queue.length})`} subtitle="Lead Captured · First Contact Attempt · Engagement Track" />
         {queue.length === 0 ? (
           <ReadyForDataNotice message={loading ? "Loading leads…" : "No referrals waiting. Add a lead or connect a source to populate this queue."} />
         ) : (
@@ -201,8 +201,8 @@ export default function ReferralQueue() {
   );
 }
 
-// Local stand-in icon import alias so the JSX above stays compact.
-import { ClipboardList as ClipboardListIcon } from "lucide-react";
+
+
 
 function RefCard({ lead }: { lead: import("@/data/leads").Lead }) {
   const risk = getLeadWorkflowRisk(lead);
