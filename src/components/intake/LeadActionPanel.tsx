@@ -240,9 +240,9 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
         <Flame className="h-3.5 w-3.5 mr-1" /> Escalate
       </Button>
       <Button asChild size={btnSize} variant="ghost">
-        <Link to={`/leads/${lead.id}`}>
+        <LeadNameLink leadId={lead.id}>
           <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open Lead
-        </Link>
+        </LeadNameLink>
       </Button>
       {/* Secondary admin-style note action — not the primary family contact workflow. */}
       <Button size={btnSize} variant="ghost" onClick={() => setLogOpen(true)}>
