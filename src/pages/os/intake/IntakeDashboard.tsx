@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import {
   ClipboardList, TrendingUp, MessageSquare, AlertCircle, ShieldCheck, Plus,
-  ArrowRightLeft, Flame, Users, MapPin, Signal, Clock, HeartHandshake, List,
+  ArrowRightLeft, Users, MapPin, Signal, Clock, HeartHandshake, List,
   Inbox, ArrowUpRight, Zap, BarChart3, HeartPulse, PieChart as PieIcon,
-  AlertTriangle,
+  AlertTriangle, Phone, Mail, Send,
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -14,10 +14,16 @@ import {
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
-import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
 import { cn } from "@/lib/utils";
+import {
+  callParent,
+  sendLeadEmail,
+  sendLeadSms,
+  notifyCommunicationResult,
+} from "@/lib/integrations/communications/communicationAdapters";
 import {
   getLeadWorkflowRisk,
   isReadyToStartStage,
@@ -352,29 +358,44 @@ export default function IntakeDashboard() {
             title={`Action Required (${actionRequired.length})`}
             subtitle="Highest-risk families in your queue right now."
           />
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="space-y-2">
             {actionRequired.map(({ lead, risk }) => {
               const urgent = risk.level === "urgent";
               const tone: Tone = urgent ? "rose" : "amber";
               const t = TONE[tone];
+              const hasPhone = Boolean(lead.phone?.trim());
+              const hasEmail = Boolean(lead.email?.trim());
+              const primaryReason = risk.reasons[0];
+              const leadContext = {
+                leadId: lead.id,
+                phone: lead.phone,
+                email: lead.email,
+                parentName: lead.parentName,
+                childName: lead.childName,
+                state: lead.state,
+                insurance: lead.insurance,
+              };
               return (
                 <article
                   key={lead.id}
                   className={cn(
-                    "relative overflow-hidden rounded-2xl border border-border/70 bg-card p-4 pl-5 transition-all hover:-translate-y-0.5 hover:shadow-sm",
+                    "group relative flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-border/70 bg-card p-3 pl-5 transition-all hover:-translate-y-0.5 hover:shadow-sm hover:border-primary/30",
                     t.bg,
                   )}
                 >
-                  <span className={cn("absolute left-0 top-0 bottom-0 w-1.5", t.bar)} />
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <LeadNameLink leadId={lead.id} className="font-semibold hover:underline truncate block">
+                  <span className={cn("absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl", t.bar)} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-3">
+                      <LeadNameLink leadId={lead.id} className="font-semibold hover:underline truncate">
                         {lead.childName}
                       </LeadNameLink>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
-                        {lead.status} · {lead.owner || "Unassigned"}
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {lead.status} · {lead.owner || "Unassigned"} · {lead.daysInStage ?? 0}d waiting
+                        {primaryReason && <span className="text-foreground/80"> · {primaryReason}</span>}
                       </p>
                     </div>
+                  </div>
+                  <div className="flex items-center flex-wrap gap-2 shrink-0">
                     <Badge
                       variant="outline"
                       className={cn(
@@ -382,16 +403,44 @@ export default function IntakeDashboard() {
                         urgent ? "bg-rose-500/15 text-rose-700 dark:text-rose-300" : "bg-amber-500/15 text-amber-700 dark:text-amber-300",
                       )}
                     >
-                      <Flame className="h-3 w-3 mr-1" /> {urgent ? "Urgent" : "At risk"}
+                      {urgent ? "Urgent" : "At risk"}
                     </Badge>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {risk.reasons.slice(0, 3).map((r) => (
-                      <Badge key={r} variant="outline" className="text-[10px] py-0 bg-background/60">{r}</Badge>
-                    ))}
-                  </div>
-                  <div className="mt-3">
-                    <LeadActionPanel lead={lead} compact sourcePage="intake-dashboard" />
+                    <Button asChild size="sm" variant="default">
+                      <LeadNameLink leadId={lead.id}>Open</LeadNameLink>
+                    </Button>
+                    {hasPhone && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        title="Call parent"
+                        onClick={async () => notifyCommunicationResult(await callParent(leadContext))}
+                      >
+                        <Phone className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {hasPhone && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        title="Send SMS"
+                        onClick={async () => notifyCommunicationResult(await sendLeadSms(leadContext))}
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {hasEmail && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        title="Send email"
+                        onClick={async () => notifyCommunicationResult(await sendLeadEmail(leadContext))}
+                      >
+                        <Mail className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </article>
               );
