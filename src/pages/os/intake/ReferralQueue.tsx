@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import { ClipboardList, Plus, Phone, Mail, MapPin, User, Flame, Search, List } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -163,9 +164,9 @@ export default function ReferralQueue() {
               <div key={lead.id} className="rounded-2xl border border-border/70 bg-card p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <Link to={`/leads/${lead.id}`} className="font-semibold text-foreground hover:underline truncate block">
+                    <LeadNameLink leadId={lead.id} className="font-semibold text-foreground hover:underline truncate block">
                       {lead.childName}
-                    </Link>
+                    </LeadNameLink>
                     <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                       <User className="h-3 w-3" /> {lead.parentName || "—"}
                     </div>

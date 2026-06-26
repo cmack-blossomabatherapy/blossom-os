@@ -467,6 +467,7 @@ function OSShellPage({ children }: { children: React.ReactNode }) {
 }
 
 import { LeadsProvider } from "@/contexts/LeadsContext";
+import { LeadDrawerProvider } from "@/contexts/LeadDrawerContext";
 import { ClientsProvider } from "@/contexts/ClientsContext";
 
 function RoleDashboardRedirect() {
@@ -574,6 +575,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <LeadsProvider>
+            <LeadDrawerProvider>
             <ClientsProvider>
               <JourneyOverridesProvider>
                 <PhoneSystemProvider>
@@ -1092,6 +1094,7 @@ const App = () => (
                 </PhoneSystemProvider>
               </JourneyOverridesProvider>
             </ClientsProvider>
+            </LeadDrawerProvider>
           </LeadsProvider>
         </AuthProvider>
       </BrowserRouter>
