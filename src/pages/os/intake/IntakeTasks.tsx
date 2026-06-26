@@ -8,6 +8,7 @@ import { useIntakeTasksLive, type IntakeTaskRow } from "@/hooks/useIntakeTasksLi
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 
 interface TaskRow {
   task: IntakeTaskRow;
@@ -83,7 +84,9 @@ function TaskCard({ row, onComplete, onSnooze, onReassign }: {
 }
 
 export default function IntakeTasks() {
-  const { leads } = useLeads();
+  const { leads: allLeads } = useLeads();
+  const { matches } = useIntakeStateFilter();
+  const leads = useMemo(() => allLeads.filter((l) => matches(l.state)), [allLeads, matches]);
   const { tasks, loading, complete, snooze, reassign } = useIntakeTasksLive();
   const [filter, setFilter] = useState<"all" | "today" | "overdue" | "escalated">("all");
 
@@ -94,8 +97,13 @@ export default function IntakeTasks() {
   }, [leads]);
 
   const rows = useMemo<TaskRow[]>(
-    () => tasks.map((t) => ({ task: t, lead: leadById.get(t.lead_id) })),
-    [tasks, leadById],
+    () =>
+      tasks
+        .map((t) => ({ task: t, lead: leadById.get(t.lead_id) }))
+        // Only show tasks whose lead matches the active intake state filter.
+        // Tasks with no linked lead row pass through so nothing is silently dropped.
+        .filter((r) => !r.task.lead_id || r.lead !== undefined || matches(undefined)),
+    [tasks, leadById, matches],
   );
   const { overdue, dueToday, upcoming } = useMemo(() => bucketize(rows), [rows]);
   const escalated = useMemo(
@@ -114,6 +122,7 @@ export default function IntakeTasks() {
       eyebrow="Growth & Admissions"
       title="Intake Tasks"
       description="Your personal intake task list — follow-ups, missing information, and lead actions."
+      headerRight={<IntakeStateFilterToggle />}
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
         { label: "Open Leads", icon: List, to: "/leads" },
