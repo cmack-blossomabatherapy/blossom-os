@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import {
   MessageSquare, Plus, ArrowRight, ArrowLeft, UserPlus, AlertCircle,
   ShieldCheck, ShieldAlert, Flame, ExternalLink,
