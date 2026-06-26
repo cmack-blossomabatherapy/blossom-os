@@ -444,22 +444,32 @@ export default function IntakeDashboard() {
           ) : (
             <div className="space-y-2">
               {ownerWorkload.map((o) => (
-                <div key={o.owner} className="rounded-xl border border-border/60 bg-card p-3">
+                <Link
+                  key={o.owner}
+                  to={`/leads?owner=${encodeURIComponent(o.owner)}`}
+                  className="group block rounded-xl border border-border/60 bg-card p-3 transition-all hover:-translate-y-0.5 hover:shadow-sm hover:border-violet-500/40"
+                >
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2 truncate">
-                      <span className={cn("grid place-items-center h-6 w-6 rounded-lg text-[10px] font-medium", TONE.violet.icon)}>
+                      <span className={cn("grid place-items-center h-7 w-7 rounded-lg text-[10px] font-semibold ring-1 ring-violet-500/20", TONE.violet.icon)}>
                         {o.owner.split(" ").map((w) => w[0]).slice(0, 2).join("")}
                       </span>
-                      <span className="truncate">{o.owner}</span>
+                      <span className="truncate font-medium">{o.owner}</span>
                     </span>
-                    <span className="tabular-nums text-xs text-muted-foreground">
-                      {o.total} {o.risk > 0 && <span className="text-amber-600">· {o.risk} at risk</span>}
+                    <span className="flex items-center gap-2">
+                      <span className="tabular-nums text-xs text-muted-foreground">
+                        {o.total}{o.risk > 0 && <span className="text-amber-600 ml-1">· {o.risk} at risk</span>}
+                      </span>
+                      <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-violet-500 transition" />
                     </span>
                   </div>
-                  <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className={cn("h-full", TONE.violet.bar)} style={{ width: `${(o.total / maxOwner) * 100}%` }} />
+                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all"
+                      style={{ width: `${(o.total / maxOwner) * 100}%` }}
+                    />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -470,16 +480,37 @@ export default function IntakeDashboard() {
           <div className="space-y-1.5">
             {agingByStage.map((s) => {
               const hot = s.oldest >= 14;
+              const warn = !hot && s.oldest >= 7;
               return (
-                <div key={s.stage} className={cn("flex items-center justify-between rounded-xl border border-border/60 px-3 py-2 text-sm", hot ? "bg-rose-500/[0.05] border-rose-500/30" : "bg-card")}>
+                <Link
+                  key={s.stage}
+                  to={`/leads?stage=${encodeURIComponent(s.stage)}`}
+                  className={cn(
+                    "group flex items-center justify-between rounded-xl border px-3 py-2 text-sm transition-all hover:-translate-y-0.5 hover:shadow-sm",
+                    hot
+                      ? "bg-rose-500/[0.06] border-rose-500/30 hover:border-rose-500/60"
+                      : warn
+                      ? "bg-amber-500/[0.06] border-amber-500/30 hover:border-amber-500/60"
+                      : "bg-card border-border/60 hover:border-amber-500/40",
+                  )}
+                >
                   <span className="flex items-center gap-2 min-w-0">
-                    <Clock className={cn("h-3.5 w-3.5", hot ? "text-rose-500" : "text-muted-foreground")} />
-                    <span className="truncate">{s.stage}</span>
+                    <span className={cn(
+                      "grid place-items-center h-7 w-7 rounded-lg shrink-0",
+                      hot ? "bg-rose-500/15 text-rose-600" : warn ? "bg-amber-500/15 text-amber-600" : "bg-muted text-muted-foreground",
+                    )}>
+                      <Clock className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="truncate font-medium">{s.stage}</span>
                   </span>
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    {s.count} · avg {s.avg}d · oldest <span className={hot ? "text-rose-600 font-medium" : ""}>{s.oldest}d</span>
+                  <span className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {s.count} · avg {s.avg}d · oldest{" "}
+                      <span className={hot ? "text-rose-600 font-semibold" : warn ? "text-amber-600 font-semibold" : ""}>{s.oldest}d</span>
+                    </span>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-foreground transition" />
                   </span>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -495,15 +526,30 @@ export default function IntakeDashboard() {
           ) : (
             <div className="space-y-2">
               {stateBreakdown.map(([state, n]) => (
-                <div key={state} className="rounded-xl border border-border/60 bg-card p-3">
+                <Link
+                  key={state}
+                  to={`/leads?state=${encodeURIComponent(state)}`}
+                  className="group block rounded-xl border border-border/60 bg-card p-3 transition-all hover:-translate-y-0.5 hover:shadow-sm hover:border-sky-500/40"
+                >
                   <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-sky-500" /> {state}</span>
-                    <span className="tabular-nums text-xs text-muted-foreground">{n}</span>
+                    <span className="flex items-center gap-2 font-medium">
+                      <span className="grid place-items-center h-7 w-7 rounded-lg bg-sky-500/15 text-sky-600">
+                        <MapPin className="h-3.5 w-3.5" />
+                      </span>
+                      {state}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="tabular-nums text-xs text-muted-foreground">{n}</span>
+                      <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-sky-500 transition" />
+                    </span>
                   </div>
-                  <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className={cn("h-full", TONE.sky.bar)} style={{ width: `${(n / maxState) * 100}%` }} />
+                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 transition-all"
+                      style={{ width: `${(n / maxState) * 100}%` }}
+                    />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -516,15 +562,30 @@ export default function IntakeDashboard() {
           ) : (
             <div className="space-y-2">
               {sourceBreakdown.map(([src, n]) => (
-                <div key={src} className="rounded-xl border border-border/60 bg-card p-3">
+                <Link
+                  key={src}
+                  to={`/leads?source=${encodeURIComponent(src)}`}
+                  className="group block rounded-xl border border-border/60 bg-card p-3 transition-all hover:-translate-y-0.5 hover:shadow-sm hover:border-emerald-500/40"
+                >
                   <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2"><Signal className="h-3.5 w-3.5 text-emerald-500" /> {src}</span>
-                    <span className="tabular-nums text-xs text-muted-foreground">{n}</span>
+                    <span className="flex items-center gap-2 font-medium">
+                      <span className="grid place-items-center h-7 w-7 rounded-lg bg-emerald-500/15 text-emerald-600">
+                        <Signal className="h-3.5 w-3.5" />
+                      </span>
+                      {src}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="tabular-nums text-xs text-muted-foreground">{n}</span>
+                      <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-emerald-500 transition" />
+                    </span>
                   </div>
-                  <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className={cn("h-full", TONE.emerald.bar)} style={{ width: `${(n / maxSource) * 100}%` }} />
+                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all"
+                      style={{ width: `${(n / maxSource) * 100}%` }}
+                    />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
