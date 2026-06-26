@@ -11,6 +11,7 @@ import { getLeadWorkflowRisk } from "@/lib/intake/intakeWorkflow";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { canonicalFamilyLeadStage, type FamilyLeadPipelineStage } from "@/lib/intake/intakeWorkflow";
+import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 
 /**
  * Export 87 — Referral Queue surfaces the canonical pre-packet stages:
@@ -26,7 +27,9 @@ const QUEUE_CANONICAL_STAGES = new Set<FamilyLeadPipelineStage>([
 type SortKey = "newest" | "oldest" | "highest_risk" | "unassigned";
 
 export default function ReferralQueue() {
-  const { leads, loading } = useLeads();
+  const { leads: allLeads, loading } = useLeads();
+  const { matches } = useIntakeStateFilter();
+  const leads = useMemo(() => allLeads.filter((l) => matches(l.state)), [allLeads, matches]);
   const [addOpen, setAddOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState<string>("all");
@@ -107,6 +110,7 @@ export default function ReferralQueue() {
       eyebrow="Growth & Admissions"
       title="Referral Queue"
       description="New referrals awaiting first contact, ownership, and intake action."
+      headerRight={<IntakeStateFilterToggle />}
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
         { label: "Open Leads", icon: List, to: "/leads" },
