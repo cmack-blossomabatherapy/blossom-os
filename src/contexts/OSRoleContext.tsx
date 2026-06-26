@@ -12,7 +12,8 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   // Allow checking against role identifiers that are not yet part of the
   // AppRole union (e.g. credentialing_team, business_development).
   const has = (r: string) => (appRoles as string[]).includes(r);
-  if (has("admin")) return "super_admin";
+  if (has("admin") || has("super_admin")) return "super_admin";
+  if (has("systems_admin")) return "systems_admin";
   if (appRoles.includes("executive") || appRoles.includes("coo")) return "executive_leadership";
   if (appRoles.includes("director_of_operations") || appRoles.includes("operations_manager")) return "operations_leadership";
   if (appRoles.includes("assistant_state_director")) return "assistant_state_director";
@@ -86,7 +87,9 @@ interface OSRoleContextValue {
 const OSRoleContext = createContext<OSRoleContextValue | null>(null);
 const STORAGE_KEY = "os.demo.role";
 const STATE_KEY = "os.demo.state";
-const HAT_KEY = "os.activeHatId";
+const HAT_KEY_BASE = "os.activeHatId";
+const hatStorageKey = (userId: string | null | undefined) =>
+  userId ? `${HAT_KEY_BASE}.${userId}` : HAT_KEY_BASE;
 
 export function OSRoleProvider({ children }: { children: ReactNode }) {
   const { roles: appRoles, user, activeAssignments, primaryAssignment } = useAuth();
@@ -97,14 +100,14 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   // Fall back to the lowest-privilege OS role if none of the user's app roles
   // map to a known OS role — never silently elevate to State Director.
   const derivedRole = mapAuthRoleToOS(appRoles) ?? "rbt";
-  const isSuperAdmin = derivedRole === "super_admin";
+  const isSuperAdmin = derivedRole === "super_admin" || derivedRole === "systems_admin";
 
   // Multi-hat: build the list of hats from active assignments.
   const hats = useMemo(() => buildHats(activeAssignments), [activeAssignments]);
 
   const [activeHatId, setActiveHatIdState] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
-    try { return window.localStorage.getItem(HAT_KEY); } catch { return null; }
+    try { return window.localStorage.getItem(hatStorageKey(user?.id)); } catch { return null; }
   });
   // Whenever the hat list changes, make sure the active hat id is still valid.
   useEffect(() => {
@@ -116,10 +119,20 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   }, [hats, activeHatId]);
   useEffect(() => {
     try {
-      if (activeHatId) window.localStorage.setItem(HAT_KEY, activeHatId);
-      else window.localStorage.removeItem(HAT_KEY);
+      const key = hatStorageKey(user?.id);
+      if (activeHatId) window.localStorage.setItem(key, activeHatId);
+      else window.localStorage.removeItem(key);
     } catch { /* ignore */ }
-  }, [activeHatId]);
+  }, [activeHatId, user?.id]);
+
+  // When the signed-in user changes, re-read their per-user active hat.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = window.localStorage.getItem(hatStorageKey(user?.id));
+      setActiveHatIdState(stored);
+    } catch { /* ignore */ }
+  }, [user?.id]);
   const activeHat = useMemo<OSHat | null>(
     () => hats.find((h) => h.id === activeHatId) ?? hats[0] ?? null,
     [hats, activeHatId],
