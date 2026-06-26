@@ -599,28 +599,54 @@ function FamiliesNeedingAction({
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">Families Needing Action</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Active blockers keeping families from service readiness.</p>
-        </div>
-        <span className="text-xs text-muted-foreground tabular-nums">{actionable.length} surfaced</span>
-      </div>
+      <SectionHeader
+        icon={AlertTriangle}
+        tone="rose"
+        title="Action Required"
+        subtitle="Active blockers keeping families from service readiness."
+        right={
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 h-7 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 tabular-nums">
+            <BellRing className="h-3 w-3" /> {actionable.length} need attention
+          </span>
+        }
+      />
 
       {actionable.length === 0 ? (
         <EmptyTile message="All caught up. No families are currently blocked." />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {actionable.map(({ lead, blocker, urgency }) => (
             <article
               key={lead.id}
-              className="group rounded-2xl border border-border/70 bg-card p-5 hover:border-border hover:-translate-y-0.5 transition-all duration-300"
+              className={cn(
+                "group relative overflow-hidden rounded-2xl border bg-card p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md",
+                urgency === "high"   && "border-rose-500/30 bg-rose-500/[0.03]",
+                urgency === "medium" && "border-amber-500/30 bg-amber-500/[0.03]",
+                urgency === "low"    && "border-emerald-500/30 bg-emerald-500/[0.03]",
+              )}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div
+                className={cn(
+                  "absolute left-0 top-0 bottom-0 w-1",
+                  urgency === "high"   && "bg-rose-500",
+                  urgency === "medium" && "bg-amber-500",
+                  urgency === "low"    && "bg-emerald-500",
+                )}
+              />
+              <div className="flex items-start justify-between gap-3 pl-2">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    {urgencyDot(urgency)}
-                    <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 h-5 rounded-full",
+                        urgency === "high"   && "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+                        urgency === "medium" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                        urgency === "low"    && "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+                      )}
+                    >
+                      {urgency}
+                    </span>
+                    <span className="text-[11px] uppercase tracking-wide text-muted-foreground truncate">
                       {blocker?.label}
                     </span>
                   </div>
@@ -636,15 +662,20 @@ function FamiliesNeedingAction({
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-[11px] text-muted-foreground">Days waiting</p>
-                  <p className="text-lg font-semibold tabular-nums">{lead.daysInStage ?? 0}</p>
+                  <p className={cn(
+                    "text-2xl font-semibold tabular-nums leading-none mt-0.5",
+                    urgency === "high"   && "text-rose-600 dark:text-rose-400",
+                    urgency === "medium" && "text-amber-600 dark:text-amber-400",
+                    urgency === "low"    && "text-emerald-600 dark:text-emerald-400",
+                  )}>{lead.daysInStage ?? 0}</p>
                 </div>
               </div>
 
-              <div className="mt-3 rounded-xl bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+              <div className="mt-3 ml-2 rounded-xl bg-background/60 border border-border/60 px-3 py-2 text-xs text-muted-foreground">
                 {blocker?.reason} · Stage: <span className="text-foreground">{lead.status}</span>
               </div>
 
-              <div className="mt-4 flex flex-wrap items-center gap-1">
+              <div className="mt-4 ml-2 flex flex-wrap items-center gap-1">
                 <QuickAction icon={Phone} label="Call Parent" onClick={() => { void import("@/lib/integrations/communications/communicationAdapters").then(async (m) => m.notifyCommunicationResult(await m.callParent({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state }))); }} disabled={!lead.phone} />
                 <QuickAction icon={MessageSquare} label="Text" onClick={() => modals.open({ kind: "comm", channel: "text", lead })} />
                 <QuickAction icon={Mail} label="Email" onClick={() => modals.open({ kind: "comm", channel: "email", lead })} disabled={!lead.email} />
