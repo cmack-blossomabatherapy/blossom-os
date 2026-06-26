@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { AvatarUploader } from "@/components/profile/AvatarUploader";
 import { useAuth } from "@/contexts/AuthContext";
+import { HatsSection } from "@/components/users/HatsSection";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
