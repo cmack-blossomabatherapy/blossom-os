@@ -406,9 +406,18 @@ export async function upsertAssignment(input: UpsertAssignmentInput) {
     os_role_key: mapRoleKeyToOSRole(input.role_key),
   };
   if (input.id) {
-    return supabase.from("employee_role_assignments").update(payload).eq("id", input.id);
+    return supabase
+      .from("employee_role_assignments")
+      .update(payload)
+      .eq("id", input.id)
+      .select()
+      .maybeSingle();
   }
-  return supabase.from("employee_role_assignments").insert(payload);
+  return supabase
+    .from("employee_role_assignments")
+    .insert(payload)
+    .select()
+    .maybeSingle();
 }
 
 export async function deactivateAssignment(id: string) {
@@ -447,16 +456,56 @@ export async function applyPreset(
   preset: GrowthStagePreset,
   state: StateCode,
 ) {
-  const drafts = preset.build(state).map((d) => ({
-    ...d,
-    user_id: userId,
-    employee_id: employeeId,
-    os_role_key: mapRoleKeyToOSRole(d.role_key),
-    is_active: true,
-  }));
-  return supabase
-    .from("employee_role_assignments")
-    .upsert(drafts, { onConflict: "user_id,role_key,state_code,department_key", ignoreDuplicates: false });
+  // The unique index on (user_id, role_key, COALESCE(state_code,''), COALESCE(department_key,''))
+  // is on expressions, which PostgREST cannot target via `onConflict`. Do a manual
+  // load → update existing / insert missing pass so presets persist reliably.
+  const drafts = preset.build(state);
+  const existing = await loadAssignmentsForUser(userId);
+  const sameKey = (a: { role_key: string; state_code: string | null; department_key: string | null }, b: typeof a) =>
+    a.role_key === b.role_key &&
+    (a.state_code ?? null) === (b.state_code ?? null) &&
+    (a.department_key ?? null) === (b.department_key ?? null);
+
+  for (const d of drafts) {
+    const match = existing.find((e) =>
+      sameKey(
+        { role_key: e.role_key, state_code: e.state_code, department_key: e.department_key },
+        { role_key: d.role_key, state_code: d.state_code, department_key: d.department_key },
+      ),
+    );
+    if (match) {
+      const { error } = await supabase
+        .from("employee_role_assignments")
+        .update({
+          scope: d.scope,
+          is_primary: d.is_primary,
+          is_active: true,
+          os_role_key: mapRoleKeyToOSRole(d.role_key),
+        })
+        .eq("id", match.id);
+      if (error) return { error };
+      if (d.is_primary) await setPrimary(userId, match.id);
+    } else {
+      const { data, error } = await supabase
+        .from("employee_role_assignments")
+        .insert({
+          user_id: userId,
+          employee_id: employeeId,
+          role_key: d.role_key,
+          state_code: d.state_code,
+          department_key: d.department_key,
+          scope: d.scope,
+          is_primary: d.is_primary,
+          is_active: true,
+          os_role_key: mapRoleKeyToOSRole(d.role_key),
+        })
+        .select()
+        .maybeSingle();
+      if (error) return { error };
+      if (d.is_primary && data?.id) await setPrimary(userId, data.id);
+    }
+  }
+  return { error: null as null };
 }
 
 /* ------------------------------------------------------------------ */
