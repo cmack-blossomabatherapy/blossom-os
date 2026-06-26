@@ -86,23 +86,22 @@ function TaskCard({ row, onComplete, onSnooze, onReassign }: {
 export default function IntakeTasks() {
   const { leads: allLeads } = useLeads();
   const { matches } = useIntakeStateFilter();
-  const leads = useMemo(() => allLeads.filter((l) => matches(l.state)), [allLeads, matches]);
   const { tasks, loading, complete, snooze, reassign } = useIntakeTasksLive();
   const [filter, setFilter] = useState<"all" | "today" | "overdue" | "escalated">("all");
 
   const leadById = useMemo(() => {
     const map = new Map<string, Lead>();
-    leads.forEach((l) => map.set(l.id, l));
+    allLeads.forEach((l) => map.set(l.id, l));
     return map;
-  }, [leads]);
+  }, [allLeads]);
 
   const rows = useMemo<TaskRow[]>(
     () =>
       tasks
         .map((t) => ({ task: t, lead: leadById.get(t.lead_id) }))
-        // Only show tasks whose lead matches the active intake state filter.
-        // Tasks with no linked lead row pass through so nothing is silently dropped.
-        .filter((r) => !r.task.lead_id || r.lead !== undefined || matches(undefined)),
+        // Filter by the active intake state filter via the lead's state.
+        // Tasks with no linked lead row are kept (cannot be state-filtered).
+        .filter((r) => (r.lead ? matches(r.lead.state) : true)),
     [tasks, leadById, matches],
   );
   const { overdue, dueToday, upcoming } = useMemo(() => bucketize(rows), [rows]);
