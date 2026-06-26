@@ -467,6 +467,7 @@ function OSShellPage({ children }: { children: React.ReactNode }) {
 }
 
 import { LeadsProvider } from "@/contexts/LeadsContext";
+import { LeadDrawerProvider } from "@/contexts/LeadDrawerContext";
 import { ClientsProvider } from "@/contexts/ClientsContext";
 
 function RoleDashboardRedirect() {
