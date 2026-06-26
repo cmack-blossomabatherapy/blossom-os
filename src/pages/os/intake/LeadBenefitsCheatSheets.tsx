@@ -62,6 +62,7 @@ export default function LeadBenefitsCheatSheets() {
       eyebrow="Growth & Admissions"
       title="Lead Benefits Cheat Sheets"
       description="Real payer-by-payer intake guidance synced from the Monday source board. Use to qualify leads quickly and route safely."
+      headerRight={<IntakeStateFilterToggle />}
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
         { label: "Open Leads", icon: List, to: "/leads" },
