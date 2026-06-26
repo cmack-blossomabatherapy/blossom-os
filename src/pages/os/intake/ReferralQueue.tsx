@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
-import { ClipboardList, Plus, Phone, Mail, MapPin, User, Flame, Search, List } from "lucide-react";
-import { GrowthPageShell, ReadyForDataNotice, Section } from "@/components/os/growth/GrowthPageShell";
+import { Inbox, Plus, Phone, Mail, MapPin, User, Flame, Search, List, UserX, AlertTriangle, Filter, Sparkles, ClipboardList } from "lucide-react";
+import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
+import { IntakeSectionHeader, IntakePulseStrip, INTAKE_TONE, type PulseTileSpec } from "@/components/os/intake/IntakeVisuals";
+import { cn } from "@/lib/utils";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
@@ -106,6 +107,25 @@ export default function ReferralQueue() {
     [baseQueue, search, stateF, ownerF, sourceF, priorityF, riskF, sort],
   );
 
+  const pulseTiles: PulseTileSpec[] = useMemo(() => {
+    const hot = baseQueue.filter((l) => l.priority === "Hot").length;
+    const unassigned = baseQueue.filter((l) => !l.owner).length;
+    const today = baseQueue.filter((l) => {
+      const d = new Date(l.createdAt);
+      const now = new Date();
+      return d.toDateString() === now.toDateString();
+    }).length;
+    const urgent = baseQueue.filter((l) => getLeadWorkflowRisk(l).level === "urgent").length;
+    return [
+      { key: "queue",      label: "In Queue",     value: baseQueue.length, hint: "Awaiting first contact",     icon: Inbox,         tone: "sky" },
+      { key: "today",      label: "New Today",    value: today,            hint: "Captured in the last 24h",   icon: Sparkles,      tone: "indigo" },
+      { key: "hot",        label: "Hot Leads",    value: hot,              hint: "Priority families",          icon: Flame,         tone: "amber" },
+      { key: "urgent",     label: "Urgent Risk",  value: urgent,           hint: "SLA breach in progress",     icon: AlertTriangle, tone: "rose" },
+      { key: "unassigned", label: "Unassigned",   value: unassigned,       hint: "Needs owner",                icon: UserX,         tone: "violet" },
+      { key: "shown",      label: "Showing",      value: queue.length,     hint: "After filters",              icon: Filter,        tone: "emerald" },
+    ];
+  }, [baseQueue, queue.length]);
+
   return (
     <GrowthPageShell
       eyebrow="Growth & Admissions"
@@ -117,7 +137,12 @@ export default function ReferralQueue() {
         { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
-      <div className="flex flex-col gap-2 md:flex-row md:items-center p-3 rounded-2xl border border-border/60 bg-card/50">
+      <section>
+        <IntakeSectionHeader icon={Inbox} tone="sky" title="Queue Pulse" subtitle="Live snapshot of inbound referrals." />
+        <IntakePulseStrip tiles={pulseTiles} loading={loading} />
+      </section>
+
+      <div className="flex flex-col gap-2 md:flex-row md:items-center p-3 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, parent, phone, email…" className="pl-9 h-9 bg-transparent border-0 focus-visible:ring-0" />
@@ -155,13 +180,37 @@ export default function ReferralQueue() {
         </div>
       </div>
 
-      <Section title={`Awaiting contact (${queue.length})`} description="Leads in Lead Captured, First Contact Attempt, or Engagement Track — newest first.">
+      <section>
+        <IntakeSectionHeader icon={ClipboardList} tone="indigo" title={`Awaiting contact (${queue.length})`} subtitle="Lead Captured · First Contact Attempt · Engagement Track" />
         {queue.length === 0 ? (
           <ReadyForDataNotice message={loading ? "Loading leads…" : "No referrals waiting. Add a lead or connect a source to populate this queue."} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {queue.map((lead) => (
-              <div key={lead.id} className="rounded-2xl border border-border/70 bg-card p-4 hover:shadow-md transition-shadow">
+              <RefCard key={lead.id} lead={lead} />
+            ))}
+          </div>
+        )}
+      </section>
+      <NewLeadDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        defaults={buildLeadSourceDefaults("Website", { sourcePage: "referral-queue" })}
+      />
+    </GrowthPageShell>
+  );
+}
+
+
+
+
+function RefCard({ lead }: { lead: import("@/data/leads").Lead }) {
+  const risk = getLeadWorkflowRisk(lead);
+  const tone: keyof typeof INTAKE_TONE =
+    risk.level === "urgent" ? "rose" : risk.level === "risk" ? "amber" : lead.priority === "Hot" ? "amber" : "sky";
+  const t = INTAKE_TONE[tone];
+  return (
+    <div className={cn("group rounded-2xl border border-border/70 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm", t.bg)}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <LeadNameLink leadId={lead.id} className="font-semibold text-foreground hover:underline truncate block">
@@ -184,29 +233,16 @@ export default function ReferralQueue() {
                   <div>Owner: {lead.owner || "Unassigned"}</div>
                   {lead.nextAction && <div>Next: {lead.nextAction}</div>}
                 </div>
-                {(() => {
-                  const risk = getLeadWorkflowRisk(lead);
-                  return risk.reasons.length > 0 ? (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {risk.reasons.slice(0, 3).map((r) => (
-                        <Badge key={r} variant="secondary" className="text-[10px] py-0">{r}</Badge>
-                      ))}
-                    </div>
-                  ) : null;
-                })()}
+      {risk.reasons.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {risk.reasons.slice(0, 3).map((r) => (
+            <Badge key={r} variant="secondary" className={cn("text-[10px] py-0", t.icon)}>{r}</Badge>
+          ))}
+        </div>
+      )}
                 <div className="mt-3">
                   <LeadActionPanel lead={lead} compact sourcePage="referral-queue" />
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
-      <NewLeadDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        defaults={buildLeadSourceDefaults("Website", { sourcePage: "referral-queue" })}
-      />
-    </GrowthPageShell>
+    </div>
   );
 }

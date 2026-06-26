@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, ShieldCheck, Copy, MapPin, Tag, List, Plus } from "lucide-react";
+import { Search, ShieldCheck, Copy, MapPin, Tag, List, Plus, CheckCircle2, AlertTriangle, XCircle, BookOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GrowthPageShell, Section } from "@/components/os/growth/GrowthPageShell";
+import { GrowthPageShell } from "@/components/os/growth/GrowthPageShell";
+import { IntakeSectionHeader, IntakePulseStrip, INTAKE_TONE, type PulseTileSpec } from "@/components/os/intake/IntakeVisuals";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -16,10 +17,13 @@ import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/inta
 
 type SortKey = "payer" | "state" | "status";
 const STATUS_ORDER: Record<string, number> = {
-  "TAKE": 0,
-  "TAKE-CONDITIONAL": 1,
-  "CONDITIONAL": 2,
-  "DON'T TAKE": 3,
+  "TAKE": 0, "TAKE-CONDITIONAL": 1, "CONDITIONAL": 2, "DON'T TAKE": 3,
+};
+const STATUS_TONE: Record<CheatSheetStatus, keyof typeof INTAKE_TONE> = {
+  "TAKE": "emerald",
+  "TAKE-CONDITIONAL": "sky",
+  "CONDITIONAL": "amber",
+  "DON'T TAKE": "rose",
 };
 
 export default function LeadBenefitsCheatSheets() {
@@ -27,7 +31,6 @@ export default function LeadBenefitsCheatSheets() {
   const [cat, setCat] = useState<string>("all");
   const { stateFilter: intakeState } = useIntakeStateFilter();
   const [stateFilter, setStateFilter] = useState<string>(intakeState === "ALL" ? "all" : intakeState);
-  // Keep the local state dropdown in sync with the cross-page intake state filter.
   useEffect(() => {
     setStateFilter(intakeState === "ALL" ? "all" : intakeState);
   }, [intakeState]);
@@ -50,6 +53,21 @@ export default function LeadBenefitsCheatSheets() {
     return out;
   }, [search, cat, stateFilter, statusFilter, sort]);
 
+  const pulseTiles: PulseTileSpec[] = useMemo(() => {
+    const take = leadBenefitsCheatSheets.filter((d) => d.intakeStatus === "TAKE").length;
+    const takeCond = leadBenefitsCheatSheets.filter((d) => d.intakeStatus === "TAKE-CONDITIONAL").length;
+    const cond = leadBenefitsCheatSheets.filter((d) => d.intakeStatus === "CONDITIONAL").length;
+    const dont = leadBenefitsCheatSheets.filter((d) => d.intakeStatus === "DON'T TAKE").length;
+    return [
+      { key: "total",    label: "Total Payers",    value: leadBenefitsCheatSheets.length, hint: "Across all states", icon: BookOpen,      tone: "indigo" },
+      { key: "take",     label: "TAKE",            value: take,     hint: "Safe to qualify",          icon: CheckCircle2,  tone: "emerald", onClick: () => setStatusFilter("TAKE") },
+      { key: "taken",    label: "Take-Conditional",value: takeCond, hint: "Mostly safe",              icon: ShieldCheck,   tone: "sky",     onClick: () => setStatusFilter("TAKE-CONDITIONAL") },
+      { key: "cond",     label: "Conditional",     value: cond,     hint: "Verify case-by-case",      icon: AlertTriangle, tone: "amber",   onClick: () => setStatusFilter("CONDITIONAL") },
+      { key: "dont",     label: "Don't Take",      value: dont,     hint: "Route to non-qualified",   icon: XCircle,       tone: "rose",    onClick: () => setStatusFilter("DON'T TAKE") },
+      { key: "shown",    label: "Showing",         value: filtered.length, hint: "After filters",     icon: Search,        tone: "violet" },
+    ];
+  }, [filtered.length]);
+
   const copyGuidance = async (payer: string, notes: string, status: CheatSheetStatus) => {
     const tone = mapCheatSheetStatusToTone(status);
     const text = `${payer} — ${status}\n${notes}\nRecommendation: ${tone.recommendation}`;
@@ -68,7 +86,12 @@ export default function LeadBenefitsCheatSheets() {
         { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
-      <div className="flex flex-col md:flex-row md:items-center gap-3 p-3 rounded-2xl border border-border/60 bg-card/50">
+      <section>
+        <IntakeSectionHeader icon={ShieldCheck} tone="emerald" title="Payer Pulse" subtitle="Tap a status to filter the catalog below." />
+        <IntakePulseStrip tiles={pulseTiles} />
+      </section>
+
+      <div className="flex flex-col md:flex-row md:items-center gap-3 p-3 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
         <div className="relative flex-1">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search payer, note, or state…" className="pl-9 h-9 bg-transparent border-0 focus-visible:ring-0" />
@@ -114,19 +137,23 @@ export default function LeadBenefitsCheatSheets() {
         </Select>
       </div>
 
-      <Section title={`Cheat sheets (${filtered.length})`}>
+      <section>
+        <IntakeSectionHeader icon={BookOpen} tone="indigo" title={`Cheat sheets (${filtered.length})`} subtitle="Color-coded by intake recommendation." />
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {filtered.map((d) => {
             const tone = mapCheatSheetStatusToTone(d.intakeStatus);
+            const t = INTAKE_TONE[STATUS_TONE[d.intakeStatus]];
             return (
-              <article key={`${d.state}-${d.payer}`} className="rounded-2xl border border-border/70 bg-card p-4">
+              <article key={`${d.state}-${d.payer}`} className={cn("group rounded-2xl border border-border/70 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm", t.bg)}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                      <div className={cn("grid place-items-center h-7 w-7 rounded-lg shrink-0", t.icon)}>
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                      </div>
                       <h3 className="text-sm font-semibold text-foreground truncate">{d.payer}</h3>
                     </div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2">
+                    <div className="text-[11px] text-muted-foreground mt-1.5 flex items-center gap-2">
                       <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {d.state}</span>
                       <span className="inline-flex items-center gap-1"><Tag className="h-3 w-3" /> {d.insuranceCategory}</span>
                     </div>
@@ -136,9 +163,9 @@ export default function LeadBenefitsCheatSheets() {
                   </Badge>
                 </div>
                 {d.notes && (
-                  <p className="text-xs text-foreground/90 mt-2">{d.notes}</p>
+                  <p className="text-xs text-foreground/90 mt-3">{d.notes}</p>
                 )}
-                <div className="mt-3 rounded-lg border border-border/60 bg-muted/40 p-2">
+                <div className="mt-3 rounded-lg border border-border/60 bg-background/60 p-2">
                   <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5">Recommended action</div>
                   <p className="text-[11px] text-foreground/90 leading-relaxed">{tone.recommendation}</p>
                 </div>
@@ -158,7 +185,7 @@ export default function LeadBenefitsCheatSheets() {
         {filtered.length === 0 && (
           <div className="text-xs text-muted-foreground p-3">No payer matches those filters.</div>
         )}
-      </Section>
+      </section>
     </GrowthPageShell>
   );
 }

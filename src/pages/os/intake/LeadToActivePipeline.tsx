@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
-import { TrendingUp, ChevronLeft, ChevronRight, Plus, Ban, List } from "lucide-react";
-import { GrowthPageShell, Section, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
+import { TrendingUp, ChevronLeft, ChevronRight, Plus, Ban, List, Workflow, Flame, Sparkles, AlertTriangle, ArrowRightLeft } from "lucide-react";
+import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
+import { IntakeSectionHeader, IntakePulseStrip, INTAKE_TONE, type PulseTileSpec } from "@/components/os/intake/IntakeVisuals";
+import { cn } from "@/lib/utils";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,12 +20,16 @@ import {
   getNextFamilyLeadStage,
   getPreviousFamilyLeadStage,
   FAMILY_LEAD_STAGE_OWNERS,
+  isReadyToStartStage,
+  isLeadOutOfPipeline,
   type FamilyLeadPipelineStage,
 } from "@/lib/intake/intakeWorkflow";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 
-// Export 78 — Canonical Family / Lead Workflow (13 stages).
 const STAGES: readonly FamilyLeadPipelineStage[] = FAMILY_LEAD_PIPELINE_STAGES;
+
+// Rotating tone palette per stage for a colorful kanban.
+const STAGE_TONES: (keyof typeof INTAKE_TONE)[] = ["sky", "indigo", "violet", "amber", "rose", "emerald", "primary"];
 
 export default function LeadToActivePipeline() {
   const { leads: allLeads, loading, moveStage, revertStage } = useLeads();
@@ -43,18 +49,31 @@ export default function LeadToActivePipeline() {
 
   const avgAgeForStage = (items: typeof leads) => {
     if (items.length === 0) return null;
-    const total = items.reduce((sum, l) => sum + (l.daysInStage ?? 0), 0);
-    return Math.round(total / items.length);
+    return Math.round(items.reduce((s, l) => s + (l.daysInStage ?? 0), 0) / items.length);
   };
-
   const oldestForStage = (items: typeof leads) =>
     items.reduce((m, l) => Math.max(m, l.daysInStage ?? 0), 0);
-
   const atRiskForStage = (items: typeof leads) =>
     items.filter((l) => {
       const r = getLeadWorkflowRisk(l);
       return r.level === "risk" || r.level === "urgent";
     }).length;
+
+  const pulseTiles: PulseTileSpec[] = useMemo(() => {
+    const inPipeline = leads.filter((l) => !isLeadOutOfPipeline(l.status)).length;
+    const ready = leads.filter((l) => isReadyToStartStage(l.status)).length;
+    const urgent = leads.filter((l) => getLeadWorkflowRisk(l).level === "urgent").length;
+    const risk = leads.filter((l) => getLeadWorkflowRisk(l).level === "risk").length;
+    const hot = leads.filter((l) => l.priority === "Hot" && !isLeadOutOfPipeline(l.status)).length;
+    return [
+      { key: "open",    label: "In Pipeline",   value: inPipeline, hint: "Captured → Ready to Start",  icon: Workflow,       tone: "indigo" },
+      { key: "ready",   label: "Ready to Start",value: ready,      hint: "Handoff to active services", icon: ArrowRightLeft, tone: "emerald" },
+      { key: "urgent",  label: "Urgent",        value: urgent,     hint: "SLA breach",                 icon: AlertTriangle,  tone: "rose" },
+      { key: "risk",    label: "At Risk",       value: risk,       hint: "Slipping",                   icon: AlertTriangle,  tone: "amber" },
+      { key: "hot",     label: "Hot Priority",  value: hot,        hint: "Family-flagged hot",         icon: Flame,          tone: "violet" },
+      { key: "stages",  label: "Stages",        value: STAGES.length, hint: "Canonical workflow",      icon: Sparkles,       tone: "sky" },
+    ];
+  }, [leads]);
 
   return (
     <GrowthPageShell
@@ -67,31 +86,47 @@ export default function LeadToActivePipeline() {
         { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
-      <Section title="Pipeline stages" description="Canonical 13-stage family lead workflow. Existing leads with legacy statuses appear under their mapped canonical stage.">
-        <div className="overflow-x-auto">
+      <section>
+        <IntakeSectionHeader icon={TrendingUp} tone="indigo" title="Pipeline Pulse" subtitle="Live snapshot of where every family sits." />
+        <IntakePulseStrip tiles={pulseTiles} loading={loading} />
+      </section>
+
+      <section>
+        <IntakeSectionHeader icon={Workflow} tone="violet" title="Pipeline stages" subtitle="Canonical 13-stage family lead workflow. Legacy statuses map into their canonical stage." />
+        <div className="overflow-x-auto -mx-2 px-2">
           <div className="flex items-stretch gap-3 min-w-max pb-2">
-            {STAGES.map((stage) => {
+            {STAGES.map((stage, i) => {
               const items = byStage.get(stage) ?? [];
               const avgAge = avgAgeForStage(items);
               const oldest = oldestForStage(items);
               const atRisk = atRiskForStage(items);
-              const stageIdx = STAGES.indexOf(stage);
               const owner = FAMILY_LEAD_STAGE_OWNERS[stage];
               const isPipelineEnd = stage === "Ready to Start Services";
+              const toneKey: keyof typeof INTAKE_TONE = isPipelineEnd ? "emerald" : STAGE_TONES[i % STAGE_TONES.length];
+              const t = INTAKE_TONE[toneKey];
               return (
-                <div key={stage} className={`rounded-2xl border p-4 w-64 shrink-0 ${isPipelineEnd ? "border-amber-500/40 bg-amber-500/5" : "border-border/70 bg-card"}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      {stage}
-                      {isPipelineEnd && <Ban className="h-3 w-3 text-amber-600" aria-hidden="true" />}
+                <div
+                  key={stage}
+                  className={cn(
+                    "rounded-2xl border p-4 w-64 shrink-0 transition-all duration-300",
+                    t.bg,
+                    isPipelineEnd ? "border-emerald-500/40" : "border-border/70",
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={cn("grid place-items-center h-7 w-7 rounded-lg shrink-0", t.icon)}>
+                        {isPipelineEnd ? <ArrowRightLeft className="h-3.5 w-3.5" /> : <Workflow className="h-3.5 w-3.5" />}
+                      </div>
+                      <div className="text-xs font-medium text-foreground truncate">{stage}</div>
                     </div>
-                    <div className="text-lg font-semibold tabular-nums text-foreground">{items.length}</div>
+                    <div className={cn("text-lg font-semibold tabular-nums", t.number)}>{items.length}</div>
                   </div>
-                  <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                  <div className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground/80">
                     Owner: {owner}
                   </div>
                   {avgAge !== null && (
-                    <div className="text-[10px] text-muted-foreground flex items-center gap-2">
+                    <div className="text-[10px] text-muted-foreground flex items-center gap-2 mt-0.5">
                       <span>Avg {avgAge}d</span>
                       <span>· Oldest {oldest}d</span>
                       {atRisk > 0 && <span className="text-amber-600">· {atRisk} at risk</span>}
@@ -99,7 +134,7 @@ export default function LeadToActivePipeline() {
                   )}
                   <div className="mt-3 space-y-1.5">
                     {items.slice(0, 6).map((l) => (
-                      <div key={l.id} className="rounded-md border border-border/60 bg-background/60 px-2 py-1.5 text-xs">
+                      <div key={l.id} className="rounded-md border border-border/60 bg-background/70 px-2 py-1.5 text-xs">
                         <LeadNameLink leadId={l.id} className="font-medium truncate block hover:underline">{l.childName}</LeadNameLink>
                         <div className="text-[10px] text-muted-foreground truncate">{l.owner || "Unassigned"} · {l.state}</div>
                         {(() => {
@@ -126,7 +161,7 @@ export default function LeadToActivePipeline() {
                                   </Button>
                                 )}
                                 {isPipelineEnd ? (
-                                  <Button size="sm" variant="ghost" disabled className="h-6 px-1.5 text-[10px] text-muted-foreground" title="Active patient operations start after this point. Use the active patient workflow to continue.">
+                                  <Button size="sm" variant="ghost" disabled className="h-6 px-1.5 text-[10px] text-muted-foreground" title="Active patient operations start after this point.">
                                     <Ban className="h-3 w-3 mr-1" /> Pipeline end
                                   </Button>
                                 ) : next && (
@@ -159,13 +194,13 @@ export default function LeadToActivePipeline() {
             })}
           </div>
         </div>
-        <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-900 dark:text-amber-100">
-          <Ban className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-700 dark:text-amber-300" aria-hidden="true" />
+        <div className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-900 dark:text-emerald-100">
+          <Ban className="h-3.5 w-3.5 shrink-0 mt-0.5 text-emerald-700 dark:text-emerald-300" aria-hidden="true" />
           <span>
             <strong>Hard stop:</strong> this pipeline ends at <strong>Ready to Start Services</strong>. Active patient operations start after this point and are managed in a separate workflow.
           </span>
         </div>
-      </Section>
+      </section>
 
       {leads.length === 0 && (
         <ReadyForDataNotice message={loading ? "Loading leads…" : "No leads yet. Add a lead or connect a source to populate the pipeline."} />
