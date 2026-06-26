@@ -68,8 +68,37 @@ function SectionHeader({
 }
 
 export default function IntakeDashboard() {
-  const { leads, loading } = useLeads();
+  const { leads: allLeads, loading } = useLeads();
   const [addOpen, setAddOpen] = useState(false);
+
+  // State filter — Intake spans all states by default; flip to a single state to focus.
+  const SUPPORTED_STATES = ["GA", "TN", "MD", "NC", "VA"] as const;
+  type StateFilter = "ALL" | (typeof SUPPORTED_STATES)[number];
+  const STATE_STORAGE_KEY = "intake.dashboard.stateFilter";
+  const [stateFilter, setStateFilter] = useState<StateFilter>(() => {
+    if (typeof window === "undefined") return "ALL";
+    const v = window.localStorage.getItem(STATE_STORAGE_KEY) as StateFilter | null;
+    return v && (v === "ALL" || (SUPPORTED_STATES as readonly string[]).includes(v)) ? v : "ALL";
+  });
+  const handleStateChange = (next: StateFilter) => {
+    setStateFilter(next);
+    try { window.localStorage.setItem(STATE_STORAGE_KEY, next); } catch {}
+  };
+
+  const normalizeState = (raw?: string | null) => {
+    if (!raw) return "";
+    const s = raw.trim().toUpperCase();
+    const map: Record<string, string> = {
+      GEORGIA: "GA", TENNESSEE: "TN", MARYLAND: "MD",
+      "NORTH CAROLINA": "NC", VIRGINIA: "VA",
+    };
+    return map[s] ?? s;
+  };
+
+  const leads = useMemo(() => {
+    if (stateFilter === "ALL") return allLeads;
+    return allLeads.filter((l) => normalizeState(l.state) === stateFilter);
+  }, [allLeads, stateFilter]);
 
   const counts = useMemo(() => {
     const now = Date.now();
@@ -196,6 +225,29 @@ export default function IntakeDashboard() {
       eyebrow="Growth & Admissions"
       title="Intake Dashboard"
       description="Manage new referrals, parent communication, missing information, insurance checks, and movement from lead capture to ready to start services."
+      headerRight={
+        <div className="inline-flex items-center rounded-full border border-border/70 bg-card/60 p-0.5 shadow-sm">
+          {(["ALL", ...SUPPORTED_STATES] as const).map((s) => {
+            const active = stateFilter === s;
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => handleStateChange(s)}
+                className={cn(
+                  "px-2.5 py-1 text-xs font-medium rounded-full transition-colors",
+                  active
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+                )}
+                aria-pressed={active}
+              >
+                {s === "ALL" ? "All States" : s}
+              </button>
+            );
+          })}
+        </div>
+      }
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
         { label: "Open Leads", icon: List, to: "/leads" },
