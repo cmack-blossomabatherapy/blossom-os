@@ -233,9 +233,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       void loadProfileFlag(user.id);
     };
     window.addEventListener("profile:updated", onProfileUpdated as EventListener);
+    const onAssignmentsUpdated = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { userId?: string } | undefined;
+      if (detail?.userId && detail.userId !== user.id) return;
+      void loadRolesAndAccess(user.id);
+    };
+    window.addEventListener("role-assignments:updated", onAssignmentsUpdated as EventListener);
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("profile:updated", onProfileUpdated as EventListener);
+      window.removeEventListener("role-assignments:updated", onAssignmentsUpdated as EventListener);
     };
   }, [user?.id]);
 
