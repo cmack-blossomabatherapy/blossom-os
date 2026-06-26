@@ -6,6 +6,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import type { AppRole } from "@/lib/roles";
 import { supabase } from "@/integrations/supabase/client";
+import { buildHats, type OSHat } from "@/lib/access/roleAssignments";
 
 function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   // Allow checking against role identifiers that are not yet part of the
@@ -72,14 +73,23 @@ interface OSRoleContextValue {
   can: (m: OSModule, a: OSAction) => boolean;
   leadership: (typeof ROLE_PROFILES)[OSRole]["leadership"];
   platform: (cap: "managePermissions" | "impersonate" | "accessOldVersion" | "configureWorkflows") => boolean;
+  /** Multi-hat: hats this user can switch into. Empty for legacy single-role users. */
+  hats: OSHat[];
+  /** Multi-hat: currently active hat (null when user has no assignments). */
+  activeHat: OSHat | null;
+  /** Multi-hat: switch the active hat by id. */
+  setActiveHat: (id: string) => void;
+  /** Multi-hat: active department from the current hat, if any. */
+  activeDepartment: string | null;
 }
 
 const OSRoleContext = createContext<OSRoleContextValue | null>(null);
 const STORAGE_KEY = "os.demo.role";
 const STATE_KEY = "os.demo.state";
+const HAT_KEY = "os.activeHatId";
 
 export function OSRoleProvider({ children }: { children: ReactNode }) {
-  const { roles: appRoles, user } = useAuth();
+  const { roles: appRoles, user, activeAssignments, primaryAssignment } = useAuth();
   const [roleOverride, setRoleState] = useState<OSRole | null>(() => {
     if (typeof window === "undefined") return null;
     return (window.localStorage.getItem(STORAGE_KEY) as OSRole) || null;
@@ -87,9 +97,42 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   // Fall back to the lowest-privilege OS role if none of the user's app roles
   // map to a known OS role — never silently elevate to State Director.
   const derivedRole = mapAuthRoleToOS(appRoles) ?? "rbt";
-  // Only super_admins can override their role via the demo switcher.
-  const role: OSRole = derivedRole === "super_admin" && roleOverride ? roleOverride : derivedRole;
   const isSuperAdmin = derivedRole === "super_admin";
+
+  // Multi-hat: build the list of hats from active assignments.
+  const hats = useMemo(() => buildHats(activeAssignments), [activeAssignments]);
+
+  const [activeHatId, setActiveHatIdState] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try { return window.localStorage.getItem(HAT_KEY); } catch { return null; }
+  });
+  // Whenever the hat list changes, make sure the active hat id is still valid.
+  useEffect(() => {
+    if (hats.length === 0) { setActiveHatIdState(null); return; }
+    if (!activeHatId || !hats.some((h) => h.id === activeHatId)) {
+      const fallback = hats.find((h) => h.isPrimary)?.id ?? hats[0].id;
+      setActiveHatIdState(fallback);
+    }
+  }, [hats, activeHatId]);
+  useEffect(() => {
+    try {
+      if (activeHatId) window.localStorage.setItem(HAT_KEY, activeHatId);
+      else window.localStorage.removeItem(HAT_KEY);
+    } catch { /* ignore */ }
+  }, [activeHatId]);
+  const activeHat = useMemo<OSHat | null>(
+    () => hats.find((h) => h.id === activeHatId) ?? hats[0] ?? null,
+    [hats, activeHatId],
+  );
+
+  // Role resolution order:
+  //   1. Super-admin override (View As Role)
+  //   2. Active hat's OS role (multi-hat users)
+  //   3. Legacy derived role from user_roles
+  const role: OSRole = isSuperAdmin && roleOverride
+    ? roleOverride
+    : activeHat?.osRole ?? derivedRole;
+
   const [profileState, setProfileState] = useState<OSState | null>(null);
   const [activeState, setActiveStateInternal] = useState<OSState>(() => {
     if (typeof window === "undefined") return "GA";
@@ -126,20 +169,26 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   useEffect(() => { try { window.localStorage.setItem(STATE_KEY, activeState); } catch { /* ignore */ } }, [activeState]);
 
   const setRole = useCallback((r: OSRole) => setRoleState(r), []);
+  const setActiveHat = useCallback((id: string) => setActiveHatIdState(id), []);
   const setActiveState = useCallback((s: OSState) => {
-    // Only State Directors are locked to their profile state.
-    // Every other role operates company-wide, so the state selector is a no-op for them.
+    // State Directors stay pinned to their profile state. Multi-hat users with
+    // a state-scoped active hat stay pinned to that hat's state.
     if (!isSuperAdmin && derivedRole === "state_director" && profileState) return;
+    if (!isSuperAdmin && activeHat?.stateCode && activeHat.scope !== "company") return;
     setActiveStateInternal(s);
-  }, [isSuperAdmin, derivedRole, profileState]);
+  }, [isSuperAdmin, derivedRole, profileState, activeHat]);
 
-  // Only State Directors get pinned to their profile state. Everyone else uses the
-  // currently-selected state (which they can change freely, or ignore — their scope
-  // is company-wide so it has no effect on the data they see).
-  const effectiveState: OSState =
-    !isSuperAdmin && derivedRole === "state_director" && profileState
-      ? profileState
-      : activeState;
+  // Effective state precedence:
+  //   1. Super-admin can pick freely.
+  //   2. Active hat with a state_code wins over everything else.
+  //   3. State Director pinned to profile state.
+  //   4. Otherwise: user's stored selection.
+  const effectiveState: OSState = (() => {
+    if (isSuperAdmin) return activeState;
+    if (activeHat?.stateCode) return activeHat.stateCode as OSState;
+    if (derivedRole === "state_director" && profileState) return profileState;
+    return activeState;
+  })();
 
   const value = useMemo<OSRoleContextValue>(() => ({
     role,
@@ -152,7 +201,11 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
     can: (m, a) => canAct(role, m, a),
     leadership: ROLE_PROFILES[role].leadership,
     platform: (cap) => hasPlatformCap(role, cap),
-  }), [role, effectiveState, setRole, setActiveState]);
+    hats,
+    activeHat,
+    setActiveHat,
+    activeDepartment: activeHat?.departmentKey ?? null,
+  }), [role, effectiveState, setRole, setActiveState, hats, activeHat, setActiveHat]);
 
   return <OSRoleContext.Provider value={value}>{children}</OSRoleContext.Provider>;
 }
