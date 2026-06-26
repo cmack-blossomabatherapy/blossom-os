@@ -45,6 +45,9 @@ export function HatsSection({ employeeId, userId }: Props) {
     const data = await loadAssignmentsForUser(userId);
     setRows(data);
     setLoading(false);
+    try {
+      window.dispatchEvent(new CustomEvent("role-assignments:updated", { detail: { userId } }));
+    } catch { /* noop */ }
   }, [userId]);
 
   useEffect(() => { void refresh(); }, [refresh]);
@@ -272,7 +275,7 @@ function HatEditorDialog({
 
   const save = async () => {
     setSaving(true);
-    const { error } = await upsertAssignment({
+    const { data, error } = await upsertAssignment({
       id: existing?.id,
       user_id: userId,
       employee_id: employeeId,
@@ -286,15 +289,16 @@ function HatEditorDialog({
       ends_at: form.ends_at || null,
       title_override: form.title_override || null,
       responsibility_notes: form.responsibility_notes || null,
-    });
+    }) as { data: { id?: string } | null; error: { message: string } | null };
     setSaving(false);
     if (error) {
       toast({ title: "Couldn't save hat", description: error.message, variant: "destructive" });
       return;
     }
     // Setting primary clears every other primary atomically.
-    if (form.is_primary && existing?.id) {
-      await setPrimary(userId, existing.id);
+    const savedId = existing?.id ?? data?.id ?? null;
+    if (form.is_primary && savedId) {
+      await setPrimary(userId, savedId);
     }
     toast({ title: existing ? "Hat updated" : "Hat added" });
     onSaved();
