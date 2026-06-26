@@ -14,6 +14,7 @@ import { kpiFilters, KpiKey, LeadStatus } from "@/data/leads";
 import { useLeads } from "@/contexts/LeadsContext";
 import { toast } from "sonner";
 import { useClients } from "@/contexts/ClientsContext";
+import { canonicalFamilyLeadStage } from "@/lib/intake/intakeWorkflow";
 
 const emptyFilters: LeadFilters = { states: [], sources: [], owners: [], insurances: [], priorities: [] };
 
@@ -49,6 +50,7 @@ export default function Leads() {
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [stageParam, setStageParam] = useState<string | null>(searchParams.get("stage"));
   const { clients } = useClients();
 
   // Initial ?source=… filter (linked from marketing source pages).
@@ -57,6 +59,16 @@ export default function Leads() {
     if (src) {
       setFilters((f) => (f.sources.includes(src) ? f : { ...f, sources: [...f.sources, src] }));
     }
+    const stateParam = searchParams.get("state");
+    if (stateParam) {
+      setFilters((f) => (f.states.includes(stateParam) ? f : { ...f, states: [...f.states, stateParam] }));
+    }
+    const ownerParam = searchParams.get("owner");
+    if (ownerParam) {
+      setFilters((f) => (f.owners.includes(ownerParam) ? f : { ...f, owners: [...f.owners, ownerParam] }));
+    }
+    const stage = searchParams.get("stage");
+    if (stage) setStageParam(stage);
     if (searchParams.get("new") === "1") setNewLeadOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -111,6 +123,10 @@ export default function Leads() {
     if (filters.insurances.length) result = result.filter((l) => filters.insurances.includes(l.insurance));
     if (filters.priorities.length) result = result.filter((l) => filters.priorities.includes(l.priority));
 
+    if (stageParam) {
+      result = result.filter((l) => canonicalFamilyLeadStage(l.status) === stageParam || l.status === stageParam);
+    }
+
     if (activeKpi) {
       result = result.filter(kpiFilters[activeKpi]);
     } else {
@@ -150,7 +166,7 @@ export default function Leads() {
     }
 
     return result;
-  }, [leads, searchQuery, activeView, filters, activeKpi, sortField, sortDir]);
+  }, [leads, searchQuery, activeView, filters, activeKpi, sortField, sortDir, stageParam]);
 
   const handleKpiClick = (key: KpiKey) => {
     setActiveKpi(activeKpi === key ? null : key);
