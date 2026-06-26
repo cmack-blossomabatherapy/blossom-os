@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import {
   ClipboardList, TrendingUp, MessageSquare, AlertCircle, ShieldCheck, Plus,
-  ArrowRightLeft, Flame, Users, MapPin, Signal, Clock, HeartHandshake, List,
+  ArrowRightLeft, Users, MapPin, Signal, Clock, HeartHandshake, List,
   Inbox, ArrowUpRight, Zap, BarChart3, HeartPulse, PieChart as PieIcon,
   AlertTriangle, Phone, Mail, Send,
 } from "lucide-react";
@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
-import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
 import { cn } from "@/lib/utils";
 import {
   callParent,
