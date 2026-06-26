@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, ShieldCheck, Copy, MapPin, Tag, List, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import {
   mapCheatSheetStatusToTone,
   type CheatSheetStatus,
 } from "@/lib/intake/leadBenefitsCheatSheets";
+import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 
 type SortKey = "payer" | "state" | "status";
 const STATUS_ORDER: Record<string, number> = {
@@ -24,7 +25,12 @@ const STATUS_ORDER: Record<string, number> = {
 export default function LeadBenefitsCheatSheets() {
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState<string>("all");
-  const [stateFilter, setStateFilter] = useState<string>("all");
+  const { stateFilter: intakeState } = useIntakeStateFilter();
+  const [stateFilter, setStateFilter] = useState<string>(intakeState === "ALL" ? "all" : intakeState);
+  // Keep the local state dropdown in sync with the cross-page intake state filter.
+  useEffect(() => {
+    setStateFilter(intakeState === "ALL" ? "all" : intakeState);
+  }, [intakeState]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("state");
 
@@ -56,6 +62,7 @@ export default function LeadBenefitsCheatSheets() {
       eyebrow="Growth & Admissions"
       title="Lead Benefits Cheat Sheets"
       description="Real payer-by-payer intake guidance synced from the Monday source board. Use to qualify leads quickly and route safely."
+      headerRight={<IntakeStateFilterToggle />}
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
         { label: "Open Leads", icon: List, to: "/leads" },

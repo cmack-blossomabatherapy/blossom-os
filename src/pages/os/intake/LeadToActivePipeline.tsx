@@ -19,12 +19,15 @@ import {
   FAMILY_LEAD_STAGE_OWNERS,
   type FamilyLeadPipelineStage,
 } from "@/lib/intake/intakeWorkflow";
+import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 
 // Export 78 — Canonical Family / Lead Workflow (13 stages).
 const STAGES: readonly FamilyLeadPipelineStage[] = FAMILY_LEAD_PIPELINE_STAGES;
 
 export default function LeadToActivePipeline() {
-  const { leads, loading, moveStage, revertStage } = useLeads();
+  const { leads: allLeads, loading, moveStage, revertStage } = useLeads();
+  const { matches } = useIntakeStateFilter();
+  const leads = useMemo(() => allLeads.filter((l) => matches(l.state)), [allLeads, matches]);
   const [addOpen, setAddOpen] = useState(false);
 
   const byStage = useMemo(() => {
@@ -57,6 +60,7 @@ export default function LeadToActivePipeline() {
       eyebrow="Growth & Admissions"
       title="Lead to Ready-to-Start Pipeline"
       description="Family lead workflow from lead capture through ready to start services. Active patient operations begin in a separate workflow after Ready to Start Services."
+      headerRight={<IntakeStateFilterToggle />}
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
         { label: "Open Leads", icon: List, to: "/leads" },

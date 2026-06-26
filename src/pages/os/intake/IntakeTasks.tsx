@@ -8,6 +8,7 @@ import { useIntakeTasksLive, type IntakeTaskRow } from "@/hooks/useIntakeTasksLi
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 
 interface TaskRow {
   task: IntakeTaskRow;
@@ -83,19 +84,25 @@ function TaskCard({ row, onComplete, onSnooze, onReassign }: {
 }
 
 export default function IntakeTasks() {
-  const { leads } = useLeads();
+  const { leads: allLeads } = useLeads();
+  const { matches } = useIntakeStateFilter();
   const { tasks, loading, complete, snooze, reassign } = useIntakeTasksLive();
   const [filter, setFilter] = useState<"all" | "today" | "overdue" | "escalated">("all");
 
   const leadById = useMemo(() => {
     const map = new Map<string, Lead>();
-    leads.forEach((l) => map.set(l.id, l));
+    allLeads.forEach((l) => map.set(l.id, l));
     return map;
-  }, [leads]);
+  }, [allLeads]);
 
   const rows = useMemo<TaskRow[]>(
-    () => tasks.map((t) => ({ task: t, lead: leadById.get(t.lead_id) })),
-    [tasks, leadById],
+    () =>
+      tasks
+        .map((t) => ({ task: t, lead: leadById.get(t.lead_id) }))
+        // Filter by the active intake state filter via the lead's state.
+        // Tasks with no linked lead row are kept (cannot be state-filtered).
+        .filter((r) => (r.lead ? matches(r.lead.state) : true)),
+    [tasks, leadById, matches],
   );
   const { overdue, dueToday, upcoming } = useMemo(() => bucketize(rows), [rows]);
   const escalated = useMemo(
@@ -114,6 +121,7 @@ export default function IntakeTasks() {
       eyebrow="Growth & Admissions"
       title="Intake Tasks"
       description="Your personal intake task list — follow-ups, missing information, and lead actions."
+      headerRight={<IntakeStateFilterToggle />}
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
         { label: "Open Leads", icon: List, to: "/leads" },

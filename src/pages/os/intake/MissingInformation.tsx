@@ -6,9 +6,12 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
 import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
 import { getMissingInfoFlags, canonicalFamilyLeadStage } from "@/lib/intake/intakeWorkflow";
+import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 
 export default function MissingInformation() {
-  const { leads, loading } = useLeads();
+  const { leads: allLeads, loading } = useLeads();
+  const { matches } = useIntakeStateFilter();
+  const leads = useMemo(() => allLeads.filter((l) => matches(l.state)), [allLeads, matches]);
 
   const blocked = useMemo(
     () =>
@@ -31,6 +34,7 @@ export default function MissingInformation() {
       eyebrow="Intake"
       title="Packet Follow Up / Missing Info"
       description="Leads waiting on packet corrections, documents, insurance details, or family follow-up."
+      headerRight={<IntakeStateFilterToggle />}
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
         { label: "Open Leads", icon: List, to: "/leads" },
