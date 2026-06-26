@@ -12924,6 +12924,7 @@ export type Database = {
           status: Database["public"]["Enums"]["employee_status"] | null
           supports_onboarding: boolean | null
           unlock_level: number | null
+          user_id: string | null
         }
         Relationships: [
           {
