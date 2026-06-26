@@ -1,0 +1,1 @@
+ALTER TYPE public.intake_task_type ADD VALUE IF NOT EXISTS 'Run Benefits Verification';
