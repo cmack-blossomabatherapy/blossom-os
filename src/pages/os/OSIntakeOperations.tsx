@@ -5,7 +5,12 @@ import {
   MessageSquare, StickyNote, AlertTriangle, ChevronRight, Loader2, RefreshCw,
   CalendarClock, FileWarning, FileCheck2, UserCheck, Users, Activity,
   ArrowUpRight, CircleDot, BellRing, ListTodo, Wand2, X, Flag, BookOpen, Clock,
+  TrendingUp, Inbox, PhoneCall, FileText, Stethoscope, Heart, Zap,
 } from "lucide-react";
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
+  PieChart, Pie, Cell,
+} from "recharts";
 import { OSShell } from "./OSShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -237,6 +242,7 @@ function OSIntakeOperationsInner({ title, subtitle }: Required<OSIntakeOperation
         ) : (
           <>
             <IntakePulse leads={scopedLeads} onRefresh={refresh} loading={loading} onFilter={setFilter} active={filterKey} />
+            <IntakeCharts leads={scopedLeads} onFilter={setFilter} onStage={setStage} />
             <FamiliesNeedingAction
               leads={visibleLeads}
               onOpen={setOpenLeadId}
@@ -302,40 +308,272 @@ function IntakePulse({
     return c;
   }, [leads]);
 
-  const pills = [
-    { key: "new_inquiries", label: "New Inquiries", value: pulse.new },
-    { key: "awaiting_contact", label: "Awaiting Contact", value: pulse.awaiting_contact },
-    { key: "missing_info", label: "Missing Information", value: pulse.missing_info },
-    { key: "vob_pending", label: "VOB Pending", value: pulse.vob_pending },
-    { key: "assessment", label: "Assessment Coord.", value: pulse.assessment },
-    { key: "ready", label: "Ready for Next Step", value: pulse.ready, accent: true },
+  const pills: {
+    key: string; label: string; value: number; icon: any;
+    tone: "sky" | "amber" | "rose" | "violet" | "indigo" | "emerald";
+  }[] = [
+    { key: "new_inquiries",    label: "New Inquiries",       value: pulse.new,              icon: Inbox,        tone: "sky" },
+    { key: "awaiting_contact", label: "Awaiting Contact",    value: pulse.awaiting_contact, icon: PhoneCall,    tone: "amber" },
+    { key: "missing_info",     label: "Missing Information", value: pulse.missing_info,     icon: FileWarning,  tone: "rose" },
+    { key: "vob_pending",      label: "VOB Pending",         value: pulse.vob_pending,      icon: ShieldCheck,  tone: "violet" },
+    { key: "assessment",       label: "Assessment Coord.",   value: pulse.assessment,       icon: Stethoscope,  tone: "indigo" },
+    { key: "ready",            label: "Ready for Next Step", value: pulse.ready,            icon: Heart,        tone: "emerald" },
   ];
+
+  const toneClass: Record<string, { bg: string; ring: string; icon: string; number: string; bar: string }> = {
+    sky:     { bg: "bg-sky-500/[0.06]",     ring: "ring-sky-500/30",     icon: "bg-sky-500/15 text-sky-600 dark:text-sky-400",         number: "text-sky-700 dark:text-sky-300",         bar: "bg-sky-500" },
+    amber:   { bg: "bg-amber-500/[0.06]",   ring: "ring-amber-500/30",   icon: "bg-amber-500/15 text-amber-600 dark:text-amber-400",   number: "text-amber-700 dark:text-amber-300",     bar: "bg-amber-500" },
+    rose:    { bg: "bg-rose-500/[0.06]",    ring: "ring-rose-500/30",    icon: "bg-rose-500/15 text-rose-600 dark:text-rose-400",      number: "text-rose-700 dark:text-rose-300",       bar: "bg-rose-500" },
+    violet:  { bg: "bg-violet-500/[0.06]",  ring: "ring-violet-500/30",  icon: "bg-violet-500/15 text-violet-600 dark:text-violet-400", number: "text-violet-700 dark:text-violet-300",   bar: "bg-violet-500" },
+    indigo:  { bg: "bg-indigo-500/[0.06]",  ring: "ring-indigo-500/30",  icon: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400", number: "text-indigo-700 dark:text-indigo-300",   bar: "bg-indigo-500" },
+    emerald: { bg: "bg-emerald-500/[0.06]", ring: "ring-emerald-500/30", icon: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400", number: "text-emerald-700 dark:text-emerald-300", bar: "bg-emerald-500" },
+  };
+
+  const total = pills.reduce((s, p) => s + p.value, 0) || 1;
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-xs uppercase tracking-widest text-muted-foreground">Intake Pulse</h2>
-        <button onClick={onRefresh} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-          <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} /> Refresh
-        </button>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {pills.map((p) => (
-          <button
-            key={p.label}
-            onClick={() => onFilter(p.key)}
-            className={cn(
-              "text-left rounded-2xl border border-border/70 bg-card p-4 hover:-translate-y-0.5 hover:border-border transition-all duration-300",
-              p.accent && "bg-primary/[0.04] border-primary/20",
-              active === p.key && "ring-2 ring-primary/40 border-primary/40",
-            )}
-          >
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{p.label}</p>
-            <p className={cn("mt-1.5 text-2xl font-semibold tabular-nums", p.accent && "text-primary")}>
-              {p.value.toLocaleString()}
-            </p>
+      <SectionHeader
+        icon={Zap}
+        tone="primary"
+        title="Intake Pulse"
+        subtitle="Live snapshot of today's intake — tap a tile to drill in."
+        right={
+          <button onClick={onRefresh} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+            <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} /> Refresh
           </button>
-        ))}
+        }
+      />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {pills.map((p) => {
+          const t = toneClass[p.tone];
+          const pct = Math.round((p.value / total) * 100);
+          return (
+            <button
+              key={p.label}
+              onClick={() => onFilter(p.key)}
+              className={cn(
+                "group text-left rounded-2xl border border-border/70 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm",
+                t.bg,
+                active === p.key && `ring-2 ${t.ring} border-transparent`,
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div className={cn("grid place-items-center h-8 w-8 rounded-xl", t.icon)}>
+                  <p.icon className="h-4 w-4" />
+                </div>
+                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-foreground transition" />
+              </div>
+              <p className="mt-3 text-[11px] uppercase tracking-wide text-muted-foreground">{p.label}</p>
+              <p className={cn("mt-1 text-2xl font-semibold tabular-nums", t.number)}>
+                {p.value.toLocaleString()}
+              </p>
+              <div className="mt-2 h-1 rounded-full bg-muted/60 overflow-hidden">
+                <div className={cn("h-full rounded-full transition-all", t.bar)} style={{ width: `${Math.max(pct, 4)}%` }} />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────── Section Header ─────────────────────── */
+
+function SectionHeader({
+  icon: Icon, tone = "primary", title, subtitle, right,
+}: {
+  icon: any;
+  tone?: "primary" | "sky" | "amber" | "rose" | "violet" | "indigo" | "emerald";
+  title: string;
+  subtitle?: string;
+  right?: React.ReactNode;
+}) {
+  const tones: Record<string, string> = {
+    primary: "bg-primary/10 text-primary",
+    sky:     "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+    amber:   "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+    rose:    "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+    violet:  "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+    indigo:  "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
+    emerald: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  };
+  return (
+    <div className="flex items-end justify-between gap-3 mb-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={cn("grid place-items-center h-9 w-9 rounded-xl shrink-0", tones[tone])}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold tracking-tight leading-tight">{title}</h2>
+          {subtitle && <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>}
+        </div>
+      </div>
+      {right && <div className="shrink-0">{right}</div>}
+    </div>
+  );
+}
+
+/* ─────────────────────── Intake Charts ─────────────────────── */
+
+function IntakeCharts({
+  leads, onFilter, onStage,
+}: { leads: Lead[]; onFilter: (key: string) => void; onStage: (key: string) => void }) {
+  // Funnel-by-stage bar chart (clickable → stage filter)
+  const funnel = useMemo(
+    () => READINESS_STAGES.map((s) => ({
+      stage: s.label,
+      key: s.key,
+      count: leads.filter(s.match).length,
+    })),
+    [leads],
+  );
+
+  // Stage aging stacked bar (Fresh / Waiting / Overdue per readiness stage)
+  const aging = useMemo(
+    () => READINESS_STAGES.slice(0, 6).map((s) => {
+      const items = leads.filter(s.match);
+      return {
+        stage: s.label.split(" ").slice(0, 2).join(" "),
+        key: s.key,
+        Fresh: items.filter((l) => (l.daysInStage ?? 0) <= 1).length,
+        Waiting: items.filter((l) => (l.daysInStage ?? 0) > 1 && (l.daysInStage ?? 0) < 7).length,
+        Overdue: items.filter((l) => (l.daysInStage ?? 0) >= 7).length,
+      };
+    }),
+    [leads],
+  );
+
+  // Source mix donut → drill to filter where possible
+  const sources = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const l of leads) {
+      const src = (l.source || "Unknown").trim() || "Unknown";
+      counts.set(src, (counts.get(src) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([name, value]) => ({ name, value }));
+  }, [leads]);
+
+  const PIE_COLORS = [
+    "hsl(265 70% 55%)", "hsl(195 80% 50%)", "hsl(150 65% 45%)",
+    "hsl(30 90% 55%)", "hsl(340 75% 55%)", "hsl(220 70% 55%)",
+  ];
+
+  const maxFunnel = Math.max(...funnel.map((f) => f.count), 1);
+
+  return (
+    <section>
+      <SectionHeader
+        icon={TrendingUp}
+        tone="indigo"
+        title="Pipeline Insights"
+        subtitle="Click any bar or slice to drill into the matching families."
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* Funnel */}
+        <article className="rounded-2xl border border-border/70 bg-card p-4">
+          <div className="flex items-baseline justify-between mb-2">
+            <p className="text-sm font-medium">Readiness Funnel</p>
+            <p className="text-[11px] text-muted-foreground">Families per stage</p>
+          </div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={funnel} layout="vertical" margin={{ top: 4, right: 12, left: 4, bottom: 0 }}>
+                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 10 }} allowDecimals={false} />
+                <YAxis
+                  type="category"
+                  dataKey="stage"
+                  width={130}
+                  tick={{ fontSize: 10 }}
+                  interval={0}
+                />
+                <Tooltip
+                  wrapperStyle={{ fontSize: 12 }}
+                  cursor={{ fill: "hsl(var(--muted) / 0.6)" }}
+                />
+                <Bar
+                  dataKey="count"
+                  radius={[0, 6, 6, 0]}
+                  onClick={(d: any) => d?.key && onStage(d.key)}
+                  className="cursor-pointer"
+                >
+                  {funnel.map((f, i) => (
+                    <Cell
+                      key={i}
+                      fill={`hsl(${230 + i * 8} 70% ${50 + (f.count === maxFunnel ? 0 : 6)}%)`}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+
+        {/* Aging stacked */}
+        <article className="rounded-2xl border border-border/70 bg-card p-4">
+          <div className="flex items-baseline justify-between mb-2">
+            <p className="text-sm font-medium">Stage Aging</p>
+            <p className="text-[11px] text-muted-foreground">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 mr-1" />Fresh
+              <span className="inline-block h-2 w-2 rounded-full bg-amber-500 ml-2 mr-1" />Waiting
+              <span className="inline-block h-2 w-2 rounded-full bg-rose-500 ml-2 mr-1" />Overdue
+            </p>
+          </div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={aging} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="stage" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={50} />
+                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} width={28} />
+                <Tooltip wrapperStyle={{ fontSize: 12 }} cursor={{ fill: "hsl(var(--muted) / 0.6)" }} />
+                <Bar dataKey="Fresh"   stackId="a" fill="hsl(150 65% 45%)" radius={[0, 0, 0, 0]} onClick={(d: any) => d?.key && onStage(d.key)} className="cursor-pointer" />
+                <Bar dataKey="Waiting" stackId="a" fill="hsl(40 90% 55%)"  onClick={(d: any) => d?.key && onStage(d.key)} className="cursor-pointer" />
+                <Bar dataKey="Overdue" stackId="a" fill="hsl(355 75% 55%)" radius={[6, 6, 0, 0]} onClick={(d: any) => d?.key && onStage(d.key)} className="cursor-pointer" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+
+        {/* Source mix */}
+        <article className="rounded-2xl border border-border/70 bg-card p-4">
+          <div className="flex items-baseline justify-between mb-2">
+            <p className="text-sm font-medium">Source Mix</p>
+            <p className="text-[11px] text-muted-foreground">Top 6 attribution sources</p>
+          </div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={sources}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={48}
+                  outerRadius={84}
+                  paddingAngle={2}
+                  onClick={() => onFilter("new_inquiries")}
+                  className="cursor-pointer"
+                >
+                  {sources.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                </Pie>
+                <Tooltip wrapperStyle={{ fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+            {sources.map((s, i) => (
+              <div key={s.name} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <span className="inline-block h-2 w-2 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                <span className="truncate max-w-[100px]">{s.name}</span>
+                <span className="tabular-nums text-foreground/80">{s.value}</span>
+              </div>
+            ))}
+          </div>
+        </article>
       </div>
     </section>
   );
@@ -361,28 +599,54 @@ function FamiliesNeedingAction({
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">Families Needing Action</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Active blockers keeping families from service readiness.</p>
-        </div>
-        <span className="text-xs text-muted-foreground tabular-nums">{actionable.length} surfaced</span>
-      </div>
+      <SectionHeader
+        icon={AlertTriangle}
+        tone="rose"
+        title="Action Required"
+        subtitle="Active blockers keeping families from service readiness."
+        right={
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 h-7 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 tabular-nums">
+            <BellRing className="h-3 w-3" /> {actionable.length} need attention
+          </span>
+        }
+      />
 
       {actionable.length === 0 ? (
         <EmptyTile message="All caught up. No families are currently blocked." />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {actionable.map(({ lead, blocker, urgency }) => (
             <article
               key={lead.id}
-              className="group rounded-2xl border border-border/70 bg-card p-5 hover:border-border hover:-translate-y-0.5 transition-all duration-300"
+              className={cn(
+                "group relative overflow-hidden rounded-2xl border bg-card p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md",
+                urgency === "high"   && "border-rose-500/30 bg-rose-500/[0.03]",
+                urgency === "medium" && "border-amber-500/30 bg-amber-500/[0.03]",
+                urgency === "low"    && "border-emerald-500/30 bg-emerald-500/[0.03]",
+              )}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div
+                className={cn(
+                  "absolute left-0 top-0 bottom-0 w-1",
+                  urgency === "high"   && "bg-rose-500",
+                  urgency === "medium" && "bg-amber-500",
+                  urgency === "low"    && "bg-emerald-500",
+                )}
+              />
+              <div className="flex items-start justify-between gap-3 pl-2">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    {urgencyDot(urgency)}
-                    <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 h-5 rounded-full",
+                        urgency === "high"   && "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+                        urgency === "medium" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                        urgency === "low"    && "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+                      )}
+                    >
+                      {urgency}
+                    </span>
+                    <span className="text-[11px] uppercase tracking-wide text-muted-foreground truncate">
                       {blocker?.label}
                     </span>
                   </div>
@@ -398,15 +662,20 @@ function FamiliesNeedingAction({
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-[11px] text-muted-foreground">Days waiting</p>
-                  <p className="text-lg font-semibold tabular-nums">{lead.daysInStage ?? 0}</p>
+                  <p className={cn(
+                    "text-2xl font-semibold tabular-nums leading-none mt-0.5",
+                    urgency === "high"   && "text-rose-600 dark:text-rose-400",
+                    urgency === "medium" && "text-amber-600 dark:text-amber-400",
+                    urgency === "low"    && "text-emerald-600 dark:text-emerald-400",
+                  )}>{lead.daysInStage ?? 0}</p>
                 </div>
               </div>
 
-              <div className="mt-3 rounded-xl bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+              <div className="mt-3 ml-2 rounded-xl bg-background/60 border border-border/60 px-3 py-2 text-xs text-muted-foreground">
                 {blocker?.reason} · Stage: <span className="text-foreground">{lead.status}</span>
               </div>
 
-              <div className="mt-4 flex flex-wrap items-center gap-1">
+              <div className="mt-4 ml-2 flex flex-wrap items-center gap-1">
                 <QuickAction icon={Phone} label="Call Parent" onClick={() => { void import("@/lib/integrations/communications/communicationAdapters").then(async (m) => m.notifyCommunicationResult(await m.callParent({ leadId: lead.id, phone: lead.phone, email: lead.email, parentName: lead.parentName, childName: lead.childName, state: lead.state }))); }} disabled={!lead.phone} />
                 <QuickAction icon={MessageSquare} label="Text" onClick={() => modals.open({ kind: "comm", channel: "text", lead })} />
                 <QuickAction icon={Mail} label="Email" onClick={() => modals.open({ kind: "comm", channel: "email", lead })} disabled={!lead.email} />
@@ -478,9 +747,12 @@ function DailyFollowUps({
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-xl font-semibold tracking-tight">Daily Follow-Ups</h2>
-      </div>
+      <SectionHeader
+        icon={CalendarClock}
+        tone="amber"
+        title="Daily Follow-Ups"
+        subtitle="Today's queues, by what's due."
+      />
 
       <div className="rounded-2xl border border-border/70 bg-card overflow-hidden">
         <div className="flex items-center gap-1 px-3 py-2 overflow-x-auto border-b border-border/60">
@@ -569,10 +841,13 @@ function AssessmentCoordination({ leads, onOpen }: { leads: Lead[]; onOpen: (id:
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-xl font-semibold tracking-tight">Assessment Coordination</h2>
-        <span className="text-xs text-muted-foreground">{total} families</span>
-      </div>
+      <SectionHeader
+        icon={Stethoscope}
+        tone="indigo"
+        title="Assessment Coordination"
+        subtitle="Diagnostic and assessment scheduling pipeline."
+        right={<span className="text-xs text-muted-foreground tabular-nums">{total} families</span>}
+      />
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {columns.map((col) => (
           <div key={col.key} className="rounded-2xl border border-border/70 bg-card p-4">
@@ -636,10 +911,12 @@ function MissingInfoCenter({
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-xl font-semibold tracking-tight">Missing Information Center</h2>
-        <p className="text-sm text-muted-foreground">What's preventing readiness</p>
-      </div>
+      <SectionHeader
+        icon={FileWarning}
+        tone="rose"
+        title="Missing Information Center"
+        subtitle="What's preventing readiness — tap a tile to drill in."
+      />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {tiles.map((t) => (
           <div
@@ -709,10 +986,12 @@ function ServiceReadinessPipeline({
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-xl font-semibold tracking-tight">Service Readiness Pipeline</h2>
-        <p className="text-sm text-muted-foreground">Operational progression from inquiry to staffing</p>
-      </div>
+      <SectionHeader
+        icon={TrendingUp}
+        tone="violet"
+        title="Service Readiness Pipeline"
+        subtitle="Operational progression from inquiry to staffing."
+      />
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
         {stages.map((s, i) => (
           <button
@@ -784,10 +1063,12 @@ function RecentActivityFeed({ leads, onOpen }: { leads: Lead[]; onOpen: (id: str
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-xl font-semibold tracking-tight">Recent Activity</h2>
-        <p className="text-sm text-muted-foreground">Latest intake communication</p>
-      </div>
+      <SectionHeader
+        icon={Activity}
+        tone="sky"
+        title="Recent Activity"
+        subtitle="Latest intake communication and updates."
+      />
       <div className="rounded-2xl border border-border/70 bg-card divide-y divide-border/50">
         {loading ? (
           <div className="p-10 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" /></div>
