@@ -370,7 +370,7 @@ export default function IntakeDashboard() {
                     <div className="min-w-0">
                       <LeadNameLink leadId={lead.id} className="font-semibold hover:underline truncate block">
                         {lead.childName}
-                      </Link>
+                      </LeadNameLink>
                       <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
                         {lead.status} · {lead.owner || "Unassigned"}
                       </p>
@@ -417,7 +417,7 @@ export default function IntakeDashboard() {
             {handoffReady.map((lead) => (
               <article key={lead.id} className={cn("rounded-2xl border border-border/70 p-4", TONE.emerald.bg)}>
                 <div className="flex items-start justify-between gap-2">
-                  <LeadNameLink leadId={lead.id} className="font-semibold hover:underline truncate">{lead.childName}</Link>
+                  <LeadNameLink leadId={lead.id} className="font-semibold hover:underline truncate">{lead.childName}</LeadNameLink>
                   <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-transparent">
                     <HeartHandshake className="h-3 w-3 mr-1" /> Ready
                   </Badge>

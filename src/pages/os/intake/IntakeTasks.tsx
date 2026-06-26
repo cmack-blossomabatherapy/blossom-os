@@ -59,7 +59,7 @@ function TaskCard({ row, onComplete, onSnooze, onReassign }: {
         <div className="min-w-0">
           <div className="font-medium text-sm truncate">{row.task.title}</div>
           <div className="text-xs text-muted-foreground mt-0.5">
-            <LeadNameLink leadId={leadId} className="hover:underline">{leadName}</Link>
+            <LeadNameLink leadId={leadId} className="hover:underline">{leadName}</LeadNameLink>
             {row.task.task_type && <span> · {row.task.task_type}</span>}
           </div>
         </div>
@@ -77,7 +77,7 @@ function TaskCard({ row, onComplete, onSnooze, onReassign }: {
         <Button size="sm" variant="ghost" onClick={wrap("Snoozed", () => onSnooze(row.task.id))}>Snooze</Button>
         <Button size="sm" variant="ghost" onClick={reassign}>Reassign</Button>
         <Button asChild size="sm" variant="ghost">
-          <LeadNameLink leadId={leadId}><ExternalLink className="h-3 w-3 mr-1" /> Lead</Link>
+          <LeadNameLink leadId={leadId}><ExternalLink className="h-3 w-3 mr-1" /> Lead</LeadNameLink>
         </Button>
       </div>
     </div>

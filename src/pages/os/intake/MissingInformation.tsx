@@ -53,7 +53,7 @@ export default function MissingInformation() {
                   <div className="min-w-0">
                     <LeadNameLink leadId={lead.id} className="font-semibold hover:underline truncate block">
                       {lead.childName}
-                    </Link>
+                    </LeadNameLink>
                     <div className="text-xs text-muted-foreground mt-0.5">{lead.parentName}</div>
                   </div>
                   <Badge variant="outline" className="shrink-0">{lead.status}</Badge>

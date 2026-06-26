@@ -100,7 +100,7 @@ export default function LeadToActivePipeline() {
                   <div className="mt-3 space-y-1.5">
                     {items.slice(0, 6).map((l) => (
                       <div key={l.id} className="rounded-md border border-border/60 bg-background/60 px-2 py-1.5 text-xs">
-                        <LeadNameLink leadId={l.id} className="font-medium truncate block hover:underline">{l.childName}</Link>
+                        <LeadNameLink leadId={l.id} className="font-medium truncate block hover:underline">{l.childName}</LeadNameLink>
                         <div className="text-[10px] text-muted-foreground truncate">{l.owner || "Unassigned"} · {l.state}</div>
                         {(() => {
                           const risk = getLeadWorkflowRisk(l);

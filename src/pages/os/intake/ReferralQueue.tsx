@@ -166,7 +166,7 @@ export default function ReferralQueue() {
                   <div className="min-w-0">
                     <LeadNameLink leadId={lead.id} className="font-semibold text-foreground hover:underline truncate block">
                       {lead.childName}
-                    </Link>
+                    </LeadNameLink>
                     <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                       <User className="h-3 w-3" /> {lead.parentName || "—"}
                     </div>
