@@ -44,21 +44,25 @@ export interface PageAction {
 }
 
 export function GrowthPageShell({
-  eyebrow, title, description, actions, children,
+  eyebrow, title, description, actions, headerRight, children,
 }: {
   eyebrow: string;
   title: string;
   description: string;
   actions?: PageAction[];
+  headerRight?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <OSShell>
       <div className="px-6 lg:px-10 py-8 max-w-[1400px] mx-auto space-y-8">
         <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
+          <div className="min-w-0">
             <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">{eyebrow}</div>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
+              {headerRight}
+            </div>
             <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl">{description}</p>
           </div>
           {actions && actions.length > 0 && (
