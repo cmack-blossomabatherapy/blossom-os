@@ -5,7 +5,7 @@ import {
   ClipboardList, TrendingUp, MessageSquare, AlertCircle, ShieldCheck, Plus,
   ArrowRightLeft, Flame, Users, MapPin, Signal, Clock, HeartHandshake, List,
   Inbox, ArrowUpRight, Zap, BarChart3, HeartPulse, PieChart as PieIcon,
-  AlertTriangle,
+  AlertTriangle, Phone, Mail, Send,
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -14,10 +14,17 @@ import {
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
 import { cn } from "@/lib/utils";
+import {
+  callParent,
+  sendLeadEmail,
+  sendLeadSms,
+  notifyCommunicationResult,
+} from "@/lib/integrations/communications/communicationAdapters";
 import {
   getLeadWorkflowRisk,
   isReadyToStartStage,
