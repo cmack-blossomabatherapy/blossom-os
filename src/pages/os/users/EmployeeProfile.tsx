@@ -1977,6 +1977,7 @@ function PermissionsTab({ m }: { m: DirectoryEmployee }) {
   const navigate = useNavigate();
   return (
     <div className="space-y-6">
+      <HatsSection employeeId={m.id} userId={m.uuid ?? null} />
       <Card>
         <div className="grid grid-cols-2 gap-x-8 gap-y-5 md:grid-cols-3">
           <Field label="Role" value={m.title} />
