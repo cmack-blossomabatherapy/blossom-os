@@ -575,6 +575,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <LeadsProvider>
+            <LeadDrawerProvider>
             <ClientsProvider>
               <JourneyOverridesProvider>
                 <PhoneSystemProvider>
@@ -1093,6 +1094,7 @@ const App = () => (
                 </PhoneSystemProvider>
               </JourneyOverridesProvider>
             </ClientsProvider>
+            </LeadDrawerProvider>
           </LeadsProvider>
         </AuthProvider>
       </BrowserRouter>
