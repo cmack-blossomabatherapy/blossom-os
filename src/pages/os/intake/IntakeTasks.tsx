@@ -187,7 +187,7 @@ export default function IntakeTasks() {
                     <th className="px-3 py-2 w-32">Type</th>
                     <th className="px-3 py-2 w-28"><SortBtn k="due">Due</SortBtn></th>
                     <th className="px-3 py-2 w-36"><SortBtn k="owner">Owner</SortBtn></th>
-                    <th className="px-3 py-2 w-[220px] text-right">Actions</th>
+                    <th className="px-3 py-2 w-[300px] text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
