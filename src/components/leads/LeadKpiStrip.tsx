@@ -24,7 +24,7 @@ export function LeadKpiStrip({ leads, activeKpi, onKpiClick }: LeadKpiStripProps
   ];
 
   return (
-    <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2.5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-3">
       {cards.map(({ key, label, value, icon: Icon, tone, clickable }) => {
         const isActive = clickable && activeKpi === key;
         return (
@@ -33,19 +33,21 @@ export function LeadKpiStrip({ leads, activeKpi, onKpiClick }: LeadKpiStripProps
             disabled={!clickable}
             onClick={() => clickable && onKpiClick(key as KpiKey)}
             className={cn(
-              "group bg-card rounded-xl border text-left p-3 transition-all",
-              clickable ? "hover:shadow-md hover:border-primary/40 cursor-pointer" : "cursor-default opacity-90",
-              isActive ? "border-primary bg-primary/5 shadow-sm" : "border-border/60",
+              "group relative bg-card rounded-2xl border text-left p-3.5 transition-all overflow-hidden",
+              clickable
+                ? "hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40 cursor-pointer"
+                : "cursor-default opacity-90",
+              isActive ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/30" : "border-border/60",
             )}
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center", tone)}>
-                <Icon className="h-3.5 w-3.5" />
+            <div className="flex items-center justify-between mb-2.5">
+              <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center shrink-0", tone)}>
+                <Icon className="h-4 w-4" strokeWidth={1.75} />
               </div>
-              {isActive && <span className="text-[9px] font-semibold text-primary uppercase tracking-wider">Active</span>}
+              {isActive && <span className="text-[9px] font-semibold text-primary uppercase tracking-wider">On</span>}
             </div>
-            <p className="text-xl font-semibold text-foreground leading-none">{value}</p>
-            <p className="text-[10px] text-muted-foreground mt-1.5 leading-tight">{label}</p>
+            <p className="text-2xl font-semibold tracking-tight text-foreground leading-none tabular-nums">{value}</p>
+            <p className="text-[11px] text-muted-foreground mt-2 leading-snug line-clamp-2">{label}</p>
           </button>
         );
       })}
