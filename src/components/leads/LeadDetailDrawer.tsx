@@ -786,3 +786,53 @@ function DocumentRequestsBlock({
     </div>
   );
 }
+
+function PipelineProgress({ status }: { status: string }) {
+  const canonical = canonicalFamilyLeadStage(status);
+  const stages = FAMILY_LEAD_PIPELINE_STAGES;
+  const currentIdx = stages.indexOf(canonical as typeof stages[number]);
+  const total = stages.length;
+  const pct = currentIdx < 0 ? 0 : ((currentIdx + 1) / total) * 100;
+  return (
+    <div className="mt-4 rounded-xl border border-border/60 bg-muted/40 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+          Pipeline progress
+        </span>
+        <span className="text-[11px] font-medium text-foreground">
+          {currentIdx < 0 ? "Off-pipeline" : `${currentIdx + 1} of ${total} · ${canonical}`}
+        </span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full bg-primary transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="mt-2 flex items-center gap-1">
+        {stages.map((s, i) => {
+          const state =
+            currentIdx < 0
+              ? "future"
+              : i < currentIdx
+              ? "done"
+              : i === currentIdx
+              ? "current"
+              : "future";
+          return (
+            <div
+              key={s}
+              title={s}
+              className={cn(
+                "flex-1 h-1 rounded-full transition-colors",
+                state === "done" && "bg-primary/70",
+                state === "current" && "bg-primary ring-2 ring-primary/30",
+                state === "future" && "bg-muted-foreground/20",
+              )}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
