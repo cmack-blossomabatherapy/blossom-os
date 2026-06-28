@@ -872,6 +872,15 @@ export function AppSidebar({
             </p>
           )}
 
+          {showAskBlossom && (
+            <div className="pt-2">
+              <AskBlossomCard
+                variant="desktop"
+                onNavigate={() => navigate("/ask-blossom")}
+              />
+            </div>
+          )}
+
           {isAdmin && (
             <div className="pt-2">
               {impersonating ? (
