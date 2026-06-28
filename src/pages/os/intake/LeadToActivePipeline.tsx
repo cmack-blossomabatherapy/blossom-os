@@ -35,6 +35,7 @@ const STAGE_TONES: (keyof typeof INTAKE_TONE)[] = ["sky", "indigo", "violet", "a
 export default function LeadToActivePipeline() {
   const { leads: allLeads, loading, moveStage, revertStage } = useLeads();
   const { matches } = useIntakeStateFilter();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const leads = useMemo(() => allLeads.filter((l) => matches(l.state)), [allLeads, matches]);
   const [addOpen, setAddOpen] = useState(false);
   const [actionLead, setActionLead] = useState<Lead | null>(null);
