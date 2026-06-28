@@ -25,6 +25,76 @@ import {
   FAMILY_LEAD_PIPELINE_STAGES,
   canonicalFamilyLeadStage,
 } from "@/lib/intake/intakeWorkflow";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check } from "lucide-react";
+
+const STAGE_DETAILS: Record<string, { what: string; involves: string[]; owner: string }> = {
+  "Lead Captured": {
+    what: "Inquiry received from a parent, referral source, or marketing channel.",
+    involves: ["Source attribution logged", "Auto-assigned to intake coordinator", "Welcome SMS/email queued"],
+    owner: "Intake Coordinator",
+  },
+  "First Contact Attempt": {
+    what: "Initial outreach within the SLA (call + email + SMS).",
+    involves: ["First call attempt", "Voicemail + follow-up text", "Logged in activity timeline"],
+    owner: "Intake Coordinator",
+  },
+  "Engagement Track": {
+    what: "Family is responsive; nurturing toward qualification.",
+    involves: ["Discovery conversation", "Cadenced touchpoints", "Education on ABA process"],
+    owner: "Intake Coordinator",
+  },
+  "Qualification": {
+    what: "Confirm diagnosis, insurance, and service area fit.",
+    involves: ["Diagnosis confirmation", "Insurance captured", "State / region eligibility"],
+    owner: "Intake Coordinator",
+  },
+  "Intake Packet Sent": {
+    what: "Digital intake packet delivered to the family.",
+    involves: ["Packet emailed", "Reminders scheduled", "Tracking link active"],
+    owner: "Intake Coordinator",
+  },
+  "Intake Packet Follow Up": {
+    what: "Chasing missing documents or signatures.",
+    involves: ["Daily follow-up cadence", "Document checklist review", "Escalation if stalled 5+ days"],
+    owner: "Intake Coordinator",
+  },
+  "Intake Complete": {
+    what: "All required intake documents collected and verified.",
+    involves: ["Packet QA review", "Hand-off to Benefits Verification", "Family notified"],
+    owner: "Intake Coordinator",
+  },
+  "Benefits Verification": {
+    what: "Insurance benefits verified and summarized for the family.",
+    involves: ["VOB submitted via Solum", "Benefit summary built", "Financial responsibility communicated"],
+    owner: "Benefits Team",
+  },
+  "Assessment Scheduling": {
+    what: "Initial assessment booked with a BCBA.",
+    involves: ["BCBA matched", "Family availability confirmed", "Assessment on calendar"],
+    owner: "Scheduling Team",
+  },
+  "QA / Treatment Plan Authorization": {
+    what: "Assessment complete; treatment plan in QA before submission.",
+    involves: ["BCBA writes treatment plan", "QA review", "Plan ready for auth submission"],
+    owner: "QA / Authorization",
+  },
+  "Authorization Pending": {
+    what: "Treatment plan submitted to payer; awaiting authorization.",
+    involves: ["Auth submitted", "Payer follow-up cadence", "Auth window tracked"],
+    owner: "Authorization Team",
+  },
+  "Staffing Match": {
+    what: "Authorization received; matching RBT(s) to the client.",
+    involves: ["RBT match by availability + skill", "Family availability confirmed", "Schedule drafted"],
+    owner: "Staffing Team",
+  },
+  "Ready to Start Services": {
+    what: "Client fully onboarded and ready for first session.",
+    involves: ["Start date confirmed", "Welcome packet sent", "Hand-off to clinical team"],
+    owner: "Clinical Operations",
+  },
+};
 
 type Tab = "overview" | "insurance" | "documents" | "activity" | "actions";
 
@@ -792,7 +862,6 @@ function PipelineProgress({ status }: { status: string }) {
   const stages = FAMILY_LEAD_PIPELINE_STAGES;
   const currentIdx = stages.indexOf(canonical as typeof stages[number]);
   const total = stages.length;
-  const pct = currentIdx < 0 ? 0 : ((currentIdx + 1) / total) * 100;
   return (
     <div className="mt-4 rounded-xl border border-border/60 bg-muted/40 p-3">
       <div className="flex items-center justify-between mb-2">
@@ -803,13 +872,7 @@ function PipelineProgress({ status }: { status: string }) {
           {currentIdx < 0 ? "Off-pipeline" : `${currentIdx + 1} of ${total} · ${canonical}`}
         </span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-        <div
-          className="h-full bg-primary transition-all"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <div className="mt-2 flex items-center gap-1">
+      <div className="flex items-center gap-1">
         {stages.map((s, i) => {
           const state =
             currentIdx < 0
@@ -819,17 +882,64 @@ function PipelineProgress({ status }: { status: string }) {
               : i === currentIdx
               ? "current"
               : "future";
+          const details = STAGE_DETAILS[s];
           return (
-            <div
-              key={s}
-              title={s}
-              className={cn(
-                "flex-1 h-1 rounded-full transition-colors",
-                state === "done" && "bg-primary/70",
-                state === "current" && "bg-primary ring-2 ring-primary/30",
-                state === "future" && "bg-muted-foreground/20",
-              )}
-            />
+            <Popover key={s}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Stage ${i + 1}: ${s}`}
+                  className={cn(
+                    "flex-1 h-2 rounded-full transition-all cursor-pointer hover:h-3 focus:outline-none focus:ring-2 focus:ring-primary/40",
+                    state === "done" && "bg-primary/70 hover:bg-primary",
+                    state === "current" && "bg-primary ring-2 ring-primary/30",
+                    state === "future" && "bg-muted-foreground/20 hover:bg-muted-foreground/40",
+                  )}
+                />
+              </PopoverTrigger>
+              <PopoverContent side="top" align="center" className="w-72 p-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+                    Step {i + 1} of {total}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
+                      state === "done" && "bg-primary/15 text-primary",
+                      state === "current" && "bg-primary text-primary-foreground",
+                      state === "future" && "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {state === "done" ? "Completed" : state === "current" ? "In progress" : "Upcoming"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  {state === "done" && <Check className="h-3.5 w-3.5 text-primary" />}
+                  <h4 className="text-sm font-semibold text-foreground">{s}</h4>
+                </div>
+                {details ? (
+                  <>
+                    <p className="text-xs text-muted-foreground mb-2">{details.what}</p>
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
+                      What's involved
+                    </p>
+                    <ul className="space-y-1 mb-2">
+                      {details.involves.map((it) => (
+                        <li key={it} className="flex items-start gap-1.5 text-xs text-foreground">
+                          <span className="mt-1 h-1 w-1 rounded-full bg-primary/60 shrink-0" />
+                          <span>{it}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-[11px] text-muted-foreground">
+                      <span className="font-medium text-foreground">Owner:</span> {details.owner}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No detail available.</p>
+                )}
+              </PopoverContent>
+            </Popover>
           );
         })}
       </div>
