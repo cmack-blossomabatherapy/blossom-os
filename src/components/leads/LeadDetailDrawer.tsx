@@ -862,7 +862,6 @@ function PipelineProgress({ status }: { status: string }) {
   const stages = FAMILY_LEAD_PIPELINE_STAGES;
   const currentIdx = stages.indexOf(canonical as typeof stages[number]);
   const total = stages.length;
-  const pct = currentIdx < 0 ? 0 : ((currentIdx + 1) / total) * 100;
   return (
     <div className="mt-4 rounded-xl border border-border/60 bg-muted/40 p-3">
       <div className="flex items-center justify-between mb-2">
@@ -873,13 +872,7 @@ function PipelineProgress({ status }: { status: string }) {
           {currentIdx < 0 ? "Off-pipeline" : `${currentIdx + 1} of ${total} · ${canonical}`}
         </span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-        <div
-          className="h-full bg-primary transition-all"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <div className="mt-2 flex items-center gap-1">
+      <div className="flex items-center gap-1">
         {stages.map((s, i) => {
           const state =
             currentIdx < 0
@@ -889,17 +882,64 @@ function PipelineProgress({ status }: { status: string }) {
               : i === currentIdx
               ? "current"
               : "future";
+          const details = STAGE_DETAILS[s];
           return (
-            <div
-              key={s}
-              title={s}
-              className={cn(
-                "flex-1 h-1 rounded-full transition-colors",
-                state === "done" && "bg-primary/70",
-                state === "current" && "bg-primary ring-2 ring-primary/30",
-                state === "future" && "bg-muted-foreground/20",
-              )}
-            />
+            <Popover key={s}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Stage ${i + 1}: ${s}`}
+                  className={cn(
+                    "flex-1 h-2 rounded-full transition-all cursor-pointer hover:h-3 focus:outline-none focus:ring-2 focus:ring-primary/40",
+                    state === "done" && "bg-primary/70 hover:bg-primary",
+                    state === "current" && "bg-primary ring-2 ring-primary/30",
+                    state === "future" && "bg-muted-foreground/20 hover:bg-muted-foreground/40",
+                  )}
+                />
+              </PopoverTrigger>
+              <PopoverContent side="top" align="center" className="w-72 p-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+                    Step {i + 1} of {total}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
+                      state === "done" && "bg-primary/15 text-primary",
+                      state === "current" && "bg-primary text-primary-foreground",
+                      state === "future" && "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {state === "done" ? "Completed" : state === "current" ? "In progress" : "Upcoming"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  {state === "done" && <Check className="h-3.5 w-3.5 text-primary" />}
+                  <h4 className="text-sm font-semibold text-foreground">{s}</h4>
+                </div>
+                {details ? (
+                  <>
+                    <p className="text-xs text-muted-foreground mb-2">{details.what}</p>
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
+                      What's involved
+                    </p>
+                    <ul className="space-y-1 mb-2">
+                      {details.involves.map((it) => (
+                        <li key={it} className="flex items-start gap-1.5 text-xs text-foreground">
+                          <span className="mt-1 h-1 w-1 rounded-full bg-primary/60 shrink-0" />
+                          <span>{it}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-[11px] text-muted-foreground">
+                      <span className="font-medium text-foreground">Owner:</span> {details.owner}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No detail available.</p>
+                )}
+              </PopoverContent>
+            </Popover>
           );
         })}
       </div>
