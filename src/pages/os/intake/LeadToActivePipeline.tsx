@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import { TrendingUp, Plus, Ban, List, Workflow, Flame, Sparkles, AlertTriangle, ArrowRightLeft, GripVertical, MoreHorizontal } from "lucide-react";
@@ -25,6 +25,7 @@ import {
   type FamilyLeadPipelineStage,
 } from "@/lib/intake/intakeWorkflow";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
+import { PipelinePanRail } from "@/components/intake/PipelinePanRail";
 
 const STAGES: readonly FamilyLeadPipelineStage[] = FAMILY_LEAD_PIPELINE_STAGES;
 
@@ -143,7 +144,7 @@ export default function LeadToActivePipeline() {
 
       <section>
         <IntakeSectionHeader icon={Workflow} tone="violet" title="Pipeline stages" subtitle="Drag a card between columns to move stages. Click Actions for more options." />
-        <div className="overflow-x-auto -mx-2 px-2">
+        <PipelineDragSection>
           <div className="flex items-stretch gap-3 min-w-max pb-2">
             {STAGES.map((stage, i) => {
               const items = byStage.get(stage) ?? [];
