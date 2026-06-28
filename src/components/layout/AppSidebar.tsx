@@ -8,7 +8,7 @@ import {
   Plug, Briefcase, Building2, IdCard, KeyRound, Smartphone, Stethoscope,
   AlertTriangle, BarChart3, ClipboardList, ListTodo, MapPin, XCircle, CheckCircle2,
   PhoneCall, BookUser, Activity, Workflow as WorkflowIcon, Inbox, Bug,
-  Mail,
+  Mail, Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,80 @@ interface NavSection {
   items: NavItem[];
   /** When true, section is collapsed by default. */
   defaultCollapsed?: boolean;
+}
+
+/**
+ * Standout "Ask Blossom AI" pinned card. Rendered at the very bottom of the
+ * navigation for roles that have the AI enabled (currently Intake + admins
+ * previewing Intake). Designed to feel premium and inviting — gradient,
+ * sparkle iconography, and a clear "Here's how I help" sub-line.
+ */
+function AskBlossomCard({
+  variant,
+  onNavigate,
+}: {
+  variant: "desktop" | "mobile";
+  onNavigate: () => void;
+}) {
+  const isMobile = variant === "mobile";
+  return (
+    <button
+      type="button"
+      onClick={onNavigate}
+      className={cn(
+        "group relative block w-full overflow-hidden rounded-2xl p-[1.5px] text-left transition-all",
+        "bg-[linear-gradient(135deg,hsl(265_90%_70%)_0%,hsl(290_85%_70%)_45%,hsl(320_85%_72%)_100%)]",
+        "shadow-[0_14px_38px_-18px_hsl(280_85%_55%/0.65)] hover:shadow-[0_18px_44px_-16px_hsl(280_85%_55%/0.8)]",
+        "hover:-translate-y-[1px] active:translate-y-0",
+      )}
+      aria-label="Open Ask Blossom AI"
+    >
+      <span
+        className={cn(
+          "relative block rounded-[14px] px-3.5 py-3",
+          isMobile ? "bg-background" : "bg-sidebar",
+        )}
+      >
+        {/* shimmer */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-[14px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{
+            background:
+              "radial-gradient(120% 80% at 100% 0%, hsl(280 90% 80% / 0.25), transparent 60%), radial-gradient(120% 80% at 0% 100%, hsl(320 90% 80% / 0.22), transparent 60%)",
+          }}
+        />
+        <span className="relative flex items-start gap-2.5">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,hsl(265_90%_65%),hsl(305_85%_68%))] text-white shadow-[0_8px_18px_-10px_hsl(280_85%_55%/0.7)] ring-1 ring-white/20">
+            <Sparkles className="h-4 w-4" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  "truncate text-[13px] font-semibold tracking-tight",
+                  isMobile ? "text-foreground" : "text-sidebar-foreground",
+                )}
+              >
+                Ask Blossom AI
+              </span>
+              <span className="rounded-full bg-[hsl(280_90%_60%/0.18)] px-1.5 py-[1px] text-[8.5px] font-bold uppercase tracking-wider text-[hsl(285_85%_75%)] ring-1 ring-[hsl(280_85%_70%/0.45)]">
+                New
+              </span>
+            </span>
+            <span
+              className={cn(
+                "mt-0.5 block text-[10.5px] leading-snug",
+                isMobile ? "text-muted-foreground" : "text-sidebar-foreground/70",
+              )}
+            >
+              Answers, scripts, benefits lookups, and next-best actions — for every lead.
+            </span>
+          </span>
+        </span>
+      </span>
+    </button>
+  );
 }
 
 const roleLabels: Record<string, string> = {
@@ -475,6 +549,15 @@ export function AppSidebar({
   const roleLabel = roles.map((r) => roleLabels[r]).find(Boolean) || "Team Member";
   void ROLE_HOME;
 
+  // Ask Blossom AI is currently launched for the Intake department only.
+  // Admins (and admins previewing intake) also get it for QA + testing.
+  const showAskBlossom =
+    isAdmin ||
+    osRole === "intake_coordinator" ||
+    osRole === "intake_lead" ||
+    roles.includes("intake") ||
+    roles.includes("intake_lead");
+
   return (
     <>
       {/* ---------- Mobile sheet ---------- */}
@@ -594,6 +677,17 @@ export function AppSidebar({
               <p className="mt-4 rounded-xl border border-dashed border-border/60 bg-card/60 p-4 text-center text-xs text-muted-foreground">
                 No menu matches.
               </p>
+            )}
+            {showAskBlossom && (
+              <div className="mt-4 px-1">
+                <AskBlossomCard
+                  variant="mobile"
+                  onNavigate={() => {
+                    onMobileOpenChange?.(false);
+                    navigate("/ask-blossom");
+                  }}
+                />
+              </div>
             )}
             {isAdmin && (
               <div className="mt-4 px-1">
@@ -776,6 +870,15 @@ export function AppSidebar({
             <p className="rounded-md border border-sidebar-border bg-sidebar-accent/40 px-3 py-2 text-[11px] text-sidebar-muted">
               No menu matches.
             </p>
+          )}
+
+          {showAskBlossom && (
+            <div className="pt-2">
+              <AskBlossomCard
+                variant="desktop"
+                onNavigate={() => navigate("/ask-blossom")}
+              />
+            </div>
           )}
 
           {isAdmin && (
