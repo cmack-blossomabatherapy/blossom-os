@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
-import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
+import { LeadActionsButton } from "@/components/intake/LeadActionsButton";
 import { getMissingInfoFlags, canonicalFamilyLeadStage } from "@/lib/intake/intakeWorkflow";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 
@@ -128,7 +128,7 @@ export default function MissingInformation() {
                     ) : null;
                   })()}
                   <div className="mt-3">
-                    <LeadActionPanel lead={lead} compact sourcePage="missing-information" />
+                    <LeadActionsButton lead={lead} sourcePage="missing-information" />
                   </div>
                 </div>
               );
