@@ -144,7 +144,7 @@ export default function LeadToActivePipeline() {
 
       <section>
         <IntakeSectionHeader icon={Workflow} tone="violet" title="Pipeline stages" subtitle="Drag a card between columns to move stages. Click Actions for more options." />
-        <PipelineDragSection>
+        <div ref={scrollRef} className="overflow-x-auto -mx-2 px-2">
           <div className="flex items-stretch gap-3 min-w-max pb-2">
             {STAGES.map((stage, i) => {
               const items = byStage.get(stage) ?? [];
@@ -282,6 +282,7 @@ export default function LeadToActivePipeline() {
             })}
           </div>
         </div>
+        <PipelinePanRail targetRef={scrollRef} className="mx-1" />
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-900 dark:text-emerald-100">
           <Ban className="h-3.5 w-3.5 shrink-0 mt-0.5 text-emerald-700 dark:text-emerald-300" aria-hidden="true" />
           <span>
