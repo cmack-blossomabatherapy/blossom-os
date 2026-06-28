@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import { TrendingUp, Plus, Ban, List, Workflow, Flame, Sparkles, AlertTriangle, ArrowRightLeft, GripVertical, MoreHorizontal } from "lucide-react";
@@ -25,6 +25,7 @@ import {
   type FamilyLeadPipelineStage,
 } from "@/lib/intake/intakeWorkflow";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
+import { PipelinePanRail } from "@/components/intake/PipelinePanRail";
 
 const STAGES: readonly FamilyLeadPipelineStage[] = FAMILY_LEAD_PIPELINE_STAGES;
 
@@ -34,6 +35,7 @@ const STAGE_TONES: (keyof typeof INTAKE_TONE)[] = ["sky", "indigo", "violet", "a
 export default function LeadToActivePipeline() {
   const { leads: allLeads, loading, moveStage, revertStage } = useLeads();
   const { matches } = useIntakeStateFilter();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const leads = useMemo(() => allLeads.filter((l) => matches(l.state)), [allLeads, matches]);
   const [addOpen, setAddOpen] = useState(false);
   const [actionLead, setActionLead] = useState<Lead | null>(null);
@@ -143,7 +145,7 @@ export default function LeadToActivePipeline() {
 
       <section>
         <IntakeSectionHeader icon={Workflow} tone="violet" title="Pipeline stages" subtitle="Drag a card between columns to move stages. Click Actions for more options." />
-        <div className="overflow-x-auto -mx-2 px-2">
+        <div ref={scrollRef} className="overflow-x-auto -mx-2 px-2">
           <div className="flex items-stretch gap-3 min-w-max pb-2">
             {STAGES.map((stage, i) => {
               const items = byStage.get(stage) ?? [];
@@ -281,6 +283,7 @@ export default function LeadToActivePipeline() {
             })}
           </div>
         </div>
+        <PipelinePanRail targetRef={scrollRef} className="mx-1" />
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-900 dark:text-emerald-100">
           <Ban className="h-3.5 w-3.5 shrink-0 mt-0.5 text-emerald-700 dark:text-emerald-300" aria-hidden="true" />
           <span>
