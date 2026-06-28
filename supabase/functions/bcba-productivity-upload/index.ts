@@ -25,6 +25,51 @@ function json(body: unknown, status = 200) {
   });
 }
 
+async function callerCanUpload(admin: ReturnType<typeof createClient>, userId: string): Promise<boolean> {
+  const allowedRoles = new Set(["super_admin", "admin", "systems_admin"]);
+
+  const { data: legacyRoles, error: legacyErr } = await admin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (!legacyErr && (legacyRoles ?? []).some((r: any) => allowedRoles.has(String(r.role)))) {
+    return true;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: hats, error: hatsErr } = await admin
+    .from("employee_role_assignments")
+    .select("role_key,os_role_key,is_active,starts_at,ends_at")
+    .eq("user_id", userId)
+    .eq("is_active", true);
+  if (hatsErr) return false;
+
+  return (hats ?? []).some((h: any) => {
+    if (h.starts_at && String(h.starts_at) > today) return false;
+    if (h.ends_at && String(h.ends_at) < today) return false;
+    return allowedRoles.has(String(h.role_key)) || allowedRoles.has(String(h.os_role_key));
+  });
+}
+
+async function existingActiveHashes(
+  admin: ReturnType<typeof createClient>,
+  hashes: string[],
+): Promise<Set<string>> {
+  const found = new Set<string>();
+  const SUB = 150;
+  for (let i = 0; i < hashes.length; i += SUB) {
+    const slice = hashes.slice(i, i + SUB);
+    const { data, error } = await admin
+      .from("bcba_productivity_billing_rows")
+      .select("row_hash")
+      .eq("active", true)
+      .in("row_hash", slice);
+    if (error) throw error;
+    for (const d of (data ?? []) as Array<{ row_hash: string }>) found.add(d.row_hash);
+  }
+  return found;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -47,14 +92,8 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-  // Authorize: only super_admin / admin / systems_admin can append.
-  const ALLOWED_ROLES = ["super_admin", "admin", "systems_admin"] as const;
-  let allowed = false;
-  for (const role of ALLOWED_ROLES) {
-    const { data } = await admin.rpc("has_role", { _user_id: callerId, _role: role });
-    if (data) { allowed = true; break; }
-  }
-  if (!allowed) return json({ error: "Admin access required" }, 403);
+  // Authorize: legacy roles OR active multi-hat assignments can upload.
+  if (!(await callerCanUpload(admin, callerId))) return json({ error: "Admin access required" }, 403);
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const action = String(body.action ?? "");
@@ -66,18 +105,7 @@ Deno.serve(async (req) => {
       if (hashes.length > 5000) return json({ error: "Max 5000 hashes per call" }, 400);
       // supabase-js .in() puts everything in the URL, which blows past URL
       // length limits for big batches. Sub-chunk and union the results.
-      const SUB = 150;
-      const found = new Set<string>();
-      for (let i = 0; i < hashes.length; i += SUB) {
-        const slice = hashes.slice(i, i + SUB);
-        const { data, error } = await admin
-          .from("bcba_productivity_billing_rows")
-          .select("row_hash")
-          .eq("active", true)
-          .in("row_hash", slice);
-        if (error) return json({ error: error.message }, 500);
-        for (const d of (data ?? []) as Array<{ row_hash: string }>) found.add(d.row_hash);
-      }
+      const found = await existingActiveHashes(admin, hashes);
       return json({ existing: Array.from(found) });
     }
     if (action === "create_batch") {
@@ -142,12 +170,7 @@ Deno.serve(async (req) => {
         .select("id");
       if (attempt.error && /duplicate key|unique constraint/i.test(attempt.error.message)) {
         const hashes = payload.map((p) => p.row_hash);
-        const { data: existing } = await admin
-          .from("bcba_productivity_billing_rows")
-          .select("row_hash")
-          .eq("active", true)
-          .in("row_hash", hashes);
-        const dropped = new Set((existing ?? []).map((d: any) => d.row_hash));
+        const dropped = await existingActiveHashes(admin, hashes);
         const filtered = payload.filter((p) => !dropped.has(p.row_hash));
         if (filtered.length === 0) return json({ inserted: 0, attempted: payload.length });
         attempt = await admin
@@ -157,6 +180,21 @@ Deno.serve(async (req) => {
       }
       if (attempt.error) return json({ error: attempt.error.message }, 500);
       return json({ inserted: attempt.data?.length ?? 0, attempted: payload.length });
+    }
+
+    if (action === "fail_batch") {
+      const batchId = String(body.batchId ?? "");
+      if (!batchId) return json({ error: "batchId required" }, 400);
+      const message = String(body.error ?? "Upload failed").slice(0, 1000);
+      const { error: updErr } = await admin
+        .from("bcba_productivity_upload_batches")
+        .update({
+          status: "failed",
+          metadata: { failed_at: new Date().toISOString(), error: message },
+        })
+        .eq("id", batchId);
+      if (updErr) return json({ error: updErr.message }, 500);
+      return json({ ok: true });
     }
 
     if (action === "finalize_batch") {
