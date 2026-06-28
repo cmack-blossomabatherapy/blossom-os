@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Lead, LeadStatus, pipelineStages, statusVariant } from "@/data/leads";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Lead, LeadStatus, pipelineStages } from "@/data/leads";
 import { cn } from "@/lib/utils";
 import { useLeads } from "@/contexts/LeadsContext";
 import { toast } from "sonner";
