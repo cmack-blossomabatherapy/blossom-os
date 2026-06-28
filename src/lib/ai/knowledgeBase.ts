@@ -1,6 +1,7 @@
 import type { OSRole } from "@/lib/os/permissions";
 import type { KBEntry } from "./types";
 import { canAccessCategory } from "./aiPermissions";
+import { leadBenefitsCheatSheets } from "@/lib/intake/leadBenefitsCheatSheets";
 
 /**
  * Seeded mock knowledge base. Summarizes material that already lives in the
@@ -88,7 +89,83 @@ export const KNOWLEDGE_BASE: KBEntry[] = [
   { id: "train-rbt-onboarding", category: "training", title: "RBT Onboarding Track", sourceType: "academy",
     content: "5-week onboarding: foundations, ethics, data collection, behavior basics, shadow sessions. Tracked in My Learning.",
     updatedAt: "2026-04-10", tags: ["rbt","onboarding","training","academy"] },
+
+  // ---------------------------- Intake — SOPs ------------------------------
+  { id: "intake-sop-first-contact", category: "sop", title: "Intake — First Contact SLA & Script",
+    sourceType: "intake_sop",
+    content: "Reach every new lead within 1 business hour (target: 15 minutes for self-referred families). Greet by family name, confirm child's first name + age, ask the presenting concern in one open-ended question, then walk through: insurance on file, primary concerns, diagnosis status, preferred location/state, and best contact window. Close by setting expectations: 'I'll verify your benefits today and circle back within 24 hours with next steps.' Always log the call in the lead drawer and advance the pipeline stage.",
+    updatedAt: "2026-05-20", tags: ["intake","sop","first contact","script","sla","lead"] },
+  { id: "intake-sop-vob-handoff", category: "sop", title: "Intake — Benefits Verification Handoff",
+    sourceType: "intake_sop",
+    content: "Once insurance card front/back + member info are captured, move the lead to 'Benefits Verification' and notify the Finance/Benefits queue. Required fields: payer, member ID, group #, subscriber DOB, plan type, state. If the payer's cheat sheet says DON'T TAKE, route the lead to 'Non-Qualified' with a templated decline message — do not start VOB.",
+    updatedAt: "2026-05-20", tags: ["intake","vob","benefits","verification","handoff"] },
+  { id: "intake-sop-packet-followup", category: "sop", title: "Intake — Packet Follow Up / Missing Info Cadence",
+    sourceType: "intake_sop",
+    content: "Day 0: send packet + checklist. Day 2: text reminder. Day 4: phone call + email. Day 7: escalate to Intake Lead and offer 'we can complete this together' Zoom slot. After 14 days with no response, move to 'Stalled' and schedule a 30-day re-engagement task.",
+    updatedAt: "2026-05-20", tags: ["intake","packet","missing information","follow up","cadence"] },
+  { id: "intake-sop-diagnosis-required", category: "sop", title: "Intake — Diagnosis Requirements",
+    sourceType: "intake_sop",
+    content: "ABA requires a current ASD diagnostic evaluation (typically <3 years old; some payers require <1 year). If the family does not have one, offer the Blossom diagnostic evaluation pathway and tag the lead 'Needs Dx'. Never schedule sessions before a qualifying Dx report is in the chart.",
+    updatedAt: "2026-05-20", tags: ["intake","diagnosis","asd","evaluation","dx"] },
+  { id: "intake-sop-stage-meanings", category: "workflow", title: "Intake — Canonical Pipeline Stages",
+    sourceType: "intake_sop",
+    content: "Lead Captured → Contact Attempted → Contact Made → Benefits Verification → Assessment Scheduling → Assessment Completed → Intake Packet Sent → Packet Follow Up → Diagnosis Confirmed → Authorization Submitted → Authorization Approved → Scheduling Build → Ready to Start. Every stage has SLAs surfaced on the Intake Dashboard. Move stages from the lead drawer or by drag-and-drop on the Lead-to-Active pipeline.",
+    updatedAt: "2026-05-20", tags: ["intake","pipeline","stages","workflow","canonical"] },
+
+  // ------------------- Intake — Email & SMS templates ----------------------
+  { id: "intake-email-welcome", category: "faq", title: "Email Template — Welcome / First Touch",
+    sourceType: "intake_email",
+    content: "Subject: Welcome to Blossom ABA — next steps for {{child_first_name}}\n\nHi {{parent_first_name}},\n\nThank you for reaching out to Blossom ABA. I'm {{intake_coordinator}}, your intake coordinator. I'd love to learn a little more about {{child_first_name}} and walk you through what starting ABA with us looks like.\n\nTo get started, could you reply with:\n• A photo of the front + back of your insurance card\n• {{child_first_name}}'s date of birth\n• The best phone number + time to reach you\n\nI'll verify your benefits and follow up within 24 hours.\n\nWarmly,\n{{intake_coordinator}}",
+    updatedAt: "2026-05-20", tags: ["intake","email","template","welcome","first touch"] },
+  { id: "intake-email-packet-reminder", category: "faq", title: "Email Template — Packet Reminder",
+    sourceType: "intake_email",
+    content: "Subject: Quick reminder — {{child_first_name}}'s intake packet\n\nHi {{parent_first_name}},\n\nJust a friendly nudge — we're still missing a couple of items to keep {{child_first_name}}'s start on track:\n{{missing_items}}\n\nIf it's easier, I'm happy to hop on a quick 15-minute call to fill these out together. Reply with a time that works, or grab a slot here: {{scheduling_link}}.\n\nThanks!\n{{intake_coordinator}}",
+    updatedAt: "2026-05-20", tags: ["intake","email","template","packet","reminder","missing"] },
+  { id: "intake-email-benefits-good", category: "faq", title: "Email Template — Benefits Verified (Good Coverage)",
+    sourceType: "intake_email",
+    content: "Subject: Great news — {{child_first_name}}'s benefits are verified\n\nHi {{parent_first_name}},\n\nGood news! I verified your {{payer}} benefits for {{child_first_name}}. Here's a quick summary:\n• In-network with Blossom: {{in_network}}\n• Estimated family responsibility per session: {{family_responsibility}}\n• Authorization required: {{auth_required}}\n\nNext step is our diagnostic/assessment scheduling — I'll send a calendar link shortly. Let me know if you have any questions!\n\n{{intake_coordinator}}",
+    updatedAt: "2026-05-20", tags: ["intake","email","template","benefits","vob","verified"] },
+  { id: "intake-email-decline", category: "faq", title: "Email Template — Non-Qualified / Decline",
+    sourceType: "intake_email",
+    content: "Subject: Update on {{child_first_name}}'s services with Blossom ABA\n\nHi {{parent_first_name}},\n\nThank you for trusting us with {{child_first_name}}'s care. After reviewing your {{payer}} plan, unfortunately we are not able to provide in-network ABA services under this plan at this time.\n\nA few options that may help:\n• Other local providers who are in-network: {{referrals}}\n• Single-case agreement option (we can help you submit a request)\n• Reach back out if your insurance changes — we'd love to serve your family\n\nWishing you the best,\n{{intake_coordinator}}",
+    updatedAt: "2026-05-20", tags: ["intake","email","template","decline","non-qualified"] },
+  { id: "intake-sms-templates", category: "faq", title: "SMS Templates — Intake Quick Replies",
+    sourceType: "intake_sms",
+    content: "Voicemail follow-up: 'Hi {{parent_first_name}}, this is {{intake_coordinator}} with Blossom ABA following up on {{child_first_name}}'s referral. Best number to reach you?'\n\nPacket nudge: 'Hi {{parent_first_name}} — still need {{missing_items}} to keep {{child_first_name}}'s start moving. Reply here when you have a minute. Thanks!'\n\nAppointment confirm: 'Reminder: {{child_first_name}}'s assessment is {{date_time}} with {{clinician}}. Reply C to confirm or R to reschedule.'",
+    updatedAt: "2026-05-20", tags: ["intake","sms","text","template","reminder"] },
+
+  // ------------------- Intake — Direction / Coaching ----------------------
+  { id: "intake-coach-tough-call", category: "workflow", title: "Coaching — Handling a Frustrated Parent",
+    sourceType: "intake_coach",
+    content: "1) Lead with empathy — name the feeling: 'It sounds like this has been exhausting.' 2) Reflect back what they said before pivoting. 3) Own what we can: timelines, next concrete step, who is doing what. 4) Always commit to a specific next-touch time and log it as a task in the drawer. 5) Escalate to Intake Lead if the family mentions complaints, attorney, or BBB.",
+    updatedAt: "2026-05-20", tags: ["intake","coaching","parent","de-escalation","script"] },
+  { id: "intake-coach-pace", category: "workflow", title: "Coaching — Keeping the Pipeline Moving",
+    sourceType: "intake_coach",
+    content: "Touch every active lead at least every 48 hours until they hit 'Ready to Start'. Use the Intake Tasks spreadsheet view to clear overdue rows first. If a lead has been in the same stage >7 days without a logged contact, the Intake Dashboard flags it as 'Stalled' — clear those before opening new referrals.",
+    updatedAt: "2026-05-20", tags: ["intake","coaching","pipeline","sla","stalled"] },
 ];
+
+// ------------- Auto-generated entries from Lead Benefits Cheat Sheets -------------
+// Every payer cheat sheet row is searchable by Ask Blossom so intake can ask
+// "do we take Anthem GA?" and get a precise answer with the source.
+for (const row of leadBenefitsCheatSheets) {
+  KNOWLEDGE_BASE.push({
+    id: `cheat-${row.mondayItemId ?? `${row.state}-${row.payer}`.replace(/\s+/g, "-")}`,
+    category: "insurance",
+    title: `Cheat Sheet — ${row.payer} (${row.state})`,
+    sourceType: "lead_benefits_cheat_sheet",
+    sourceId: row.mondayItemId,
+    content: `Payer: ${row.payer}\nState: ${row.state}\nCategory: ${row.insuranceCategory}\nIntake Status: ${row.intakeStatus}\nNotes: ${row.notes || "—"}`,
+    updatedAt: "2026-05-20",
+    tags: [
+      "cheat sheet", "benefits", "payer", "intake",
+      row.state.toLowerCase(),
+      row.payer.toLowerCase(),
+      row.insuranceCategory.toLowerCase(),
+      row.intakeStatus.toLowerCase(),
+    ],
+  });
+}
 
 export function searchKnowledge(query: string, role: OSRole, limit = 5): KBEntry[] {
   const q = query.toLowerCase().trim();
