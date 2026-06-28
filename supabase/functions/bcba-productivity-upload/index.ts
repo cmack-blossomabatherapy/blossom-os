@@ -194,6 +194,11 @@ Deno.serve(async (req) => {
         })
         .eq("id", batchId);
       if (updErr) return json({ error: updErr.message }, 500);
+      const { error: rowsErr } = await admin
+        .from("bcba_productivity_billing_rows")
+        .update({ active: false })
+        .eq("batch_id", batchId);
+      if (rowsErr) return json({ error: rowsErr.message }, 500);
       return json({ ok: true });
     }
 
@@ -216,6 +221,14 @@ Deno.serve(async (req) => {
       const status = body.expectedNew && actualRows < Number(body.expectedNew)
         ? "failed"
         : "active";
+
+      if (status === "failed") {
+        const { error: rowsErr } = await admin
+          .from("bcba_productivity_billing_rows")
+          .update({ active: false })
+          .eq("batch_id", batchId);
+        if (rowsErr) return json({ error: rowsErr.message }, 500);
+      }
 
       const { error: updErr } = await admin
         .from("bcba_productivity_upload_batches")
