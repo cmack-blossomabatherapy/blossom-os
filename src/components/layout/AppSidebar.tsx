@@ -549,6 +549,15 @@ export function AppSidebar({
   const roleLabel = roles.map((r) => roleLabels[r]).find(Boolean) || "Team Member";
   void ROLE_HOME;
 
+  // Ask Blossom AI is currently launched for the Intake department only.
+  // Admins (and admins previewing intake) also get it for QA + testing.
+  const showAskBlossom =
+    isAdmin ||
+    osRole === "intake_coordinator" ||
+    osRole === "intake_lead" ||
+    roles.includes("intake") ||
+    roles.includes("intake_lead");
+
   return (
     <>
       {/* ---------- Mobile sheet ---------- */}
