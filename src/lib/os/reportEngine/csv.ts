@@ -12,10 +12,25 @@ export function parseCSVText(text: string): { headers: string[]; rows: Record<st
   // Strip BOM
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
 
-  const out: string[][] = [];
+  let headers: string[] | null = null;
+  const rows: Record<string, string>[] = [];
   let cur: string[] = [];
   let field = "";
   let inQuotes = false;
+
+  const finishRow = (cells: string[]) => {
+    if (!cells.length || cells.every(c => !c || !c.trim())) return;
+    if (!headers) {
+      const rawHeaders = cells.map(h => h.trim());
+      headers = rawHeaders.map((h, i) => h || `column_${i + 1}`);
+      return;
+    }
+    const obj: Record<string, string> = {};
+    for (let c = 0; c < headers.length; c++) {
+      obj[headers[c]] = (cells[c] ?? "").trim();
+    }
+    rows.push(obj);
+  };
 
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
@@ -29,31 +44,15 @@ export function parseCSVText(text: string): { headers: string[]; rows: Record<st
     if (ch === '"') { inQuotes = true; continue; }
     if (ch === ",") { cur.push(field); field = ""; continue; }
     if (ch === "\n" || ch === "\r") {
-      if (field.length || cur.length) { cur.push(field); out.push(cur); cur = []; field = ""; }
+      if (field.length || cur.length) { cur.push(field); finishRow(cur); cur = []; field = ""; }
       if (ch === "\r" && text[i + 1] === "\n") i++;
       continue;
     }
     field += ch;
   }
-  if (field.length || cur.length) { cur.push(field); out.push(cur); }
+  if (field.length || cur.length) { cur.push(field); finishRow(cur); }
 
-  if (!out.length) return { headers: [], rows: [] };
-  const rawHeaders = out[0].map(h => h.trim());
-  // De-duplicate empty headers
-  const headers = rawHeaders.map((h, i) => h || `column_${i + 1}`);
-
-  const rows: Record<string, string>[] = [];
-  for (let i = 1; i < out.length; i++) {
-    const r = out[i];
-    // Skip fully empty rows
-    if (r.every(c => !c || !c.trim())) continue;
-    const obj: Record<string, string> = {};
-    for (let c = 0; c < headers.length; c++) {
-      obj[headers[c]] = (r[c] ?? "").trim();
-    }
-    rows.push(obj);
-  }
-  return { headers, rows };
+  return { headers: headers ?? [], rows };
 }
 
 /** Try to parse a value as a date; return ISO yyyy-mm-dd or null. */
