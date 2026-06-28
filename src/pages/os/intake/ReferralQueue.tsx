@@ -8,7 +8,7 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
-import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
+import { LeadActionsButton } from "@/components/intake/LeadActionsButton";
 import { getLeadWorkflowRisk } from "@/lib/intake/intakeWorkflow";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -241,7 +241,7 @@ function RefCard({ lead }: { lead: import("@/data/leads").Lead }) {
         </div>
       )}
                 <div className="mt-3">
-                  <LeadActionPanel lead={lead} compact sourcePage="referral-queue" />
+                  <LeadActionsButton lead={lead} sourcePage="referral-queue" />
                 </div>
     </div>
   );
