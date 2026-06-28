@@ -263,6 +263,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Intake Tasks",               path: "/intake/tasks",                  icon: ClipboardList },
           { label: "Lead Benefits Cheat Sheets", path: "/intake/benefits-cheat-sheets",  icon: ShieldCheck },
           { label: "After-Hours AI Calls",       path: "/phone/ai-calls",                icon: PhoneCall },
+          { label: "Ask Blossom AI",             path: "/os/ask-blossom",                icon: Sparkles },
         ],
       },
       TRAINING_AND_RESOURCES,
