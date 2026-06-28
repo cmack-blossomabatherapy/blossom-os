@@ -678,6 +678,17 @@ export function AppSidebar({
                 No menu matches.
               </p>
             )}
+            {showAskBlossom && (
+              <div className="mt-4 px-1">
+                <AskBlossomCard
+                  variant="mobile"
+                  onNavigate={() => {
+                    onMobileOpenChange?.(false);
+                    navigate("/ask-blossom");
+                  }}
+                />
+              </div>
+            )}
             {isAdmin && (
               <div className="mt-4 px-1">
                 {impersonating ? (
