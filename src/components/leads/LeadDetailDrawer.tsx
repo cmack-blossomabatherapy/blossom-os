@@ -21,6 +21,10 @@ import {
 } from "@/lib/integrations/communications/communicationAdapters";
 import type { EmailTemplateKey } from "@/lib/integrations/communications/communicationTypes";
 import { LeadContactActions } from "@/components/leads/LeadContactActions";
+import {
+  FAMILY_LEAD_PIPELINE_STAGES,
+  canonicalFamilyLeadStage,
+} from "@/lib/intake/intakeWorkflow";
 
 type Tab = "overview" | "insurance" | "documents" | "activity" | "actions";
 
@@ -193,6 +197,9 @@ export function LeadDetailDrawer({
               </span>
             )}
           </div>
+
+          {/* Pipeline progress strip */}
+          <PipelineProgress status={lead.status} />
 
           {/* Quick contact */}
           <LeadContactActions
