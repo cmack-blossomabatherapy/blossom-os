@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import {
-  Plus, Clock, AlertCircle, CheckCircle2, ExternalLink, List,
-  CalendarClock, Flame, Inbox, ListTodo,
+  Plus, AlertCircle, CheckCircle2, List,
+  CalendarClock, Flame, Inbox, ListTodo, Search, ArrowUpDown,
 } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import {
-  IntakeSectionHeader, IntakePulseStrip, INTAKE_TONE, type PulseTileSpec,
+  IntakeSectionHeader, IntakePulseStrip, type PulseTileSpec,
 } from "@/components/os/intake/IntakeVisuals";
 import { cn } from "@/lib/utils";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -14,76 +14,21 @@ import type { Lead } from "@/data/leads";
 import { useIntakeTasksLive, type IntakeTaskRow } from "@/hooks/useIntakeTasksLive";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 
 type FilterKey = "all" | "today" | "overdue" | "escalated";
+type SortKey = "due" | "lead" | "owner" | "title";
 interface TaskRow { task: IntakeTaskRow; lead: Lead | undefined }
 
-function bucketize(rows: TaskRow[]) {
+function classify(r: TaskRow): "overdue" | "today" | "upcoming" {
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const overdue: TaskRow[] = []; const dueToday: TaskRow[] = []; const upcoming: TaskRow[] = [];
-  rows.forEach((r) => {
-    if (r.task.status === "Completed") return;
-    if (!r.task.due_date) { upcoming.push(r); return; }
-    const due = new Date(r.task.due_date); due.setHours(0, 0, 0, 0);
-    if (due.getTime() < today.getTime()) overdue.push(r);
-    else if (due.getTime() === today.getTime()) dueToday.push(r);
-    else upcoming.push(r);
-  });
-  return { overdue, dueToday, upcoming };
-}
-
-function TaskCard({
-  row, tone, onComplete, onSnooze, onReassign,
-}: {
-  row: TaskRow;
-  tone: keyof typeof INTAKE_TONE;
-  onComplete: (id: string) => Promise<void>;
-  onSnooze: (id: string) => Promise<void>;
-  onReassign: (id: string, owner: string) => Promise<void>;
-}) {
-  const t = INTAKE_TONE[tone];
-  const wrap = (label: string, fn: () => Promise<void>) => async () => {
-    try { await fn(); toast.success(`${label}: ${row.task.title}`); }
-    catch (e) { toast.error(e instanceof Error ? e.message : `Could not ${label.toLowerCase()}`); }
-  };
-  const reassign = async () => {
-    const next = window.prompt("Reassign to", row.task.owner || "");
-    if (next && next.trim()) {
-      try { await onReassign(row.task.id, next.trim()); toast.success(`Reassigned to ${next.trim()}`); }
-      catch (e) { toast.error(e instanceof Error ? e.message : "Could not reassign"); }
-    }
-  };
-  const leadName = row.lead?.childName ?? "Lead";
-  const leadId = row.lead?.id ?? row.task.lead_id;
-  return (
-    <div className={cn("group rounded-2xl border border-border/70 p-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm", t.bg)}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="font-medium text-sm truncate">{row.task.title}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">
-            <LeadNameLink leadId={leadId} className="hover:underline">{leadName}</LeadNameLink>
-            {row.task.task_type && <span> · {row.task.task_type}</span>}
-          </div>
-        </div>
-        {row.task.due_date && (
-          <div className={cn("text-[11px] shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-md", t.icon)}>
-            <Clock className="h-3 w-3" /> {row.task.due_date}
-          </div>
-        )}
-      </div>
-      <div className="mt-2 text-[11px] text-muted-foreground">Owner: {row.task.owner || "Unassigned"}</div>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        <Button size="sm" variant="outline" onClick={wrap("Completed", () => onComplete(row.task.id))}>Complete</Button>
-        <Button size="sm" variant="ghost" onClick={wrap("Snoozed", () => onSnooze(row.task.id))}>Snooze</Button>
-        <Button size="sm" variant="ghost" onClick={reassign}>Reassign</Button>
-        <Button asChild size="sm" variant="ghost">
-          <LeadNameLink leadId={leadId}><ExternalLink className="h-3 w-3 mr-1" /> Lead</LeadNameLink>
-        </Button>
-      </div>
-    </div>
-  );
+  if (!r.task.due_date) return "upcoming";
+  const due = new Date(r.task.due_date); due.setHours(0, 0, 0, 0);
+  if (due.getTime() < today.getTime()) return "overdue";
+  if (due.getTime() === today.getTime()) return "today";
+  return "upcoming";
 }
 
 export default function IntakeTasks() {
@@ -91,6 +36,9 @@ export default function IntakeTasks() {
   const { matches } = useIntakeStateFilter();
   const { tasks, loading, complete, snooze, reassign } = useIntakeTasksLive();
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("due");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const leadById = useMemo(() => {
     const map = new Map<string, Lead>();
@@ -100,16 +48,48 @@ export default function IntakeTasks() {
 
   const rows = useMemo<TaskRow[]>(
     () => tasks
+      .filter((t) => t.status !== "Completed")
       .map((t) => ({ task: t, lead: leadById.get(t.lead_id) }))
       .filter((r) => (r.lead ? matches(r.lead.state) : true)),
     [tasks, leadById, matches],
   );
-  const { overdue, dueToday, upcoming } = useMemo(() => bucketize(rows), [rows]);
+  const overdue = rows.filter((r) => classify(r) === "overdue");
+  const dueToday = rows.filter((r) => classify(r) === "today");
+  const upcoming = rows.filter((r) => classify(r) === "upcoming");
   const escalated = useMemo(
     () => rows.filter((r) => (r.lead?.tags ?? []).some((t) => /escalat/i.test(t))),
     [rows],
   );
-  const openTotal = overdue.length + dueToday.length + upcoming.length;
+  const openTotal = rows.length;
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let out = rows.filter((r) => {
+      const c = classify(r);
+      if (filter === "today" && c !== "today") return false;
+      if (filter === "overdue" && c !== "overdue") return false;
+      if (filter === "escalated" && !(r.lead?.tags ?? []).some((t) => /escalat/i.test(t))) return false;
+      if (q) {
+        const hay = [r.task.title, r.task.task_type, r.task.owner, r.lead?.childName, r.lead?.parentName]
+          .map((s) => String(s ?? "").toLowerCase()).join(" ");
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    out = [...out].sort((a, b) => {
+      const dir = sortDir === "asc" ? 1 : -1;
+      const get = (r: TaskRow): string => {
+        switch (sortKey) {
+          case "due": return r.task.due_date ?? "9999-12-31";
+          case "lead": return r.lead?.childName ?? "";
+          case "owner": return r.task.owner ?? "";
+          case "title": return r.task.title ?? "";
+        }
+      };
+      return get(a).localeCompare(get(b)) * dir;
+    });
+    return out;
+  }, [rows, filter, search, sortKey, sortDir]);
 
   const pulseTiles: PulseTileSpec[] = [
     { key: "all",       label: "All Open",   value: openTotal,        hint: "Across all buckets",   icon: ListTodo,      tone: "indigo",  onClick: () => setFilter("all") },
@@ -120,10 +100,23 @@ export default function IntakeTasks() {
     { key: "done",      label: "All Clear",  value: openTotal === 0 ? 1 : 0, hint: openTotal === 0 ? "Nothing pending" : "Keep working", icon: CheckCircle2, tone: "emerald" },
   ];
 
-  const showOverdue = filter === "all" || filter === "overdue";
-  const showToday = filter === "all" || filter === "today";
-  const showUpcoming = filter === "all";
-  const showEscalated = filter === "all" || filter === "escalated";
+  const toggleSort = (k: SortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir("asc"); }
+  };
+  const SortBtn = ({ k, children }: { k: SortKey; children: React.ReactNode }) => (
+    <button onClick={() => toggleSort(k)} className="inline-flex items-center gap-1 hover:text-foreground">
+      {children} <ArrowUpDown className={cn("h-3 w-3 opacity-50", sortKey === k && "opacity-100 text-primary")} />
+    </button>
+  );
+
+  const onReassignRow = async (row: TaskRow) => {
+    const next = window.prompt("Reassign to", row.task.owner || "");
+    if (next && next.trim()) {
+      try { await reassign(row.task.id, next.trim()); toast.success(`Reassigned to ${next.trim()}`); }
+      catch (e) { toast.error(e instanceof Error ? e.message : "Could not reassign"); }
+    }
+  };
 
   return (
     <GrowthPageShell
@@ -144,56 +137,87 @@ export default function IntakeTasks() {
       {openTotal === 0 ? (
         <ReadyForDataNotice message={loading ? "Loading tasks…" : "No open intake tasks. Tasks created from leads will appear here."} />
       ) : (
-        <>
-          <div className="flex flex-wrap gap-1.5">
-            {(["all", "today", "overdue", "escalated"] as const).map((k) => (
-              <button key={k} onClick={() => setFilter(k)}
-                className={`px-3 py-1 rounded-full text-xs border transition ${filter === k ? "bg-foreground text-background border-foreground" : "bg-card border-border/70 hover:bg-muted"}`}>
-                {k === "all" ? "All open" : k === "today" ? "Due today" : k === "overdue" ? "Overdue" : "Escalated"}
-              </button>
-            ))}
+        <section className="space-y-3">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center p-2 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search task, lead, owner…" className="pl-9 h-9 bg-transparent border-0 focus-visible:ring-0" />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {(["all", "today", "overdue", "escalated"] as const).map((k) => (
+                <button key={k} onClick={() => setFilter(k)}
+                  className={cn("px-3 py-1 rounded-full text-xs border transition",
+                    filter === k ? "bg-foreground text-background border-foreground" : "bg-card border-border/70 hover:bg-muted")}>
+                  {k === "all" ? "All open" : k === "today" ? "Due today" : k === "overdue" ? "Overdue" : "Escalated"}
+                </button>
+              ))}
+            </div>
           </div>
-          {showOverdue && (
-            <section>
-              <IntakeSectionHeader icon={AlertCircle} tone="rose" title={`Overdue (${overdue.length})`} subtitle="Tasks past their due date." />
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                {overdue.length === 0 ? (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-600" /> Nothing overdue.</div>
-                ) : overdue.map((r) => <TaskCard key={r.task.id} row={r} tone="rose" onComplete={complete} onSnooze={snooze} onReassign={reassign} />)}
-              </div>
-            </section>
-          )}
-          {showToday && (
-            <section>
-              <IntakeSectionHeader icon={CalendarClock} tone="amber" title={`Due today (${dueToday.length})`} />
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                {dueToday.length === 0 ? (
-                  <div className="text-xs text-muted-foreground">Nothing due today.</div>
-                ) : dueToday.map((r) => <TaskCard key={r.task.id} row={r} tone="amber" onComplete={complete} onSnooze={snooze} onReassign={reassign} />)}
-              </div>
-            </section>
-          )}
-          {showUpcoming && (
-            <section>
-              <IntakeSectionHeader icon={Inbox} tone="sky" title={`Upcoming (${upcoming.length})`} />
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                {upcoming.length === 0 ? (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1"><AlertCircle className="h-3 w-3" /> No upcoming tasks.</div>
-                ) : upcoming.map((r) => <TaskCard key={r.task.id} row={r} tone="sky" onComplete={complete} onSnooze={snooze} onReassign={reassign} />)}
-              </div>
-            </section>
-          )}
-          {showEscalated && (
-            <section>
-              <IntakeSectionHeader icon={Flame} tone="violet" title={`Escalated (${escalated.length})`} subtitle="Tasks tied to leads tagged as escalated." />
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                {escalated.length === 0 ? (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1"><Badge variant="outline" className="text-[10px]">none</Badge> No escalated tasks.</div>
-                ) : escalated.map((r) => <TaskCard key={r.task.id} row={r} tone="violet" onComplete={complete} onSnooze={snooze} onReassign={reassign} />)}
-              </div>
-            </section>
-          )}
-        </>
+
+          <div className="rounded-2xl border border-border/70 bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs text-muted-foreground">
+                  <tr className="text-left">
+                    <th className="px-3 py-2 w-24">Status</th>
+                    <th className="px-3 py-2"><SortBtn k="title">Task</SortBtn></th>
+                    <th className="px-3 py-2"><SortBtn k="lead">Lead</SortBtn></th>
+                    <th className="px-3 py-2 w-32">Type</th>
+                    <th className="px-3 py-2 w-28"><SortBtn k="due">Due</SortBtn></th>
+                    <th className="px-3 py-2 w-36"><SortBtn k="owner">Owner</SortBtn></th>
+                    <th className="px-3 py-2 w-[220px] text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {visible.length === 0 ? (
+                    <tr><td colSpan={7} className="px-3 py-8 text-center text-xs text-muted-foreground">No tasks match the current filters.</td></tr>
+                  ) : visible.map((r) => {
+                    const c = classify(r);
+                    const leadName = r.lead?.childName ?? "Lead";
+                    const leadId = r.lead?.id ?? r.task.lead_id;
+                    const isEscalated = (r.lead?.tags ?? []).some((t) => /escalat/i.test(t));
+                    const wrap = (label: string, fn: () => Promise<void>) => async () => {
+                      try { await fn(); toast.success(`${label}: ${r.task.title}`); }
+                      catch (e) { toast.error(e instanceof Error ? e.message : `Could not ${label.toLowerCase()}`); }
+                    };
+                    return (
+                      <tr key={r.task.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-1">
+                            {c === "overdue" && <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30">Overdue</Badge>}
+                            {c === "today" && <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30">Today</Badge>}
+                            {c === "upcoming" && <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30">Upcoming</Badge>}
+                            {isEscalated && <Flame className="h-3 w-3 text-violet-600" aria-label="Escalated" />}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 font-medium text-foreground truncate max-w-[280px]">{r.task.title}</td>
+                        <td className="px-3 py-2">
+                          <LeadNameLink leadId={leadId} className="hover:underline text-foreground">{leadName}</LeadNameLink>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground">{r.task.task_type || "—"}</td>
+                        <td className={cn("px-3 py-2 text-xs", c === "overdue" && "text-rose-700 dark:text-rose-300 font-medium")}>
+                          {r.task.due_date || "—"}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground truncate max-w-[180px]">{r.task.owner || "Unassigned"}</td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={wrap("Completed", () => complete(r.task.id))}>Complete</Button>
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={wrap("Snoozed", () => snooze(r.task.id))}>Snooze</Button>
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onReassignRow(r)}>Reassign</Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-3 py-2 border-t border-border/60 text-[11px] text-muted-foreground flex items-center justify-between">
+              <span>Showing {visible.length} of {openTotal}</span>
+              <span className="hidden md:inline">Click column headers to sort.</span>
+            </div>
+          </div>
+        </section>
       )}
     </GrowthPageShell>
   );
