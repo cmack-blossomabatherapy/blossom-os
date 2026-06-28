@@ -13025,11 +13025,19 @@ export type Database = {
         Returns: boolean
       }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_bcba_productivity_uploads: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       can_manage_role_assignments: {
         Args: { _user_id: string }
         Returns: boolean
       }
       can_read_all_states: { Args: never; Returns: boolean }
+      can_read_bcba_productivity: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       classify_eval_role: { Args: { _job_title: string }; Returns: string }
       compute_profile_completion: {
         Args: { emp: Database["public"]["Tables"]["employees"]["Row"] }

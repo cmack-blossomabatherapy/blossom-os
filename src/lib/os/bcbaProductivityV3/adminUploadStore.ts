@@ -8,7 +8,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { parseAnyFile } from "@/lib/os/dashboardEngine/excelParser";
-import { normalizeUsState, resolveRowState } from "./stateNormalization";
+import { STATE_FALLBACK_COLUMNS, normalizeUsState, resolveRowState } from "./stateNormalization";
 
 /* ----- shared types ----- */
 
@@ -192,6 +192,23 @@ export async function parseBcbaProductivityUpload(file: File): Promise<BcbaUploa
       units: number | null;
       hashKey: string;
     }
+    const rawAuditHeaders = Array.from(new Set([
+      clientIdH, cliFirstH, cliLastH, clientNameH, dosH, codeH, hoursH,
+      provIdH, provFirstH, provLastH, provNameH, payorH, provLabelsH,
+      startH, endH, unitsH, apptIdH,
+      ...STATE_FALLBACK_COLUMNS.map((col) => findH(h, [col])),
+    ].filter(Boolean))) as string[];
+    const compactRaw = (r: Record<string, unknown>) => {
+      const out: Record<string, unknown> = {};
+      for (const header of rawAuditHeaders) {
+        const value = r[header];
+        if (value !== undefined && value !== null && String(value).trim() !== "") {
+          out[header] = value;
+        }
+      }
+      return out;
+    };
+
     const pending: Pending[] = [];
     for (const r of first.rows) {
       const code = String((codeH ? r[codeH] : "") ?? "").trim();
@@ -245,7 +262,7 @@ export async function parseBcbaProductivityUpload(file: File): Promise<BcbaUploa
             normNumStr(hours),
             isFinite(units) ? normNumStr(units) : "",
           ].join("|");
-      pending.push({ row, raw: r as Record<string, unknown>, providerId, units: isFinite(units) ? units : null, hashKey });
+      pending.push({ row, raw: compactRaw(r as Record<string, unknown>), providerId, units: isFinite(units) ? units : null, hashKey });
       if (!dateMin || dos < dateMin) dateMin = dos;
       if (!dateMax || dos > dateMax) dateMax = dos;
     }
@@ -397,6 +414,7 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
   const fileHash = await sha256Hex(`${input.file.name}|${input.file.size}|${parsed.rawRowCount}`);
   const onProgress = input.onProgress;
   onProgress?.({ phase: "create_batch" });
+  let batchId = "";
   const createRes = await callUploadFn(accessToken, {
     action: "create_batch",
     batch: {
@@ -415,26 +433,22 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
       },
     },
   });
-  const batchId = createRes.batchId as string;
+  batchId = createRes.batchId as string;
   if (!batchId) throw new Error("Failed to create upload batch");
 
-  // Insert rows in chunks via Edge Function with limited concurrency.
-  // Server-side inserts using the service role are fast and reliable,
-  // and do not depend on the browser staying open or supabase-js promise
-  // delivery quirks.
   let actuallyInserted = 0;
-  if (toInsert.length > 0) {
-    const CHUNK = 500;
-    const CONCURRENCY = 3;
-    const chunks: ParsedRow[][] = [];
-    for (let i = 0; i < toInsert.length; i += CHUNK) {
-      chunks.push(toInsert.slice(i, i + CHUNK));
-    }
-    let cursor = 0;
-    async function worker() {
-      while (cursor < chunks.length) {
-        const idx = cursor++;
-        const slice = chunks[idx];
+  try {
+    // Insert rows in small, sequential chunks through the Edge Function.
+    // CentralReach exports can have 180+ columns and 40k+ rows; keeping one
+    // request in flight prevents the function from rebooting under parallel
+    // oversized JSON payloads and makes progress honest/recoverable.
+    if (toInsert.length > 0) {
+      const CHUNK = 750;
+      const chunks: ParsedRow[][] = [];
+      for (let i = 0; i < toInsert.length; i += CHUNK) {
+        chunks.push(toInsert.slice(i, i + CHUNK));
+      }
+      for (const slice of chunks) {
         const payload = slice.map((p) => ({
           row_hash: p.rowHash,
           service_date: p.row.date || null,
@@ -457,38 +471,48 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
         });
       }
     }
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, chunks.length) }, worker));
-  }
 
-  // Finalize: server verifies actual row count and updates the batch row
-  // with honest counters (no more "42707 appended" while only 6000 landed).
-  onProgress?.({ phase: "finalize_batch" });
-  // Refresh the token once for finalize in case the long upload outlived it.
-  accessToken = (await getFreshAccessToken()) || accessToken;
-  const fin = await callUploadFn(accessToken!, {
-    action: "finalize_batch",
-    batchId,
-    expectedNew: toInsert.length,
-    parsed_row_count: parsed.parsedRows.length,
-    duplicate_row_count: duplicateRowCount,
-    service_date_min: parsed.serviceDateMin,
-    service_date_max: parsed.serviceDateMax,
-  });
-  const actualRows = Number(fin.actualRows ?? actuallyInserted);
-  if (toInsert.length > 0 && actualRows < toInsert.length) {
-    throw new Error(
-      `Upload incomplete: only ${actualRows.toLocaleString()} of ${toInsert.length.toLocaleString()} new rows landed. The batch has been marked failed — please re-upload.`,
-    );
-  }
+    // Finalize: server verifies actual row count and updates the batch row
+    // with honest counters (no more "42707 appended" while only 6000 landed).
+    onProgress?.({ phase: "finalize_batch" });
+    // Refresh the token once for finalize in case the long upload outlived it.
+    accessToken = (await getFreshAccessToken()) || accessToken;
+    const fin = await callUploadFn(accessToken!, {
+      action: "finalize_batch",
+      batchId,
+      expectedNew: toInsert.length,
+      parsed_row_count: parsed.parsedRows.length,
+      duplicate_row_count: duplicateRowCount,
+      service_date_min: parsed.serviceDateMin,
+      service_date_max: parsed.serviceDateMax,
+    });
+    const actualRows = Number(fin.actualRows ?? actuallyInserted);
+    if (toInsert.length > 0 && actualRows < toInsert.length) {
+      throw new Error(
+        `Upload incomplete: only ${actualRows.toLocaleString()} of ${toInsert.length.toLocaleString()} new rows landed. The batch has been marked failed — please re-upload.`,
+      );
+    }
 
-  return {
-    batchId,
-    parsedRowCount: parsed.parsedRows.length,
-    appendedRowCount: actualRows,
-    duplicateRowCount,
-    serviceDateMin: parsed.serviceDateMin,
-    serviceDateMax: parsed.serviceDateMax,
-  };
+    return {
+      batchId,
+      parsedRowCount: parsed.parsedRows.length,
+      appendedRowCount: actualRows,
+      duplicateRowCount,
+      serviceDateMin: parsed.serviceDateMin,
+      serviceDateMax: parsed.serviceDateMax,
+    };
+  } catch (e: any) {
+    if (batchId) {
+      try {
+        await callUploadFn(accessToken!, {
+          action: "fail_batch",
+          batchId,
+          error: e?.message ?? "Upload failed before finalize",
+        });
+      } catch { /* keep original error */ }
+    }
+    throw e;
+  }
 }
 
 /**
