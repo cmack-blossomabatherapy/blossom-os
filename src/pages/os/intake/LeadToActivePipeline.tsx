@@ -1,15 +1,17 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
-import { TrendingUp, ChevronLeft, ChevronRight, Plus, Ban, List, Workflow, Flame, Sparkles, AlertTriangle, ArrowRightLeft } from "lucide-react";
+import { TrendingUp, Plus, Ban, List, Workflow, Flame, Sparkles, AlertTriangle, ArrowRightLeft, GripVertical, MoreHorizontal } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { IntakeSectionHeader, IntakePulseStrip, INTAKE_TONE, type PulseTileSpec } from "@/components/os/intake/IntakeVisuals";
 import { cn } from "@/lib/utils";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import type { LeadStatus } from "@/data/leads";
+import type { Lead } from "@/data/leads";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
@@ -17,8 +19,6 @@ import {
   getLeadWorkflowRisk,
   FAMILY_LEAD_PIPELINE_STAGES,
   canonicalFamilyLeadStage,
-  getNextFamilyLeadStage,
-  getPreviousFamilyLeadStage,
   FAMILY_LEAD_STAGE_OWNERS,
   isReadyToStartStage,
   isLeadOutOfPipeline,
@@ -36,6 +36,9 @@ export default function LeadToActivePipeline() {
   const { matches } = useIntakeStateFilter();
   const leads = useMemo(() => allLeads.filter((l) => matches(l.state)), [allLeads, matches]);
   const [addOpen, setAddOpen] = useState(false);
+  const [actionLead, setActionLead] = useState<Lead | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<FamilyLeadPipelineStage | null>(null);
 
   const byStage = useMemo(() => {
     const map = new Map<FamilyLeadPipelineStage, typeof leads>();
@@ -75,6 +78,53 @@ export default function LeadToActivePipeline() {
     ];
   }, [leads]);
 
+  const handleDragStart = (e: React.DragEvent, lead: Lead) => {
+    setDraggingId(lead.id);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", lead.id);
+  };
+  const handleDragEnd = () => { setDraggingId(null); setDragOverStage(null); };
+  const handleDragOver = (e: React.DragEvent, stage: FamilyLeadPipelineStage) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverStage !== stage) setDragOverStage(stage);
+  };
+  const handleDragLeave = (e: React.DragEvent, stage: FamilyLeadPipelineStage) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      if (dragOverStage === stage) setDragOverStage(null);
+    }
+  };
+  const handleDrop = (e: React.DragEvent, stage: FamilyLeadPipelineStage) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("text/plain") || draggingId;
+    setDraggingId(null);
+    setDragOverStage(null);
+    if (!id) return;
+    const lead = leads.find((l) => l.id === id);
+    if (!lead) return;
+    const fromCanonical = canonicalFamilyLeadStage(lead.status);
+    if (fromCanonical === stage) return;
+    const fromIdx = STAGES.indexOf(fromCanonical as FamilyLeadPipelineStage);
+    const toIdx = STAGES.indexOf(stage);
+    const previousStatus = lead.status;
+    const previousDays = lead.daysInStage;
+    if (toIdx > fromIdx) {
+      moveStage([lead.id], stage as unknown as LeadStatus);
+    } else {
+      revertStage(lead.id, stage as unknown as LeadStatus, 0, `Moved back to ${stage}`);
+    }
+    toast.success(`${lead.childName} → ${stage}`, {
+      description: `From ${fromCanonical}`,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          revertStage(lead.id, previousStatus, previousDays, `Reverted to ${previousStatus}`);
+          toast.success(`Reverted ${lead.childName}`);
+        },
+      },
+    });
+  };
+
   return (
     <GrowthPageShell
       eyebrow="Growth & Admissions"
@@ -92,7 +142,7 @@ export default function LeadToActivePipeline() {
       </section>
 
       <section>
-        <IntakeSectionHeader icon={Workflow} tone="violet" title="Pipeline stages" subtitle="Canonical 13-stage family lead workflow. Legacy statuses map into their canonical stage." />
+        <IntakeSectionHeader icon={Workflow} tone="violet" title="Pipeline stages" subtitle="Drag a card between columns to move stages. Click Actions for more options." />
         <div className="overflow-x-auto -mx-2 px-2">
           <div className="flex items-stretch gap-3 min-w-max pb-2">
             {STAGES.map((stage, i) => {
@@ -104,13 +154,18 @@ export default function LeadToActivePipeline() {
               const isPipelineEnd = stage === "Ready to Start Services";
               const toneKey: keyof typeof INTAKE_TONE = isPipelineEnd ? "emerald" : STAGE_TONES[i % STAGE_TONES.length];
               const t = INTAKE_TONE[toneKey];
+              const isDropTarget = dragOverStage === stage;
               return (
                 <div
                   key={stage}
+                  onDragOver={(e) => handleDragOver(e, stage)}
+                  onDragLeave={(e) => handleDragLeave(e, stage)}
+                  onDrop={(e) => handleDrop(e, stage)}
                   className={cn(
-                    "rounded-2xl border p-4 w-64 shrink-0 transition-all duration-300",
+                    "rounded-2xl border p-4 w-72 shrink-0 transition-all duration-200 flex flex-col",
                     t.bg,
                     isPipelineEnd ? "border-emerald-500/40" : "border-border/70",
+                    isDropTarget && "ring-2 ring-primary border-primary bg-primary/5",
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -132,59 +187,91 @@ export default function LeadToActivePipeline() {
                       {atRisk > 0 && <span className="text-amber-600">· {atRisk} at risk</span>}
                     </div>
                   )}
-                  <div className="mt-3 space-y-1.5">
-                    {items.slice(0, 6).map((l) => (
-                      <div key={l.id} className="rounded-md border border-border/60 bg-background/70 px-2 py-1.5 text-xs">
-                        <LeadNameLink leadId={l.id} className="font-medium truncate block hover:underline">{l.childName}</LeadNameLink>
-                        <div className="text-[10px] text-muted-foreground truncate">{l.owner || "Unassigned"} · {l.state}</div>
-                        {(() => {
-                          const risk = getLeadWorkflowRisk(l);
-                          if (risk.level === "ok") return null;
-                          return (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {risk.reasons.slice(0, 2).map((r) => (
-                                <Badge key={r} variant="secondary" className="text-[9px] py-0">{r}</Badge>
-                              ))}
+                  <div className={cn(
+                    "mt-3 space-y-2 flex-1 min-h-[120px] rounded-xl p-1 transition-colors",
+                    isDropTarget && "bg-primary/5",
+                  )}>
+                    {items.slice(0, 6).map((l) => {
+                      const risk = getLeadWorkflowRisk(l);
+                      const isDragging = draggingId === l.id;
+                      const accent =
+                        risk.level === "urgent" ? "border-l-rose-500" :
+                        risk.level === "risk" ? "border-l-amber-500" :
+                        l.priority === "Hot" ? "border-l-primary" :
+                        "border-l-border";
+                      return (
+                        <div
+                          key={l.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, l)}
+                          onDragEnd={handleDragEnd}
+                          className={cn(
+                            "group rounded-xl border border-border/70 bg-card shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all px-2.5 py-2.5 text-xs cursor-grab active:cursor-grabbing border-l-4",
+                            accent,
+                            isDragging && "opacity-40 scale-[0.97] rotate-1",
+                          )}
+                        >
+                          <div className="flex items-start gap-1.5">
+                            <GripVertical className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <LeadNameLink leadId={l.id} className="font-medium truncate text-foreground hover:underline">
+                                  {l.childName}
+                                </LeadNameLink>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setActionLead(l); }}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-muted p-0.5"
+                                  aria-label="Lead actions"
+                                >
+                                  <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                                </button>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                {l.owner || "Unassigned"} · {l.state} · {l.daysInStage}d
+                              </div>
+                              {risk.level !== "ok" && (
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {risk.reasons.slice(0, 2).map((r) => (
+                                    <Badge
+                                      key={r}
+                                      variant="secondary"
+                                      className={cn(
+                                        "text-[9px] py-0 px-1.5",
+                                        risk.level === "urgent" && "bg-rose-500/10 text-rose-700 dark:text-rose-300",
+                                        risk.level === "risk" && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                                      )}
+                                    >
+                                      {r}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="mt-2 flex justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                                  onClick={(e) => { e.stopPropagation(); setActionLead(l); }}
+                                >
+                                  Actions
+                                </Button>
+                              </div>
                             </div>
-                          );
-                        })()}
-                        <div className="mt-1 flex gap-1">
-                          {(() => {
-                            const prev = getPreviousFamilyLeadStage(stage);
-                            const next = getNextFamilyLeadStage(stage);
-                            return (
-                              <>
-                                {prev && (
-                                  <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
-                                    onClick={() => { revertStage(l.id, prev as LeadStatus, 0, "Move back"); toast.success(`Moved back to ${prev}`); }}>
-                                    <ChevronLeft className="h-3 w-3" /> Back
-                                  </Button>
-                                )}
-                                {isPipelineEnd ? (
-                                  <Button size="sm" variant="ghost" disabled className="h-6 px-1.5 text-[10px] text-muted-foreground" title="Active patient operations start after this point.">
-                                    <Ban className="h-3 w-3 mr-1" /> Pipeline end
-                                  </Button>
-                                ) : next && (
-                                  <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]"
-                                    onClick={() => { moveStage([l.id], next as LeadStatus); toast.success(`Moved to ${next}`); }}>
-                                    Forward <ChevronRight className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </>
-                            );
-                          })()}
+                          </div>
                         </div>
-                        <details className="mt-1">
-                          <summary className="text-[10px] text-muted-foreground cursor-pointer">Actions</summary>
-                          <div className="mt-1"><LeadActionPanel lead={l} compact sourcePage="lead-to-active" /></div>
-                        </details>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {items.length === 0 && (
-                      <div className="text-[11px] text-muted-foreground italic">No leads in stage</div>
+                      <div className={cn(
+                        "h-full min-h-[100px] grid place-items-center text-[11px] italic rounded-lg border border-dashed border-border/60",
+                        isDropTarget ? "text-primary border-primary/40 bg-primary/5" : "text-muted-foreground",
+                      )}>
+                        {isDropTarget ? "Drop to move here" : "No leads in stage"}
+                      </div>
                     )}
                     {items.length > 6 && (
-                      <Link to={`/leads?view=pipeline`} className="text-[11px] text-primary hover:underline">
+                      <Link to={`/leads?view=pipeline`} className="block text-[11px] text-primary hover:underline pt-1">
                         +{items.length - 6} more
                       </Link>
                     )}
@@ -210,6 +297,28 @@ export default function LeadToActivePipeline() {
         onOpenChange={setAddOpen}
         defaults={buildLeadSourceDefaults("Website", { sourcePage: "lead-to-active" })}
       />
+
+      <Dialog open={!!actionLead} onOpenChange={(o) => !o && setActionLead(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span>{actionLead?.childName}</span>
+              {actionLead && (
+                <span className="text-xs font-normal text-muted-foreground">
+                  · {canonicalFamilyLeadStage(actionLead.status)}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          {actionLead && (
+            <LeadActionPanel
+              lead={actionLead}
+              sourcePage="lead-to-active"
+              onAfterAction={() => setActionLead(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </GrowthPageShell>
   );
 }
