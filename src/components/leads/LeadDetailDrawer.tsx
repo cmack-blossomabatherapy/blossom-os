@@ -25,6 +25,76 @@ import {
   FAMILY_LEAD_PIPELINE_STAGES,
   canonicalFamilyLeadStage,
 } from "@/lib/intake/intakeWorkflow";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check } from "lucide-react";
+
+const STAGE_DETAILS: Record<string, { what: string; involves: string[]; owner: string }> = {
+  "Lead Captured": {
+    what: "Inquiry received from a parent, referral source, or marketing channel.",
+    involves: ["Source attribution logged", "Auto-assigned to intake coordinator", "Welcome SMS/email queued"],
+    owner: "Intake Coordinator",
+  },
+  "First Contact Attempt": {
+    what: "Initial outreach within the SLA (call + email + SMS).",
+    involves: ["First call attempt", "Voicemail + follow-up text", "Logged in activity timeline"],
+    owner: "Intake Coordinator",
+  },
+  "Engagement Track": {
+    what: "Family is responsive; nurturing toward qualification.",
+    involves: ["Discovery conversation", "Cadenced touchpoints", "Education on ABA process"],
+    owner: "Intake Coordinator",
+  },
+  "Qualification": {
+    what: "Confirm diagnosis, insurance, and service area fit.",
+    involves: ["Diagnosis confirmation", "Insurance captured", "State / region eligibility"],
+    owner: "Intake Coordinator",
+  },
+  "Intake Packet Sent": {
+    what: "Digital intake packet delivered to the family.",
+    involves: ["Packet emailed", "Reminders scheduled", "Tracking link active"],
+    owner: "Intake Coordinator",
+  },
+  "Intake Packet Follow Up": {
+    what: "Chasing missing documents or signatures.",
+    involves: ["Daily follow-up cadence", "Document checklist review", "Escalation if stalled 5+ days"],
+    owner: "Intake Coordinator",
+  },
+  "Intake Complete": {
+    what: "All required intake documents collected and verified.",
+    involves: ["Packet QA review", "Hand-off to Benefits Verification", "Family notified"],
+    owner: "Intake Coordinator",
+  },
+  "Benefits Verification": {
+    what: "Insurance benefits verified and summarized for the family.",
+    involves: ["VOB submitted via Solum", "Benefit summary built", "Financial responsibility communicated"],
+    owner: "Benefits Team",
+  },
+  "Assessment Scheduling": {
+    what: "Initial assessment booked with a BCBA.",
+    involves: ["BCBA matched", "Family availability confirmed", "Assessment on calendar"],
+    owner: "Scheduling Team",
+  },
+  "QA / Treatment Plan Authorization": {
+    what: "Assessment complete; treatment plan in QA before submission.",
+    involves: ["BCBA writes treatment plan", "QA review", "Plan ready for auth submission"],
+    owner: "QA / Authorization",
+  },
+  "Authorization Pending": {
+    what: "Treatment plan submitted to payer; awaiting authorization.",
+    involves: ["Auth submitted", "Payer follow-up cadence", "Auth window tracked"],
+    owner: "Authorization Team",
+  },
+  "Staffing Match": {
+    what: "Authorization received; matching RBT(s) to the client.",
+    involves: ["RBT match by availability + skill", "Family availability confirmed", "Schedule drafted"],
+    owner: "Staffing Team",
+  },
+  "Ready to Start Services": {
+    what: "Client fully onboarded and ready for first session.",
+    involves: ["Start date confirmed", "Welcome packet sent", "Hand-off to clinical team"],
+    owner: "Clinical Operations",
+  },
+};
 
 type Tab = "overview" | "insurance" | "documents" | "activity" | "actions";
 
