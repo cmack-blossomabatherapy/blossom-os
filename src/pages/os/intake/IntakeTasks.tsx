@@ -18,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 import { useNavigate } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Lock } from "lucide-react";
 
 type FilterKey = "all" | "today" | "overdue" | "escalated";
 type SortKey = "due" | "lead" | "owner" | "title";
@@ -32,10 +34,61 @@ function classify(r: TaskRow): "overdue" | "today" | "upcoming" {
   return "upcoming";
 }
 
+type Destination = {
+  to?: string;
+  drawer?: boolean;
+  label: string;
+  nextStep: string;
+  section: string;
+};
+
+function resolveDestination(row: TaskRow): Destination {
+  const leadId = row.lead?.id ?? row.task.lead_id;
+  const text = `${row.task.task_type ?? ""} ${row.task.title ?? ""}`.toLowerCase();
+  const focus = `taskId=${encodeURIComponent(row.task.id)}#task-${row.task.id}`;
+  if (/missing|packet|document|signature|consent/.test(text)) {
+    return {
+      to: `/intake/missing-information?leadId=${encodeURIComponent(leadId)}&${focus}`,
+      label: "Packet & Missing Info",
+      section: "Documents checklist",
+      nextStep: "Request, upload, or confirm the missing documents for this lead.",
+    };
+  }
+  if (/staff|match|schedul|assess|ready/.test(text)) {
+    return {
+      to: `/intake/lead-to-active?leadId=${encodeURIComponent(leadId)}&${focus}`,
+      label: "Lead → Active pipeline",
+      section: "Scheduling / staffing card",
+      nextStep: "Move the lead through staffing, scheduling, or assessment steps.",
+    };
+  }
+  if (/referr/.test(text)) {
+    return {
+      to: `/intake/referral-queue?leadId=${encodeURIComponent(leadId)}&${focus}`,
+      label: "Referral queue",
+      section: "Referral intake form",
+      nextStep: "Triage the referral and capture intake details.",
+    };
+  }
+  return {
+    drawer: true,
+    label: "Lead drawer",
+    section: "Lead overview & actions",
+    nextStep: "Use the action panel in the drawer to complete this task.",
+  };
+}
+
+function getBlockReason(row: TaskRow): string | null {
+  if (row.task.status === "Blocked") return "Task is marked Blocked — clear the blocker first.";
+  if (!row.task.owner || !row.task.owner.trim()) return "No owner assigned — reassign before starting.";
+  if (!row.lead) return "Lead record not found — open the lead first.";
+  return null;
+}
+
 export default function IntakeTasks() {
   const { leads: allLeads } = useLeads();
   const { matches } = useIntakeStateFilter();
-  const { tasks, loading, complete, snooze, reassign } = useIntakeTasksLive();
+  const { tasks, loading, complete, snooze, reassign, markStarted } = useIntakeTasksLive();
   const { openLead } = useLeadDrawer();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -121,23 +174,21 @@ export default function IntakeTasks() {
     }
   };
 
-  const startTask = (row: TaskRow) => {
-    const leadId = row.lead?.id ?? row.task.lead_id;
-    const text = `${row.task.task_type ?? ""} ${row.task.title ?? ""}`.toLowerCase();
-    if (/missing|packet|document|signature|consent/.test(text)) {
-      navigate(`/intake/missing-information?leadId=${encodeURIComponent(leadId)}`);
-      return;
+  const startTask = async (row: TaskRow) => {
+    const reason = getBlockReason(row);
+    if (reason) { toast.error(reason); return; }
+    const dest = resolveDestination(row);
+    try {
+      await markStarted(row.task);
+      toast.success(`Started: ${row.task.title}`, { description: `Opening ${dest.label} — ${dest.section}` });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not mark task started");
     }
-    if (/staff|match|schedul|assess|ready/.test(text)) {
-      navigate(`/intake/lead-to-active?leadId=${encodeURIComponent(leadId)}`);
-      return;
+    if (dest.drawer) {
+      openLead(row.lead?.id ?? row.task.lead_id);
+    } else if (dest.to) {
+      navigate(dest.to);
     }
-    if (/referr/.test(text)) {
-      navigate(`/intake/referral-queue?leadId=${encodeURIComponent(leadId)}`);
-      return;
-    }
-    // Default: open the lead drawer so the user can act in context
-    openLead(leadId);
   };
 
   return (
@@ -223,9 +274,7 @@ export default function IntakeTasks() {
                         <td className="px-3 py-2 text-xs text-muted-foreground truncate max-w-[180px]">{r.task.owner || "Unassigned"}</td>
                         <td className="px-3 py-2">
                           <div className="flex items-center justify-end gap-1">
-                            <Button size="sm" variant="default" className="h-7 px-2.5 text-xs gap-1" onClick={() => startTask(r)}>
-                              <Play className="h-3 w-3" /> Start
-                            </Button>
+                            <StartButton row={r} onStart={() => startTask(r)} />
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={wrap("Completed", () => complete(r.task.id))}>Complete</Button>
                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={wrap("Snoozed", () => snooze(r.task.id))}>Snooze</Button>
                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onReassignRow(r)}>Reassign</Button>
@@ -245,5 +294,47 @@ export default function IntakeTasks() {
         </section>
       )}
     </GrowthPageShell>
+  );
+}
+
+function StartButton({ row, onStart }: { row: TaskRow; onStart: () => void }) {
+  const blocked = getBlockReason(row);
+  const dest = resolveDestination(row);
+  const inProgress = row.task.status === "In Progress";
+  const label = blocked ? "Blocked" : inProgress ? "Resume" : "Start";
+  const Icon = blocked ? Lock : Play;
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span>
+            <Button
+              size="sm"
+              variant={blocked ? "outline" : "default"}
+              disabled={!!blocked}
+              className={cn("h-7 px-2.5 text-xs gap-1", blocked && "opacity-70 cursor-not-allowed")}
+              onClick={onStart}
+            >
+              <Icon className="h-3 w-3" /> {label}
+            </Button>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="left" className="max-w-[260px] text-xs leading-snug">
+          {blocked ? (
+            <div>
+              <div className="font-semibold mb-0.5">Can't start yet</div>
+              <div className="text-muted-foreground">{blocked}</div>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <div className="font-semibold">{inProgress ? "Resume this task" : "Start this task"}</div>
+              <div><span className="text-muted-foreground">Opens:</span> {dest.label}</div>
+              <div><span className="text-muted-foreground">Focus:</span> {dest.section}</div>
+              <div><span className="text-muted-foreground">Next:</span> {dest.nextStep}</div>
+            </div>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

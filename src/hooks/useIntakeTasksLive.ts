@@ -60,5 +60,17 @@ export function useIntakeTasksLive() {
     if (error) throw error;
   }, []);
 
-  return { tasks, loading, refetch, complete, snooze, reassign };
+  const markStarted = useCallback(async (task: IntakeTaskRow) => {
+    const stamp = new Date().toISOString();
+    const prev = (task.notes ?? "").trim();
+    const entry = `[${stamp}] Task started`;
+    const nextNotes = prev ? `${prev}\n${entry}` : entry;
+    const { error } = await supabase
+      .from("intake_tasks")
+      .update({ status: "In Progress", notes: nextNotes } as never)
+      .eq("id", task.id);
+    if (error) throw error;
+  }, []);
+
+  return { tasks, loading, refetch, complete, snooze, reassign, markStarted };
 }
