@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { LeadNameLink } from "@/contexts/LeadDrawerContext";
+import { LeadNameLink, useLeadDrawer } from "@/contexts/LeadDrawerContext";
 import {
-  Plus, AlertCircle, CheckCircle2, List,
+  Plus, AlertCircle, CheckCircle2, List, Play,
   CalendarClock, Flame, Inbox, ListTodo, Search, ArrowUpDown,
 } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
+import { useNavigate } from "react-router-dom";
 
 type FilterKey = "all" | "today" | "overdue" | "escalated";
 type SortKey = "due" | "lead" | "owner" | "title";
@@ -35,6 +36,8 @@ export default function IntakeTasks() {
   const { leads: allLeads } = useLeads();
   const { matches } = useIntakeStateFilter();
   const { tasks, loading, complete, snooze, reassign } = useIntakeTasksLive();
+  const { openLead } = useLeadDrawer();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("due");
@@ -118,6 +121,25 @@ export default function IntakeTasks() {
     }
   };
 
+  const startTask = (row: TaskRow) => {
+    const leadId = row.lead?.id ?? row.task.lead_id;
+    const text = `${row.task.task_type ?? ""} ${row.task.title ?? ""}`.toLowerCase();
+    if (/missing|packet|document|signature|consent/.test(text)) {
+      navigate(`/intake/missing-information?leadId=${encodeURIComponent(leadId)}`);
+      return;
+    }
+    if (/staff|match|schedul|assess|ready/.test(text)) {
+      navigate(`/intake/lead-to-active?leadId=${encodeURIComponent(leadId)}`);
+      return;
+    }
+    if (/referr/.test(text)) {
+      navigate(`/intake/referral-queue?leadId=${encodeURIComponent(leadId)}`);
+      return;
+    }
+    // Default: open the lead drawer so the user can act in context
+    openLead(leadId);
+  };
+
   return (
     <GrowthPageShell
       eyebrow="Growth & Admissions"
@@ -165,7 +187,7 @@ export default function IntakeTasks() {
                     <th className="px-3 py-2 w-32">Type</th>
                     <th className="px-3 py-2 w-28"><SortBtn k="due">Due</SortBtn></th>
                     <th className="px-3 py-2 w-36"><SortBtn k="owner">Owner</SortBtn></th>
-                    <th className="px-3 py-2 w-[220px] text-right">Actions</th>
+                    <th className="px-3 py-2 w-[300px] text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -201,6 +223,9 @@ export default function IntakeTasks() {
                         <td className="px-3 py-2 text-xs text-muted-foreground truncate max-w-[180px]">{r.task.owner || "Unassigned"}</td>
                         <td className="px-3 py-2">
                           <div className="flex items-center justify-end gap-1">
+                            <Button size="sm" variant="default" className="h-7 px-2.5 text-xs gap-1" onClick={() => startTask(r)}>
+                              <Play className="h-3 w-3" /> Start
+                            </Button>
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={wrap("Completed", () => complete(r.task.id))}>Complete</Button>
                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={wrap("Snoozed", () => snooze(r.task.id))}>Snooze</Button>
                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onReassignRow(r)}>Reassign</Button>
