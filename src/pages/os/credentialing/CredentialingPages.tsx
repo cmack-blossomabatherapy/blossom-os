@@ -1,0 +1,1043 @@
+import { useMemo, useState, type ReactNode } from "react";
+import { Navigate } from "react-router-dom";
+import {
+  Stethoscope, Building2, IdCard, AlertTriangle, Calendar, Plus, Filter,
+  Download, RefreshCw, ListChecks, FileSignature, ShieldCheck, Activity,
+  Search, X, type LucideIcon,
+} from "lucide-react";
+import { OSShell } from "@/pages/os/OSShell";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import {
+  useCredentialingData, useCredentialingActivity,
+  createCredProvider, createCredRecord, updateCredRecord, createCredTask, addCredDocument,
+  CRED_STATUSES, CRED_TYPES, CRED_PRIORITIES, CRED_PROVIDER_TYPES, CRED_STATES,
+  ACTIVE_CRED_STATUSES, APPROVED_CRED_STATUSES,
+  daysUntil,
+  type CredentialingProvider, type CredentialingRecord,
+  type CredStatus, type CredType, type CredPriority, type CredProviderType,
+} from "@/hooks/useCredentialing";
+
+/* -------------------------------------------------------------------------- */
+/* Layout                                                                     */
+/* -------------------------------------------------------------------------- */
+function Shell({ children }: { children: ReactNode }) {
+  return (
+    <OSShell>
+      <div className="px-6 lg:px-10 py-8 max-w-[1500px] mx-auto space-y-6">{children}</div>
+    </OSShell>
+  );
+}
+
+function PageHeader({
+  eyebrow, title, subtitle, icon: Icon, actions,
+}: { eyebrow: string; title: string; subtitle: string; icon: LucideIcon; actions?: ReactNode }) {
+  return (
+    <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div>
+        <div className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+          <Icon className="h-3.5 w-3.5" /> {eyebrow}
+        </div>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
+        <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl">{subtitle}</p>
+      </div>
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+    </header>
+  );
+}
+
+function SectionCard({ title, description, action, children }: {
+  title: string; description?: string; action?: ReactNode; children: ReactNode;
+}) {
+  return (
+    <Card className="p-6 rounded-2xl border-border/60">
+      <div className="flex items-start justify-between mb-4 gap-4">
+        <div>
+          <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+          {description ? <p className="text-sm text-muted-foreground mt-1">{description}</p> : null}
+        </div>
+        {action}
+      </div>
+      {children}
+    </Card>
+  );
+}
+
+function StatusBadge({ status }: { status: CredStatus | string }) {
+  const tone =
+    status === "Approved" || status === "Effective"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : status === "Denied" || status === "Blocked"
+      ? "bg-red-50 text-red-700 border-red-200"
+    : status === "Expiring" || status === "Missing Info"
+      ? "bg-amber-50 text-amber-800 border-amber-200"
+    : status === "Submitted" || status === "Payer Follow-Up" || status === "Ready to Submit"
+      ? "bg-sky-50 text-sky-700 border-sky-200"
+    : status === "Renewal In Progress" || status === "Gathering Docs"
+      ? "bg-violet-50 text-violet-700 border-violet-200"
+    : "bg-muted/40 text-muted-foreground border-border/60";
+  return <Badge variant="outline" className={cn("font-medium", tone)}>{status}</Badge>;
+}
+
+function KpiCard({ label, value, tone = "neutral", hint }: {
+  label: string; value: ReactNode; tone?: "ok" | "warn" | "danger" | "neutral"; hint?: string;
+}) {
+  return (
+    <Card className="p-5 rounded-2xl border-border/60">
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={cn(
+        "text-3xl font-semibold tracking-tight mt-2",
+        tone === "ok" && "text-emerald-600",
+        tone === "warn" && "text-amber-600",
+        tone === "danger" && "text-red-600",
+      )}>{value}</div>
+      {hint ? <div className="text-xs text-muted-foreground mt-1">{hint}</div> : null}
+    </Card>
+  );
+}
+
+function LoadErr({ loading, error }: { loading: boolean; error: string | null }) {
+  if (loading) return <div className="text-sm text-muted-foreground">Loading credentialing data…</div>;
+  if (error) return <div className="text-sm text-red-600">{error}</div>;
+  return null;
+}
+
+function Empty({ icon: Icon = FileSignature, title, action }: { icon?: LucideIcon; title: string; action?: ReactNode }) {
+  return (
+    <div className="text-center py-10">
+      <div className="h-10 w-10 mx-auto rounded-full bg-muted grid place-items-center mb-3">
+        <Icon className="h-5 w-5 text-muted-foreground" />
+      </div>
+      <div className="text-sm font-medium text-foreground">{title}</div>
+      {action ? <div className="mt-3">{action}</div> : null}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Add Provider dialog                                                        */
+/* -------------------------------------------------------------------------- */
+function AddProviderDialog({ open, onOpenChange, onCreated }: {
+  open: boolean; onOpenChange: (v: boolean) => void; onCreated: () => void;
+}) {
+  const [form, setForm] = useState({
+    provider_name: "", provider_type: "BCBA" as CredProviderType,
+    email: "", phone: "", npi: "", caqh_id: "",
+    license_number: "", license_state: "GA", license_expiration_date: "",
+    centralreach_provider_id: "", active: true, notes: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    if (!form.provider_name.trim()) { toast.error("Provider name is required"); return; }
+    setSaving(true);
+    try {
+      await createCredProvider({
+        provider_name: form.provider_name.trim(),
+        provider_type: form.provider_type,
+        email: form.email || null, phone: form.phone || null,
+        npi: form.npi || null, caqh_id: form.caqh_id || null,
+        license_number: form.license_number || null,
+        license_state: form.license_state || null,
+        license_expiration_date: form.license_expiration_date || null,
+        centralreach_provider_id: form.centralreach_provider_id || null,
+        active: form.active, notes: form.notes || null,
+      });
+      toast.success("Provider added");
+      onCreated();
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to add provider");
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Add provider</DialogTitle>
+          <DialogDescription>Create a credentialing provider record.</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <Label>Provider name</Label>
+            <Input value={form.provider_name} onChange={(e) => setForm({ ...form, provider_name: e.target.value })} />
+          </div>
+          <div>
+            <Label>Type</Label>
+            <Select value={form.provider_type} onValueChange={(v) => setForm({ ...form, provider_type: v as CredProviderType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_PROVIDER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>License state</Label>
+            <Select value={form.license_state} onValueChange={(v) => setForm({ ...form, license_state: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+          <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+          <div><Label>NPI</Label><Input value={form.npi} onChange={(e) => setForm({ ...form, npi: e.target.value })} /></div>
+          <div><Label>CAQH ID</Label><Input value={form.caqh_id} onChange={(e) => setForm({ ...form, caqh_id: e.target.value })} /></div>
+          <div><Label>License number</Label><Input value={form.license_number} onChange={(e) => setForm({ ...form, license_number: e.target.value })} /></div>
+          <div><Label>License expiration</Label><Input type="date" value={form.license_expiration_date} onChange={(e) => setForm({ ...form, license_expiration_date: e.target.value })} /></div>
+          <div><Label>CentralReach provider id</Label><Input value={form.centralreach_provider_id} onChange={(e) => setForm({ ...form, centralreach_provider_id: e.target.value })} /></div>
+          <div className="flex items-center gap-3 pt-6">
+            <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
+            <Label className="!mt-0">Active</Label>
+          </div>
+          <div className="col-span-2">
+            <Label>Notes</Label>
+            <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : "Add provider"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Add / edit Credentialing Record dialog                                     */
+/* -------------------------------------------------------------------------- */
+function AddRecordDialog({
+  open, onOpenChange, providers, defaultProviderId, onCreated,
+}: {
+  open: boolean; onOpenChange: (v: boolean) => void;
+  providers: CredentialingProvider[]; defaultProviderId?: string;
+  onCreated: () => void;
+}) {
+  const [form, setForm] = useState({
+    provider_id: defaultProviderId ?? "",
+    payer_name: "", state: "GA", plan_type: "",
+    credentialing_type: "Initial" as CredType, status: "Not Started" as CredStatus,
+    priority: "Normal" as CredPriority, payer_reference_number: "",
+    submitted_date: "", expiration_date: "", next_follow_up_date: "",
+    blocker_reason: "", notes: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    if (!form.provider_id) { toast.error("Select a provider"); return; }
+    if (!form.payer_name.trim()) { toast.error("Payer name is required"); return; }
+    setSaving(true);
+    try {
+      await createCredRecord({
+        provider_id: form.provider_id,
+        payer_name: form.payer_name.trim(),
+        state: form.state || null,
+        plan_type: form.plan_type || null,
+        credentialing_type: form.credentialing_type,
+        status: form.status,
+        priority: form.priority,
+        payer_reference_number: form.payer_reference_number || null,
+        submitted_date: form.submitted_date || null,
+        expiration_date: form.expiration_date || null,
+        next_follow_up_date: form.next_follow_up_date || null,
+        blocker_reason: form.blocker_reason || null,
+        notes: form.notes || null,
+        centralreach_sync_status: "Not Connected",
+      });
+      toast.success("Credentialing record created");
+      onCreated();
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to create record");
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Add credentialing record</DialogTitle>
+          <DialogDescription>Track a payer/state credentialing workflow.</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <Label>Provider</Label>
+            <Select value={form.provider_id} onValueChange={(v) => setForm({ ...form, provider_id: v })}>
+              <SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger>
+              <SelectContent>
+                {providers.map((p) => <SelectItem key={p.id} value={p.id}>{p.provider_name} · {p.provider_type}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>Payer</Label><Input value={form.payer_name} onChange={(e) => setForm({ ...form, payer_name: e.target.value })} placeholder="Aetna, BCBS, United..." /></div>
+          <div>
+            <Label>State</Label>
+            <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Plan type</Label><Input value={form.plan_type} onChange={(e) => setForm({ ...form, plan_type: e.target.value })} placeholder="Commercial, Medicaid..." /></div>
+          <div>
+            <Label>Credentialing type</Label>
+            <Select value={form.credentialing_type} onValueChange={(v) => setForm({ ...form, credentialing_type: v as CredType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Status</Label>
+            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as CredStatus })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Priority</Label>
+            <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v as CredPriority })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Payer reference #</Label><Input value={form.payer_reference_number} onChange={(e) => setForm({ ...form, payer_reference_number: e.target.value })} /></div>
+          <div><Label>Submitted date</Label><Input type="date" value={form.submitted_date} onChange={(e) => setForm({ ...form, submitted_date: e.target.value })} /></div>
+          <div><Label>Expiration date</Label><Input type="date" value={form.expiration_date} onChange={(e) => setForm({ ...form, expiration_date: e.target.value })} /></div>
+          <div><Label>Next follow-up</Label><Input type="date" value={form.next_follow_up_date} onChange={(e) => setForm({ ...form, next_follow_up_date: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Blocker reason</Label><Input value={form.blocker_reason} onChange={(e) => setForm({ ...form, blocker_reason: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : "Create record"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Record detail sheet                                                        */
+/* -------------------------------------------------------------------------- */
+function RecordDetailSheet({
+  recordId, records, providerById, onClose, onChanged,
+}: {
+  recordId: string | null;
+  records: CredentialingRecord[];
+  providerById: Map<string, CredentialingProvider>;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const record = useMemo(() => records.find((r) => r.id === recordId) ?? null, [records, recordId]);
+  const provider = record ? providerById.get(record.provider_id) ?? null : null;
+  const { items: activity } = useCredentialingActivity(record?.id ?? null);
+  const [busy, setBusy] = useState(false);
+
+  async function moveStatus(s: CredStatus) {
+    if (!record) return;
+    setBusy(true);
+    try {
+      const patch: Partial<CredentialingRecord> = { status: s };
+      const today = new Date().toISOString().slice(0, 10);
+      if (s === "Submitted" && !record.submitted_date) patch.submitted_date = today;
+      if ((s === "Approved" || s === "Effective") && !record.approved_date) patch.approved_date = today;
+      await updateCredRecord(record.id, patch);
+      toast.success(`Marked ${s}`);
+      onChanged();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Update failed"); }
+    finally { setBusy(false); }
+  }
+
+  async function quickAddTask() {
+    if (!record) return;
+    const title = window.prompt("Task title");
+    if (!title) return;
+    try {
+      await createCredTask({ credentialing_record_id: record.id, title, status: "Open" });
+      toast.success("Task created");
+      onChanged();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+  }
+
+  async function quickAddDoc() {
+    if (!record) return;
+    const document_type = window.prompt("Document type (e.g. CAQH attestation, License)");
+    if (!document_type) return;
+    try {
+      await addCredDocument({
+        credentialing_record_id: record.id, provider_id: record.provider_id,
+        document_type, verification_status: "Needed",
+      });
+      toast.success("Document logged");
+      onChanged();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+  }
+
+  return (
+    <Sheet open={!!record} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        {record && provider ? (
+          <>
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                {provider.provider_name}
+                <StatusBadge status={record.status} />
+              </SheetTitle>
+              <SheetDescription>
+                {record.payer_name} · {record.state ?? "—"} · {record.credentialing_type}
+              </SheetDescription>
+            </SheetHeader>
+            <Tabs defaultValue="overview" className="mt-4">
+              <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="activity">Activity</TabsTrigger>
+                <TabsTrigger value="cr">CentralReach</TabsTrigger>
+              </TabsList>
+              <TabsContent value="overview" className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <Field label="Submitted" value={record.submitted_date} />
+                  <Field label="Approved" value={record.approved_date} />
+                  <Field label="Effective" value={record.effective_date} />
+                  <Field label="Expiration" value={record.expiration_date} />
+                  <Field label="Next follow-up" value={record.next_follow_up_date} />
+                  <Field label="Priority" value={record.priority} />
+                  <Field label="Payer reference" value={record.payer_reference_number} />
+                  <Field label="Plan type" value={record.plan_type} />
+                </div>
+                {record.blocker_reason ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 text-red-800 text-sm p-3">
+                    <div className="font-medium mb-1">Blocker</div>{record.blocker_reason}
+                  </div>
+                ) : null}
+                {record.missing_items?.length ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 text-amber-900 text-sm p-3">
+                    <div className="font-medium mb-1">Missing items</div>
+                    <ul className="list-disc pl-5">{record.missing_items.map((m) => <li key={m}>{m}</li>)}</ul>
+                  </div>
+                ) : null}
+                {record.notes ? (
+                  <div className="text-sm text-muted-foreground whitespace-pre-wrap">{record.notes}</div>
+                ) : null}
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Move status</div>
+                  <div className="flex flex-wrap gap-2">
+                    {(["Gathering Docs","Ready to Submit","Submitted","Payer Follow-Up","Approved","Effective","Expiring","Renewal In Progress","Denied","Blocked"] as CredStatus[]).map((s) => (
+                      <Button key={s} size="sm" variant="outline" disabled={busy || s === record.status} onClick={() => moveStatus(s)}>
+                        {s}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button size="sm" variant="outline" onClick={quickAddTask}><Plus className="h-3.5 w-3.5 mr-1" />Add task</Button>
+                  <Button size="sm" variant="outline" onClick={quickAddDoc}><FileSignature className="h-3.5 w-3.5 mr-1" />Track document</Button>
+                </div>
+              </TabsContent>
+              <TabsContent value="activity" className="mt-4 space-y-2">
+                {activity.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No activity yet.</div>
+                ) : activity.map((a) => (
+                  <div key={a.id} className="text-sm border-l-2 border-border/60 pl-3 py-1">
+                    <div className="font-medium">
+                      {a.activity_type === "status_change"
+                        ? `Status: ${a.old_status ?? "—"} → ${a.new_status ?? "—"}`
+                        : a.message ?? a.activity_type}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleString()}</div>
+                  </div>
+                ))}
+              </TabsContent>
+              <TabsContent value="cr" className="mt-4 space-y-3 text-sm">
+                <Field label="CentralReach provider id" value={provider.centralreach_provider_id} />
+                <Field label="CentralReach record id" value={record.centralreach_external_id} />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground">Sync status</span>
+                  <StatusBadge status={record.centralreach_sync_status} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  CentralReach is the EMR. Live sync is not connected yet — these fields stage the integration.
+                </p>
+              </TabsContent>
+            </Tabs>
+          </>
+        ) : null}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-sm">{value && value.length ? value : "—"}</div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* CSV export helper                                                          */
+/* -------------------------------------------------------------------------- */
+function exportCsv(filename: string, rows: Record<string, unknown>[]) {
+  if (!rows.length) { toast.message("Nothing to export"); return; }
+  const headers = Object.keys(rows[0]);
+  const escape = (v: unknown) => {
+    const s = v == null ? "" : Array.isArray(v) ? v.join("; ") : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => escape(r[h])).join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Page 1: Dashboard                                                          */
+/* -------------------------------------------------------------------------- */
+export function CredentialingDashboardPage() {
+  const { providers, records, providerById, loading, error, reload } = useCredentialingData();
+  const [addProv, setAddProv] = useState(false);
+  const [addRec, setAddRec] = useState(false);
+  const [openRecord, setOpenRecord] = useState<string | null>(null);
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [payerFilter, setPayerFilter] = useState<string>("");
+
+  const filtered = useMemo(() => records.filter((r) =>
+    (stateFilter === "ALL" || r.state === stateFilter) &&
+    (statusFilter === "ALL" || r.status === statusFilter) &&
+    (!payerFilter || r.payer_name.toLowerCase().includes(payerFilter.toLowerCase()))
+  ), [records, stateFilter, statusFilter, payerFilter]);
+
+  const kpis = useMemo(() => {
+    const inProgress = records.filter((r) => ACTIVE_CRED_STATUSES.includes(r.status)).length;
+    const submitted = records.filter((r) => r.status === "Submitted" || r.status === "Payer Follow-Up").length;
+    const missing = records.filter((r) => r.status === "Missing Info").length;
+    const exp30 = records.filter((r) => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 30; }).length;
+    const exp60 = records.filter((r) => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 60; }).length;
+    const exp90 = records.filter((r) => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 90; }).length;
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const approvedMonth = records.filter((r) => r.approved_date && r.approved_date.startsWith(thisMonth)).length;
+    const overdueFollowUps = records.filter((r) => {
+      const d = daysUntil(r.next_follow_up_date); return d !== null && d < 0;
+    }).length;
+    const bcbaProviders = providers.filter((p) => p.provider_type === "BCBA" && p.active);
+    const bcbaWithCoverage = new Set(records.filter((r) => APPROVED_CRED_STATUSES.includes(r.status)).map((r) => r.provider_id));
+    const uncredentialedBcbas = bcbaProviders.filter((p) => !bcbaWithCoverage.has(p.id)).length;
+    return {
+      activeProviders: providers.filter((p) => p.active).length,
+      inProgress, submitted, missing, exp30, exp60, exp90,
+      approvedMonth, overdueFollowUps, uncredentialedBcbas,
+    };
+  }, [records, providers]);
+
+  return (
+    <Shell>
+      <PageHeader
+        eyebrow="Credentialing"
+        title="Credentialing Dashboard"
+        subtitle="Provider and payer credentialing readiness across every state."
+        icon={Stethoscope}
+        actions={
+          <>
+            <Button size="sm" variant="outline" onClick={reload}><RefreshCw className="h-4 w-4 mr-1.5" />Refresh</Button>
+            <Button size="sm" variant="outline" onClick={() => exportCsv("credentialing-records.csv", filtered as unknown as Record<string, unknown>[])}>
+              <Download className="h-4 w-4 mr-1.5" />Export CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add provider</Button>
+            <Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1.5" />Add credentialing record</Button>
+          </>
+        }
+      />
+      <LoadErr loading={loading} error={error} />
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <KpiCard label="Active providers" value={kpis.activeProviders} tone="ok" />
+        <KpiCard label="In progress" value={kpis.inProgress} tone="warn" />
+        <KpiCard label="Submitted · awaiting payer" value={kpis.submitted} />
+        <KpiCard label="Missing info" value={kpis.missing} tone="warn" />
+        <KpiCard label="Uncredentialed BCBAs" value={kpis.uncredentialedBcbas} tone="danger" />
+        <KpiCard label="Expiring < 30 days" value={kpis.exp30} tone="danger" />
+        <KpiCard label="Expiring < 60 days" value={kpis.exp60} tone="warn" hint={`<90d: ${kpis.exp90}`} />
+        <KpiCard label="Approved this month" value={kpis.approvedMonth} tone="ok" hint={`Overdue follow-ups: ${kpis.overdueFollowUps}`} />
+      </div>
+
+      <SectionCard
+        title="Credentialing records"
+        description="All payer/state credentialing work, filterable."
+        action={
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="relative">
+              <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+              <Input placeholder="Payer…" className="h-9 pl-7 w-40" value={payerFilter} onChange={(e) => setPayerFilter(e.target.value)} />
+            </div>
+            <Select value={stateFilter} onValueChange={setStateFilter}>
+              <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
+              <SelectContent><SelectItem value="ALL">All states</SelectItem>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent><SelectItem value="ALL">All statuses</SelectItem>{CRED_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        }
+      >
+        {filtered.length === 0 ? (
+          <Empty title="No credentialing records yet" action={
+            <Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1" />Create credentialing record</Button>
+          } />
+        ) : (
+          <div className="overflow-x-auto -mx-2">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>{["Provider","Payer","State","Type","Status","Submitted","Expires","Next follow-up",""].map((h) => (
+                  <th key={h} className="text-left font-medium px-3 py-2.5">{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {filtered.map((r) => {
+                  const p = providerById.get(r.provider_id);
+                  return (
+                    <tr key={r.id} className="border-t border-border/60 hover:bg-muted/30 cursor-pointer" onClick={() => setOpenRecord(r.id)}>
+                      <td className="px-3 py-2.5 font-medium">{p?.provider_name ?? "Unknown"}</td>
+                      <td className="px-3 py-2.5">{r.payer_name}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{r.state ?? "—"}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{r.credentialing_type}</td>
+                      <td className="px-3 py-2.5"><StatusBadge status={r.status} /></td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{r.submitted_date ?? "—"}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{r.expiration_date ?? "—"}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{r.next_follow_up_date ?? "—"}</td>
+                      <td className="px-3 py-2.5 text-right">
+                        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setOpenRecord(r.id); }}>Open</Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+
+      <AddProviderDialog open={addProv} onOpenChange={setAddProv} onCreated={reload} />
+      <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} onCreated={reload} />
+      <RecordDetailSheet
+        recordId={openRecord} records={records} providerById={providerById}
+        onClose={() => setOpenRecord(null)} onChanged={reload}
+      />
+    </Shell>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Page 2: Provider workspace                                                 */
+/* -------------------------------------------------------------------------- */
+export function ProviderCredentialingPage() {
+  const { providers, records, loading, error, reload, providerById } = useCredentialingData();
+  const [addProv, setAddProv] = useState(false);
+  const [addRec, setAddRec] = useState(false);
+  const [defaultProv, setDefaultProv] = useState<string | undefined>();
+  const [openRecord, setOpenRecord] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+
+  const list = providers.filter((p) =>
+    !q || p.provider_name.toLowerCase().includes(q.toLowerCase()) || (p.npi ?? "").includes(q)
+  );
+
+  function startFor(providerId: string) { setDefaultProv(providerId); setAddRec(true); }
+
+  return (
+    <Shell>
+      <PageHeader
+        eyebrow="Credentialing"
+        title="Provider Credentialing"
+        subtitle="Provider directory with payer/state coverage, licensing, and CentralReach readiness."
+        icon={Stethoscope}
+        actions={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add provider</Button>}
+      />
+      <LoadErr loading={loading} error={error} />
+      <div className="flex items-center gap-2">
+        <div className="relative max-w-sm w-full">
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search providers or NPI…" className="pl-7 h-9" />
+        </div>
+      </div>
+      <SectionCard title={`${list.length} provider${list.length === 1 ? "" : "s"}`} description="Each row shows credentialing posture across payers.">
+        {list.length === 0 ? (
+          <Empty title="No providers yet" action={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1" />Add provider</Button>} />
+        ) : (
+          <div className="overflow-x-auto -mx-2">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>{["Provider","Type","State / license","NPI","CAQH","Active records","Missing items","Expiring","CentralReach",""].map((h) => (
+                  <th key={h} className="text-left font-medium px-3 py-2.5">{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {list.map((p) => {
+                  const provRecs = records.filter((r) => r.provider_id === p.id);
+                  const active = provRecs.filter((r) => ACTIVE_CRED_STATUSES.includes(r.status)).length;
+                  const missing = provRecs.reduce((n, r) => n + (r.missing_items?.length ?? 0), 0);
+                  const expiring = provRecs.filter((r) => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 90; }).length;
+                  const cr = p.centralreach_provider_id ? "Synced" : "Not Connected";
+                  return (
+                    <tr key={p.id} className="border-t border-border/60 hover:bg-muted/30">
+                      <td className="px-3 py-2.5 font-medium">{p.provider_name}{!p.active && <Badge variant="outline" className="ml-2 text-[10px]">Inactive</Badge>}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{p.provider_type}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{p.license_state ?? "—"} {p.license_number ? `· ${p.license_number}` : ""}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{p.npi ?? "—"}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{p.caqh_id ?? "—"}</td>
+                      <td className="px-3 py-2.5">{active}</td>
+                      <td className="px-3 py-2.5">{missing}</td>
+                      <td className="px-3 py-2.5">{expiring}</td>
+                      <td className="px-3 py-2.5"><StatusBadge status={cr} /></td>
+                      <td className="px-3 py-2.5 text-right">
+                        <Button size="sm" variant="outline" onClick={() => startFor(p.id)}>Start credentialing</Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+      <AddProviderDialog open={addProv} onOpenChange={setAddProv} onCreated={reload} />
+      <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} defaultProviderId={defaultProv} onCreated={() => { setDefaultProv(undefined); reload(); }} />
+      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} onClose={() => setOpenRecord(null)} onChanged={reload} />
+    </Shell>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Page 3: Insurance / Payer matrix                                           */
+/* -------------------------------------------------------------------------- */
+export function InsuranceCredentialingPage() {
+  const { providers, records, providerById, loading, error, reload } = useCredentialingData();
+  const [addRec, setAddRec] = useState(false);
+  const [openRecord, setOpenRecord] = useState<string | null>(null);
+
+  const matrix = useMemo(() => {
+    const map = new Map<string, {
+      payer: string; state: string; required: number; credentialed: number;
+      pending: number; blocked: number; expiring: number; nextFollowUp: string | null;
+    }>();
+    records.forEach((r) => {
+      const key = `${r.payer_name}|${r.state ?? "—"}`;
+      let row = map.get(key);
+      if (!row) {
+        row = { payer: r.payer_name, state: r.state ?? "—", required: 0, credentialed: 0, pending: 0, blocked: 0, expiring: 0, nextFollowUp: null };
+        map.set(key, row);
+      }
+      row.required += 1;
+      if (APPROVED_CRED_STATUSES.includes(r.status)) row.credentialed += 1;
+      else if (r.status === "Blocked" || r.status === "Denied") row.blocked += 1;
+      else if (ACTIVE_CRED_STATUSES.includes(r.status)) row.pending += 1;
+      const d = daysUntil(r.expiration_date);
+      if (d !== null && d >= 0 && d <= 90) row.expiring += 1;
+      if (r.next_follow_up_date && (!row.nextFollowUp || r.next_follow_up_date < row.nextFollowUp)) {
+        row.nextFollowUp = r.next_follow_up_date;
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => (b.blocked - a.blocked) || (b.pending - a.pending));
+  }, [records]);
+
+  return (
+    <Shell>
+      <PageHeader
+        eyebrow="Credentialing" title="Insurance Credentialing"
+        subtitle="Payer + state credentialing matrix. See which payers are blocking growth or authorizations."
+        icon={Building2}
+        actions={<Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1.5" />Add payer credentialing record</Button>}
+      />
+      <LoadErr loading={loading} error={error} />
+      <SectionCard title="Payer / state posture" description={`${matrix.length} payer-state combinations.`}>
+        {matrix.length === 0 ? (
+          <Empty title="No payer credentialing yet" action={
+            <Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1" />Add payer credentialing record</Button>
+          } />
+        ) : (
+          <div className="overflow-x-auto -mx-2">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>{["Payer","State","Required","Credentialed","Pending","Blocked","Expiring","Next follow-up"].map((h) => (
+                  <th key={h} className="text-left font-medium px-3 py-2.5">{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {matrix.map((m) => (
+                  <tr key={`${m.payer}-${m.state}`} className="border-t border-border/60">
+                    <td className="px-3 py-2.5 font-medium">{m.payer}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground">{m.state}</td>
+                    <td className="px-3 py-2.5">{m.required}</td>
+                    <td className="px-3 py-2.5 text-emerald-700">{m.credentialed}</td>
+                    <td className="px-3 py-2.5 text-sky-700">{m.pending}</td>
+                    <td className="px-3 py-2.5 text-red-700">{m.blocked}</td>
+                    <td className="px-3 py-2.5 text-amber-700">{m.expiring}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground">{m.nextFollowUp ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+      <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} onCreated={reload} />
+      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} onClose={() => setOpenRecord(null)} onChanged={reload} />
+    </Shell>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Page 4: BCBA Credentials                                                   */
+/* -------------------------------------------------------------------------- */
+export function BCBACredentialsPage() {
+  const { providers, records, providerById, loading, error, reload, tasks, documents } = useCredentialingData();
+  const [addProv, setAddProv] = useState(false);
+  const [addRec, setAddRec] = useState(false);
+  const [defaultProv, setDefaultProv] = useState<string | undefined>();
+  const [openRecord, setOpenRecord] = useState<string | null>(null);
+
+  const bcbaProviders = providers.filter((p) => p.provider_type === "BCBA");
+
+  return (
+    <Shell>
+      <PageHeader
+        eyebrow="Credentialing" title="BCBA Credentials"
+        subtitle="Credentialing posture for every BCBA: licensing, CAQH, payer coverage, documents, CentralReach."
+        icon={IdCard}
+        actions={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add BCBA</Button>}
+      />
+      <LoadErr loading={loading} error={error} />
+      <SectionCard title={`${bcbaProviders.length} BCBA${bcbaProviders.length === 1 ? "" : "s"}`}>
+        {bcbaProviders.length === 0 ? (
+          <Empty title="No BCBAs in the credentialing directory yet" action={
+            <Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1" />Add BCBA</Button>
+          } />
+        ) : (
+          <div className="overflow-x-auto -mx-2">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>{["BCBA","License","License exp","Payers covered","Missing payers","Documents","Open tasks","CentralReach",""].map((h) => (
+                  <th key={h} className="text-left font-medium px-3 py-2.5">{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {bcbaProviders.map((p) => {
+                  const provRecs = records.filter((r) => r.provider_id === p.id);
+                  const covered = provRecs.filter((r) => APPROVED_CRED_STATUSES.includes(r.status)).length;
+                  const missing = provRecs.filter((r) => !APPROVED_CRED_STATUSES.includes(r.status)).length;
+                  const docs = documents.filter((d) => d.provider_id === p.id).length;
+                  const openTasks = tasks.filter((t) => t.status !== "Done" && provRecs.some((r) => r.id === t.credentialing_record_id)).length;
+                  const cr = p.centralreach_provider_id ? "Synced" : "Not Connected";
+                  return (
+                    <tr key={p.id} className="border-t border-border/60">
+                      <td className="px-3 py-2.5 font-medium">{p.provider_name}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{p.license_state ?? "—"} {p.license_number ? `· ${p.license_number}` : ""}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{p.license_expiration_date ?? "—"}</td>
+                      <td className="px-3 py-2.5 text-emerald-700">{covered}</td>
+                      <td className="px-3 py-2.5 text-amber-700">{missing}</td>
+                      <td className="px-3 py-2.5">{docs}</td>
+                      <td className="px-3 py-2.5">{openTasks}</td>
+                      <td className="px-3 py-2.5"><StatusBadge status={cr} /></td>
+                      <td className="px-3 py-2.5 text-right">
+                        <Button size="sm" variant="outline" onClick={() => { setDefaultProv(p.id); setAddRec(true); }}>
+                          Start credentialing
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+      <AddProviderDialog open={addProv} onOpenChange={setAddProv} onCreated={reload} />
+      <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} defaultProviderId={defaultProv} onCreated={() => { setDefaultProv(undefined); reload(); }} />
+      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} onClose={() => setOpenRecord(null)} onChanged={reload} />
+    </Shell>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Page 5: Uncredentialed BCBAs                                               */
+/* -------------------------------------------------------------------------- */
+export function UncredentialedBCBAsPage() {
+  const { providers, records, providerById, loading, error, reload } = useCredentialingData();
+  const [addRec, setAddRec] = useState(false);
+  const [defaultProv, setDefaultProv] = useState<string | undefined>();
+  const [openRecord, setOpenRecord] = useState<string | null>(null);
+
+  const gap = useMemo(() => {
+    const bcbaProviders = providers.filter((p) => p.provider_type === "BCBA");
+    return bcbaProviders.map((p) => {
+      const provRecs = records.filter((r) => r.provider_id === p.id);
+      const blocked = provRecs.filter((r) => r.status === "Blocked" || r.status === "Denied");
+      const missingPayerRecs = provRecs.filter((r) => !APPROVED_CRED_STATUSES.includes(r.status));
+      return {
+        provider: p, state: p.license_state, blocked, missingPayerRecs,
+        hasGap: provRecs.length === 0 || missingPayerRecs.length > 0 || blocked.length > 0,
+      };
+    }).filter((g) => g.hasGap);
+  }, [providers, records]);
+
+  return (
+    <Shell>
+      <PageHeader
+        eyebrow="Credentialing" title="Uncredentialed BCBAs"
+        subtitle="BCBAs missing payer/state credentialing, or with blockers preventing approval."
+        icon={AlertTriangle}
+      />
+      <LoadErr loading={loading} error={error} />
+      <SectionCard title={`${gap.length} BCBA${gap.length === 1 ? "" : "s"} with gaps`}>
+        {gap.length === 0 ? (
+          <Empty title="No uncredentialed BCBAs. Nice." />
+        ) : (
+          <div className="overflow-x-auto -mx-2">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>{["BCBA","State","Missing payers","Blocker reason","Owner","Next action",""].map((h) => (
+                  <th key={h} className="text-left font-medium px-3 py-2.5">{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {gap.map((g) => {
+                  const missingList = g.missingPayerRecs.length
+                    ? g.missingPayerRecs.map((r) => `${r.payer_name} (${r.status})`).join(", ")
+                    : "No payer records yet";
+                  const blocker = g.blocked[0]?.blocker_reason ?? "—";
+                  return (
+                    <tr key={g.provider.id} className="border-t border-border/60">
+                      <td className="px-3 py-2.5 font-medium">{g.provider.provider_name}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{g.state ?? "—"}</td>
+                      <td className="px-3 py-2.5">{missingList}</td>
+                      <td className="px-3 py-2.5 text-red-700">{blocker}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">—</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">Create credentialing record</td>
+                      <td className="px-3 py-2.5 text-right">
+                        <Button size="sm" variant="outline" onClick={() => { setDefaultProv(g.provider.id); setAddRec(true); }}>
+                          <Plus className="h-3.5 w-3.5 mr-1" />Create record
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+      <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} defaultProviderId={defaultProv} onCreated={() => { setDefaultProv(undefined); reload(); }} />
+      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} onClose={() => setOpenRecord(null)} onChanged={reload} />
+    </Shell>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Page 6: Expiring credentials                                               */
+/* -------------------------------------------------------------------------- */
+export function ExpiringCredentialsPage() {
+  const { records, providerById, loading, error, reload } = useCredentialingData();
+  const [openRecord, setOpenRecord] = useState<string | null>(null);
+  const [windowDays, setWindowDays] = useState<30 | 60 | 90>(90);
+
+  const grouped = useMemo(() => {
+    const buckets = { d15: [] as CredentialingRecord[], d30: [] as CredentialingRecord[], d60: [] as CredentialingRecord[], d90: [] as CredentialingRecord[] };
+    records.forEach((r) => {
+      const d = daysUntil(r.expiration_date);
+      if (d === null || d < 0 || d > 90) return;
+      if (d <= 15) buckets.d15.push(r);
+      else if (d <= 30) buckets.d30.push(r);
+      else if (d <= 60) buckets.d60.push(r);
+      else buckets.d90.push(r);
+    });
+    return buckets;
+  }, [records]);
+
+  const visible = useMemo(() => {
+    const all = [...grouped.d15, ...grouped.d30, ...grouped.d60, ...grouped.d90];
+    return all.filter((r) => { const d = daysUntil(r.expiration_date)!; return d <= windowDays; })
+      .sort((a, b) => (daysUntil(a.expiration_date)! - daysUntil(b.expiration_date)!));
+  }, [grouped, windowDays]);
+
+  return (
+    <Shell>
+      <PageHeader
+        eyebrow="Credentialing" title="Expiring Credentials"
+        subtitle="30 / 60 / 90 day renewal command center. Anything under 15 days is critical."
+        icon={Calendar}
+      />
+      <LoadErr loading={loading} error={error} />
+      <div className="grid gap-4 md:grid-cols-4">
+        <KpiCard label="< 15 days" value={grouped.d15.length} tone="danger" />
+        <KpiCard label="< 30 days" value={grouped.d15.length + grouped.d30.length} tone="warn" />
+        <KpiCard label="< 60 days" value={grouped.d15.length + grouped.d30.length + grouped.d60.length} />
+        <KpiCard label="< 90 days" value={grouped.d15.length + grouped.d30.length + grouped.d60.length + grouped.d90.length} />
+      </div>
+      <div className="flex gap-2">
+        {([30, 60, 90] as const).map((w) => (
+          <Button key={w} size="sm" variant={windowDays === w ? "default" : "outline"} onClick={() => setWindowDays(w)}>
+            {`< ${w} days`}
+          </Button>
+        ))}
+      </div>
+      <SectionCard title={`${visible.length} expiring credential${visible.length === 1 ? "" : "s"}`}>
+        {visible.length === 0 ? <Empty title="Nothing expiring in this window. " /> : (
+          <div className="overflow-x-auto -mx-2">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>{["Provider","Payer","State","Expires","Days left","Status","Owner","Next follow-up",""].map((h) => (
+                  <th key={h} className="text-left font-medium px-3 py-2.5">{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {visible.map((r) => {
+                  const d = daysUntil(r.expiration_date)!;
+                  const p = providerById.get(r.provider_id);
+                  return (
+                    <tr key={r.id} className={cn("border-t border-border/60 hover:bg-muted/30 cursor-pointer", d <= 15 && "bg-red-50/30")} onClick={() => setOpenRecord(r.id)}>
+                      <td className="px-3 py-2.5 font-medium">{p?.provider_name ?? "—"}</td>
+                      <td className="px-3 py-2.5">{r.payer_name}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{r.state ?? "—"}</td>
+                      <td className="px-3 py-2.5">{r.expiration_date}</td>
+                      <td className={cn("px-3 py-2.5 font-medium", d <= 15 ? "text-red-700" : d <= 30 ? "text-amber-700" : "text-muted-foreground")}>{d}d</td>
+                      <td className="px-3 py-2.5"><StatusBadge status={r.status} /></td>
+                      <td className="px-3 py-2.5 text-muted-foreground">—</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{r.next_follow_up_date ?? "—"}</td>
+                      <td className="px-3 py-2.5 text-right"><Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setOpenRecord(r.id); }}>Open</Button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} onClose={() => setOpenRecord(null)} onChanged={reload} />
+    </Shell>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Reports redirect                                                           */
+/* -------------------------------------------------------------------------- */
+export function CredentialingReportsRedirect() {
+  return <Navigate to="/reports" replace />;
+}

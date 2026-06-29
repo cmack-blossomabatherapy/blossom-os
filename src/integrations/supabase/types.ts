@@ -2916,6 +2916,309 @@ export type Database = {
         }
         Relationships: []
       }
+      credentialing_activity: {
+        Row: {
+          activity_type: string
+          actor_id: string | null
+          created_at: string
+          credentialing_record_id: string
+          id: string
+          message: string | null
+          new_status: string | null
+          old_status: string | null
+        }
+        Insert: {
+          activity_type: string
+          actor_id?: string | null
+          created_at?: string
+          credentialing_record_id: string
+          id?: string
+          message?: string | null
+          new_status?: string | null
+          old_status?: string | null
+        }
+        Update: {
+          activity_type?: string
+          actor_id?: string | null
+          created_at?: string
+          credentialing_record_id?: string
+          id?: string
+          message?: string | null
+          new_status?: string | null
+          old_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credentialing_activity_credentialing_record_id_fkey"
+            columns: ["credentialing_record_id"]
+            isOneToOne: false
+            referencedRelation: "credentialing_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credentialing_documents: {
+        Row: {
+          created_at: string
+          credentialing_record_id: string | null
+          document_type: string
+          expiration_date: string | null
+          file_name: string | null
+          id: string
+          provider_id: string | null
+          storage_path: string | null
+          uploaded_by: string | null
+          verification_status: string
+        }
+        Insert: {
+          created_at?: string
+          credentialing_record_id?: string | null
+          document_type: string
+          expiration_date?: string | null
+          file_name?: string | null
+          id?: string
+          provider_id?: string | null
+          storage_path?: string | null
+          uploaded_by?: string | null
+          verification_status?: string
+        }
+        Update: {
+          created_at?: string
+          credentialing_record_id?: string | null
+          document_type?: string
+          expiration_date?: string | null
+          file_name?: string | null
+          id?: string
+          provider_id?: string | null
+          storage_path?: string | null
+          uploaded_by?: string | null
+          verification_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credentialing_documents_credentialing_record_id_fkey"
+            columns: ["credentialing_record_id"]
+            isOneToOne: false
+            referencedRelation: "credentialing_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credentialing_documents_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "credentialing_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credentialing_providers: {
+        Row: {
+          active: boolean
+          caqh_id: string | null
+          centralreach_provider_id: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          employee_id: string | null
+          id: string
+          license_expiration_date: string | null
+          license_number: string | null
+          license_state: string | null
+          notes: string | null
+          npi: string | null
+          phone: string | null
+          provider_name: string
+          provider_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          caqh_id?: string | null
+          centralreach_provider_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          employee_id?: string | null
+          id?: string
+          license_expiration_date?: string | null
+          license_number?: string | null
+          license_state?: string | null
+          notes?: string | null
+          npi?: string | null
+          phone?: string | null
+          provider_name: string
+          provider_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          caqh_id?: string | null
+          centralreach_provider_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          employee_id?: string | null
+          id?: string
+          license_expiration_date?: string | null
+          license_number?: string | null
+          license_state?: string | null
+          notes?: string | null
+          npi?: string | null
+          phone?: string | null
+          provider_name?: string
+          provider_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      credentialing_records: {
+        Row: {
+          approved_date: string | null
+          blocker_reason: string | null
+          centralreach_external_id: string | null
+          centralreach_sync_status: string
+          created_at: string
+          created_by: string | null
+          credentialing_type: string
+          effective_date: string | null
+          expiration_date: string | null
+          id: string
+          last_follow_up_date: string | null
+          legacy_monday_raw_id: string | null
+          missing_items: string[]
+          next_follow_up_date: string | null
+          notes: string | null
+          owner_id: string | null
+          payer_name: string
+          payer_reference_number: string | null
+          plan_type: string | null
+          priority: string
+          provider_id: string
+          reattestation_due_date: string | null
+          source_system: string | null
+          state: string | null
+          status: string
+          submitted_date: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          approved_date?: string | null
+          blocker_reason?: string | null
+          centralreach_external_id?: string | null
+          centralreach_sync_status?: string
+          created_at?: string
+          created_by?: string | null
+          credentialing_type?: string
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          last_follow_up_date?: string | null
+          legacy_monday_raw_id?: string | null
+          missing_items?: string[]
+          next_follow_up_date?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          payer_name: string
+          payer_reference_number?: string | null
+          plan_type?: string | null
+          priority?: string
+          provider_id: string
+          reattestation_due_date?: string | null
+          source_system?: string | null
+          state?: string | null
+          status?: string
+          submitted_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          approved_date?: string | null
+          blocker_reason?: string | null
+          centralreach_external_id?: string | null
+          centralreach_sync_status?: string
+          created_at?: string
+          created_by?: string | null
+          credentialing_type?: string
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          last_follow_up_date?: string | null
+          legacy_monday_raw_id?: string | null
+          missing_items?: string[]
+          next_follow_up_date?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          payer_name?: string
+          payer_reference_number?: string | null
+          plan_type?: string | null
+          priority?: string
+          provider_id?: string
+          reattestation_due_date?: string | null
+          source_system?: string | null
+          state?: string | null
+          status?: string
+          submitted_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credentialing_records_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "credentialing_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credentialing_tasks: {
+        Row: {
+          created_at: string
+          credentialing_record_id: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          owner_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credentialing_record_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          owner_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credentialing_record_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          owner_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credentialing_tasks_credentialing_record_id_fkey"
+            columns: ["credentialing_record_id"]
+            isOneToOne: false
+            referencedRelation: "credentialing_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       critical_alert_audit: {
         Row: {
           actor_email: string | null
@@ -13552,6 +13855,14 @@ export type Database = {
         Returns: boolean
       }
       has_authorization_write_access: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      has_credentialing_read_access: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      has_credentialing_write_access: {
         Args: { _user_id: string }
         Returns: boolean
       }

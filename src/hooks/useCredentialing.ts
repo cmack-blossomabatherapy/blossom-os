@@ -1,0 +1,247 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+export type CredProviderType = "BCBA" | "RBT" | "Clinical Director" | "Other";
+export type CredStatus =
+  | "Not Started" | "Gathering Docs" | "Missing Info" | "Ready to Submit"
+  | "Submitted" | "Payer Follow-Up" | "Approved" | "Effective"
+  | "Expiring" | "Renewal In Progress" | "Denied" | "Blocked" | "Inactive";
+export type CredType = "Initial" | "Recredentialing" | "Add State" | "Add Payer" | "Renewal";
+export type CredPriority = "Low" | "Normal" | "High" | "Urgent";
+export type CrSyncStatus = "Not Connected" | "Ready To Sync" | "Synced" | "Sync Error";
+
+export const CRED_STATUSES: CredStatus[] = [
+  "Not Started","Gathering Docs","Missing Info","Ready to Submit","Submitted",
+  "Payer Follow-Up","Approved","Effective","Expiring","Renewal In Progress",
+  "Denied","Blocked","Inactive",
+];
+export const CRED_TYPES: CredType[] = ["Initial","Recredentialing","Add State","Add Payer","Renewal"];
+export const CRED_PRIORITIES: CredPriority[] = ["Low","Normal","High","Urgent"];
+export const CRED_PROVIDER_TYPES: CredProviderType[] = ["BCBA","RBT","Clinical Director","Other"];
+export const CRED_STATES = ["GA","NC","TN","VA","MD","NJ","SC","FL"];
+
+export interface CredentialingProvider {
+  id: string;
+  employee_id: string | null;
+  provider_name: string;
+  provider_type: CredProviderType;
+  email: string | null;
+  phone: string | null;
+  npi: string | null;
+  caqh_id: string | null;
+  license_number: string | null;
+  license_state: string | null;
+  license_expiration_date: string | null;
+  centralreach_provider_id: string | null;
+  active: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CredentialingRecord {
+  id: string;
+  provider_id: string;
+  payer_name: string;
+  state: string | null;
+  plan_type: string | null;
+  credentialing_type: CredType;
+  status: CredStatus;
+  priority: CredPriority;
+  owner_id: string | null;
+  submitted_date: string | null;
+  approved_date: string | null;
+  effective_date: string | null;
+  expiration_date: string | null;
+  reattestation_due_date: string | null;
+  next_follow_up_date: string | null;
+  last_follow_up_date: string | null;
+  missing_items: string[];
+  blocker_reason: string | null;
+  payer_reference_number: string | null;
+  source_system: string | null;
+  centralreach_sync_status: CrSyncStatus;
+  centralreach_external_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CredentialingActivity {
+  id: string;
+  credentialing_record_id: string;
+  activity_type: string;
+  message: string | null;
+  old_status: string | null;
+  new_status: string | null;
+  actor_id: string | null;
+  created_at: string;
+}
+
+export interface CredentialingTask {
+  id: string;
+  credentialing_record_id: string | null;
+  title: string;
+  description: string | null;
+  owner_id: string | null;
+  due_date: string | null;
+  status: "Open" | "In Progress" | "Done" | "Blocked";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CredentialingDocument {
+  id: string;
+  provider_id: string | null;
+  credentialing_record_id: string | null;
+  document_type: string;
+  file_name: string | null;
+  storage_path: string | null;
+  verification_status: "Needed" | "Received" | "Verified" | "Expired" | "Rejected";
+  expiration_date: string | null;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+const TABLE_PROVIDERS = "credentialing_providers" as const;
+const TABLE_RECORDS = "credentialing_records" as const;
+const TABLE_ACTIVITY = "credentialing_activity" as const;
+const TABLE_TASKS = "credentialing_tasks" as const;
+const TABLE_DOCS = "credentialing_documents" as const;
+
+// Use loose typing because these tables are newly added; types regen will catch up.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sb = supabase as any;
+
+export function useCredentialingData() {
+  const [providers, setProviders] = useState<CredentialingProvider[]>([]);
+  const [records, setRecords] = useState<CredentialingRecord[]>([]);
+  const [tasks, setTasks] = useState<CredentialingTask[]>([]);
+  const [documents, setDocuments] = useState<CredentialingDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const reload = useCallback(() => setReloadKey((k) => k + 1), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [p, r, t, d] = await Promise.all([
+          sb.from(TABLE_PROVIDERS).select("*").order("provider_name", { ascending: true }),
+          sb.from(TABLE_RECORDS).select("*").order("updated_at", { ascending: false }),
+          sb.from(TABLE_TASKS).select("*").order("due_date", { ascending: true, nullsFirst: false }),
+          sb.from(TABLE_DOCS).select("*").order("created_at", { ascending: false }),
+        ]);
+        if (p.error) throw p.error;
+        if (r.error) throw r.error;
+        if (t.error) throw t.error;
+        if (d.error) throw d.error;
+        if (cancelled) return;
+        setProviders((p.data ?? []) as CredentialingProvider[]);
+        setRecords((r.data ?? []) as CredentialingRecord[]);
+        setTasks((t.data ?? []) as CredentialingTask[]);
+        setDocuments((d.data ?? []) as CredentialingDocument[]);
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load credentialing data");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [reloadKey]);
+
+  const providerById = useMemo(() => {
+    const m = new Map<string, CredentialingProvider>();
+    providers.forEach((p) => m.set(p.id, p));
+    return m;
+  }, [providers]);
+
+  return { providers, records, tasks, documents, providerById, loading, error, reload };
+}
+
+export function useCredentialingActivity(recordId: string | null) {
+  const [items, setItems] = useState<CredentialingActivity[]>([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!recordId) { setItems([]); return; }
+    let cancelled = false;
+    setLoading(true);
+    sb.from(TABLE_ACTIVITY)
+      .select("*")
+      .eq("credentialing_record_id", recordId)
+      .order("created_at", { ascending: false })
+      .limit(100)
+      .then((res: { data: CredentialingActivity[] | null; error: unknown }) => {
+        if (cancelled) return;
+        if (!res.error) setItems((res.data ?? []) as CredentialingActivity[]);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [recordId]);
+  return { items, loading };
+}
+
+// ---- Mutations -------------------------------------------------------------
+
+export async function createCredProvider(input: Partial<CredentialingProvider>) {
+  const { data, error } = await sb.from(TABLE_PROVIDERS).insert(input).select("*").single();
+  if (error) throw error;
+  return data as CredentialingProvider;
+}
+export async function updateCredProvider(id: string, patch: Partial<CredentialingProvider>) {
+  const { data, error } = await sb.from(TABLE_PROVIDERS).update(patch).eq("id", id).select("*").single();
+  if (error) throw error;
+  return data as CredentialingProvider;
+}
+
+export async function createCredRecord(input: Partial<CredentialingRecord>) {
+  const { data, error } = await sb.from(TABLE_RECORDS).insert(input).select("*").single();
+  if (error) throw error;
+  return data as CredentialingRecord;
+}
+export async function updateCredRecord(id: string, patch: Partial<CredentialingRecord>, actorNote?: string) {
+  const { data, error } = await sb.from(TABLE_RECORDS).update(patch).eq("id", id).select("*").single();
+  if (error) throw error;
+  if (actorNote) {
+    await sb.from(TABLE_ACTIVITY).insert({
+      credentialing_record_id: id, activity_type: "note", message: actorNote,
+    });
+  }
+  return data as CredentialingRecord;
+}
+export async function logCredActivity(recordId: string, message: string, type = "note") {
+  await sb.from(TABLE_ACTIVITY).insert({
+    credentialing_record_id: recordId, activity_type: type, message,
+  });
+}
+
+export async function createCredTask(input: Partial<CredentialingTask>) {
+  const { error } = await sb.from(TABLE_TASKS).insert(input);
+  if (error) throw error;
+}
+
+export async function addCredDocument(input: Partial<CredentialingDocument>) {
+  const { error } = await sb.from(TABLE_DOCS).insert(input);
+  if (error) throw error;
+}
+
+// ---- Derived helpers -------------------------------------------------------
+export function daysUntil(iso: string | null): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.floor((t - Date.now()) / 86_400_000);
+}
+
+export function isExpiring(record: CredentialingRecord, windowDays = 90): boolean {
+  const d = daysUntil(record.expiration_date);
+  return d !== null && d <= windowDays && d >= 0;
+}
+
+export const ACTIVE_CRED_STATUSES: CredStatus[] = [
+  "Gathering Docs","Missing Info","Ready to Submit","Submitted","Payer Follow-Up","Renewal In Progress",
+];
+export const APPROVED_CRED_STATUSES: CredStatus[] = ["Approved","Effective"];
