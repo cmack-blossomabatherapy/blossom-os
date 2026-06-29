@@ -1,30 +1,48 @@
-## Problem
+## Plan: make BCBA Productivity Uploads actually persist and show data
 
-Last turn I redesigned `src/pages/os/OSIntakeOperations.tsx`, but the `/intake/dashboard` route the Intake team actually lands on renders `src/pages/os/intake/IntakeDashboard.tsx` — a different, plainer file built on `GrowthPageShell` / `Section` / `StatCard`. That's why nothing changed for you visually.
+### What I found
+- The backend tables for BCBA upload batches and billing rows currently have **0 rows**, so the report and uploads page are correctly showing no dataset.
+- The browser network trace shows the file parsed and duplicate checks ran (`check_hashes`), but I do **not** see the later upload steps (`create_batch`, `append_rows`, `finalize_batch`) completing.
+- The upload UI currently treats “Parsed 46,305 rows” as success even though that is only the preview step, not a committed upload.
+- The Data API grants for the two BCBA upload tables are missing in the current database grant inspection, which can break client visibility even when policies exist.
 
-## Plan
+### Fixes to implement
+1. **Restore backend table access grants**
+   - Add a database migration to explicitly grant authenticated users and backend service access to:
+     - `bcba_productivity_upload_batches`
+     - `bcba_productivity_billing_rows`
+   - Keep the existing role-based row access policies intact.
 
-Redesign `src/pages/os/intake/IntakeDashboard.tsx` with the same direction we agreed on:
+2. **Make the upload flow impossible to mistake for saved data**
+   - Change the preview toast from “Parsed…” success to a clear preview message: “Ready to append…”.
+   - Only show a success toast after the backend confirms rows landed.
+   - Add a clear warning/confirmation state if a file was parsed but not appended.
 
-1. **Remove "Intake workspaces" section** entirely (it's the same redundant grid you flagged).
-2. **Intake Pulse KPI row** — replace plain `StatCard`s with gradient/tone chips (sky, amber, rose, violet, indigo, emerald), each with an icon, value, sub-label, and a thin progress bar showing share of total. Clicking a tile drills down (filters the lists below by stage bucket / blocker).
-3. **Pipeline Insights row** (new, using `recharts` already in the project):
-   - Readiness Funnel — horizontal bar of families per canonical stage.
-   - Stage Aging — stacked bar (Fresh / Waiting / Overdue) per stage.
-   - Source Mix — donut of top referral sources.
-   - All segments click-through to filter the action lists.
-4. **Action Required redesign** — three-column card layout, left urgency bar (red/amber/sky), color-coded status pills, owner avatar, last-touch + days-in-stage, quick actions (Open lead, Log contact). Replaces the current cramped list.
-5. **Handoff Readiness** — keep, restyled as emerald-toned cards matching the new system.
-6. **Shared `SectionHeader`** — uniform icon chip + title + subtitle across every block (Pulse, Insights, Action Required, Handoff, Owner workload, Aging, State, Source), so the whole page feels like one design.
-7. Keep existing data sources (`useLeads`, owner/stage/source aggregations) and canonical stage helpers — visual/layout only, no business-logic or schema changes.
+3. **Harden upload persistence for 46k+ rows**
+   - Reduce upload chunk size to avoid edge function/request instability.
+   - Add retry with backoff for row chunk inserts.
+   - Refresh auth token during long uploads before retrying chunks.
+   - Treat missing/invalid `inserted` counts as a hard error, not success.
+   - Ensure `finalize_batch` verifies the actual backend row count before the UI says it worked.
+
+4. **Improve admin upload page visibility**
+   - Add an “Upload progress” panel that shows phases: parsing, duplicate check, creating batch, uploading rows, finalizing, verified.
+   - After upload, reload the dataset status and show the verified active row count.
+   - If active rows are still `0` after append, show an error explaining that nothing saved.
+
+5. **Improve report loading feedback**
+   - On `/reports/bcba-productivity-report-v3`, show a clear empty state when the shared admin dataset has no rows.
+   - Add a “Refresh shared dataset” action so the report can reload immediately after an admin upload.
+
+6. **Validate after changes**
+   - Query the backend counts after the migration/fix.
+   - Test the upload service with a small synthetic payload first.
+   - Confirm rows appear in upload history and load in the report.
 
 ### Technical notes
-
-- File touched: `src/pages/os/intake/IntakeDashboard.tsx` only (plus, if needed, a small `IntakeDashboardCharts.tsx` extracted alongside it for the recharts block).
-- Keep `GrowthPageShell` as the outer wrapper for layout consistency with other Intake pages, but stop using the plain `Section` / `StatCard` primitives inside — render the new tiles/cards directly so we control gradients, tones, and spacing.
-- Reuse the canonical pipeline stage list already imported in this file; no DB or context changes.
-- The previous redesign of `OSIntakeOperations.tsx` stays — it's a sibling operations view and won't hurt — unless you'd like me to revert it.
-
-## Question for you
-
-Do you want me to **also leave the previous `OSIntakeOperations.tsx` redesign in place**, or revert that file so only the real dashboard is restyled?
+- Files to update:
+  - `src/lib/os/bcbaProductivityV3/adminUploadStore.ts`
+  - `src/pages/os/system/BcbaProductivityUploads.tsx`
+  - `src/pages/os/reports/BcbaProductivityReportV3.tsx`
+  - `supabase/functions/bcba-productivity-upload/index.ts` if chunk response handling needs extra diagnostics
+- Backend migration will only adjust permissions/grants and preserve existing role visibility rules.
