@@ -374,9 +374,12 @@ import {
   NFCBadgeManagementPage, DeviceRequestsPage,
   HRDashboardPage, HREmployeeRecordsPage, HRRequestsPage, HRComplianceItemsPage,
   HRNFCBadgeSupportPage, HRReportsPage,
-  CredentialingDashboardPage, ProviderCredentialingPage, InsuranceCredentialingPage,
-  BCBACredentialsPage, UncredentialedBCBAsPage, ExpiringCredentialsPage, CredentialingReportsPage,
 } from "./pages/os/people/PeoplePages";
+import {
+  CredentialingDashboardPage, ProviderCredentialingPage, InsuranceCredentialingPage,
+  BCBACredentialsPage, UncredentialedBCBAsPage, ExpiringCredentialsPage,
+  CredentialingReportsRedirect,
+} from "./pages/os/credentialing/CredentialingPages";
 import {
   StateOperationsPage, AuthorizationsPhase6Page, ApprovedAuthorizationsPage,
   DenialsPage, SchedulingPhase6Page, StaffingPhase6Page, NoOONBenefitsPage,
