@@ -302,16 +302,19 @@ export default function OSAuthorizations() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => toast("Saved views — coming soon")}>
-              <Bookmark className="mr-1.5 h-4 w-4" /> Saved Views
-            </Button>
+            <SavedViewsMenu
+              scope="authorizations"
+              currentConfig={{ view, query, density, filters }}
+              onApply={applySavedView}
+              triggerClassName="h-8 rounded-md border-0 bg-transparent px-2"
+            />
             <Button variant="ghost" size="sm" onClick={() => toast("Export — coming soon")}>
               <Download className="mr-1.5 h-4 w-4" /> Export
             </Button>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-4 w-4" /> Operational Insights</Link>
             </Button>
-            <Button size="sm" onClick={() => toast("New authorization — coming soon")}>
+            <Button size="sm" onClick={() => setNewAuthOpen(true)}>
               <Plus className="mr-1.5 h-4 w-4" /> New Authorization
             </Button>
           </div>
