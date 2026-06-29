@@ -192,6 +192,7 @@ export default function BcbaProductivityReportV3() {
   /* ----- shared admin dataset (the only data source) ----- */
   const [sharedStatus, setSharedStatus] = useState<BcbaDatasetStatus | null>(null);
   const [sharedLoading, setSharedLoading] = useState(false);
+  const [sharedError, setSharedError] = useState("");
 
   useEffect(() => {
     const refreshAssign = () => setAssignments(readAssignmentsV3());
@@ -238,20 +239,25 @@ export default function BcbaProductivityReportV3() {
 
   async function loadSharedDataset() {
     setSharedLoading(true);
+    setSharedError("");
     try {
       const shared = await getBcbaProductivitySharedRows();
+      const s = await getBcbaProductivityDatasetStatus();
+      setSharedStatus(s);
       if (!shared.length) {
+        setRows([]);
+        setFileName("");
         toast.info("Shared admin dataset is empty.");
         setSharedLoading(false);
         return;
       }
       setRows(shared as BillingRow[]);
       setFileName("Shared admin dataset");
-      const s = await getBcbaProductivityDatasetStatus();
-      setSharedStatus(s);
       toast.success(`Loaded ${shared.length.toLocaleString()} shared admin rows`);
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to load shared admin dataset");
+      const message = e?.message ?? "Failed to load shared admin dataset";
+      setSharedError(message);
+      toast.error(message);
     } finally {
       setSharedLoading(false);
     }
@@ -1012,7 +1018,7 @@ export default function BcbaProductivityReportV3() {
         )}
 
         {/* Empty state when no admin-uploaded dataset exists. */}
-        {!savedParam && !rows.length && sharedStatus && sharedStatus.activeRowCount === 0 && (
+        {!savedParam && !rows.length && (!sharedStatus || sharedStatus.activeRowCount === 0) && (
           <div className="rounded-xl border bg-card/60 p-5">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="flex items-start gap-3">
@@ -1020,8 +1026,14 @@ export default function BcbaProductivityReportV3() {
                 <div>
                   <div className="font-medium">Admin-fed CentralReach dataset</div>
                   <div className="mt-1 text-sm text-muted-foreground max-w-xl">
-                    No admin-uploaded BCBA productivity dataset found. Ask an admin to upload the CentralReach billing export.
+                    No saved BCBA productivity rows are available yet. Upload and save the CentralReach billing export in System Tools, then refresh this report.
                   </div>
+                  {sharedError && (
+                    <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                      <AlertTriangle className="mr-1.5 inline h-3.5 w-3.5" />
+                      {sharedError}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1132,7 +1144,13 @@ export default function BcbaProductivityReportV3() {
                       </div>
                     ) : (
                       <div className="mt-2 text-xs text-muted-foreground">
-                        No admin-uploaded BCBA productivity dataset found. Ask an admin to upload the CentralReach billing export.
+                        No saved BCBA productivity rows are available yet. Upload and save the CentralReach billing export in System Tools, then refresh this report.
+                      </div>
+                    )}
+                    {sharedError && (
+                      <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                        <AlertTriangle className="mr-1.5 inline h-3.5 w-3.5" />
+                        {sharedError}
                       </div>
                     )}
                   </div>

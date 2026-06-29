@@ -63,6 +63,7 @@ export default function BcbaProductivityUploads() {
   const [preview, setPreview] = useState<BcbaUploadPreview | null>(null);
   const [appending, setAppending] = useState(false);
   const [appendPhase, setAppendPhase] = useState<string>("");
+  const [appendProgress, setAppendProgress] = useState<{ inserted: number; total: number; chunk?: number; chunks?: number } | null>(null);
 
   const [batches, setBatches] = useState<BcbaUploadBatch[]>([]);
   const [status, setStatus] = useState<BcbaDatasetStatus | null>(null);
@@ -97,7 +98,10 @@ export default function BcbaProductivityUploads() {
       if (p.missingColumns.length) {
         toast.error(`Missing required columns: ${p.missingColumns.join(", ")}`);
       } else {
-        toast.success(`Parsed ${p.parsedRows.length.toLocaleString()} rows · ${p.newRowCount.toLocaleString()} new, ${p.duplicateRowCount.toLocaleString()} duplicate`);
+        toast.message(`Ready to append ${p.newRowCount.toLocaleString()} new rows`, {
+          description: `${p.parsedRows.length.toLocaleString()} parsed · ${p.duplicateRowCount.toLocaleString()} duplicates detected. Click Append & Save to commit this data.`,
+          duration: 8000,
+        });
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to parse file");
@@ -113,6 +117,7 @@ export default function BcbaProductivityUploads() {
       return;
     }
     setAppending(true);
+    setAppendProgress(null);
     setAppendPhase("Starting upload…");
     const startedAt = Date.now();
     // eslint-disable-next-line no-console
@@ -127,24 +132,35 @@ export default function BcbaProductivityUploads() {
         file, uploadLabel, notes,
         parsed: preview,
         onProgress: (ev) => {
-          if (ev.phase === "create_batch") setAppendPhase("Creating upload batch…");
+          if (ev.phase === "check_duplicates") setAppendPhase("Checking for rows already saved…");
+          else if (ev.phase === "create_batch") setAppendPhase("Creating upload batch…");
           else if (ev.phase === "finalize_batch") setAppendPhase("Finalizing batch…");
+          else if (ev.phase === "verify") setAppendPhase("Verified saved rows. Refreshing dataset…");
           else if (ev.phase === "append_rows") {
             const pct = ev.total > 0 ? Math.round((ev.inserted / ev.total) * 100) : 0;
-            setAppendPhase(`Uploading rows — ${ev.inserted.toLocaleString()} / ${ev.total.toLocaleString()} (${pct}%)`);
+            setAppendProgress({ inserted: ev.inserted, total: ev.total, chunk: ev.chunk, chunks: ev.chunks });
+            setAppendPhase(`Uploading rows — ${ev.inserted.toLocaleString()} / ${ev.total.toLocaleString()} (${pct}%) · chunk ${ev.chunk}/${ev.chunks}`);
           }
         },
       });
+      const verified = await getBcbaProductivityDatasetStatus();
+      if (res.appendedRowCount > 0 && verified.activeRowCount < res.appendedRowCount) {
+        throw new Error(
+          `Upload finished, but the shared dataset only shows ${verified.activeRowCount.toLocaleString()} active rows. Please retry before using the report.`,
+        );
+      }
       // eslint-disable-next-line no-console
       console.info("[bcba-upload] append done", { ...res, ms: Date.now() - startedAt });
       toast.success(
-        `Appended ${res.appendedRowCount.toLocaleString()} rows · ${res.duplicateRowCount.toLocaleString()} duplicates skipped`,
+        `Saved ${res.appendedRowCount.toLocaleString()} rows to the shared dataset`,
+        { description: `${res.duplicateRowCount.toLocaleString()} duplicates skipped · ${verified.activeRowCount.toLocaleString()} active rows now available in the report.` },
       );
       setFile(null);
       setPreview(null);
       setUploadLabel("");
       setNotes("");
       if (fileInputRef.current) fileInputRef.current.value = "";
+      setStatus(verified);
       await refresh();
     } catch (e: any) {
       // eslint-disable-next-line no-console
@@ -157,6 +173,7 @@ export default function BcbaProductivityUploads() {
     } finally {
       setAppending(false);
       setAppendPhase("");
+      setAppendProgress(null);
     }
   }
 
@@ -308,6 +325,12 @@ export default function BcbaProductivityUploads() {
                       Missing required columns: {preview.missingColumns.join(", ")}
                     </div>
                   )}
+                  {!preview.missingColumns.length && !appending && (
+                    <div className="mt-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+                      <AlertTriangle className="mr-1.5 inline h-3.5 w-3.5" />
+                      Parsed only — this data is not saved yet. Click <span className="font-semibold">Append &amp; Save</span> to make it available in the report.
+                    </div>
+                  )}
                   {Object.keys(preview.dropReasons).length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2 text-xs">
                       {Object.entries(preview.dropReasons).map(([k, v]) => (
@@ -346,12 +369,26 @@ export default function BcbaProductivityUploads() {
                 onClick={handleAppend}
               >
                 <UploadCloud className="mr-2 h-4 w-4" />
-                {appending ? "Appending…" : "Append Upload"}
+                {appending ? "Saving…" : "Append & Save"}
               </Button>
               {appending && appendPhase && (
-                <p className="text-[11px] text-muted-foreground text-center tabular-nums">
-                  {appendPhase}
-                </p>
+                <div className="rounded-xl border bg-card/60 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground tabular-nums">
+                    <span>{appendPhase}</span>
+                    {appendProgress && <span>{Math.round((appendProgress.inserted / Math.max(appendProgress.total, 1)) * 100)}%</span>}
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${appendProgress ? Math.min(100, Math.round((appendProgress.inserted / Math.max(appendProgress.total, 1)) * 100)) : 8}%` }}
+                    />
+                  </div>
+                  {appendProgress?.chunks && (
+                    <div className="mt-1 text-[10px] text-muted-foreground text-center">
+                      Chunk {appendProgress.chunk} of {appendProgress.chunks}
+                    </div>
+                  )}
+                </div>
               )}
               <p className="text-[11px] text-muted-foreground">
                 Re-uploading the same file is safe — duplicate rows are skipped.
