@@ -1183,9 +1183,10 @@ function RowKv({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function DrawerAction({ icon: Icon, label, primary }: { icon: React.ElementType; label: string; primary?: boolean }) {
+function DrawerAction({ icon: Icon, label, primary, onClick }: { icon: React.ElementType; label: string; primary?: boolean; onClick?: () => void }) {
   return (
     <button
+      onClick={onClick}
       className={cn(
         "inline-flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-[12px] font-semibold transition",
         primary
