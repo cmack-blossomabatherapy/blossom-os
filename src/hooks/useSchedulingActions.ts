@@ -36,7 +36,7 @@ export function useSchedulingActions() {
     }) => {
       const { data, error } = await supabase
         .from("scheduling_actions")
-        .insert({
+        .insert([{
           client_id: params.clientId ?? null,
           action_type: params.actionType,
           title: params.title ?? null,
@@ -50,7 +50,7 @@ export function useSchedulingActions() {
           due_at: params.dueAt ?? null,
           metadata: params.metadata ?? {},
           created_by: userId,
-        })
+        }]))
         .select()
         .single();
       if (error) {
@@ -81,7 +81,7 @@ export function useSchedulingActions() {
     }) => {
       const { data, error } = await supabase
         .from("scheduling_coverage_cases")
-        .insert({
+        .insert([{
           client_id: params.clientId ?? null,
           state: params.state ?? null,
           case_type: params.caseType,
@@ -98,7 +98,7 @@ export function useSchedulingActions() {
           owner_user_id: userId,
           metadata: params.metadata ?? {},
           created_by: userId,
-        })
+        }]))
         .select()
         .single();
       if (error) {
@@ -114,7 +114,7 @@ export function useSchedulingActions() {
     async (id: string, patch: Record<string, unknown>) => {
       const { data, error } = await supabase
         .from("scheduling_coverage_cases")
-        .update(patch)
+        .update(patch as never)
         .eq("id", id)
         .select()
         .single();
@@ -146,7 +146,7 @@ export function useSchedulingActions() {
     }) => {
       const { data, error } = await supabase
         .from("scheduling_cancellations")
-        .insert({
+        .insert([{
           client_id: params.clientId ?? null,
           session_date: params.sessionDate ?? null,
           start_time: params.startTime ?? null,
@@ -163,7 +163,7 @@ export function useSchedulingActions() {
           centralreach_sync_status: "queued",
           created_by: userId,
           metadata: params.metadata ?? {},
-        })
+        }]))
         .select()
         .single();
       if (error) {
@@ -190,7 +190,7 @@ export function useSchedulingActions() {
       if (patch.make_up_date) next.centralreach_sync_status = "queued";
       const { data, error } = await supabase
         .from("scheduling_cancellations")
-        .update(next)
+        .update(next as never)
         .eq("id", id)
         .select()
         .single();
@@ -230,7 +230,7 @@ export function useSchedulingActions() {
     }) => {
       const { data, error } = await supabase
         .from("scheduling_session_adjustments")
-        .insert({
+        .insert([{
           client_id: params.clientId ?? null,
           adjustment_type: params.adjustmentType,
           day_of_week: params.dayOfWeek ?? null,
@@ -248,7 +248,7 @@ export function useSchedulingActions() {
           centralreach_sync_status: "not_ready",
           metadata: params.metadata ?? {},
           created_by: userId,
-        })
+        }]))
         .select()
         .single();
       if (error) {
