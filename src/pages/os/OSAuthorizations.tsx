@@ -524,6 +524,8 @@ function AuthRecords({ auths, density, onOpen }: { auths: EnrichedAuth[]; densit
 
 function AuthRow({ a, density, onOpen }: { a: EnrichedAuth; density: "comfortable" | "compact"; onOpen: () => void }) {
   const compact = density === "compact";
+  const actions = useAuthorizationActions();
+  const overlay = buildOverlayFromAuth(a);
   const expTone = a.daysToExpire === null ? "text-muted-foreground"
     : a.daysToExpire < 15 ? "text-rose-600"
     : a.daysToExpire < 45 ? "text-amber-600"
