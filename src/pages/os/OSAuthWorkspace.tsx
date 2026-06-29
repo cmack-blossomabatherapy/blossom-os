@@ -686,9 +686,19 @@ export default function OSAuthWorkspace() {
 
 /* ─────────── center: work card ─────────── */
 
+type CardActionKind =
+  | "submit" | "request_pr" | "send_qa" | "escalate"
+  | "review_denial" | "resolve_docs" | "mark_reviewed" | "note";
+
 function AuthWorkCard({
-  auth, selected, onToggleSelect, onOpen,
-}: { auth: AuthCard; selected: boolean; onToggleSelect: () => void; onOpen: () => void }) {
+  auth, selected, onToggleSelect, onOpen, onAction,
+}: {
+  auth: AuthCard;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onOpen: () => void;
+  onAction?: (kind: CardActionKind) => void;
+}) {
   const stateToToneKey: Record<AuthState, Tone> = {
     awaiting: "info", expiring: "crit", denied: "warn",
     missing: "warn", qa: "info", approved: "ok",
@@ -723,6 +733,7 @@ function AuthWorkCard({
               <span className="text-[11px] text-muted-foreground">{auth.id}</span>
               <StatusChip tone={accent}>{auth.status}</StatusChip>
               {auth.risk === "crit" && <StatusChip tone="crit">High risk</StatusChip>}
+              <SourceBadge source={auth.source ?? "sample"} />
             </div>
             <p className="mt-1 truncate text-[11.5px] text-muted-foreground">
               {auth.state} · {auth.payer} · {auth.authType} · {auth.requestType}
@@ -766,9 +777,9 @@ function AuthWorkCard({
           <p className="text-[10.5px] text-muted-foreground">{auth.lastActivity}</p>
           <div className="flex flex-wrap items-center gap-1.5">
             <CardAction icon={Eye}             label="Open" onClick={onOpen} primary />
-            <PrimaryActionFor auth={auth} onOpen={onOpen} />
-            <CardAction icon={Flame}           label="Escalate" />
-            <CardAction icon={MessageSquare}   label="Note" />
+            <PrimaryActionFor auth={auth} onOpen={onOpen} onAction={onAction} />
+            <CardAction icon={Flame}           label="Escalate" onClick={() => onAction?.("escalate")} />
+            <CardAction icon={MessageSquare}   label="Note"     onClick={() => onAction?.("note")} />
           </div>
         </div>
       </div>
@@ -788,14 +799,16 @@ function MetaRow({ label, tone, children }: { label: string; tone: Tone; childre
   );
 }
 
-function PrimaryActionFor({ auth, onOpen }: { auth: AuthCard; onOpen: () => void }) {
+function PrimaryActionFor({
+  auth, onOpen, onAction,
+}: { auth: AuthCard; onOpen: () => void; onAction?: (k: CardActionKind) => void }) {
   switch (auth.stateTone) {
-    case "awaiting":  return <CardAction icon={Send}            label="Submit" />;
-    case "expiring":  return <CardAction icon={FileText}        label="Request PR" />;
-    case "denied":    return <CardAction icon={ShieldAlert}     label="Review Denial" />;
-    case "missing":   return <CardAction icon={FileWarning}     label="Resolve Docs" onClick={onOpen} />;
-    case "qa":        return <CardAction icon={ClipboardCheck}  label="Send to QA" />;
-    case "approved":  return <CardAction icon={CheckCircle2}    label="Mark Reviewed" />;
+    case "awaiting":  return <CardAction icon={Send}            label="Submit"        onClick={() => onAction?.("submit")} />;
+    case "expiring":  return <CardAction icon={FileText}        label="Request PR"    onClick={() => onAction?.("request_pr")} />;
+    case "denied":    return <CardAction icon={ShieldAlert}     label="Review Denial" onClick={() => onAction?.("review_denial")} />;
+    case "missing":   return <CardAction icon={FileWarning}     label="Resolve Docs"  onClick={() => { onAction?.("resolve_docs"); onOpen(); }} />;
+    case "qa":        return <CardAction icon={ClipboardCheck}  label="Send to QA"    onClick={() => onAction?.("send_qa")} />;
+    case "approved":  return <CardAction icon={CheckCircle2}    label="Mark Reviewed" onClick={() => onAction?.("mark_reviewed")} />;
   }
 }
 
