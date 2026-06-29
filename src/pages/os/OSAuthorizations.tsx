@@ -15,6 +15,16 @@ import {
   daysUntil, getAuthAlert,
 } from "@/data/authorizations";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import {
+  NewAuthorizationDialog,
+  SavedViewsMenu,
+  SourceBadge,
+} from "@/components/authorizations/AuthorizationActionUI";
+import {
+  useAuthorizationActions,
+  type EnsureOverlayInput,
+} from "@/hooks/useAuthorizationActions";
+import type { SavedView } from "@/hooks/useAuthorizationSavedViews";
 
 /* ------------------------------ helpers ------------------------------ */
 function hash(s: string) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -195,6 +205,32 @@ export default function OSAuthorizations() {
   const [view, setView] = useState<ViewId>(() => paramToView(searchParams) || "all");
   const [openId, setOpenId] = useState<string | null>(() => searchParams.get("authId"));
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
+  const [newAuthOpen, setNewAuthOpen] = useState(false);
+  const actions = useAuthorizationActions();
+
+  const buildOverlayFromAuth = (a: Authorization): EnsureOverlayInput => ({
+    source_system: "monday",
+    monday_item_id: a.id,
+    source_id: a.id,
+    client_name: a.clientName,
+    state: a.state,
+    payer: a.payor,
+    auth_type: a.authType,
+    status: a.stage,
+    workflow_stage: a.stage,
+    assigned_owner: a.coordinator ?? null,
+    assigned_bcba: a.qaOwner ?? null,
+    expiration_date: a.expirationDate ?? null,
+  });
+
+  const applySavedView = (v: SavedView) => {
+    const cfg = v.config as { view?: ViewId; query?: string; density?: "comfortable" | "compact"; filters?: Filters };
+    if (cfg.view) setView(cfg.view);
+    if (typeof cfg.query === "string") setQuery(cfg.query);
+    if (cfg.density) setDensity(cfg.density);
+    if (cfg.filters) setFilters(cfg.filters);
+  };
+
   const [filters, setFilters] = useState<Filters>({
     state: searchParams.get("state"),
     payor: searchParams.get("payor"),
