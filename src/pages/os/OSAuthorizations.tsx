@@ -619,6 +619,8 @@ function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; l
   if (!auth) return null;
   const a = auth;
   const e = enrich(a, liveBcba);
+  const actions = useAuthorizationActions();
+  const overlay = buildOverlayFromAuth(a);
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -654,19 +656,22 @@ function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; l
 
         {/* Quick action bar */}
         <div className="px-6 py-3 border-b border-border/60 flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => toast(`PR requested for ${a.clientName}`)}>
+          <Button size="sm" variant="outline" onClick={() => void actions.requestPR(overlay, { dueInDays: 3 })}>
             <Send className="mr-1.5 h-3.5 w-3.5" /> Request PR
           </Button>
-          <Button size="sm" variant="outline" onClick={() => toast("Sent to QA")}>
+          <Button size="sm" variant="outline" onClick={() => void actions.sendToQA(overlay)}>
             <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Send to QA
           </Button>
-          <Button size="sm" variant="outline" onClick={() => toast(`Message sent to ${e.bcba}`)}>
+          <Button size="sm" variant="outline" onClick={() => void actions.queueExternalSend(overlay, { channel: "email", summary: `Message BCBA ${e.bcba}` })}>
             <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message BCBA
           </Button>
-          <Button size="sm" variant="outline" onClick={() => toast("Note added")}>
+          <Button size="sm" variant="outline" onClick={() => {
+            const note = window.prompt("Add a note for this authorization:");
+            if (note && note.trim()) void actions.addNote(overlay, note.trim());
+          }}>
             <StickyNote className="mr-1.5 h-3.5 w-3.5" /> Note
           </Button>
-          <Button size="sm" variant="outline" onClick={() => toast("Escalated")}>
+          <Button size="sm" variant="outline" onClick={() => void actions.escalate(overlay)}>
             <AlertTriangle className="mr-1.5 h-3.5 w-3.5" /> Escalate
           </Button>
         </div>
