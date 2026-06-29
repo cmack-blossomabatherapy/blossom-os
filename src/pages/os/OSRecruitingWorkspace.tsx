@@ -22,6 +22,8 @@ import {
 } from "@/hooks/useRecruitingCandidates";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
+import { RecruitingIntegrationsPanel } from "@/components/recruiting/RecruitingIntegrationsPanel";
+import { useRecruitingActivity } from "@/hooks/useRecruitingMutations";
 
 type Tone = "ok" | "warn" | "crit";
 type QueueKey = "today" | "followup" | "offers" | "onboarding" | "escalation";
@@ -451,6 +453,10 @@ export default function OSRecruitingWorkspace() {
                 ))}
               </div>
             </Card>
+
+            <RecruitingIntegrationsPanel />
+
+            <RecruitingActivityCard />
           </aside>
         </div>
       </div>
