@@ -37,20 +37,27 @@ export function LeadActionsButton({
         Actions
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <span>{lead.childName}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                · {canonicalFamilyLeadStage(lead.status)}
-              </span>
-            </DialogTitle>
-          </DialogHeader>
-          <LeadActionPanel
-            lead={lead}
-            sourcePage={sourcePage}
-            onAfterAction={() => setOpen(false)}
-          />
+        <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto p-0">
+          <div className="border-b border-border/60 bg-gradient-to-br from-primary/[0.06] via-background to-background px-6 py-4">
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-lg">
+                <span className="font-semibold">{lead.childName}</span>
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-primary">
+                  {canonicalFamilyLeadStage(lead.status)}
+                </span>
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground">
+                Pick an action — every one is explained so you always know what it will do.
+              </p>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5">
+            <LeadActionPanel
+              lead={lead}
+              sourcePage={sourcePage}
+              onAfterAction={() => setOpen(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </>
