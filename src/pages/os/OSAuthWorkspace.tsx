@@ -377,6 +377,8 @@ export default function OSAuthWorkspace() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [newAuthOpen, setNewAuthOpen] = useState(false);
+  const actions = useAuthorizationActions();
 
   const { items: liveItems, loading, error } = useLiveAuthorizations();
 
@@ -424,6 +426,55 @@ export default function OSAuthWorkspace() {
       return next;
     });
 
+  const buildOverlay = (a: AuthCard): EnsureOverlayInput => ({
+    source_system: (a.source === "monday" || a.source === "manual" || a.source === "centralreach") ? a.source : "manual",
+    monday_item_id: a.mondayItemId ?? null,
+    source_id: a.id,
+    client_name: a.client,
+    state: a.state,
+    payer: a.payer,
+    auth_type: a.authType,
+    status: a.status,
+    workflow_stage: a.status,
+    assigned_owner: a.coordinator,
+    assigned_bcba: a.bcba,
+    expiration_date: a.expirationISO ?? null,
+  });
+
+  const selectedAuths = visible.filter((a) => selected.has(a.id));
+
+  const handleBulk = async (kind: "assign" | "status" | "escalate" | "qa" | "followup" | "request_docs") => {
+    if (!selectedAuths.length) return;
+    const overlays = selectedAuths.map(buildOverlay);
+    try {
+      if (kind === "assign") {
+        const who = window.prompt("Assign selected authorizations to:");
+        if (!who) return;
+        await actions.bulkAssign(overlays, who);
+      } else if (kind === "status") {
+        const status = window.prompt("New status (e.g. Submitted, In QA Review, Approved):");
+        if (!status) return;
+        await actions.bulkChangeStatus(overlays, status);
+      } else if (kind === "escalate") {
+        for (const o of overlays) await actions.escalate(o);
+      } else if (kind === "qa") {
+        for (const o of overlays) await actions.sendToQA(o);
+      } else if (kind === "followup") {
+        for (const o of overlays) await actions.requestPR(o, { dueInDays: 2 });
+      } else if (kind === "request_docs") {
+        for (const o of overlays) await actions.addNote(o, "Documentation request sent to BCBA.");
+      }
+      setSelected(new Set());
+    } catch { /* hook surfaces toast */ }
+  };
+
+  const applySavedView = (v: SavedView) => {
+    const cfg = v.config as { activeQueue?: QueueKey; search?: string };
+    if (cfg.activeQueue) setActiveQueue(cfg.activeQueue);
+    if (typeof cfg.search === "string") setSearch(cfg.search);
+    setSelected(new Set());
+  };
+
   return (
     <OSShell
       rightRail={<RightContextPanel queueLabel={activeMeta.label} />}
@@ -453,10 +504,18 @@ export default function OSAuthWorkspace() {
           <button className="grid h-9 w-9 place-items-center rounded-xl border border-white/70 bg-white/70 text-muted-foreground transition hover:text-foreground" aria-label="Notifications">
             <Bell className="h-4 w-4" />
           </button>
+          <SavedViewsMenu
+            scope="auth_workspace"
+            currentConfig={{ activeQueue, search }}
+            onApply={applySavedView}
+          />
           <button className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/70 bg-white/70 px-3 text-[12.5px] font-semibold text-foreground/85 transition hover:text-foreground">
             <Sparkles className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" /> Operational Insights
           </button>
-          <button className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[hsl(265_85%_62%)] to-[hsl(285_85%_68%)] px-3 text-[12.5px] font-semibold text-white shadow-[0_10px_24px_-14px_hsl(265_85%_55%/0.5)] transition hover:opacity-95">
+          <button
+            onClick={() => setNewAuthOpen(true)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[hsl(265_85%_62%)] to-[hsl(285_85%_68%)] px-3 text-[12.5px] font-semibold text-white shadow-[0_10px_24px_-14px_hsl(265_85%_55%/0.5)] transition hover:opacity-95"
+          >
             <Plus className="h-3.5 w-3.5" /> New Authorization
           </button>
         </div>
@@ -548,12 +607,12 @@ export default function OSAuthWorkspace() {
                 {selected.size} selected
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
-                <BulkAction icon={UserCog}        label="Assign" />
-                <BulkAction icon={MessageSquare}  label="Follow-Up" />
-                <BulkAction icon={Flame}          label="Escalate" />
-                <BulkAction icon={FileWarning}    label="Request Docs" />
-                <BulkAction icon={ClipboardCheck} label="Send to QA" />
-                <BulkAction icon={Workflow}       label="Change Status" />
+                <BulkAction icon={UserCog}        label="Assign"          onClick={() => handleBulk("assign")} />
+                <BulkAction icon={MessageSquare}  label="Follow-Up"       onClick={() => handleBulk("followup")} />
+                <BulkAction icon={Flame}          label="Escalate"        onClick={() => handleBulk("escalate")} />
+                <BulkAction icon={FileWarning}    label="Request Docs"    onClick={() => handleBulk("request_docs")} />
+                <BulkAction icon={ClipboardCheck} label="Send to QA"      onClick={() => handleBulk("qa")} />
+                <BulkAction icon={Workflow}       label="Change Status"   onClick={() => handleBulk("status")} />
                 <button
                   onClick={() => setSelected(new Set())}
                   className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-foreground/[0.05] hover:text-foreground"
@@ -577,6 +636,21 @@ export default function OSAuthWorkspace() {
                   selected={selected.has(a.id)}
                   onToggleSelect={() => toggleSel(a.id)}
                   onOpen={() => setOpenId(a.id)}
+                  onAction={(kind) => {
+                    const o = buildOverlay(a);
+                    if (kind === "submit") return actions.submitAuth(o).catch(() => undefined);
+                    if (kind === "request_pr") return actions.requestPR(o, { dueInDays: 3 }).catch(() => undefined);
+                    if (kind === "send_qa") return actions.sendToQA(o).catch(() => undefined);
+                    if (kind === "escalate") return actions.escalate(o).catch(() => undefined);
+                    if (kind === "review_denial") return actions.reviewDenial(o).catch(() => undefined);
+                    if (kind === "resolve_docs") return actions.resolveDocs(o).catch(() => undefined);
+                    if (kind === "mark_reviewed") return actions.markReviewed(o).catch(() => undefined);
+                    if (kind === "note") {
+                      const n = window.prompt("Note:");
+                      if (!n) return;
+                      return actions.addNote(o, n).catch(() => undefined);
+                    }
+                  }}
                 />
               ))}
             </ul>
@@ -587,9 +661,25 @@ export default function OSAuthWorkspace() {
       {/* DETAIL DRAWER */}
       <Sheet open={!!openAuth} onOpenChange={(o) => !o && setOpenId(null)}>
         <SheetContent side="right" className="w-full p-0 sm:max-w-xl">
-          {openAuth && <AuthDetailDrawer auth={openAuth} />}
+          {openAuth && (
+            <AuthDetailDrawer
+              auth={openAuth}
+              onAction={(kind) => {
+                const o = buildOverlay(openAuth);
+                if (kind === "submit") return actions.submitAuth(o).catch(() => undefined);
+                if (kind === "request_pr") return actions.requestPR(o, { dueInDays: 3 }).catch(() => undefined);
+                if (kind === "send_qa") return actions.sendToQA(o).catch(() => undefined);
+                if (kind === "escalate") return actions.escalate(o).catch(() => undefined);
+              }}
+            />
+          )}
         </SheetContent>
       </Sheet>
+
+      <NewAuthorizationDialog
+        open={newAuthOpen}
+        onOpenChange={setNewAuthOpen}
+      />
     </OSShell>
   );
 }
