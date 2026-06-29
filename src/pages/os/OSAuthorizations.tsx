@@ -616,10 +616,10 @@ function IconAction({ icon: Icon, title, onClick }: { icon: any; title: string; 
 
 /* ------------------------------ drawer ------------------------------ */
 function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; liveBcba: string | null; onClose: () => void }) {
+  const actions = useAuthorizationActions();
   if (!auth) return null;
   const a = auth;
   const e = enrich(a, liveBcba);
-  const actions = useAuthorizationActions();
   const overlay = buildOverlayFromAuth(a);
 
   return (
