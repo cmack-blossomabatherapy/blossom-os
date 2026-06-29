@@ -758,8 +758,10 @@ const App = () => (
                   <Route path="/payroll" element={<Navigate to="/payroll/workspace" replace />} />
                   <Route path="/revenue" element={<Navigate to="/billing-finance" replace />} />
                   <Route path="/insurance" element={<Navigate to="/authorizations" replace />} />
-                  <Route path="/reports" element={<ReportsLanding />} />
-                  <Route path="/reports/catalog" element={<ReportsHome />} />
+                  {/* Canonical single Reports page (Authorizations Team + every role uses this). */}
+                  <Route path="/reports" element={<ReportsHome />} />
+                  <Route path="/reports/catalog" element={<Navigate to="/reports" replace />} />
+                  <Route path="/reports/landing" element={<ReportsLanding />} />
                   <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
                   <Route path="/reports/qa-supervision-pt" element={<QaSupervisionPtDashboard />} />
                   <Route path="/reports/qa-auth-utilization" element={<QaAuthUtilizationDashboard />} />
@@ -832,9 +834,12 @@ const App = () => (
                   <Route path="/credentialing/reports" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><CredentialingReportsPage /></PermissionRoute>} />
                   {/* Phase 6 — Core ABA Operations */}
                   <Route path="/state-operations" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director"]}><StateOperationsPage /></PermissionRoute>} />
-                  <Route path="/ops/authorizations" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director", "auth_team", "authorization_manager", "authorization_coordinator"]}><AuthorizationsPhase6Page /></PermissionRoute>} />
-                  <Route path="/ops/approved-authorizations" element={<PermissionRoute allowedRoles={["admin", "auth_team", "authorization_manager", "authorization_coordinator"]}><ApprovedAuthorizationsPage /></PermissionRoute>} />
-                  <Route path="/ops/denials" element={<PermissionRoute allowedRoles={["admin", "auth_team", "authorization_manager", "authorization_coordinator"]}><DenialsPage /></PermissionRoute>} />
+                  {/* Authorizations consolidation — these three were static phase-6 tables.
+                      They now redirect into the live /authorizations workspace with the
+                      appropriate stage pre-selected. */}
+                  <Route path="/ops/authorizations" element={<Navigate to="/authorizations" replace />} />
+                  <Route path="/ops/approved-authorizations" element={<Navigate to="/authorizations?stage=approved" replace />} />
+                  <Route path="/ops/denials" element={<Navigate to="/authorizations?stage=denied" replace />} />
                   <Route path="/ops/scheduling" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director", "scheduling", "scheduling_lead", "scheduling_coordinator"]}><SchedulingPhase6Page /></PermissionRoute>} />
                   <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director", "staffing", "staffing_lead", "staffing_coordinator"]}><StaffingPhase6Page /></PermissionRoute>} />
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import {
   ShieldCheck, CheckCircle2, XCircle, Calendar, Users, ClipboardCheck,
   HeartHandshake, AlertTriangle, ListTodo, MapPin, FileSignature,
@@ -258,31 +258,14 @@ const AUTH_ROWS: (string | ReactNode)[][] = [
   ["AUTH-1040", "Noah Brooks", "Reauth", <StatusBadge status="Approved" />, "Priya Patel", "Blossom VA", "United", "—", "VA", "Home", "2024-12-20", "2024-12-22", "TRK-99240", "2025-01-02", "2026-01-01", "Approved", "In-Network", "Commercial", "Behavioral Health", "Auth Team"],
 ];
 
+/**
+ * Static Phase-6 Authorizations table retired. The canonical live workspace
+ * lives at `/authorizations` and reads from the merged authorization data
+ * source (Monday import + Blossom OS operational overlay + CentralReach when
+ * configured).
+ */
 export function AuthorizationsPhase6Page() {
-  return (
-    <Shell>
-      <PageHeader
-        eyebrow="Operations"
-        title="Authorizations"
-        subtitle="Track authorization requests, submission status, payer requirements, missing documentation, tracking numbers, and upcoming deadlines."
-        icon={ShieldCheck}
-        actions={<Button size="sm"><Plus className="h-4 w-4 mr-1.5" />Add authorization</Button>}
-      />
-      <ActionRow actions={["Add authorization", "Update status", "Assign owner", "Add tracking number", "Add notes", "Mark ready for QA", "Mark submitted", "Flag missing docs", "Open related patient journey"]} />
-
-      <div className="grid gap-4 md:grid-cols-4">
-        <KPI label="Open" value={28} tone="info" />
-        <KPI label="Awaiting payer" value={11} tone="warn" />
-        <KPI label="Missing docs" value={6} tone="warn" />
-        <KPI label="Approved this week" value={9} tone="ok" />
-      </div>
-
-      <DataTable
-        columns={["Auth #", "Client", "Type", "Status", "BCBA", "Submitted Under", "Insurance", "Secondary", "State", "Location", "Received", "Submitted", "Tracking #", "Start", "Expires", "Notes", "Network", "Policy", "Coverage", "Owner"]}
-        rows={AUTH_ROWS}
-      />
-    </Shell>
-  );
+  return <Navigate to="/authorizations" replace />;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -295,29 +278,9 @@ const APPROVED_ROWS: (string | ReactNode)[][] = [
   ["AUTH-1031", "Ethan Lee", "Aetna", "GA", "2024-06-01", "2025-06-01", "300 hrs", <StatusBadge status="Active" />],
 ];
 
+/** Static approved-authorizations table retired — redirects to the live workspace filtered to Approved. */
 export function ApprovedAuthorizationsPage() {
-  return (
-    <Shell>
-      <PageHeader
-        eyebrow="Operations"
-        title="Approved Authorizations"
-        subtitle="View approved authorizations, active date ranges, expiration risk, payer details, approved units, and related patient records."
-        icon={CheckCircle2}
-        actions={<Button size="sm" variant="outline">Export list</Button>}
-      />
-      <ActionRow actions={["Track auth start date", "Track auth expiration date", "Mark expiring soon", "Link to patient journey", "Export list"]} />
-      <div className="grid gap-4 md:grid-cols-4">
-        <KPI label="Active auths" value={142} tone="ok" />
-        <KPI label="Expiring < 30d" value={11} tone="warn" />
-        <KPI label="Expiring < 60d" value={19} tone="warn" />
-        <KPI label="Renewals in flight" value={7} tone="info" />
-      </div>
-      <DataTable
-        columns={["Auth #", "Client", "Payer", "State", "Start", "Expires", "Units", "Status"]}
-        rows={APPROVED_ROWS}
-      />
-    </Shell>
-  );
+  return <Navigate to="/authorizations?stage=approved" replace />;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -330,29 +293,9 @@ const DENIAL_ROWS: (string | ReactNode)[][] = [
   ["Sophia Reyes", "VA", "Priya Patel", "TRK-99198", "United", <StatusBadge status="Escalated" />, "Service location", "Initial", "2024-12-20", "2025-01-20", "—", "—", "Escalated to payer rep"],
 ];
 
+/** Static denials table retired — redirects to the live workspace filtered to Denied. */
 export function DenialsPage() {
-  return (
-    <Shell>
-      <PageHeader
-        eyebrow="Operations"
-        title="Denials"
-        subtitle="Track denied authorization requests, denial reasons, due dates, BCBA edits, resubmissions, and payer follow-up."
-        icon={XCircle}
-        actions={<Button size="sm"><Plus className="h-4 w-4 mr-1.5" />Add denial</Button>}
-      />
-      <ActionRow actions={["Add denial", "Assign BCBA edits", "Track due date", "Mark resubmitted", "Add notes", "Escalate denial", "Open related authorization"]} />
-      <div className="grid gap-4 md:grid-cols-4">
-        <KPI label="Open denials" value={9} tone="danger" />
-        <KPI label="Awaiting BCBA edits" value={4} tone="warn" />
-        <KPI label="Resubmitted" value={6} tone="info" />
-        <KPI label="Overturned" value={3} tone="ok" />
-      </div>
-      <DataTable
-        columns={["Client", "State", "BCBA", "Tracking #", "Payer", "Status", "Reason", "Type", "Date Denied", "Due", "Resubmitted", "BCBA Edits Due", "Notes"]}
-        rows={DENIAL_ROWS}
-      />
-    </Shell>
-  );
+  return <Navigate to="/authorizations?stage=denied" replace />;
 }
 
 /* -------------------------------------------------------------------------- */

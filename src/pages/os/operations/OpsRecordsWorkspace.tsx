@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   useOpsRecords, toCSV, downloadCSV, type OpsStoreKey, type OpsRecord,
 } from "@/lib/os/operations/recordsStore";
+import { useSupabaseRecords } from "@/lib/os/operations/supabaseRecordsStore";
 
 export type FieldDef = {
   key: string;
@@ -54,6 +55,14 @@ export interface OpsRecordsWorkspaceProps {
     remove: (id: string) => void;
   }) => ReactNode;
   buckets?: { label: string; predicate: (row: OpsRecord) => boolean }[];
+  /**
+   * Optional Supabase-backed data source. When provided, the workspace reads
+   * and writes to this Postgres table instead of localStorage. The
+   * `writableFields` list controls which column names create/update will
+   * write — the workspace's `fields` keys must match those column names.
+   */
+  supabaseTable?: string;
+  writableFields?: string[];
 }
 
 export default function OpsRecordsWorkspace(props: OpsRecordsWorkspaceProps) {
@@ -63,7 +72,30 @@ export default function OpsRecordsWorkspace(props: OpsRecordsWorkspaceProps) {
     filterField, statusField, statusOptions = [], seed = [], rowActions, buckets,
   } = props;
 
-  const { rows, create, update, remove } = useOpsRecords(storeKey, seed);
+  const local = useOpsRecords(storeKey, seed);
+  const remote = useSupabaseRecords(
+    props.supabaseTable ?? "_unused_table_",
+    props.writableFields ?? [],
+  );
+  const useRemote = !!props.supabaseTable;
+  const rows = useRemote ? remote.rows : local.rows;
+  const create = useRemote
+    ? ((row: Omit<OpsRecord, "id" | "createdAt" | "updatedAt">) => {
+        remote.create(row).catch((e) => toast.error(e.message ?? "Failed to save"));
+      })
+    : local.create;
+  const update = useRemote
+    ? ((id: string, patch: Partial<OpsRecord>) => {
+        remote.update(id, patch).catch((e) => toast.error(e.message ?? "Failed to update"));
+      })
+    : local.update;
+  const remove = useRemote
+    ? ((id: string) => {
+        remote.remove(id).catch((e) => toast.error(e.message ?? "Failed to delete"));
+      })
+    : local.remove;
+  const loading = useRemote && remote.loading;
+  const loadError = useRemote ? remote.error : null;
   const [query, setQuery] = useState("");
   const [filterValue, setFilterValue] = useState<string>("all");
   const [showAdd, setShowAdd] = useState(false);
@@ -165,7 +197,11 @@ export default function OpsRecordsWorkspace(props: OpsRecordsWorkspaceProps) {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border/60 bg-white/85">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="px-6 py-16 text-center text-sm text-muted-foreground">Loading records…</div>
+        ) : loadError ? (
+          <div className="px-6 py-16 text-center text-sm text-rose-600">{loadError}</div>
+        ) : filtered.length === 0 ? (
           <div className="px-6 py-16 text-center">
             <p className="text-sm text-muted-foreground">
               {rows.length === 0

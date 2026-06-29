@@ -1407,6 +1407,333 @@ export type Database = {
           },
         ]
       }
+      authorization_activity: {
+        Row: {
+          activity_type: string
+          authorization_id: string | null
+          body: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          title: string | null
+        }
+        Insert: {
+          activity_type: string
+          authorization_id?: string | null
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          title?: string | null
+        }
+        Update: {
+          activity_type?: string
+          authorization_id?: string | null
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authorization_activity_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "authorization_operational_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      authorization_operational_records: {
+        Row: {
+          appeal_due_date: string | null
+          approved_date: string | null
+          assigned_auth_coordinator: string | null
+          assigned_bcba: string | null
+          assigned_owner: string | null
+          auth_type: string | null
+          authorization_number: string | null
+          authorized_hours: number | null
+          authorized_units: number | null
+          centralreach_authorization_id: string | null
+          centralreach_client_id: string | null
+          centralreach_last_synced_at: string | null
+          centralreach_payload: Json | null
+          centralreach_sync_status: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          denial_reason: string | null
+          denied_date: string | null
+          expiration_date: string | null
+          id: string
+          metadata: Json | null
+          missing_info: string | null
+          monday_item_id: string | null
+          next_action: string | null
+          next_action_due_date: string | null
+          payer: string | null
+          priority: string | null
+          qa_owner: string | null
+          received_date: string | null
+          remaining_hours: number | null
+          remaining_units: number | null
+          resubmitted_date: string | null
+          secondary_payer: string | null
+          service_code: string | null
+          source_id: string | null
+          source_system: string
+          start_date: string | null
+          state: string | null
+          status: string | null
+          submitted_date: string | null
+          submitted_under: string | null
+          tracking_number: string | null
+          updated_at: string
+          updated_by: string | null
+          used_hours: number | null
+          used_units: number | null
+          utilization_percent: number | null
+          workflow_stage: string | null
+        }
+        Insert: {
+          appeal_due_date?: string | null
+          approved_date?: string | null
+          assigned_auth_coordinator?: string | null
+          assigned_bcba?: string | null
+          assigned_owner?: string | null
+          auth_type?: string | null
+          authorization_number?: string | null
+          authorized_hours?: number | null
+          authorized_units?: number | null
+          centralreach_authorization_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_last_synced_at?: string | null
+          centralreach_payload?: Json | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          denial_reason?: string | null
+          denied_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          metadata?: Json | null
+          missing_info?: string | null
+          monday_item_id?: string | null
+          next_action?: string | null
+          next_action_due_date?: string | null
+          payer?: string | null
+          priority?: string | null
+          qa_owner?: string | null
+          received_date?: string | null
+          remaining_hours?: number | null
+          remaining_units?: number | null
+          resubmitted_date?: string | null
+          secondary_payer?: string | null
+          service_code?: string | null
+          source_id?: string | null
+          source_system?: string
+          start_date?: string | null
+          state?: string | null
+          status?: string | null
+          submitted_date?: string | null
+          submitted_under?: string | null
+          tracking_number?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          used_hours?: number | null
+          used_units?: number | null
+          utilization_percent?: number | null
+          workflow_stage?: string | null
+        }
+        Update: {
+          appeal_due_date?: string | null
+          approved_date?: string | null
+          assigned_auth_coordinator?: string | null
+          assigned_bcba?: string | null
+          assigned_owner?: string | null
+          auth_type?: string | null
+          authorization_number?: string | null
+          authorized_hours?: number | null
+          authorized_units?: number | null
+          centralreach_authorization_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_last_synced_at?: string | null
+          centralreach_payload?: Json | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          denial_reason?: string | null
+          denied_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          metadata?: Json | null
+          missing_info?: string | null
+          monday_item_id?: string | null
+          next_action?: string | null
+          next_action_due_date?: string | null
+          payer?: string | null
+          priority?: string | null
+          qa_owner?: string | null
+          received_date?: string | null
+          remaining_hours?: number | null
+          remaining_units?: number | null
+          resubmitted_date?: string | null
+          secondary_payer?: string | null
+          service_code?: string | null
+          source_id?: string | null
+          source_system?: string
+          start_date?: string | null
+          state?: string | null
+          status?: string | null
+          submitted_date?: string | null
+          submitted_under?: string | null
+          tracking_number?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          used_hours?: number | null
+          used_units?: number | null
+          utilization_percent?: number | null
+          workflow_stage?: string | null
+        }
+        Relationships: []
+      }
+      authorization_requirements: {
+        Row: {
+          authorization_id: string | null
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          owner_department: string | null
+          owner_user: string | null
+          payer: string | null
+          received_at: string | null
+          requested_at: string | null
+          requirement_name: string
+          requirement_type: string | null
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          authorization_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          owner_department?: string | null
+          owner_user?: string | null
+          payer?: string | null
+          received_at?: string | null
+          requested_at?: string | null
+          requirement_name: string
+          requirement_type?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          authorization_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          owner_department?: string | null
+          owner_user?: string | null
+          payer?: string | null
+          received_at?: string | null
+          requested_at?: string | null
+          requirement_name?: string
+          requirement_type?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authorization_requirements_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "authorization_operational_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      authorization_tasks: {
+        Row: {
+          authorization_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          owner_department: string | null
+          owner_user: string | null
+          priority: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          authorization_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          owner_department?: string | null
+          owner_user?: string | null
+          priority?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          authorization_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          owner_department?: string | null
+          owner_user?: string | null
+          priority?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authorization_tasks_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "authorization_operational_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bcba_assignment_history: {
         Row: {
           bcba_name: string
@@ -8720,6 +9047,63 @@ export type Database = {
         }
         Relationships: []
       }
+      payer_requirements: {
+        Row: {
+          active: boolean
+          auth_requirements: string | null
+          created_at: string
+          created_by: string | null
+          document_requirements: string | null
+          email: string | null
+          id: string
+          notes: string | null
+          parent_signature_rules: string | null
+          payer: string
+          payer_contact: string | null
+          phone: string | null
+          reassessment_rules: string | null
+          state: string | null
+          submission_portal: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          auth_requirements?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_requirements?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          parent_signature_rules?: string | null
+          payer: string
+          payer_contact?: string | null
+          phone?: string | null
+          reassessment_rules?: string | null
+          state?: string | null
+          submission_portal?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          auth_requirements?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_requirements?: string | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          parent_signature_rules?: string | null
+          payer?: string
+          payer_contact?: string | null
+          phone?: string | null
+          reassessment_rules?: string | null
+          state?: string | null
+          submission_portal?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payroll_adjustments: {
         Row: {
           adjustment_type: Database["public"]["Enums"]["payroll_adjustment_type"]
@@ -13163,6 +13547,14 @@ export type Database = {
         }
       }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
+      has_authorization_read_access: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      has_authorization_write_access: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       has_permission: {
         Args: { _perm: string; _user_id: string }
         Returns: boolean
