@@ -225,19 +225,10 @@ export default function OSAuthorizations() {
   const [newAuthOpen, setNewAuthOpen] = useState(false);
   const actions = useAuthorizationActions();
 
-  const buildOverlayFromAuth = (a: Authorization): EnsureOverlayInput => ({
-    source_system: "monday",
-    monday_item_id: a.id,
-    source_id: a.id,
-    client_name: a.clientName,
-    state: a.state,
-    payer: a.payor,
-    auth_type: a.authType,
-    status: a.stage,
-    workflow_stage: a.stage,
-    assigned_owner: a.coordinator ?? null,
-    assigned_bcba: a.qaOwner ?? null,
-    expiration_date: a.expirationDate ?? null,
+  const [filters, setFilters] = useState<Filters>({
+    state: searchParams.get("state"),
+    payor: searchParams.get("payor"),
+    coordinator: searchParams.get("coordinator"),
   });
 
   const applySavedView = (v: SavedView) => {
@@ -247,12 +238,6 @@ export default function OSAuthorizations() {
     if (cfg.density) setDensity(cfg.density);
     if (cfg.filters) setFilters(cfg.filters);
   };
-
-  const [filters, setFilters] = useState<Filters>({
-    state: searchParams.get("state"),
-    payor: searchParams.get("payor"),
-    coordinator: searchParams.get("coordinator"),
-  });
 
   // React to deep-link changes coming from other pages (Risk Center, Supervision, etc.)
   useEffect(() => {
