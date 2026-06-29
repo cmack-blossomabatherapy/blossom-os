@@ -994,7 +994,7 @@ export function ExpiringCredentialsPage() {
       <div className="flex gap-2">
         {([30, 60, 90] as const).map((w) => (
           <Button key={w} size="sm" variant={windowDays === w ? "default" : "outline"} onClick={() => setWindowDays(w)}>
-            < {w} days
+            {`< ${w} days`}
           </Button>
         ))}
       </div>
