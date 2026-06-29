@@ -542,6 +542,7 @@ function AuthRow({ a, density, onOpen }: { a: EnrichedAuth; density: "comfortabl
         <div className="flex items-center gap-2 mb-0.5">
           <p className="text-[15px] font-medium truncate">{a.clientName}</p>
           <span className="text-[10px] font-mono text-muted-foreground/70">{a.id}</span>
+          <SourceBadge source="monday" />
         </div>
         <p className="text-xs text-muted-foreground truncate">
           {a.state} · {a.payor} · <span className="text-foreground/70">{a.requestType}</span>
