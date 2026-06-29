@@ -834,7 +834,7 @@ const App = () => (
                   <Route path="/credentialing/bcba" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><BCBACredentialsPage /></PermissionRoute>} />
                   <Route path="/credentialing/uncredentialed-bcbas" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><UncredentialedBCBAsPage /></PermissionRoute>} />
                   <Route path="/credentialing/expiring" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><ExpiringCredentialsPage /></PermissionRoute>} />
-                  <Route path="/credentialing/reports" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><CredentialingReportsPage /></PermissionRoute>} />
+                  <Route path="/credentialing/reports" element={<CredentialingReportsRedirect />} />
                   {/* Phase 6 — Core ABA Operations */}
                   <Route path="/state-operations" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director"]}><StateOperationsPage /></PermissionRoute>} />
                   {/* Authorizations consolidation — these three were static phase-6 tables.
