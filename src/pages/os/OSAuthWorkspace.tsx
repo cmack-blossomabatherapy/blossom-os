@@ -838,9 +838,12 @@ function FilterChip({ icon: Icon, label }: { icon: React.ElementType; label: str
   );
 }
 
-function BulkAction({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+function BulkAction({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) {
   return (
-    <button className="inline-flex h-7 items-center gap-1 rounded-lg border border-white/70 bg-white/80 px-2 text-[11.5px] font-semibold text-foreground/80 transition hover:text-foreground">
+    <button
+      onClick={onClick}
+      className="inline-flex h-7 items-center gap-1 rounded-lg border border-white/70 bg-white/80 px-2 text-[11.5px] font-semibold text-foreground/80 transition hover:text-foreground"
+    >
       <Icon className="h-3 w-3" /> {label}
     </button>
   );
