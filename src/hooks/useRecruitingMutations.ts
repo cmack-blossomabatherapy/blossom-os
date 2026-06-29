@@ -44,7 +44,7 @@ export function useRecruitingMutations() {
 
   // ---- Offers ----
   const updateOffer = useCallback(async (id: string, patch: Record<string, unknown>) => {
-    return wrap("Update offer", supabase.from("recruiting_offers").update(patch).eq("id", id));
+    return wrap("Update offer", supabase.from("recruiting_offers").update(patch as any).eq("id", id));
   }, []);
   const markOfferAccepted = useCallback((id: string) =>
     updateOffer(id, { status: "Accepted", accepted_at: new Date().toISOString() }), [updateOffer]);
@@ -53,7 +53,7 @@ export function useRecruitingMutations() {
 
   // ---- Background checks ----
   const updateBackground = useCallback(async (id: string, patch: Record<string, unknown>) => {
-    return wrap("Update background", supabase.from("recruiting_background_checks").update(patch).eq("id", id));
+    return wrap("Update background", supabase.from("recruiting_background_checks").update(patch as any).eq("id", id));
   }, []);
   const markBackgroundCleared = useCallback((id: string) =>
     updateBackground(id, { status: "Cleared", cleared_at: new Date().toISOString(), blocker: null }), [updateBackground]);
@@ -62,7 +62,7 @@ export function useRecruitingMutations() {
 
   // ---- Orientation ----
   const updateOrientation = useCallback(async (id: string, patch: Record<string, unknown>) => {
-    return wrap("Update orientation", supabase.from("recruiting_orientation_slots").update(patch).eq("id", id));
+    return wrap("Update orientation", supabase.from("recruiting_orientation_slots").update(patch as any).eq("id", id));
   }, []);
   const scheduleOrientation = useCallback((id: string, date: string, time?: string, format?: string) =>
     updateOrientation(id, { scheduled_date: date, scheduled_time: time ?? null, format: format ?? null, status: "Scheduled" }),
