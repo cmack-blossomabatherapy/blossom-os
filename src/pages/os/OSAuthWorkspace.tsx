@@ -12,6 +12,17 @@ import {
 import { OSShell } from "./OSShell";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import {
+  NewAuthorizationDialog,
+  SavedViewsMenu,
+  SourceBadge,
+  type AuthSourceTag,
+} from "@/components/authorizations/AuthorizationActionUI";
+import {
+  useAuthorizationActions,
+  type EnsureOverlayInput,
+} from "@/hooks/useAuthorizationActions";
+import type { SavedView } from "@/hooks/useAuthorizationSavedViews";
 
 /* ─────────── tone palette (calm, restrained) ─────────── */
 
@@ -131,6 +142,9 @@ type AuthCard = {
   treatmentPlan: { label: string; tone: Tone };
   lastActivity: string;
   queues: QueueKey[];
+  source?: AuthSourceTag;
+  mondayItemId?: string | null;
+  expirationISO?: string | null;
 };
 
 /** Legacy demo seeds — kept as a fallback only if the live query returns nothing. */
@@ -331,6 +345,9 @@ function liveAuthToCard(a: Authorization): AuthCard {
       : { label: "Pending", tone: "warn" },
     lastActivity: a.lastActivity ? `Updated · ${new Date(a.lastActivity).toLocaleDateString()}` : "—",
     queues,
+    source: "monday",
+    mondayItemId: a.id,
+    expirationISO: a.expirationDate ?? null,
   };
 }
 
