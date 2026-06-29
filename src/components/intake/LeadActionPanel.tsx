@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { LeadNameLink } from "@/contexts/LeadDrawerContext";
+import { LeadNameLink, useLeadDrawer } from "@/contexts/LeadDrawerContext";
 import {
   MessageSquare, Plus, ArrowRight, ArrowLeft, UserPlus, AlertCircle,
   ShieldCheck, ShieldAlert, Flame, ExternalLink,
@@ -73,6 +73,7 @@ const MISSING_OPTIONS: { key: string; label: string; tag: string }[] = [
 export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: LeadActionPanelProps) {
   const { moveStage, revertStage, assignOwner, addTag } = useLeads();
   const { logInteraction, addFollowUp, isPersistable } = useLeadJourneyLive(lead.id);
+  const { openLead } = useLeadDrawer();
 
   const [logOpen, setLogOpen] = useState(false);
   const [followOpen, setFollowOpen] = useState(false);
@@ -309,9 +310,8 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
           label: "Open Lead",
           description: "Open the full lead detail drawer with timeline and docs.",
           onClick: () => {
-            // Trigger LeadNameLink behavior by simulating click on a hidden link.
-            const el = document.getElementById(`open-lead-link-${lead.id}`);
-            (el as HTMLAnchorElement | null)?.click();
+            openLead(lead.id);
+            after();
           },
         },
         {
@@ -344,13 +344,6 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
           This lead isn't synced to the database yet — actions that write history (follow-ups, notes) are disabled until it syncs.
         </div>
       )}
-
-      {/* Hidden anchor used by the "Open Lead" action card. */}
-      <span className="hidden">
-        <LeadNameLink leadId={lead.id}>
-          <a id={`open-lead-link-${lead.id}`} />
-        </LeadNameLink>
-      </span>
 
       {sections.map((section) => (
         section.actions.length === 0 ? null : (
