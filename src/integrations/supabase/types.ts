@@ -9934,6 +9934,56 @@ export type Database = {
         }
         Relationships: []
       }
+      recruiting_activity_events: {
+        Row: {
+          actor_label: string | null
+          actor_user_id: string | null
+          candidate_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_table: string
+          event_type: string
+          from_value: string | null
+          id: string
+          payload: Json | null
+          to_value: string | null
+        }
+        Insert: {
+          actor_label?: string | null
+          actor_user_id?: string | null
+          candidate_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_table: string
+          event_type: string
+          from_value?: string | null
+          id?: string
+          payload?: Json | null
+          to_value?: string | null
+        }
+        Update: {
+          actor_label?: string | null
+          actor_user_id?: string | null
+          candidate_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_table?: string
+          event_type?: string
+          from_value?: string | null
+          id?: string
+          payload?: Json | null
+          to_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_activity_events_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recruiting_background_checks: {
         Row: {
           blocker: string | null
@@ -13139,6 +13189,18 @@ export type Database = {
           _employee_id: string
           _event_type: string
           _metadata?: Json
+        }
+        Returns: undefined
+      }
+      log_recruiting_event: {
+        Args: {
+          _candidate_id: string
+          _entity_id: string
+          _entity_table: string
+          _event_type: string
+          _from_value: string
+          _payload: Json
+          _to_value: string
         }
         Returns: undefined
       }
