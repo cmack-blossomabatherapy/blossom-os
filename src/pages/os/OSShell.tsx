@@ -333,7 +333,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/recruiting/messages",
     "/recruiting/escalations",
     "/recruiting/resources",
-    "/reports/hr-recruiting-pipeline",
+    "/reports",
   ]),
   recruiting_lead: new Set<string>([
     "/recruiting-team",
@@ -353,7 +353,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/recruiting/messages",
     "/recruiting/escalations",
     "/recruiting/resources",
-    "/reports/hr-recruiting-pipeline",
+    "/reports",
   ]),
   recruiting_coordinator: new Set<string>([
     "/recruiting-team",
@@ -373,7 +373,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/recruiting/messages",
     "/recruiting/escalations",
     "/recruiting/resources",
-    "/reports/hr-recruiting-pipeline",
+    "/reports",
   ]),
   hr_team: new Set<string>([
     "/hr-team",

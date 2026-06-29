@@ -23,7 +23,6 @@ const RECRUITING_PATHS = [
   "/recruiting/messages",
   "/recruiting/escalations",
   "/recruiting/resources",
-  "/reports/hr-recruiting-pipeline",
   "/reports",
   "/academy",
   "/resource-library",
@@ -48,6 +47,15 @@ describe("Sprint 20 — Recruiting Team menu & routing", () => {
     expect(menuPaths("recruiting_team")).not.toContain("/dashboard");
   });
 
+  it("Recruiting role menus expose exactly one Reports link (/reports) and never /reports/hr-recruiting-pipeline", () => {
+    for (const role of ["recruiting_team", "recruiting_lead", "recruiting_coordinator"]) {
+      const paths = menuPaths(role);
+      expect(paths).toContain("/reports");
+      expect(paths.filter((p) => p === "/reports").length).toBe(1);
+      expect(paths).not.toContain("/reports/hr-recruiting-pipeline");
+    }
+  });
+
   it("All Recruiting role homes resolve to /recruiting-team", () => {
     expect(ROLE_HOME.recruiting_team).toBe("/recruiting-team");
     expect(ROLE_HOME.recruiting_lead).toBe("/recruiting-team");
@@ -63,7 +71,8 @@ describe("Sprint 20 — Recruiting Team menu & routing", () => {
       const block = shell.split(`${role}: new Set<string>`)[1].split("]),")[0];
       expect(block).toContain('"/recruiting-team"');
       expect(block).toContain('"/recruiting/workspace"');
-      expect(block).toContain('"/reports/hr-recruiting-pipeline"');
+      expect(block).toContain('"/reports"');
+      expect(block).not.toContain('"/reports/hr-recruiting-pipeline"');
     }
   });
 
