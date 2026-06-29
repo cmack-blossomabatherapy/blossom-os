@@ -1,4 +1,7 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import type { Authorization } from "@/data/authorizations";
 import {
   Search, Bell, Sparkles, Plus, ChevronRight, X, Inbox, CalendarClock,
   FileText, ClipboardCheck, FileWarning, ShieldAlert, AlertTriangle,
@@ -130,7 +133,8 @@ type AuthCard = {
   queues: QueueKey[];
 };
 
-const AUTHS: AuthCard[] = [
+/** Legacy demo seeds — kept as a fallback only if the live query returns nothing. */
+const FALLBACK_AUTHS: AuthCard[] = [
   {
     id: "AUTH-1042", client: "Ava Walker", state: "NC", payer: "BCBS NC",
     authType: "Treatment Auth", requestType: "6-month renewal",
@@ -245,6 +249,91 @@ const AUTHS: AuthCard[] = [
   },
 ];
 
+/* ─────────── live ↔ card mapping ─────────── */
+
+function daysUntilISO(iso: string | null): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.floor((t - Date.now()) / 86_400_000);
+}
+
+function liveAuthToCard(a: Authorization): AuthCard {
+  const expiresInDays = daysUntilISO(a.expirationDate);
+  const stateTone: AuthState =
+    a.stage === "Approved" ? "approved"
+    : a.stage === "Denied" ? "denied"
+    : a.stage === "Expiring Soon" ? "expiring"
+    : a.stage === "In QA Review" ? "qa"
+    : a.missingInfo ? "missing"
+    : "awaiting";
+
+  const risk: Tone = a.riskLevel === "High" ? "crit" : a.riskLevel === "Medium" ? "warn" : "info";
+
+  // Snap state to one of the dashboard's known buckets.
+  const stateCode = (() => {
+    const s = (a.state || "").toUpperCase();
+    if (["GA","NC","VA","TN","MD","NJ"].includes(s)) return s as AuthCard["state"];
+    return "GA";
+  })();
+
+  // Snap auth type into the card's enum.
+  const authType: AuthCard["authType"] =
+    a.authType === "Initial" ? "Initial Auth"
+    : a.authType === "Reauth" ? "Reassessment"
+    : "Treatment Auth";
+
+  const queues: QueueKey[] = ["all"];
+  if (a.riskLevel === "High") queues.push("attention", "high_risk");
+  if (stateTone === "expiring") queues.push("expiring");
+  if (stateTone === "awaiting") queues.push("awaiting");
+  if (stateTone === "qa") queues.push("qa_ready");
+  if (stateTone === "missing") queues.push("missing");
+  if (stateTone === "denied") queues.push("denied");
+  if (a.missingInfo) queues.push("missing");
+  if (a.nextTaskDue) queues.push("due_today");
+  if (authType === "Initial Auth") queues.push("initial");
+  if (authType === "Treatment Auth") queues.push("treatment");
+  if (authType === "Reassessment") queues.push("reassessment");
+  if (stateCode === "GA") queues.push("ga");
+  if (stateCode === "NC") queues.push("nc");
+  if (stateCode === "TN") queues.push("tn");
+  if (stateCode === "VA") queues.push("va");
+  if (stateCode === "MD") queues.push("md");
+  queues.push("recent");
+  if (!a.coordinator || a.coordinator === "Unassigned") queues.push("unassigned");
+
+  return {
+    id: a.id,
+    client: a.clientName,
+    state: stateCode,
+    payer: a.payor,
+    authType,
+    requestType: a.nextAction ?? a.stage,
+    coordinator: a.coordinator || "Unassigned",
+    bcba: a.qaOwner || "—",
+    status: a.stage,
+    stateTone,
+    risk,
+    expiresInDays,
+    prStatus: a.missingInfo
+      ? { label: "PR follow-up needed", tone: "warn" }
+      : { label: "PR on track", tone: "ok" },
+    qaStatus: a.stage === "In QA Review"
+      ? { label: "QA reviewing", tone: "info" }
+      : a.stage === "Approved"
+        ? { label: "QA complete", tone: "ok" }
+        : { label: "Not started", tone: "neutral" },
+    missingDocs: a.missingRequirements ?? [],
+    parentSig: "Signed",
+    treatmentPlan: a.treatmentPlanReceived
+      ? { label: "Received", tone: "ok" }
+      : { label: "Pending", tone: "warn" },
+    lastActivity: a.lastActivity ? `Updated · ${new Date(a.lastActivity).toLocaleDateString()}` : "—",
+    queues,
+  };
+}
+
 /* ─────────── small ui atoms ─────────── */
 
 function CountPill({ tone = "neutral", children }: { tone?: Tone; children: React.ReactNode }) {
@@ -272,13 +361,32 @@ export default function OSAuthWorkspace() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
 
+  const { items: liveItems, loading, error } = useLiveAuthorizations();
+
+  const AUTHS: AuthCard[] = useMemo(() => {
+    if (loading || error) return [];
+    if (!liveItems.length) return FALLBACK_AUTHS;
+    return liveItems.map(liveAuthToCard);
+  }, [liveItems, loading, error]);
+
+  // Dynamic queue counts based on live data.
+  const liveQueueGroups: QueueGroup[] = useMemo(() => {
+    return QUEUE_GROUPS.map((g) => ({
+      ...g,
+      items: g.items.map((q) => ({
+        ...q,
+        count: q.key === "all" ? AUTHS.length : AUTHS.filter((a) => a.queues.includes(q.key)).length,
+      })),
+    }));
+  }, [AUTHS]);
+
   const activeMeta = useMemo(() => {
-    for (const g of QUEUE_GROUPS) {
+    for (const g of liveQueueGroups) {
       const found = g.items.find((i) => i.key === activeQueue);
       if (found) return { group: g.title, ...found };
     }
     return { group: "Today", key: activeQueue, label: "All", count: AUTHS.length };
-  }, [activeQueue]);
+  }, [activeQueue, liveQueueGroups, AUTHS.length]);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -288,7 +396,7 @@ export default function OSAuthWorkspace() {
       return [a.client, a.payer, a.id, a.bcba, a.coordinator, a.state, a.authType]
         .some((s) => s.toLowerCase().includes(q));
     });
-  }, [activeQueue, search]);
+  }, [activeQueue, search, AUTHS]);
 
   const openAuth = visible.find((a) => a.id === openId) ?? null;
 
@@ -337,12 +445,31 @@ export default function OSAuthWorkspace() {
         </div>
       </header>
 
+      {/* live data status banner */}
+      {(loading || error || (!liveItems.length && !loading)) && (
+        <div className={cn(
+          "os-card flex items-center justify-between gap-3 p-3 text-[12px]",
+          error ? "border-rose-200 bg-rose-50/70 text-rose-700" :
+          loading ? "text-muted-foreground" :
+          "text-muted-foreground",
+        )}>
+          <span>
+            {error ? `Live data error: ${error}` :
+             loading ? "Loading live authorizations…" :
+             "No imported authorizations yet — showing sample queue layout."}
+          </span>
+          <Link to="/authorizations" className="font-semibold hover:underline">
+            Open Authorizations workspace →
+          </Link>
+        </div>
+      )}
+
       {/* THREE-ZONE LAYOUT */}
       <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
         {/* LEFT — operational queues */}
         <aside className="os-card max-h-[calc(100vh-220px)] overflow-y-auto p-3 lg:sticky lg:top-4">
           <nav className="space-y-4">
-            {QUEUE_GROUPS.map((group) => (
+            {liveQueueGroups.map((group) => (
               <div key={group.title}>
                 <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   {group.title}
