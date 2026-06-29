@@ -373,10 +373,16 @@ export interface AppendInput {
    * large upload runs. Phase order: create_batch → append_rows* → finalize_batch.
    */
   onProgress?: (event:
+    | { phase: "check_duplicates" }
     | { phase: "create_batch" }
-    | { phase: "append_rows"; inserted: number; total: number }
+    | { phase: "append_rows"; inserted: number; total: number; chunk: number; chunks: number }
     | { phase: "finalize_batch" }
+    | { phase: "verify" }
   ) => void;
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function appendBcbaProductivityUpload(input: AppendInput): Promise<BcbaUploadAppendResult> {
@@ -396,6 +402,8 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
   }
 
   // Pre-check duplicates (against current active rows).
+  const onProgress = input.onProgress;
+  onProgress?.({ phase: "check_duplicates" });
   const hashes = parsed.parsedRows.map((r) => r.rowHash);
   const existing = await fetchExistingHashes(hashes);
 
@@ -412,7 +420,6 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
 
   // Create batch row via Edge Function (service-role, reliable).
   const fileHash = await sha256Hex(`${input.file.name}|${input.file.size}|${parsed.rawRowCount}`);
-  const onProgress = input.onProgress;
   onProgress?.({ phase: "create_batch" });
   let batchId = "";
   const createRes = await callUploadFn(accessToken, {
@@ -443,12 +450,13 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
     // request in flight prevents the function from rebooting under parallel
     // oversized JSON payloads and makes progress honest/recoverable.
     if (toInsert.length > 0) {
-      const CHUNK = 750;
+      const CHUNK = 400;
       const chunks: ParsedRow[][] = [];
       for (let i = 0; i < toInsert.length; i += CHUNK) {
         chunks.push(toInsert.slice(i, i + CHUNK));
       }
-      for (const slice of chunks) {
+      for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex += 1) {
+        const slice = chunks[chunkIndex];
         const payload = slice.map((p) => ({
           row_hash: p.rowHash,
           service_date: p.row.date || null,
@@ -462,12 +470,31 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
           raw: p.raw,
           normalized: p.row,
         }));
-        const res = await callUploadFn(accessToken!, { action: "append_rows", batchId, rows: payload });
-        actuallyInserted += Number(res.inserted ?? 0);
+        let res: Record<string, unknown> | null = null;
+        let lastError: unknown = null;
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
+          try {
+            accessToken = (await getFreshAccessToken()) || accessToken;
+            res = await callUploadFn(accessToken!, { action: "append_rows", batchId, rows: payload });
+            lastError = null;
+            break;
+          } catch (e) {
+            lastError = e;
+            if (attempt < 3) await wait(1000 * attempt);
+          }
+        }
+        if (lastError) throw lastError;
+        const inserted = Number(res?.inserted);
+        if (!Number.isFinite(inserted)) {
+          throw new Error(`Upload service did not confirm inserted rows for chunk ${chunkIndex + 1} of ${chunks.length}.`);
+        }
+        actuallyInserted += inserted;
         onProgress?.({
           phase: "append_rows",
           inserted: actuallyInserted,
           total: toInsert.length,
+          chunk: chunkIndex + 1,
+          chunks: chunks.length,
         });
       }
     }
@@ -487,11 +514,18 @@ export async function appendBcbaProductivityUpload(input: AppendInput): Promise<
       service_date_max: parsed.serviceDateMax,
     });
     const actualRows = Number(fin.actualRows ?? actuallyInserted);
+    if (fin.status && fin.status !== "active") {
+      throw new Error(`Upload did not finalize as active. Backend status: ${String(fin.status)}.`);
+    }
+    if (fin.ok === false) {
+      throw new Error("Upload verification failed after finalize. No rows were activated for the report.");
+    }
     if (toInsert.length > 0 && actualRows < toInsert.length) {
       throw new Error(
         `Upload incomplete: only ${actualRows.toLocaleString()} of ${toInsert.length.toLocaleString()} new rows landed. The batch has been marked failed — please re-upload.`,
       );
     }
+    onProgress?.({ phase: "verify" });
 
     return {
       batchId,
