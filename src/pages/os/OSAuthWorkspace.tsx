@@ -1001,7 +1001,10 @@ function SummaryCell({ label, value, tone }: { label: string; value: string; ton
 
 /* ─────────── detail drawer ─────────── */
 
-function AuthDetailDrawer({ auth }: { auth: AuthCard }) {
+function AuthDetailDrawer({
+  auth,
+  onAction,
+}: { auth: AuthCard; onAction?: (kind: "submit" | "request_pr" | "send_qa" | "escalate") => void }) {
   const stateToToneKey: Record<AuthState, Tone> = {
     awaiting: "info", expiring: "crit", denied: "warn",
     missing: "warn", qa: "info", approved: "ok",
@@ -1021,10 +1024,10 @@ function AuthDetailDrawer({ auth }: { auth: AuthCard }) {
           {auth.state} · {auth.payer} · {auth.authType} · {auth.requestType}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <DrawerAction icon={Send}            label="Submit" primary />
-          <DrawerAction icon={FileText}        label="Request PR" />
-          <DrawerAction icon={ClipboardCheck}  label="Send to QA" />
-          <DrawerAction icon={Flame}           label="Escalate" />
+          <DrawerAction icon={Send}            label="Submit"     primary onClick={() => onAction?.("submit")} />
+          <DrawerAction icon={FileText}        label="Request PR"         onClick={() => onAction?.("request_pr")} />
+          <DrawerAction icon={ClipboardCheck}  label="Send to QA"         onClick={() => onAction?.("send_qa")} />
+          <DrawerAction icon={Flame}           label="Escalate"           onClick={() => onAction?.("escalate")} />
           <DrawerAction icon={MessageSquare}   label="Note" />
           <DrawerAction icon={Star}            label="Follow" />
         </div>
