@@ -60,6 +60,23 @@ type EnrichedAuth = Authorization & {
   requestType: ReturnType<typeof requestType>;
 };
 
+function buildOverlayFromAuth(a: Authorization): EnsureOverlayInput {
+  return {
+    source_system: "monday",
+    monday_item_id: a.id,
+    source_id: a.id,
+    client_name: a.clientName,
+    state: a.state,
+    payer: a.payor,
+    auth_type: a.authType,
+    status: a.stage,
+    workflow_stage: a.stage,
+    assigned_owner: a.coordinator ?? null,
+    assigned_bcba: a.qaOwner ?? null,
+    expiration_date: a.expirationDate ?? null,
+  };
+}
+
 function enrich(a: Authorization, liveBcba?: string | null): EnrichedAuth {
   const days = daysUntil(a.expirationDate);
   const alert = getAuthAlert(a);
