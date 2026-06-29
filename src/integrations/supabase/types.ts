@@ -12205,6 +12205,297 @@ export type Database = {
           },
         ]
       }
+      scheduling_actions: {
+        Row: {
+          action_type: string
+          assigned_to_user_id: string | null
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          id: string
+          metadata: Json
+          note: string | null
+          owner_role: string | null
+          owner_user_id: string | null
+          priority: string
+          state: string | null
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          assigned_to_user_id?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          owner_role?: string | null
+          owner_user_id?: string | null
+          priority?: string
+          state?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          assigned_to_user_id?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          owner_role?: string | null
+          owner_user_id?: string | null
+          priority?: string
+          state?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scheduling_cancellations: {
+        Row: {
+          bcba_name: string | null
+          bcba_notified: boolean
+          cancelled_by: string | null
+          centralreach_reference_id: string | null
+          centralreach_sync_status: string
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          duration_hours: number | null
+          end_time: string | null
+          family_notified: boolean
+          id: string
+          location: string | null
+          make_up_date: string | null
+          make_up_required: boolean
+          make_up_status: string
+          metadata: Json
+          rbt_name: string | null
+          reason: string | null
+          session_date: string | null
+          start_time: string | null
+          state: string | null
+          state_director_notified: boolean
+          updated_at: string
+        }
+        Insert: {
+          bcba_name?: string | null
+          bcba_notified?: boolean
+          cancelled_by?: string | null
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_hours?: number | null
+          end_time?: string | null
+          family_notified?: boolean
+          id?: string
+          location?: string | null
+          make_up_date?: string | null
+          make_up_required?: boolean
+          make_up_status?: string
+          metadata?: Json
+          rbt_name?: string | null
+          reason?: string | null
+          session_date?: string | null
+          start_time?: string | null
+          state?: string | null
+          state_director_notified?: boolean
+          updated_at?: string
+        }
+        Update: {
+          bcba_name?: string | null
+          bcba_notified?: boolean
+          cancelled_by?: string | null
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_hours?: number | null
+          end_time?: string | null
+          family_notified?: boolean
+          id?: string
+          location?: string | null
+          make_up_date?: string | null
+          make_up_required?: boolean
+          make_up_status?: string
+          metadata?: Json
+          rbt_name?: string | null
+          reason?: string | null
+          session_date?: string | null
+          start_time?: string | null
+          state?: string | null
+          state_director_notified?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scheduling_coverage_cases: {
+        Row: {
+          approved_hours: number | null
+          bcba_name: string | null
+          case_type: string
+          centralreach_reference_id: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          delivered_hours: number | null
+          escalation_level: number
+          gap_hours: number | null
+          id: string
+          metadata: Json
+          next_action: string | null
+          owner_user_id: string | null
+          rbt_name: string | null
+          reason: string | null
+          resolved_at: string | null
+          risk_level: string
+          scheduled_hours: number | null
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_hours?: number | null
+          bcba_name?: string | null
+          case_type: string
+          centralreach_reference_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_hours?: number | null
+          escalation_level?: number
+          gap_hours?: number | null
+          id?: string
+          metadata?: Json
+          next_action?: string | null
+          owner_user_id?: string | null
+          rbt_name?: string | null
+          reason?: string | null
+          resolved_at?: string | null
+          risk_level?: string
+          scheduled_hours?: number | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_hours?: number | null
+          bcba_name?: string | null
+          case_type?: string
+          centralreach_reference_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_hours?: number | null
+          escalation_level?: number
+          gap_hours?: number | null
+          id?: string
+          metadata?: Json
+          next_action?: string | null
+          owner_user_id?: string | null
+          rbt_name?: string | null
+          reason?: string | null
+          resolved_at?: string | null
+          risk_level?: string
+          scheduled_hours?: number | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scheduling_session_adjustments: {
+        Row: {
+          adjustment_type: string
+          approval_status: string
+          approved_by: string | null
+          centralreach_reference_id: string | null
+          centralreach_sync_status: string
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          day_of_week: string | null
+          id: string
+          metadata: Json
+          new_end_time: string | null
+          new_location: string | null
+          new_rbt_name: string | null
+          new_start_time: string | null
+          old_end_time: string | null
+          old_location: string | null
+          old_rbt_name: string | null
+          old_start_time: string | null
+          reason: string | null
+          session_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          adjustment_type: string
+          approval_status?: string
+          approved_by?: string | null
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: string | null
+          id?: string
+          metadata?: Json
+          new_end_time?: string | null
+          new_location?: string | null
+          new_rbt_name?: string | null
+          new_start_time?: string | null
+          old_end_time?: string | null
+          old_location?: string | null
+          old_rbt_name?: string | null
+          old_start_time?: string | null
+          reason?: string | null
+          session_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adjustment_type?: string
+          approval_status?: string
+          approved_by?: string | null
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: string | null
+          id?: string
+          metadata?: Json
+          new_end_time?: string | null
+          new_location?: string | null
+          new_rbt_name?: string | null
+          new_start_time?: string | null
+          old_end_time?: string | null
+          old_location?: string | null
+          old_rbt_name?: string | null
+          old_start_time?: string | null
+          reason?: string | null
+          session_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       secure_unlock_events: {
         Row: {
           device: string | null
