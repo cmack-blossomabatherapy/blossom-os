@@ -22,6 +22,8 @@ import {
 } from "@/hooks/useRecruitingCandidates";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
+import { RecruitingIntegrationsPanel } from "@/components/recruiting/RecruitingIntegrationsPanel";
+import { useRecruitingActivity } from "@/hooks/useRecruitingMutations";
 
 type Tone = "ok" | "warn" | "crit";
 type QueueKey = "today" | "followup" | "offers" | "onboarding" | "escalation";
@@ -451,6 +453,10 @@ export default function OSRecruitingWorkspace() {
                 ))}
               </div>
             </Card>
+
+            <RecruitingIntegrationsPanel />
+
+            <RecruitingActivityCard />
           </aside>
         </div>
       </div>
@@ -466,6 +472,41 @@ export default function OSRecruitingWorkspace() {
         followups={selected ? followups.filter((f) => f.candidate_id === selected.id && f.status !== "Done") : []}
       />
     </OSShell>
+  );
+}
+
+function RecruitingActivityCard() {
+  const { items, loading } = useRecruitingActivity(undefined, 12);
+  return (
+    <Card className="p-5">
+      <div className="mb-3">
+        <h3 className="text-base font-semibold">Recent activity</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">Live audit trail of recruiting workflow events.</p>
+      </div>
+      {loading ? (
+        <div className="text-xs text-muted-foreground">Loading…</div>
+      ) : items.length === 0 ? (
+        <div className="text-xs text-muted-foreground">No activity yet.</div>
+      ) : (
+        <ul className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+          {items.map((e) => (
+            <li key={e.id} className="text-[11.5px] leading-snug flex items-start gap-2">
+              <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary/70 shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="font-medium text-foreground">
+                  {e.event_type === "stage_change"
+                    ? `Stage: ${e.from_value ?? "—"} → ${e.to_value ?? "—"}`
+                    : `${e.event_type} · ${e.entity_table.replace("recruiting_", "")}`}
+                </span>
+                <span className="block text-muted-foreground">
+                  {new Date(e.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
 
