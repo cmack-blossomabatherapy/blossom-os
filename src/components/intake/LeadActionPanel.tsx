@@ -6,6 +6,7 @@ import {
   ShieldCheck, ShieldAlert, Flame, ExternalLink,
   Phone, Send, Mail, FileText, BellRing,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -121,140 +122,287 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
   const hasPhone = Boolean(lead.phone && lead.phone.trim());
   const hasEmail = Boolean(lead.email && lead.email.trim());
 
+  // Compact mode (used on cards) keeps the legacy chip strip so card layout
+  // does not blow up. The modal/expanded surface gets the new sectioned UI.
+  if (compact) {
+    return (
+      <div className="flex flex-wrap gap-1" data-source-page={sourcePage}>
+        <Button size="sm" variant="default" disabled={!hasPhone}
+          onClick={async () => notifyCommunicationResult(await callParent(leadContext))}>
+          <Phone className="h-3.5 w-3.5 mr-1" /> Call
+        </Button>
+        <Button size="sm" variant="outline" disabled={!hasPhone}
+          onClick={async () => notifyCommunicationResult(await sendLeadSms(leadContext))}>
+          <Send className="h-3.5 w-3.5 mr-1" /> SMS
+        </Button>
+        <Button size="sm" variant="outline" disabled={!hasEmail}
+          onClick={async () => notifyCommunicationResult(await sendLeadEmail(leadContext))}>
+          <Mail className="h-3.5 w-3.5 mr-1" /> Email
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setFollowOpen(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1" /> Follow-Up
+        </Button>
+      </div>
+    );
+  }
+
+  type ActionCard = {
+    icon: LucideIcon;
+    label: string;
+    description: string;
+    onClick: () => void;
+    disabled?: boolean;
+    disabledHint?: string;
+    tone?: "primary" | "default" | "warning" | "danger";
+  };
+
+  type ActionSection = {
+    id: string;
+    title: string;
+    subtitle: string;
+    actions: ActionCard[];
+  };
+
+  const sections: ActionSection[] = [
+    {
+      id: "contact",
+      title: "Contact family",
+      subtitle: "Reach the parent directly through the phone, SMS, or email systems.",
+      actions: [
+        {
+          icon: Phone,
+          label: "Call Parent",
+          description: "Place an outbound call through the phone system.",
+          onClick: async () => notifyCommunicationResult(await callParent(leadContext)),
+          disabled: !hasPhone,
+          disabledHint: "No phone on file",
+          tone: "primary",
+        },
+        {
+          icon: Send,
+          label: "Send SMS",
+          description: "Send a quick text to the parent's phone on file.",
+          onClick: async () => notifyCommunicationResult(await sendLeadSms(leadContext)),
+          disabled: !hasPhone,
+          disabledHint: "No phone on file",
+        },
+        {
+          icon: Mail,
+          label: "Send Email",
+          description: "Email the parent using their address on file.",
+          onClick: async () => notifyCommunicationResult(await sendLeadEmail(leadContext)),
+          disabled: !hasEmail,
+          disabledHint: "No email on file",
+        },
+        {
+          icon: FileText,
+          label: "Send Intake Packet",
+          description: "Email the standard intake packet for the family to complete.",
+          onClick: async () => notifyCommunicationResult(await sendIntakePacket(leadContext)),
+          disabled: !hasEmail,
+          disabledHint: "No email on file",
+        },
+        {
+          icon: BellRing,
+          label: "Missing Info Reminder",
+          description: "Nudge the family for outstanding documents or info.",
+          onClick: async () => notifyCommunicationResult(await sendMissingInfoReminder(leadContext)),
+          disabled: !hasPhone && !hasEmail,
+          disabledHint: "No phone or email on file",
+        },
+      ],
+    },
+    {
+      id: "workflow",
+      title: "Move the workflow",
+      subtitle: "Advance, rewind, or trigger the canonical Family / Lead pipeline.",
+      actions: [
+        ...(nextStage && !atPipelineEnd
+          ? [{
+              icon: ArrowRight,
+              label: `Move to ${nextStage}`,
+              description: "Advance this lead to the next canonical pipeline stage.",
+              onClick: () => safeMove(nextStage, nextStage),
+              tone: "primary" as const,
+            }]
+          : []),
+        ...(prevStage
+          ? [{
+              icon: ArrowLeft,
+              label: `Back to ${prevStage}`,
+              description: "Send the lead back one stage if it was moved by mistake.",
+              onClick: () => {
+                revertStage(lead.id, prevStage, 0, "Manual workflow correction");
+                toast.success(`Moved back to ${prevStage}`);
+                after();
+              },
+            }]
+          : []),
+        ...(vobEligible
+          ? [{
+              icon: ShieldCheck,
+              label: "Start Benefits Verification",
+              description: "Begin the benefits verification workflow and queue a follow-up.",
+              onClick: () => {
+                moveStage([lead.id], "Benefits Verification");
+                void tryAddFollowUp({ isPersistable, addFollowUp, title: "Start benefits verification" });
+                toast.success("Started benefits verification");
+                after();
+              },
+            }]
+          : []),
+        ...(benefitsInProgress
+          ? [{
+              icon: ShieldCheck,
+              label: "Mark Benefits Verified",
+              description: "Confirm benefits and advance to Assessment Scheduling.",
+              onClick: () => {
+                moveStage([lead.id], "Assessment Scheduling");
+                void tryAddFollowUp({ isPersistable, addFollowUp, title: "Schedule assessment" });
+                toast.success("Benefits verified — moved to Assessment Scheduling");
+                after();
+              },
+            }]
+          : []),
+        {
+          icon: Plus,
+          label: "Add Follow-Up",
+          description: "Create a dated follow-up task tied to this lead.",
+          onClick: () => setFollowOpen(true),
+        },
+      ],
+    },
+    {
+      id: "coordination",
+      title: "Coordinate",
+      subtitle: "Assign ownership, flag what's missing, or raise an escalation.",
+      actions: [
+        {
+          icon: UserPlus,
+          label: "Assign Owner",
+          description: "Hand off this lead to another intake coordinator.",
+          onClick: () => setOwnerOpen(true),
+        },
+        {
+          icon: AlertCircle,
+          label: "Flag Missing Info",
+          description: "Tag what's missing and move to Intake Packet Follow Up.",
+          onClick: () => setMissingOpen(true),
+          tone: "warning",
+        },
+        {
+          icon: Flame,
+          label: "Escalate",
+          description: "Raise an escalation with severity and assigned owner.",
+          onClick: () => setEscalateOpen(true),
+          tone: "danger",
+        },
+      ],
+    },
+    {
+      id: "other",
+      title: "Lead record",
+      subtitle: "Open the full record or log a note for the timeline.",
+      actions: [
+        {
+          icon: ExternalLink,
+          label: "Open Lead",
+          description: "Open the full lead detail drawer with timeline and docs.",
+          onClick: () => {
+            // Trigger LeadNameLink behavior by simulating click on a hidden link.
+            const el = document.getElementById(`open-lead-link-${lead.id}`);
+            (el as HTMLAnchorElement | null)?.click();
+          },
+        },
+        {
+          icon: MessageSquare,
+          label: "Add Note",
+          description: "Log a note, call, text, or email entry on the lead timeline.",
+          onClick: () => setLogOpen(true),
+        },
+      ],
+    },
+  ];
+
+  const toneClasses: Record<NonNullable<ActionCard["tone"]>, string> = {
+    primary: "border-primary/30 bg-primary/[0.04] hover:border-primary/60 hover:bg-primary/[0.08]",
+    default: "border-border/60 bg-background hover:border-primary/40 hover:bg-accent/40",
+    warning: "border-amber-300/60 bg-amber-50/40 hover:border-amber-400 hover:bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/[0.06] dark:hover:bg-amber-500/[0.12]",
+    danger:  "border-rose-300/60 bg-rose-50/40 hover:border-rose-400 hover:bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/[0.06] dark:hover:bg-rose-500/[0.12]",
+  };
+  const toneIconClasses: Record<NonNullable<ActionCard["tone"]>, string> = {
+    primary: "bg-primary/10 text-primary",
+    default: "bg-muted text-foreground/70",
+    warning: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300",
+    danger:  "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300",
+  };
+
   return (
-    <div
-      className={cn(
-        "flex flex-wrap gap-1.5",
-        compact ? "gap-1" : "gap-1.5",
-      )}
-      data-source-page={sourcePage}
-    >
-      {/* Primary family-contact actions — adapter-driven (Jivetel / CTM / Mailchimp). */}
-      <Button
-        size={btnSize}
-        variant="default"
-        disabled={!hasPhone}
-        title={hasPhone ? undefined : "No phone on file"}
-        onClick={async () => notifyCommunicationResult(await callParent(leadContext))}
-      >
-        <Phone className="h-3.5 w-3.5 mr-1" /> Call Parent
-      </Button>
-      <Button
-        size={btnSize}
-        variant="outline"
-        disabled={!hasPhone}
-        title={hasPhone ? undefined : "No phone on file"}
-        onClick={async () => notifyCommunicationResult(await sendLeadSms(leadContext))}
-      >
-        <Send className="h-3.5 w-3.5 mr-1" /> Send SMS
-      </Button>
-      <Button
-        size={btnSize}
-        variant="outline"
-        disabled={!hasEmail}
-        title={hasEmail ? undefined : "No email on file"}
-        onClick={async () => notifyCommunicationResult(await sendLeadEmail(leadContext))}
-      >
-        <Mail className="h-3.5 w-3.5 mr-1" /> Send Email
-      </Button>
-      <Button
-        size={btnSize}
-        variant="outline"
-        disabled={!hasEmail}
-        title={hasEmail ? undefined : "No email on file"}
-        onClick={async () => notifyCommunicationResult(await sendIntakePacket(leadContext))}
-      >
-        <FileText className="h-3.5 w-3.5 mr-1" /> Send Intake Packet
-      </Button>
-      <Button
-        size={btnSize}
-        variant="outline"
-        disabled={!hasPhone && !hasEmail}
-        title={hasPhone || hasEmail ? undefined : "No phone or email on file"}
-        onClick={async () => notifyCommunicationResult(await sendMissingInfoReminder(leadContext))}
-      >
-        <BellRing className="h-3.5 w-3.5 mr-1" /> Missing Info Reminder
-      </Button>
-
-      <Button size={btnSize} variant="outline" onClick={() => setFollowOpen(true)}>
-        <Plus className="h-3.5 w-3.5 mr-1" /> Follow-Up
-      </Button>
-      {nextStage && !atPipelineEnd && (
-        <Button size={btnSize} variant="ghost" onClick={() => safeMove(nextStage, nextStage)}>
-          Move Forward <ArrowRight className="h-3.5 w-3.5 ml-1" />
-        </Button>
-      )}
-      {prevStage && (
-        <Button
-          size={btnSize}
-          variant="ghost"
-          onClick={() => {
-            revertStage(lead.id, prevStage, 0, "Manual workflow correction");
-            toast.success(`Moved back to ${prevStage}`);
-            after();
-          }}
-        >
-          <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Back
-        </Button>
-      )}
-      <Button size={btnSize} variant="ghost" onClick={() => setOwnerOpen(true)}>
-        <UserPlus className="h-3.5 w-3.5 mr-1" /> Assign Owner
-      </Button>
-      <Button size={btnSize} variant="ghost" onClick={() => setMissingOpen(true)}>
-        <AlertCircle className="h-3.5 w-3.5 mr-1" /> Missing Info
-      </Button>
-      {vobEligible && (
-        <Button
-          size={btnSize}
-          variant="ghost"
-          onClick={() => {
-            moveStage([lead.id], "Benefits Verification");
-            void tryAddFollowUp({
-              isPersistable, addFollowUp,
-              title: "Start benefits verification",
-            });
-            toast.success("Started benefits verification");
-            after();
-          }}
-        >
-          <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Start Benefits Verification
-        </Button>
-      )}
-      {benefitsInProgress && (
-        <Button
-          size={btnSize}
-          variant="ghost"
-          onClick={() => {
-            moveStage([lead.id], "Assessment Scheduling");
-            void tryAddFollowUp({
-              isPersistable, addFollowUp,
-              title: "Schedule assessment",
-            });
-            toast.success("Benefits verified — moved to Assessment Scheduling");
-            after();
-          }}
-        >
-          <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Mark Benefits Verified
-        </Button>
-      )}
-      <Button size={btnSize} variant="ghost" onClick={() => setEscalateOpen(true)}>
-        <Flame className="h-3.5 w-3.5 mr-1" /> Escalate
-      </Button>
-      <Button asChild size={btnSize} variant="ghost">
-        <LeadNameLink leadId={lead.id}>
-          <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open Lead
-        </LeadNameLink>
-      </Button>
-      {/* Secondary admin-style note action — not the primary family contact workflow. */}
-      <Button size={btnSize} variant="ghost" onClick={() => setLogOpen(true)}>
-        <MessageSquare className="h-3.5 w-3.5 mr-1" /> Add Note
-      </Button>
-
+    <div className="space-y-5" data-source-page={sourcePage}>
       {!isPersistable && (
-        <Badge variant="outline" className="text-[10px]">
-          Not synced — DB actions disabled
-        </Badge>
+        <div className="rounded-lg border border-dashed border-amber-300/60 bg-amber-50/40 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/[0.06] dark:text-amber-200">
+          This lead isn't synced to the database yet — actions that write history (follow-ups, notes) are disabled until it syncs.
+        </div>
       )}
+
+      {/* Hidden anchor used by the "Open Lead" action card. */}
+      <span className="hidden">
+        <LeadNameLink leadId={lead.id}>
+          <a id={`open-lead-link-${lead.id}`} />
+        </LeadNameLink>
+      </span>
+
+      {sections.map((section) => (
+        section.actions.length === 0 ? null : (
+          <section key={section.id} className="space-y-2">
+            <div className="space-y-0.5">
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {section.title}
+              </h4>
+              <p className="text-xs text-muted-foreground/80">{section.subtitle}</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {section.actions.map((a) => {
+                const tone = a.tone ?? "default";
+                const Icon = a.icon;
+                return (
+                  <button
+                    key={a.label}
+                    type="button"
+                    onClick={a.onClick}
+                    disabled={a.disabled}
+                    title={a.disabled ? a.disabledHint : undefined}
+                    className={cn(
+                      "group flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition-all",
+                      "hover:shadow-sm",
+                      a.disabled
+                        ? "cursor-not-allowed opacity-50 border-border/60 bg-muted/20"
+                        : toneClasses[tone],
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                        a.disabled ? "bg-muted text-muted-foreground" : toneIconClasses[tone],
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13px] font-medium leading-tight text-foreground">
+                        {a.label}
+                      </span>
+                      <span className="mt-0.5 block text-[11.5px] leading-snug text-muted-foreground">
+                        {a.disabled && a.disabledHint ? a.disabledHint : a.description}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )
+      ))}
 
       <LogContactDialog
         open={logOpen}
