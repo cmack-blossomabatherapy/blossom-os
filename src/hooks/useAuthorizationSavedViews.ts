@@ -49,7 +49,13 @@ export function useAuthorizationSavedViews(scope: SavedViewScope) {
       }
       const { data, error: e } = await supabase
         .from("authorization_saved_views")
-        .insert({ user_id: u.user.id, name, scope, config, is_shared: isShared })
+        .insert({
+          user_id: u.user.id,
+          name,
+          scope,
+          config: config as never,
+          is_shared: isShared,
+        })
         .select("*")
         .single();
       if (e) {
