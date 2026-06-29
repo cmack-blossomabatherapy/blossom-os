@@ -594,9 +594,9 @@ function AuthRow({ a, density, onOpen }: { a: EnrichedAuth; density: "comfortabl
       {/* Far right — open arrow + quick actions on hover */}
       <div className="flex items-center justify-end gap-1">
         <div className="hidden xl:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition" onClick={(e) => e.stopPropagation()}>
-          <IconAction icon={Send} title="Request PR" onClick={() => toast(`PR requested for ${a.clientName}`)} />
-          <IconAction icon={ClipboardCheck} title="Send to QA" onClick={() => toast("Sent to QA")} />
-          <IconAction icon={AlertTriangle} title="Escalate" onClick={() => toast("Escalated")} />
+          <IconAction icon={Send} title="Request PR" onClick={() => void actions.requestPR(overlay, { dueInDays: 3 })} />
+          <IconAction icon={ClipboardCheck} title="Send to QA" onClick={() => void actions.sendToQA(overlay)} />
+          <IconAction icon={AlertTriangle} title="Escalate" onClick={() => void actions.escalate(overlay)} />
         </div>
         <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
       </div>
