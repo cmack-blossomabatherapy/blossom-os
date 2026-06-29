@@ -52,7 +52,8 @@ export interface LogActivityInput {
   recordId: string;
   activityType: AuthActivityType;
   description?: string;
-  payload?: Record<string, unknown>;
+  oldValue?: string | null;
+  newValue?: string | null;
 }
 
 export interface CreateTaskInput {
@@ -127,14 +128,16 @@ async function ensureOverlay(input: EnsureOverlayInput): Promise<string> {
   return inserted.id;
 }
 
-async function logActivity({ recordId, activityType, description, payload }: LogActivityInput) {
+async function logActivity({ recordId, activityType, description, oldValue, newValue }: LogActivityInput) {
   const userId = await currentUserId();
   const { error } = await supabase.from("authorization_activity").insert({
-    record_id: recordId,
+    authorization_id: recordId,
     activity_type: activityType,
-    description: description ?? null,
-    payload: payload ?? null,
-    actor_user_id: userId,
+    title: description ?? activityType,
+    body: description ?? null,
+    old_value: oldValue ?? null,
+    new_value: newValue ?? null,
+    created_by: userId,
   });
   if (error) throw error;
 }
@@ -142,11 +145,11 @@ async function logActivity({ recordId, activityType, description, payload }: Log
 async function createTask({ recordId, title, ownerLabel, dueDate, notes }: CreateTaskInput) {
   const userId = await currentUserId();
   const { error } = await supabase.from("authorization_tasks").insert({
-    record_id: recordId,
+    authorization_id: recordId,
     title,
-    owner_label: ownerLabel ?? null,
+    owner_user: ownerLabel ?? null,
     due_date: dueDate ?? null,
-    notes: notes ?? null,
+    description: notes ?? null,
     created_by: userId,
   });
   if (error) throw error;
@@ -329,7 +332,7 @@ export function useAuthorizationActions(): AuthorizationActions {
           recordId: id,
           activityType: "external_send_pending",
           description: `${CHANNEL_LABEL[send.channel]} send queued — integration pending. ${send.summary}`,
-          payload: { channel: send.channel, summary: send.summary },
+          newValue: send.channel,
         });
       }, `${CHANNEL_LABEL[send.channel]} send queued — integration pending`),
     [run],
@@ -348,7 +351,7 @@ export function useAuthorizationActions(): AuthorizationActions {
             recordId: id,
             activityType: "status_change",
             description: `Status changed to ${newStatus}.`,
-            payload: { status: newStatus },
+            newValue: newStatus,
           });
         }
       }, `Status updated · ${records.length} record${records.length === 1 ? "" : "s"}`),
@@ -368,7 +371,7 @@ export function useAuthorizationActions(): AuthorizationActions {
             recordId: id,
             activityType: "assign_coordinator",
             description: `Assigned to ${assignee}.`,
-            payload: { assignee },
+            newValue: assignee,
           });
         }
       }, `Assigned ${records.length} record${records.length === 1 ? "" : "s"}`),
