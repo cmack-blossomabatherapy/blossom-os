@@ -365,6 +365,10 @@ export default function OSAuthorizations() {
           onClose={closeDrawer}
         />
       )}
+      <NewAuthorizationDialog
+        open={newAuthOpen}
+        onOpenChange={setNewAuthOpen}
+      />
     </OSShell>
   );
 }
