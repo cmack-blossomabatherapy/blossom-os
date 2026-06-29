@@ -1678,6 +1678,39 @@ export type Database = {
           },
         ]
       }
+      authorization_saved_views: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          is_shared: boolean
+          name: string
+          scope: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          name: string
+          scope?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          name?: string
+          scope?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       authorization_tasks: {
         Row: {
           authorization_id: string | null
@@ -13854,6 +13887,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      has_authorization_state_access: {
+        Args: { _state: string; _user_id: string }
+        Returns: boolean
+      }
       has_authorization_write_access: {
         Args: { _user_id: string }
         Returns: boolean
@@ -14024,6 +14061,10 @@ export type Database = {
         Returns: string[]
       }
       user_allowed_states: { Args: { _user_id: string }; Returns: string[] }
+      user_assigned_state_codes: {
+        Args: { _user_id: string }
+        Returns: string[]
+      }
       user_has_hat: {
         Args: {
           _department_key?: string

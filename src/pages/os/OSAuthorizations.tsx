@@ -15,6 +15,16 @@ import {
   daysUntil, getAuthAlert,
 } from "@/data/authorizations";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import {
+  NewAuthorizationDialog,
+  SavedViewsMenu,
+  SourceBadge,
+} from "@/components/authorizations/AuthorizationActionUI";
+import {
+  useAuthorizationActions,
+  type EnsureOverlayInput,
+} from "@/hooks/useAuthorizationActions";
+import type { SavedView } from "@/hooks/useAuthorizationSavedViews";
 
 /* ------------------------------ helpers ------------------------------ */
 function hash(s: string) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -49,6 +59,23 @@ type EnrichedAuth = Authorization & {
   primaryBlocker: string | null;
   requestType: ReturnType<typeof requestType>;
 };
+
+function buildOverlayFromAuth(a: Authorization): EnsureOverlayInput {
+  return {
+    source_system: "monday",
+    monday_item_id: a.id,
+    source_id: a.id,
+    client_name: a.clientName,
+    state: a.state,
+    payer: a.payor,
+    auth_type: a.authType,
+    status: a.stage,
+    workflow_stage: a.stage,
+    assigned_owner: a.coordinator ?? null,
+    assigned_bcba: a.qaOwner ?? null,
+    expiration_date: a.expirationDate ?? null,
+  };
+}
 
 function enrich(a: Authorization, liveBcba?: string | null): EnrichedAuth {
   const days = daysUntil(a.expirationDate);
@@ -195,11 +222,22 @@ export default function OSAuthorizations() {
   const [view, setView] = useState<ViewId>(() => paramToView(searchParams) || "all");
   const [openId, setOpenId] = useState<string | null>(() => searchParams.get("authId"));
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
+  const [newAuthOpen, setNewAuthOpen] = useState(false);
+  const actions = useAuthorizationActions();
+
   const [filters, setFilters] = useState<Filters>({
     state: searchParams.get("state"),
     payor: searchParams.get("payor"),
     coordinator: searchParams.get("coordinator"),
   });
+
+  const applySavedView = (v: SavedView) => {
+    const cfg = v.config as { view?: ViewId; query?: string; density?: "comfortable" | "compact"; filters?: Filters };
+    if (cfg.view) setView(cfg.view);
+    if (typeof cfg.query === "string") setQuery(cfg.query);
+    if (cfg.density) setDensity(cfg.density);
+    if (cfg.filters) setFilters(cfg.filters);
+  };
 
   // React to deep-link changes coming from other pages (Risk Center, Supervision, etc.)
   useEffect(() => {
@@ -266,16 +304,19 @@ export default function OSAuthorizations() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => toast("Saved views — coming soon")}>
-              <Bookmark className="mr-1.5 h-4 w-4" /> Saved Views
-            </Button>
+            <SavedViewsMenu
+              scope="authorizations"
+              currentConfig={{ view, query, density, filters }}
+              onApply={applySavedView}
+              triggerClassName="h-8 rounded-md border-0 bg-transparent px-2"
+            />
             <Button variant="ghost" size="sm" onClick={() => toast("Export — coming soon")}>
               <Download className="mr-1.5 h-4 w-4" /> Export
             </Button>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-4 w-4" /> Operational Insights</Link>
             </Button>
-            <Button size="sm" onClick={() => toast("New authorization — coming soon")}>
+            <Button size="sm" onClick={() => setNewAuthOpen(true)}>
               <Plus className="mr-1.5 h-4 w-4" /> New Authorization
             </Button>
           </div>
@@ -324,6 +365,10 @@ export default function OSAuthorizations() {
           onClose={closeDrawer}
         />
       )}
+      <NewAuthorizationDialog
+        open={newAuthOpen}
+        onOpenChange={setNewAuthOpen}
+      />
     </OSShell>
   );
 }
@@ -479,6 +524,8 @@ function AuthRecords({ auths, density, onOpen }: { auths: EnrichedAuth[]; densit
 
 function AuthRow({ a, density, onOpen }: { a: EnrichedAuth; density: "comfortable" | "compact"; onOpen: () => void }) {
   const compact = density === "compact";
+  const actions = useAuthorizationActions();
+  const overlay = buildOverlayFromAuth(a);
   const expTone = a.daysToExpire === null ? "text-muted-foreground"
     : a.daysToExpire < 15 ? "text-rose-600"
     : a.daysToExpire < 45 ? "text-amber-600"
@@ -495,6 +542,7 @@ function AuthRow({ a, density, onOpen }: { a: EnrichedAuth; density: "comfortabl
         <div className="flex items-center gap-2 mb-0.5">
           <p className="text-[15px] font-medium truncate">{a.clientName}</p>
           <span className="text-[10px] font-mono text-muted-foreground/70">{a.id}</span>
+          <SourceBadge source="monday" />
         </div>
         <p className="text-xs text-muted-foreground truncate">
           {a.state} · {a.payor} · <span className="text-foreground/70">{a.requestType}</span>
@@ -547,9 +595,9 @@ function AuthRow({ a, density, onOpen }: { a: EnrichedAuth; density: "comfortabl
       {/* Far right — open arrow + quick actions on hover */}
       <div className="flex items-center justify-end gap-1">
         <div className="hidden xl:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition" onClick={(e) => e.stopPropagation()}>
-          <IconAction icon={Send} title="Request PR" onClick={() => toast(`PR requested for ${a.clientName}`)} />
-          <IconAction icon={ClipboardCheck} title="Send to QA" onClick={() => toast("Sent to QA")} />
-          <IconAction icon={AlertTriangle} title="Escalate" onClick={() => toast("Escalated")} />
+          <IconAction icon={Send} title="Request PR" onClick={() => void actions.requestPR(overlay, { dueInDays: 3 })} />
+          <IconAction icon={ClipboardCheck} title="Send to QA" onClick={() => void actions.sendToQA(overlay)} />
+          <IconAction icon={AlertTriangle} title="Escalate" onClick={() => void actions.escalate(overlay)} />
         </div>
         <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
       </div>
@@ -568,9 +616,11 @@ function IconAction({ icon: Icon, title, onClick }: { icon: any; title: string; 
 
 /* ------------------------------ drawer ------------------------------ */
 function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; liveBcba: string | null; onClose: () => void }) {
+  const actions = useAuthorizationActions();
   if (!auth) return null;
   const a = auth;
   const e = enrich(a, liveBcba);
+  const overlay = buildOverlayFromAuth(a);
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -606,19 +656,22 @@ function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; l
 
         {/* Quick action bar */}
         <div className="px-6 py-3 border-b border-border/60 flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => toast(`PR requested for ${a.clientName}`)}>
+          <Button size="sm" variant="outline" onClick={() => void actions.requestPR(overlay, { dueInDays: 3 })}>
             <Send className="mr-1.5 h-3.5 w-3.5" /> Request PR
           </Button>
-          <Button size="sm" variant="outline" onClick={() => toast("Sent to QA")}>
+          <Button size="sm" variant="outline" onClick={() => void actions.sendToQA(overlay)}>
             <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Send to QA
           </Button>
-          <Button size="sm" variant="outline" onClick={() => toast(`Message sent to ${e.bcba}`)}>
+          <Button size="sm" variant="outline" onClick={() => void actions.queueExternalSend(overlay, { channel: "email", summary: `Message BCBA ${e.bcba}` })}>
             <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message BCBA
           </Button>
-          <Button size="sm" variant="outline" onClick={() => toast("Note added")}>
+          <Button size="sm" variant="outline" onClick={() => {
+            const note = window.prompt("Add a note for this authorization:");
+            if (note && note.trim()) void actions.addNote(overlay, note.trim());
+          }}>
             <StickyNote className="mr-1.5 h-3.5 w-3.5" /> Note
           </Button>
-          <Button size="sm" variant="outline" onClick={() => toast("Escalated")}>
+          <Button size="sm" variant="outline" onClick={() => void actions.escalate(overlay)}>
             <AlertTriangle className="mr-1.5 h-3.5 w-3.5" /> Escalate
           </Button>
         </div>
