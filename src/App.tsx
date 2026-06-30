@@ -891,18 +891,18 @@ const App = () => (
                   <Route path="/marketing/training" element={<MarketingTraining />} />
                   <Route path="/marketing/campaigns" element={<MarketingCampaigns />} />
                   <Route path="/marketing/lead-sources" element={<MarketingLeadSources />} />
-                  <Route path="/marketing/lead-source-inbox" element={<PermissionRoute allowedRoles={["marketing"]}><LeadSourceInbox /></PermissionRoute>} />
-                  <Route path="/marketing/email-marketing" element={<PermissionRoute allowedRoles={["marketing"]}><EmailMarketing /></PermissionRoute>} />
+                  <Route path="/marketing/lead-source-inbox" element={<PermissionRoute allowedRoles={["admin", "super_admin", "marketing", "marketing_team", "marketing_growth_lead", "business_development"]}><LeadSourceInbox /></PermissionRoute>} />
+                  <Route path="/marketing/email-marketing" element={<PermissionRoute allowedRoles={["admin", "super_admin", "marketing", "marketing_team", "marketing_growth_lead", "business_development"]}><EmailMarketing /></PermissionRoute>} />
                   <Route path="/marketing/seo" element={<MarketingSEO />} />
                   <Route path="/marketing/web-analytics" element={<MarketingWebAnalytics />} />
                   <Route path="/marketing/call-tracking" element={<MarketingCallTracking />} />
                   {/* Relationships routes — Marketing + Super Admin only */}
                   {/* Old standalone Referrals page is retired — redirect to the unified CRM. */}
                   <Route path="/marketing/referrals" element={<Navigate to="/marketing/referral-crm" replace />} />
-                  <Route path="/marketing/referral-crm" element={<PermissionRoute allowedRoles={["admin", "marketing", "marketing_team", "marketing_growth_lead", "business_development"]}><ReferralCRM /></PermissionRoute>} />
-                  <Route path="/marketing/recruiting" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingRecruiting /></PermissionRoute>} />
-                  <Route path="/marketing/outreach" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingOutreach /></PermissionRoute>} />
-                  <Route path="/marketing/reputation" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingReputation /></PermissionRoute>} />
+                  <Route path="/marketing/referral-crm" element={<PermissionRoute allowedRoles={["admin", "super_admin", "marketing", "marketing_team", "marketing_growth_lead", "business_development"]}><ReferralCRM /></PermissionRoute>} />
+                  <Route path="/marketing/recruiting" element={<PermissionRoute allowedRoles={["admin", "super_admin", "marketing", "marketing_team", "marketing_growth_lead", "business_development"]}><MarketingRecruiting /></PermissionRoute>} />
+                  <Route path="/marketing/outreach" element={<PermissionRoute allowedRoles={["admin", "super_admin", "marketing", "marketing_team", "marketing_growth_lead", "business_development"]}><MarketingOutreach /></PermissionRoute>} />
+                  <Route path="/marketing/reputation" element={<PermissionRoute allowedRoles={["admin", "super_admin", "marketing", "marketing_team", "marketing_growth_lead", "business_development"]}><MarketingReputation /></PermissionRoute>} />
                   <Route path="/marketing/attribution" element={<MarketingAttribution />} />
                   <Route path="/marketing/state-growth" element={<MarketingStateGrowth />} />
                  <Route path="/marketing/reports" element={<Navigate to="/reports?category=marketing" replace />} />
