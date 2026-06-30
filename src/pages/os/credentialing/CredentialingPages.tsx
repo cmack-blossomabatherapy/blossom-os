@@ -2119,6 +2119,32 @@ export function ExpiringCredentialsPage() {
   const [openRecord, setOpenRecord] = useState<string | null>(null);
   const [windowDays, setWindowDays] = useState<30 | 60 | 90>(90);
 
+  async function startRenewal(r: CredentialingRecord) {
+    try {
+      const patch: Partial<CredentialingRecord> = { status: "Renewal In Progress" };
+      if (r.credentialing_type !== "Recredentialing") patch.credentialing_type = "Renewal";
+      await updateCredRecord(
+        r.id,
+        patch,
+        {
+          type: "renewal_started",
+          message: `Renewal started · expires ${r.expiration_date ?? "—"}`,
+          old: r.status,
+          new: "Renewal In Progress",
+        },
+      );
+      toast.success("Renewal started");
+      reload();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+  }
+
+  async function quickFollowUp(r: CredentialingRecord, date: string) {
+    try {
+      await updateCredRecord(r.id, { next_follow_up_date: date || null }, `Follow-up set to ${date || "(cleared)"}`);
+      reload();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+  }
+
   const grouped = useMemo(() => {
     const buckets = { d15: [] as CredentialingRecord[], d30: [] as CredentialingRecord[], d60: [] as CredentialingRecord[], d90: [] as CredentialingRecord[] };
     records.forEach((r) => {
@@ -2181,8 +2207,22 @@ export function ExpiringCredentialsPage() {
                       <td className={cn("px-3 py-2.5 font-medium", d <= 15 ? "text-red-700" : d <= 30 ? "text-amber-700" : "text-muted-foreground")}>{d}d</td>
                       <td className="px-3 py-2.5"><StatusBadge status={r.status} /></td>
                       <td className="px-3 py-2.5 text-muted-foreground">{r.owner_name ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground">{r.next_follow_up_date ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-right"><Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setOpenRecord(r.id); }}>Open</Button></td>
+                      <td className="px-3 py-2.5 text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                        <Input
+                          type="date"
+                          value={r.next_follow_up_date ?? ""}
+                          onChange={(e) => quickFollowUp(r, e.target.value)}
+                          className="h-8 w-36"
+                        />
+                      </td>
+                      <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1 justify-end">
+                          {r.status !== "Renewal In Progress" ? (
+                            <Button size="sm" variant="outline" onClick={() => startRenewal(r)}>Start Renewal</Button>
+                          ) : null}
+                          <Button size="sm" variant="ghost" onClick={() => setOpenRecord(r.id)}>Open</Button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
