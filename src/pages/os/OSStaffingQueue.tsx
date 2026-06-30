@@ -736,10 +736,11 @@ function EmptyState({ icon: Icon, title, description }: { icon: typeof CheckCirc
 /* ---------------- workspace ---------------- */
 
 function CaseWorkspace({
-  client, onCardAction,
+  client, onCardAction, onAssignRbt,
 }: {
   client: Client;
   onCardAction: (a: CardActionKey) => void;
+  onAssignRbt: (rbtName: string) => void;
 }) {
   const need = useMemo(() => getClientStaffingNeeds([client])[0], [client]);
   const matches = useMemo(() => (need ? suggestStaffingMatches(need) : []), [need]);
@@ -748,7 +749,7 @@ function CaseWorkspace({
     <div className="space-y-4">
       <ClientOverview client={client} />
       <ReadinessTracker client={client} />
-      <MatchingEngine client={client} matches={matches} onCardAction={onCardAction} />
+      <MatchingEngine client={client} matches={matches} onCardAction={onCardAction} onAssignRbt={onAssignRbt} />
       <ScheduleBuilder client={client} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <OperationalNotes client={client} onAddNote={() => onCardAction("note")} />
@@ -865,11 +866,12 @@ function ReadinessTracker({ client }: { client: Client }) {
 }
 
 function MatchingEngine({
-  client, matches, onCardAction,
+  client, matches, onCardAction, onAssignRbt,
 }: {
   client: Client;
   matches: ReturnType<typeof suggestStaffingMatches>;
   onCardAction: (a: CardActionKey) => void;
+  onAssignRbt: (rbtName: string) => void;
 }) {
   return (
     <SectionCard
@@ -903,13 +905,7 @@ function MatchingEngine({
                 <div className="flex items-center gap-1.5 shrink-0">
                   <CardAction
                     label="Assign"
-                    onClick={() => {
-                      // Open the AssignRbt dialog pre-filled with this RBT.
-                      const evt = new CustomEvent("blossom:open-pairing", {
-                        detail: { clientId: client.id, rbtName: rbt.name },
-                      });
-                      window.dispatchEvent(evt);
-                    }}
+                    onClick={() => onAssignRbt(rbt.name)}
                   />
                   <CardAction label="Compare" onClick={() => toast.info(`Compare ${rbt.name} — coming soon.`)} />
                   <CardAction label="Contact" onClick={() => onCardAction("contact")} />
