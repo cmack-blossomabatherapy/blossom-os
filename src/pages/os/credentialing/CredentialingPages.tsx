@@ -1348,7 +1348,7 @@ export function BCBACredentialsPage() {
         )}
       </SectionCard>
       <AddProviderDialog open={addProv} onOpenChange={setAddProv} onCreated={reload} />
-      <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} defaultProviderId={defaultProv} onCreated={() => { setDefaultProv(undefined); reload(); }} />
+      <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} defaultProviderId={defaultProv} defaultProviderType="BCBA" onCreated={() => { setDefaultProv(undefined); reload(); }} />
       <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} tasks={tasks} documents={documents} onClose={() => setOpenRecord(null)} onChanged={reload} />
     </Shell>
   );
