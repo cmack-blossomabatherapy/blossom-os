@@ -1505,12 +1505,16 @@ function LegacyImportDialog({ open, onOpenChange, onImported }: {
   const [rows, setRows] = useState<LegacyRawRow[]>([]);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<LegacyImportPreview | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setRows([]); setError(null); setLoading(true);
+    setRows([]); setError(null); setPreview(null); setLoading(true);
     fetchLegacyRaw(500)
-      .then((data) => setRows(data))
+      .then(async (data) => {
+        setRows(data);
+        try { setPreview(await previewLegacyImport(data)); } catch { /* ignore */ }
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load legacy data"))
       .finally(() => setLoading(false));
   }, [open]);
@@ -1550,6 +1554,15 @@ function LegacyImportDialog({ open, onOpenChange, onImported }: {
             <div className="text-sm">
               <strong>{rows.length}</strong> legacy row{rows.length === 1 ? "" : "s"} available.
             </div>
+            {preview ? (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
+                <div className="rounded-lg border border-border/60 p-2"><div className="text-muted-foreground">Total rows</div><div className="font-medium text-sm">{preview.totalRows}</div></div>
+                <div className="rounded-lg border border-border/60 p-2"><div className="text-muted-foreground">Already imported</div><div className="font-medium text-sm">{preview.alreadyImported}</div></div>
+                <div className="rounded-lg border border-border/60 p-2"><div className="text-muted-foreground">New providers</div><div className="font-medium text-sm">{preview.willCreateProviders}</div></div>
+                <div className="rounded-lg border border-border/60 p-2"><div className="text-muted-foreground">New records</div><div className="font-medium text-sm">{preview.willCreateRecords}</div></div>
+                <div className="rounded-lg border border-border/60 p-2"><div className="text-muted-foreground">Missing provider/payer</div><div className="font-medium text-sm">{preview.missingProviderOrPayer}</div></div>
+              </div>
+            ) : null}
             <div className="overflow-auto max-h-60 border rounded-lg text-xs">
               <table className="w-full">
                 <thead className="bg-muted/40">
@@ -1571,7 +1584,7 @@ function LegacyImportDialog({ open, onOpenChange, onImported }: {
               </table>
             </div>
             <p className="text-xs text-muted-foreground">
-              Each row becomes a provider (if missing) and a credentialing record tagged with source “Legacy import”.
+              Rows already imported (matched on legacy id) are skipped automatically. Running this import multiple times is safe.
             </p>
           </div>
         )}
