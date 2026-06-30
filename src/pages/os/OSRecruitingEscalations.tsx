@@ -221,6 +221,95 @@ const QUICK_ACTIONS = [
   { label: "Review High-Risk Delays",   icon: ShieldAlert },
 ];
 
+/**
+ * Map a live `recruiting_escalations` row to the rich Esc view-model used by
+ * the rest of this page. When the row references a known candidate we
+ * preferentially borrow the legacy candidate record (it carries `region`,
+ * `candidateStatus`, etc. needed by the drawer); otherwise we fall back to
+ * lookup via `findCandidate` (DB shape) or a minimal stub.
+ */
+function mapLiveEscalationToViewModel(
+  row: RecruitingEscalation,
+  findCandidate: (id: string | null | undefined) => any,
+  legacyCandidates: RecruitingCandidate[],
+): Esc {
+  const lookupCand = row.candidate_id ? findCandidate(row.candidate_id) : null;
+  const lookupName = lookupCand ? `${lookupCand.first_name} ${lookupCand.last_name}`.trim() : (row.title ?? "Escalation");
+  const legacyMatch = legacyCandidates.find(
+    (c) => c.id === row.candidate_id || c.name.toLowerCase() === lookupName.toLowerCase(),
+  );
+  const candidate: RecruitingCandidate = legacyMatch ?? ({
+    id: row.candidate_id ?? row.id,
+    name: lookupName,
+    role: (lookupCand?.role as any) ?? "RBT",
+    state: (lookupCand?.state as any) ?? "GA",
+    region: lookupCand?.city ?? "—",
+    city: lookupCand?.city ?? "—",
+    source: "Apploi",
+    recruiter: row.owner ?? lookupCand?.recruiter ?? "Unassigned",
+    interviewer: "—",
+    candidateStatus: "New Applicant",
+    interviewStatus: "Not Scheduled",
+    offerStatus: "Not Sent",
+    onboardingStatus: "Not Started",
+    readinessStatus: "Not Ready",
+    appliedDate: row.opened_at,
+    daysInStage: 0,
+    nextAction: row.notes ?? "—",
+    resume: "Received",
+    certification: "Not Required",
+    bacbCheck: "N/A",
+    kidsExperience: "Moderate",
+    screeningOutcome: "Pending",
+    eligibility: "Review",
+    noShow: false,
+    viventium: "Not Started",
+    backgroundCheck: "Not Sent",
+    orientation: "Not Scheduled",
+    training: "Not Assigned",
+    i9: "Not Started",
+    everify: "Not Started",
+    centralReach: "Needed",
+    availability: "—",
+    travelRadius: 0,
+    preferredHours: "—",
+    blockers: [],
+    interviewNotes: "",
+    followUps: [],
+    tasks: [],
+    timeline: [],
+  } as unknown as RecruitingCandidate);
+
+  const days = row.opened_at
+    ? Math.max(0, Math.floor((Date.now() - new Date(row.opened_at).getTime()) / 86400000))
+    : 0;
+  const stage: StageKey =
+    row.status === "Resolved" ? "resolved"
+    : (STATUS_TO_STAGE[row.status] ?? "new");
+  const urgency: Esc["urgency"] =
+    row.severity === "High" ? "High"
+    : row.severity === "Low" ? "Low"
+    : "Medium";
+
+  return {
+    id: row.id,
+    candidateId: candidate.id,
+    candidate,
+    type: ((row.title as EscType) ?? "Candidate stalled") as EscType,
+    reason: row.reason ?? row.title ?? "—",
+    recruiter: row.owner ?? candidate.recruiter ?? "Unassigned",
+    staffingCoord: coordFor(candidate.state ?? ""),
+    state: candidate.state ?? "—",
+    daysDelayed: days,
+    lastUpdate: days < 7 ? `${days}d ago` : `${Math.floor(days / 7)}w ago`,
+    urgency,
+    stage,
+    operationalImpact: row.notes ?? "—",
+    staffingImpact: stage === "staffing" || urgency === "High",
+    leadership: urgency === "High" || days >= 7 || stage === "leadership" || stage === "highrisk",
+  };
+}
+
 export default function OSRecruitingEscalations() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
