@@ -14,9 +14,12 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingMessages } from "@/hooks/useRecruitingCandidates";
+import {
+  useRecruitingMessages,
+  type RecruitingMessage,
+  type RecruitingCandidate as DbRecruitingCandidate,
+} from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
-import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { cn } from "@/lib/utils";
 
 // Recruiting → Communication → Messages & Updates
@@ -213,6 +216,71 @@ function buildSuggestedMessages(candidates: RecruitingCandidate[]): Msg[] {
   return out;
 }
 
+// Map a live recruiting_messages row into the visual Msg view-model.
+function mapLiveMessageToViewModel(
+  row: RecruitingMessage,
+  findCandidate: (id: string | null | undefined) => DbRecruitingCandidate | null,
+  legacyCandidates: RecruitingCandidate[],
+): Msg {
+  const liveCand = row.candidate_id ? findCandidate(row.candidate_id) : null;
+  const fallback: RecruitingCandidate =
+    legacyCandidates.find((c) => c.id === row.candidate_id) ??
+    ({
+      id: row.candidate_id ?? row.id,
+      name: liveCand ? `${liveCand.first_name} ${liveCand.last_name}`.trim() : (row.sender || "Unknown candidate"),
+      role: (liveCand?.role ?? "RBT") as any,
+      state: (liveCand?.state ?? "GA") as any,
+      region: liveCand?.city ?? "—",
+      recruiter: liveCand?.recruiter ?? row.sender ?? "Unassigned",
+      candidateStatus: "New Applicant",
+      readinessStatus: "Active",
+      daysInStage: 0,
+      nextAction: "—",
+      interviewStatus: "Not Scheduled",
+      offerStatus: "None",
+      backgroundCheck: "Not Started",
+      orientation: "Not Scheduled",
+      onboardingStatus: "Pending",
+      followUps: [],
+    } as unknown as RecruitingCandidate);
+
+  const sentMs = row.sent_at ? new Date(row.sent_at).getTime() : Date.now();
+  const hoursAgo = Math.max(0, Math.floor((Date.now() - sentMs) / (1000 * 60 * 60)));
+  const direction: Direction =
+    row.direction === "inbound" || row.direction === "in" ? "in"
+    : row.direction === "system" ? "system"
+    : "out";
+  const status = (row.status ?? "").toLowerCase();
+  const unread = !(status === "read" || status === "handled");
+  const channelMap: Record<string, Msg["source"]> = {
+    sms: "SMS", email: "Email", apploi: "Apploi", monday: "Monday",
+    internal: "Internal", calendly: "Calendly",
+  };
+  const source = channelMap[(row.channel ?? "").toLowerCase()] ?? "Email";
+  const escalated = status === "escalated";
+  const noResponseDays = direction === "out" && unread ? Math.floor(hoursAgo / 24) : 0;
+  const urgency: Msg["urgency"] = escalated || noResponseDays >= 5 ? "High" : noResponseDays >= 2 || unread ? "Medium" : "Low";
+
+  return {
+    id: row.id,
+    candidateId: row.candidate_id ?? row.id,
+    candidate: fallback,
+    type: "Candidate Message",
+    direction,
+    sender: row.sender ?? (direction === "in" ? fallback.name : fallback.recruiter ?? "System"),
+    recipient: direction === "in" ? (fallback.recruiter ?? "Recruiter") : fallback.name,
+    preview: row.subject ?? row.body?.slice(0, 140) ?? "",
+    hoursAgo,
+    unread,
+    awaitingResponse: direction === "out" && unread,
+    noResponseDays,
+    urgency,
+    staffingImpact: false,
+    escalated,
+    source,
+  };
+}
+
 function toneFor(m: Msg): Tone {
   if (m.escalated || m.urgency === "High") return "crit";
   if (m.unread || m.noResponseDays >= 3 || m.urgency === "Medium") return "warn";
@@ -270,7 +338,23 @@ export default function OSRecruitingMessages() {
   const mutations = useRecruitingMutations();
   const { items: liveMessages, loading: liveMessagesLoading } = useRecruitingMessages();
   const { find: findCandidate } = useRecruitingCandidateLookup();
-  const baseMessages = useMemo(() => buildSuggestedMessages(recruitingCandidates), [recruitingCandidates]);
+
+  // Active feed = live recruiting_messages rows.
+  const baseMessages = useMemo<Msg[]>(
+    () => liveMessages.map((row) => mapLiveMessageToViewModel(row, findCandidate, recruitingCandidates)),
+    [liveMessages, findCandidate, recruitingCandidates],
+  );
+
+  // Suggested outreach = candidate-derived items for candidates without any live messages.
+  const suggestedMessages = useMemo<Msg[]>(() => {
+    const liveCandidateIds = new Set(
+      liveMessages.map((r) => r.candidate_id).filter((x): x is string => Boolean(x)),
+    );
+    return buildSuggestedMessages(recruitingCandidates).filter(
+      (s) => !liveCandidateIds.has(s.candidateId),
+    );
+  }, [liveMessages, recruitingCandidates]);
+  const [sendingId, setSendingId] = useState<string | null>(null);
 
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
@@ -363,6 +447,23 @@ export default function OSRecruitingMessages() {
     if (/^[0-9a-f-]{36}$/i.test(id)) {
       if (status === 'read') void mutations.markMessageRead(id);
       else void mutations.markMessageHandled(id);
+    }
+  }
+
+  async function sendFromSuggestion(s: Msg) {
+    const cid = s.candidate.id;
+    if (!/^[0-9a-f-]{36}$/i.test(cid)) return;
+    setSendingId(s.id);
+    try {
+      await mutations.logMessage(cid, {
+        direction: s.direction === "in" ? "inbound" : s.direction === "system" ? "system" : "outbound",
+        channel: (s.source ?? "Email").toLowerCase(),
+        subject: s.type,
+        body: s.preview,
+        sender: s.sender,
+      });
+    } finally {
+      setSendingId(null);
     }
   }
 
