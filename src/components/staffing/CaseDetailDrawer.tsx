@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, ClipboardList, HeartHandshake, ListChecks, Plus, UserCheck, X } from "lucide-react";
 import { useStaffingWorkspace } from "@/hooks/useStaffingWorkspace";
-import type { Client } from "@/types/client";
+import type { Client } from "@/data/clients";
 import type { StaffingActivityType, StaffingActivityStatus } from "@/lib/os/staffing/types";
 import { ProposeMatchDialog } from "./ProposeMatchDialog";
 
