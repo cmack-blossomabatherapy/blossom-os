@@ -998,6 +998,31 @@ function RecordDetailSheet({
             <AddDocumentDialog open={addDocOpen} onOpenChange={setAddDocOpen} recordId={record.id} providerId={record.provider_id} onCreated={onChanged} />
             <CentralReachIdsDialog open={crIdsOpen} onOpenChange={setCrIdsOpen} record={record} onSaved={onChanged} />
             <EditRecordDialog open={editOpen} onOpenChange={setEditOpen} record={record} onSaved={onChanged} />
+            <Dialog open={syncErrorOpen} onOpenChange={(o) => { setSyncErrorOpen(o); if (!o) setSyncErrorNote(""); }}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Mark CentralReach Sync Error</DialogTitle>
+                  <DialogDescription>
+                    Capture what went wrong so the next person picking this up knows the blocker.
+                    Every change is logged to the activity timeline.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2">
+                  <Label htmlFor="cr-sync-error">Error reason / note</Label>
+                  <Textarea
+                    id="cr-sync-error"
+                    value={syncErrorNote}
+                    onChange={(e) => setSyncErrorNote(e.target.value)}
+                    placeholder="e.g. CentralReach NPI mismatch — escalated to RCM."
+                    rows={4}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setSyncErrorOpen(false)}>Cancel</Button>
+                  <Button onClick={submitSyncError} disabled={!syncErrorNote.trim()}>Mark Sync Error</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </>
         ) : null}
       </SheetContent>
