@@ -19,9 +19,8 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingStaffingNeeds } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingStaffingNeeds, type RecruitingStaffingNeed } from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
-import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +42,58 @@ const STAGES = [
   { key: "highRisk",     label: "High Risk Delay" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+const STATUS_TO_STAGE: Record<string, StageKey> = {
+  Open: "new",
+  New: "new",
+  Active: "active",
+  Working: "active",
+  Review: "review",
+  Match: "matchAvail",
+  matchAvail: "matchAvail",
+  Orientation: "orientation",
+  Coordination: "coordination",
+  Confirmed: "confirmed",
+  Closed: "confirmed",
+  Escalated: "escalated",
+  HighRisk: "highRisk",
+};
+function statusToStage(status: string | null | undefined, fallback: StageKey = "new"): StageKey {
+  if (!status) return fallback;
+  if ((STAGES as readonly { key: string }[]).some((s) => s.key === status)) return status as StageKey;
+  return STATUS_TO_STAGE[status] ?? fallback;
+}
+
+function mapLiveNeedToViewModel(row: RecruitingStaffingNeed): StaffingClientNeed {
+  const opened = row.opened_at ? new Date(row.opened_at) : null;
+  const days = opened ? Math.max(0, Math.floor((Date.now() - opened.getTime()) / 86_400_000)) : 0;
+  const label = row.client_label || "Unassigned client";
+  const stageReason: StaffingClientNeed["reason"] =
+    row.status === "Closed" ? "RBT Assigned"
+    : row.matched_candidate_id ? "Matching"
+    : "Staffing Needed";
+  // Fabricate a minimal Client wrapper. Only fields used by this page are populated;
+  // remaining required fields are cast away to avoid leaking placeholder client data.
+  const client = {
+    id: row.id,
+    childName: label,
+    state: row.state,
+    clinic: "—",
+    bcba: row.role_needed === "BCBA" ? null : "BCBA Assigned",
+    serviceLocation: "In-Home",
+  } as unknown as StaffingClientNeed["client"];
+  return {
+    client,
+    reason: stageReason,
+    priority: ((row.priority as "High" | "Medium" | "Low") ?? "Medium"),
+    daysWaiting: days,
+    requiredHours: row.hours_per_week ?? 0,
+    availability: [],
+    zip: "",
+    region: row.state,
+    alert: row.status === "Closed" ? null : (row.notes ?? null),
+  };
+}
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
@@ -119,21 +170,38 @@ export default function OSRecruitingStaffingNeeds() {
   const { items: liveStaffingNeeds, loading: liveStaffingNeedsLoading } = useRecruitingStaffingNeeds();
   const { find: findCandidate } = useRecruitingCandidateLookup();
   // Build needs list
-  const baseNeeds = useMemo(() => getClientStaffingNeeds(), []);
+  const syntheticNeeds = useMemo(() => getClientStaffingNeeds(), []);
+  const liveNeeds = useMemo(
+    () => liveStaffingNeeds.map(mapLiveNeedToViewModel),
+    [liveStaffingNeeds],
+  );
+  // De-dupe synthetic needs against live rows by client label / childName.
+  const liveLabels = useMemo(
+    () => new Set(liveNeeds.map((n) => n.client.childName.toLowerCase())),
+    [liveNeeds],
+  );
+  const suggestedNeeds = useMemo(
+    () => syntheticNeeds.filter((n) => !liveLabels.has(n.client.childName.toLowerCase())),
+    [syntheticNeeds, liveLabels],
+  );
+  // Live rows are the operational source of truth; synthetic suggestions
+  // keep the board populated for empty tenants and surface unlogged demand.
+  const baseNeeds = useMemo(
+    () => [...liveNeeds, ...suggestedNeeds],
+    [liveNeeds, suggestedNeeds],
+  );
   const readyCandidates = useMemo(
     () => recruitingCandidates.filter(orientationReady),
     []
   );
 
-  // Default stage mapping based on need + candidate readiness
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() => {
-    const map: Record<string, StageKey> = {};
-    baseNeeds.forEach((n) => {
-      const matches = readyCandidates.filter((c) => c.state === n.client.state && c.role === needRole(n)).length;
-      map[n.client.id] = classify(n, matches);
-    });
-    return map;
-  });
+  // Default stage mapping: live rows derive from DB status; synthetic from classifier.
+  const [stageOverrides, setStageOverrides] = useState<Record<string, StageKey>>({});
+  const liveStatusById = useMemo(() => {
+    const m: Record<string, string | null | undefined> = {};
+    liveStaffingNeeds.forEach((r) => { m[r.id] = r.status; });
+    return m;
+  }, [liveStaffingNeeds]);
 
   const [activeChip, setActiveChip] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -142,7 +210,13 @@ export default function OSRecruitingStaffingNeeds() {
   const [urgencyF, setUrgencyF] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const stageOf = (n: StaffingClientNeed) => stageMap[n.client.id] ?? classify(n, 0);
+  const stageOf = (n: StaffingClientNeed): StageKey => {
+    const override = stageOverrides[n.client.id];
+    if (override) return override;
+    if (liveStatusById[n.client.id] !== undefined) return statusToStage(liveStatusById[n.client.id]);
+    const matches = readyCandidates.filter((c) => c.state === n.client.state && c.role === needRole(n)).length;
+    return classify(n, matches);
+  };
 
   // Synthesize recruiter assignment per need (round robin over real recruiters)
   const assignedRecruiter = (n: StaffingClientNeed) =>
@@ -192,11 +266,12 @@ export default function OSRecruitingStaffingNeeds() {
       escalations: get((n) => stageOf(n) === "escalated" || stageOf(n) === "highRisk"),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseNeeds, readyCandidates, stageMap]);
+  }, [baseNeeds, readyCandidates, stageOverrides, liveStatusById]);
 
   const escalations = useMemo(
     () => baseNeeds.filter((n) => stageOf(n) === "escalated" || stageOf(n) === "highRisk"),
-    [baseNeeds, stageMap]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baseNeeds, stageOverrides, liveStatusById]
   );
 
   const statePressure = useMemo(() => {
@@ -217,7 +292,7 @@ export default function OSRecruitingStaffingNeeds() {
   const selected = selectedId ? baseNeeds.find((n) => n.client.id === selectedId) ?? null : null;
 
   function moveStage(id: string, to: StageKey) {
-    setStageMap((m) => ({ ...m, [id]: to }));
+    setStageOverrides((m) => ({ ...m, [id]: to }));
     // Persist when this row corresponds to a real recruiting_staffing_needs row.
     const liveNeed = liveStaffingNeeds.find((n: any) => n.client_id === id || n.id === id);
     if (liveNeed?.id && /^[0-9a-f-]{36}$/i.test(liveNeed.id)) {
