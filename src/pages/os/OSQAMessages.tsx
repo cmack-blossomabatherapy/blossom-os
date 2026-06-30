@@ -755,11 +755,70 @@ export default function OSQAMessages() {
                         <ComposerIcon icon={StickyNote} title="Add internal QA note" />
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <ActionPill icon={MailCheck} label="Mark resolved" />
-                        <ActionPill icon={Flame} label="Escalate" tone="crit" />
-                        <button className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-2 hover:opacity-90 transition">
+                        <ActionPill
+                          icon={MailCheck}
+                          label="Mark resolved"
+                          title="Persist a 'resolved' workflow update for this thread's authorization"
+                          disabled={actionBusy !== null}
+                          loading={actionBusy === "resolve"}
+                          onClick={async () => {
+                            if (!active) return;
+                            setActionBusy("resolve");
+                            try {
+                              await wf.markResolved(
+                                toQAWorkItemRef(active.auth, sourceById.get(active.auth.id)),
+                                composer.trim() || undefined,
+                              );
+                              await refresh();
+                            } finally { setActionBusy(null); }
+                          }}
+                        />
+                        <ActionPill
+                          icon={Flame}
+                          label="Escalate"
+                          tone="crit"
+                          title="Escalate this thread's authorization to leadership"
+                          disabled={actionBusy !== null}
+                          loading={actionBusy === "escalate"}
+                          onClick={async () => {
+                            if (!active) return;
+                            const reason = composer.trim() || `Escalated from messages: ${active.subject}`;
+                            setActionBusy("escalate");
+                            try {
+                              await wf.escalate(
+                                toQAWorkItemRef(active.auth, sourceById.get(active.auth.id)),
+                                reason,
+                              );
+                              await refresh();
+                            } finally { setActionBusy(null); }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          title="Send a follow-up note that persists to the QA workflow"
+                          disabled={!active || actionBusy !== null || composer.trim().length === 0}
+                          aria-label="Send follow-up"
+                          onClick={async () => {
+                            if (!active) return;
+                            const note = composer.trim();
+                            if (!note) {
+                              toast({ title: "Add a note", description: "Type a follow-up message before sending." });
+                              return;
+                            }
+                            setActionBusy("send");
+                            try {
+                              await wf.sendFollowUp(
+                                toQAWorkItemRef(active.auth, sourceById.get(active.auth.id)),
+                                note,
+                              );
+                              setComposer("");
+                              await refresh();
+                            } finally { setActionBusy(null); }
+                          }}
+                          className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-2 hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                           <Send className="h-4 w-4" strokeWidth={1.75} />
-                          Send follow-up
+                          {actionBusy === "send" ? "Sending…" : "Send follow-up"}
                         </button>
                       </div>
                     </div>
