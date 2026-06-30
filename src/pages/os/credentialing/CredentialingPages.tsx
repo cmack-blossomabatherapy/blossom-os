@@ -728,6 +728,11 @@ function RecordDetailSheet({
                 {record.payer_name} · {record.state ?? "—"} · {record.credentialing_type}
               </SheetDescription>
             </SheetHeader>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>Edit record</Button>
+              <Button size="sm" variant="outline" onClick={() => setAddTaskOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" />Add task</Button>
+              <Button size="sm" variant="outline" onClick={() => setAddDocOpen(true)}><FileText className="h-3.5 w-3.5 mr-1" />Add document</Button>
+            </div>
             <Tabs defaultValue="overview" className="mt-4">
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
