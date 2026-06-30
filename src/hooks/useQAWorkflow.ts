@@ -23,6 +23,12 @@ interface OverrideRow {
   escalation_reason: string | null;
   last_action_at: string | null;
   updated_at: string;
+  progress_report_received_at?: string | null;
+  treatment_plan_received_at?: string | null;
+  resolved_at?: string | null;
+  resolved_reason?: string | null;
+  last_completed_action?: string | null;
+  workflow_state?: string | null;
 }
 
 /**
@@ -139,6 +145,27 @@ export function useQAWorkflow() {
       (ref: QAWorkItemRef) => qaWorkflowStore.resolveMissingInfo(ref),
       "Missing info resolved",
       "Failed to resolve missing info",
+    ),
+    markProgressReportReceived: withRefresh(
+      (ref: QAWorkItemRef) => qaWorkflowStore.markProgressReportReceived(ref),
+      "Progress report marked received",
+      "Failed to mark PR received",
+    ),
+    markTreatmentPlanReceived: withRefresh(
+      (ref: QAWorkItemRef) => qaWorkflowStore.markTreatmentPlanReceived(ref),
+      "Treatment plan marked received",
+      "Failed to mark TP received",
+    ),
+    markResolved: withRefresh(
+      (ref: QAWorkItemRef, reason?: string) =>
+        qaWorkflowStore.markResolved(ref, reason),
+      "Marked resolved",
+      "Failed to mark resolved",
+    ),
+    clearEscalation: withRefresh(
+      (ref: QAWorkItemRef) => qaWorkflowStore.clearEscalation(ref),
+      "Escalation cleared",
+      "Failed to clear escalation",
     ),
     bulkAssign: withRefresh(
       (refs: QAWorkItemRef[], owner: string | null) =>
