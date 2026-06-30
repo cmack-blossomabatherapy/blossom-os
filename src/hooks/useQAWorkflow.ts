@@ -123,6 +123,12 @@ export function useQAWorkflow() {
       "Note saved",
       "Failed to save note",
     ),
+    sendFollowUp: withRefresh(
+      (ref: QAWorkItemRef, text: string) =>
+        qaWorkflowStore.sendFollowUp(ref, text),
+      "Follow-up sent",
+      "Failed to send follow-up",
+    ),
     escalate: withRefresh(
       (ref: QAWorkItemRef, reason: string) =>
         qaWorkflowStore.escalate(ref, reason),
