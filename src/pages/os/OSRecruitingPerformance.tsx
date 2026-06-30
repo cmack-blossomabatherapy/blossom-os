@@ -12,6 +12,16 @@ import {
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
+import {
+  useRecruitingCandidates,
+  useRecruitingInterviews,
+  useRecruitingOffers,
+  useRecruitingBackgroundChecks,
+  useRecruitingOnboarding,
+  useRecruitingFollowups,
+  useRecruitingEscalations,
+  useRecruitingStaffingNeeds,
+} from "@/hooks/useRecruitingCandidates";
 import { getClientStaffingNeeds } from "@/data/staffing";
 import { cn } from "@/lib/utils";
 
