@@ -683,6 +683,47 @@ export default function OSRecruitingMessages() {
           </div>
         </section>
 
+        {/* Suggested outreach (candidate-derived, not yet in recruiting_messages) */}
+        <section className="rounded-2xl bg-card border border-border/70 p-4 space-y-3">
+          <header className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold">Suggested Outreach</h2>
+              <p className="text-xs text-muted-foreground">
+                Candidate-derived suggestions. Click <span className="font-medium text-foreground">Log</span> to record in recruiting_messages.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground">{suggestedMessages.length} suggested</span>
+          </header>
+          {suggestedMessages.length === 0 ? (
+            <div className="text-xs text-muted-foreground">No suggestions right now.</div>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {suggestedMessages.slice(0, 12).map((s) => {
+                const canLog = /^[0-9a-f-]{36}$/i.test(s.candidate.id);
+                const isSending = sendingId === s.id;
+                return (
+                  <li key={s.id} className="flex items-center justify-between py-2 gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{s.candidate.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {s.type} · {s.source} · {s.preview}
+                      </div>
+                    </div>
+                    <button
+                      disabled={!canLog || isSending}
+                      onClick={() => void sendFromSuggestion(s)}
+                      className="h-8 px-3 rounded-lg text-xs bg-primary text-primary-foreground hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                      title={canLog ? "Log to recruiting_messages" : "Candidate not in live table yet"}
+                    >
+                      <Send className="size-3" /> {isSending ? "Logging…" : "Log"}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
         {/* Quick actions + AI */}
         <section className="grid lg:grid-cols-3 gap-4">
           {/* (intentional: suggested outreach lives just above) */}
