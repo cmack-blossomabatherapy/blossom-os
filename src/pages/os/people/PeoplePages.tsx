@@ -2,9 +2,8 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   Users, ShieldCheck, IdCard, KeyRound, Smartphone, Box, Eye, EyeOff,
-  Copy, Search, Plus, Lock, FileSignature, HeartHandshake, Briefcase,
-  ClipboardList, AlertTriangle, CheckCircle2, Calendar, Stethoscope,
-  Building2, BarChart3, type LucideIcon,
+  Copy, Search, Plus, Lock, HeartHandshake, Briefcase,
+  ClipboardList, CheckCircle2, BarChart3, type LucideIcon,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
