@@ -710,7 +710,7 @@ function Td({ children, className }: { children: React.ReactNode; className?: st
   return <td className={cn("px-3 py-2 align-middle", className)}>{children}</td>;
 }
 
-function KPI({ label, value, tone, icon: Icon }: { label: string; value: number | string; tone: "ok" | "warn" | "danger" | "info" | "muted"; icon: typeof Users }) {
+function KPI({ label, value, tone, icon: Icon, onClick }: { label: string; value: number | string; tone: "ok" | "warn" | "danger" | "info" | "muted"; icon: typeof Users; onClick?: () => void }) {
   const toneClass = {
     ok: "text-success bg-success/10",
     warn: "text-warning bg-warning/10",
@@ -719,7 +719,10 @@ function KPI({ label, value, tone, icon: Icon }: { label: string; value: number 
     muted: "text-muted-foreground bg-muted",
   }[tone];
   return (
-    <Card className="p-5 rounded-2xl border-border/60">
+    <Card
+      className={cn("p-5 rounded-2xl border-border/60", onClick && "cursor-pointer hover:border-primary/60 transition-colors")}
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
         <span className={cn("inline-flex items-center justify-center h-7 w-7 rounded-lg", toneClass)}>
