@@ -16,6 +16,7 @@ import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandid
 import { getClientStaffingNeeds, type StaffingClientNeed } from "@/data/staffing";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
+import { notifyApploiNotConnected } from "@/lib/recruiting/apploi";
 
 // Recruiting → Staffing & Operations → BCBA Recruiting
 
@@ -246,8 +247,8 @@ export default function OSRecruitingBCBA() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-2 text-sm">
-              <RefreshCw className="size-4" /> Sync Apploi Candidates
+            <button onClick={notifyApploiNotConnected} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-2 text-sm">
+              <RefreshCw className="size-4" /> Import from Apploi
             </button>
             <button className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center gap-2 text-sm font-medium">
               <Plus className="size-4" /> Add BCBA Candidate
@@ -392,15 +393,15 @@ export default function OSRecruitingBCBA() {
               <div className="space-y-1.5">
                 {[
                   { icon: Plus, label: "Add BCBA Candidate" },
-                  { icon: RefreshCw, label: "Sync Apploi Candidates" },
+                  { icon: RefreshCw, label: "Import from Apploi", onClick: notifyApploiNotConnected },
                   { icon: CalendarClock, label: "Schedule Interview" },
                   { icon: Send, label: "Resend Onboarding" },
                   { icon: Bell, label: "Notify Staffing Leadership" },
                   { icon: AlertTriangle, label: "Escalate Staffing Delay" },
                   { icon: ArrowRight, label: "Move to Staffing Ready" },
                   { icon: Download, label: "Export BCBA Pipeline" },
-                ].map((a) => (
-                  <button key={a.label} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
+                ].map((a: { icon: any; label: string; onClick?: () => void }) => (
+                  <button key={a.label} onClick={a.onClick} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
                     <a.icon className="size-4 text-muted-foreground" />
                     {a.label}
                   </button>

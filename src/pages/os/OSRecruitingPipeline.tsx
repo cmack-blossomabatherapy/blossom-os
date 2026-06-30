@@ -15,6 +15,7 @@ import {
 } from "@/hooks/useRecruitingCandidates";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
+import { notifyApploiNotConnected } from "@/lib/recruiting/apploi";
 
 // Recruiting → Candidates → Applicant Pipeline
 // Real backend (recruiting_candidates). DnD persists pipeline_stage.
@@ -170,8 +171,11 @@ export default function OSRecruitingPipeline() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <button className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl border border-border/70 bg-card text-sm font-medium text-foreground hover:bg-muted/40 transition">
-                  <UserPlus className="h-3.5 w-3.5" /> Import Apploi
+                <button
+                  onClick={notifyApploiNotConnected}
+                  className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl border border-border/70 bg-card text-sm font-medium text-foreground hover:bg-muted/40 transition"
+                >
+                  <UserPlus className="h-3.5 w-3.5" /> Import from Apploi
                 </button>
                 <button className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition">
                   <UserPlus className="h-3.5 w-3.5" /> Add candidate

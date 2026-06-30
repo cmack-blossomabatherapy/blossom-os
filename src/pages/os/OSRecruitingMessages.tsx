@@ -247,7 +247,6 @@ const CHIPS = [
 
 const ANNOUNCEMENTS = [
   { id: "a1", title: "New orientation cohort opens Monday", body: "Wave 17 has 14 slots across GA/NC. Coordinate with staffing on regional priorities.", who: "Recruiting Ops", when: "2h ago", tone: "info" as Tone },
-  { id: "a2", title: "Apploi sync schedule updated", body: "Inbound messages now sync every 10 minutes. Manual sync still available.", who: "System", when: "Yesterday", tone: "muted" as Tone },
   { id: "a3", title: "Background vendor SLA change", body: "New SLA is 72h — escalate anything older than 5 days.", who: "Leadership", when: "2d ago", tone: "warn" as Tone },
 ];
 

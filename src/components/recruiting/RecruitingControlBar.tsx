@@ -90,7 +90,7 @@ export function RecruitingControlBar({
         </div>
         <Button variant="outline" size="sm" className="h-9" onClick={onSync} disabled={syncing}>
           <RefreshCw className={cn("h-4 w-4 mr-1.5", syncing && "animate-spin")} />
-          Sync from Apploi
+          Import from Apploi
         </Button>
         <Button size="sm" className="h-9">
           <Plus className="h-4 w-4 mr-1.5" /> Add Candidate

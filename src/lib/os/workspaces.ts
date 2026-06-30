@@ -117,7 +117,7 @@ export const WORKSPACES: Workspace[] = [
       { label: "Reputation",      path: "/marketing/reputation" },
       { label: "Attribution",     path: "/marketing/attribution" },
       { label: "State Growth",    path: "/marketing/state-growth" },
-      { label: "Reports",         path: "/marketing/reports" },
+      { label: "Reports",         path: "/reports" },
     ],
   },
   {
@@ -453,7 +453,7 @@ export const LEGACY_GROUPS: { title: string; items: LegacyLink[] }[] = [
       { label: "Time Clock", path: "/hr/time-clock" },
       { label: "Hours", path: "/hr/hours" },
       { label: "Payroll", path: "/hr/payroll" },
-      { label: "HR Reports", path: "/hr/reports" },
+      { label: "Reports", path: "/reports" },
       { label: "HR Settings", path: "/hr/settings" },
     ],
   },

@@ -36,10 +36,23 @@ export function useRecruitingMutations() {
 
   // ---- Candidates / stages ----
   const moveStage = useCallback(async (candidateId: string, stage: PipelineStage) => {
-    return wrap("Move stage", supabase
+    const now = new Date().toISOString();
+    const res = await wrap("Move stage", supabase
       .from("recruiting_candidates")
-      .update({ pipeline_stage: stage })
+      .update({ pipeline_stage: stage, stage_entered_at: now })
       .eq("id", candidateId));
+    if (res) {
+      try {
+        await supabase.from("recruiting_activity_events").insert({
+          candidate_id: candidateId,
+          entity_table: "recruiting_candidates",
+          entity_id: candidateId,
+          event_type: "stage_changed",
+          to_value: stage,
+        } as any);
+      } catch (e) { console.warn("activity log failed", e); }
+    }
+    return res;
   }, []);
 
   // ---- Offers ----

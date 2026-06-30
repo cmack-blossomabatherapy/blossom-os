@@ -161,7 +161,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
     { label: "Payroll", path: "/hr/payroll", perm: "hr.payroll.runs.view" },
     { label: "Announcements", path: "/hr/announcements", perm: "hr.announcements.view" },
     { label: "Resource Hub", path: "/hr/resources", perm: "hr.resources.view" },
-    { label: "HR Reports", path: "/hr/reports", perm: "hr.reports.view" },
+    { label: "Reports", path: "/reports", perm: "hr.reports.view" },
     { label: "HR Settings", path: "/hr/settings", perm: "hr.settings.manage" },
   ] },
   { title: "Admin", items: [
