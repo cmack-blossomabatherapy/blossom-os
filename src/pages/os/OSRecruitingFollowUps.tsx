@@ -14,6 +14,8 @@ import {
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
 import { useRecruitingFollowups } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
+import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { cn } from "@/lib/utils";
 import { useWorkflowStages } from "@/hooks/useWorkflowStages";
 
@@ -174,9 +176,8 @@ const CHIPS = [
 export default function OSRecruitingFollowUps() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveFollowups } = useRecruitingFollowups();
-  const liveActiveCount = liveFollowups.filter((f: any) => f.status !== "Done").length;
-  void liveActiveCount;
+  const { items: liveFollowups, loading: liveFollowupsLoading } = useRecruitingFollowups();
+  const { find: findCandidate } = useRecruitingCandidateLookup();
   const baseFollowUps = useMemo(() => buildSuggestedFollowUps(recruitingCandidates), [recruitingCandidates]);
 
   const defaults = useMemo(() => {
