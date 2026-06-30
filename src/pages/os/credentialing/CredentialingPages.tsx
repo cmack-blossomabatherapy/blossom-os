@@ -26,14 +26,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   useCredentialingData, useCredentialingActivity,
-  createCredProvider, createCredRecord, updateCredRecord,
+  createCredProvider, updateCredProvider, createCredRecord, updateCredRecord,
   createCredTask, updateCredTask, addCredDocument, updateCredDocument,
   logCredActivity,
-  fetchLegacyRaw, importLegacyRows, type LegacyRawRow,
+  uploadCredDocumentFile, getCredDocumentSignedUrl,
+  fetchLegacyRaw, importLegacyRows, previewLegacyImport, type LegacyRawRow, type LegacyImportPreview,
   CRED_STATUSES, CRED_TYPES, CRED_PRIORITIES, CRED_PROVIDER_TYPES, CRED_STATES,
   ACTIVE_CRED_STATUSES, APPROVED_CRED_STATUSES,
   daysUntil,
-  type CredentialingProvider, type CredentialingRecord,
+  type CredentialingProvider, type CredentialingRecord, type CredentialingDocument,
   type CredStatus, type CredType, type CredPriority, type CredProviderType,
   type CrSyncStatus,
 } from "@/hooks/useCredentialing";
