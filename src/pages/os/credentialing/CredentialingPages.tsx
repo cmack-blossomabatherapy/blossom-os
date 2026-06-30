@@ -602,6 +602,7 @@ function RecordDetailSheet({
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [addDocOpen, setAddDocOpen] = useState(false);
   const [crIdsOpen, setCrIdsOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [newMissing, setNewMissing] = useState("");
   const [ownerDraft, setOwnerDraft] = useState("");
   const [followUpDraft, setFollowUpDraft] = useState("");
