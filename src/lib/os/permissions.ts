@@ -491,8 +491,8 @@ const ROLE_ALIASES: Record<
   clinical_lead: "bcba",
   scheduling_lead: "scheduling_team",
   scheduling_coordinator: "scheduling_team",
-  staffing_lead: "scheduling_team",
-  staffing_coordinator: "scheduling_team",
+  staffing_lead: "staffing_team",
+  staffing_coordinator: "staffing_team",
   recruiting_lead: "recruiting_team",
   recruiting_coordinator: "recruiting_team",
   hr_lead: "hr_team",
@@ -502,7 +502,6 @@ const ROLE_ALIASES: Record<
   rcm_team: "billing_finance",
   assistant_state_director: "state_director",
   business_development: "marketing_team",
-  staffing_team: "scheduling_team",
   clinical_director: "operations_leadership",
   viewer: "behavioral_support",
 };
