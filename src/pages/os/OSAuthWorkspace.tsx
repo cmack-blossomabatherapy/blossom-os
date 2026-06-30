@@ -906,11 +906,11 @@ function RightContextPanel({ queueLabel }: { queueLabel: string }) {
         </header>
         <ul className="space-y-2.5">
           {[
-            { who: "BCBS NC",    what: "approved auth · Walker",        when: "12m" },
-            { who: "Dr. Nguyen", what: "uploaded PR · Pierce",          when: "35m" },
-            { who: "QA",         what: "reviewed plan · Ortiz",          when: "2h" },
-            { who: "Cigna VA",   what: "denied auth · Davis",            when: "3h" },
-            { who: "Parent",     what: "signed consent · Hayes",         when: "4h" },
+            { who: "Payer",      what: "approved auth · Sample",         when: "12m" },
+            { who: "BCBA",       what: "uploaded PR · Sample",           when: "35m" },
+            { who: "QA",         what: "reviewed plan · Sample",         when: "2h" },
+            { who: "Payer",      what: "denied auth · Sample",           when: "3h" },
+            { who: "Parent",     what: "signed consent · Sample",        when: "4h" },
           ].map((a, i) => (
             <li key={i} className="flex items-start gap-2 text-[12px]">
               <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(220_70%_55%)]" />
