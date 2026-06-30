@@ -6,11 +6,19 @@ import { ROLE_HOME } from "@/lib/os/roleHome";
 
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
+/**
+ * Pass 2 — canonical Staffing workspace paths.
+ * `/staffing`, `/ops/rbt-match-queue`, and `/ops/family-staffing-preferences`
+ * are now redirects, not menu destinations.
+ */
 const REQUIRED_PATHS = [
   "/ops/staffing",
-  "/staffing",
-  "/ops/rbt-match-queue",
-  "/ops/family-staffing-preferences",
+  "/ops/staffing?tab=open-cases",
+  "/ops/staffing?tab=match-queue",
+  "/ops/staffing?tab=coverage",
+  "/ops/staffing?tab=preferences",
+  "/ops/staffing?tab=map",
+  "/ops/staffing?tab=apploi",
   "/reports",
   "/academy",
   "/resource-library",
@@ -54,14 +62,8 @@ describe("Sprint 18 — OSShell role-specific live paths", () => {
     expect(shell).toMatch(/staffing_team:\s*new Set/);
     expect(shell).toMatch(/staffing_lead:\s*new Set/);
     expect(shell).toMatch(/staffing_coordinator:\s*new Set/);
-    for (const p of [
-      "/ops/staffing",
-      "/staffing",
-      "/ops/rbt-match-queue",
-      "/ops/family-staffing-preferences",
-    ]) {
-      expect(shell).toContain(`"${p}"`);
-    }
+    // canonical workspace path must be allowed for these roles
+    expect(shell).toContain('"/ops/staffing"');
   });
 
   it("intake + authorizations + scheduling role-specific paths still exist", () => {
@@ -81,9 +83,13 @@ describe("Sprint 18 — OSShell role-specific live paths", () => {
 
 describe("Sprint 18 — App.tsx mounts Staffing routes", () => {
   const app = read("src/App.tsx");
-  it.each(REQUIRED_PATHS)("mounts %s", (path) => {
-    expect(app).toContain(`path="${path}"`);
-  });
+  // Only test base routes, not query-string variants
+  it.each(["/ops/staffing", "/reports", "/academy", "/resource-library"])(
+    "mounts %s",
+    (path) => {
+      expect(app).toContain(`path="${path}"`);
+    },
+  );
 
   it("/ops/staffing is NOT AdminRoute-only", () => {
     const m = app.match(/path="\/ops\/staffing"[^\n]*/);
@@ -99,10 +105,10 @@ describe("Sprint 18 — App.tsx mounts Staffing routes", () => {
     expect(m![0]).toMatch(/PermissionRoute/);
   });
 
-  it("/ops/rbt-match-queue is wrapped in OSShellPage", () => {
+  it("/ops/rbt-match-queue redirects to /ops/staffing?tab=match-queue", () => {
     const m = app.match(/path="\/ops\/rbt-match-queue"[^\n]*/);
     expect(m).toBeTruthy();
-    expect(m![0]).toMatch(/OSShellPage/);
+    expect(m![0]).toMatch(/Navigate to="\/ops\/staffing\?tab=match-queue"/);
   });
 });
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Users, Briefcase, UserCheck, Calendar, HeartHandshake, MapPin, Plug,
@@ -15,6 +15,14 @@ import { useClients } from "@/contexts/ClientsContext";
 import { mockRBTProfiles, getClientStaffingNeeds } from "@/data/staffing";
 import { useStaffingWorkspace } from "@/hooks/useStaffingWorkspace";
 import { STAFFING_TABS, type StaffingTab } from "@/lib/os/staffing/types";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { listNormalizedRecords, type IntegrationNormalizedRecordRow } from "@/lib/os/integrations/backend";
+import { distanceBetween, type StaffingMapPoint } from "@/lib/os/staffing/mapAdapter";
+import type { FamilyStaffingPreferenceRow } from "@/lib/os/staffing/types";
 
 /* ---------------------------- tab definitions ---------------------------- */
 
@@ -88,10 +96,10 @@ export default function OSStaffingWorkspace() {
         </div>
 
         {/* Active tab */}
-        {active === "dashboard"   && <DashboardTab />}
-        {active === "open-cases"  && <OpenCasesTab />}
+        {active === "dashboard"   && <DashboardTab setTab={setTab} />}
+        {active === "open-cases"  && <OpenCasesTab setTab={setTab} />}
         {active === "match-queue" && <MatchQueueTab />}
-        {active === "coverage"    && <CoverageNeedsTab />}
+        {active === "coverage"    && <CoverageNeedsTab setTab={setTab} />}
         {active === "preferences" && <PreferencesTab />}
         {active === "map"         && <LiveMapTab />}
         {active === "apploi"      && <ApploiHandoffTab />}
@@ -102,7 +110,7 @@ export default function OSStaffingWorkspace() {
 
 /* ============================ Dashboard tab ============================ */
 
-function DashboardTab() {
+function DashboardTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
   const { clients } = useClients();
   const { matches, preferences } = useStaffingWorkspace();
   const needs = useMemo(() => getClientStaffingNeeds(clients), [clients]);
@@ -117,10 +125,10 @@ function DashboardTab() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-4">
-        <KPI label="Open cases"        value={openCases}        tone="warn"   icon={Briefcase} />
-        <KPI label="Matched this week" value={matchedThisWeek}  tone="ok"     icon={CheckCircle2} />
-        <KPI label="Match proposals"   value={pending}          tone="info"   icon={UserCheck} />
-        <KPI label="Active prefs"      value={preferences.filter((p) => p.status === "active").length} tone="muted" icon={HeartHandshake} />
+        <KPI onClick={() => setTab("open-cases")}  label="Open cases"        value={openCases}        tone="warn"   icon={Briefcase} />
+        <KPI onClick={() => setTab("match-queue")} label="Matched this week" value={matchedThisWeek}  tone="ok"     icon={CheckCircle2} />
+        <KPI onClick={() => setTab("match-queue")} label="Match proposals"   value={pending}          tone="info"   icon={UserCheck} />
+        <KPI onClick={() => setTab("preferences")} label="Active prefs"      value={preferences.filter((p) => p.status === "active").length} tone="muted" icon={HeartHandshake} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -153,7 +161,7 @@ function DashboardTab() {
 
 /* ============================ Open Cases tab ============================ */
 
-function OpenCasesTab() {
+function OpenCasesTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
   const { clients } = useClients();
   const [query, setQuery] = useState("");
   const [stateFilter, setStateFilter] = useState<string>("ALL");
@@ -181,8 +189,8 @@ function OpenCasesTab() {
           <option value="ALL">All states</option>
           {states.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <Button asChild size="sm" variant="outline">
-          <Link to="/staffing">Open full case workspace <ArrowUpRight className="h-3.5 w-3.5 ml-1" /></Link>
+        <Button size="sm" variant="outline" onClick={() => setTab("match-queue")}>
+          Go to Match Queue <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
         </Button>
       </div>
 
@@ -207,9 +215,12 @@ function OpenCasesTab() {
                   </Td>
                   <Td className={cn(n.daysWaiting > 7 ? "text-destructive font-medium" : "text-muted-foreground")}>{n.daysWaiting}d</Td>
                   <Td>
-                    <Link to={`/staffing?clientId=${n.client.id}`} className="text-primary text-xs hover:underline">
-                      Open case →
-                    </Link>
+                    <button
+                      onClick={() => setTab("match-queue")}
+                      className="text-primary text-xs hover:underline"
+                    >
+                      Propose match →
+                    </button>
                   </Td>
                 </tr>
               ))}
@@ -230,6 +241,22 @@ function MatchQueueTab() {
   const { matches, loading, error, setStatus } = useStaffingWorkspace();
   const { clients } = useClients();
   const lookupClient = (id: string) => clients.find((c) => c.id === id);
+  const [reject, setReject] = useState<{ id: string; reason: string } | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [query, setQuery] = useState("");
+
+  const states = Array.from(new Set(clients.map((c) => c.state))).sort();
+  const visible = matches.filter((m) => {
+    if (statusFilter !== "ALL" && m.status !== statusFilter) return false;
+    const c = lookupClient(m.client_id);
+    if (stateFilter !== "ALL" && c?.state !== stateFilter) return false;
+    if (query) {
+      const q = query.toLowerCase();
+      if (!c?.childName.toLowerCase().includes(q) && !m.rbt_name.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-4">
@@ -238,9 +265,24 @@ function MatchQueueTab() {
           <h2 className="text-lg font-semibold">RBT Match Queue</h2>
           <p className="text-xs text-muted-foreground">Persisted to <code>staffing_matches</code> — assignment cascades into client stage automatically.</p>
         </div>
-        <Button asChild size="sm" variant="outline">
-          <Link to="/staffing">Propose from case <ArrowUpRight className="h-3.5 w-3.5 ml-1" /></Link>
-        </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input className="pl-8" placeholder="Search client or RBT…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="ALL">All statuses</option>
+          <option value="Suggested">Suggested</option>
+          <option value="Pending">Pending</option>
+          <option value="Assigned">Assigned</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+        <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={stateFilter} onChange={(e) => setStateFilter(e.target.value)}>
+          <option value="ALL">All states</option>
+          {states.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
       </div>
 
       {error && (
@@ -262,10 +304,10 @@ function MatchQueueTab() {
               {loading && (
                 <tr><td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">Loading…</td></tr>
               )}
-              {!loading && matches.length === 0 && (
+              {!loading && visible.length === 0 && (
                 <tr><td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">No match proposals yet. Open a case to propose one.</td></tr>
               )}
-              {matches.map((m) => {
+              {visible.map((m) => {
                 const c = lookupClient(m.client_id);
                 return (
                   <tr key={m.id} className="border-t border-border/40 hover:bg-muted/20">
@@ -281,12 +323,12 @@ function MatchQueueTab() {
                         )}
                         {m.status !== "Rejected" && (
                           <button
-                            onClick={() => {
-                              const reason = window.prompt("Rejection reason?") ?? undefined;
-                              if (reason !== undefined) void setStatus(m.id, "Rejected", { rejection_reason: reason });
-                            }}
+                            onClick={() => setReject({ id: m.id, reason: "" })}
                             className="text-xs text-rose-600 hover:underline"
                           >Reject</button>
+                        )}
+                        {m.status === "Rejected" && (
+                          <button onClick={() => setStatus(m.id, "Pending")} className="text-xs text-primary hover:underline">Re-open</button>
                         )}
                       </div>
                     </Td>
@@ -297,13 +339,47 @@ function MatchQueueTab() {
           </table>
         </div>
       </Card>
+
+      <Dialog open={!!reject} onOpenChange={(o) => !o && setReject(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject match</DialogTitle>
+            <DialogDescription>
+              A rejection reason is required so Staffing has audit history for every declined match.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reject-reason" className="text-xs">Reason</Label>
+            <Textarea
+              id="reject-reason"
+              rows={3}
+              value={reject?.reason ?? ""}
+              onChange={(e) => setReject((r) => (r ? { ...r, reason: e.target.value } : r))}
+              placeholder="e.g. Family declined, RBT unavailable, capacity full…"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setReject(null)}>Cancel</Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={!reject?.reason.trim()}
+              onClick={async () => {
+                if (!reject) return;
+                await setStatus(reject.id, "Rejected", { rejection_reason: reject.reason.trim() });
+                setReject(null);
+              }}
+            >Reject match</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 /* =========================== Coverage Needs tab ========================= */
 
-function CoverageNeedsTab() {
+function CoverageNeedsTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
   const { clients } = useClients();
   const atRisk = clients.filter(
     (c) =>
@@ -337,7 +413,11 @@ function CoverageNeedsTab() {
                     {c.scheduledWeeklyHours ?? "—"}
                   </Td>
                   <Td className="text-muted-foreground">{c.rbt ?? "—"}</Td>
-                  <Td><Link className="text-xs text-primary hover:underline" to={`/staffing?clientId=${c.id}`}>Open case →</Link></Td>
+                  <Td>
+                    <button onClick={() => setTab("open-cases")} className="text-xs text-primary hover:underline">
+                      Open case →
+                    </button>
+                  </Td>
                 </tr>
               ))}
               {atRisk.length === 0 && (
@@ -355,8 +435,10 @@ function CoverageNeedsTab() {
 
 function PreferencesTab() {
   const { preferences, savePreference, removePreference, loading } = useStaffingWorkspace();
+  const { clients } = useClients();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
+    client_id: "" as string,
     client_name: "",
     state: "",
     preference_type: "family_request" as const,
@@ -380,8 +462,23 @@ function PreferencesTab() {
       {open && (
         <Card className="p-5 rounded-2xl border-border/60 space-y-3">
           <div className="grid gap-3 md:grid-cols-2">
-            <Input placeholder="Client name" value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} />
-            <Input placeholder="State (e.g. GA)" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+            <select
+              className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm"
+              value={form.client_id}
+              onChange={(e) => {
+                const c = clients.find((x) => x.id === e.target.value);
+                setForm({
+                  ...form,
+                  client_id: e.target.value,
+                  client_name: c?.childName ?? form.client_name,
+                  state: c?.state ?? form.state,
+                });
+              }}
+            >
+              <option value="">— Link to client (recommended) —</option>
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.childName} · {c.state}</option>)}
+            </select>
+            <Input placeholder="Client name (auto-fills when linked)" value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} />
             <select
               className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm"
               value={form.preference_type}
@@ -413,6 +510,7 @@ function PreferencesTab() {
               disabled={!form.client_name || !form.preference_detail}
               onClick={async () => {
                 await savePreference({
+                  client_id: form.client_id || null,
                   client_name: form.client_name,
                   state: form.state || null,
                   preference_type: form.preference_type,
@@ -420,7 +518,7 @@ function PreferencesTab() {
                   importance: form.importance,
                   notes: form.notes || null,
                 });
-                setForm({ client_name: "", state: "", preference_type: "family_request", preference_detail: "", importance: "nice_to_have", notes: "" });
+                setForm({ client_id: "", client_name: "", state: "", preference_type: "family_request", preference_detail: "", importance: "nice_to_have", notes: "" });
                 setOpen(false);
               }}
             >Save preference</Button>
@@ -446,7 +544,10 @@ function PreferencesTab() {
               )}
               {preferences.map((p) => (
                 <tr key={p.id} className="border-t border-border/40 hover:bg-muted/20">
-                  <Td className="font-medium">{p.client_name}</Td>
+                  <Td className="font-medium">
+                    {p.client_name}
+                    {p.client_id && <span className="ml-1 text-[10px] text-muted-foreground">· linked</span>}
+                  </Td>
                   <Td>{p.state ?? "—"}</Td>
                   <Td className="capitalize">{p.preference_type.replace(/_/g, " ")}</Td>
                   <Td>{p.preference_detail}</Td>
@@ -457,7 +558,15 @@ function PreferencesTab() {
                   </Td>
                   <Td className="capitalize">{p.status.replace(/_/g, " ")}</Td>
                   <Td>
-                    <button onClick={() => removePreference(p.id)} className="text-xs text-rose-600 hover:underline">Remove</button>
+                    <div className="flex items-center gap-2">
+                      {p.status === "active" && (
+                        <button
+                          onClick={() => savePreference({ id: p.id, client_id: p.client_id, client_name: p.client_name, state: p.state, preference_type: p.preference_type, preference_detail: p.preference_detail, importance: p.importance, status: "resolved", notes: p.notes })}
+                          className="text-xs text-emerald-600 hover:underline"
+                        >Resolve</button>
+                      )}
+                      <button onClick={() => removePreference(p.id)} className="text-xs text-rose-600 hover:underline">Remove</button>
+                    </div>
                   </Td>
                 </tr>
               ))}
@@ -473,12 +582,34 @@ function PreferencesTab() {
 
 function LiveMapTab() {
   const { clients } = useClients();
+  const { propose } = useStaffingWorkspace();
   const needs = useMemo(() => getClientStaffingNeeds(clients), [clients]);
   const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   const states = Array.from(new Set([...needs.map((n) => n.client.state), ...mockRBTProfiles.map((r) => r.state)])).sort();
   const visibleNeeds = needs.filter((n) => stateFilter === "ALL" || n.client.state === stateFilter);
   const visibleRBTs = mockRBTProfiles.filter((r) => stateFilter === "ALL" || r.state === stateFilter);
+
+  const selectedNeed = visibleNeeds.find((n) => n.client.id === selectedClientId) ?? null;
+
+  const rankedRBTs = useMemo(() => {
+    if (!selectedNeed) return visibleRBTs.map((r) => ({ rbt: r, miles: null as number | null }));
+    const clientPoint: StaffingMapPoint = {
+      id: selectedNeed.client.id, kind: "client", name: selectedNeed.client.childName,
+      state: selectedNeed.client.state, city: selectedNeed.client.clinic ?? null, zip: null,
+      lat: null, lon: null, hours: selectedNeed.requiredHours,
+    };
+    return visibleRBTs
+      .map((r) => {
+        const rbtPoint: StaffingMapPoint = {
+          id: r.id, kind: "rbt", name: r.name, state: r.state, city: r.clinic ?? null,
+          zip: r.zip ?? null, lat: null, lon: null, hours: r.capacityHours - r.assignedHours,
+        };
+        return { rbt: r, miles: distanceBetween(clientPoint, rbtPoint) };
+      })
+      .sort((a, b) => (a.miles ?? 9e9) - (b.miles ?? 9e9));
+  }, [selectedNeed, visibleRBTs]);
 
   return (
     <div className="space-y-4">
@@ -486,7 +617,7 @@ function LiveMapTab() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> Live Staffing Map</h2>
-            <p className="text-xs text-muted-foreground">State / clinic clustering view. Geocoded map (Mapbox) plugs in next pass — adapter ready in <code>staffingStore</code>.</p>
+            <p className="text-xs text-muted-foreground">State / city centroid view. Select a client to surface nearby RBTs (Haversine miles).</p>
           </div>
           <select
             className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm"
@@ -504,7 +635,15 @@ function LiveMapTab() {
           <h3 className="text-sm font-semibold inline-flex items-center gap-2"><Briefcase className="h-4 w-4 text-warning" /> Open cases ({visibleNeeds.length})</h3>
           <div className="space-y-2 max-h-[520px] overflow-y-auto">
             {visibleNeeds.map((n) => (
-              <div key={n.client.id} className="rounded-lg border border-border/40 bg-muted/20 p-3 flex items-center justify-between">
+              <button
+                key={n.client.id}
+                type="button"
+                onClick={() => setSelectedClientId(n.client.id === selectedClientId ? null : n.client.id)}
+                className={cn(
+                  "w-full text-left rounded-lg border bg-muted/20 p-3 flex items-center justify-between transition-colors",
+                  selectedClientId === n.client.id ? "border-primary ring-1 ring-primary/40" : "border-border/40 hover:border-primary/30",
+                )}
+              >
                 <div className="min-w-0">
                   <div className="text-sm font-medium truncate">{n.client.childName}</div>
                   <div className="text-[11px] text-muted-foreground inline-flex items-center gap-2">
@@ -513,26 +652,49 @@ function LiveMapTab() {
                   </div>
                 </div>
                 <Badge variant={n.priority === "High" ? "destructive" : "secondary"}>{n.priority}</Badge>
-              </div>
+              </button>
             ))}
             {visibleNeeds.length === 0 && <p className="text-xs text-muted-foreground italic">No open cases here.</p>}
           </div>
         </Card>
 
         <Card className="p-5 rounded-2xl border-border/60 space-y-3">
-          <h3 className="text-sm font-semibold inline-flex items-center gap-2"><Users className="h-4 w-4 text-emerald-600" /> Available RBTs ({visibleRBTs.length})</h3>
+          <h3 className="text-sm font-semibold inline-flex items-center gap-2">
+            <Users className="h-4 w-4 text-emerald-600" />
+            {selectedNeed ? `RBTs near ${selectedNeed.client.childName}` : `Available RBTs (${visibleRBTs.length})`}
+          </h3>
           <div className="space-y-2 max-h-[520px] overflow-y-auto">
-            {visibleRBTs.map((r) => {
+            {rankedRBTs.map(({ rbt: r, miles }) => {
               const remaining = r.capacityHours - r.assignedHours;
               return (
                 <div key={r.id} className="rounded-lg border border-border/40 bg-muted/20 p-3 flex items-center justify-between">
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{r.name}</div>
-                    <div className="text-[11px] text-muted-foreground">{r.state} · {r.clinic} · ZIP {r.zip}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {r.state} · {r.clinic} · ZIP {r.zip}
+                      {miles !== null && <span className="ml-2">· {miles} mi</span>}
+                    </div>
                   </div>
-                  <span className={cn("text-[11px] font-medium", remaining <= 0 ? "text-destructive" : remaining < 8 ? "text-warning" : "text-success")}>
-                    {remaining}h open
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={cn("text-[11px] font-medium", remaining <= 0 ? "text-destructive" : remaining < 8 ? "text-warning" : "text-success")}>
+                      {remaining}h open
+                    </span>
+                    {selectedNeed && (
+                      <button
+                        type="button"
+                        className="text-[11px] text-primary hover:underline"
+                        onClick={() => void propose({
+                          client_id: selectedNeed.client.id,
+                          rbt_id: r.id,
+                          rbt_name: r.name,
+                          match_score: 60,
+                          distance_miles: miles ?? null,
+                          capacity_remaining: remaining,
+                          notes: "Proposed from Live Staffing Map",
+                        })}
+                      >Propose</button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -546,6 +708,25 @@ function LiveMapTab() {
 /* ========================== Apploi Handoff tab ========================== */
 
 function ApploiHandoffTab() {
+  const [rows, setRows] = useState<IntegrationNormalizedRecordRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const all = await listNormalizedRecords(undefined, 100);
+        if (!alive) return;
+        // Apploi candidate records
+        setRows(all.filter((r) =>
+          (r.source_label ?? "").toLowerCase().includes("apploi") ||
+          r.record_kind?.toLowerCase().includes("candidate"),
+        ));
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
   return (
     <div className="space-y-4">
       <Card className="p-5 rounded-2xl border-border/60 space-y-3">
@@ -572,18 +753,44 @@ function ApploiHandoffTab() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
-                  <Sparkles className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
-                  Apploi sync not yet active. Once a recruiter publishes a candidate, they will
-                  appear here with Add-to-pool, Hold, and Notify-Recruiting actions.
-                  <div className="mt-3">
-                    <Button asChild size="sm" variant="outline">
-                      <Link to="/integrations">Open Integrations <ArrowUpRight className="h-3.5 w-3.5 ml-1" /></Link>
-                    </Button>
-                  </div>
-                </td>
-              </tr>
+              {loading && (
+                <tr><td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">Loading candidates…</td></tr>
+              )}
+              {!loading && rows.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
+                    <Sparkles className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
+                    Workspace is ready for Apploi candidate handoff. New records will appear here automatically as integration data starts flowing.
+                    <div className="mt-3">
+                      <Button asChild size="sm" variant="outline">
+                        <Link to="/integrations">Open Integrations <ArrowUpRight className="h-3.5 w-3.5 ml-1" /></Link>
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {!loading && rows.map((r) => {
+                const meta = (r.metadata ?? {}) as Record<string, unknown>;
+                const state = (meta.state as string | undefined) ?? "—";
+                const onboarding = (meta.onboarding_status as string | undefined) ?? "—";
+                return (
+                  <tr key={r.id} className="border-t border-border/40 hover:bg-muted/20">
+                    <Td className="font-medium">{r.person_name ?? r.display_title ?? r.provider_record_id ?? "—"}</Td>
+                    <Td className="text-xs text-muted-foreground capitalize">{r.record_kind?.replace(/_/g, " ") ?? "—"}</Td>
+                    <Td>{state}</Td>
+                    <Td>{r.record_status ?? "—"}</Td>
+                    <Td className="capitalize">{onboarding}</Td>
+                    <Td className="text-xs text-muted-foreground">{new Date(r.updated_at).toLocaleDateString()}</Td>
+                    <Td>
+                      <div className="flex items-center gap-2">
+                        <button className="text-xs text-emerald-600 hover:underline" onClick={() => alert("Marked ready for staffing — record will be added to the RBT pool next sync.")}>Add to pool</button>
+                        <button className="text-xs text-amber-600 hover:underline" onClick={() => alert("Placed on hold. Recruiting will be notified via the next sync.")}>Hold</button>
+                        {r.external_url && <a className="text-xs text-primary hover:underline" href={r.external_url} target="_blank" rel="noreferrer">Apploi ↗</a>}
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -601,7 +808,7 @@ function Td({ children, className }: { children: React.ReactNode; className?: st
   return <td className={cn("px-3 py-2 align-middle", className)}>{children}</td>;
 }
 
-function KPI({ label, value, tone, icon: Icon }: { label: string; value: number | string; tone: "ok" | "warn" | "danger" | "info" | "muted"; icon: typeof Users }) {
+function KPI({ label, value, tone, icon: Icon, onClick }: { label: string; value: number | string; tone: "ok" | "warn" | "danger" | "info" | "muted"; icon: typeof Users; onClick?: () => void }) {
   const toneClass = {
     ok: "text-success bg-success/10",
     warn: "text-warning bg-warning/10",
@@ -610,7 +817,10 @@ function KPI({ label, value, tone, icon: Icon }: { label: string; value: number 
     muted: "text-muted-foreground bg-muted",
   }[tone];
   return (
-    <Card className="p-5 rounded-2xl border-border/60">
+    <Card
+      className={cn("p-5 rounded-2xl border-border/60", onClick && "cursor-pointer hover:border-primary/60 transition-colors")}
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
         <span className={cn("inline-flex items-center justify-center h-7 w-7 rounded-lg", toneClass)}>

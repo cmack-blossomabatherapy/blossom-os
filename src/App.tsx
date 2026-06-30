@@ -632,7 +632,10 @@ const App = () => (
                   <Route path="/parent-training-97156" element={<OSParentTraining97156 />} />
                   <Route path="/scheduling-team" element={<OSSchedulingTeam />} />
                   <Route path="/scheduling-workspace" element={<OSSchedulingWorkspace />} />
-                  <Route path="/staffing" element={<OSStaffingQueue />} />
+                  {/* Pass 2 — /staffing is no longer the source of truth.
+                     Canonical staffing workspace is /ops/staffing. Redirect to
+                     the Open Cases tab. */}
+                  <Route path="/staffing" element={<Navigate to="/ops/staffing?tab=open-cases" replace />} />
                   <Route path="/recruiting-team" element={<OSRecruitingTeam />} />
                   <Route path="/recruiting/workspace"      element={<OSRecruitingWorkspace />} />
                   <Route path="/recruiting/academy"        element={<OSRecruitingTrainingAcademy />} />
@@ -934,7 +937,9 @@ const App = () => (
                   <Route path="/ops/missing-docs"            element={<OSShellPage><MissingDocs /></OSShellPage>} />
                   <Route path="/ops/payer-requirements"      element={<OSShellPage><PayerRequirements /></OSShellPage>} />
                   <Route path="/ops/make-up-sessions"        element={<OSShellPage><MakeUpSessions /></OSShellPage>} />
-                  <Route path="/ops/rbt-match-queue"         element={<OSShellPage><RbtMatchQueue /></OSShellPage>} />
+                  {/* Pass 2 — legacy localStorage match queue retired.
+                     Canonical match queue lives in the Staffing Workspace. */}
+                  <Route path="/ops/rbt-match-queue"         element={<Navigate to="/ops/staffing?tab=match-queue" replace />} />
                   {/* Generic Training Academy routes — render inside the OS shell so
                       every non-admin role (including Intake Team) keeps the current
                       Blossom OS sidebar/topbar. State Director training stays at /training. */}
