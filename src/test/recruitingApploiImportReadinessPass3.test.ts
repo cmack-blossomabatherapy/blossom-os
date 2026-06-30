@@ -18,6 +18,11 @@ describe("Recruiting Pass 3 — Apploi import readiness", () => {
     expect(src).toMatch(/"Apploi"/);
     // Honest not-connected behavior is gated through the centralized helper.
     expect(src).toMatch(/notifyApploiNotConnected/);
+    // Pass 4: deterministic lookup by catalog id, never fuzzy display-name.
+    expect(src).toMatch(/\.eq\("id",\s*"apploi"\)/);
+    expect(src).not.toMatch(/ilike\("[^"]*",\s*"%apploi%"\)/i);
+    // Activity logging on import.
+    expect(src).toMatch(/recruiting_activity_events/);
   });
 
   it("pipeline page wires Apploi import through the live readiness path", () => {
