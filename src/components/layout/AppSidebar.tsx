@@ -217,7 +217,7 @@ function buildSections(args: {
           { label: "Clients",         path: "/clients",         icon: UsersIcon },
           { label: "Authorizations",  path: "/authorizations",  icon: ShieldCheck },
           { label: "Scheduling",      path: "/scheduling",      icon: Calendar },
-          { label: "Staffing",        path: "/staffing",        icon: UserCheck },
+          { label: "Staffing",        path: "/ops/staffing",    icon: UserCheck },
           { label: "QA",              path: "/qa",              icon: ClipboardCheck },
           { label: "Evaluations",     path: "/evaluations",     icon: ClipboardCheck },
         ],
