@@ -10,6 +10,10 @@ import { cn } from "@/lib/utils";
 import { type Client } from "@/data/clients";
 import { useClients } from "@/contexts/ClientsContext";
 import { useCentralReachOps, type ProviderRosterEntry, type CoverageRiskRow } from "@/hooks/useCentralReachOps";
+import {
+  AssignRbtDialog, ContactAttemptDialog, CoverageNoteDialog,
+} from "@/components/scheduling/SchedulingDialogs";
+import { useSchedulingActions } from "@/hooks/useSchedulingActions";
 
 const RBT_TARGET_HOURS = 32;
 
@@ -70,6 +74,8 @@ export default function OSSchedulingWorkspace() {
   const { clients } = useClients();
   const cr = useCentralReachOps();
   const [params, setParams] = useSearchParams();
+  const [coverageOpen, setCoverageOpen] = useState(false);
+  const [pairingOpen, setPairingOpen] = useState(false);
 
   // Initialize filters from URL so deep links pre-apply correctly.
   const initialBucket = (() => {
@@ -113,6 +119,7 @@ export default function OSSchedulingWorkspace() {
 
   const selectedId = params.get("clientId") ?? filtered[0]?.c.id ?? null;
   const selected = selectedId ? clients.find((c) => c.id === selectedId) ?? null : null;
+  const liteSelected = selected ? { id: selected.id, childName: selected.childName, state: selected.state, rbt: selected.rbt, bcba: selected.bcba } : null;
 
   const selectClient = (id: string) => {
     const next = new URLSearchParams(params);
@@ -147,13 +154,13 @@ export default function OSSchedulingWorkspace() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
+              <button onClick={() => setCoverageOpen(true)} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
                 <MessageSquare className="size-4" /> Add Coverage Note
               </button>
               <Link to="/scheduling-team" className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
-                <ListChecks className="size-4" /> Open Staffing Queue
+                <ListChecks className="size-4" /> Open Coverage Queue
               </Link>
-              <button className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">
+              <button onClick={() => setPairingOpen(true)} className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">
                 <UserPlus className="size-4" /> Quick Pairing
               </button>
             </div>
@@ -176,7 +183,7 @@ export default function OSSchedulingWorkspace() {
             <div className="rounded-2xl bg-card border border-border/70 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)] overflow-hidden">
               <div className="p-4 border-b border-border/60 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold tracking-tight text-foreground">Staffing Queue</h2>
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground">Coverage Queue</h2>
                   <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{filtered.length}</span>
                 </div>
                 <div className="relative">
@@ -210,7 +217,7 @@ export default function OSSchedulingWorkspace() {
 
               <div className="max-h-[680px] overflow-y-auto divide-y divide-border/50">
                 {filtered.length === 0 && (
-                  <EmptyState label="No staffing cases match your filters." />
+                  <EmptyState label="No coverage cases match your filters." />
                 )}
                 {filtered.map(({ c, b }) => (
                   <QueueCard
@@ -243,6 +250,8 @@ export default function OSSchedulingWorkspace() {
             <AskBlossomPanel cr={cr} counts={counts} availableRbts={availableRbts} />
           </aside>
         </div>
+        <CoverageNoteDialog open={coverageOpen} onOpenChange={setCoverageOpen} client={liteSelected ?? undefined} />
+        <AssignRbtDialog open={pairingOpen} onOpenChange={setPairingOpen} client={liteSelected ?? undefined} />
       </div>
     </OSShell>
   );
