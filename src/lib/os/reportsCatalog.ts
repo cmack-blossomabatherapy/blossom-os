@@ -181,6 +181,18 @@ export function visibleReportsForRole(role: OSRole): ReportDef[] {
   if (CRED_VISIBLE_ROLES.includes(role)) {
     for (const id of CRED_OPERATIONAL_IDS) ids.add(id);
   }
+
+  // QA roles (team / director / specialist) share the same QA report surface.
+  // Walk the catalog's per-report `visibleTo` so QA-tagged reports are surfaced
+  // even when the role isn't listed in the operational ID buckets above.
+  const QA_ROLES: OSRole[] = ["qa_team", "qa_director", "qa_specialist"];
+  const isQA = QA_ROLES.includes(role);
+  for (const r of REPORTS) {
+    const roles = r.visibleTo as readonly OSRole[];
+    if (roles.includes(role)) ids.add(r.id);
+    if (isQA && roles.includes("qa_team")) ids.add(r.id);
+  }
+
   return Array.from(ids)
     .map(id => REPORTS.find(r => r.id === id))
     .filter((r): r is ReportDef => Boolean(r));
