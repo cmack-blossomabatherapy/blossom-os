@@ -400,6 +400,7 @@ import OSAskBlossom from "./pages/os/OSAskBlossom";
 import OSResourceLibrary from "./pages/os/OSResourceLibrary";
 import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
 import OSAuthHandoff from "./pages/os/OSAuthHandoff";
+import OSQAReviewBoard from "./pages/os/OSQAReviewBoard";
 import OSBCBAResources from "./pages/os/OSBCBAResources";
 import OSBCBATrainingAcademy from "./pages/os/OSBCBATrainingAcademy";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
