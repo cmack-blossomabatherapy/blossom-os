@@ -1,5 +1,5 @@
 import { runPageStageMove } from "@/lib/recruiting/stageMapping";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Search, X, AlertTriangle, CheckCircle2, Clock, Sparkles,
   Brain, Send, MessageSquare, UserPlus, Download,
@@ -15,7 +15,8 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingOrientation } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingOrientation, fullName, type RecruitingOrientationSlot } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,39 @@ const STAGES = [
   { key: "blocked",           label: "Blocked" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+// Round-trip mapping between recruiting_orientation_slots.status and the
+// board's stage keys. Live rows always win over the synthetic classifier.
+const ORIENT_STATUS_TO_STAGE: Record<string, StageKey> = {
+  Pending: "readyForOrientation",
+  Ready: "readyForOrientation",
+  Sent: "linkSent",
+  "Link Sent": "linkSent",
+  Scheduled: "scheduled",
+  Today: "today",
+  "Attendance Pending": "attendancePending",
+  Attended: "complete",
+  Completed: "complete",
+  Complete: "complete",
+  Missed: "blocked",
+  Blocked: "blocked",
+  "Staffing Ready": "staffingReady",
+};
+const STAGE_TO_ORIENT_STATUS: Partial<Record<StageKey, string>> = {
+  waitingReadiness: "Pending",
+  readyForOrientation: "Pending",
+  linkSent: "Sent",
+  scheduled: "Scheduled",
+  today: "Scheduled",
+  attendancePending: "Attendance Pending",
+  complete: "Completed",
+  staffingReady: "Completed",
+  blocked: "Missed",
+};
+function orientStatusToStage(status: string | null | undefined, fallback: StageKey): StageKey {
+  if (!status) return fallback;
+  return ORIENT_STATUS_TO_STAGE[status] ?? fallback;
+}
 
 function onboardingDone(c: RecruitingCandidate) {
   return c.onboardingStatus === "Complete" || c.viventium === "Complete";
@@ -117,7 +151,31 @@ const CHIPS: Array<{ key: string; label: string }> = [
 export default function OSRecruitingOrientation() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveOrientation } = useRecruitingOrientation();
+  const { items: liveOrientation, loading: liveOrientLoading } = useRecruitingOrientation();
+  const { candidates: liveCandidates } = useRecruitingCandidateLookup();
+
+  // Cross-reference live orientation slot rows with live candidate rows so
+  // legacy in-page candidates can be matched to real DB rows by full name.
+  const liveOrientByName = useMemo(() => {
+    const candidateNameById = new Map<string, string>();
+    for (const lc of liveCandidates) candidateNameById.set(lc.id, fullName(lc).toLowerCase());
+    const m = new Map<string, RecruitingOrientationSlot>();
+    for (const o of liveOrientation) {
+      const name = candidateNameById.get(o.candidate_id);
+      if (name && !m.has(name)) m.set(name, o);
+    }
+    return m;
+  }, [liveOrientation, liveCandidates]);
+  const liveCandidateIdByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const lc of liveCandidates) m.set(fullName(lc).toLowerCase(), lc.id);
+    return m;
+  }, [liveCandidates]);
+  const findLiveOrientFor = useCallback(
+    (c: RecruitingCandidate) => liveOrientByName.get(c.name.toLowerCase()) ?? null,
+    [liveOrientByName],
+  );
+
   const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
     Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
   );
@@ -128,7 +186,13 @@ export default function OSRecruitingOrientation() {
   const [recruiter, setRecruiter] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => {
+    const override = stageMap[c.id];
+    if (override) return override;
+    const live = findLiveOrientFor(c);
+    if (live) return orientStatusToStage(live.status, classify(c));
+    return classify(c);
+  };
 
   // Pool: anyone past offer acceptance — orientation lifecycle eligible.
   const pool = useMemo(
@@ -200,6 +264,19 @@ export default function OSRecruitingOrientation() {
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
     void runPageStageMove(mutations, "orientation", id, to);
+    const candidate = recruitingCandidates.find((c) => c.id === id);
+    if (!candidate) return;
+    const live = findLiveOrientFor(candidate);
+    const nextStatus = STAGE_TO_ORIENT_STATUS[to];
+    if (live && nextStatus && live.status !== nextStatus) {
+      if (to === "complete" || to === "staffingReady") void mutations.markOrientationCompleted(live.id);
+      else if (to === "blocked") {
+        const uuid = liveCandidateIdByName.get(candidate.name.toLowerCase());
+        if (uuid) void mutations.markOrientationMissed(uuid, "Marked missed from board");
+        else void mutations.updateOrientation(live.id, { status: "Missed" });
+      }
+      else void mutations.updateOrientation(live.id, { status: nextStatus });
+    }
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id);
@@ -283,6 +360,16 @@ export default function OSRecruitingOrientation() {
           ))}
         </div>
 
+        {/* Live vs Suggested pill summary */}
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <Pill tone="info">{liveOrientation.length} live</Pill>
+          <Pill tone="muted">{Math.max(0, pool.length - liveOrientByName.size)} suggested</Pill>
+          {liveOrientLoading && <span>Loading live orientation slots…</span>}
+          <span className="text-muted-foreground/70">
+            Live rows persist to <code className="text-foreground/80">recruiting_orientation_slots</code>; suggested rows are orientation-ready candidates without a scheduled slot yet.
+          </span>
+        </div>
+
         {/* Main grid */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
           <div className="space-y-8">
@@ -357,6 +444,62 @@ export default function OSRecruitingOrientation() {
                 </div>
               )}
             </section>
+
+            {/* Suggested orientations — orientation-ready candidates without a slot */}
+            {(() => {
+              const suggested = pool.filter(
+                (c) => !findLiveOrientFor(c) && (stageOf(c) === "readyForOrientation" || stageOf(c) === "linkSent" || isOrientationReady(c)),
+              );
+              if (suggested.length === 0) return null;
+              const today = new Date().toISOString().slice(0, 10);
+              return (
+                <section>
+                  <SectionHeader
+                    title="Suggested orientations"
+                    caption={`${suggested.length} candidate${suggested.length === 1 ? "" : "s"} ready for a recruiting_orientation_slots record`}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {suggested.slice(0, 8).map((c) => {
+                      const uuid = liveCandidateIdByName.get(c.name.toLowerCase()) ?? null;
+                      return (
+                        <div key={`sug-orient-${c.id}`} className="rounded-2xl bg-card border border-border/70 p-4">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">{c.name}</div>
+                              <div className="text-[11px] text-muted-foreground truncate">{c.role} · {c.state} · {c.recruiter}</div>
+                            </div>
+                            <Pill tone="muted">Suggested</Pill>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">{c.nextAction}</div>
+                          <div className="flex justify-end mt-3">
+                            <button
+                              disabled={!uuid}
+                              title={uuid ? "Create a pending orientation slot" : "No matching candidate record in recruiting_candidates"}
+                              onClick={() => {
+                                if (!uuid) return;
+                                void mutations.upsertOrientationForCandidate(uuid, {
+                                  scheduled_date: today,
+                                  status: "Pending",
+                                  format: "Virtual",
+                                });
+                              }}
+                              className={cn(
+                                "h-8 px-3 rounded-lg text-xs inline-flex items-center gap-1.5 transition",
+                                uuid
+                                  ? "bg-primary text-primary-foreground hover:opacity-90"
+                                  : "bg-muted text-muted-foreground cursor-not-allowed",
+                              )}
+                            >
+                              <CalendarPlus className="size-3.5" /> Schedule Orientation
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })()}
           </div>
 
           {/* Right rail */}
