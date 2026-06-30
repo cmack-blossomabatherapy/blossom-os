@@ -8,8 +8,35 @@ export type AuthStage =
   | "Flaked Client";
 
 export type AuthType = "Initial" | "Treatment" | "Reauth";
-export type QAStatus = "Not Started" | "In Review" | "Complete";
+/**
+ * Canonical QA workflow statuses.
+ *
+ * Persisted in `qa_work_item_overrides.qa_status` (source-backed items)
+ * and `client_qa_reviews.status` (UUID-backed reviews). Every QA page
+ * renders against this union so workflow state survives reload.
+ */
+export type QAStatus =
+  | "Not Started"
+  | "Awaiting Review"
+  | "In Review"
+  | "Issues Found"
+  | "Ready for Submission"
+  | "Submitted to Auth"
+  | "Escalated"
+  | "Complete";
 export type RiskLevel = "Low" | "Medium" | "High";
+
+export const QA_DONE_STATUSES: ReadonlyArray<QAStatus> = [
+  "Ready for Submission",
+  "Submitted to Auth",
+  "Complete",
+];
+export const QA_BLOCKED_STATUSES: ReadonlyArray<QAStatus> = [
+  "Issues Found",
+  "Escalated",
+];
+export const isQADone = (s: QAStatus) => QA_DONE_STATUSES.includes(s);
+export const isQABlocked = (s: QAStatus) => QA_BLOCKED_STATUSES.includes(s);
 
 export interface AuthDocument {
   name: string;
@@ -76,13 +103,20 @@ export const authStages: { name: AuthStage; variant: "default" | "success" | "wa
 export const stageVariant = (s: string): "default" | "success" | "warning" | "destructive" | "info" | "muted" =>
   authStages.find((x) => x.name === s)?.variant || "muted";
 
-export const qaVariant = (s: QAStatus): "default" | "success" | "warning" | "muted" => {
-  const m: Record<QAStatus, "default" | "success" | "warning" | "muted"> = {
-    "Not Started": "muted",
-    "In Review": "warning",
-    "Complete": "success",
+export const qaVariant = (
+  s: QAStatus,
+): "default" | "success" | "warning" | "destructive" | "muted" => {
+  const m: Record<QAStatus, "default" | "success" | "warning" | "destructive" | "muted"> = {
+    "Not Started":          "muted",
+    "Awaiting Review":      "muted",
+    "In Review":            "warning",
+    "Issues Found":         "destructive",
+    "Ready for Submission": "success",
+    "Submitted to Auth":    "success",
+    "Escalated":            "destructive",
+    "Complete":             "success",
   };
-  return m[s];
+  return m[s] ?? "muted";
 };
 
 export const riskVariant = (r: RiskLevel): "destructive" | "warning" | "muted" =>
