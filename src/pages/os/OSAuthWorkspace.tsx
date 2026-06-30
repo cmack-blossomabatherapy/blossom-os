@@ -721,11 +721,44 @@ export default function OSAuthWorkspace() {
       </div>
 
       {/* DETAIL DRAWER */}
-      <Sheet open={!!openAuth} onOpenChange={(o) => !o && setOpenId(null)}>
+      <Sheet open={!!openAuth} onOpenChange={(o) => {
+        if (!o) {
+          setOpenId(null);
+          setDrawerNote("");
+          setDrawerNoteError(null);
+          if (searchParams.get("authId") || searchParams.get("overlayId")) {
+            const next = new URLSearchParams(searchParams);
+            next.delete("authId");
+            next.delete("overlayId");
+            setSearchParams(next, { replace: true });
+          }
+        }
+      }}>
         <SheetContent side="right" className="w-full p-0 sm:max-w-xl">
           {openAuth && (
             <AuthDetailDrawer
               auth={openAuth}
+              liveAuth={openLiveAuth}
+              noteValue={drawerNote}
+              onNoteChange={setDrawerNote}
+              noteError={drawerNoteError}
+              noteSaving={actions.pending}
+              onSaveNote={async () => {
+                const text = drawerNote.trim();
+                if (!text) return;
+                try {
+                  await actions.addNote(buildOverlay(openAuth), text);
+                  setDrawerNote("");
+                  setDrawerNoteError(null);
+                  await refresh();
+                } catch (err) {
+                  setDrawerNoteError(err instanceof Error ? err.message : "Failed to save note");
+                }
+              }}
+              onFocusNote={() => {
+                const el = document.getElementById("ws-drawer-note");
+                if (el) (el as HTMLTextAreaElement).focus();
+              }}
               onAction={(kind) => {
                 const o = buildOverlay(openAuth);
                 if (kind === "submit") return runActionAndRefresh(() => actions.submitAuth(o));
