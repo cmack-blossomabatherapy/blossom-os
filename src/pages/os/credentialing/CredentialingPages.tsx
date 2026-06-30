@@ -485,7 +485,22 @@ function CentralReachIdsDialog({ open, onOpenChange, record, onSaved }: {
   async function submit() {
     setSaving(true);
     try {
-      await updateCredRecord(record.id, { centralreach_external_id: externalId || null }, `CentralReach record id updated to ${externalId || "(cleared)"}`);
+      const oldId = record.centralreach_external_id ?? "";
+      const newId = externalId.trim();
+      if (oldId === newId) {
+        onOpenChange(false);
+        return;
+      }
+      await updateCredRecord(
+        record.id,
+        { centralreach_external_id: newId || null },
+        {
+          type: "cr_id_change",
+          message: `CentralReach record id: ${oldId || "(empty)"} → ${newId || "(cleared)"}`,
+          old: oldId || null,
+          new: newId || null,
+        },
+      );
       toast.success("CentralReach IDs updated");
       onSaved();
       onOpenChange(false);
@@ -604,8 +619,22 @@ function RecordDetailSheet({
 
   async function setCrSync(status: CrSyncStatus) {
     if (!record) return;
+    const old = record.centralreach_sync_status;
+    if (old === status) {
+      toast.message(`CentralReach already ${status}`);
+      return;
+    }
     try {
-      await updateCredRecord(record.id, { centralreach_sync_status: status }, `CentralReach sync marked ${status}`);
+      await updateCredRecord(
+        record.id,
+        { centralreach_sync_status: status },
+        {
+          type: "cr_sync_status_change",
+          message: `CentralReach sync: ${old} → ${status}`,
+          old,
+          new: status,
+        },
+      );
       toast.success(`CentralReach: ${status}`);
       onChanged();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Update failed"); }
@@ -824,6 +853,10 @@ function RecordDetailSheet({
                     <div className="font-medium">
                       {a.activity_type === "status_change"
                         ? `Status: ${a.old_status ?? "—"} → ${a.new_status ?? "—"}`
+                        : a.activity_type === "cr_sync_status_change"
+                        ? `CentralReach sync: ${a.old_status ?? "—"} → ${a.new_status ?? "—"}`
+                        : a.activity_type === "cr_id_change"
+                        ? `CentralReach record id: ${a.old_status ?? "(empty)"} → ${a.new_status ?? "(cleared)"}`
                         : a.message ?? a.activity_type}
                     </div>
                     <div className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleString()}</div>

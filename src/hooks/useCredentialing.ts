@@ -206,13 +206,34 @@ export async function createCredRecord(input: Partial<CredentialingRecord>) {
   if (error) throw error;
   return data as CredentialingRecord;
 }
-export async function updateCredRecord(id: string, patch: Partial<CredentialingRecord>, actorNote?: string) {
+export type CredActivityInput =
+  | string
+  | {
+      type: string;
+      message: string;
+      old?: string | null;
+      new?: string | null;
+    };
+
+export async function updateCredRecord(
+  id: string,
+  patch: Partial<CredentialingRecord>,
+  activity?: CredActivityInput,
+) {
   const { data, error } = await sb.from(TABLE_RECORDS).update(patch).eq("id", id).select("*").single();
   if (error) throw error;
-  if (actorNote) {
-    await sb.from(TABLE_ACTIVITY).insert({
-      credentialing_record_id: id, activity_type: "note", message: actorNote,
-    });
+  if (activity) {
+    const entry =
+      typeof activity === "string"
+        ? { credentialing_record_id: id, activity_type: "note", message: activity }
+        : {
+            credentialing_record_id: id,
+            activity_type: activity.type,
+            message: activity.message,
+            old_status: activity.old ?? null,
+            new_status: activity.new ?? null,
+          };
+    await sb.from(TABLE_ACTIVITY).insert(entry);
   }
   return data as CredentialingRecord;
 }
