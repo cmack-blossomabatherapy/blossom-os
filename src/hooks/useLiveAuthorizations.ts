@@ -465,7 +465,7 @@ export function useLiveAuthorizations(): LiveAuthorizations {
           overlayIds.length
             ? supabase
                 .from("authorization_requirements")
-                .select("id,authorization_id,title,status,due_date")
+                .select("id,authorization_id,requirement_name,status,due_date")
                 .in("authorization_id", overlayIds)
             : Promise.resolve({ data: [], error: null }),
           overlayIds.length
