@@ -19,9 +19,8 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingStaffingNeeds } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingStaffingNeeds, type RecruitingStaffingNeed } from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
-import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +42,58 @@ const STAGES = [
   { key: "highRisk",     label: "High Risk Delay" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+const STATUS_TO_STAGE: Record<string, StageKey> = {
+  Open: "new",
+  New: "new",
+  Active: "active",
+  Working: "active",
+  Review: "review",
+  Match: "matchAvail",
+  matchAvail: "matchAvail",
+  Orientation: "orientation",
+  Coordination: "coordination",
+  Confirmed: "confirmed",
+  Closed: "confirmed",
+  Escalated: "escalated",
+  HighRisk: "highRisk",
+};
+function statusToStage(status: string | null | undefined, fallback: StageKey = "new"): StageKey {
+  if (!status) return fallback;
+  if ((STAGES as readonly { key: string }[]).some((s) => s.key === status)) return status as StageKey;
+  return STATUS_TO_STAGE[status] ?? fallback;
+}
+
+function mapLiveNeedToViewModel(row: RecruitingStaffingNeed): StaffingClientNeed {
+  const opened = row.opened_at ? new Date(row.opened_at) : null;
+  const days = opened ? Math.max(0, Math.floor((Date.now() - opened.getTime()) / 86_400_000)) : 0;
+  const label = row.client_label || "Unassigned client";
+  const stageReason: StaffingClientNeed["reason"] =
+    row.status === "Closed" ? "RBT Assigned"
+    : row.matched_candidate_id ? "Matching"
+    : "Staffing Needed";
+  // Fabricate a minimal Client wrapper. Only fields used by this page are populated;
+  // remaining required fields are cast away to avoid leaking placeholder client data.
+  const client = {
+    id: row.id,
+    childName: label,
+    state: row.state,
+    clinic: "—",
+    bcba: row.role_needed === "BCBA" ? null : "BCBA Assigned",
+    serviceLocation: "In-Home",
+  } as unknown as StaffingClientNeed["client"];
+  return {
+    client,
+    reason: stageReason,
+    priority: ((row.priority as "High" | "Medium" | "Low") ?? "Medium"),
+    daysWaiting: days,
+    requiredHours: row.hours_per_week ?? 0,
+    availability: [],
+    zip: "",
+    region: row.state,
+    alert: row.status === "Closed" ? null : (row.notes ?? null),
+  };
+}
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
@@ -119,21 +170,38 @@ export default function OSRecruitingStaffingNeeds() {
   const { items: liveStaffingNeeds, loading: liveStaffingNeedsLoading } = useRecruitingStaffingNeeds();
   const { find: findCandidate } = useRecruitingCandidateLookup();
   // Build needs list
-  const baseNeeds = useMemo(() => getClientStaffingNeeds(), []);
+  const syntheticNeeds = useMemo(() => getClientStaffingNeeds(), []);
+  const liveNeeds = useMemo(
+    () => liveStaffingNeeds.map(mapLiveNeedToViewModel),
+    [liveStaffingNeeds],
+  );
+  // De-dupe synthetic needs against live rows by client label / childName.
+  const liveLabels = useMemo(
+    () => new Set(liveNeeds.map((n) => n.client.childName.toLowerCase())),
+    [liveNeeds],
+  );
+  const suggestedNeeds = useMemo(
+    () => syntheticNeeds.filter((n) => !liveLabels.has(n.client.childName.toLowerCase())),
+    [syntheticNeeds, liveLabels],
+  );
+  // Live rows are the operational source of truth; synthetic suggestions
+  // keep the board populated for empty tenants and surface unlogged demand.
+  const baseNeeds = useMemo(
+    () => [...liveNeeds, ...suggestedNeeds],
+    [liveNeeds, suggestedNeeds],
+  );
   const readyCandidates = useMemo(
     () => recruitingCandidates.filter(orientationReady),
     []
   );
 
-  // Default stage mapping based on need + candidate readiness
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() => {
-    const map: Record<string, StageKey> = {};
-    baseNeeds.forEach((n) => {
-      const matches = readyCandidates.filter((c) => c.state === n.client.state && c.role === needRole(n)).length;
-      map[n.client.id] = classify(n, matches);
-    });
-    return map;
-  });
+  // Default stage mapping: live rows derive from DB status; synthetic from classifier.
+  const [stageOverrides, setStageOverrides] = useState<Record<string, StageKey>>({});
+  const liveStatusById = useMemo(() => {
+    const m: Record<string, string | null | undefined> = {};
+    liveStaffingNeeds.forEach((r) => { m[r.id] = r.status; });
+    return m;
+  }, [liveStaffingNeeds]);
 
   const [activeChip, setActiveChip] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -142,7 +210,13 @@ export default function OSRecruitingStaffingNeeds() {
   const [urgencyF, setUrgencyF] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const stageOf = (n: StaffingClientNeed) => stageMap[n.client.id] ?? classify(n, 0);
+  const stageOf = (n: StaffingClientNeed): StageKey => {
+    const override = stageOverrides[n.client.id];
+    if (override) return override;
+    if (liveStatusById[n.client.id] !== undefined) return statusToStage(liveStatusById[n.client.id]);
+    const matches = readyCandidates.filter((c) => c.state === n.client.state && c.role === needRole(n)).length;
+    return classify(n, matches);
+  };
 
   // Synthesize recruiter assignment per need (round robin over real recruiters)
   const assignedRecruiter = (n: StaffingClientNeed) =>
@@ -177,7 +251,8 @@ export default function OSRecruitingStaffingNeeds() {
         default: return true;
       }
     });
-  }, [baseNeeds, stageMap, activeChip, search, stateF, recruiterF, urgencyF]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseNeeds, stageOverrides, liveStatusById, activeChip, search, stateF, recruiterF, urgencyF]);
 
   const summary = useMemo(() => {
     const get = (pred: (n: StaffingClientNeed) => boolean) => baseNeeds.filter(pred).length;
@@ -192,11 +267,12 @@ export default function OSRecruitingStaffingNeeds() {
       escalations: get((n) => stageOf(n) === "escalated" || stageOf(n) === "highRisk"),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseNeeds, readyCandidates, stageMap]);
+  }, [baseNeeds, readyCandidates, stageOverrides, liveStatusById]);
 
   const escalations = useMemo(
     () => baseNeeds.filter((n) => stageOf(n) === "escalated" || stageOf(n) === "highRisk"),
-    [baseNeeds, stageMap]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baseNeeds, stageOverrides, liveStatusById]
   );
 
   const statePressure = useMemo(() => {
@@ -217,7 +293,7 @@ export default function OSRecruitingStaffingNeeds() {
   const selected = selectedId ? baseNeeds.find((n) => n.client.id === selectedId) ?? null : null;
 
   function moveStage(id: string, to: StageKey) {
-    setStageMap((m) => ({ ...m, [id]: to }));
+    setStageOverrides((m) => ({ ...m, [id]: to }));
     // Persist when this row corresponds to a real recruiting_staffing_needs row.
     const liveNeed = liveStaffingNeeds.find((n: any) => n.client_id === id || n.id === id);
     if (liveNeed?.id && /^[0-9a-f-]{36}$/i.test(liveNeed.id)) {
@@ -290,54 +366,15 @@ export default function OSRecruitingStaffingNeeds() {
           <SummaryCard label="Escalations"          value={summary.escalations} icon={Bell}         tone="crit" onClick={() => setActiveChip("escalated")} />
         </div>
 
-        {/* Chips */}
-        <LiveRecruitingSection
-          title="Live staffing needs"
-          subtitle="Primary source — rows from recruiting_staffing_needs"
-          tableName="recruiting_staffing_needs"
-          items={liveStaffingNeeds}
-          loading={liveStaffingNeedsLoading}
-          emptyTitle="No live staffing needs on file"
-          emptyBody="When the team logs a need to recruiting_staffing_needs, it will render here. The board below shows synthetic client demand."
-          renderRow={(row: any) => {
-            const matched = row.matched_candidate_id ? findCandidate(row.matched_candidate_id) : null;
-            const isClosed = row.status === "Closed";
-            const tone = isClosed ? "ok" : row.priority === "High" ? "crit" : row.priority === "Medium" ? "warn" : "info";
-            return (
-              <LiveRowCard
-                title={`${row.role_needed ?? "Role"} · ${row.client_label ?? "Unassigned client"}`}
-                meta={[row.state, row.hours_per_week ? `${row.hours_per_week} hrs/wk` : null, matched ? `Match: ${matched.first_name} ${matched.last_name}` : null, `Status: ${row.status}`].filter(Boolean).join(" · ")}
-                tone={tone}
-                badges={
-                  <>
-                    {row.priority && <Pill tone={tone}>{row.priority}</Pill>}
-                    {isClosed && <Pill tone="ok">Closed</Pill>}
-                  </>
-                }
-                actions={
-                  !isClosed && (
-                    <>
-                      {row.status !== "Active" && (
-                        <button
-                          onClick={() => void mutations.markStaffingNeedWorking(row.id)}
-                          className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition"
-                        >
-                          Start work
-                        </button>
-                      )}
-                      <button
-                        onClick={() => void mutations.closeStaffingNeed(row.id, "Closed via Live section")}
-                        className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition"
-                      >
-                        Close
-                      </button>
-                    </>
-                  )
-                }
-              />
-            );
-          }}
-        />
+        {/* Live vs Suggested pill summary */}
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <Pill tone="info">{liveNeeds.length} live</Pill>
+          <Pill tone="muted">{suggestedNeeds.length} suggested</Pill>
+          {liveStaffingNeedsLoading && <span>Loading live needs…</span>}
+          <span className="text-muted-foreground/70">
+            Live rows persist to <code className="text-foreground/80">recruiting_staffing_needs</code>; suggested rows are client-demand signals not yet logged.
+          </span>
+        </div>
 
         <div className="flex flex-wrap gap-2">
           {CHIPS.map((c) => (
@@ -435,6 +472,53 @@ export default function OSRecruitingStaffingNeeds() {
                 </div>
               )}
             </section>
+
+            {/* Suggested staffing needs (synthetic demand not yet logged) */}
+            {suggestedNeeds.length > 0 && (
+              <section>
+                <SectionHeader
+                  title="Suggested staffing needs"
+                  caption={`${suggestedNeeds.length} client-demand signal${suggestedNeeds.length === 1 ? "" : "s"} not yet in recruiting_staffing_needs`}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {suggestedNeeds.slice(0, 8).map((n) => {
+                    const role = needRole(n);
+                    return (
+                      <div key={`sug-${n.client.id}`} className="rounded-2xl bg-card border border-border/70 p-4">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium truncate">Client {initials(n.client.childName)} · {n.client.state}</div>
+                            <div className="text-[11px] text-muted-foreground truncate">{n.reason} · {n.daysWaiting}d waiting</div>
+                          </div>
+                          <Pill tone="muted">Suggested</Pill>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          <Pill tone="info">Needs {role}</Pill>
+                          {n.priority === "High" && <Pill tone="crit">Urgent</Pill>}
+                        </div>
+                        <div className="flex justify-end mt-3">
+                          <button
+                            onClick={() => void mutations.createStaffingNeed({
+                              role: role,
+                              role_needed: role,
+                              state: n.client.state,
+                              client_label: n.client.childName,
+                              priority: n.priority,
+                              hours_per_week: n.requiredHours || null,
+                              status: "new",
+                              notes: n.alert ?? n.reason,
+                            } as any)}
+                            className="h-8 px-3 rounded-lg text-xs bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center gap-1.5"
+                          >
+                            <Plus className="size-3.5" /> Create
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </div>
 
           {/* Right rail */}
