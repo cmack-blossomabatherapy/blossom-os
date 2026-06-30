@@ -103,7 +103,6 @@ import Training from "./pages/hr/Training";
 import Payroll from "./pages/hr/Payroll";
 import Announcements from "./pages/hr/Announcements";
 import ResourceUploadCenter from "./pages/hr/ResourceUploadCenter";
-import HRReports from "./pages/hr/HRReports";
 import HRSettings from "./pages/hr/HRSettings";
 import NotificationSettings from "./pages/hr/NotificationSettings";
 import HRAssistant from "./pages/hr/HRAssistant";
