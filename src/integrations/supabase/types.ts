@@ -2954,31 +2954,34 @@ export type Database = {
           activity_type: string
           actor_id: string | null
           created_at: string
-          credentialing_record_id: string
+          credentialing_record_id: string | null
           id: string
           message: string | null
           new_status: string | null
           old_status: string | null
+          provider_id: string | null
         }
         Insert: {
           activity_type: string
           actor_id?: string | null
           created_at?: string
-          credentialing_record_id: string
+          credentialing_record_id?: string | null
           id?: string
           message?: string | null
           new_status?: string | null
           old_status?: string | null
+          provider_id?: string | null
         }
         Update: {
           activity_type?: string
           actor_id?: string | null
           created_at?: string
-          credentialing_record_id?: string
+          credentialing_record_id?: string | null
           id?: string
           message?: string | null
           new_status?: string | null
           old_status?: string | null
+          provider_id?: string | null
         }
         Relationships: [
           {
@@ -2986,6 +2989,13 @@ export type Database = {
             columns: ["credentialing_record_id"]
             isOneToOne: false
             referencedRelation: "credentialing_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credentialing_activity_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "credentialing_providers"
             referencedColumns: ["id"]
           },
         ]
@@ -3121,6 +3131,8 @@ export type Database = {
           approved_date: string | null
           blocker_reason: string | null
           centralreach_external_id: string | null
+          centralreach_last_readiness_at: string | null
+          centralreach_sync_error: string | null
           centralreach_sync_status: string
           created_at: string
           created_by: string | null
@@ -3152,6 +3164,8 @@ export type Database = {
           approved_date?: string | null
           blocker_reason?: string | null
           centralreach_external_id?: string | null
+          centralreach_last_readiness_at?: string | null
+          centralreach_sync_error?: string | null
           centralreach_sync_status?: string
           created_at?: string
           created_by?: string | null
@@ -3183,6 +3197,8 @@ export type Database = {
           approved_date?: string | null
           blocker_reason?: string | null
           centralreach_external_id?: string | null
+          centralreach_last_readiness_at?: string | null
+          centralreach_sync_error?: string | null
           centralreach_sync_status?: string
           created_at?: string
           created_by?: string | null
