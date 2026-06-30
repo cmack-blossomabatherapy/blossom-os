@@ -136,6 +136,7 @@ export function CoverageNoteDialog({
     try {
       await logAction({
         clientId: client?.id ?? null,
+        clientName: client?.childName ?? null,
         actionType: "coverage_note",
         title: "Coverage note",
         note,
@@ -183,6 +184,7 @@ export function CancellationDialog({
     try {
       const row = await logCancellation({
         clientId: client.id,
+        clientName: client.childName,
         sessionDate: date || null,
         startTime: start || null,
         endTime: end || null,
@@ -195,6 +197,7 @@ export function CancellationDialog({
       });
       await logAction({
         clientId: client.id,
+        clientName: client.childName,
         actionType: "cancellation_logged",
         title: `Cancellation (${cancelledBy})`,
         note: reason,
@@ -265,14 +268,14 @@ export function AdjustmentDialog({
     setBusy(true);
     try {
       const row = await createAdjustment({
-        clientId: client.id, adjustmentType: type, dayOfWeek: day || null, sessionDate: date || null,
+        clientId: client.id, clientName: client.childName, adjustmentType: type, dayOfWeek: day || null, sessionDate: date || null,
         oldStartTime: oldStart || null, newStartTime: newStart || null,
         oldEndTime: oldEnd || null, newEndTime: newEnd || null,
         oldRbtName: oldRbt || null, newRbtName: newRbt || null,
         newLocation: location || null, reason,
       });
       await logAction({
-        clientId: client.id, actionType: "schedule_adjustment", title: `Adjustment: ${type}`,
+        clientId: client.id, clientName: client.childName, actionType: "schedule_adjustment", title: `Adjustment: ${type}`,
         note: reason, state: client.state ?? null,
         metadata: { adjustment_id: (row as { id?: string } | null)?.id },
       });
@@ -342,7 +345,7 @@ export function CoverageCaseDialog({
     setBusy(true);
     try {
       await createCoverageCase({
-        clientId: client.id, state: client.state ?? null,
+        clientId: client.id, clientName: client.childName, state: client.state ?? null,
         caseType: mode === "escalate" ? "escalation" : "coverage_gap",
         riskLevel: mode === "escalate" ? "critical" : "high",
         rbtName: client.rbt ?? null, bcbaName: client.bcba ?? null,
@@ -351,6 +354,7 @@ export function CoverageCaseDialog({
       });
       await logAction({
         clientId: client.id,
+        clientName: client.childName,
         actionType: mode === "escalate" ? "state_director_escalated" : "coverage_case_opened",
         priority: mode === "escalate" ? "urgent" : "high",
         title: mode === "escalate" ? "Escalated to State Director" : "Coverage case opened",
@@ -393,12 +397,17 @@ export function AssignRbtDialog({
   const [rbt, setRbt] = useState(defaultRbt);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  // Re-sync defaultRbt whenever dialog opens — the dialog stays mounted, so
+  // without this a second Quick Pairing for a different RBT keeps the old name.
+  useEffect(() => {
+    if (open) setRbt(defaultRbt ?? "");
+  }, [open, defaultRbt]);
   const save = async () => {
     if (!client || !rbt.trim()) { toast.error("Select a client and RBT."); return; }
     setBusy(true);
     try {
       await logAction({
-        clientId: client.id, actionType: "rbt_assigned",
+        clientId: client.id, clientName: client.childName, actionType: "rbt_assigned",
         title: `RBT assigned: ${rbt}`, note,
         state: client.state ?? null,
         status: "completed",
@@ -446,12 +455,14 @@ export function ProviderRiskDialog({
         actionType: providerRole === "rbt" ? "rbt_capacity_risk" : "bcba_caseload_risk",
         title: providerRole === "rbt" ? `RBT capacity risk: ${providerName}` : `BCBA caseload risk: ${providerName}`,
         note: reason, state: state ?? null, priority: "high",
+        providerName, providerRole,
         metadata: { provider_name: providerName, role: providerRole },
       });
       await createCoverageCase({
         state: state ?? null,
         caseType: providerRole === "rbt" ? "rbt_capacity" : "bcba_caseload",
         riskLevel: "high",
+        providerName, providerRole,
         rbtName: providerRole === "rbt" ? providerName : null,
         bcbaName: providerRole === "bcba" ? providerName : null,
         reason,
