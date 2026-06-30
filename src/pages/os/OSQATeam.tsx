@@ -471,18 +471,30 @@ export default function OSQATeam() {
                           </StatusPill>
                         </div>
                         <div className="flex items-center gap-2 mt-3 flex-wrap">
-                          <button className="h-8 px-3 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-1.5">
+                          <Link
+                            to={`/qa-queue?focus=${encodeURIComponent(a.id)}`}
+                            className="h-8 px-3 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-1.5"
+                          >
                             <Send className="h-3 w-3" /> Send follow-up
-                          </button>
-                          <button className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
+                          </Link>
+                          <Link
+                            to={`/escalations-followups?focus=${encodeURIComponent(a.id)}`}
+                            className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground"
+                          >
                             <Flame className="h-3 w-3" /> Escalate
-                          </button>
-                          <Link to="/qa-queue" className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
+                          </Link>
+                          <Link
+                            to={`/qa-queue?focus=${encodeURIComponent(a.id)}`}
+                            className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground"
+                          >
                             <ExternalLink className="h-3 w-3" /> Open record
                           </Link>
-                          <button className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
+                          <Link
+                            to={`/qa-queue?focus=${encodeURIComponent(a.id)}`}
+                            className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground"
+                          >
                             <CheckCircle2 className="h-3 w-3" /> Mark updated
-                          </button>
+                          </Link>
                         </div>
                       </div>
                     ))}
