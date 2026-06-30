@@ -18,6 +18,7 @@ import {
   SourceBadge,
   type AuthSourceTag,
 } from "@/components/authorizations/AuthorizationActionUI";
+import { AuthPromptDialog } from "@/components/authorizations/AuthPromptDialog";
 import {
   useAuthorizationActions,
   type EnsureOverlayInput,
@@ -147,122 +148,6 @@ type AuthCard = {
   expirationISO?: string | null;
 };
 
-/** Legacy demo seeds — kept as a fallback only if the live query returns nothing. */
-const FALLBACK_AUTHS: AuthCard[] = [
-  {
-    id: "AUTH-1042", client: "Ava Walker", state: "NC", payer: "BCBS NC",
-    authType: "Treatment Auth", requestType: "6-month renewal",
-    coordinator: "Rivky", bcba: "Dr. Patel",
-    status: "Expiring Soon", stateTone: "expiring", risk: "crit",
-    expiresInDays: 6,
-    prStatus:     { label: "PR overdue (12d)",   tone: "crit" },
-    qaStatus:     { label: "Not started",        tone: "neutral" },
-    missingDocs: ["Progress report"],
-    parentSig: "Signed",
-    treatmentPlan: { label: "Pending PR",        tone: "warn" },
-    lastActivity: "BCBA pinged · 2h",
-    queues: ["all","attention","expiring","pr","high_risk","esc_bcba","treatment","nc","mine","recent"],
-  },
-  {
-    id: "AUTH-1051", client: "Liam Pierce", state: "GA", payer: "Aetna",
-    authType: "Reassessment", requestType: "60-day pre-expiration",
-    coordinator: "Rivky", bcba: "Dr. Nguyen",
-    status: "Awaiting Submission", stateTone: "awaiting", risk: "warn",
-    expiresInDays: 24,
-    prStatus:     { label: "PR received",        tone: "ok" },
-    qaStatus:     { label: "QA ready to submit", tone: "ok" },
-    missingDocs: [],
-    parentSig: "Signed",
-    treatmentPlan: { label: "Reviewed",          tone: "ok" },
-    lastActivity: "QA approved · 35m",
-    queues: ["all","attention","due_today","awaiting","qa_ready","reassessment","ga","mine","recent"],
-  },
-  {
-    id: "AUTH-1063", client: "Reya Sharma", state: "VA", payer: "Cigna VA",
-    authType: "Treatment Auth", requestType: "6-month renewal",
-    coordinator: "Julianne", bcba: "Dr. Patel",
-    status: "In QA Review", stateTone: "qa", risk: "info",
-    expiresInDays: 41,
-    prStatus:     { label: "PR in QA review",    tone: "info" },
-    qaStatus:     { label: "QA reviewing",       tone: "info" },
-    missingDocs: [],
-    parentSig: "Signed",
-    treatmentPlan: { label: "With QA",           tone: "info" },
-    lastActivity: "Sent to QA · 1d",
-    queues: ["all","treatment","va","recent","esc_qa"],
-  },
-  {
-    id: "AUTH-1078", client: "Mason Hayes", state: "NC", payer: "UHC",
-    authType: "Treatment Auth", requestType: "6-month renewal",
-    coordinator: "Rivky", bcba: "Dr. Cole",
-    status: "Missing Documentation", stateTone: "missing", risk: "crit",
-    expiresInDays: 18,
-    prStatus:     { label: "Awaiting BCBA",      tone: "warn" },
-    qaStatus:     { label: "Blocked",            tone: "crit" },
-    missingDocs: ["Treatment plan", "Parent signature"],
-    parentSig: "Pending",
-    treatmentPlan: { label: "Not received",      tone: "crit" },
-    lastActivity: "Parent emailed · 4h",
-    queues: ["all","attention","missing","high_risk","parent_sig","treatment","nc","mine","recent","esc_bcba"],
-  },
-  {
-    id: "AUTH-1085", client: "Sofia Ortiz", state: "NC", payer: "BCBS NC",
-    authType: "Reassessment", requestType: "90-day pre-expiration",
-    coordinator: "Julianne", bcba: "Dr. Nguyen",
-    status: "QA Approved", stateTone: "qa", risk: "info",
-    expiresInDays: 55,
-    prStatus:     { label: "PR received",        tone: "ok" },
-    qaStatus:     { label: "QA approved",        tone: "ok" },
-    missingDocs: [],
-    parentSig: "Pending",
-    treatmentPlan: { label: "Reviewed",          tone: "ok" },
-    lastActivity: "QA approved · 2h",
-    queues: ["all","qa_ready","reassessment","nc","parent_sig","recent"],
-  },
-  {
-    id: "AUTH-1093", client: "Noah Davis", state: "VA", payer: "Cigna VA",
-    authType: "Treatment Auth", requestType: "Appeal · medical necessity",
-    coordinator: "Rivky", bcba: "Dr. Cole",
-    status: "Denied", stateTone: "denied", risk: "warn",
-    expiresInDays: null,
-    prStatus:     { label: "PR on file",         tone: "ok" },
-    qaStatus:     { label: "Complete",           tone: "ok" },
-    missingDocs: [],
-    parentSig: "Signed",
-    treatmentPlan: { label: "Updated for appeal", tone: "info" },
-    lastActivity: "Denial received · 3h",
-    queues: ["all","attention","denied","treatment","va","mine","recent"],
-  },
-  {
-    id: "AUTH-1101", client: "Ezra Klein", state: "GA", payer: "Aetna",
-    authType: "Initial Auth", requestType: "New start",
-    coordinator: "Rivky", bcba: "Dr. Patel",
-    status: "Awaiting Submission", stateTone: "awaiting", risk: "info",
-    expiresInDays: null,
-    prStatus:     { label: "Not required",       tone: "neutral" },
-    qaStatus:     { label: "Complete",           tone: "ok" },
-    missingDocs: [],
-    parentSig: "Signed",
-    treatmentPlan: { label: "Approved",          tone: "ok" },
-    lastActivity: "Plan finalized · 1d",
-    queues: ["all","due_today","awaiting","initial","ga","mine","recent"],
-  },
-  {
-    id: "AUTH-1119", client: "Maya Lopez", state: "TN", payer: "BCBS TN",
-    authType: "Parent Training 97156", requestType: "Quarterly",
-    coordinator: "Julianne", bcba: "Dr. Cole",
-    status: "Awaiting Submission", stateTone: "awaiting", risk: "info",
-    expiresInDays: null,
-    prStatus:     { label: "PR received",        tone: "ok" },
-    qaStatus:     { label: "Complete",           tone: "ok" },
-    missingDocs: [],
-    parentSig: "Signed",
-    treatmentPlan: { label: "Reviewed",          tone: "ok" },
-    lastActivity: "Ready · 30m",
-    queues: ["all","awaiting","pt97156","tn","recent"],
-  },
-];
-
 /* ─────────── live ↔ card mapping ─────────── */
 
 function daysUntilISO(iso: string | null): number | null {
@@ -382,9 +267,13 @@ export default function OSAuthWorkspace() {
 
   const { items: liveItems, loading, error } = useLiveAuthorizations();
 
+  // Prompt-dialog state (replaces window.prompt)
+  const [promptKind, setPromptKind] = useState<null | "assign" | "status" | "note">(null);
+  const [noteForId, setNoteForId] = useState<string | null>(null);
+
   const AUTHS: AuthCard[] = useMemo(() => {
     if (loading || error) return [];
-    if (!liveItems.length) return FALLBACK_AUTHS;
+    // No fallback demo data — show empty state instead.
     return liveItems.map(liveAuthToCard);
   }, [liveItems, loading, error]);
 
@@ -448,13 +337,11 @@ export default function OSAuthWorkspace() {
     const overlays = selectedAuths.map(buildOverlay);
     try {
       if (kind === "assign") {
-        const who = window.prompt("Assign selected authorizations to:");
-        if (!who) return;
-        await actions.bulkAssign(overlays, who);
+        setPromptKind("assign");
+        return;
       } else if (kind === "status") {
-        const status = window.prompt("New status (e.g. Submitted, In QA Review, Approved):");
-        if (!status) return;
-        await actions.bulkChangeStatus(overlays, status);
+        setPromptKind("status");
+        return;
       } else if (kind === "escalate") {
         for (const o of overlays) await actions.escalate(o);
       } else if (kind === "qa") {
@@ -646,9 +533,7 @@ export default function OSAuthWorkspace() {
                     if (kind === "resolve_docs") return actions.resolveDocs(o).catch(() => undefined);
                     if (kind === "mark_reviewed") return actions.markReviewed(o).catch(() => undefined);
                     if (kind === "note") {
-                      const n = window.prompt("Note:");
-                      if (!n) return;
-                      return actions.addNote(o, n).catch(() => undefined);
+                      setNoteForId(a.id);
                     }
                   }}
                 />
@@ -679,6 +564,60 @@ export default function OSAuthWorkspace() {
       <NewAuthorizationDialog
         open={newAuthOpen}
         onOpenChange={setNewAuthOpen}
+      />
+
+      {/* Bulk Assign prompt */}
+      <AuthPromptDialog
+        open={promptKind === "assign"}
+        title="Bulk assign"
+        description={`Assign ${selectedAuths.length} authorization${selectedAuths.length === 1 ? "" : "s"} to a coordinator.`}
+        label="Assign to"
+        placeholder="e.g. Coordinator name"
+        submitLabel="Assign"
+        pending={actions.pending}
+        onCancel={() => setPromptKind(null)}
+        onSubmit={async (val) => {
+          await actions.bulkAssign(selectedAuths.map(buildOverlay), val).catch(() => undefined);
+          setPromptKind(null);
+          setSelected(new Set());
+        }}
+      />
+
+      {/* Bulk Status prompt */}
+      <AuthPromptDialog
+        open={promptKind === "status"}
+        title="Change status"
+        description={`Change status for ${selectedAuths.length} authorization${selectedAuths.length === 1 ? "" : "s"}.`}
+        label="New status"
+        options={["Awaiting Submission", "Submitted", "In QA Review", "Approved", "Denied", "Expiring Soon", "Denial Review"]}
+        submitLabel="Update status"
+        pending={actions.pending}
+        onCancel={() => setPromptKind(null)}
+        onSubmit={async (val) => {
+          await actions.bulkChangeStatus(selectedAuths.map(buildOverlay), val).catch(() => undefined);
+          setPromptKind(null);
+          setSelected(new Set());
+        }}
+      />
+
+      {/* Add Note prompt */}
+      <AuthPromptDialog
+        open={!!noteForId}
+        title="Add note"
+        description="Adds a note to this authorization's activity timeline."
+        label="Note"
+        multiline
+        placeholder="What happened? Who did what?"
+        submitLabel="Add note"
+        pending={actions.pending}
+        onCancel={() => setNoteForId(null)}
+        onSubmit={async (val) => {
+          const target = visible.find((a) => a.id === noteForId);
+          if (target) {
+            await actions.addNote(buildOverlay(target), val).catch(() => undefined);
+          }
+          setNoteForId(null);
+        }}
       />
     </OSShell>
   );
@@ -967,11 +906,11 @@ function RightContextPanel({ queueLabel }: { queueLabel: string }) {
         </header>
         <ul className="space-y-2.5">
           {[
-            { who: "BCBS NC",    what: "approved auth · Walker",        when: "12m" },
-            { who: "Dr. Nguyen", what: "uploaded PR · Pierce",          when: "35m" },
-            { who: "QA",         what: "reviewed plan · Ortiz",          when: "2h" },
-            { who: "Cigna VA",   what: "denied auth · Davis",            when: "3h" },
-            { who: "Parent",     what: "signed consent · Hayes",         when: "4h" },
+            { who: "Payer",      what: "approved auth · Sample",         when: "12m" },
+            { who: "BCBA",       what: "uploaded PR · Sample",           when: "35m" },
+            { who: "QA",         what: "reviewed plan · Sample",         when: "2h" },
+            { who: "Payer",      what: "denied auth · Sample",           when: "3h" },
+            { who: "Parent",     what: "signed consent · Sample",        when: "4h" },
           ].map((a, i) => (
             <li key={i} className="flex items-start gap-2 text-[12px]">
               <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(220_70%_55%)]" />
@@ -1044,8 +983,8 @@ function AuthDetailDrawer({
             <KV label="Expires in">{auth.expiresInDays !== null ? `${auth.expiresInDays} days` : "—"}</KV>
             <KV label="Coordinator">{auth.coordinator}</KV>
             <KV label="BCBA">{auth.bcba}</KV>
-            <KV label="State Director">{auth.state === "GA" ? "Shira" : "Julianne"}</KV>
-            <KV label="QA Reviewer">Rachel</KV>
+            <KV label="State Director">—</KV>
+            <KV label="QA Reviewer">—</KV>
           </div>
         </DrawerSection>
 
@@ -1093,14 +1032,12 @@ function AuthDetailDrawer({
             <RowKv label="PR requested">10 days ago</RowKv>
             <RowKv label="PR due">In 4 days</RowKv>
             <RowKv label="BCBA contacted">3 pings · last 4h</RowKv>
-            <RowKv label="State Director">{auth.state === "GA" ? "Shira & Rachel looped in (6w mark)" : "Julianne escalated (6w mark)"}</RowKv>
+            <RowKv label="State Director">—</RowKv>
             <RowKv label="Parent signature">{auth.parentSig}</RowKv>
             <RowKv label="QA review">{auth.qaStatus.label}</RowKv>
           </ul>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            {auth.state === "GA"
-              ? "GA workflow: Rivky reaches out at 9w · Shira & Rachel looped in at 6w."
-              : "Multi-state workflow: weekly notifications begin at 9w (cc Julianne) · State Director escalated at 6w. SD exits once PR received unless parent signature support needed."}
+            Outreach cadence and escalation owners are configured per state. Update state ownership in admin to populate.
           </p>
         </DrawerSection>
 
@@ -1120,16 +1057,9 @@ function AuthDetailDrawer({
             placeholder="Add an internal note…"
             className="h-20 w-full resize-none rounded-xl border border-white/70 bg-white/70 p-2.5 text-[12.5px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-[hsl(265_85%_60%/0.4)]"
           />
-          <ul className="mt-2 space-y-1.5 text-[12px]">
-            <li className="rounded-xl border border-white/60 bg-white/60 px-3 py-2">
-              <p className="text-foreground/85">Pinged Dr. Cole again about treatment plan; ETA tomorrow.</p>
-              <p className="mt-0.5 text-[10.5px] text-muted-foreground">Rivky · 2h</p>
-            </li>
-            <li className="rounded-xl border border-white/60 bg-white/60 px-3 py-2">
-              <p className="text-foreground/85">Parent acknowledged signature request via email.</p>
-              <p className="mt-0.5 text-[10.5px] text-muted-foreground">System · 4h</p>
-            </li>
-          </ul>
+          <p className="mt-2 rounded-xl border border-dashed border-white/60 bg-white/40 px-3 py-2 text-[12px] text-muted-foreground">
+            Notes will appear here as coordinators add them to this authorization.
+          </p>
         </DrawerSection>
 
         {/* AI */}

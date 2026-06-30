@@ -272,10 +272,17 @@ export function useAuthorizationActions(): AuthorizationActions {
     (input) =>
       run("Submit", async () => {
         const id = await ensureOverlay(input);
-        await supabase
+        const userId = await currentUserId();
+        const { error: updErr } = await supabase
           .from("authorization_operational_records")
-          .update({ status: "Submitted", workflow_stage: "Submitted", submitted_date: new Date().toISOString().slice(0, 10) })
+          .update({
+            status: "Submitted",
+            workflow_stage: "Submitted",
+            submitted_date: new Date().toISOString().slice(0, 10),
+            updated_by: userId,
+          })
           .eq("id", id);
+        if (updErr) throw updErr;
         await logActivity({
           recordId: id,
           activityType: "submitted",
@@ -289,10 +296,24 @@ export function useAuthorizationActions(): AuthorizationActions {
     (input) =>
       run("Resolve docs", async () => {
         const id = await ensureOverlay(input);
+        // Mark any open authorization_requirements as received for this auth.
+        const { error: reqErr } = await supabase
+          .from("authorization_requirements")
+          .update({ status: "received", received_at: new Date().toISOString() })
+          .eq("authorization_id", id)
+          .neq("status", "received");
+        // Don't throw if there are simply no matching rows; log other errors.
+        if (reqErr && reqErr.code !== "PGRST116") {
+          await logActivity({
+            recordId: id,
+            activityType: "resolve_docs",
+            description: `Tried to resolve requirements but received: ${reqErr.message}`,
+          });
+        }
         await logActivity({
           recordId: id,
           activityType: "resolve_docs",
-          description: `Documentation resolution started.`,
+          description: `Documentation resolution recorded.`,
         });
       }, "Documentation tracker opened"),
     [run],
@@ -302,6 +323,15 @@ export function useAuthorizationActions(): AuthorizationActions {
     (input) =>
       run("Mark reviewed", async () => {
         const id = await ensureOverlay(input);
+        const userId = await currentUserId();
+        const { error: updErr } = await supabase
+          .from("authorization_operational_records")
+          .update({
+            metadata: { last_reviewed_at: new Date().toISOString(), last_reviewed_by: userId },
+            updated_by: userId,
+          })
+          .eq("id", id);
+        if (updErr) throw updErr;
         await logActivity({
           recordId: id,
           activityType: "mark_reviewed",
@@ -315,10 +345,26 @@ export function useAuthorizationActions(): AuthorizationActions {
     (input) =>
       run("Review denial", async () => {
         const id = await ensureOverlay(input);
+        const userId = await currentUserId();
+        const { error: updErr } = await supabase
+          .from("authorization_operational_records")
+          .update({
+            workflow_stage: "Denial Review",
+            priority: "High",
+            updated_by: userId,
+          })
+          .eq("id", id);
+        if (updErr) throw updErr;
+        await createTask({
+          recordId: id,
+          title: "Review denial reason and plan response",
+          ownerLabel: input.assigned_owner ?? null,
+          dueDate: new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10),
+        });
         await logActivity({
           recordId: id,
           activityType: "review_denial",
-          description: `Denial review opened.`,
+          description: `Denial review opened — follow-up task created.`,
         });
       }, "Denial review logged"),
     [run],
@@ -341,12 +387,14 @@ export function useAuthorizationActions(): AuthorizationActions {
   const bulkChangeStatus: AuthorizationActions["bulkChangeStatus"] = useCallback(
     (records, newStatus) =>
       run("Change status", async () => {
+        const userId = await currentUserId();
         for (const r of records) {
           const id = await ensureOverlay(r);
-          await supabase
+          const { error: updErr } = await supabase
             .from("authorization_operational_records")
-            .update({ status: newStatus })
+            .update({ status: newStatus, workflow_stage: newStatus, updated_by: userId })
             .eq("id", id);
+          if (updErr) throw updErr;
           await logActivity({
             recordId: id,
             activityType: "status_change",
@@ -361,12 +409,14 @@ export function useAuthorizationActions(): AuthorizationActions {
   const bulkAssign: AuthorizationActions["bulkAssign"] = useCallback(
     (records, assignee) =>
       run("Assign", async () => {
+        const userId = await currentUserId();
         for (const r of records) {
           const id = await ensureOverlay(r);
-          await supabase
+          const { error: updErr } = await supabase
             .from("authorization_operational_records")
-            .update({ assigned_owner: assignee })
+            .update({ assigned_owner: assignee, updated_by: userId })
             .eq("id", id);
+          if (updErr) throw updErr;
           await logActivity({
             recordId: id,
             activityType: "assign_coordinator",
@@ -392,11 +442,35 @@ export function useAuthorizationActions(): AuthorizationActions {
     [run],
   );
 
+  const sendToQAImpl: AuthorizationActions["sendToQA"] = useCallback(
+    (input) =>
+      run("Send to QA", async () => {
+        const id = await ensureOverlay(input);
+        const userId = await currentUserId();
+        const { error: updErr } = await supabase
+          .from("authorization_operational_records")
+          .update({
+            workflow_stage: "In QA Review",
+            status: "In QA Review",
+            updated_by: userId,
+          })
+          .eq("id", id);
+        if (updErr) throw updErr;
+        await logActivity({
+          recordId: id,
+          activityType: "send_to_qa",
+          description: `Sent to QA review.`,
+          newValue: "In QA Review",
+        });
+      }, "Sent to QA"),
+    [run],
+  );
+
   return {
     pending,
     ensureOverlay: ensure,
     requestPR,
-    sendToQA,
+    sendToQA: sendToQAImpl,
     escalate,
     addNote,
     submitAuth,

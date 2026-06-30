@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AuthPromptDialog } from "@/components/authorizations/AuthPromptDialog";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Sparkles, AlertTriangle, ChevronRight, ClipboardCheck,
@@ -32,7 +33,7 @@ function supervisionPct(a: Authorization) { return 55 + (hash(a.id) % 45); }
 function lastPRDays(a: Authorization) { return hash(a.id + "pr") % 95; }
 function bcbaName(a: Authorization, liveBcba?: string | null) {
   if (liveBcba) return liveBcba;
-  return ["Dr. Kim", "Dr. Lee", "Dr. Patel", "Dr. Rivera", "Dr. Wright"][hash(a.id + "b") % 5];
+  return "Unassigned BCBA";
 }
 function requestType(a: Authorization): "Initial" | "Treatment Auth" | "Reassessment" | "Parent Training 97156" {
   if (a.authType === "Initial") return "Initial";
@@ -617,6 +618,7 @@ function IconAction({ icon: Icon, title, onClick }: { icon: any; title: string; 
 /* ------------------------------ drawer ------------------------------ */
 function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; liveBcba: string | null; onClose: () => void }) {
   const actions = useAuthorizationActions();
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   if (!auth) return null;
   const a = auth;
   const e = enrich(a, liveBcba);
@@ -674,16 +676,29 @@ function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; l
             <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message BCBA
             <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700">Queued</span>
           </Button>
-          <Button size="sm" variant="outline" onClick={() => {
-            const note = window.prompt("Add a note for this authorization:");
-            if (note && note.trim()) void actions.addNote(overlay, note.trim());
-          }}>
+          <Button size="sm" variant="outline" onClick={() => setNoteDialogOpen(true)}>
             <StickyNote className="mr-1.5 h-3.5 w-3.5" /> Note
           </Button>
           <Button size="sm" variant="outline" onClick={() => void actions.escalate(overlay)}>
             <AlertTriangle className="mr-1.5 h-3.5 w-3.5" /> Escalate
           </Button>
         </div>
+
+        <AuthPromptDialog
+          open={noteDialogOpen}
+          title="Add note"
+          description={`Add a note to ${a.clientName}'s authorization activity timeline.`}
+          label="Note"
+          multiline
+          placeholder="What happened? Who did what?"
+          submitLabel="Add note"
+          pending={actions.pending}
+          onCancel={() => setNoteDialogOpen(false)}
+          onSubmit={async (val) => {
+            await actions.addNote(overlay, val).catch(() => undefined);
+            setNoteDialogOpen(false);
+          }}
+        />
 
         <div className="p-6 space-y-7">
           {/* 1 — Auth summary */}
@@ -702,7 +717,7 @@ function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; l
               <KV label="Coordinator" value={a.coordinator} />
               <KV label="BCBA" value={e.bcba} />
               <KV label="QA Reviewer" value={a.qaOwner ?? "—"} />
-              <KV label="State Director" value={a.state === "GA" ? "Shira / Rachel" : "Julianne"} />
+              <KV label="State Director" value="—" />
             </div>
           </DrawerSection>
 
@@ -783,13 +798,13 @@ function PRTracking({ a }: { a: EnrichedAuth }) {
 
   const milestones = isGA
     ? [
-        { week: 9, owner: "Rivky", action: "Begins parent outreach", hit: weeksSincePR >= 9 },
-        { week: 6, owner: "Shira / Rachel", action: "Looped in for SD escalation", hit: weeksSincePR >= (9 + 6) },
+        { week: 9, owner: "GA Outreach Owner", action: "Begins parent outreach", hit: weeksSincePR >= 9 },
+        { week: 6, owner: "GA State Director", action: "Looped in for SD escalation", hit: weeksSincePR >= (9 + 6) },
         { week: 0, owner: "QA", action: "Ready for QA submission", hit: a.treatmentPlanReceived },
       ]
     : [
-        { week: 9, owner: "Rikki", action: "Weekly outreach begins", hit: weeksSincePR >= 9 },
-        { week: 8, owner: "Julianne", action: "CC'd on weekly outreach", hit: weeksSincePR >= 9 },
+        { week: 9, owner: "Multi-state Outreach Owner", action: "Weekly outreach begins", hit: weeksSincePR >= 9 },
+        { week: 8, owner: "State Director", action: "CC'd on weekly outreach", hit: weeksSincePR >= 9 },
         { week: 6, owner: "State Director", action: "Escalation activated", hit: weeksSincePR >= (9 + 3) },
         { week: 0, owner: "QA", action: "Ready for QA submission", hit: a.treatmentPlanReceived },
       ];
@@ -799,8 +814,8 @@ function PRTracking({ a }: { a: EnrichedAuth }) {
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-3">
         <KV label="Last PR received" value={`${a.lastPRDays}d ago`} />
         <KV label="Weeks since PR" value={`${weeksSincePR}w`} />
-        <KV label="Outreach owner" value={isGA ? "Rivky (GA)" : "Rikki (multi-state)"} />
-        <KV label="SD escalation" value={isGA ? "Shira / Rachel" : "Julianne"} />
+        <KV label="Outreach owner" value={isGA ? "GA outreach owner" : "Multi-state outreach owner"} />
+        <KV label="SD escalation" value="State Director" />
       </div>
       <ol className="relative border-l border-border/70 ml-2 space-y-2.5">
         {milestones.map((m, i) => (
@@ -869,8 +884,8 @@ const PROMPT_CATALOG: { key: PromptKey; label: string; icon: any }[] = [
 function buildAnswer(a: EnrichedAuth, key: PromptKey): { headline: string; bullets: string[]; nextAction?: string } {
   const exp = a.daysToExpire;
   const isGA = a.state === "GA";
-  const sd = isGA ? "Shira / Rachel" : "Julianne";
-  const outreach = isGA ? "Rivky (GA)" : "Rikki (multi-state)";
+  const sd = "State Director";
+  const outreach = isGA ? "GA outreach owner" : "Multi-state outreach owner";
   const lastEvent = a.timeline[a.timeline.length - 1];
   const missingDocs = [
     !a.treatmentPlanReceived && "Treatment plan",
