@@ -50,7 +50,7 @@ export function useSchedulingActions() {
           due_at: params.dueAt ?? null,
           metadata: params.metadata ?? {},
           created_by: userId,
-        }]))
+        }])
         .select()
         .single();
       if (error) {
@@ -98,7 +98,7 @@ export function useSchedulingActions() {
           owner_user_id: userId,
           metadata: params.metadata ?? {},
           created_by: userId,
-        }]))
+        }])
         .select()
         .single();
       if (error) {
@@ -163,7 +163,7 @@ export function useSchedulingActions() {
           centralreach_sync_status: "queued",
           created_by: userId,
           metadata: params.metadata ?? {},
-        }]))
+        }])
         .select()
         .single();
       if (error) {
@@ -248,7 +248,7 @@ export function useSchedulingActions() {
           centralreach_sync_status: "not_ready",
           metadata: params.metadata ?? {},
           created_by: userId,
-        }]))
+        }])
         .select()
         .single();
       if (error) {
