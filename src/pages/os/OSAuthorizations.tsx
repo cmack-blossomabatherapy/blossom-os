@@ -242,7 +242,7 @@ export default function OSAuthorizations() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ViewId>(() => paramToView(searchParams) || "all");
-  const [openId, setOpenId] = useState<string | null>(() => searchParams.get("authId"));
+  const [openId, setOpenId] = useState<string | null>(() => searchParams.get("authId") ?? searchParams.get("overlayId"));
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [newAuthOpen, setNewAuthOpen] = useState(false);
   const actions = useAuthorizationActions();
@@ -262,25 +262,45 @@ export default function OSAuthorizations() {
     if (cfg.filters) setFilters(cfg.filters);
   };
 
-  // React to deep-link changes coming from other pages (Risk Center, Supervision, etc.)
+  const live = useLiveAuthorizations();
+
+  // Resolve a deep-link id (which may be either the public/visible auth id
+  // OR the operational overlay id) to the canonical visible auth id used by
+  // `live.items`. We reverse-map overlay ids via `live.overlayIdByAuthId`.
+  const resolveAuthId = (id: string | null): string | null => {
+    if (!id) return null;
+    // Direct hit on visible id.
+    if (live.items.some((x) => x.id === id)) return id;
+    // Reverse-map overlay id → visible auth id.
+    for (const [publicId, overlayId] of live.overlayIdByAuthId.entries()) {
+      if (overlayId === id) return publicId;
+    }
+    // Standalone overlay (manual/CR): visible id IS the overlay id.
+    return id;
+  };
+
+  // React to deep-link changes coming from other pages (Risk Center,
+  // Missing Docs, Supervision, etc.) — accept both authId and overlayId.
   useEffect(() => {
-    const id = searchParams.get("authId");
-    if (id) setOpenId(id);
+    const rawId = searchParams.get("authId") ?? searchParams.get("overlayId");
+    if (rawId) setOpenId(resolveAuthId(rawId));
     const v = paramToView(searchParams);
     if (v) setView(v);
-  }, [searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, live.items.length, live.overlayIdByAuthId.size]);
 
-  // Keep the URL clean when the drawer closes so back-nav stays sensible.
+  // Keep the URL clean when the drawer closes — remove BOTH legacy authId
+  // and new overlayId so back-nav stays sensible.
   const closeDrawer = () => {
     setOpenId(null);
-    if (searchParams.get("authId")) {
+    if (searchParams.get("authId") || searchParams.get("overlayId")) {
       const next = new URLSearchParams(searchParams);
       next.delete("authId");
+      next.delete("overlayId");
       setSearchParams(next, { replace: true });
     }
   };
 
-  const live = useLiveAuthorizations();
   const enriched = useMemo(
     () => live.items.map((a) => {
       const e = enrich(a, live.bcbaById.get(a.id));
