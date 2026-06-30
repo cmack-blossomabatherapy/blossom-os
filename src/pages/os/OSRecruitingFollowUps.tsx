@@ -112,6 +112,64 @@ function lastContactFor(c: RecruitingCandidate): string {
   return `${Math.floor(d / 7)}w ago`;
 }
 
+// Map a live recruiting_followups row into the visual FollowUp view-model.
+function mapLiveFollowupToViewModel(
+  row: RecruitingFollowup,
+  findCandidate: (id: string | null | undefined) => RecruitingCandidate | null,
+  legacyCandidates: RecruitingCandidate[],
+): FollowUp {
+  const liveCand = row.candidate_id ? findCandidate(row.candidate_id) : null;
+  // Fall back to a legacy candidate shell so the UI keeps rendering name/state/region.
+  const fallback: RecruitingCandidate =
+    legacyCandidates.find((c) => c.id === row.candidate_id) ??
+    ({
+      id: row.candidate_id ?? row.id,
+      name: liveCand ? `${liveCand.first_name} ${liveCand.last_name}`.trim() : (row.title || "Unknown candidate"),
+      role: (liveCand?.role as any) ?? "RBT",
+      state: (liveCand?.state as any) ?? "GA",
+      region: liveCand?.city ?? "—",
+      recruiter: row.owner ?? liveCand?.recruiter ?? "Unassigned",
+      candidateStatus: "New Applicant",
+      readinessStatus: "Active",
+      daysInStage: 0,
+      nextAction: row.title,
+      interviewStatus: "Not Scheduled",
+      offerStatus: "None",
+      backgroundCheck: "Not Started",
+      orientation: "Not Scheduled",
+      onboardingStatus: "Pending",
+      followUps: row.notes ? [row.notes] : [],
+    } as unknown as RecruitingCandidate);
+
+  const stage = stageFromStatus(row.status);
+  const dueMs = row.due_date ? new Date(row.due_date).getTime() : NaN;
+  const daysOverdue = Number.isFinite(dueMs)
+    ? Math.max(0, Math.floor((Date.now() - dueMs) / (1000 * 60 * 60 * 24)))
+    : 0;
+  const urgency: FollowUp["urgency"] = daysOverdue >= 5 ? "High" : daysOverdue >= 2 ? "Medium" : "Low";
+  const type = ((row.category as FollowUpType) || "Candidate no response") as FollowUpType;
+  const staffingImpact = /staff/i.test(row.category ?? row.title);
+
+  return {
+    id: row.id,
+    candidateId: row.candidate_id ?? row.id,
+    candidate: fallback,
+    type,
+    reason: row.notes ?? row.title,
+    recruiter: row.owner ?? fallback.recruiter ?? "Unassigned",
+    state: fallback.state,
+    daysOverdue,
+    lastContact: row.completed_at
+      ? new Date(row.completed_at).toLocaleDateString()
+      : row.due_date ?? "—",
+    urgency,
+    stage,
+    nextAction: row.title,
+    staffingImpact,
+    isLive: true,
+  };
+}
+
 function buildSuggestedFollowUps(candidates: RecruitingCandidate[]): FollowUp[] {
   const items: FollowUp[] = [];
   const push = (
