@@ -1077,8 +1077,8 @@ function ApploiHandoffTab() {
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="text-left font-medium px-3 py-2 whitespace-nowrap">{children}</th>;
 }
-function Td({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <td className={cn("px-3 py-2 align-middle", className)}>{children}</td>;
+function Td({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent) => void }) {
+  return <td className={cn("px-3 py-2 align-middle", className)} onClick={onClick}>{children}</td>;
 }
 
 function KPI({ label, value, tone, icon: Icon, onClick }: { label: string; value: number | string; tone: "ok" | "warn" | "danger" | "info" | "muted"; icon: typeof Users; onClick?: () => void }) {
