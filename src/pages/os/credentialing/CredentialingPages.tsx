@@ -432,24 +432,49 @@ type DocStatus = typeof DOC_VERIFICATION_STATUSES[number];
 
 function AddDocumentDialog({ open, onOpenChange, recordId, providerId, onCreated }: {
   open: boolean; onOpenChange: (v: boolean) => void;
-  recordId: string; providerId: string; onCreated: () => void;
+  recordId: string | null; providerId: string | null; onCreated: () => void;
 }) {
-  const [form, setForm] = useState({ document_type: "", file_name: "", verification_status: "Needed" as DocStatus, expiration_date: "" });
+  const [form, setForm] = useState({
+    document_type: "", file_name: "",
+    verification_status: "Needed" as DocStatus,
+    expiration_date: "", notes: "",
+  });
+  const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  useEffect(() => { if (open) setForm({ document_type: "", file_name: "", verification_status: "Needed", expiration_date: "" }); }, [open]);
+  useEffect(() => {
+    if (open) {
+      setForm({ document_type: "", file_name: "", verification_status: "Needed", expiration_date: "", notes: "" });
+      setFile(null);
+    }
+  }, [open]);
   async function submit() {
     if (!form.document_type.trim()) { toast.error("Document type is required"); return; }
+    if (!recordId && !providerId) { toast.error("Document must be attached to a provider or record"); return; }
     setSaving(true);
     try {
-      await addCredDocument({
-        credentialing_record_id: recordId,
-        provider_id: providerId,
-        document_type: form.document_type.trim(),
-        file_name: form.file_name || null,
-        verification_status: form.verification_status,
-        expiration_date: form.expiration_date || null,
-      });
-      toast.success("Document tracked");
+      if (file) {
+        await uploadCredDocumentFile({
+          file,
+          document_type: form.document_type.trim(),
+          provider_id: providerId,
+          credentialing_record_id: recordId,
+          verification_status: form.verification_status,
+          expiration_date: form.expiration_date || null,
+          notes: form.notes || null,
+        });
+        toast.success("Document uploaded");
+      } else {
+        await addCredDocument({
+          credentialing_record_id: recordId,
+          provider_id: providerId,
+          document_type: form.document_type.trim(),
+          file_name: form.file_name || null,
+          verification_status: form.verification_status,
+          expiration_date: form.expiration_date || null,
+          notes: form.notes || null,
+        });
+        toast.success("Document tracked");
+      }
       onCreated();
       onOpenChange(false);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
@@ -459,12 +484,28 @@ function AddDocumentDialog({ open, onOpenChange, recordId, providerId, onCreated
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Track document</DialogTitle>
-          <DialogDescription>Document tracking only — file upload to storage is not wired yet.</DialogDescription>
+          <DialogTitle>Add document</DialogTitle>
+          <DialogDescription>
+            Upload a file to secure credentialing storage, or track the document
+            without a file if it lives elsewhere.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div><Label>Document type</Label><Input value={form.document_type} onChange={(e) => setForm({ ...form, document_type: e.target.value })} placeholder="CAQH attestation, License, W9…" /></div>
-          <div><Label>File name (reference)</Label><Input value={form.file_name} onChange={(e) => setForm({ ...form, file_name: e.target.value })} placeholder="optional" /></div>
+          <div>
+            <Label>File (optional)</Label>
+            <Input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            {file ? (
+              <div className="text-xs text-muted-foreground mt-1">
+                {file.name} · {(file.size / 1024).toFixed(0)} KB
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground mt-1">No file selected — saves as metadata-only.</div>
+            )}
+          </div>
+          {!file ? (
+            <div><Label>File name reference</Label><Input value={form.file_name} onChange={(e) => setForm({ ...form, file_name: e.target.value })} placeholder="optional" /></div>
+          ) : null}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Verification status</Label>
@@ -475,10 +516,11 @@ function AddDocumentDialog({ open, onOpenChange, recordId, providerId, onCreated
             </div>
             <div><Label>Expiration date</Label><Input type="date" value={form.expiration_date} onChange={(e) => setForm({ ...form, expiration_date: e.target.value })} /></div>
           </div>
+          <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : "Track document"}</Button>
+          <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : file ? "Upload" : "Track document"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
