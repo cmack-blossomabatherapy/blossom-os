@@ -218,7 +218,13 @@ export default function OSRecruitingStaffingNeeds() {
 
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
-    /* board-local stage; real recruiting_staffing_needs persistence is wired through dedicated mutations elsewhere */
+    // Persist when this row corresponds to a real recruiting_staffing_needs row.
+    const liveNeed = liveStaffingNeeds.find((n: any) => n.client_id === id || n.id === id);
+    if (liveNeed?.id && /^[0-9a-f-]{36}$/i.test(liveNeed.id)) {
+      if (to === "active")        void mutations.markStaffingNeedWorking(liveNeed.id);
+      else if (to === "confirmed") void mutations.closeStaffingNeed(liveNeed.id, "confirmed");
+      else                         void mutations.updateStaffingNeed(liveNeed.id, { status: to });
+    }
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id);
