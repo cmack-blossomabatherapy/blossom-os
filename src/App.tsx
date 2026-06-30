@@ -267,7 +267,6 @@ import OSAuthWorkspace from "./pages/os/OSAuthWorkspace";
 import OSAuthRiskCenter from "./pages/os/OSAuthRiskCenter";
 import OSSupervisionTracking from "./pages/os/OSSupervisionTracking";
 import OSParentTraining97156 from "./pages/os/OSParentTraining97156";
-import OSSchedulingTeam from "./pages/os/OSSchedulingTeam";
 import OSSchedulingWorkspace from "./pages/os/OSSchedulingWorkspace";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
 import OSRecruitingWorkspace from "./pages/os/OSRecruitingWorkspace";

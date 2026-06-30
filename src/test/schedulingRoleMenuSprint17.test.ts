@@ -8,7 +8,6 @@ const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
 const REQUIRED_PATHS = [
   "/scheduling",
-  "/ops/scheduling",
   "/scheduling-workspace",
   "/scheduling/rbts",
   "/scheduling/bcbas",
@@ -60,13 +59,13 @@ describe("Sprint 17 — OSShell role-specific live paths", () => {
     expect(shell).toMatch(/scheduling_coordinator:\s*new Set/);
     for (const p of [
       "/scheduling",
-      "/ops/scheduling",
       "/scheduling-workspace",
       "/scheduling/rbts",
       "/scheduling/bcbas",
       "/scheduling/resources",
       "/reports/cancellation-command-center",
       "/ops/make-up-sessions",
+      "/reports",
     ]) {
       expect(shell).toContain(`"${p}"`);
     }
@@ -92,11 +91,10 @@ describe("Sprint 17 — App.tsx mounts Scheduling routes", () => {
     expect(app).toContain(`path="${path}"`);
   });
 
-  it("/ops/scheduling is NOT AdminRoute-only", () => {
+  it("/ops/scheduling is a back-compat redirect to /scheduling-workspace", () => {
     const m = app.match(/path="\/ops\/scheduling"[^\n]*/);
     expect(m).toBeTruthy();
-    expect(m![0]).not.toMatch(/<AdminRoute>/);
-    expect(m![0]).toMatch(/PermissionRoute/);
+    expect(m![0]).toMatch(/Navigate to="\/scheduling-workspace/);
   });
 
   it("/ops/make-up-sessions is wrapped in OSShellPage", () => {
