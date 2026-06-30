@@ -1,3 +1,4 @@
+import { runPageStageMove } from "@/lib/recruiting/stageMapping";
 import { useMemo, useState } from "react";
 import {
   Search, X, AlertTriangle, CheckCircle2, Clock, Sparkles,
@@ -189,7 +190,7 @@ export default function OSRecruitingBackgroundChecks() {
 
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
-    if (/^[0-9a-f-]{36}$/i.test(id)) void mutations.moveStage(id, to as unknown as any);
+    void runPageStageMove(mutations, "background", id, to);
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id);

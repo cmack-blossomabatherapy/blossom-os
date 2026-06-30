@@ -215,7 +215,7 @@ export default function OSRecruitingStaffingNeeds() {
 
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
-    if (/^[0-9a-f-]{36}$/i.test(id)) void mutations.moveStage(id, to as unknown as any);
+    /* board-local stage; real recruiting_staffing_needs persistence is wired through dedicated mutations elsewhere */
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id);
