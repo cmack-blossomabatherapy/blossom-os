@@ -1,5 +1,5 @@
 import { runPageStageMove } from "@/lib/recruiting/stageMapping";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Search, X, FileSignature, AlertTriangle, CheckCircle2, Clock, Sparkles,
   Brain, RefreshCw, Send, MessageSquare, UserPlus, Download,
@@ -15,7 +15,8 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingOffers } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingOffers, fullName, type RecruitingOffer } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,35 @@ const STAGES = [
   { key: "staffingReady",  label: "Staffing Ready" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+// Round-trip mapping between recruiting_offers.status and the board's stage keys.
+// Live rows always win over the synthetic classifier when present.
+const OFFER_STATUS_TO_STAGE: Record<string, StageKey> = {
+  Draft: "offerReady",
+  Pending: "offerReady",
+  Sent: "offerSent",
+  Unsigned: "awaitingSig",
+  Accepted: "offerSigned",
+  Signed: "offerSigned",
+  Declined: "offerReady",
+  Withdrawn: "offerReady",
+};
+const STAGE_TO_OFFER_STATUS: Partial<Record<StageKey, string>> = {
+  offerReady: "Draft",
+  offerSent: "Sent",
+  awaitingSig: "Unsigned",
+  offerSigned: "Accepted",
+  viventiumSetup: "Accepted",
+  onboardingStarted: "Accepted",
+  onboardingComplete: "Accepted",
+  bgPending: "Accepted",
+  orientation: "Accepted",
+  staffingReady: "Accepted",
+};
+function offerStatusToStage(status: string | null | undefined, fallback: StageKey): StageKey {
+  if (!status) return fallback;
+  return OFFER_STATUS_TO_STAGE[status] ?? fallback;
+}
 
 function classify(c: RecruitingCandidate): StageKey {
   if (c.readinessStatus === "Ready for Staffing" || c.candidateStatus === "Ready for Staffing") return "staffingReady";
@@ -134,7 +164,33 @@ const HIRING_STEPS = [
 export default function OSRecruitingOffers() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveOffers } = useRecruitingOffers();
+  const { items: liveOffers, loading: liveOffersLoading } = useRecruitingOffers();
+  const { candidates: liveCandidates } = useRecruitingCandidateLookup();
+
+  // Cross-reference live offer rows with live candidate rows so we can match
+  // them back to the synthetic recruiting candidates rendered in this page.
+  const liveOfferByName = useMemo(() => {
+    const candidateNameById = new Map<string, string>();
+    for (const lc of liveCandidates) {
+      candidateNameById.set(lc.id, fullName(lc).toLowerCase());
+    }
+    const m = new Map<string, RecruitingOffer>();
+    for (const o of liveOffers) {
+      const name = candidateNameById.get(o.candidate_id);
+      if (name && !m.has(name)) m.set(name, o);
+    }
+    return m;
+  }, [liveOffers, liveCandidates]);
+  const liveCandidateIdByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const lc of liveCandidates) m.set(fullName(lc).toLowerCase(), lc.id);
+    return m;
+  }, [liveCandidates]);
+  const findLiveOfferFor = useCallback(
+    (c: RecruitingCandidate) => liveOfferByName.get(c.name.toLowerCase()) ?? null,
+    [liveOfferByName],
+  );
+
   const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
     Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
   );
@@ -146,7 +202,13 @@ export default function OSRecruitingOffers() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checks, setChecks] = useState<Record<string, boolean[]>>({});
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => {
+    const override = stageMap[c.id];
+    if (override) return override;
+    const live = findLiveOfferFor(c);
+    if (live) return offerStatusToStage(live.status, classify(c));
+    return classify(c);
+  };
 
   // Only candidates relevant to hiring (post-interview & forward).
   const hiringPool = useMemo(
@@ -221,6 +283,16 @@ export default function OSRecruitingOffers() {
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
     void runPageStageMove(mutations, "offers", id, to);
+    // Persist the offer status directly when the candidate has a live
+    // recruiting_offers row. Stage moves that don't map to an offer status
+    // (e.g. orientation, staffingReady) still fall back to runPageStageMove.
+    const candidate = recruitingCandidates.find((c) => c.id === id);
+    if (!candidate) return;
+    const offer = findLiveOfferFor(candidate);
+    const nextStatus = STAGE_TO_OFFER_STATUS[to];
+    if (offer && nextStatus && offer.status !== nextStatus) {
+      void mutations.updateOffer(offer.id, { status: nextStatus });
+    }
   }
 
   function onDragStart(e: React.DragEvent, id: string) {
@@ -308,6 +380,16 @@ export default function OSRecruitingOffers() {
           ))}
         </div>
 
+        {/* Live vs Suggested pill summary */}
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <Pill tone="info">{liveOffers.length} live offers</Pill>
+          <Pill tone="muted">{Math.max(0, hiringPool.length - liveOfferByName.size)} suggested</Pill>
+          {liveOffersLoading && <span>Loading live offers…</span>}
+          <span className="text-muted-foreground/70">
+            Live rows persist to <code className="text-foreground/80">recruiting_offers</code>; suggested candidates are post-interview leads without an offer record yet.
+          </span>
+        </div>
+
         {/* Main grid */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
           <div className="space-y-8">
@@ -384,6 +466,62 @@ export default function OSRecruitingOffers() {
                 </div>
               )}
             </section>
+
+            {/* Suggested offers — post-interview candidates with no live offer record */}
+            {(() => {
+              const suggested = hiringPool.filter(
+                (c) => !findLiveOfferFor(c) && (stageOf(c) === "offerReady" || stageOf(c) === "offerSent" || stageOf(c) === "awaitingSig"),
+              );
+              if (suggested.length === 0) return null;
+              return (
+                <section>
+                  <SectionHeader
+                    title="Suggested offers"
+                    caption={`${suggested.length} candidate${suggested.length === 1 ? "" : "s"} ready for an offer record in recruiting_offers`}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {suggested.slice(0, 8).map((c) => {
+                      const uuid = liveCandidateIdByName.get(c.name.toLowerCase()) ?? null;
+                      return (
+                        <div key={`sug-offer-${c.id}`} className="rounded-2xl bg-card border border-border/70 p-4">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">{c.name}</div>
+                              <div className="text-[11px] text-muted-foreground truncate">{c.role} · {c.state} · {c.recruiter}</div>
+                            </div>
+                            <Pill tone="muted">Suggested</Pill>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">{c.nextAction}</div>
+                          <div className="flex justify-end mt-3">
+                            <button
+                              disabled={!uuid}
+                              title={uuid ? "Create an offer record and mark as sent" : "No matching candidate record in recruiting_candidates"}
+                              onClick={() => {
+                                if (!uuid) return;
+                                void mutations.sendOfferInternal(uuid, {
+                                  status: "Sent",
+                                  hourly_rate: c.payRate ?? null,
+                                  sent_at: new Date().toISOString(),
+                                  notes: c.interviewNotes || null,
+                                });
+                              }}
+                              className={cn(
+                                "h-8 px-3 rounded-lg text-xs inline-flex items-center gap-1.5 transition",
+                                uuid
+                                  ? "bg-primary text-primary-foreground hover:opacity-90"
+                                  : "bg-muted text-muted-foreground cursor-not-allowed",
+                              )}
+                            >
+                              <Send className="size-3.5" /> Send Offer
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })()}
           </div>
 
           {/* Right rail */}
