@@ -1,5 +1,53 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { LeadSource } from "@/data/leads";
+
+const KNOWN_LEAD_SOURCES: LeadSource[] = [
+  "Website",
+  "Phone",
+  "Facebook",
+  "Referral",
+  "Ads",
+  "Organic",
+  "Digital",
+  "Insurance",
+];
+
+const LEAD_SOURCE_ALIASES: Record<string, LeadSource> = {
+  web: "Website",
+  website: "Website",
+  organic: "Organic",
+  seo: "Organic",
+  google: "Organic",
+  search: "Organic",
+  phone: "Phone",
+  call: "Phone",
+  inbound: "Phone",
+  facebook: "Facebook",
+  fb: "Facebook",
+  meta: "Facebook",
+  instagram: "Facebook",
+  referral: "Referral",
+  referrer: "Referral",
+  partner: "Referral",
+  ads: "Ads",
+  ppc: "Ads",
+  paid: "Ads",
+  "google ads": "Ads",
+  digital: "Digital",
+  email: "Digital",
+  insurance: "Insurance",
+  payer: "Insurance",
+};
+
+/** Coerce an arbitrary string (or null) into a known LeadSource literal. */
+export function normalizeLeadSource(raw: string | null | undefined): LeadSource {
+  if (!raw) return "Referral";
+  const trimmed = raw.trim();
+  if ((KNOWN_LEAD_SOURCES as string[]).includes(trimmed)) return trimmed as LeadSource;
+  const key = trimmed.toLowerCase();
+  return LEAD_SOURCE_ALIASES[key] ?? "Referral";
+}
 
 /**
  * Real-data hook for Marketing surfaces. Replaces the previous reliance on
@@ -13,14 +61,14 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export type MktLead = {
   id: string;
-  source: string;
+  source: LeadSource;
   state: string | null;
   status: string;
   createdAt: string;
 };
 export type MktCandidate = {
   id: string;
-  source: string;
+  source: LeadSource;
   state: string | null;
   role: string;
   stage: string;
@@ -30,7 +78,7 @@ export type MktCandidate = {
 export type MktCall = {
   id: string;
   createdAt: string;
-  source: string;
+  source: LeadSource;
   state: string | null;
   status: string;
 };
@@ -80,7 +128,7 @@ export function useMarketingData(): UseMarketingDataResult {
       setLeads(
         (leadsRes.data ?? []).map((l: any) => ({
           id: l.id,
-          source: l.referral_source ?? "Unknown",
+          source: normalizeLeadSource(l.referral_source),
           state: l.state ?? null,
           status: l.pipeline_stage ?? "Lead Captured",
           createdAt: l.created_at,
@@ -89,7 +137,7 @@ export function useMarketingData(): UseMarketingDataResult {
       setCandidates(
         (candRes.data ?? []).map((c: any) => ({
           id: c.id,
-          source: c.source ?? "Direct",
+          source: normalizeLeadSource(c.source),
           state: (c.state as string) ?? null,
           role: c.role,
           stage: c.pipeline_stage,
@@ -101,7 +149,7 @@ export function useMarketingData(): UseMarketingDataResult {
         (callsRes.data ?? []).map((c: any) => ({
           id: c.id,
           createdAt: c.occurred_at,
-          source: c.source_system ?? "Unknown",
+          source: normalizeLeadSource(c.source_system),
           state: c.state ?? null,
           status: c.status ?? "Unknown",
         })),
