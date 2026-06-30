@@ -13,6 +13,11 @@ import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
+import { useQAWorkflow } from "@/hooks/useQAWorkflow";
+import { toQAWorkItemRef } from "@/lib/os/qa/qaRefs";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 
 // QA → Messages & Updates.
 // Real data only — operational threads derived from live authorization workflows
@@ -303,6 +308,8 @@ function fillTemplate(body: string, t: Thread): string {
 
 export default function OSQAMessages() {
   const { qaItems: items, loading, refresh, sourceById } = useLiveAuthorizations();
+  const wf = useQAWorkflow();
+  const { toast } = useToast();
   const threads = useMemo(() => buildThreads(items), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");
@@ -317,6 +324,39 @@ export default function OSQAMessages() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [composer, setComposer] = useState("");
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
+  const [actionBusy, setActionBusy] = useState<"resolve" | "escalate" | "send" | null>(null);
+
+  // QA Pass 5 — deep links: ?id=/?focus= open thread by auth id; ?bcba= filters; ?client= searches.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const consumedRef = useRef(false);
+  useEffect(() => {
+    if (consumedRef.current || loading || threads.length === 0) return;
+    const idP = searchParams.get("id") ?? searchParams.get("focus");
+    const bcbaP = searchParams.get("bcba");
+    const clientP = searchParams.get("client");
+    if (!idP && !bcbaP && !clientP) { consumedRef.current = true; return; }
+    const missed: string[] = [];
+    if (idP) {
+      const t = threads.find(x => x.auth.id === idP);
+      if (t) setOpenId(t.id); else missed.push(`record ${idP}`);
+    }
+    if (bcbaP) {
+      if (threads.some(x => (x.bcba ?? "").toLowerCase() === bcbaP.toLowerCase())) setBcbaFilter(bcbaP);
+      else { setQuery(bcbaP); missed.push(`BCBA "${bcbaP}"`); }
+    }
+    if (clientP) {
+      setQuery(clientP);
+      const t = threads.find(x => x.client?.toLowerCase() === clientP.toLowerCase());
+      if (t && !idP) setOpenId(t.id);
+    }
+    if (missed.length) {
+      toast({ title: "Deep link partially resolved", description: `Could not locate ${missed.join(", ")}.` });
+    }
+    const next = new URLSearchParams(searchParams);
+    ["id", "focus", "bcba", "client"].forEach(k => next.delete(k));
+    setSearchParams(next, { replace: true });
+    consumedRef.current = true;
+  }, [threads, loading, searchParams, setSearchParams, toast]);
 
   const states = useMemo(() => Array.from(new Set(threads.map(t => t.state).filter(Boolean))).sort(), [threads]);
   const bcbas  = useMemo(() => Array.from(new Set(threads.map(t => t.bcba).filter(Boolean))).sort(), [threads]);
