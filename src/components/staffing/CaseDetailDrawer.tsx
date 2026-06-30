@@ -111,6 +111,10 @@ export function CaseDetailDrawer({ open, onOpenChange, client, onJumpMap, onJump
     });
   };
 
+  // Suggested RBTs preview (top 3) — hook MUST run unconditionally (call before any early return)
+  const suggested = useMemoSuggested(client, clientPrefs);
+  const [proposeRbtId, setProposeRbtId] = useState<string | null>(null);
+
   if (!client) return null;
   const approvedHrs = client.approvedWeeklyHours ?? 0;
   const scheduledHrs = client.scheduledWeeklyHours ?? 0;
@@ -127,8 +131,10 @@ export function CaseDetailDrawer({ open, onOpenChange, client, onJumpMap, onJump
     risks.push("Family preference constraint");
   }
 
-  // Suggested RBTs preview (top 3)
-  const suggested = useMemoSuggested(client, clientPrefs);
+  const openPropose = (rbtId: string | null) => {
+    setProposeRbtId(rbtId);
+    setProposeOpen(true);
+  };
 
   return (
     <>
@@ -163,7 +169,7 @@ export function CaseDetailDrawer({ open, onOpenChange, client, onJumpMap, onJump
           )}
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => setProposeOpen(true)}><UserCheck className="h-3.5 w-3.5 mr-1" /> Propose match</Button>
+            <Button size="sm" onClick={() => openPropose(null)}><UserCheck className="h-3.5 w-3.5 mr-1" /> Propose match</Button>
             <Button size="sm" variant="outline" onClick={() => quickAction("note", "open", "Note added from drawer")}><Plus className="h-3.5 w-3.5 mr-1" /> Add note</Button>
             <Button size="sm" variant="outline" onClick={() => quickAction("blocked", "open", "Case marked blocked")}><Ban className="h-3.5 w-3.5 mr-1" /> Mark blocked</Button>
             <Button size="sm" variant="outline" onClick={() => quickAction("escalation", "open", "Case escalated")}><AlertTriangle className="h-3.5 w-3.5 mr-1" /> Escalate</Button>
@@ -187,7 +193,7 @@ export function CaseDetailDrawer({ open, onOpenChange, client, onJumpMap, onJump
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold">{s.score}</span>
-                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setProposeOpen(true)}>Propose</Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2" disabled={s.blocked} onClick={() => openPropose(s.rbt.id)}>Propose</Button>
                 </div>
               </div>
             ))}
@@ -290,7 +296,8 @@ export function CaseDetailDrawer({ open, onOpenChange, client, onJumpMap, onJump
 
       <ProposeMatchDialog
         open={proposeOpen}
-        onOpenChange={setProposeOpen}
+        onOpenChange={(o) => { setProposeOpen(o); if (!o) setProposeRbtId(null); }}
+        initialRbtId={proposeRbtId}
         caseInfo={{
           id: client.id,
           childName: client.childName,
@@ -309,10 +316,11 @@ export { X };
 /* ------------------------- suggested-RBT helper -------------------------- */
 
 function useMemoSuggested(
-  client: Client,
+  client: Client | null,
   clientPrefs: ReturnType<typeof useStaffingWorkspace>["preferences"],
 ) {
   return useMemo(() => {
+    if (!client) return [];
     const clientPoint: StaffingMapPoint = {
       id: client.id, kind: "client", name: client.childName,
       state: client.state, city: client.clinic ?? null, zip: null,
