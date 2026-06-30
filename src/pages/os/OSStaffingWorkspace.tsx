@@ -28,7 +28,7 @@ import type {
   FamilyPreferenceStatus,
   IntegrationHandoffStatus,
 } from "@/lib/os/staffing/types";
-import { applyPreferenceScoring } from "@/lib/os/staffing/preferenceScoring";
+import { applyPreferenceScoring, type PreferenceScoringResult } from "@/lib/os/staffing/preferenceScoring";
 import { CaseDetailDrawer } from "@/components/staffing/CaseDetailDrawer";
 import { ProposeMatchDialog } from "@/components/staffing/ProposeMatchDialog";
 import type { Client } from "@/data/clients";
@@ -679,8 +679,16 @@ function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
     return Array.from(map.values()).sort((a, b) => b.openHours - a.openHours);
   }, [visibleNeeds, visibleRBTs]);
 
-  const rankedRBTs = useMemo(() => {
-    if (!selectedNeed) return visibleRBTs.map((r) => ({ rbt: r, miles: null as number | null }));
+  type RankedRow = {
+    rbt: (typeof visibleRBTs)[number];
+    miles: number | null;
+    base: number;
+    scored: PreferenceScoringResult | null;
+  };
+  const rankedRBTs = useMemo<RankedRow[]>(() => {
+    if (!selectedNeed) {
+      return visibleRBTs.map((r) => ({ rbt: r, miles: null, base: 0, scored: null }));
+    }
     const clientPoint: StaffingMapPoint = {
       id: selectedNeed.client.id, kind: "client", name: selectedNeed.client.childName,
       state: selectedNeed.client.state, city: selectedNeed.client.clinic ?? null, zip: null,
@@ -701,9 +709,9 @@ function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
           (miles !== null ? Math.max(0, 20 - Math.round(miles / 5)) : 0),
         ));
         const scored = applyPreferenceScoring(base, relevantPrefs, { rbtName: r.name, rbtState: r.state });
-        return { rbt: r, miles, base, scored };
+        return { rbt: r, miles, base, scored } as RankedRow;
       })
-      .sort((a, b) => ("scored" in b ? b.scored.score : 0) - ("scored" in a ? a.scored.score : 0));
+      .sort((a, b) => (b.scored?.score ?? 0) - (a.scored?.score ?? 0));
   }, [selectedNeed, visibleRBTs, relevantPrefs]);
 
   return (
@@ -785,10 +793,8 @@ function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
           </div>
           <div className="space-y-2 max-h-[520px] overflow-y-auto">
             {rankedRBTs.map((row) => {
-              const r = row.rbt;
-              const miles = row.miles;
+              const { rbt: r, miles, scored } = row;
               const remaining = r.capacityHours - r.assignedHours;
-              const scored = "scored" in row ? row.scored : null;
               return (
                 <div
                   key={r.id}
