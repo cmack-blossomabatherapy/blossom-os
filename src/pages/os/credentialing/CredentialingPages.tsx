@@ -825,7 +825,7 @@ function RecordDetailSheet({
               <TabsContent value="documents" className="mt-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-muted-foreground">
-                    Document tracking. File upload to storage is not wired yet — use this list to record what has been collected and verified.
+                    Upload real files to the private credentialing bucket, or keep metadata-only entries for items stored elsewhere.
                   </p>
                   <Button size="sm" variant="outline" onClick={() => setAddDocOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" />Add document</Button>
                 </div>
@@ -837,7 +837,7 @@ function RecordDetailSheet({
                   <div className="overflow-x-auto -mx-2">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-                        <tr>{["Type","File","Status","Expires","Added"].map((h) => (
+                        <tr>{["Type","File","Status","Expires","Added",""].map((h) => (
                           <th key={h} className="text-left font-medium px-3 py-2">{h}</th>
                         ))}</tr>
                       </thead>
@@ -854,6 +854,13 @@ function RecordDetailSheet({
                             </td>
                             <td className="px-3 py-2 text-muted-foreground">{d.expiration_date ?? "—"}</td>
                             <td className="px-3 py-2 text-muted-foreground">{new Date(d.created_at).toLocaleDateString()}</td>
+                            <td className="px-3 py-2 text-right">
+                              {d.storage_path ? (
+                                <Button size="sm" variant="ghost" onClick={() => openCredDocument(d)}>View</Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">metadata-only</span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -928,7 +935,8 @@ function RecordDetailSheet({
               {/* CENTRALREACH */}
               <TabsContent value="cr" className="mt-4 space-y-3 text-sm">
                 <div className="rounded-lg border border-sky-200 bg-sky-50 text-sky-900 text-xs p-3">
-                  API sync not active yet. This is readiness tracking — CentralReach remains the EMR of record.
+                  Readiness tracking only — no live CentralReach API sync is wired up.
+                  Every status or ID change here is written to the activity log below.
                 </div>
                 <Field label="CentralReach provider id" value={provider.centralreach_provider_id} />
                 <Field label="CentralReach record id" value={record.centralreach_external_id} />
@@ -936,6 +944,7 @@ function RecordDetailSheet({
                   <span className="text-xs uppercase tracking-wider text-muted-foreground">Sync status</span>
                   <StatusBadge status={record.centralreach_sync_status} />
                 </div>
+                <Field label="Last record update" value={record.updated_at ? new Date(record.updated_at).toLocaleString() : null} />
                 <div className="flex flex-wrap gap-2 pt-2">
                   <Button size="sm" variant="outline" onClick={() => setCrSync("Ready To Sync")}>Mark Ready To Sync</Button>
                   <Button size="sm" variant="outline" onClick={() => setCrSync("Synced")}>Mark Synced</Button>
