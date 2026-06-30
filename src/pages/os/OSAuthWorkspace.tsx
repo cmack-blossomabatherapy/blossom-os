@@ -158,6 +158,25 @@ function daysUntilISO(iso: string | null): number | null {
   return Math.floor((t - Date.now()) / 86_400_000);
 }
 
+function relTimeShort(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+  const diff = Date.now() - t;
+  const m = Math.floor(diff / 60_000);
+  if (m < 1) return "now";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  return `${d}d`;
+}
+
+function prettyActivityType(t: string | null | undefined): string {
+  if (!t) return "Activity";
+  return t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function liveAuthToCard(a: Authorization): AuthCard {
   const expiresInDays = daysUntilISO(a.expirationDate);
   const stateTone: AuthState =
