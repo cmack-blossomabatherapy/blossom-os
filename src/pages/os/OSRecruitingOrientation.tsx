@@ -444,6 +444,62 @@ export default function OSRecruitingOrientation() {
                 </div>
               )}
             </section>
+
+            {/* Suggested orientations — orientation-ready candidates without a slot */}
+            {(() => {
+              const suggested = pool.filter(
+                (c) => !findLiveOrientFor(c) && (stageOf(c) === "readyForOrientation" || stageOf(c) === "linkSent" || isOrientationReady(c)),
+              );
+              if (suggested.length === 0) return null;
+              const today = new Date().toISOString().slice(0, 10);
+              return (
+                <section>
+                  <SectionHeader
+                    title="Suggested orientations"
+                    caption={`${suggested.length} candidate${suggested.length === 1 ? "" : "s"} ready for a recruiting_orientation_slots record`}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {suggested.slice(0, 8).map((c) => {
+                      const uuid = liveCandidateIdByName.get(c.name.toLowerCase()) ?? null;
+                      return (
+                        <div key={`sug-orient-${c.id}`} className="rounded-2xl bg-card border border-border/70 p-4">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">{c.name}</div>
+                              <div className="text-[11px] text-muted-foreground truncate">{c.role} · {c.state} · {c.recruiter}</div>
+                            </div>
+                            <Pill tone="muted">Suggested</Pill>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">{c.nextAction}</div>
+                          <div className="flex justify-end mt-3">
+                            <button
+                              disabled={!uuid}
+                              title={uuid ? "Create a pending orientation slot" : "No matching candidate record in recruiting_candidates"}
+                              onClick={() => {
+                                if (!uuid) return;
+                                void mutations.upsertOrientationForCandidate(uuid, {
+                                  scheduled_date: today,
+                                  status: "Pending",
+                                  format: "Virtual",
+                                });
+                              }}
+                              className={cn(
+                                "h-8 px-3 rounded-lg text-xs inline-flex items-center gap-1.5 transition",
+                                uuid
+                                  ? "bg-primary text-primary-foreground hover:opacity-90"
+                                  : "bg-muted text-muted-foreground cursor-not-allowed",
+                              )}
+                            >
+                              <CalendarPlus className="size-3.5" /> Schedule Orientation
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })()}
           </div>
 
           {/* Right rail */}
