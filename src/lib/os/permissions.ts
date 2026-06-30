@@ -216,7 +216,7 @@ export const MODULE_ROUTES: Record<OSModule, string> = {
   state_growth: "/marketing/state-growth",
   reputation: "/marketing/reputation",
   community_outreach: "/marketing/outreach",
-  marketing_reports: "/marketing/reports",
+  marketing_reports: "/reports?category=marketing",
   web_analytics: "/marketing/web-analytics",
   call_tracking: "/marketing/call-tracking",
   phone_system: "/phone",
