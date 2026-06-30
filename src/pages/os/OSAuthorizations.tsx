@@ -26,7 +26,7 @@ import {
   type EnsureOverlayInput,
 } from "@/hooks/useAuthorizationActions";
 import type { SavedView } from "@/hooks/useAuthorizationSavedViews";
-import { useAuth } from "@/auth/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function safeNameLabel(value: string | null | undefined, fallback = "Unassigned"): string {
