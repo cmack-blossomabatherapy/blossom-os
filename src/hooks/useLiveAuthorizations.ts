@@ -113,6 +113,11 @@ interface QAOverrideRow {
   escalated: boolean | null;
   escalation_reason: string | null;
   last_action_at: string | null;
+  progress_report_received_at?: string | null;
+  treatment_plan_received_at?: string | null;
+  resolved_at?: string | null;
+  resolved_reason?: string | null;
+  workflow_state?: string | null;
 }
 
 function pickIsoDate(value: unknown): string | null {
