@@ -845,11 +845,14 @@ const App = () => (
                   <Route path="/ops/approved-authorizations" element={<Navigate to="/authorizations?stage=approved" replace />} />
                   <Route path="/ops/denials" element={<Navigate to="/authorizations?stage=denied" replace />} />
                   <Route path="/ops/scheduling" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director", "scheduling", "scheduling_lead", "scheduling_coordinator"]}><SchedulingPhase6Page /></PermissionRoute>} />
-                  <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director", "staffing", "staffing_lead", "staffing_coordinator"]}><StaffingPhase6Page /></PermissionRoute>} />
+                  <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director", "staffing", "staffing_lead", "staffing_coordinator"]}><OSStaffingWorkspace /></PermissionRoute>} />
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
                   <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
                   <Route path="/ops/qa" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_director", "qa_specialist"]}><QAPhase6OpsPage /></PermissionRoute>} />
-                  <Route path="/ops/family-staffing-preferences" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><FamilyStaffingPreferencesPage /></PermissionRoute>} />
+                  <Route path="/ops/family-staffing-preferences" element={<Navigate to="/ops/staffing?tab=preferences" replace />} />
+                  {/* Staffing reports always route through the unified Reports page */}
+                  <Route path="/staffing/reports" element={<Navigate to="/reports" replace />} />
+                  <Route path="/ops/staffing/reports" element={<Navigate to="/reports" replace />} />
                   <Route path="/ops/state-escalations" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director"]}><StateEscalationsPage /></PermissionRoute>} />
                   <Route path="/ops/tasks" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director"]}><OperationalTasksPage /></PermissionRoute>} />
                   {/* Phase 7 — Communications */}
