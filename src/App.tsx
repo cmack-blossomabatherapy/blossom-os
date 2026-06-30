@@ -411,6 +411,7 @@ import OSSettings from "./pages/os/OSSettings";
 import OSWorkforce from "./pages/os/OSWorkforce";
 import OSStaffingQueue from "./pages/os/OSStaffingQueue";
 import OSScheduling from "./pages/os/OSScheduling";
+import OSSchedulingBoard from "./pages/os/OSSchedulingBoard";
 import OSSchedulingResources from "./pages/os/OSSchedulingResources";
 import OSSchedulingRosterRBTs from "./pages/os/OSSchedulingRosterRBTs";
 import OSSchedulingRosterBCBAs from "./pages/os/OSSchedulingRosterBCBAs";
