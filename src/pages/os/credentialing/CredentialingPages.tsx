@@ -986,6 +986,7 @@ export function CredentialingDashboardPage() {
   const { providers, records, providerById, loading, error, reload, tasks, documents } = useCredentialingData();
   const [addProv, setAddProv] = useState(false);
   const [addRec, setAddRec] = useState(false);
+  const [legacyOpen, setLegacyOpen] = useState(false);
   const [openRecord, setOpenRecord] = useState<string | null>(null);
   const [stateFilter, setStateFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -1031,6 +1032,9 @@ export function CredentialingDashboardPage() {
             <Button size="sm" variant="outline" onClick={reload}><RefreshCw className="h-4 w-4 mr-1.5" />Refresh</Button>
             <Button size="sm" variant="outline" onClick={() => exportCsv("credentialing-records.csv", filtered as unknown as Record<string, unknown>[])}>
               <Download className="h-4 w-4 mr-1.5" />Export CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setLegacyOpen(true)}>
+              <Upload className="h-4 w-4 mr-1.5" />Import legacy data
             </Button>
             <Button size="sm" variant="outline" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add provider</Button>
             <Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1.5" />Add credentialing record</Button>
@@ -1109,6 +1113,7 @@ export function CredentialingDashboardPage() {
 
       <AddProviderDialog open={addProv} onOpenChange={setAddProv} onCreated={reload} />
       <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} onCreated={reload} />
+      <LegacyImportDialog open={legacyOpen} onOpenChange={setLegacyOpen} onImported={reload} />
       <RecordDetailSheet
         recordId={openRecord} records={records} providerById={providerById}
         tasks={tasks} documents={documents}
