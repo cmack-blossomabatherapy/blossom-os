@@ -13,7 +13,11 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingFollowups, type RecruitingFollowup } from "@/hooks/useRecruitingCandidates";
+import {
+  useRecruitingFollowups,
+  type RecruitingFollowup,
+  type RecruitingCandidate as DbRecruitingCandidate,
+} from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { cn } from "@/lib/utils";
 
@@ -115,7 +119,7 @@ function lastContactFor(c: RecruitingCandidate): string {
 // Map a live recruiting_followups row into the visual FollowUp view-model.
 function mapLiveFollowupToViewModel(
   row: RecruitingFollowup,
-  findCandidate: (id: string | null | undefined) => RecruitingCandidate | null,
+  findCandidate: (id: string | null | undefined) => DbRecruitingCandidate | null,
   legacyCandidates: RecruitingCandidate[],
 ): FollowUp {
   const liveCand = row.candidate_id ? findCandidate(row.candidate_id) : null;
@@ -125,8 +129,8 @@ function mapLiveFollowupToViewModel(
     ({
       id: row.candidate_id ?? row.id,
       name: liveCand ? `${liveCand.first_name} ${liveCand.last_name}`.trim() : (row.title || "Unknown candidate"),
-      role: (liveCand?.role as any) ?? "RBT",
-      state: (liveCand?.state as any) ?? "GA",
+      role: (liveCand?.role ?? "RBT") as any,
+      state: (liveCand?.state ?? "GA") as any,
       region: liveCand?.city ?? "—",
       recruiter: row.owner ?? liveCand?.recruiter ?? "Unassigned",
       candidateStatus: "New Applicant",
