@@ -472,6 +472,53 @@ export default function OSRecruitingStaffingNeeds() {
                 </div>
               )}
             </section>
+
+            {/* Suggested staffing needs (synthetic demand not yet logged) */}
+            {suggestedNeeds.length > 0 && (
+              <section>
+                <SectionHeader
+                  title="Suggested staffing needs"
+                  caption={`${suggestedNeeds.length} client-demand signal${suggestedNeeds.length === 1 ? "" : "s"} not yet in recruiting_staffing_needs`}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {suggestedNeeds.slice(0, 8).map((n) => {
+                    const role = needRole(n);
+                    return (
+                      <div key={`sug-${n.client.id}`} className="rounded-2xl bg-card border border-border/70 p-4">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium truncate">Client {initials(n.client.childName)} · {n.client.state}</div>
+                            <div className="text-[11px] text-muted-foreground truncate">{n.reason} · {n.daysWaiting}d waiting</div>
+                          </div>
+                          <Pill tone="muted">Suggested</Pill>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          <Pill tone="info">Needs {role}</Pill>
+                          {n.priority === "High" && <Pill tone="crit">Urgent</Pill>}
+                        </div>
+                        <div className="flex justify-end mt-3">
+                          <button
+                            onClick={() => void mutations.createStaffingNeed({
+                              role: role,
+                              role_needed: role,
+                              state: n.client.state,
+                              client_label: n.client.childName,
+                              priority: n.priority,
+                              hours_per_week: n.requiredHours || null,
+                              status: "new",
+                              notes: n.alert ?? n.reason,
+                            } as any)}
+                            className="h-8 px-3 rounded-lg text-xs bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center gap-1.5"
+                          >
+                            <Plus className="size-3.5" /> Create
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </div>
 
           {/* Right rail */}
