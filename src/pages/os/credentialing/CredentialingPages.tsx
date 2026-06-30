@@ -948,6 +948,7 @@ function RecordDetailSheet({
             <AddTaskDialog open={addTaskOpen} onOpenChange={setAddTaskOpen} recordId={record.id} onCreated={onChanged} />
             <AddDocumentDialog open={addDocOpen} onOpenChange={setAddDocOpen} recordId={record.id} providerId={record.provider_id} onCreated={onChanged} />
             <CentralReachIdsDialog open={crIdsOpen} onOpenChange={setCrIdsOpen} record={record} onSaved={onChanged} />
+            <EditRecordDialog open={editOpen} onOpenChange={setEditOpen} record={record} onSaved={onChanged} />
           </>
         ) : null}
       </SheetContent>
