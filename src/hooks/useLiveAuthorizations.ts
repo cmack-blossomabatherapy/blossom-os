@@ -607,5 +607,5 @@ export function useLiveAuthorizations(): LiveAuthorizations {
       sourceById,
       refresh,
     };
-  }, [rows, overlays, reqs, tasks, activity, loading, error]);
+  }, [rows, overlays, reqs, tasks, activity, qaOverrides, loading, error]);
 }
