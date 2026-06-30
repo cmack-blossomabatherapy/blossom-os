@@ -31,7 +31,7 @@ describe("Recruiting Pass 3 — no local-only workflow regressions", () => {
       // (runPageStageMove internally invokes mutations.moveStage / child-table
       // upserts and is the Pass 4 standard pattern).
       expect(body).toMatch(
-        /(mutations\.(moveStage|createFollowup|resolveEscalation|markMessageRead)|runPageStageMove\(mutations)/,
+        /(mutations\.(moveStage|createFollowup|resolveEscalation|markMessageRead|markStaffingNeedWorking|updateStaffingNeed|closeStaffingNeed|linkCandidateToStaffingNeed)|runPageStageMove\(mutations)/,
       );
       // Pass 4 invariants: no unsafe casts of board substage keys onto candidate stages.
       expect(body).not.toMatch(/as unknown as any/);
