@@ -662,8 +662,17 @@ function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; l
           <Button size="sm" variant="outline" onClick={() => void actions.sendToQA(overlay)}>
             <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Send to QA
           </Button>
-          <Button size="sm" variant="outline" onClick={() => void actions.queueExternalSend(overlay, { channel: "email", summary: `Message BCBA ${e.bcba}` })}>
+          <Button
+            size="sm"
+            variant="outline"
+            title="Outbound email/SMS integration is pending — message is logged to the activity feed."
+            onClick={() => {
+              void actions.queueExternalSend(overlay, { channel: "email", summary: `Message BCBA ${e.bcba}` });
+              toast.info("Message queued", { description: "External send integration pending — logged to activity feed." });
+            }}
+          >
             <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message BCBA
+            <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700">Queued</span>
           </Button>
           <Button size="sm" variant="outline" onClick={() => {
             const note = window.prompt("Add a note for this authorization:");
