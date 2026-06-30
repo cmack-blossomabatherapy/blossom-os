@@ -59,10 +59,10 @@ export default function LeadSources() {
     const map = new Map<LeadSource, { recent: number; prior: number }>();
     marketingLeads.forEach((l) => {
       const age = (now - new Date(l.createdAt).getTime()) / 86_400_000;
-      const m = map.get(l.source as LeadSource) ?? { recent: 0, prior: 0 };
+      const m = map.get(l.source) ?? { recent: 0, prior: 0 };
       if (age <= 7) m.recent += 1;
       else if (age <= 14) m.prior += 1;
-      map.set(l.source as LeadSource, m);
+      map.set(l.source, m);
     });
     return mi.bySource.map((s) => {
       const m = map.get(s.source) ?? { recent: 0, prior: 0 };
