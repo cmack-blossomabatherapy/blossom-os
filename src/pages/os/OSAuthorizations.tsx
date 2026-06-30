@@ -617,6 +617,7 @@ function IconAction({ icon: Icon, title, onClick }: { icon: any; title: string; 
 /* ------------------------------ drawer ------------------------------ */
 function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; liveBcba: string | null; onClose: () => void }) {
   const actions = useAuthorizationActions();
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   if (!auth) return null;
   const a = auth;
   const e = enrich(a, liveBcba);
@@ -681,6 +682,22 @@ function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; l
             <AlertTriangle className="mr-1.5 h-3.5 w-3.5" /> Escalate
           </Button>
         </div>
+
+        <AuthPromptDialog
+          open={noteDialogOpen}
+          title="Add note"
+          description={`Add a note to ${a.clientName}'s authorization activity timeline.`}
+          label="Note"
+          multiline
+          placeholder="What happened? Who did what?"
+          submitLabel="Add note"
+          pending={actions.pending}
+          onCancel={() => setNoteDialogOpen(false)}
+          onSubmit={async (val) => {
+            await actions.addNote(overlay, val).catch(() => undefined);
+            setNoteDialogOpen(false);
+          }}
+        />
 
         <div className="p-6 space-y-7">
           {/* 1 — Auth summary */}
