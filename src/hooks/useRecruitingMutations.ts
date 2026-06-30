@@ -229,6 +229,12 @@ export function useRecruitingMutations() {
     if (res) await logActivity(candidateId, "recruiting_followups", null, "followup_created", null, data.title);
     return res;
   }, [logActivity]);
+  const updateFollowup = useCallback(async (id: string, patch: Record<string, unknown>) => {
+    const res = await wrap("Update follow-up", supabase.from("recruiting_followups")
+      .update(patch as any).eq("id", id));
+    if (res) await logActivity(null, "recruiting_followups", id, "followup_updated", null, (patch?.status as string) ?? null, patch);
+    return res;
+  }, [logActivity]);
 
   // ---- Escalations ----
   const resolveEscalation = useCallback(async (id: string, notes?: string) => {
@@ -307,7 +313,7 @@ export function useRecruitingMutations() {
     setOnboardingTask,
     createOnboardingTask, ensureDefaultOnboardingTasks,
     resolveFollowup, snoozeFollowup,
-    createFollowup,
+    createFollowup, updateFollowup,
     resolveEscalation,
     createEscalation,
     logMessage,

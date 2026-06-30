@@ -13,11 +13,13 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingFollowups } from "@/hooks/useRecruitingCandidates";
+import {
+  useRecruitingFollowups,
+  type RecruitingFollowup,
+  type RecruitingCandidate as DbRecruitingCandidate,
+} from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
-import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { cn } from "@/lib/utils";
-import { useWorkflowStages } from "@/hooks/useWorkflowStages";
 
 // Recruiting → Staffing & Operations → Hiring Follow-Ups
 
@@ -34,6 +36,41 @@ const STAGES = [
   { key: "completed",    label: "Completed" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+// Status values written into recruiting_followups.status for each board stage.
+const STAGE_TO_STATUS: Record<StageKey, string> = {
+  new: "Open",
+  waiting: "Waiting",
+  action: "Action",
+  onboarding: "Onboarding",
+  orientation: "Orientation",
+  staffing: "Staffing",
+  escalated: "Escalated",
+  completed: "Done",
+};
+
+function stageFromStatus(status: string | null | undefined): StageKey {
+  switch ((status ?? "").toLowerCase()) {
+    case "done":
+    case "completed":
+    case "resolved":
+      return "completed";
+    case "waiting":
+      return "waiting";
+    case "action":
+      return "action";
+    case "onboarding":
+      return "onboarding";
+    case "orientation":
+      return "orientation";
+    case "staffing":
+      return "staffing";
+    case "escalated":
+      return "escalated";
+    default:
+      return "new";
+  }
+}
 
 type FollowUpType =
   | "Interview no-show"
@@ -62,6 +99,7 @@ type FollowUp = {
   stage: StageKey;
   nextAction: string;
   staffingImpact: boolean;
+  isLive?: boolean;
 };
 
 function urgencyFor(c: RecruitingCandidate): "High" | "Medium" | "Low" {
@@ -76,6 +114,64 @@ function lastContactFor(c: RecruitingCandidate): string {
   if (d <= 1) return "yesterday";
   if (d < 7) return `${d}d ago`;
   return `${Math.floor(d / 7)}w ago`;
+}
+
+// Map a live recruiting_followups row into the visual FollowUp view-model.
+function mapLiveFollowupToViewModel(
+  row: RecruitingFollowup,
+  findCandidate: (id: string | null | undefined) => DbRecruitingCandidate | null,
+  legacyCandidates: RecruitingCandidate[],
+): FollowUp {
+  const liveCand = row.candidate_id ? findCandidate(row.candidate_id) : null;
+  // Fall back to a legacy candidate shell so the UI keeps rendering name/state/region.
+  const fallback: RecruitingCandidate =
+    legacyCandidates.find((c) => c.id === row.candidate_id) ??
+    ({
+      id: row.candidate_id ?? row.id,
+      name: liveCand ? `${liveCand.first_name} ${liveCand.last_name}`.trim() : (row.title || "Unknown candidate"),
+      role: (liveCand?.role ?? "RBT") as any,
+      state: (liveCand?.state ?? "GA") as any,
+      region: liveCand?.city ?? "—",
+      recruiter: row.owner ?? liveCand?.recruiter ?? "Unassigned",
+      candidateStatus: "New Applicant",
+      readinessStatus: "Active",
+      daysInStage: 0,
+      nextAction: row.title,
+      interviewStatus: "Not Scheduled",
+      offerStatus: "None",
+      backgroundCheck: "Not Started",
+      orientation: "Not Scheduled",
+      onboardingStatus: "Pending",
+      followUps: row.notes ? [row.notes] : [],
+    } as unknown as RecruitingCandidate);
+
+  const stage = stageFromStatus(row.status);
+  const dueMs = row.due_date ? new Date(row.due_date).getTime() : NaN;
+  const daysOverdue = Number.isFinite(dueMs)
+    ? Math.max(0, Math.floor((Date.now() - dueMs) / (1000 * 60 * 60 * 24)))
+    : 0;
+  const urgency: FollowUp["urgency"] = daysOverdue >= 5 ? "High" : daysOverdue >= 2 ? "Medium" : "Low";
+  const type = ((row.category as FollowUpType) || "Candidate no response") as FollowUpType;
+  const staffingImpact = /staff/i.test(row.category ?? row.title);
+
+  return {
+    id: row.id,
+    candidateId: row.candidate_id ?? row.id,
+    candidate: fallback,
+    type,
+    reason: row.notes ?? row.title,
+    recruiter: row.owner ?? fallback.recruiter ?? "Unassigned",
+    state: fallback.state,
+    daysOverdue,
+    lastContact: row.completed_at
+      ? new Date(row.completed_at).toLocaleDateString()
+      : row.due_date ?? "—",
+    urgency,
+    stage,
+    nextAction: row.title,
+    staffingImpact,
+    isLive: true,
+  };
 }
 
 function buildSuggestedFollowUps(candidates: RecruitingCandidate[]): FollowUp[] {
@@ -178,24 +274,34 @@ export default function OSRecruitingFollowUps() {
   const mutations = useRecruitingMutations();
   const { items: liveFollowups, loading: liveFollowupsLoading } = useRecruitingFollowups();
   const { find: findCandidate } = useRecruitingCandidateLookup();
-  const baseFollowUps = useMemo(() => buildSuggestedFollowUps(recruitingCandidates), [recruitingCandidates]);
 
-  const defaults = useMemo(() => {
-    const m: Record<string, StageKey> = {};
-    baseFollowUps.forEach((f) => { m[f.id] = f.stage; });
-    return m;
-  }, [baseFollowUps]);
-  const { stageMap, moveStage: persistStage } = useWorkflowStages("follow-ups", defaults);
+  // Active board = mapped rows from recruiting_followups. Source of truth.
+  const baseFollowUps = useMemo<FollowUp[]>(
+    () => liveFollowups.map((row) => mapLiveFollowupToViewModel(row, findCandidate, recruitingCandidates)),
+    [liveFollowups, findCandidate, recruitingCandidates],
+  );
+
+  // Suggested = candidate-derived items NOT yet represented by a live row for that candidate.
+  const suggestedFollowUps = useMemo<FollowUp[]>(() => {
+    const liveCandidateIds = new Set(
+      liveFollowups.map((r) => r.candidate_id).filter((x): x is string => Boolean(x)),
+    );
+    return buildSuggestedFollowUps(recruitingCandidates).filter(
+      (s) => !liveCandidateIds.has(s.candidateId),
+    );
+  }, [liveFollowups, recruitingCandidates]);
+
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
   const [recruiterF, setRecruiterF] = useState("all");
   const [urgencyF, setUrgencyF] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creatingId, setCreatingId] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiQ, setAiQ] = useState("");
 
-  const stageOf = (f: FollowUp): StageKey => stageMap[f.id] ?? f.stage;
+  const stageOf = (f: FollowUp): StageKey => f.stage;
 
   const filtered = useMemo(() => {
     return baseFollowUps.filter((f) => {
@@ -222,7 +328,7 @@ export default function OSRecruitingFollowUps() {
         default:            return true;
       }
     });
-  }, [baseFollowUps, stageMap, activeChip, search, stateF, recruiterF, urgencyF]);
+  }, [baseFollowUps, activeChip, search, stateF, recruiterF, urgencyF]);
 
   const summary = useMemo(() => {
     const has = (pred: (f: FollowUp) => boolean) => baseFollowUps.filter(pred).length;
@@ -236,8 +342,7 @@ export default function OSRecruitingFollowUps() {
       staffing:        has((f) => stageOf(f) === "staffing" || f.staffingImpact),
       escalated:       has((f) => stageOf(f) === "escalated"),
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseFollowUps, stageMap]);
+  }, [baseFollowUps]);
 
   const grouped = useMemo(() => {
     const g: Record<StageKey, FollowUp[]> = {
@@ -246,7 +351,7 @@ export default function OSRecruitingFollowUps() {
     filtered.forEach((f) => { g[stageOf(f)].push(f); });
     Object.values(g).forEach((arr) => arr.sort((a, b) => b.daysOverdue - a.daysOverdue));
     return g;
-  }, [filtered, stageMap]);
+  }, [filtered]);
 
   const overdueQueue = useMemo(
     () => filtered.filter((f) => f.daysOverdue >= 3 || f.urgency === "High").sort((a, b) => b.daysOverdue - a.daysOverdue).slice(0, 10),
@@ -255,7 +360,7 @@ export default function OSRecruitingFollowUps() {
 
   const staffingDelays = useMemo(
     () => filtered.filter((f) => f.staffingImpact || stageOf(f) === "staffing").sort((a, b) => b.daysOverdue - a.daysOverdue).slice(0, 8),
-    [filtered, stageMap]
+    [filtered]
   );
 
   const recruiterRows = useMemo(() => {
@@ -270,8 +375,7 @@ export default function OSRecruitingFollowUps() {
         completed: owned.filter((f) => stageOf(f) === "completed").length,
       };
     }).filter((r) => r.active + r.completed > 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseFollowUps, stageMap]);
+  }, [baseFollowUps]);
 
   const activityFeed = useMemo(() => {
     return filtered.slice(0, 12).map((f) => ({
@@ -287,10 +391,33 @@ export default function OSRecruitingFollowUps() {
   const selected = selectedId ? baseFollowUps.find((f) => f.id === selectedId) ?? null : null;
 
   function moveStage(id: string, to: StageKey) {
-    const item = baseFollowUps.find((f) => f.id === id);
-    persistStage(id, to, item?.candidate.id);
-    if (item && /^[0-9a-f-]{36}$/i.test(item.candidate.id)) void mutations.createFollowup(item.candidate.id, { title: `Stage \u2192 ${to}` });
+    // id is the live recruiting_followups.id since baseFollowUps now maps live rows.
+    if (to === "completed") {
+      void mutations.resolveFollowup(id);
+      return;
+    }
+    void mutations.updateFollowup(id, { status: STAGE_TO_STATUS[to] });
   }
+
+  async function createFromSuggestion(s: FollowUp) {
+    const cid = s.candidate.id;
+    if (!/^[0-9a-f-]{36}$/i.test(cid)) {
+      return;
+    }
+    setCreatingId(s.id);
+    try {
+      await mutations.createFollowup(cid, {
+        title: s.type,
+        category: s.type,
+        owner: s.recruiter,
+        status: STAGE_TO_STATUS[s.stage] ?? "Open",
+        notes: s.reason,
+      });
+    } finally {
+      setCreatingId(null);
+    }
+  }
+
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move";
   }
@@ -359,46 +486,14 @@ export default function OSRecruitingFollowUps() {
         </section>
 
         {/* Filter chips */}
-        <LiveRecruitingSection
-          title="Live follow-ups"
-          subtitle="Primary source — rows from recruiting_followups"
-          tableName="recruiting_followups"
-          items={liveFollowups}
-          loading={liveFollowupsLoading}
-          emptyTitle="No live follow-ups on file"
-          emptyBody="When a recruiter logs a follow-up to recruiting_followups, it will render here. The board below shows candidate-derived suggestions."
-          renderRow={(row: any) => {
-            const cand = row.candidate_id ? findCandidate(row.candidate_id) : null;
-            const candName = cand ? `${cand.first_name} ${cand.last_name}`.trim() : (row.title ?? "Follow-up");
-            const isDone = row.status === "Done";
-            const overdue = row.due_date && new Date(row.due_date).getTime() < Date.now() && !isDone;
-            const tone = isDone ? "ok" : overdue ? "crit" : "info";
-            return (
-              <LiveRowCard
-                title={candName}
-                meta={[row.title, row.owner ?? "Unassigned", row.due_date ? `Due ${new Date(row.due_date).toLocaleDateString()}` : null, `Status: ${row.status}`].filter(Boolean).join(" · ")}
-                tone={tone}
-                badges={
-                  <>
-                    {row.category && <Pill tone="info">{row.category}</Pill>}
-                    {overdue && <Pill tone="crit">Overdue</Pill>}
-                    {isDone && <Pill tone="ok">Done</Pill>}
-                  </>
-                }
-                actions={
-                  !isDone && (
-                    <button
-                      onClick={() => void mutations.resolveFollowup(row.id)}
-                      className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition inline-flex items-center gap-1"
-                    >
-                      <CheckCircle2 className="size-3" /> Resolve
-                    </button>
-                  )
-                }
-              />
-            );
-          }}
-        />
+        {liveFollowupsLoading && (
+          <div className="text-xs text-muted-foreground">Loading live follow-ups…</div>
+        )}
+        {!liveFollowupsLoading && baseFollowUps.length === 0 && suggestedFollowUps.length > 0 && (
+          <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 p-4 text-sm text-muted-foreground">
+            No live follow-ups yet. Use the <span className="font-medium text-foreground">Suggested Follow-Ups</span> section below to create one from a candidate signal.
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           {CHIPS.map((c) => (
@@ -561,6 +656,47 @@ export default function OSRecruitingFollowUps() {
           <QA icon={Calendar} label="Resend orientation link" />
           <QA icon={UserPlus} label="Assign recruiter" />
           <QA icon={Download} label="Export queue" />
+        </section>
+
+        {/* Suggested Follow-Ups (candidate-derived, not yet in recruiting_followups) */}
+        <section className="rounded-2xl bg-card border border-border/70 p-4 space-y-3">
+          <header className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold">Suggested Follow-Ups</h2>
+              <p className="text-xs text-muted-foreground">
+                Candidate-derived signals. Click <span className="font-medium text-foreground">Create</span> to add to recruiting_followups.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground">{suggestedFollowUps.length} suggested</span>
+          </header>
+          {suggestedFollowUps.length === 0 ? (
+            <div className="text-xs text-muted-foreground">No suggestions right now.</div>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {suggestedFollowUps.slice(0, 12).map((s) => {
+                const canCreate = /^[0-9a-f-]{36}$/i.test(s.candidate.id);
+                const isCreating = creatingId === s.id;
+                return (
+                  <li key={s.id} className="flex items-center justify-between py-2 gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{s.candidate.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {s.type} · {s.recruiter} · {s.state} · {s.reason}
+                      </div>
+                    </div>
+                    <button
+                      disabled={!canCreate || isCreating}
+                      onClick={() => void createFromSuggestion(s)}
+                      className="h-8 px-3 rounded-lg text-xs bg-primary text-primary-foreground hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                      title={canCreate ? "Create follow-up" : "Candidate not in live table yet"}
+                    >
+                      <Plus className="size-3" /> {isCreating ? "Creating…" : "Create"}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
 
         {/* AI floating */}
