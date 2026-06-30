@@ -226,10 +226,12 @@ function AddProviderDialog({ open, onOpenChange, onCreated }: {
 /* Add / edit Credentialing Record dialog                                     */
 /* -------------------------------------------------------------------------- */
 function AddRecordDialog({
-  open, onOpenChange, providers, defaultProviderId, onCreated,
+  open, onOpenChange, providers, defaultProviderId, defaultProviderType, onCreated,
 }: {
   open: boolean; onOpenChange: (v: boolean) => void;
-  providers: CredentialingProvider[]; defaultProviderId?: string;
+  providers: CredentialingProvider[];
+  defaultProviderId?: string;
+  defaultProviderType?: CredProviderType;
   onCreated: () => void;
 }) {
   const [form, setForm] = useState({
@@ -238,9 +240,30 @@ function AddRecordDialog({
     credentialing_type: "Initial" as CredType, status: "Not Started" as CredStatus,
     priority: "Normal" as CredPriority, payer_reference_number: "",
     submitted_date: "", expiration_date: "", next_follow_up_date: "",
-    blocker_reason: "", notes: "",
+    blocker_reason: "", notes: "", owner_name: "",
   });
   const [saving, setSaving] = useState(false);
+
+  // Keep provider in sync with the caller when the dialog re-opens for a
+  // different provider. Without this the form retains stale provider state.
+  useEffect(() => {
+    if (!open) return;
+    setForm((f) => ({
+      ...f,
+      provider_id: defaultProviderId ?? f.provider_id,
+    }));
+  }, [open, defaultProviderId]);
+
+  // Prefer BCBA-typed providers when the caller has signalled that intent
+  // (e.g. "Add BCBA" flow). Used only to pick a sensible default in an
+  // empty form.
+  useEffect(() => {
+    if (!open || form.provider_id) return;
+    if (defaultProviderType) {
+      const first = providers.find((p) => p.provider_type === defaultProviderType);
+      if (first) setForm((f) => ({ ...f, provider_id: first.id }));
+    }
+  }, [open, defaultProviderType, providers, form.provider_id]);
 
   async function submit() {
     if (!form.provider_id) { toast.error("Select a provider"); return; }
@@ -261,6 +284,7 @@ function AddRecordDialog({
         next_follow_up_date: form.next_follow_up_date || null,
         blocker_reason: form.blocker_reason || null,
         notes: form.notes || null,
+        owner_name: form.owner_name || null,
         centralreach_sync_status: "Not Connected",
       });
       toast.success("Credentialing record created");
@@ -322,6 +346,7 @@ function AddRecordDialog({
           <div><Label>Submitted date</Label><Input type="date" value={form.submitted_date} onChange={(e) => setForm({ ...form, submitted_date: e.target.value })} /></div>
           <div><Label>Expiration date</Label><Input type="date" value={form.expiration_date} onChange={(e) => setForm({ ...form, expiration_date: e.target.value })} /></div>
           <div><Label>Next follow-up</Label><Input type="date" value={form.next_follow_up_date} onChange={(e) => setForm({ ...form, next_follow_up_date: e.target.value })} /></div>
+          <div><Label>Owner</Label><Input value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} placeholder="Person responsible" /></div>
           <div className="col-span-2"><Label>Blocker reason</Label><Input value={form.blocker_reason} onChange={(e) => setForm({ ...form, blocker_reason: e.target.value })} /></div>
           <div className="col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
         </div>
