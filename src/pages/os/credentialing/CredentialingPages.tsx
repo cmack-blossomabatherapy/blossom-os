@@ -1407,7 +1407,7 @@ export function UncredentialedBCBAsPage() {
                       <td className="px-3 py-2.5 text-muted-foreground">{g.state ?? "—"}</td>
                       <td className="px-3 py-2.5">{missingList}</td>
                       <td className="px-3 py-2.5 text-red-700">{blocker}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground">—</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{g.missingPayerRecs[0]?.owner_name ?? g.blocked[0]?.owner_name ?? "—"}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">Create credentialing record</td>
                       <td className="px-3 py-2.5 text-right">
                         <Button size="sm" variant="outline" onClick={() => { setDefaultProv(g.provider.id); setAddRec(true); }}>
@@ -1497,7 +1497,7 @@ export function ExpiringCredentialsPage() {
                       <td className="px-3 py-2.5">{r.expiration_date}</td>
                       <td className={cn("px-3 py-2.5 font-medium", d <= 15 ? "text-red-700" : d <= 30 ? "text-amber-700" : "text-muted-foreground")}>{d}d</td>
                       <td className="px-3 py-2.5"><StatusBadge status={r.status} /></td>
-                      <td className="px-3 py-2.5 text-muted-foreground">—</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{r.owner_name ?? "—"}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{r.next_follow_up_date ?? "—"}</td>
                       <td className="px-3 py-2.5 text-right"><Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setOpenRecord(r.id); }}>Open</Button></td>
                     </tr>
