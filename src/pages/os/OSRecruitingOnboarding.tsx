@@ -391,6 +391,16 @@ export default function OSRecruitingOnboarding() {
           ))}
         </div>
 
+        {/* Live vs Suggested pill summary */}
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <Pill tone="info">{liveOnboardingByName.size} live</Pill>
+          <Pill tone="muted">{Math.max(0, pool.length - liveOnboardingByName.size)} suggested</Pill>
+          {liveOnboardingLoading && <span>Loading live onboarding tasks…</span>}
+          <span className="text-muted-foreground/70">
+            Live rows persist to <code className="text-foreground/80">recruiting_onboarding_tasks</code>; suggested rows are accepted-offer candidates without a task list yet.
+          </span>
+        </div>
+
         {/* Main grid */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
           <div className="space-y-8">
