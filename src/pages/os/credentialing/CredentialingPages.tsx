@@ -485,7 +485,22 @@ function CentralReachIdsDialog({ open, onOpenChange, record, onSaved }: {
   async function submit() {
     setSaving(true);
     try {
-      await updateCredRecord(record.id, { centralreach_external_id: externalId || null }, `CentralReach record id updated to ${externalId || "(cleared)"}`);
+      const oldId = record.centralreach_external_id ?? "";
+      const newId = externalId.trim();
+      if (oldId === newId) {
+        onOpenChange(false);
+        return;
+      }
+      await updateCredRecord(
+        record.id,
+        { centralreach_external_id: newId || null },
+        {
+          type: "cr_id_change",
+          message: `CentralReach record id: ${oldId || "(empty)"} → ${newId || "(cleared)"}`,
+          old: oldId || null,
+          new: newId || null,
+        },
+      );
       toast.success("CentralReach IDs updated");
       onSaved();
       onOpenChange(false);
