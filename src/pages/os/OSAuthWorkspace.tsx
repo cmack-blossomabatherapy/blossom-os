@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import type { Authorization } from "@/data/authorizations";
 import {
@@ -8,7 +8,7 @@ import {
   FileText, ClipboardCheck, FileWarning, ShieldAlert, AlertTriangle,
   CheckCircle2, Send, FileSignature, Flame, Brain, MapPin, ListFilter,
   Stamp, ArrowUpRight, BadgeCheck, BookOpen, Activity, UserCog, MessageSquare,
-  Star, Eye, Users, Workflow, RefreshCw,
+  Eye, Users, Workflow, RefreshCw,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -309,7 +309,10 @@ function StatusChip({ tone, children }: { tone: Tone; children: React.ReactNode 
 
 export default function OSAuthWorkspace() {
   const [activeQueue, setActiveQueue] = useState<QueueKey>("attention");
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [openId, setOpenId] = useState<string | null>(
+    () => searchParams.get("authId") ?? searchParams.get("overlayId"),
+  );
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [newAuthOpen, setNewAuthOpen] = useState(false);
@@ -317,6 +320,38 @@ export default function OSAuthWorkspace() {
 
   const live = useLiveAuthorizations();
   const { items: liveItems, loading, error, refresh } = live;
+
+  // Resolve incoming deep-link id (overlay id OR visible auth id) to the
+  // canonical visible auth id.
+  const resolveAuthId = (id: string | null): string | null => {
+    if (!id) return null;
+    if (liveItems.some((x) => x.id === id)) return id;
+    for (const [publicId, overlayId] of live.overlayIdByAuthId.entries()) {
+      if (overlayId === id) return publicId;
+    }
+    return id;
+  };
+
+  useEffect(() => {
+    const raw = searchParams.get("authId") ?? searchParams.get("overlayId");
+    if (raw) setOpenId(resolveAuthId(raw));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, liveItems.length, live.overlayIdByAuthId.size]);
+
+  // Working filter state — replaces the previously decorative chips.
+  type WSFilters = {
+    state: string | null;
+    risk: "High" | "Medium" | "Low" | null;
+    expiring: "past_due" | "0_14" | "15_30" | "31_60" | "61_90" | "none" | null;
+    pr: "needs" | "overdue" | "ok" | null;
+    qa: "needs" | "in_review" | "complete" | "not_started" | null;
+    assigned: string | null;
+  };
+  const [wsFilters, setWsFilters] = useState<WSFilters>({
+    state: null, risk: null, expiring: null, pr: null, qa: null, assigned: null,
+  });
+  const clearFilter = <K extends keyof WSFilters>(k: K) => setWsFilters((f) => ({ ...f, [k]: null }));
+  const clearAllFilters = () => setWsFilters({ state: null, risk: null, expiring: null, pr: null, qa: null, assigned: null });
 
   // Live recent activity for the right rail.
   type RailActivity = { id: string; who: string; what: string; when: string };
@@ -345,6 +380,8 @@ export default function OSAuthWorkspace() {
   // Prompt-dialog state (replaces window.prompt)
   const [promptKind, setPromptKind] = useState<null | "assign" | "status" | "note">(null);
   const [noteForId, setNoteForId] = useState<string | null>(null);
+  const [drawerNote, setDrawerNote] = useState("");
+  const [drawerNoteError, setDrawerNoteError] = useState<string | null>(null);
 
   const AUTHS: AuthCard[] = useMemo(() => {
     if (loading || error) return [];
@@ -382,13 +419,56 @@ export default function OSAuthWorkspace() {
     const q = search.trim().toLowerCase();
     return AUTHS.filter((a) => {
       if (activeQueue !== "all" && !a.queues.includes(activeQueue)) return false;
+      // Working filters
+      if (wsFilters.state && a.state !== wsFilters.state) return false;
+      if (wsFilters.risk) {
+        const map: Record<string, "High" | "Medium" | "Low"> = { crit: "High", warn: "Medium", info: "Low", ok: "Low", neutral: "Low" };
+        if (map[a.risk] !== wsFilters.risk) return false;
+      }
+      if (wsFilters.expiring) {
+        const d = a.expiresInDays;
+        const bucket = d == null ? "none"
+          : d < 0 ? "past_due"
+          : d <= 14 ? "0_14"
+          : d <= 30 ? "15_30"
+          : d <= 60 ? "31_60"
+          : d <= 90 ? "61_90"
+          : null;
+        if (bucket !== wsFilters.expiring) return false;
+      }
+      if (wsFilters.pr) {
+        const t = a.prStatus.tone;
+        const want = wsFilters.pr;
+        if (want === "ok" && t !== "ok") return false;
+        if (want === "needs" && t !== "warn") return false;
+        if (want === "overdue" && t !== "crit") return false;
+      }
+      if (wsFilters.qa) {
+        const label = (a.qaStatus.label || "").toLowerCase();
+        if (wsFilters.qa === "needs" && !label.includes("not started") && !label.includes("needs")) return false;
+        if (wsFilters.qa === "in_review" && !label.includes("review")) return false;
+        if (wsFilters.qa === "complete" && !label.includes("complete")) return false;
+        if (wsFilters.qa === "not_started" && !label.includes("not started")) return false;
+      }
+      if (wsFilters.assigned && a.coordinator !== wsFilters.assigned) return false;
       if (!q) return true;
       return [a.client, a.payer, a.id, a.bcba, a.coordinator, a.state, a.authType]
         .some((s) => s.toLowerCase().includes(q));
     });
-  }, [activeQueue, search, AUTHS]);
+  }, [activeQueue, search, AUTHS, wsFilters]);
+
+  // Reset selection when filters change.
+  useEffect(() => { setSelected(new Set()); }, [wsFilters]);
+
+  // Distinct values for filter dropdowns.
+  const filterOptions = useMemo(() => ({
+    states: Array.from(new Set(AUTHS.map((a) => a.state).filter(Boolean))).sort(),
+    assignees: Array.from(new Set(AUTHS.map((a) => a.coordinator).filter((c) => c && c !== "Unassigned"))).sort(),
+  }), [AUTHS]);
 
   const openAuth = visible.find((a) => a.id === openId) ?? null;
+  // Get the underlying live Authorization (for real timeline / activity).
+  const openLiveAuth = openAuth ? liveItems.find((x) => x.id === openAuth.id) ?? null : null;
 
   const toggleSel = (id: string) =>
     setSelected((prev) => {
@@ -443,9 +523,10 @@ export default function OSAuthWorkspace() {
   };
 
   const applySavedView = (v: SavedView) => {
-    const cfg = v.config as { activeQueue?: QueueKey; search?: string };
+    const cfg = v.config as { activeQueue?: QueueKey; search?: string; wsFilters?: WSFilters };
     if (cfg.activeQueue) setActiveQueue(cfg.activeQueue);
     if (typeof cfg.search === "string") setSearch(cfg.search);
+    if (cfg.wsFilters) setWsFilters(cfg.wsFilters);
     setSelected(new Set());
   };
 
@@ -486,7 +567,7 @@ export default function OSAuthWorkspace() {
           </button>
           <SavedViewsMenu
             scope="auth_workspace"
-            currentConfig={{ activeQueue, search }}
+            currentConfig={{ activeQueue, search, wsFilters }}
             onApply={applySavedView}
           />
           <button className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/70 bg-white/70 px-3 text-[12.5px] font-semibold text-foreground/85 transition hover:text-foreground">
@@ -512,13 +593,16 @@ export default function OSAuthWorkspace() {
           <span>
             {error ? `Live data error: ${error}` :
              loading ? "Loading live authorizations…" :
-             "No imported authorizations yet — showing sample queue layout."}
+             "No live authorizations found yet. Import Monday authorizations, create a manual authorization, or connect CentralReach when ready."}
           </span>
           <Link to="/authorizations" className="font-semibold hover:underline">
             Open Authorizations workspace →
           </Link>
         </div>
       )}
+
+      {/* Subnav — relate the canonical daily dashboard and focused queue */}
+      <AuthSubnav active="focused" />
 
       {/* THREE-ZONE LAYOUT */}
       <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
@@ -568,15 +652,15 @@ export default function OSAuthWorkspace() {
               <h2 className="text-[16px] font-semibold tracking-tight">{activeMeta.label}</h2>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
-              <FilterChip icon={MapPin}        label="State" />
-              <FilterChip icon={AlertTriangle} label="Risk" />
-              <FilterChip icon={CalendarClock} label="Expiring" />
-              <FilterChip icon={FileText}      label="PR" />
-              <FilterChip icon={ClipboardCheck}label="QA" />
-              <FilterChip icon={UserCog}       label="Assigned" />
-              <button className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-foreground/[0.05] hover:text-foreground" aria-label="More filters">
-                <ListFilter className="h-3.5 w-3.5" />
-              </button>
+              <FilterDropdown icon={MapPin} label="State" value={wsFilters.state} options={filterOptions.states.map((s) => ({ value: s, label: s }))} onChange={(v) => setWsFilters((f) => ({ ...f, state: v }))} />
+              <FilterDropdown icon={AlertTriangle} label="Risk" value={wsFilters.risk} options={[{ value: "High", label: "High" }, { value: "Medium", label: "Medium" }, { value: "Low", label: "Low" }]} onChange={(v) => setWsFilters((f) => ({ ...f, risk: v as WSFilters["risk"] }))} />
+              <FilterDropdown icon={CalendarClock} label="Expiring" value={wsFilters.expiring} options={[{ value: "past_due", label: "Past due" }, { value: "0_14", label: "0–14 days" }, { value: "15_30", label: "15–30 days" }, { value: "31_60", label: "31–60 days" }, { value: "61_90", label: "61–90 days" }, { value: "none", label: "No expiration" }]} onChange={(v) => setWsFilters((f) => ({ ...f, expiring: v as WSFilters["expiring"] }))} />
+              <FilterDropdown icon={FileText} label="PR" value={wsFilters.pr} options={[{ value: "needs", label: "Needs PR" }, { value: "overdue", label: "PR overdue" }, { value: "ok", label: "PR OK" }]} onChange={(v) => setWsFilters((f) => ({ ...f, pr: v as WSFilters["pr"] }))} />
+              <FilterDropdown icon={ClipboardCheck} label="QA" value={wsFilters.qa} options={[{ value: "needs", label: "Needs QA" }, { value: "in_review", label: "In QA" }, { value: "complete", label: "QA complete" }, { value: "not_started", label: "Not started" }]} onChange={(v) => setWsFilters((f) => ({ ...f, qa: v as WSFilters["qa"] }))} />
+              <FilterDropdown icon={UserCog} label="Assigned" value={wsFilters.assigned} options={filterOptions.assignees.map((s) => ({ value: s, label: s }))} onChange={(v) => setWsFilters((f) => ({ ...f, assigned: v }))} />
+              {(wsFilters.state || wsFilters.risk || wsFilters.expiring || wsFilters.pr || wsFilters.qa || wsFilters.assigned) && (
+                <button onClick={clearAllFilters} className="text-[11px] text-muted-foreground hover:text-foreground ml-1">Clear all</button>
+              )}
             </div>
           </div>
 
@@ -637,11 +721,44 @@ export default function OSAuthWorkspace() {
       </div>
 
       {/* DETAIL DRAWER */}
-      <Sheet open={!!openAuth} onOpenChange={(o) => !o && setOpenId(null)}>
+      <Sheet open={!!openAuth} onOpenChange={(o) => {
+        if (!o) {
+          setOpenId(null);
+          setDrawerNote("");
+          setDrawerNoteError(null);
+          if (searchParams.get("authId") || searchParams.get("overlayId")) {
+            const next = new URLSearchParams(searchParams);
+            next.delete("authId");
+            next.delete("overlayId");
+            setSearchParams(next, { replace: true });
+          }
+        }
+      }}>
         <SheetContent side="right" className="w-full p-0 sm:max-w-xl">
           {openAuth && (
             <AuthDetailDrawer
               auth={openAuth}
+              liveAuth={openLiveAuth}
+              noteValue={drawerNote}
+              onNoteChange={setDrawerNote}
+              noteError={drawerNoteError}
+              noteSaving={actions.pending}
+              onSaveNote={async () => {
+                const text = drawerNote.trim();
+                if (!text) return;
+                try {
+                  await actions.addNote(buildOverlay(openAuth), text);
+                  setDrawerNote("");
+                  setDrawerNoteError(null);
+                  await refresh();
+                } catch (err) {
+                  setDrawerNoteError(err instanceof Error ? err.message : "Failed to save note");
+                }
+              }}
+              onFocusNote={() => {
+                const el = document.getElementById("ws-drawer-note");
+                if (el) (el as HTMLTextAreaElement).focus();
+              }}
               onAction={(kind) => {
                 const o = buildOverlay(openAuth);
                 if (kind === "submit") return runActionAndRefresh(() => actions.submitAuth(o));
@@ -1048,8 +1165,25 @@ function SummaryCell({ label, value, tone }: { label: string; value: string; ton
 
 function AuthDetailDrawer({
   auth,
+  liveAuth,
+  noteValue,
+  onNoteChange,
+  noteError,
+  noteSaving,
+  onSaveNote,
+  onFocusNote,
   onAction,
-}: { auth: AuthCard; onAction?: (kind: "submit" | "request_pr" | "send_qa" | "escalate") => void }) {
+}: {
+  auth: AuthCard;
+  liveAuth?: Authorization | null;
+  noteValue?: string;
+  onNoteChange?: (v: string) => void;
+  noteError?: string | null;
+  noteSaving?: boolean;
+  onSaveNote?: () => void | Promise<void>;
+  onFocusNote?: () => void;
+  onAction?: (kind: "submit" | "request_pr" | "send_qa" | "escalate") => void;
+}) {
   const stateToToneKey: Record<AuthState, Tone> = {
     awaiting: "info", expiring: "crit", denied: "warn",
     missing: "warn", qa: "info", approved: "ok",
@@ -1073,8 +1207,8 @@ function AuthDetailDrawer({
           <DrawerAction icon={FileText}        label="Request PR"         onClick={() => onAction?.("request_pr")} />
           <DrawerAction icon={ClipboardCheck}  label="Send to QA"         onClick={() => onAction?.("send_qa")} />
           <DrawerAction icon={Flame}           label="Escalate"           onClick={() => onAction?.("escalate")} />
-          <DrawerAction icon={MessageSquare}   label="Note" />
-          <DrawerAction icon={Star}            label="Follow" />
+          <DrawerAction icon={MessageSquare}   label="Note" onClick={() => onFocusNote?.()} />
+          {/* Follow tracking is not yet persisted — removed honest empty until follow table exists. */}
         </div>
       </div>
 
@@ -1096,36 +1230,42 @@ function AuthDetailDrawer({
 
         {/* Timeline */}
         <DrawerSection title="Timeline">
-          <ol className="space-y-2">
-            {[
-              { t: "3d", text: "Authorization created", dot: "info" as Tone },
-              { t: "2d", text: "PR requested from BCBA", dot: "warn" as Tone },
-              { t: "1d", text: "Escalated to State Director", dot: "crit" as Tone },
-              { t: "4h", text: "Parent contacted for signature", dot: "warn" as Tone },
-              { t: "2h", text: "Last update from coordinator", dot: "info" as Tone },
-            ].map((e, i) => (
-              <li key={i} className="flex items-start gap-2 text-[12.5px]">
-                <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", toneDot[e.dot])} />
-                <span className="text-foreground/85">{e.text}</span>
-                <span className="ml-auto text-[11px] text-muted-foreground">{e.t} ago</span>
-              </li>
-            ))}
-          </ol>
+          {liveAuth?.timeline?.length ? (
+            <ol className="space-y-2">
+              {liveAuth.timeline.slice(0, 12).map((e) => {
+                const dot: Tone =
+                  e.type === "denial" ? "crit" :
+                  e.type === "approval" ? "ok" :
+                  e.type === "qa" || e.type === "submission" ? "info" :
+                  e.type === "document" || e.type === "renewal" ? "warn" :
+                  "neutral";
+                return (
+                  <li key={e.id} className="flex items-start gap-2 text-[12.5px]">
+                    <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", toneDot[dot])} />
+                    <span className="text-foreground/85">{e.description}</span>
+                    <span className="ml-auto text-[11px] text-muted-foreground">{relTimeShort(e.timestamp)}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <p className="text-[12.5px] text-muted-foreground">No activity logged yet.</p>
+          )}
         </DrawerSection>
 
         {/* Missing Documentation */}
         <DrawerSection title="Missing Documentation">
-          {auth.missingDocs.length === 0 ? (
+          {(liveAuth?.missingRequirements?.length ?? auth.missingDocs.length) === 0 ? (
             <p className="text-[12.5px] text-muted-foreground">All required documents on file.</p>
           ) : (
             <ul className="space-y-1.5">
-              {auth.missingDocs.map((d) => (
+              {(liveAuth?.missingRequirements?.length ? liveAuth.missingRequirements : auth.missingDocs).map((d) => (
                 <li key={d} className="flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/60 px-3 py-2 text-[12.5px]">
                   <span className="flex items-center gap-2">
                     <FileWarning className="h-3.5 w-3.5 text-[hsl(30_75%_40%)]" />
                     <span className="font-medium">{d}</span>
                   </span>
-                  <span className="text-[11px] text-muted-foreground">Owner: {d === "Parent signature" ? "Parent" : "BCBA"}</span>
+                  <span className="text-[11px] text-muted-foreground">Owner: {/Parent/i.test(d) ? "Parent" : "BCBA"}</span>
                 </li>
               ))}
             </ul>
@@ -1134,17 +1274,22 @@ function AuthDetailDrawer({
 
         {/* PR Tracking */}
         <DrawerSection title="Progress Report Tracking">
-          <ul className="space-y-1.5 text-[12.5px]">
-            <RowKv label="PR requested">10 days ago</RowKv>
-            <RowKv label="PR due">In 4 days</RowKv>
-            <RowKv label="BCBA contacted">3 pings · last 4h</RowKv>
-            <RowKv label="State Director">—</RowKv>
-            <RowKv label="Parent signature">{auth.parentSig}</RowKv>
-            <RowKv label="QA review">{auth.qaStatus.label}</RowKv>
-          </ul>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Outreach cadence and escalation owners are configured per state. Update state ownership in admin to populate.
-          </p>
+          {(() => {
+            const tl = liveAuth?.timeline ?? [];
+            const prRequested = tl.find((e) => /PR requested|Progress report requested/i.test(e.description));
+            const escalated = tl.find((e) => /Escalat/i.test(e.description));
+            if (!prRequested && !escalated && !liveAuth) {
+              return <p className="text-[12.5px] text-muted-foreground">No PR tracking activity has been logged yet.</p>;
+            }
+            return (
+              <ul className="space-y-1.5 text-[12.5px]">
+                <RowKv label="PR requested">{prRequested ? relTimeShort(prRequested.timestamp) : "—"}</RowKv>
+                <RowKv label="Last escalation">{escalated ? relTimeShort(escalated.timestamp) : "—"}</RowKv>
+                <RowKv label="Parent signature">{auth.parentSig}</RowKv>
+                <RowKv label="QA review">{auth.qaStatus.label}</RowKv>
+              </ul>
+            );
+          })()}
         </DrawerSection>
 
         {/* QA */}
@@ -1160,12 +1305,26 @@ function AuthDetailDrawer({
         {/* Notes */}
         <DrawerSection title="Notes & Activity">
           <textarea
+            id="ws-drawer-note"
+            value={noteValue ?? ""}
+            onChange={(e) => onNoteChange?.(e.target.value)}
             placeholder="Add an internal note…"
             className="h-20 w-full resize-none rounded-xl border border-white/70 bg-white/70 p-2.5 text-[12.5px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-[hsl(265_85%_60%/0.4)]"
           />
-          <p className="mt-2 rounded-xl border border-dashed border-white/60 bg-white/40 px-3 py-2 text-[12px] text-muted-foreground">
-            Notes will appear here as coordinators add them to this authorization.
-          </p>
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-[11px] text-muted-foreground">Notes are appended to this authorization's activity timeline.</p>
+            <button
+              type="button"
+              onClick={() => onSaveNote?.()}
+              disabled={!noteValue?.trim() || noteSaving}
+              className="rounded-lg bg-foreground/90 px-3 py-1.5 text-[12px] font-semibold text-background transition hover:bg-foreground disabled:opacity-50"
+            >
+              {noteSaving ? "Saving…" : "Add Note"}
+            </button>
+          </div>
+          {noteError && (
+            <p className="mt-2 text-[11.5px] text-rose-600">Failed to save note: {noteError}</p>
+          )}
         </DrawerSection>
 
         {/* AI */}
@@ -1256,3 +1415,82 @@ function DrawerAction({ icon: Icon, label, primary, onClick }: { icon: React.Ele
     </button>
   );
 }
+
+/* ─────────── filter dropdown ─────────── */
+
+function FilterDropdown<T extends string>({
+  icon: Icon, label, value, options, onChange,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: T | null;
+  options: { value: T; label: string }[];
+  onChange: (v: T | null) => void;
+}) {
+  const active = value != null;
+  return (
+    <div className="relative">
+      <select
+        aria-label={label}
+        value={value ?? ""}
+        onChange={(e) => onChange((e.target.value || null) as T | null)}
+        className={cn(
+          "h-7 appearance-none rounded-full border bg-white/70 pl-7 pr-6 text-[11px] font-medium transition",
+          active
+            ? "border-[hsl(265_85%_60%/0.4)] text-foreground"
+            : "border-white/70 text-foreground/75 hover:text-foreground",
+        )}
+      >
+        <option value="">{label}{active ? "" : ""}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{label}: {o.label}</option>
+        ))}
+      </select>
+      <Icon className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+      {active && (
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          aria-label={`Clear ${label} filter`}
+          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ─────────── subnav: relate main + focused queue ─────────── */
+
+function AuthSubnav({ active }: { active: "main" | "focused" | "expiring" | "missing" | "payer" | "reports" }) {
+  const items: { key: typeof active; label: string; to: string }[] = [
+    { key: "main", label: "Main List", to: "/authorizations" },
+    { key: "focused", label: "Focused Queue", to: "/auth-workspace" },
+    { key: "expiring", label: "Expiring", to: "/ops/expiring-authorizations" },
+    { key: "missing", label: "Missing Docs", to: "/ops/missing-docs" },
+    { key: "payer", label: "Payer Requirements", to: "/ops/payer-requirements" },
+    { key: "reports", label: "Reports", to: "/reports" },
+  ];
+  return (
+    <nav className="os-card flex flex-wrap items-center gap-1 p-2 text-[12px]" aria-label="Authorizations navigation">
+      {items.map((it) => (
+        <Link
+          key={it.key}
+          to={it.to}
+          className={cn(
+            "rounded-lg px-2.5 py-1.5 font-medium transition",
+            it.key === active
+              ? "bg-foreground text-background"
+              : "text-foreground/75 hover:bg-foreground/[0.06] hover:text-foreground",
+          )}
+        >
+          {it.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+// FilterChip kept (legacy) — silence "unused" by re-exporting via void.
+void FilterChip;
