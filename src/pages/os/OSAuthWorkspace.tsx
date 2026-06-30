@@ -18,6 +18,7 @@ import {
   SourceBadge,
   type AuthSourceTag,
 } from "@/components/authorizations/AuthorizationActionUI";
+import { AuthPromptDialog } from "@/components/authorizations/AuthPromptDialog";
 import {
   useAuthorizationActions,
   type EnsureOverlayInput,
@@ -382,9 +383,13 @@ export default function OSAuthWorkspace() {
 
   const { items: liveItems, loading, error } = useLiveAuthorizations();
 
+  // Prompt-dialog state (replaces window.prompt)
+  const [promptKind, setPromptKind] = useState<null | "assign" | "status" | "note">(null);
+  const [noteForId, setNoteForId] = useState<string | null>(null);
+
   const AUTHS: AuthCard[] = useMemo(() => {
     if (loading || error) return [];
-    if (!liveItems.length) return FALLBACK_AUTHS;
+    // No fallback demo data — show empty state instead.
     return liveItems.map(liveAuthToCard);
   }, [liveItems, loading, error]);
 
@@ -448,13 +453,11 @@ export default function OSAuthWorkspace() {
     const overlays = selectedAuths.map(buildOverlay);
     try {
       if (kind === "assign") {
-        const who = window.prompt("Assign selected authorizations to:");
-        if (!who) return;
-        await actions.bulkAssign(overlays, who);
+        setPromptKind("assign");
+        return;
       } else if (kind === "status") {
-        const status = window.prompt("New status (e.g. Submitted, In QA Review, Approved):");
-        if (!status) return;
-        await actions.bulkChangeStatus(overlays, status);
+        setPromptKind("status");
+        return;
       } else if (kind === "escalate") {
         for (const o of overlays) await actions.escalate(o);
       } else if (kind === "qa") {
@@ -646,9 +649,7 @@ export default function OSAuthWorkspace() {
                     if (kind === "resolve_docs") return actions.resolveDocs(o).catch(() => undefined);
                     if (kind === "mark_reviewed") return actions.markReviewed(o).catch(() => undefined);
                     if (kind === "note") {
-                      const n = window.prompt("Note:");
-                      if (!n) return;
-                      return actions.addNote(o, n).catch(() => undefined);
+                      setNoteForId(a.id);
                     }
                   }}
                 />
@@ -679,6 +680,60 @@ export default function OSAuthWorkspace() {
       <NewAuthorizationDialog
         open={newAuthOpen}
         onOpenChange={setNewAuthOpen}
+      />
+
+      {/* Bulk Assign prompt */}
+      <AuthPromptDialog
+        open={promptKind === "assign"}
+        title="Bulk assign"
+        description={`Assign ${selectedAuths.length} authorization${selectedAuths.length === 1 ? "" : "s"} to a coordinator.`}
+        label="Assign to"
+        placeholder="e.g. Coordinator name"
+        submitLabel="Assign"
+        pending={actions.pending}
+        onCancel={() => setPromptKind(null)}
+        onSubmit={async (val) => {
+          await actions.bulkAssign(selectedAuths.map(buildOverlay), val).catch(() => undefined);
+          setPromptKind(null);
+          setSelected(new Set());
+        }}
+      />
+
+      {/* Bulk Status prompt */}
+      <AuthPromptDialog
+        open={promptKind === "status"}
+        title="Change status"
+        description={`Change status for ${selectedAuths.length} authorization${selectedAuths.length === 1 ? "" : "s"}.`}
+        label="New status"
+        options={["Awaiting Submission", "Submitted", "In QA Review", "Approved", "Denied", "Expiring Soon", "Denial Review"]}
+        submitLabel="Update status"
+        pending={actions.pending}
+        onCancel={() => setPromptKind(null)}
+        onSubmit={async (val) => {
+          await actions.bulkChangeStatus(selectedAuths.map(buildOverlay), val).catch(() => undefined);
+          setPromptKind(null);
+          setSelected(new Set());
+        }}
+      />
+
+      {/* Add Note prompt */}
+      <AuthPromptDialog
+        open={!!noteForId}
+        title="Add note"
+        description="Adds a note to this authorization's activity timeline."
+        label="Note"
+        multiline
+        placeholder="What happened? Who did what?"
+        submitLabel="Add note"
+        pending={actions.pending}
+        onCancel={() => setNoteForId(null)}
+        onSubmit={async (val) => {
+          const target = visible.find((a) => a.id === noteForId);
+          if (target) {
+            await actions.addNote(buildOverlay(target), val).catch(() => undefined);
+          }
+          setNoteForId(null);
+        }}
       />
     </OSShell>
   );
