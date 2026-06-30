@@ -58,7 +58,7 @@ export default function MissingDocs() {
               // `authorization_id` is the overlay record id. We pass both
               // `overlayId` (preferred) and `authId` (legacy). OSAuthorizations
               // resolves either to the correct visible auth id.
-              to={`/authorizations?overlayId=${encodeURIComponent(String(r.authorization_id))}&authId=${encodeURIComponent(String(r.authorization_id))}`}
+              to={`/authorizations?authId=${encodeURIComponent(String(r.authorization_id))}&overlayId=${encodeURIComponent(String(r.authorization_id))}`}
               className="inline-flex items-center gap-1 text-xs text-sky-600 hover:underline"
               title="Open the linked authorization record"
             >
