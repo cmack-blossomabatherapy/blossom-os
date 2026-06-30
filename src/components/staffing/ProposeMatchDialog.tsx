@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -28,17 +28,22 @@ interface Props {
   caseInfo: CaseLike | null;
   preferences: FamilyStaffingPreferenceRow[];
   onProposed?: () => void;
+  initialRbtId?: string | null;
 }
 
 /**
  * Shared modal for proposing an RBT match from Open Cases, Coverage, and Live Map.
  * Uses preference scoring to surface a preference-adjusted score and surface conflicts.
  */
-export function ProposeMatchDialog({ open, onOpenChange, caseInfo, preferences, onProposed }: Props) {
+export function ProposeMatchDialog({ open, onOpenChange, caseInfo, preferences, onProposed, initialRbtId }: Props) {
   const { propose } = useStaffingWorkspace();
   const [selectedRbtId, setSelectedRbtId] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) setSelectedRbtId(initialRbtId ?? null);
+  }, [open, initialRbtId]);
 
   const relevantPrefs = useMemo(() => {
     if (!caseInfo) return [];
