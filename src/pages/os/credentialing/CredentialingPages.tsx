@@ -1173,7 +1173,7 @@ export function ProviderCredentialingPage() {
                   const active = provRecs.filter((r) => ACTIVE_CRED_STATUSES.includes(r.status)).length;
                   const missing = provRecs.reduce((n, r) => n + (r.missing_items?.length ?? 0), 0);
                   const expiring = provRecs.filter((r) => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 90; }).length;
-                  const cr = p.centralreach_provider_id ? "Synced" : "Not Connected";
+                  const cr = p.centralreach_provider_id ? "ID present" : "Not Connected";
                   return (
                     <tr key={p.id} className="border-t border-border/60 hover:bg-muted/30">
                       <td className="px-3 py-2.5 font-medium">{p.provider_name}{!p.active && <Badge variant="outline" className="ml-2 text-[10px]">Inactive</Badge>}</td>
@@ -1323,7 +1323,7 @@ export function BCBACredentialsPage() {
                   const missing = provRecs.filter((r) => !APPROVED_CRED_STATUSES.includes(r.status)).length;
                   const docs = documents.filter((d) => d.provider_id === p.id).length;
                   const openTasks = tasks.filter((t) => t.status !== "Done" && provRecs.some((r) => r.id === t.credentialing_record_id)).length;
-                  const cr = p.centralreach_provider_id ? "Synced" : "Not Connected";
+                  const cr = p.centralreach_provider_id ? "ID present" : "Not Connected";
                   return (
                     <tr key={p.id} className="border-t border-border/60">
                       <td className="px-3 py-2.5 font-medium">{p.provider_name}</td>
