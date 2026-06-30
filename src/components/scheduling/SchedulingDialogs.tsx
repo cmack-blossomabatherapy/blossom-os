@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,14 +10,16 @@ import { useSchedulingActions } from "@/hooks/useSchedulingActions";
 const CR_NOTE = "Staged in Blossom OS. CentralReach API not connected yet — change will be queued for future sync.";
 
 interface ClientLite { id: string; childName: string; state?: string; rbt?: string | null; bcba?: string | null; }
+interface ProviderLite { name: string; role: "rbt" | "bcba"; state?: string | null; }
 
 /* ---------------- Contact Attempt ---------------- */
 export function ContactAttemptDialog({
-  open, onOpenChange, client, defaultContactType = "family", onSaved,
+  open, onOpenChange, client, provider, defaultContactType = "family", onSaved,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   client?: ClientLite | null;
+  provider?: ProviderLite | null;
   defaultContactType?: "family" | "rbt" | "bcba" | "state_director" | "assistant_state_director" | "internal";
   onSaved?: () => void;
 }) {
@@ -28,16 +30,26 @@ export function ContactAttemptDialog({
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // Re-sync defaults whenever the dialog opens or the default contact type
+  // changes. Without this the persistent dialog component keeps the first
+  // value forever and Notify buttons appear to do nothing.
+  useEffect(() => {
+    if (open) setContactType(defaultContactType);
+  }, [open, defaultContactType]);
+
   const save = async () => {
     setBusy(true);
     try {
       await logContactAttempt({
         clientId: client?.id ?? null,
+        clientName: client?.childName ?? null,
+        providerName: provider?.name ?? null,
+        providerRole: provider?.role ?? null,
         contactType,
         channel,
         outcome: outcome as never,
         body,
-        state: client?.state ?? null,
+        state: client?.state ?? provider?.state ?? null,
       });
       toast.success("Contact attempt logged.");
       onOpenChange(false);
@@ -46,11 +58,12 @@ export function ContactAttemptDialog({
     } catch { /* toast already shown */ } finally { setBusy(false); }
   };
 
+  const title = client?.childName ?? provider?.name ?? "";
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Log contact attempt{client ? ` · ${client.childName}` : ""}</DialogTitle>
+          <DialogTitle>Log contact attempt{title ? ` · ${title}` : ""}</DialogTitle>
           <DialogDescription>Records to scheduling_contact_attempts.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
