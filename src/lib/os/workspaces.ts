@@ -438,7 +438,7 @@ export const LEGACY_GROUPS: { title: string; items: LegacyLink[] }[] = [
       { label: "Intake (Legacy)", path: "/intake" },
       { label: "Authorizations (Legacy)", path: "/authorizations" },
       { label: "Scheduling (Legacy)", path: "/scheduling" },
-      { label: "Staffing (Legacy)", path: "/staffing" },
+      { label: "Staffing Workspace", path: "/ops/staffing" },
     ],
   },
   {
