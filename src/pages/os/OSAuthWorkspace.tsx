@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import type { Authorization } from "@/data/authorizations";
@@ -267,6 +268,30 @@ export default function OSAuthWorkspace() {
 
   const live = useLiveAuthorizations();
   const { items: liveItems, loading, error, refresh } = live;
+
+  // Live recent activity for the right rail.
+  type RailActivity = { id: string; who: string; what: string; when: string };
+  const [liveActivityForRail, setLiveActivityForRail] = useState<RailActivity[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("authorization_activity")
+        .select("id, activity_type, description, created_at, created_by")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (cancelled || !data) return;
+      setLiveActivityForRail(
+        data.map((row) => ({
+          id: row.id,
+          who: row.activity_type ?? "Activity",
+          what: row.description ?? "",
+          when: relTime(row.created_at),
+        })),
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [liveItems.length]);
 
   // Prompt-dialog state (replaces window.prompt)
   const [promptKind, setPromptKind] = useState<null | "assign" | "status" | "note">(null);
