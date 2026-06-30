@@ -411,6 +411,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/credentialing/bcba",
     "/credentialing/uncredentialed-bcbas",
     "/credentialing/expiring",
+    "/reports",
   ]),
   credentialing_lead: new Set<string>([
     "/credentialing",
@@ -419,6 +420,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/credentialing/bcba",
     "/credentialing/uncredentialed-bcbas",
     "/credentialing/expiring",
+    "/reports",
   ]),
   marketing_team: new Set<string>([
     "/marketing",
