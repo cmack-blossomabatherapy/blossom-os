@@ -13,6 +13,8 @@ import { useQAWorkflow } from "@/hooks/useQAWorkflow";
 import { toQAWorkItemRef } from "@/lib/os/qa/qaRefs";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
+import { QABulkActionDialog, type QABulkVariant } from "@/components/qa/QABulkActionDialog";
+import { useQADeepLink } from "@/hooks/useQADeepLink";
 
 // QA Queue — central operational workflow queue for QA execution.
 // Real data only via useLiveAuthorizations (monday_authorizations_raw).
@@ -148,6 +150,18 @@ export default function OSQAQueue() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openId, setOpenId] = useState<string | null>(null);
+  const [bulkVariant, setBulkVariant] = useState<QABulkVariant | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const openBulk = (v: QABulkVariant) => { setBulkVariant(v); setBulkOpen(true); };
+
+  // QA Pass 5: honor ?id= / ?focus= / ?bcba= / ?client= deep links.
+  useQADeepLink({
+    items,
+    loading,
+    setOpenId,
+    setQuery,
+    // OSQAQueue has no dedicated BCBA dropdown — funnel into search.
+  });
 
   const states = useMemo(
     () => Array.from(new Set(items.map(a => a.state).filter(Boolean))).sort(),
@@ -239,27 +253,36 @@ export default function OSQAQueue() {
       setBulkBusy(false);
     }
   };
-  const bulkAssign = () => {
-    const owner = window.prompt("Assign QA owner to selected items (leave empty to clear):", "");
-    if (owner === null) return;
-    void runBulk(() => wf.bulkAssign(selectedRefs, owner.trim() || null));
-  };
-  const bulkFollowUp = () => {
-    const note = window.prompt("Follow-up note for selected items:", "Follow-up requested");
-    if (!note) return;
-    void runBulk(async () => {
-      for (const ref of selectedRefs) await wf.sendFollowUp(ref, note);
-    });
-  };
-  const bulkMarkReviewed = () => {
-    void runBulk(() => wf.bulkStartReview(selectedRefs, null));
-  };
-  const bulkEscalate = () => {
-    const reason = window.prompt("Escalation reason for selected items:", "Escalated from QA queue");
-    if (!reason) return;
-    void runBulk(async () => {
-      for (const ref of selectedRefs) await wf.escalate(ref, reason);
-    });
+  const bulkAssign      = () => openBulk({ kind: "assign", defaultValue: "" });
+  const bulkFollowUp    = () => openBulk({ kind: "followUp", defaultValue: "Follow-up requested" });
+  const bulkMarkReviewed= () => openBulk({ kind: "markReviewed" });
+  const bulkEscalate    = () => openBulk({ kind: "escalate", defaultValue: "Escalated from QA queue" });
+
+  const handleBulkSubmit = async (value: string) => {
+    if (!bulkVariant) return;
+    const closeAfter = () => { setBulkOpen(false); setBulkVariant(null); };
+    try {
+      switch (bulkVariant.kind) {
+        case "assign":
+          await runBulk(() => wf.bulkAssign(selectedRefs, value || null));
+          break;
+        case "followUp":
+          await runBulk(async () => {
+            for (const ref of selectedRefs) await wf.sendFollowUp(ref, value);
+          });
+          break;
+        case "markReviewed":
+          await runBulk(() => wf.bulkStartReview(selectedRefs, null));
+          break;
+        case "escalate":
+          await runBulk(async () => {
+            for (const ref of selectedRefs) await wf.escalate(ref, value);
+          });
+          break;
+      }
+    } finally {
+      closeAfter();
+    }
   };
 
   const priorities = useMemo(() => {
