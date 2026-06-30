@@ -129,7 +129,7 @@ export default function RecruitingMarketing() {
   const strongestState = [...stateRows].sort((a, b) => b.total - a.total)[0];
 
   const funnel = useMemo(() => {
-    const buckets: { label: string; match: (c: Candidate) => boolean }[] = [
+    const buckets: { label: string; match: (c: MktCandidate) => boolean }[] = [
       { label: "Application Submitted", match: (c) => c.stage === "New Applicant" },
       { label: "Screening", match: (c) => c.stage === "Screening" },
       {
