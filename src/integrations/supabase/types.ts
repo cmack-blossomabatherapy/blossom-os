@@ -6633,6 +6633,57 @@ export type Database = {
           },
         ]
       }
+      family_staffing_preferences: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          created_at: string
+          created_by: string | null
+          id: string
+          importance: Database["public"]["Enums"]["family_pref_importance"]
+          linked_match_id: string | null
+          notes: string | null
+          preference_detail: string
+          preference_type: Database["public"]["Enums"]["family_pref_type"]
+          state: string | null
+          status: Database["public"]["Enums"]["family_pref_status"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          importance?: Database["public"]["Enums"]["family_pref_importance"]
+          linked_match_id?: string | null
+          notes?: string | null
+          preference_detail: string
+          preference_type?: Database["public"]["Enums"]["family_pref_type"]
+          state?: string | null
+          status?: Database["public"]["Enums"]["family_pref_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          importance?: Database["public"]["Enums"]["family_pref_importance"]
+          linked_match_id?: string | null
+          notes?: string | null
+          preference_detail?: string
+          preference_type?: Database["public"]["Enums"]["family_pref_type"]
+          state?: string | null
+          status?: Database["public"]["Enums"]["family_pref_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       hours_timesheet_entries: {
         Row: {
           category: string | null
@@ -14648,6 +14699,17 @@ export type Database = {
         | "terminated"
         | "resigned"
       employment_type: "full_time" | "part_time" | "contractor" | "prn"
+      family_pref_importance: "must_have" | "nice_to_have"
+      family_pref_status: "active" | "resolved" | "no_longer_applicable"
+      family_pref_type:
+        | "schedule"
+        | "language"
+        | "gender"
+        | "location"
+        | "continuity"
+        | "clinical_fit"
+        | "family_request"
+        | "other"
       financial_review_status:
         | "Pending Review"
         | "Approved"
@@ -15366,6 +15428,18 @@ export const Constants = {
         "resigned",
       ],
       employment_type: ["full_time", "part_time", "contractor", "prn"],
+      family_pref_importance: ["must_have", "nice_to_have"],
+      family_pref_status: ["active", "resolved", "no_longer_applicable"],
+      family_pref_type: [
+        "schedule",
+        "language",
+        "gender",
+        "location",
+        "continuity",
+        "clinical_fit",
+        "family_request",
+        "other",
+      ],
       financial_review_status: [
         "Pending Review",
         "Approved",

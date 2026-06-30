@@ -334,6 +334,24 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
     actions: { dashboard: VIEW, scheduling: FULL, clients: VIEW, staff: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },
+  /**
+   * Staffing Team has its own role profile — it shares some surface area with
+   * Scheduling but owns RBT/case matching, family preferences, and coverage
+   * gaps. Staffing should never be aliased back to scheduling_team.
+   */
+  staffing_team: {
+    modules: ["dashboard", "staff", "clients", "scheduling", "reports", "training", "sop", "ai_assistant"],
+    scope: "company",
+    actions: {
+      dashboard: VIEW,
+      staff: FULL,
+      clients: VIEW_EDIT,
+      scheduling: VIEW_EDIT,
+      reports: ["view", "export"],
+      training: VIEW,
+    },
+    leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
+  },
   recruiting_team: {
     modules: ["dashboard", "recruiting", "staff", "credentialing", "employee_ops", "training", "hr", "kpi", "ai_assistant"],
     scope: "company",
@@ -473,8 +491,8 @@ const ROLE_ALIASES: Record<
   clinical_lead: "bcba",
   scheduling_lead: "scheduling_team",
   scheduling_coordinator: "scheduling_team",
-  staffing_lead: "scheduling_team",
-  staffing_coordinator: "scheduling_team",
+  staffing_lead: "staffing_team",
+  staffing_coordinator: "staffing_team",
   recruiting_lead: "recruiting_team",
   recruiting_coordinator: "recruiting_team",
   hr_lead: "hr_team",
@@ -484,7 +502,6 @@ const ROLE_ALIASES: Record<
   rcm_team: "billing_finance",
   assistant_state_director: "state_director",
   business_development: "marketing_team",
-  staffing_team: "scheduling_team",
   clinical_director: "operations_leadership",
   viewer: "behavioral_support",
 };
