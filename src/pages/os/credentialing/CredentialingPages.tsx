@@ -1723,8 +1723,8 @@ export function CredentialingDashboardPage() {
     (!payerFilter || r.payer_name.toLowerCase().includes(payerFilter.toLowerCase())) &&
     (!missingOnly || r.status === "Missing Info" || (r as unknown as { missing_items?: string[] }).missing_items?.length) &&
     (!overdueOnly || (() => { const d = daysUntil(r.next_follow_up_date); return d !== null && d < 0; })()) &&
-    (!crNotReady || (r as unknown as { cr_sync_status?: CrSyncStatus }).cr_sync_status !== "Synced") &&
-    (!readyToSync || ((r as unknown as { cr_sync_status?: CrSyncStatus }).cr_sync_status === "Ready" && APPROVED_CRED_STATUSES.includes(r.status))) &&
+    (!crNotReady || r.centralreach_sync_status !== "Synced") &&
+    (!readyToSync || (r.centralreach_sync_status === "Ready To Sync" && APPROVED_CRED_STATUSES.includes(r.status))) &&
     (savedView !== "expiring-30" || (() => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 30; })())
   ), [records, stateFilter, statusFilter, payerFilter, missingOnly, overdueOnly, crNotReady, readyToSync, savedView]);
 
