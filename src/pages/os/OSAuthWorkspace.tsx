@@ -1099,8 +1099,8 @@ function AuthDetailDrawer({
             <KV label="Expires in">{auth.expiresInDays !== null ? `${auth.expiresInDays} days` : "—"}</KV>
             <KV label="Coordinator">{auth.coordinator}</KV>
             <KV label="BCBA">{auth.bcba}</KV>
-            <KV label="State Director">{auth.state === "GA" ? "Shira" : "Julianne"}</KV>
-            <KV label="QA Reviewer">Rachel</KV>
+            <KV label="State Director">—</KV>
+            <KV label="QA Reviewer">—</KV>
           </div>
         </DrawerSection>
 
@@ -1148,14 +1148,12 @@ function AuthDetailDrawer({
             <RowKv label="PR requested">10 days ago</RowKv>
             <RowKv label="PR due">In 4 days</RowKv>
             <RowKv label="BCBA contacted">3 pings · last 4h</RowKv>
-            <RowKv label="State Director">{auth.state === "GA" ? "Shira & Rachel looped in (6w mark)" : "Julianne escalated (6w mark)"}</RowKv>
+            <RowKv label="State Director">—</RowKv>
             <RowKv label="Parent signature">{auth.parentSig}</RowKv>
             <RowKv label="QA review">{auth.qaStatus.label}</RowKv>
           </ul>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            {auth.state === "GA"
-              ? "GA workflow: Rivky reaches out at 9w · Shira & Rachel looped in at 6w."
-              : "Multi-state workflow: weekly notifications begin at 9w (cc Julianne) · State Director escalated at 6w. SD exits once PR received unless parent signature support needed."}
+            Outreach cadence and escalation owners are configured per state. Update state ownership in admin to populate.
           </p>
         </DrawerSection>
 
