@@ -33,6 +33,41 @@ const STAGES = [
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
 
+// Status values written into recruiting_followups.status for each board stage.
+const STAGE_TO_STATUS: Record<StageKey, string> = {
+  new: "Open",
+  waiting: "Waiting",
+  action: "Action",
+  onboarding: "Onboarding",
+  orientation: "Orientation",
+  staffing: "Staffing",
+  escalated: "Escalated",
+  completed: "Done",
+};
+
+function stageFromStatus(status: string | null | undefined): StageKey {
+  switch ((status ?? "").toLowerCase()) {
+    case "done":
+    case "completed":
+    case "resolved":
+      return "completed";
+    case "waiting":
+      return "waiting";
+    case "action":
+      return "action";
+    case "onboarding":
+      return "onboarding";
+    case "orientation":
+      return "orientation";
+    case "staffing":
+      return "staffing";
+    case "escalated":
+      return "escalated";
+    default:
+      return "new";
+  }
+}
+
 type FollowUpType =
   | "Interview no-show"
   | "Unsigned offer"
@@ -60,6 +95,7 @@ type FollowUp = {
   stage: StageKey;
   nextAction: string;
   staffingImpact: boolean;
+  isLive?: boolean;
 };
 
 function urgencyFor(c: RecruitingCandidate): "High" | "Medium" | "Low" {
