@@ -20,6 +20,8 @@ import {
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
 import { useRecruitingStaffingNeeds } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
+import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -114,10 +116,8 @@ function fitScore(n: StaffingClientNeed, c: RecruitingCandidate): number {
 export default function OSRecruitingStaffingNeeds() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveStaffingNeeds } = useRecruitingStaffingNeeds();
-  // Mutation helpers wired here so future "Create from suggestion" / "Close need" / "Link candidate" actions persist to recruiting_staffing_needs.
-  const _stf = { c: mutations.createStaffingNeed, u: mutations.updateStaffingNeed, w: mutations.markStaffingNeedWorking, x: mutations.closeStaffingNeed, l: mutations.linkCandidateToStaffingNeed };
-  void _stf; void liveStaffingNeeds;
+  const { items: liveStaffingNeeds, loading: liveStaffingNeedsLoading } = useRecruitingStaffingNeeds();
+  const { find: findCandidate } = useRecruitingCandidateLookup();
   // Build needs list
   const baseNeeds = useMemo(() => getClientStaffingNeeds(), []);
   const readyCandidates = useMemo(
