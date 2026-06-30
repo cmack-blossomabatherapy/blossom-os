@@ -71,10 +71,10 @@ describe("Sprint 18A — Sprint 18 protections remain intact", () => {
     expect(m![0]).toMatch(/allowedRoles=\{\["admin",\s*"staffing",\s*"staffing_lead",\s*"staffing_coordinator"\]\}/);
   });
 
-  it("/ops/rbt-match-queue is wrapped in OSShellPage", () => {
+  it("/ops/rbt-match-queue redirects to canonical match-queue tab", () => {
     const m = app.match(/path="\/ops\/rbt-match-queue"[^\n]*/);
     expect(m).toBeTruthy();
-    expect(m![0]).toMatch(/OSShellPage/);
+    expect(m![0]).toMatch(/Navigate to="\/ops\/staffing\?tab=match-queue"/);
   });
 
   it("STAGED_ROLE_LIVE_PATHS does not globally include Staffing paths", () => {
