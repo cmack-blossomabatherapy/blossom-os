@@ -411,6 +411,7 @@ import OSSettings from "./pages/os/OSSettings";
 import OSWorkforce from "./pages/os/OSWorkforce";
 import OSStaffingQueue from "./pages/os/OSStaffingQueue";
 import OSScheduling from "./pages/os/OSScheduling";
+import OSSchedulingBoard from "./pages/os/OSSchedulingBoard";
 import OSSchedulingResources from "./pages/os/OSSchedulingResources";
 import OSSchedulingRosterRBTs from "./pages/os/OSSchedulingRosterRBTs";
 import OSSchedulingRosterBCBAs from "./pages/os/OSSchedulingRosterBCBAs";
@@ -745,6 +746,7 @@ const App = () => (
                   <Route path="/authorizations" element={<AuthorizationsRouter />} />
                   <Route path="/authorizations/handoff" element={<OSAuthHandoff />} />
                   <Route path="/scheduling" element={<OSScheduling />} />
+                  <Route path="/scheduling/board" element={<OSSchedulingBoard />} />
                   <Route path="/scheduling/resources" element={<OSSchedulingResources />} />
                   <Route path="/scheduling/rbts" element={<OSSchedulingRosterRBTs />} />
                   <Route path="/scheduling/bcbas" element={<OSSchedulingRosterBCBAs />} />

@@ -127,6 +127,7 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
       { to: "/ops/approved-authorizations", label: "Approved Authorizations", icon: CheckCircle2 },
       { to: "/ops/denials", label: "Denials", icon: XCircle },
       { to: "/ops/scheduling", label: "Scheduling", icon: CalendarDays },
+      { to: "/scheduling/board", label: "Scheduling Board", icon: CalendarDays },
       { to: "/ops/staffing", label: "Staffing", icon: Users },
       { to: "/ops/case-management", label: "Case Management", icon: HeartHandshake },
       { to: "/ops/no-oon-benefits", label: "No OON Benefits", icon: ShieldCheck },
@@ -231,6 +232,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   scheduling_team: new Set<string>([
     "/scheduling",
     "/scheduling-workspace",
+    "/scheduling/board",
     "/scheduling/rbts",
     "/scheduling/bcbas",
     "/scheduling/resources",
@@ -241,6 +243,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   scheduling_lead: new Set<string>([
     "/scheduling",
     "/scheduling-workspace",
+    "/scheduling/board",
     "/scheduling/rbts",
     "/scheduling/bcbas",
     "/scheduling/resources",
@@ -251,6 +254,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   scheduling_coordinator: new Set<string>([
     "/scheduling",
     "/scheduling-workspace",
+    "/scheduling/board",
     "/scheduling/rbts",
     "/scheduling/bcbas",
     "/scheduling/resources",
