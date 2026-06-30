@@ -291,6 +291,54 @@ export default function OSRecruitingStaffingNeeds() {
         </div>
 
         {/* Chips */}
+        <LiveRecruitingSection
+          title="Live staffing needs"
+          subtitle="Primary source — rows from recruiting_staffing_needs"
+          tableName="recruiting_staffing_needs"
+          items={liveStaffingNeeds}
+          loading={liveStaffingNeedsLoading}
+          emptyTitle="No live staffing needs on file"
+          emptyBody="When the team logs a need to recruiting_staffing_needs, it will render here. The board below shows synthetic client demand."
+          renderRow={(row: any) => {
+            const matched = row.matched_candidate_id ? findCandidate(row.matched_candidate_id) : null;
+            const isClosed = row.status === "Closed";
+            const tone = isClosed ? "ok" : row.priority === "High" ? "crit" : row.priority === "Medium" ? "warn" : "info";
+            return (
+              <LiveRowCard
+                title={`${row.role_needed ?? "Role"} · ${row.client_label ?? "Unassigned client"}`}
+                meta={[row.state, row.hours_per_week ? `${row.hours_per_week} hrs/wk` : null, matched ? `Match: ${matched.first_name} ${matched.last_name}` : null, `Status: ${row.status}`].filter(Boolean).join(" · ")}
+                tone={tone}
+                badges={
+                  <>
+                    {row.priority && <Pill tone={tone}>{row.priority}</Pill>}
+                    {isClosed && <Pill tone="ok">Closed</Pill>}
+                  </>
+                }
+                actions={
+                  !isClosed && (
+                    <>
+                      {row.status !== "Active" && (
+                        <button
+                          onClick={() => void mutations.markStaffingNeedWorking(row.id)}
+                          className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition"
+                        >
+                          Start work
+                        </button>
+                      )}
+                      <button
+                        onClick={() => void mutations.closeStaffingNeed(row.id, "Closed via Live section")}
+                        className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition"
+                      >
+                        Close
+                      </button>
+                    </>
+                  )
+                }
+              />
+            );
+          }}
+        />
+
         <div className="flex flex-wrap gap-2">
           {CHIPS.map((c) => (
             <button
