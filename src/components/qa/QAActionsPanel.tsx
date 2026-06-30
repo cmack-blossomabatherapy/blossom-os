@@ -49,10 +49,17 @@ export function QAActionsPanel({ auth, variant = "default", sourceSystem, onChan
   const [reason, setReason] = useState("");
   const [followUp, setFollowUp] = useState("");
   const [open, setOpen] = useState<null | "note" | "assign" | "escalate" | "follow">(null);
+  const [pending, setPending] = useState(false);
 
   async function run(p: Promise<unknown> | null | undefined) {
-    await p;
-    await onChanged?.();
+    if (pending) return;
+    setPending(true);
+    try {
+      await p;
+      await onChanged?.();
+    } finally {
+      setPending(false);
+    }
   }
 
   const showMarkReviewed   = ["queue","auth-review","treatment-plan","default"].includes(variant);
@@ -65,30 +72,30 @@ export function QAActionsPanel({ auth, variant = "default", sourceSystem, onChan
     <>
       <div className={cn("grid grid-cols-2 gap-2", className)}>
         {showMarkReviewed && (
-          <Btn icon={CheckCircle2} label="Mark reviewed"
+          <Btn icon={CheckCircle2} label="Mark reviewed" disabled={pending}
             onClick={() => run(wf.markReadyForSubmission(ref))} />
         )}
         {showMarkPRReceived && (
-          <Btn icon={CheckCircle2} label="Mark PR received"
-            onClick={() => run(wf.markReadyForSubmission(ref))} />
+          <Btn icon={CheckCircle2} label="Mark PR received" disabled={pending}
+            onClick={() => run(wf.addNote(ref, "Progress Report received"))} />
         )}
         {showMoveToSub && (
-          <Btn icon={ArrowRightCircle} label="Move to submission"
+          <Btn icon={ArrowRightCircle} label="Submit to Auth" disabled={pending}
             onClick={() => run(wf.submitToAuth(ref))} />
         )}
         {showRequestMissing && (
           <Btn icon={showRequestMissing && variant === "missing-info" ? ListChecks : FileWarning}
-            label="Request missing info"
+            label="Request missing info" disabled={pending}
             onClick={() => run(wf.markIssuesFound(ref, ["Missing information requested"]))} />
         )}
         {showMarkResolved && (
-          <Btn icon={ClipboardCheck} label="Mark resolved"
+          <Btn icon={ClipboardCheck} label="Mark resolved" disabled={pending}
             onClick={() => run(wf.resolveMissingInfo(ref))} />
         )}
-        <Btn icon={Send} label="Send follow-up" onClick={() => setOpen("follow")} />
-        <Btn icon={StickyNote} label="Add QA note" onClick={() => setOpen("note")} />
-        <Btn icon={UserCheck} label="Assign owner" onClick={() => setOpen("assign")} />
-        <Btn icon={Flame} label="Escalate" tone="crit" onClick={() => setOpen("escalate")} />
+        <Btn icon={Send} label="Send follow-up" disabled={pending} onClick={() => setOpen("follow")} />
+        <Btn icon={StickyNote} label="Add QA note" disabled={pending} onClick={() => setOpen("note")} />
+        <Btn icon={UserCheck} label="Assign owner" disabled={pending} onClick={() => setOpen("assign")} />
+        <Btn icon={Flame} label="Escalate" tone="crit" disabled={pending} onClick={() => setOpen("escalate")} />
       </div>
 
       <Dialog open={open === "note"} onOpenChange={(v) => !v && setOpen(null)}>
@@ -97,7 +104,7 @@ export function QAActionsPanel({ auth, variant = "default", sourceSystem, onChan
           <Textarea rows={5} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note for this work item…" />
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(null)}>Cancel</Button>
-            <Button disabled={!note.trim()} onClick={async () => { await run(wf.addNote(ref, note.trim())); setNote(""); setOpen(null); }}>Save note</Button>
+            <Button disabled={!note.trim() || pending} onClick={async () => { await run(wf.addNote(ref, note.trim())); setNote(""); setOpen(null); }}>Save note</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -108,7 +115,7 @@ export function QAActionsPanel({ auth, variant = "default", sourceSystem, onChan
           <Input value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Owner name" />
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(null)}>Cancel</Button>
-            <Button onClick={async () => { await run(wf.assignOwner(ref, owner.trim() || null)); setOpen(null); }}>Assign</Button>
+            <Button disabled={pending} onClick={async () => { await run(wf.assignOwner(ref, owner.trim() || null)); setOpen(null); }}>Assign</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -119,7 +126,7 @@ export function QAActionsPanel({ auth, variant = "default", sourceSystem, onChan
           <Textarea rows={4} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Escalation reason…" />
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(null)}>Cancel</Button>
-            <Button variant="destructive" disabled={!reason.trim()} onClick={async () => { await run(wf.escalate(ref, reason.trim())); setReason(""); setOpen(null); }}>Escalate</Button>
+            <Button variant="destructive" disabled={!reason.trim() || pending} onClick={async () => { await run(wf.escalate(ref, reason.trim())); setReason(""); setOpen(null); }}>Escalate</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -130,7 +137,7 @@ export function QAActionsPanel({ auth, variant = "default", sourceSystem, onChan
           <Textarea rows={4} value={followUp} onChange={(e) => setFollowUp(e.target.value)} placeholder="What follow-up is needed?" />
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(null)}>Cancel</Button>
-            <Button disabled={!followUp.trim()} onClick={async () => { await run(wf.addNote(ref, `Follow-up: ${followUp.trim()}`)); setFollowUp(""); setOpen(null); }}>Send</Button>
+            <Button disabled={!followUp.trim() || pending} onClick={async () => { await run(wf.sendFollowUp(ref, followUp.trim())); setFollowUp(""); setOpen(null); }}>Send</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -138,12 +145,14 @@ export function QAActionsPanel({ auth, variant = "default", sourceSystem, onChan
   );
 }
 
-function Btn({ icon: Icon, label, tone, onClick }: { icon: React.ElementType; label: string; tone?: Tone; onClick?: () => void }) {
+function Btn({ icon: Icon, label, tone, onClick, disabled }: { icon: React.ElementType; label: string; tone?: Tone; onClick?: () => void; disabled?: boolean }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         "h-9 px-3 rounded-xl text-xs font-medium border transition inline-flex items-center justify-center gap-1.5",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
         tone === "crit"
           ? "border-destructive/20 text-destructive hover:bg-destructive/5"
           : "border-border/70 text-foreground bg-card hover:bg-muted",
