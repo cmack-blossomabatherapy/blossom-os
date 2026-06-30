@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useSchedulingActions } from "@/hooks/useSchedulingActions";
+import { useClients } from "@/contexts/ClientsContext";
+import type { ScheduleSlot } from "@/data/clients";
 
 const CR_NOTE = "Staged in Blossom OS. CentralReach API not connected yet — change will be queued for future sync.";
 
@@ -250,6 +252,7 @@ export function AdjustmentDialog({
   open: boolean; onOpenChange: (o: boolean) => void; client?: ClientLite | null; onSaved?: () => void;
 }) {
   const { createAdjustment, logAction } = useSchedulingActions();
+  const { addScheduleSlot } = useClients();
   const [type, setType] = useState<"move_session" | "add_session" | "remove_session" | "change_rbt" | "change_location" | "change_time">("move_session");
   const [day, setDay] = useState("");
   const [date, setDate] = useState("");
@@ -262,6 +265,27 @@ export function AdjustmentDialog({
   const [location, setLocation] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [applyLocal, setApplyLocal] = useState(true);
+
+  // Decide whether we can safely apply this adjustment to the local Blossom OS schedule.
+  function tryBuildLocalSlot(): ScheduleSlot | null {
+    const dayKey = (day || "").trim().slice(0, 3);
+    const allowed = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+    const dayMatch = allowed.find((d) => d.toLowerCase() === dayKey.toLowerCase());
+    if (!dayMatch) return null;
+    if (!newStart || !newEnd) return null;
+    const loc = (["Home", "School", "Clinic"] as const).find((l) => l.toLowerCase() === location.trim().toLowerCase());
+    const rbtVal = newRbt.trim() || (oldRbt.trim() || undefined);
+    return { day: dayMatch, start: newStart, end: newEnd, rbt: rbtVal, location: loc };
+  }
+
+  function canApplyLocal(): boolean {
+    if (!client) return false;
+    if (type === "add_session") return !!tryBuildLocalSlot();
+    if (type === "change_rbt") return !!tryBuildLocalSlot(); // needs day + new times to safely identify slot
+    // move_session / change_time / remove_session / change_location: too ambiguous without slot ids.
+    return false;
+  }
 
   const save = async () => {
     if (!client) { toast.error("Select a client first."); return; }
@@ -277,9 +301,21 @@ export function AdjustmentDialog({
       await logAction({
         clientId: client.id, clientName: client.childName, actionType: "schedule_adjustment", title: `Adjustment: ${type}`,
         note: reason, state: client.state ?? null,
-        metadata: { adjustment_id: (row as { id?: string } | null)?.id },
+        metadata: { adjustment_id: (row as { id?: string } | null)?.id, applied_local: applyLocal && canApplyLocal() },
       });
-      toast.success("Adjustment saved. Not ready for CentralReach sync.");
+      let appliedLocal = false;
+      if (applyLocal && canApplyLocal()) {
+        const slot = tryBuildLocalSlot();
+        if (slot) {
+          await addScheduleSlot(client.id, slot);
+          appliedLocal = true;
+        }
+      }
+      toast.success(
+        appliedLocal
+          ? "Saved and applied to Blossom OS schedule. CentralReach sync not connected yet."
+          : "Saved as staged adjustment. Not ready for CentralReach sync.",
+      );
       onOpenChange(false); onSaved?.();
     } catch { /* */ } finally { setBusy(false); }
   };
@@ -319,6 +355,23 @@ export function AdjustmentDialog({
           </div>
           <div><Label>Location</Label><Input placeholder="Home / Clinic / School" value={location} onChange={(e) => setLocation(e.target.value)} /></div>
           <div><Label>Reason</Label><Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} /></div>
+          <label className="flex items-start gap-2 text-sm rounded-md border border-border/60 bg-muted/30 p-2">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={applyLocal}
+              onChange={(e) => setApplyLocal(e.target.checked)}
+              disabled={!canApplyLocal()}
+            />
+            <span>
+              <span className="font-medium">Apply to Blossom OS schedule now</span>
+              <span className="block text-[11px] text-muted-foreground">
+                {canApplyLocal()
+                  ? "We have day + new start/end. The slot will appear in the client schedule immediately. CentralReach sync is still queued."
+                  : "Needs day, new start, and new end (add_session or change_rbt) to safely update the local schedule."}
+              </span>
+            </span>
+          </label>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
@@ -394,6 +447,7 @@ export function AssignRbtDialog({
   defaultRbt?: string; onSaved?: (rbtName: string) => void;
 }) {
   const { logAction } = useSchedulingActions();
+  const { assignRbt } = useClients();
   const [rbt, setRbt] = useState(defaultRbt);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -403,18 +457,24 @@ export function AssignRbtDialog({
     if (open) setRbt(defaultRbt ?? "");
   }, [open, defaultRbt]);
   const save = async () => {
-    if (!client || !rbt.trim()) { toast.error("Select a client and RBT."); return; }
+    const trimmed = rbt.trim();
+    if (!client || !trimmed) { toast.error("Select a client and RBT."); return; }
     setBusy(true);
     try {
       await logAction({
         clientId: client.id, clientName: client.childName, actionType: "rbt_assigned",
-        title: `RBT assigned: ${rbt}`, note,
+        title: `RBT assigned: ${trimmed}`, note,
         state: client.state ?? null,
         status: "completed",
-        metadata: { rbt_name: rbt, prior_rbt: client.rbt ?? null },
+        metadata: { rbt_name: trimmed, prior_rbt: client.rbt ?? null },
       });
-      toast.success(`Paired ${client.childName} with ${rbt}. Status moves toward Pending Schedule/Start until readiness rules pass.`);
-      onOpenChange(false); onSaved?.(rbt);
+      // Update local client state so the workspace reflects the assignment
+      // immediately. assignRbt already appends timeline + automation entries,
+      // so we do not duplicate them here. CentralReach is intentionally NOT
+      // marked as synced — the worker is not connected yet.
+      await assignRbt([client.id], trimmed);
+      toast.success(`Paired ${client.childName} with ${trimmed}. Staged in Blossom OS; CentralReach sync not connected yet.`);
+      onOpenChange(false); onSaved?.(trimmed);
     } catch { /* */ } finally { setBusy(false); }
   };
   return (
@@ -422,7 +482,7 @@ export function AssignRbtDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Assign RBT{client ? ` · ${client.childName}` : ""}</DialogTitle>
-          <DialogDescription>Logs to scheduling_actions (rbt_assigned).</DialogDescription>
+          <DialogDescription>Logs to scheduling_actions (rbt_assigned) and updates the local Blossom OS client record. {CR_NOTE}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div><Label>RBT name</Label><Input value={rbt} onChange={(e) => setRbt(e.target.value)} placeholder="Start typing…" /></div>
@@ -431,6 +491,73 @@ export function AssignRbtDialog({
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
           <Button onClick={save} disabled={busy || !client}>{busy ? "Saving…" : "Confirm Assignment"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ---------------- Confirm Start Date ---------------- */
+export function StartDateDialog({
+  open, onOpenChange, client, onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  client?: ClientLite | null;
+  onSaved?: (date: string) => void;
+}) {
+  const { logAction } = useSchedulingActions();
+  const { setStartDate } = useClients();
+  const [date, setDate] = useState<string>("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open) { setDate(""); setNote(""); }
+  }, [open]);
+
+  const save = async () => {
+    if (!client) { toast.error("Select a client first."); return; }
+    if (!date) { toast.error("Pick a start date."); return; }
+    setBusy(true);
+    try {
+      await setStartDate([client.id], date);
+      await logAction({
+        clientId: client.id,
+        clientName: client.childName,
+        actionType: "start_date_confirmed",
+        title: `Start date confirmed: ${date}`,
+        note,
+        state: client.state ?? null,
+        status: "completed",
+        metadata: { start_date: date, prior_rbt: client.rbt ?? null, bcba: client.bcba ?? null },
+      });
+      toast.success(`Start date set for ${client.childName}. Staged in Blossom OS; CentralReach sync not connected yet.`);
+      onOpenChange(false);
+      onSaved?.(date);
+    } catch { /* toast already shown */ } finally { setBusy(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Confirm start date{client ? ` · ${client.childName}` : ""}</DialogTitle>
+          <DialogDescription>{CR_NOTE}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Start date</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything Scheduling needs to know…" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
+          <Button onClick={save} disabled={busy || !client || !date}>{busy ? "Saving…" : "Confirm Start Date"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
