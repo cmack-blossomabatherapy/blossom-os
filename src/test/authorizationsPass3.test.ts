@@ -181,18 +181,21 @@ describe("Authorizations Pass 3 — merge helpers", () => {
 describe("Authorizations Pass 3 — single Reports page", () => {
   it("authorization_coordinator menu lists exactly one Reports link, /reports", () => {
     const src = read("src/lib/os/roleMenus.ts");
-    const block = src.match(
-      /authorization_coordinator[\s\S]+?(?=^\s{2}\w|\Z)/m,
-    )?.[0];
+    const startIdx = src.indexOf("authorization_coordinator:");
+    expect(startIdx).toBeGreaterThan(-1);
+    // Stop at the next role definition (next "  <ident>: {" at 2-space indent).
+    const tail = src.slice(startIdx + "authorization_coordinator:".length);
+    const stop = tail.search(/\n {2}[a-z_]+:\s*\{/);
+    const block = stop >= 0 ? tail.slice(0, stop) : tail;
     expect(block, "authorization_coordinator block not found").toBeDefined();
     if (!block) return;
     const reportsLines = block
       .split("\n")
-      .filter((l) => /Reports?/.test(l) && /to:\s*['"`]\//.test(l));
+      .filter((l) => /Reports?/.test(l) && /path:\s*['"`]\//.test(l));
     expect(reportsLines.length).toBeGreaterThan(0);
     for (const line of reportsLines) {
       expect(
-        /to:\s*['"`]\/reports['"`]/.test(line),
+        /path:\s*['"`]\/reports['"`]/.test(line),
         `non-canonical reports link in menu: ${line}`,
       ).toBe(true);
     }
