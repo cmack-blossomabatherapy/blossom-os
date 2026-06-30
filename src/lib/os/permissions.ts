@@ -334,6 +334,24 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
     actions: { dashboard: VIEW, scheduling: FULL, clients: VIEW, staff: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },
+  /**
+   * Staffing Team has its own role profile — it shares some surface area with
+   * Scheduling but owns RBT/case matching, family preferences, and coverage
+   * gaps. Staffing should never be aliased back to scheduling_team.
+   */
+  staffing_team: {
+    modules: ["dashboard", "staff", "clients", "scheduling", "reports", "training", "sop", "ai_assistant"],
+    scope: "company",
+    actions: {
+      dashboard: VIEW,
+      staff: FULL,
+      clients: VIEW_EDIT,
+      scheduling: VIEW_EDIT,
+      reports: ["view", "export"],
+      training: VIEW,
+    },
+    leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
+  },
   recruiting_team: {
     modules: ["dashboard", "recruiting", "staff", "credentialing", "employee_ops", "training", "hr", "kpi", "ai_assistant"],
     scope: "company",
