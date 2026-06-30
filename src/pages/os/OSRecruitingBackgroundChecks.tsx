@@ -462,7 +462,7 @@ export default function OSRecruitingBackgroundChecks() {
                               title={uuid ? "Initiate a Stellar Check record" : "No matching candidate record in recruiting_candidates"}
                               onClick={() => {
                                 if (!uuid) return;
-                                void mutations.startBackgroundCheck(uuid, "Stellar Check", c.blockers[0] ?? null);
+                                void mutations.startBackgroundCheck(uuid, "Stellar Check", c.blockers[0] ?? undefined);
                               }}
                               className={cn(
                                 "h-8 px-3 rounded-lg text-xs inline-flex items-center gap-1.5 transition",
