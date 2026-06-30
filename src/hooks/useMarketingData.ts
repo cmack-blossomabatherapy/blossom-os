@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { LeadSource } from "@/data/leads";
+import type { Database } from "@/integrations/supabase/types";
 
-const KNOWN_LEAD_SOURCES: LeadSource[] = [
+const KNOWN_LEAD_SOURCES = new Set<LeadSource>([
   "Website",
   "Phone",
   "Facebook",
@@ -11,7 +12,7 @@ const KNOWN_LEAD_SOURCES: LeadSource[] = [
   "Organic",
   "Digital",
   "Insurance",
-];
+]);
 
 const LEAD_SOURCE_ALIASES: Record<string, LeadSource> = {
   web: "Website",
@@ -44,10 +45,25 @@ const LEAD_SOURCE_ALIASES: Record<string, LeadSource> = {
 export function normalizeLeadSource(raw: string | null | undefined): LeadSource {
   if (!raw) return "Referral";
   const trimmed = raw.trim();
-  if ((KNOWN_LEAD_SOURCES as string[]).includes(trimmed)) return trimmed as LeadSource;
+  if (KNOWN_LEAD_SOURCES.has(trimmed as LeadSource)) return trimmed as LeadSource;
   const key = trimmed.toLowerCase();
   return LEAD_SOURCE_ALIASES[key] ?? "Referral";
 }
+
+const UNKNOWN_STATE = "Unknown";
+
+type IntakeLeadRow = Pick<
+  Database["public"]["Tables"]["intake_leads"]["Row"],
+  "id" | "referral_source" | "state" | "pipeline_stage" | "created_at"
+>;
+type RecruitingCandidateRow = Pick<
+  Database["public"]["Tables"]["recruiting_candidates"]["Row"],
+  "id" | "source" | "state" | "role" | "pipeline_stage" | "is_archived" | "applied_date"
+>;
+type MarketingCallEventRow = Pick<
+  Database["public"]["Tables"]["marketing_call_events"]["Row"],
+  "id" | "occurred_at" | "source_system" | "state" | "status"
+>;
 
 /**
  * Real-data hook for Marketing surfaces. Replaces the previous reliance on
@@ -62,12 +78,14 @@ export function normalizeLeadSource(raw: string | null | undefined): LeadSource 
 export type MktLead = {
   id: string;
   source: LeadSource;
-  state: string | null;
+  /** Always present — null states are coerced to `"Unknown"` so map keys stay safe. */
+  state: string;
   status: string;
   createdAt: string;
 };
 export type MktCandidate = {
   id: string;
+  /** Recruiting sources include channels outside `LeadSource` (e.g. "Apploi", "Direct"). */
   source: string;
   state: string | null;
   role: string;
@@ -126,27 +144,27 @@ export function useMarketingData(): UseMarketingDataResult {
       }
 
       setLeads(
-        (leadsRes.data ?? []).map((l: any) => ({
+        ((leadsRes.data ?? []) as IntakeLeadRow[]).map((l) => ({
           id: l.id,
           source: normalizeLeadSource(l.referral_source),
-          state: l.state ?? null,
+          state: l.state ?? UNKNOWN_STATE,
           status: l.pipeline_stage ?? "Lead Captured",
           createdAt: l.created_at,
         })),
       );
       setCandidates(
-        (candRes.data ?? []).map((c: any) => ({
+        ((candRes.data ?? []) as RecruitingCandidateRow[]).map((c) => ({
           id: c.id,
-          source: (c.source ?? "Direct") as string,
-          state: (c.state as string) ?? null,
-          role: c.role,
-          stage: c.pipeline_stage,
+          source: c.source ?? "Direct",
+          state: c.state ?? null,
+          role: c.role ?? "RBT",
+          stage: c.pipeline_stage ?? "New Applicant",
           status: c.is_archived ? "Withdrawn" : "Active",
-          appliedDate: c.applied_date,
+          appliedDate: c.applied_date ?? new Date().toISOString(),
         })),
       );
       setCalls(
-        (callsRes.data ?? []).map((c: any) => ({
+        ((callsRes.data ?? []) as MarketingCallEventRow[]).map((c) => ({
           id: c.id,
           createdAt: c.occurred_at,
           source: normalizeLeadSource(c.source_system),
