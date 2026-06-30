@@ -48,9 +48,9 @@ export function useSchedulingActions() {
           status: params.status ?? "open",
           priority: params.priority ?? "normal",
           due_at: params.dueAt ?? null,
-          metadata: params.metadata ?? {},
+          metadata: (params.metadata ?? {}) as never,
           created_by: userId,
-        }])
+        }] as never)
         .select()
         .single();
       if (error) {
@@ -96,9 +96,9 @@ export function useSchedulingActions() {
           reason: params.reason ?? null,
           next_action: params.nextAction ?? null,
           owner_user_id: userId,
-          metadata: params.metadata ?? {},
+          metadata: (params.metadata ?? {}) as never,
           created_by: userId,
-        }])
+        }] as never)
         .select()
         .single();
       if (error) {
@@ -162,8 +162,8 @@ export function useSchedulingActions() {
           make_up_status: params.makeUpRequired ? "needed" : "not_required",
           centralreach_sync_status: "queued",
           created_by: userId,
-          metadata: params.metadata ?? {},
-        }])
+          metadata: (params.metadata ?? {}) as never,
+        }] as never)
         .select()
         .single();
       if (error) {
@@ -246,9 +246,9 @@ export function useSchedulingActions() {
           reason: params.reason ?? null,
           approval_status: params.approvalStatus ?? "draft",
           centralreach_sync_status: "not_ready",
-          metadata: params.metadata ?? {},
+          metadata: (params.metadata ?? {}) as never,
           created_by: userId,
-        }])
+        }] as never)
         .select()
         .single();
       if (error) {
