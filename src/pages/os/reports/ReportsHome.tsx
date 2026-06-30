@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Sparkles, Plus, Bookmark, Star, History,
   ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Trash2,
@@ -27,6 +27,8 @@ import { useAuthorizationReportMetrics } from "@/hooks/useAuthorizationReportMet
 
 export default function ReportsHome() {
   const { role } = useOSRole();
+  const [searchParams] = useSearchParams();
+  const activeCategory = searchParams.get("category");
   const reports = useMemo(() => visibleReportsForRole(role), [role]);
   const authReportMetrics = useAuthorizationReportMetrics();
   // Overlay live Authorizations KPI previews so report cards never render
@@ -40,6 +42,15 @@ export default function ReportsHome() {
     });
   }, [reports, authReportMetrics.byReportId]);
   const categories = useMemo(() => visibleCategoriesForRole(role), [role]);
+  // When a ?category=xxx is set, prioritize that category to the top.
+  const categoriesOrdered = useMemo(() => {
+    if (!activeCategory) return categories;
+    const idx = categories.findIndex((c) => c.id === activeCategory);
+    if (idx < 0) return categories;
+    const copy = [...categories];
+    const [picked] = copy.splice(idx, 1);
+    return [picked, ...copy];
+  }, [categories, activeCategory]);
   const featured = useMemo(() => {
     const qaPriority = ["bcba-productivity-report", "qa-supervision-pt", "qa-auth-utilization", "qa-cancellation"];
     return reportsWithLive
