@@ -603,6 +603,8 @@ function RecordDetailSheet({
   const [addDocOpen, setAddDocOpen] = useState(false);
   const [crIdsOpen, setCrIdsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [syncErrorOpen, setSyncErrorOpen] = useState(false);
+  const [syncErrorNote, setSyncErrorNote] = useState("");
   const [newMissing, setNewMissing] = useState("");
   const [ownerDraft, setOwnerDraft] = useState("");
   const [followUpDraft, setFollowUpDraft] = useState("");
@@ -683,7 +685,12 @@ function RecordDetailSheet({
     try {
       await updateCredRecord(
         record.id,
-        { centralreach_sync_status: status },
+        {
+          centralreach_sync_status: status,
+          centralreach_last_readiness_at: new Date().toISOString(),
+          // Clear stale error message unless re-marking Sync Error
+          ...(status === "Sync Error" ? {} : { centralreach_sync_error: null }),
+        },
         {
           type: "cr_sync_status_change",
           message: `CentralReach sync: ${old} → ${status}`,
@@ -692,6 +699,32 @@ function RecordDetailSheet({
         },
       );
       toast.success(`CentralReach: ${status}`);
+      onChanged();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Update failed"); }
+  }
+
+  async function submitSyncError() {
+    if (!record) return;
+    const note = syncErrorNote.trim();
+    if (!note) { toast.error("Add a short note explaining the sync error."); return; }
+    try {
+      await updateCredRecord(
+        record.id,
+        {
+          centralreach_sync_status: "Sync Error",
+          centralreach_sync_error: note,
+          centralreach_last_readiness_at: new Date().toISOString(),
+        },
+        {
+          type: "cr_sync_status_change",
+          message: `CentralReach sync: ${record.centralreach_sync_status} → Sync Error — ${note}`,
+          old: record.centralreach_sync_status,
+          new: "Sync Error",
+        },
+      );
+      toast.success("CentralReach marked Sync Error");
+      setSyncErrorNote("");
+      setSyncErrorOpen(false);
       onChanged();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Update failed"); }
   }
