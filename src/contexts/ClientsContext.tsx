@@ -433,9 +433,14 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
 
   const getClient = useCallback((id: string) => clients.find((c) => c.id === id), [clients]);
 
-  // ─── Local-state mutation helpers ───────────────────────────────────
-  // Monday is the source of truth — mutations apply optimistically to
-  // local state only. Re-importing the Monday board will refresh values.
+  // ─── Mutation helpers ───────────────────────────────────────────────
+  // Monday is still the import baseline for client identity, but
+  // Scheduling-critical mutations (assignRbt, setStartDate, schedule
+  // slot helpers) ALSO persist to the durable Scheduling overlay tables
+  // (scheduling_client_overrides, scheduling_client_schedule_slots) so
+  // they survive refresh and Monday re-import. Other helpers remain
+  // optimistic in-memory updates until those workflows get their own
+  // overlays.
 
   const applyPatch = (id: string, patch: Partial<Client>) =>
     setClients((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
