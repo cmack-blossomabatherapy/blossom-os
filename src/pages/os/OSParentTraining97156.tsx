@@ -74,7 +74,7 @@ interface PT97156Item {
   riskTone: Tone;
   bucket: Bucket;
   signatureMissing: boolean;
-  qaState: "Not Started" | "In Review" | "Complete";
+  qaState: import("@/data/authorizations").QAStatus;
   schedulingReady: boolean;
   nextAction: string;
   lastActivity: string;

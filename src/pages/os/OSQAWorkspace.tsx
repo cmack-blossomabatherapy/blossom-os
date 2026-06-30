@@ -9,6 +9,7 @@ import {
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import type { Authorization } from "@/data/authorizations";
+import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import { cn } from "@/lib/utils";
 
 // QA Workspace — operational execution hub.
@@ -118,7 +119,7 @@ function stageTone(a: Authorization): Tone {
 }
 
 export default function OSQAWorkspace() {
-  const { qaItems: items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading, refresh, sourceById } = useLiveAuthorizations();
   const [activeQueue, setActiveQueue] = useState<QueueKey>("review");
   const [query, setQuery] = useState("");
   const [stateFilter, setStateFilter] = useState<string>("all");
@@ -333,12 +334,12 @@ export default function OSQAWorkspace() {
               </div>
               <div className="space-y-1">
                 {[
-                  { label: "Add QA Note", icon: StickyNote, to: "#" },
-                  { label: "Send Follow-Up", icon: Send, to: "#" },
-                  { label: "Escalate Workflow", icon: Flame, to: "#" },
-                  { label: "Open QA Queue", icon: Inbox, to: "/qa" },
+                  { label: "Open QA Queue", icon: Inbox, to: "/qa-queue" },
+                  { label: "Open Missing Info", icon: FileWarning, to: "/missing-information" },
+                  { label: "Send Follow-Ups", icon: Send, to: "/qa-messages" },
+                  { label: "Open Escalations", icon: Flame, to: "/escalations-followups" },
                   { label: "View Expiring Items", icon: CalendarClock, to: "/expiring-items" },
-                  { label: "Open Progress Reports", icon: ScrollText, to: "/qa-queue" },
+                  { label: "Open Progress Reports", icon: ScrollText, to: "/progress-reports" },
                 ].map(a => (
                   <Link key={a.label} to={a.to}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted transition">
@@ -476,22 +477,13 @@ export default function OSQAWorkspace() {
                               className="h-8 px-3 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center gap-1.5">
                               <ExternalLink className="h-3 w-3" /> Open record
                             </Link>
-                            <button className="h-8 px-3 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-1.5">
-                              <CheckCircle2 className="h-3 w-3" /> Mark reviewed
-                            </button>
-                            <button className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
-                              <Send className="h-3 w-3" /> Request follow-up
-                            </button>
-                            <button className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
-                              <StickyNote className="h-3 w-3" /> Add note
-                            </button>
-                            <button className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
-                              <UserCheck className="h-3 w-3" /> Assign owner
-                            </button>
-                            <button className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-destructive">
-                              <Flame className="h-3 w-3" /> Escalate
-                            </button>
                           </div>
+                          <QAActionsPanel
+                            auth={a}
+                            variant={a.missingInfo ? "missing-info" : "default"}
+                            sourceSystem={sourceById?.get(a.id) ?? "monday"}
+                            onChanged={refresh}
+                          />
                         </div>
                       )}
                     </Card>

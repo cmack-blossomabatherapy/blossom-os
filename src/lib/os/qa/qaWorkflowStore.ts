@@ -207,6 +207,19 @@ export const qaWorkflowStore = {
     return applyPatch(ref, { notes: note }, { notes: note });
   },
 
+  /**
+   * Persist a follow-up request as a structured note with a `Follow-up:` prefix
+   * and a recognizable next_action so downstream queues can detect it.
+   */
+  async sendFollowUp(ref: QAWorkItemRef, text: string) {
+    const stamped = `Follow-up: ${text}`;
+    return applyPatch(
+      ref,
+      { notes: stamped, next_action: "Awaiting BCBA follow-up" },
+      { notes: stamped, next_action: "Awaiting BCBA follow-up" },
+    );
+  },
+
   async escalate(ref: QAWorkItemRef, reason: string) {
     return applyPatch(
       ref,

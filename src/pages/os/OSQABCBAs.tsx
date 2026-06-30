@@ -524,8 +524,10 @@ export default function OSQABCBAs() {
                           </div>
                           <Pill tone={tone}>{r.weeks !== null ? `${r.weeks}w` : `${r.days}d`}</Pill>
                           <div className="hidden md:flex items-center gap-1.5 shrink-0">
-                            <IconBtn title="Send follow-up" icon={Send} />
-                            <IconBtn title="Escalate"       icon={Flame} tone="crit" />
+                            <IconBtn title="Open in QA queue" icon={Send}
+                              to={`/qa-queue?focus=${encodeURIComponent(r.id)}`} />
+                            <IconBtn title="Open escalations" icon={Flame} tone="crit"
+                              to={`/escalations-followups?focus=${encodeURIComponent(r.id)}`} />
                           </div>
                         </li>
                       );
@@ -836,9 +838,9 @@ function BCBACard({ b, onOpen }: { b: BCBARow; onOpen: () => void }) {
           </button>
           <div className="hidden md:flex flex-col items-end gap-1.5 shrink-0">
             <div className="flex items-center gap-1.5">
-              <IconBtn title="Add QA note"    icon={StickyNote} />
-              <IconBtn title="Send follow-up" icon={Send} />
-              <IconBtn title="Escalate"       icon={Flame} tone="crit" />
+              <IconBtn title="Add QA note"    icon={StickyNote} onClick={onOpen} />
+              <IconBtn title="Send follow-up" icon={Send}       onClick={onOpen} />
+              <IconBtn title="Escalate"       icon={Flame} tone="crit" onClick={onOpen} />
             </div>
             <button onClick={onOpen}
               className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition">
@@ -928,10 +930,10 @@ function BCBASlideout({ b, onClose }: { b: BCBARow; onClose: () => void }) {
           </section>
 
           <section className="grid grid-cols-2 gap-2">
-            <ActionBtn icon={ExternalLink}  label="Open BCBA"           to={`/staff/${encodeURIComponent(b.name)}`} />
-            <ActionBtn icon={FileText}      label="View PR workflows"   to="/progress-reports" />
-            <ActionBtn icon={ClipboardList} label="Open QA queue"       to="/qa-queue" />
-            <ActionBtn icon={ClipboardList} label="Open escalations"    to="/escalations-followups" />
+            <ActionBtn icon={FileText}      label="View PR workflows"   to={`/progress-reports?bcba=${encodeURIComponent(b.name)}`} />
+            <ActionBtn icon={ClipboardList} label="Open QA queue"       to={`/qa-queue?bcba=${encodeURIComponent(b.name)}`} />
+            <ActionBtn icon={ClipboardList} label="Open escalations"    to={`/escalations-followups?bcba=${encodeURIComponent(b.name)}`} />
+            <ActionBtn icon={ExternalLink}  label="QA clients"          to={`/qa-clients?bcba=${encodeURIComponent(b.name)}`} />
           </section>
 
           <section>
@@ -959,6 +961,13 @@ function BCBASlideout({ b, onClose }: { b: BCBARow; onClose: () => void }) {
                         {hasPR && <Pill tone="warn">PR</Pill>}
                         {hasTP && <Pill tone="warn">TP</Pill>}
                         {a.missingInfo && !hasPR && !hasTP && <Pill tone="warn">Missing</Pill>}
+                        <Link
+                          to={`/qa-queue?focus=${encodeURIComponent(a.id)}`}
+                          className="ml-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                          title="Open in QA queue"
+                        >
+                          Open <ChevronRight className="h-3 w-3" strokeWidth={1.75} />
+                        </Link>
                       </div>
                     </li>
                   );

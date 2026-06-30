@@ -575,10 +575,20 @@ export function useLiveAuthorizations(): LiveAuthorizations {
         const q = qaByRecord.get(a.id);
         if (!q) return a;
         const blockers = q.blockers ?? [];
+        // qa_status is persisted as text; validate against the canonical QAStatus
+        // union and fall back to the existing value if the row is stale or empty.
+        const VALID: ReadonlyArray<Authorization["qaStatus"]> = [
+          "Not Started", "Awaiting Review", "In Review", "Issues Found",
+          "Ready for Submission", "Submitted to Auth", "Escalated", "Complete",
+        ];
+        const persistedStatus = q.qa_status as string | null | undefined;
+        const nextStatus = (persistedStatus && (VALID as readonly string[]).includes(persistedStatus))
+          ? (persistedStatus as Authorization["qaStatus"])
+          : a.qaStatus;
         return {
           ...a,
           qaOwner: q.assigned_qa_owner ?? a.qaOwner,
-          qaStatus: (q.qa_status as Authorization["qaStatus"]) ?? a.qaStatus,
+          qaStatus: nextStatus,
           qaNotes: q.notes ?? a.qaNotes,
           nextAction: q.next_action ?? a.nextAction,
           missingRequirements: blockers.length ? blockers : a.missingRequirements,

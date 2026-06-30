@@ -60,7 +60,7 @@ interface SupItem {
   escStage: EscStage;
   escTone: Tone;
   parentSig: boolean;        // true = signature blocking
-  qaState: "Not Started" | "In Review" | "Complete";
+  qaState: import("@/data/authorizations").QAStatus;
   riskTone: Tone;
   ownerLabel: string;        // outreach owner
   escalationLabel: string;   // who is involved at 6-week
