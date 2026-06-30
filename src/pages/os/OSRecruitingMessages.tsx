@@ -423,6 +423,52 @@ export default function OSRecruitingMessages() {
         </section>
 
         {/* Filter chips */}
+        <LiveRecruitingSection
+          title="Live messages"
+          subtitle="Primary source — rows from recruiting_messages"
+          tableName="recruiting_messages"
+          items={liveMessages}
+          loading={liveMessagesLoading}
+          emptyTitle="No live messages on file"
+          emptyBody="Inbound and outbound messages logged to recruiting_messages will render here. The board below shows candidate-derived suggestions."
+          renderRow={(row: any) => {
+            const cand = row.candidate_id ? findCandidate(row.candidate_id) : null;
+            const candName = cand ? `${cand.first_name} ${cand.last_name}`.trim() : "Message";
+            const isRead = row.status === "Read" || row.status === "Handled";
+            return (
+              <LiveRowCard
+                title={candName}
+                meta={[row.subject ?? row.body?.slice(0, 80), row.channel, row.sender, new Date(row.sent_at).toLocaleString()].filter(Boolean).join(" · ")}
+                tone={isRead ? "ok" : "warn"}
+                badges={
+                  <>
+                    <Pill tone="info">{row.direction}</Pill>
+                    <Pill tone={isRead ? "ok" : "warn"}>{row.status}</Pill>
+                  </>
+                }
+                actions={
+                  !isRead && (
+                    <>
+                      <button
+                        onClick={() => void mutations.markMessageRead(row.id)}
+                        className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition"
+                      >
+                        Mark read
+                      </button>
+                      <button
+                        onClick={() => void mutations.markMessageHandled(row.id)}
+                        className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition"
+                      >
+                        Handled
+                      </button>
+                    </>
+                  )
+                }
+              />
+            );
+          }}
+        />
+
         <div className="flex flex-wrap gap-2">
           {CHIPS.map((c) => (
             <button
