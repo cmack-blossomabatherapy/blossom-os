@@ -1,4 +1,4 @@
-import { runPageStageMove } from "@/lib/recruiting/stageMapping";
+import { runPageStageMove, mapBcbaStageToCanonical } from "@/lib/recruiting/stageMapping";
 import { useMemo, useState } from "react";
 import {
   Search, X, AlertTriangle, CheckCircle2, Sparkles, Brain, Send,
