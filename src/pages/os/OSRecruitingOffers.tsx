@@ -15,7 +15,8 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingOffers } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingOffers, fullName, type RecruitingOffer } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,35 @@ const STAGES = [
   { key: "staffingReady",  label: "Staffing Ready" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+// Round-trip mapping between recruiting_offers.status and the board's stage keys.
+// Live rows always win over the synthetic classifier when present.
+const OFFER_STATUS_TO_STAGE: Record<string, StageKey> = {
+  Draft: "offerReady",
+  Pending: "offerReady",
+  Sent: "offerSent",
+  Unsigned: "awaitingSig",
+  Accepted: "offerSigned",
+  Signed: "offerSigned",
+  Declined: "offerReady",
+  Withdrawn: "offerReady",
+};
+const STAGE_TO_OFFER_STATUS: Partial<Record<StageKey, string>> = {
+  offerReady: "Draft",
+  offerSent: "Sent",
+  awaitingSig: "Unsigned",
+  offerSigned: "Accepted",
+  viventiumSetup: "Accepted",
+  onboardingStarted: "Accepted",
+  onboardingComplete: "Accepted",
+  bgPending: "Accepted",
+  orientation: "Accepted",
+  staffingReady: "Accepted",
+};
+function offerStatusToStage(status: string | null | undefined, fallback: StageKey): StageKey {
+  if (!status) return fallback;
+  return OFFER_STATUS_TO_STAGE[status] ?? fallback;
+}
 
 function classify(c: RecruitingCandidate): StageKey {
   if (c.readinessStatus === "Ready for Staffing" || c.candidateStatus === "Ready for Staffing") return "staffingReady";
@@ -134,7 +164,33 @@ const HIRING_STEPS = [
 export default function OSRecruitingOffers() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveOffers } = useRecruitingOffers();
+  const { items: liveOffers, loading: liveOffersLoading } = useRecruitingOffers();
+  const { candidates: liveCandidates } = useRecruitingCandidateLookup();
+
+  // Cross-reference live offer rows with live candidate rows so we can match
+  // them back to the synthetic recruiting candidates rendered in this page.
+  const liveOfferByName = useMemo(() => {
+    const candidateNameById = new Map<string, string>();
+    for (const lc of liveCandidates) {
+      candidateNameById.set(lc.id, fullName(lc).toLowerCase());
+    }
+    const m = new Map<string, RecruitingOffer>();
+    for (const o of liveOffers) {
+      const name = candidateNameById.get(o.candidate_id);
+      if (name && !m.has(name)) m.set(name, o);
+    }
+    return m;
+  }, [liveOffers, liveCandidates]);
+  const liveCandidateIdByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const lc of liveCandidates) m.set(fullName(lc).toLowerCase(), lc.id);
+    return m;
+  }, [liveCandidates]);
+  const findLiveOfferFor = useCallback(
+    (c: RecruitingCandidate) => liveOfferByName.get(c.name.toLowerCase()) ?? null,
+    [liveOfferByName],
+  );
+
   const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
     Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
   );
@@ -146,7 +202,13 @@ export default function OSRecruitingOffers() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checks, setChecks] = useState<Record<string, boolean[]>>({});
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => {
+    const override = stageMap[c.id];
+    if (override) return override;
+    const live = findLiveOfferFor(c);
+    if (live) return offerStatusToStage(live.status, classify(c));
+    return classify(c);
+  };
 
   // Only candidates relevant to hiring (post-interview & forward).
   const hiringPool = useMemo(
@@ -221,6 +283,16 @@ export default function OSRecruitingOffers() {
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
     void runPageStageMove(mutations, "offers", id, to);
+    // Persist the offer status directly when the candidate has a live
+    // recruiting_offers row. Stage moves that don't map to an offer status
+    // (e.g. orientation, staffingReady) still fall back to runPageStageMove.
+    const candidate = recruitingCandidates.find((c) => c.id === id);
+    if (!candidate) return;
+    const offer = findLiveOfferFor(candidate);
+    const nextStatus = STAGE_TO_OFFER_STATUS[to];
+    if (offer && nextStatus && offer.status !== nextStatus) {
+      void mutations.updateOffer(offer.id, { status: nextStatus });
+    }
   }
 
   function onDragStart(e: React.DragEvent, id: string) {
