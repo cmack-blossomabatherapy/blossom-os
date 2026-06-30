@@ -12529,6 +12529,129 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduling_client_overrides: {
+        Row: {
+          centralreach_reference_id: string | null
+          centralreach_sync_status: string
+          client_key: string
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
+          rbt_name: string | null
+          scheduling_status: string | null
+          source_record_id: string | null
+          source_system: string
+          staffing_status: string | null
+          start_date: string | null
+          state: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_key: string
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          rbt_name?: string | null
+          scheduling_status?: string | null
+          source_record_id?: string | null
+          source_system?: string
+          staffing_status?: string | null
+          start_date?: string | null
+          state?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_key?: string
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          rbt_name?: string | null
+          scheduling_status?: string | null
+          source_record_id?: string | null
+          source_system?: string
+          staffing_status?: string | null
+          start_date?: string | null
+          state?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      scheduling_client_schedule_slots: {
+        Row: {
+          centralreach_reference_id: string | null
+          centralreach_sync_status: string
+          client_key: string
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          day: string
+          end_time: string
+          id: string
+          location: string | null
+          notes: string | null
+          rbt_name: string | null
+          source_record_id: string | null
+          source_system: string
+          start_time: string
+          state: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_key: string
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          day: string
+          end_time: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          rbt_name?: string | null
+          source_record_id?: string | null
+          source_system?: string
+          start_time: string
+          state?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_key?: string
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          day?: string
+          end_time?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          rbt_name?: string | null
+          source_record_id?: string | null
+          source_system?: string
+          start_time?: string
+          state?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       scheduling_contact_attempts: {
         Row: {
           body: string | null
@@ -14578,6 +14701,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      has_scheduling_write_access: {
+        Args: { _user_id: string }
         Returns: boolean
       }
       is_academy_trainee: { Args: { _enrollment_id: string }; Returns: boolean }
