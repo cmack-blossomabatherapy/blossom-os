@@ -141,7 +141,7 @@ describe("Authorizations Pass 3 — merge helpers", () => {
         {
           id: "r1",
           authorization_id: "overlay-1",
-          title: "Diagnostic Eval",
+          requirement_name: "Diagnostic Eval",
           status: "open",
           due_date: null,
         },
