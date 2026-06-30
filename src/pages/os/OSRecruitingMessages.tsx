@@ -455,7 +455,8 @@ export default function OSRecruitingMessages() {
     if (!/^[0-9a-f-]{36}$/i.test(cid)) return;
     setSendingId(s.id);
     try {
-      await mutations.logMessage(cid, {
+      await mutations.logMessage({
+        candidate_id: cid,
         direction: s.direction === "in" ? "inbound" : s.direction === "system" ? "system" : "outbound",
         channel: (s.source ?? "Email").toLowerCase(),
         subject: s.type,
