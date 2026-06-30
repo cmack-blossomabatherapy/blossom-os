@@ -1,5 +1,5 @@
 import { runPageStageMove } from "@/lib/recruiting/stageMapping";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Search, X, AlertTriangle, CheckCircle2, Clock, Sparkles,
   Brain, Send, MessageSquare, UserPlus, Download,
@@ -15,7 +15,8 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingBackgroundChecks } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingBackgroundChecks, fullName, type RecruitingBackgroundCheck } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,38 @@ const STAGES = [
   { key: "orientationReady",label: "Orientation Ready" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+// Round-trip mapping between recruiting_background_checks.status and the
+// board's stage keys. Live rows always win over the synthetic classifier.
+const BG_STATUS_TO_STAGE: Record<string, StageKey> = {
+  Pending: "pending",
+  "In Review": "pending",
+  Initiated: "initiated",
+  Submitted: "initiated",
+  Sent: "linkSent",
+  "Link Sent": "linkSent",
+  "Not Started": "notStarted",
+  Blocked: "flagged",
+  Flagged: "flagged",
+  Delayed: "flagged",
+  Cleared: "cleared",
+  Clear: "cleared",
+  Complete: "cleared",
+};
+const STAGE_TO_BG_STATUS: Partial<Record<StageKey, string>> = {
+  needsSubmission: "Pending",
+  linkSent: "Sent",
+  notStarted: "Not Started",
+  initiated: "Submitted",
+  pending: "Pending",
+  flagged: "Blocked",
+  cleared: "Cleared",
+  orientationReady: "Cleared",
+};
+function bgStatusToStage(status: string | null | undefined, fallback: StageKey): StageKey {
+  if (!status) return fallback;
+  return BG_STATUS_TO_STAGE[status] ?? fallback;
+}
 
 function classify(c: RecruitingCandidate): StageKey {
   if (c.backgroundCheck === "Delayed") return "flagged";
@@ -102,7 +135,31 @@ const CHIPS: Array<{ key: string; label: string }> = [
 export default function OSRecruitingBackgroundChecks() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveBackground } = useRecruitingBackgroundChecks();
+  const { items: liveBackground, loading: liveBackgroundLoading } = useRecruitingBackgroundChecks();
+  const { candidates: liveCandidates } = useRecruitingCandidateLookup();
+
+  // Cross-reference live background-check rows with live candidate rows so
+  // legacy in-page candidates can be matched to real DB rows by full name.
+  const liveBgByName = useMemo(() => {
+    const candidateNameById = new Map<string, string>();
+    for (const lc of liveCandidates) candidateNameById.set(lc.id, fullName(lc).toLowerCase());
+    const m = new Map<string, RecruitingBackgroundCheck>();
+    for (const b of liveBackground) {
+      const name = candidateNameById.get(b.candidate_id);
+      if (name && !m.has(name)) m.set(name, b);
+    }
+    return m;
+  }, [liveBackground, liveCandidates]);
+  const liveCandidateIdByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const lc of liveCandidates) m.set(fullName(lc).toLowerCase(), lc.id);
+    return m;
+  }, [liveCandidates]);
+  const findLiveBgFor = useCallback(
+    (c: RecruitingCandidate) => liveBgByName.get(c.name.toLowerCase()) ?? null,
+    [liveBgByName],
+  );
+
   const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
     Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
   );
@@ -113,7 +170,13 @@ export default function OSRecruitingBackgroundChecks() {
   const [recruiter, setRecruiter] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => {
+    const override = stageMap[c.id];
+    if (override) return override;
+    const live = findLiveBgFor(c);
+    if (live) return bgStatusToStage(live.status, classify(c));
+    return classify(c);
+  };
 
   // Pool: candidates eligible for background check (post-onboarding-handoff).
   const pool = useMemo(
@@ -191,6 +254,15 @@ export default function OSRecruitingBackgroundChecks() {
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
     void runPageStageMove(mutations, "background", id, to);
+    const candidate = recruitingCandidates.find((c) => c.id === id);
+    if (!candidate) return;
+    const live = findLiveBgFor(candidate);
+    const nextStatus = STAGE_TO_BG_STATUS[to];
+    if (live && nextStatus && live.status !== nextStatus) {
+      if (to === "cleared" || to === "orientationReady") void mutations.markBackgroundCleared(live.id);
+      else if (to === "flagged") void mutations.flagBackgroundBlocker(live.id, "Flagged from board");
+      else void mutations.updateBackground(live.id, { status: nextStatus });
+    }
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id);
