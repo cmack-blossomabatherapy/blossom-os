@@ -22,6 +22,12 @@ export interface EnsureOverlayInput {
   monday_item_id?: string | null;
   centralreach_authorization_id?: string | null;
   source_id?: string | null;
+  /**
+   * If known, the existing operational overlay row id. When provided we skip
+   * the lookup/insert path entirely — required when chaining actions against
+   * a freshly-created manual record so we don't insert duplicate overlays.
+   */
+  overlay_id?: string | null;
   client_name?: string | null;
   state?: string | null;
   payer?: string | null;
@@ -81,6 +87,9 @@ async function currentUserId(): Promise<string | null> {
  * passed `source_id`. Returns the overlay row id.
  */
 async function ensureOverlay(input: EnsureOverlayInput): Promise<string> {
+  // Fast path: caller already knows the overlay row id.
+  if (input.overlay_id) return input.overlay_id;
+
   const lookupKey =
     input.monday_item_id ??
     input.centralreach_authorization_id ??
@@ -125,7 +134,17 @@ async function ensureOverlay(input: EnsureOverlayInput): Promise<string> {
     .select("id")
     .single();
   if (insErr) throw insErr;
-  return inserted.id;
+  const newId = inserted.id;
+  // For manual rows without an external system key, stamp source_id with the
+  // new overlay id so subsequent lookups by `source_id` find this row instead
+  // of creating a second overlay.
+  if (!input.monday_item_id && !input.centralreach_authorization_id && !input.source_id) {
+    await supabase
+      .from("authorization_operational_records")
+      .update({ source_id: newId })
+      .eq("id", newId);
+  }
+  return newId;
 }
 
 async function logActivity({ recordId, activityType, description, oldValue, newValue }: LogActivityInput) {
@@ -296,26 +315,26 @@ export function useAuthorizationActions(): AuthorizationActions {
     (input) =>
       run("Resolve docs", async () => {
         const id = await ensureOverlay(input);
-        // Mark any open authorization_requirements as received for this auth.
-        const { error: reqErr } = await supabase
+        // Mark any open authorization_requirements as "Received" for this auth.
+        // The check constraint on `status` is case-sensitive ("Received").
+        const { data: updatedRows, error: reqErr } = await supabase
           .from("authorization_requirements")
-          .update({ status: "received", received_at: new Date().toISOString() })
+          .update({ status: "Received", received_at: new Date().toISOString() })
           .eq("authorization_id", id)
-          .neq("status", "received");
-        // Don't throw if there are simply no matching rows; log other errors.
-        if (reqErr && reqErr.code !== "PGRST116") {
-          await logActivity({
-            recordId: id,
-            activityType: "resolve_docs",
-            description: `Tried to resolve requirements but received: ${reqErr.message}`,
-          });
-        }
+          .neq("status", "Received")
+          .select("id");
+        if (reqErr) throw reqErr;
+        const resolvedCount = updatedRows?.length ?? 0;
         await logActivity({
           recordId: id,
           activityType: "resolve_docs",
-          description: `Documentation resolution recorded.`,
+          description: resolvedCount > 0
+            ? `Resolved ${resolvedCount} open requirement${resolvedCount === 1 ? "" : "s"} as Received.`
+            : "Documentation reviewed — no open requirements to resolve.",
+          newValue: String(resolvedCount),
         });
-      }, "Documentation tracker opened"),
+        return resolvedCount;
+      }, "Documentation reviewed"),
     [run],
   );
 
@@ -324,12 +343,25 @@ export function useAuthorizationActions(): AuthorizationActions {
       run("Mark reviewed", async () => {
         const id = await ensureOverlay(input);
         const userId = await currentUserId();
+        // Merge metadata so we don't blow away existing keys.
+        const { data: existing, error: fetchErr } = await supabase
+          .from("authorization_operational_records")
+          .select("metadata")
+          .eq("id", id)
+          .maybeSingle();
+        if (fetchErr) throw fetchErr;
+        const currentMeta =
+          (existing?.metadata && typeof existing.metadata === "object" && !Array.isArray(existing.metadata)
+            ? (existing.metadata as Record<string, unknown>)
+            : {});
+        const mergedMeta = {
+          ...currentMeta,
+          last_reviewed_at: new Date().toISOString(),
+          last_reviewed_by: userId,
+        };
         const { error: updErr } = await supabase
           .from("authorization_operational_records")
-          .update({
-            metadata: { last_reviewed_at: new Date().toISOString(), last_reviewed_by: userId },
-            updated_by: userId,
-          })
+          .update({ metadata: mergedMeta, updated_by: userId })
           .eq("id", id);
         if (updErr) throw updErr;
         await logActivity({
@@ -442,35 +474,11 @@ export function useAuthorizationActions(): AuthorizationActions {
     [run],
   );
 
-  const sendToQAImpl: AuthorizationActions["sendToQA"] = useCallback(
-    (input) =>
-      run("Send to QA", async () => {
-        const id = await ensureOverlay(input);
-        const userId = await currentUserId();
-        const { error: updErr } = await supabase
-          .from("authorization_operational_records")
-          .update({
-            workflow_stage: "In QA Review",
-            status: "In QA Review",
-            updated_by: userId,
-          })
-          .eq("id", id);
-        if (updErr) throw updErr;
-        await logActivity({
-          recordId: id,
-          activityType: "send_to_qa",
-          description: `Sent to QA review.`,
-          newValue: "In QA Review",
-        });
-      }, "Sent to QA"),
-    [run],
-  );
-
   return {
     pending,
     ensureOverlay: ensure,
     requestPR,
-    sendToQA: sendToQAImpl,
+    sendToQA,
     escalate,
     addNote,
     submitAuth,
