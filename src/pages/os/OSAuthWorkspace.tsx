@@ -309,7 +309,10 @@ function StatusChip({ tone, children }: { tone: Tone; children: React.ReactNode 
 
 export default function OSAuthWorkspace() {
   const [activeQueue, setActiveQueue] = useState<QueueKey>("attention");
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [openId, setOpenId] = useState<string | null>(
+    () => searchParams.get("authId") ?? searchParams.get("overlayId"),
+  );
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [newAuthOpen, setNewAuthOpen] = useState(false);
@@ -317,6 +320,38 @@ export default function OSAuthWorkspace() {
 
   const live = useLiveAuthorizations();
   const { items: liveItems, loading, error, refresh } = live;
+
+  // Resolve incoming deep-link id (overlay id OR visible auth id) to the
+  // canonical visible auth id.
+  const resolveAuthId = (id: string | null): string | null => {
+    if (!id) return null;
+    if (liveItems.some((x) => x.id === id)) return id;
+    for (const [publicId, overlayId] of live.overlayIdByAuthId.entries()) {
+      if (overlayId === id) return publicId;
+    }
+    return id;
+  };
+
+  useEffect(() => {
+    const raw = searchParams.get("authId") ?? searchParams.get("overlayId");
+    if (raw) setOpenId(resolveAuthId(raw));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, liveItems.length, live.overlayIdByAuthId.size]);
+
+  // Working filter state — replaces the previously decorative chips.
+  type WSFilters = {
+    state: string | null;
+    risk: "High" | "Medium" | "Low" | null;
+    expiring: "past_due" | "0_14" | "15_30" | "31_60" | "61_90" | "none" | null;
+    pr: "needs" | "overdue" | "ok" | null;
+    qa: "needs" | "in_review" | "complete" | "not_started" | null;
+    assigned: string | null;
+  };
+  const [wsFilters, setWsFilters] = useState<WSFilters>({
+    state: null, risk: null, expiring: null, pr: null, qa: null, assigned: null,
+  });
+  const clearFilter = <K extends keyof WSFilters>(k: K) => setWsFilters((f) => ({ ...f, [k]: null }));
+  const clearAllFilters = () => setWsFilters({ state: null, risk: null, expiring: null, pr: null, qa: null, assigned: null });
 
   // Live recent activity for the right rail.
   type RailActivity = { id: string; who: string; what: string; when: string };
@@ -345,6 +380,8 @@ export default function OSAuthWorkspace() {
   // Prompt-dialog state (replaces window.prompt)
   const [promptKind, setPromptKind] = useState<null | "assign" | "status" | "note">(null);
   const [noteForId, setNoteForId] = useState<string | null>(null);
+  const [drawerNote, setDrawerNote] = useState("");
+  const [drawerNoteError, setDrawerNoteError] = useState<string | null>(null);
 
   const AUTHS: AuthCard[] = useMemo(() => {
     if (loading || error) return [];
@@ -382,13 +419,56 @@ export default function OSAuthWorkspace() {
     const q = search.trim().toLowerCase();
     return AUTHS.filter((a) => {
       if (activeQueue !== "all" && !a.queues.includes(activeQueue)) return false;
+      // Working filters
+      if (wsFilters.state && a.state !== wsFilters.state) return false;
+      if (wsFilters.risk) {
+        const map: Record<string, "High" | "Medium" | "Low"> = { crit: "High", warn: "Medium", info: "Low", ok: "Low", neutral: "Low" };
+        if (map[a.risk] !== wsFilters.risk) return false;
+      }
+      if (wsFilters.expiring) {
+        const d = a.expiresInDays;
+        const bucket = d == null ? "none"
+          : d < 0 ? "past_due"
+          : d <= 14 ? "0_14"
+          : d <= 30 ? "15_30"
+          : d <= 60 ? "31_60"
+          : d <= 90 ? "61_90"
+          : null;
+        if (bucket !== wsFilters.expiring) return false;
+      }
+      if (wsFilters.pr) {
+        const t = a.prStatus.tone;
+        const want = wsFilters.pr;
+        if (want === "ok" && t !== "ok") return false;
+        if (want === "needs" && t !== "warn") return false;
+        if (want === "overdue" && t !== "crit") return false;
+      }
+      if (wsFilters.qa) {
+        const label = (a.qaStatus.label || "").toLowerCase();
+        if (wsFilters.qa === "needs" && !label.includes("not started") && !label.includes("needs")) return false;
+        if (wsFilters.qa === "in_review" && !label.includes("review")) return false;
+        if (wsFilters.qa === "complete" && !label.includes("complete")) return false;
+        if (wsFilters.qa === "not_started" && !label.includes("not started")) return false;
+      }
+      if (wsFilters.assigned && a.coordinator !== wsFilters.assigned) return false;
       if (!q) return true;
       return [a.client, a.payer, a.id, a.bcba, a.coordinator, a.state, a.authType]
         .some((s) => s.toLowerCase().includes(q));
     });
-  }, [activeQueue, search, AUTHS]);
+  }, [activeQueue, search, AUTHS, wsFilters]);
+
+  // Reset selection when filters change.
+  useEffect(() => { setSelected(new Set()); }, [wsFilters]);
+
+  // Distinct values for filter dropdowns.
+  const filterOptions = useMemo(() => ({
+    states: Array.from(new Set(AUTHS.map((a) => a.state).filter(Boolean))).sort(),
+    assignees: Array.from(new Set(AUTHS.map((a) => a.coordinator).filter((c) => c && c !== "Unassigned"))).sort(),
+  }), [AUTHS]);
 
   const openAuth = visible.find((a) => a.id === openId) ?? null;
+  // Get the underlying live Authorization (for real timeline / activity).
+  const openLiveAuth = openAuth ? liveItems.find((x) => x.id === openAuth.id) ?? null : null;
 
   const toggleSel = (id: string) =>
     setSelected((prev) => {
@@ -443,9 +523,10 @@ export default function OSAuthWorkspace() {
   };
 
   const applySavedView = (v: SavedView) => {
-    const cfg = v.config as { activeQueue?: QueueKey; search?: string };
+    const cfg = v.config as { activeQueue?: QueueKey; search?: string; wsFilters?: WSFilters };
     if (cfg.activeQueue) setActiveQueue(cfg.activeQueue);
     if (typeof cfg.search === "string") setSearch(cfg.search);
+    if (cfg.wsFilters) setWsFilters(cfg.wsFilters);
     setSelected(new Set());
   };
 
