@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useMarketingData } from "@/hooks/useMarketingData";
 import {
   Sparkles,
   Heart,
@@ -48,6 +49,7 @@ function TrendIcon({ delta }: { delta: number }) {
 }
 
 export default function Reputation() {
+  const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
 
   /* Trust signals derived from real operational data. */

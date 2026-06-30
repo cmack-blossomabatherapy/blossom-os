@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useMarketingData } from "@/hooks/useMarketingData";
 import {
   Sparkles,
   Globe,
@@ -44,6 +45,7 @@ function HealthDot({ tone }: { tone: "good" | "watch" | "weak" }) {
 }
 
 export default function SEOContent() {
+  const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const mi = useMarketingIntelligence();
   const [activeState, setActiveState] = useState<string | null>(null);
 

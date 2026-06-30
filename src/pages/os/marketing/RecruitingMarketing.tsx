@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import type { Candidate, CandidateStage } from "@/data/recruiting";
+import { useMarketingData } from "@/hooks/useMarketingData";
 import {
   Sparkles,
   Users,
@@ -62,6 +64,7 @@ function TrendIcon({ delta }: { delta: number }) {
 }
 
 export default function RecruitingMarketing() {
+  const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
 
   const momentum = useMemo(() => {

@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { type LeadSource, pipelineStages } from "@/data/leads";
+import { useMarketingData } from "@/hooks/useMarketingData";
 import {
   Sparkles,
   Globe,
@@ -47,6 +49,7 @@ function TrendIcon({ delta }: { delta: number }) {
 }
 
 export default function LeadSources() {
+  const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const mi = useMarketingIntelligence();
   const [activeSource, setActiveSource] = useState<LeadSource | null>(null);
 

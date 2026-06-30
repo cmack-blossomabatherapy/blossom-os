@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useMarketingData } from "@/hooks/useMarketingData";
 import {
   Sparkles,
   TrendingUp,
@@ -53,6 +54,7 @@ function TrendIcon({ delta }: { delta: number }) {
 }
 
 export default function StateGrowth() {
+  const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
 
   const stateRows = useMemo(() => {
