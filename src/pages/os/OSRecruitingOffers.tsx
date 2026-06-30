@@ -466,6 +466,62 @@ export default function OSRecruitingOffers() {
                 </div>
               )}
             </section>
+
+            {/* Suggested offers — post-interview candidates with no live offer record */}
+            {(() => {
+              const suggested = hiringPool.filter(
+                (c) => !findLiveOfferFor(c) && (stageOf(c) === "offerReady" || stageOf(c) === "offerSent" || stageOf(c) === "awaitingSig"),
+              );
+              if (suggested.length === 0) return null;
+              return (
+                <section>
+                  <SectionHeader
+                    title="Suggested offers"
+                    caption={`${suggested.length} candidate${suggested.length === 1 ? "" : "s"} ready for an offer record in recruiting_offers`}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {suggested.slice(0, 8).map((c) => {
+                      const uuid = liveCandidateIdByName.get(c.name.toLowerCase()) ?? null;
+                      return (
+                        <div key={`sug-offer-${c.id}`} className="rounded-2xl bg-card border border-border/70 p-4">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">{c.name}</div>
+                              <div className="text-[11px] text-muted-foreground truncate">{c.role} · {c.state} · {c.recruiter}</div>
+                            </div>
+                            <Pill tone="muted">Suggested</Pill>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">{c.nextAction}</div>
+                          <div className="flex justify-end mt-3">
+                            <button
+                              disabled={!uuid}
+                              title={uuid ? "Create an offer record and mark as sent" : "No matching candidate record in recruiting_candidates"}
+                              onClick={() => {
+                                if (!uuid) return;
+                                void mutations.sendOfferInternal(uuid, {
+                                  status: "Sent",
+                                  hourly_rate: c.payRate ?? null,
+                                  sent_at: new Date().toISOString(),
+                                  notes: c.interviewNotes || null,
+                                });
+                              }}
+                              className={cn(
+                                "h-8 px-3 rounded-lg text-xs inline-flex items-center gap-1.5 transition",
+                                uuid
+                                  ? "bg-primary text-primary-foreground hover:opacity-90"
+                                  : "bg-muted text-muted-foreground cursor-not-allowed",
+                              )}
+                            >
+                              <Send className="size-3.5" /> Send Offer
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })()}
           </div>
 
           {/* Right rail */}
