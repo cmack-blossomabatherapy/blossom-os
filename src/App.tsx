@@ -382,10 +382,11 @@ import {
 } from "./pages/os/credentialing/CredentialingPages";
 import {
   StateOperationsPage, AuthorizationsPhase6Page, ApprovedAuthorizationsPage,
-  DenialsPage, SchedulingPhase6Page, StaffingPhase6Page, NoOONBenefitsPage,
-  CaseManagementPhase6Page, QAPhase6OpsPage, FamilyStaffingPreferencesPage,
+  DenialsPage, SchedulingPhase6Page, NoOONBenefitsPage,
+  CaseManagementPhase6Page, QAPhase6OpsPage,
   StateEscalationsPage, OperationalTasksPage,
 } from "./pages/os/operations-phase6/OperationsPages";
+import OSStaffingWorkspace from "./pages/os/OSStaffingWorkspace";
 import {
   CallLogsPage, PhoneRequestsTopPage, DirectoryTopPage,
   UserActivityLogPage, PatientActivityLogPage,
