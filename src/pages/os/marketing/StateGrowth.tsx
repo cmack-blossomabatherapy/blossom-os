@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useMarketingData } from "@/hooks/useMarketingData";
 import {
   Sparkles,
   TrendingUp,
@@ -19,8 +20,6 @@ import {
   Compass,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
-import { mockLeads } from "@/data/leads";
-import { mockCandidates } from "@/data/recruiting";
 
 /* State Growth — operational expansion intelligence.
  * Derives state-by-state expansion momentum from real lead, referral,
@@ -55,6 +54,7 @@ function TrendIcon({ delta }: { delta: number }) {
 }
 
 export default function StateGrowth() {
+  const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
 
   const stateRows = useMemo(() => {
@@ -62,7 +62,7 @@ export default function StateGrowth() {
     const age = (iso: string) => (now - new Date(iso).getTime()) / 86_400_000;
 
     return FOOTPRINT.map((state) => {
-      const leads = mockLeads.filter((l) => l.state === state);
+      const leads = marketingLeads.filter((l) => l.state === state);
       const qual = leads.filter((l) => QUALIFIED.has(l.status)).length;
       const fric = leads.filter((l) => FRICTION.has(l.status)).length;
       const refs = leads.filter((l) => l.source === "Referral").length;
@@ -74,7 +74,7 @@ export default function StateGrowth() {
         return a > 7 && a <= 14;
       }).length;
 
-      const cands = mockCandidates.filter((c) => c.state === state);
+      const cands = marketingCandidates.filter((c) => c.state === state);
       const ready = cands.filter((c) => READY_STAGES.has(c.stage)).length;
       const hired = cands.filter((c) => c.status === "Hired").length;
       const withdrew = cands.filter((c) => c.status === "Withdrawn").length;
@@ -143,10 +143,10 @@ export default function StateGrowth() {
   );
 
   const totals = useMemo(() => {
-    const leads = mockLeads.length;
-    const refs = mockLeads.filter((l) => l.source === "Referral").length;
-    const cands = mockCandidates.length;
-    const hired = mockCandidates.filter((c) => c.status === "Hired").length;
+    const leads = marketingLeads.length;
+    const refs = marketingLeads.filter((l) => l.source === "Referral").length;
+    const cands = marketingCandidates.length;
+    const hired = marketingCandidates.filter((c) => c.status === "Hired").length;
     return { leads, refs, cands, hired };
   }, []);
 

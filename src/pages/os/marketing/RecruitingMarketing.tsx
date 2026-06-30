@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import type { Candidate, CandidateStage } from "@/data/recruiting";
+import { useMarketingData } from "@/hooks/useMarketingData";
 import {
   Sparkles,
   Users,
@@ -19,8 +21,6 @@ import {
   UserCheck,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
-import { mockCandidates, type Candidate, type CandidateStage } from "@/data/recruiting";
-import { mockLeads } from "@/data/leads";
 
 /* Recruiting Marketing — operational recruiting visibility intelligence.
  * Derived from real candidate pipeline, source attribution, and state-level
@@ -64,28 +64,29 @@ function TrendIcon({ delta }: { delta: number }) {
 }
 
 export default function RecruitingMarketing() {
+  const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
 
   const momentum = useMemo(() => {
     const now = Date.now();
     const age = (iso: string) => (now - new Date(iso).getTime()) / 86_400_000;
-    const recent = mockCandidates.filter((c) => age(c.appliedDate) <= 7).length;
-    const prior = mockCandidates.filter((c) => {
+    const recent = marketingCandidates.filter((c) => age(c.appliedDate) <= 7).length;
+    const prior = marketingCandidates.filter((c) => {
       const a = age(c.appliedDate);
       return a > 7 && a <= 14;
     }).length;
-    const qualified = mockCandidates.filter(
+    const qualified = marketingCandidates.filter(
       (c) => MID_STAGES.has(c.stage) || LATE_STAGES.has(c.stage) || READY_STAGES.has(c.stage),
     ).length;
-    const ready = mockCandidates.filter((c) => READY_STAGES.has(c.stage)).length;
+    const ready = marketingCandidates.filter((c) => READY_STAGES.has(c.stage)).length;
     return {
       recent,
       prior,
       delta: recent - prior,
       qualified,
       ready,
-      qualifiedRate: mockCandidates.length
-        ? Math.round((qualified / mockCandidates.length) * 100)
+      qualifiedRate: marketingCandidates.length
+        ? Math.round((qualified / marketingCandidates.length) * 100)
         : 0,
     };
   }, []);
@@ -95,7 +96,7 @@ export default function RecruitingMarketing() {
       string,
       { source: string; total: number; qualified: number; ready: number; rbt: number; bcba: number }
     >();
-    mockCandidates.forEach((c) => {
+    marketingCandidates.forEach((c) => {
       const e =
         map.get(c.source) ?? { source: c.source, total: 0, qualified: 0, ready: 0, rbt: 0, bcba: 0 };
       e.total += 1;
@@ -111,14 +112,14 @@ export default function RecruitingMarketing() {
 
   const stateRows = useMemo(() => {
     return FOOTPRINT.map((state) => {
-      const cands = mockCandidates.filter((c) => c.state === state);
+      const cands = marketingCandidates.filter((c) => c.state === state);
       const rbt = cands.filter((c) => c.role === "RBT").length;
       const bcba = cands.filter((c) => c.role === "BCBA").length;
       const ready = cands.filter((c) => READY_STAGES.has(c.stage)).length;
       const onboarding = cands.filter(
         (c) => LATE_STAGES.has(c.stage) || c.stage === "Offer Accepted",
       ).length;
-      const demand = mockLeads.filter((l) => l.state === state).length;
+      const demand = marketingLeads.filter((l) => l.state === state).length;
       const pressure = Math.max(0, demand - ready);
       return { state, total: cands.length, rbt, bcba, ready, onboarding, demand, pressure };
     }).sort((a, b) => b.pressure - a.pressure);
@@ -152,13 +153,13 @@ export default function RecruitingMarketing() {
       },
       { label: "Ready for Staffing", match: (c) => READY_STAGES.has(c.stage) },
     ];
-    return buckets.map((b) => ({ label: b.label, count: mockCandidates.filter(b.match).length }));
+    return buckets.map((b) => ({ label: b.label, count: marketingCandidates.filter(b.match).length }));
   }, []);
   const maxFunnel = Math.max(1, ...funnel.map((f) => f.count));
 
   const roleRows = useMemo(() => {
     return (["RBT", "BCBA"] as const).map((role) => {
-      const cands = mockCandidates.filter((c) => c.role === role);
+      const cands = marketingCandidates.filter((c) => c.role === role);
       const ready = cands.filter((c) => READY_STAGES.has(c.stage)).length;
       const byState = FOOTPRINT.map((state) => ({
         state,
@@ -169,9 +170,9 @@ export default function RecruitingMarketing() {
   }, []);
 
   const campaigns = useMemo(() => {
-    const referralCount = mockCandidates.filter((c) => c.source === "Referral").length;
-    const apploiCount = mockCandidates.filter((c) => c.source === "Apploi").length;
-    const directCount = mockCandidates.filter((c) => c.source === "Direct").length;
+    const referralCount = marketingCandidates.filter((c) => c.source === "Referral").length;
+    const apploiCount = marketingCandidates.filter((c) => c.source === "Apploi").length;
+    const directCount = marketingCandidates.filter((c) => c.source === "Direct").length;
     return [
       {
         id: "referral",
@@ -194,7 +195,7 @@ export default function RecruitingMarketing() {
         title: "University & school recruiting",
         icon: School,
         note: "Psychology, education, BCBA programs",
-        signal: Math.round(mockCandidates.length * 0.15),
+        signal: Math.round(marketingCandidates.length * 0.15),
         hint: "Connect campus partners",
       },
       {
@@ -202,7 +203,7 @@ export default function RecruitingMarketing() {
         title: "Community & autism orgs",
         icon: Heart,
         note: "Awareness events, parent network",
-        signal: Math.round(mockCandidates.length * 0.1),
+        signal: Math.round(marketingCandidates.length * 0.1),
         hint: "Event-driven outreach",
       },
       {
@@ -218,7 +219,7 @@ export default function RecruitingMarketing() {
         title: "Job fairs & community hiring",
         icon: CalendarDays,
         note: "Local hiring events",
-        signal: Math.round(mockCandidates.length * 0.08),
+        signal: Math.round(marketingCandidates.length * 0.08),
         hint: "Connect events calendar",
       },
     ].sort((a, b) => b.signal - a.signal);
@@ -288,7 +289,7 @@ export default function RecruitingMarketing() {
           </h2>
           <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
-              { label: "Active applicants", value: mockCandidates.length },
+              { label: "Active applicants", value: marketingCandidates.length },
               { label: "Qualified rate", value: `${momentum.qualifiedRate}%` },
               { label: "Ready for staffing", value: momentum.ready },
               { label: "Top market", value: strongestState ? STATE_NAMES[strongestState.state] : "—" },
@@ -308,7 +309,7 @@ export default function RecruitingMarketing() {
           {[
             { label: "New applicants", value: momentum.recent, sub: "Last 7 days", icon: Users, delta: momentum.delta },
             { label: "Qualified applicants", value: momentum.qualified, sub: `${momentum.qualifiedRate}% qualification`, icon: TrendingUp, delta: 0 },
-            { label: "Onboarding in motion", value: mockCandidates.filter((c) => LATE_STAGES.has(c.stage)).length, sub: "Background, training, credentialing", icon: ShieldCheck, delta: 0 },
+            { label: "Onboarding in motion", value: marketingCandidates.filter((c) => LATE_STAGES.has(c.stage)).length, sub: "Background, training, credentialing", icon: ShieldCheck, delta: 0 },
             { label: "Ready for staffing", value: momentum.ready, sub: "Cleared for assignment", icon: UserCheck, delta: 0 },
           ].map((m) => {
             const Icon = m.icon;
@@ -499,8 +500,8 @@ export default function RecruitingMarketing() {
                   : "No applicants are fully cleared yet — orientation and credentialing are the operational bottleneck to watch."}
               </div>
               <div className="mt-3 text-[12px] text-muted-foreground">
-                {mockCandidates.filter((c) => EARLY_STAGES.has(c.stage)).length} early-stage ·{" "}
-                {mockCandidates.filter((c) => LATE_STAGES.has(c.stage)).length} late-stage ·{" "}
+                {marketingCandidates.filter((c) => EARLY_STAGES.has(c.stage)).length} early-stage ·{" "}
+                {marketingCandidates.filter((c) => LATE_STAGES.has(c.stage)).length} late-stage ·{" "}
                 {momentum.ready} ready
               </div>
             </div>

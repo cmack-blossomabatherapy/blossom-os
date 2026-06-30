@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useMarketingData } from "@/hooks/useMarketingData";
 import {
   Sparkles,
   Globe,
@@ -15,8 +16,6 @@ import {
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
-import { mockLeads } from "@/data/leads";
-import { mockPhoneCalls } from "@/data/calls";
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * SEO & Content — operational visibility intelligence derived from real
@@ -46,12 +45,13 @@ function HealthDot({ tone }: { tone: "good" | "watch" | "weak" }) {
 }
 
 export default function SEOContent() {
+  const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const mi = useMarketingIntelligence();
   const [activeState, setActiveState] = useState<string | null>(null);
 
   /* ── organic visibility (Website + Organic combined) ────────────────── */
   const organic = useMemo(() => {
-    const leads = mockLeads.filter((l) => ORGANIC_SOURCES.includes(l.source as typeof ORGANIC_SOURCES[number]));
+    const leads = marketingLeads.filter((l) => ORGANIC_SOURCES.includes(l.source as typeof ORGANIC_SOURCES[number]));
     const now = Date.now();
     const recent = leads.filter((l) => now - new Date(l.createdAt).getTime() <= 7 * 86_400_000).length;
     const prior = leads.filter((l) => {
@@ -75,7 +75,7 @@ export default function SEOContent() {
   /* ── visibility by state (organic share + total + momentum) ─────────── */
   const stateVisibility = useMemo(() => {
     const map = new Map<string, { state: string; organic: number; total: number; recent: number; prior: number; calls: number }>();
-    mockLeads.forEach((l) => {
+    marketingLeads.forEach((l) => {
       const e = map.get(l.state) ?? { state: l.state, organic: 0, total: 0, recent: 0, prior: 0, calls: 0 };
       e.total += 1;
       if (ORGANIC_SOURCES.includes(l.source as typeof ORGANIC_SOURCES[number])) {
@@ -86,7 +86,7 @@ export default function SEOContent() {
       }
       map.set(l.state, e);
     });
-    mockPhoneCalls.forEach((c) => {
+    marketingCalls.forEach((c) => {
       if (!c.state) return;
       const e = map.get(c.state) ?? { state: c.state, organic: 0, total: 0, recent: 0, prior: 0, calls: 0 };
       e.calls += 1;
@@ -101,7 +101,7 @@ export default function SEOContent() {
   const contentSurfaces = useMemo(() => {
     const surfaces = [
       { id: "state", title: "State location pages", icon: MapPin, signal: organic.total, hint: `${organic.qualifiedRate}% qualified` },
-      { id: "clinic", title: "Clinic & service pages", icon: Building2, signal: mockPhoneCalls.length, hint: "Inbound call volume" },
+      { id: "clinic", title: "Clinic & service pages", icon: Building2, signal: marketingCalls.length, hint: "Inbound call volume" },
       { id: "parent", title: "Parent education", icon: FileText, signal: mi.bySource.find((s) => s.source === "Website")?.count ?? 0, hint: "Website lead intent" },
       { id: "faq", title: "Insurance & FAQ", icon: HelpCircle, signal: mi.bottlenecks.find((b) => b.stage === "Form Received")?.count ?? 0, hint: "Form-stage drop-off signal" },
       { id: "referral", title: "Referral content", icon: Link2, signal: mi.referrals.total, hint: "Relationship-driven leads" },

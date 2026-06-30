@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useMarketingData } from "@/hooks/useMarketingData";
 import {
   Sparkles,
   Heart,
@@ -18,8 +19,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
-import { mockLeads } from "@/data/leads";
-import { mockCandidates } from "@/data/recruiting";
 
 /* Reputation — operational trust intelligence.
  * Derives community perception from real operational signal: intake
@@ -50,6 +49,7 @@ function TrendIcon({ delta }: { delta: number }) {
 }
 
 export default function Reputation() {
+  const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
 
   /* Trust signals derived from real operational data. */
@@ -57,13 +57,13 @@ export default function Reputation() {
     const now = Date.now();
     const age = (iso: string) => (now - new Date(iso).getTime()) / 86_400_000;
 
-    const total = mockLeads.length;
-    const qualified = mockLeads.filter((l) => QUALIFIED.has(l.status)).length;
-    const friction = mockLeads.filter((l) => FRICTION.has(l.status)).length;
-    const referralLeads = mockLeads.filter((l) => l.source === "Referral");
-    const referralCands = mockCandidates.filter((c) => c.source === "Referral");
-    const hired = mockCandidates.filter((c) => c.status === "Hired").length;
-    const withdrawn = mockCandidates.filter((c) => c.status === "Withdrawn").length;
+    const total = marketingLeads.length;
+    const qualified = marketingLeads.filter((l) => QUALIFIED.has(l.status)).length;
+    const friction = marketingLeads.filter((l) => FRICTION.has(l.status)).length;
+    const referralLeads = marketingLeads.filter((l) => l.source === "Referral");
+    const referralCands = marketingCandidates.filter((c) => c.source === "Referral");
+    const hired = marketingCandidates.filter((c) => c.status === "Hired").length;
+    const withdrawn = marketingCandidates.filter((c) => c.status === "Withdrawn").length;
 
     const recent = referralLeads.filter((l) => age(l.createdAt) <= 7).length;
     const prior = referralLeads.filter((l) => {
@@ -104,11 +104,11 @@ export default function Reputation() {
   /* State-by-state trust visibility. */
   const stateRows = useMemo(() => {
     return FOOTPRINT.map((state) => {
-      const leads = mockLeads.filter((l) => l.state === state);
+      const leads = marketingLeads.filter((l) => l.state === state);
       const qual = leads.filter((l) => QUALIFIED.has(l.status)).length;
       const fric = leads.filter((l) => FRICTION.has(l.status)).length;
       const refs = leads.filter((l) => l.source === "Referral").length;
-      const cands = mockCandidates.filter((c) => c.state === state);
+      const cands = marketingCandidates.filter((c) => c.state === state);
       const recHired = cands.filter((c) => c.status === "Hired").length;
       const recWithdrawn = cands.filter((c) => c.status === "Withdrawn").length;
       const total = leads.length;
@@ -153,7 +153,7 @@ export default function Reputation() {
       detail: string;
     };
     const items: Item[] = [];
-    mockLeads
+    marketingLeads
       .filter((l) => QUALIFIED.has(l.status))
       .slice(0, 6)
       .forEach((l) => {
@@ -166,7 +166,7 @@ export default function Reputation() {
           detail: `Smooth path through ${l.status.toLowerCase()} — trust signal`,
         });
       });
-    mockLeads
+    marketingLeads
       .filter((l) => l.source === "Referral")
       .slice(0, 5)
       .forEach((l) => {
@@ -179,7 +179,7 @@ export default function Reputation() {
           detail: `Community trust — family referred by existing relationship`,
         });
       });
-    mockLeads
+    marketingLeads
       .filter((l) => FRICTION.has(l.status))
       .slice(0, 4)
       .forEach((l) => {
@@ -192,7 +192,7 @@ export default function Reputation() {
           detail: `${l.status} — perception risk if unresolved`,
         });
       });
-    mockCandidates
+    marketingCandidates
       .filter((c) => c.status === "Hired")
       .slice(0, 3)
       .forEach((c) => {
@@ -213,11 +213,11 @@ export default function Reputation() {
 
   /* Family experience themes — derived from real status distribution. */
   const themes = useMemo(() => {
-    const fastIntake = mockLeads.filter((l) => l.status === "VOB Completed").length;
-    const formResponsive = mockLeads.filter((l) => l.status === "Form Received").length;
-    const contactWarmth = mockLeads.filter((l) => l.status === "In Contact").length;
-    const missingInfo = mockLeads.filter((l) => l.status === "Missing Information").length;
-    const cantReach = mockLeads.filter((l) => l.status === "Can't Reach").length;
+    const fastIntake = marketingLeads.filter((l) => l.status === "VOB Completed").length;
+    const formResponsive = marketingLeads.filter((l) => l.status === "Form Received").length;
+    const contactWarmth = marketingLeads.filter((l) => l.status === "In Contact").length;
+    const missingInfo = marketingLeads.filter((l) => l.status === "Missing Information").length;
+    const cantReach = marketingLeads.filter((l) => l.status === "Can't Reach").length;
     return [
       {
         id: "responsive",

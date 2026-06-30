@@ -8848,6 +8848,462 @@ export type Database = {
           },
         ]
       }
+      marketing_call_events: {
+        Row: {
+          caller_name: string | null
+          caller_phone: string | null
+          campaign_id: string | null
+          central_reach_client_id: string | null
+          central_reach_patient_id: string | null
+          created_at: string
+          duration_seconds: number | null
+          external_id: string | null
+          follow_up_action: string | null
+          id: string
+          last_synced_at: string | null
+          lead_id: string | null
+          occurred_at: string
+          raw_payload: Json | null
+          recording_url: string | null
+          referral_company_id: string | null
+          referral_contact_id: string | null
+          source_id: string | null
+          source_system: string | null
+          state: string | null
+          status: string | null
+          sync_status: string | null
+          transcript_summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          caller_name?: string | null
+          caller_phone?: string | null
+          campaign_id?: string | null
+          central_reach_client_id?: string | null
+          central_reach_patient_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          external_id?: string | null
+          follow_up_action?: string | null
+          id?: string
+          last_synced_at?: string | null
+          lead_id?: string | null
+          occurred_at?: string
+          raw_payload?: Json | null
+          recording_url?: string | null
+          referral_company_id?: string | null
+          referral_contact_id?: string | null
+          source_id?: string | null
+          source_system?: string | null
+          state?: string | null
+          status?: string | null
+          sync_status?: string | null
+          transcript_summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          caller_name?: string | null
+          caller_phone?: string | null
+          campaign_id?: string | null
+          central_reach_client_id?: string | null
+          central_reach_patient_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          external_id?: string | null
+          follow_up_action?: string | null
+          id?: string
+          last_synced_at?: string | null
+          lead_id?: string | null
+          occurred_at?: string
+          raw_payload?: Json | null
+          recording_url?: string | null
+          referral_company_id?: string | null
+          referral_contact_id?: string | null
+          source_id?: string | null
+          source_system?: string | null
+          state?: string | null
+          status?: string | null
+          sync_status?: string | null
+          transcript_summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_call_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_call_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_call_events_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_campaign_metrics: {
+        Row: {
+          campaign_id: string
+          clicks: number
+          conversions: number
+          created_at: string
+          id: string
+          impressions: number
+          leads: number
+          metric_date: string
+          raw_payload: Json | null
+          source_system: string | null
+          spend_cents: number
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          id?: string
+          impressions?: number
+          leads?: number
+          metric_date: string
+          raw_payload?: Json | null
+          source_system?: string | null
+          spend_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          id?: string
+          impressions?: number
+          leads?: number
+          metric_date?: string
+          raw_payload?: Json | null
+          source_system?: string | null
+          spend_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaign_metrics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_campaigns: {
+        Row: {
+          budget_cents: number | null
+          channel: string | null
+          created_at: string
+          end_date: string | null
+          external_id: string | null
+          id: string
+          name: string
+          notes: string | null
+          owner_id: string | null
+          source_id: string | null
+          source_system: string | null
+          start_date: string | null
+          state: string | null
+          status: string
+          updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          budget_cents?: number | null
+          channel?: string | null
+          created_at?: string
+          end_date?: string | null
+          external_id?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          owner_id?: string | null
+          source_id?: string | null
+          source_system?: string | null
+          start_date?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          budget_cents?: number | null
+          channel?: string | null
+          created_at?: string
+          end_date?: string | null
+          external_id?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          owner_id?: string | null
+          source_id?: string | null
+          source_system?: string | null
+          start_date?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaigns_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_email_events: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          event_type: string | null
+          external_id: string | null
+          id: string
+          last_synced_at: string | null
+          lead_id: string | null
+          list_name: string | null
+          occurred_at: string
+          raw_payload: Json | null
+          recipient_email: string | null
+          referral_contact_id: string | null
+          source_system: string | null
+          state: string | null
+          subject: string | null
+          sync_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          event_type?: string | null
+          external_id?: string | null
+          id?: string
+          last_synced_at?: string | null
+          lead_id?: string | null
+          list_name?: string | null
+          occurred_at?: string
+          raw_payload?: Json | null
+          recipient_email?: string | null
+          referral_contact_id?: string | null
+          source_system?: string | null
+          state?: string | null
+          subject?: string | null
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          event_type?: string | null
+          external_id?: string | null
+          id?: string
+          last_synced_at?: string | null
+          lead_id?: string | null
+          list_name?: string | null
+          occurred_at?: string
+          raw_payload?: Json | null
+          recipient_email?: string | null
+          referral_contact_id?: string | null
+          source_system?: string | null
+          state?: string | null
+          subject?: string | null
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_email_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_email_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_source_events: {
+        Row: {
+          caller_email: string | null
+          caller_name: string | null
+          caller_phone: string | null
+          campaign_id: string | null
+          central_reach_client_id: string | null
+          central_reach_patient_id: string | null
+          created_at: string
+          event_type: string | null
+          external_id: string | null
+          id: string
+          last_synced_at: string | null
+          lead_id: string | null
+          occurred_at: string
+          payload_summary: string | null
+          raw_payload: Json | null
+          referral_company_id: string | null
+          referral_contact_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_id: string | null
+          source_system: string
+          state: string | null
+          status: string
+          sync_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          caller_email?: string | null
+          caller_name?: string | null
+          caller_phone?: string | null
+          campaign_id?: string | null
+          central_reach_client_id?: string | null
+          central_reach_patient_id?: string | null
+          created_at?: string
+          event_type?: string | null
+          external_id?: string | null
+          id?: string
+          last_synced_at?: string | null
+          lead_id?: string | null
+          occurred_at?: string
+          payload_summary?: string | null
+          raw_payload?: Json | null
+          referral_company_id?: string | null
+          referral_contact_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_id?: string | null
+          source_system: string
+          state?: string | null
+          status?: string
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          caller_email?: string | null
+          caller_name?: string | null
+          caller_phone?: string | null
+          campaign_id?: string | null
+          central_reach_client_id?: string | null
+          central_reach_patient_id?: string | null
+          created_at?: string
+          event_type?: string | null
+          external_id?: string | null
+          id?: string
+          last_synced_at?: string | null
+          lead_id?: string | null
+          occurred_at?: string
+          payload_summary?: string | null
+          raw_payload?: Json | null
+          referral_company_id?: string | null
+          referral_contact_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_id?: string | null
+          source_system?: string
+          state?: string | null
+          status?: string
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_source_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_source_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_source_events_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_sources: {
+        Row: {
+          channel: string | null
+          created_at: string
+          external_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          owner_id: string | null
+          source_system: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          owner_id?: string | null
+          source_system?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          owner_id?: string | null
+          source_system?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mobile_alert_dismissals: {
         Row: {
           alert_key: string
@@ -14730,6 +15186,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_marketing_user: { Args: { _uid: string }; Returns: boolean }
       is_platform_admin: { Args: { _uid: string }; Returns: boolean }
       is_vault_admin: { Args: { _user_id: string }; Returns: boolean }
       kpi_can_manage: { Args: { _user_id: string }; Returns: boolean }

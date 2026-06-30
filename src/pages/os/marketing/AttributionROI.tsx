@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useMarketingData } from "@/hooks/useMarketingData";
 import {
   Sparkles,
   TrendingUp,
@@ -20,8 +21,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
-import { mockLeads } from "@/data/leads";
-import { mockCandidates } from "@/data/recruiting";
 
 /* Attribution & ROI — operational growth intelligence.
  * Derives growth value from real lead source quality, qualification rates,
@@ -68,6 +67,7 @@ function TrendIcon({ delta }: { delta: number }) {
 }
 
 export default function AttributionROI() {
+  const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
 
   /* Top-level growth signals. */
@@ -75,20 +75,20 @@ export default function AttributionROI() {
     const now = Date.now();
     const age = (iso: string) => (now - new Date(iso).getTime()) / 86_400_000;
 
-    const total = mockLeads.length;
-    const qualified = mockLeads.filter((l) => QUALIFIED.has(l.status)).length;
-    const friction = mockLeads.filter((l) => FRICTION.has(l.status)).length;
-    const referrals = mockLeads.filter((l) => l.source === "Referral");
-    const recent = mockLeads.filter((l) => age(l.createdAt) <= 7).length;
-    const prior = mockLeads.filter((l) => {
+    const total = marketingLeads.length;
+    const qualified = marketingLeads.filter((l) => QUALIFIED.has(l.status)).length;
+    const friction = marketingLeads.filter((l) => FRICTION.has(l.status)).length;
+    const referrals = marketingLeads.filter((l) => l.source === "Referral");
+    const recent = marketingLeads.filter((l) => age(l.createdAt) <= 7).length;
+    const prior = marketingLeads.filter((l) => {
       const a = age(l.createdAt);
       return a > 7 && a <= 14;
     }).length;
 
-    const candTotal = mockCandidates.length;
-    const candReady = mockCandidates.filter((c) => READY_STAGES.has(c.stage)).length;
-    const candHired = mockCandidates.filter((c) => c.status === "Hired").length;
-    const referralCands = mockCandidates.filter((c) => c.source === "Referral");
+    const candTotal = marketingCandidates.length;
+    const candReady = marketingCandidates.filter((c) => READY_STAGES.has(c.stage)).length;
+    const candHired = marketingCandidates.filter((c) => c.status === "Hired").length;
+    const referralCands = marketingCandidates.filter((c) => c.source === "Referral");
 
     const qualifiedRate = total ? Math.round((qualified / total) * 100) : 0;
     const frictionRate = total ? Math.round((friction / total) * 100) : 0;
@@ -121,9 +121,9 @@ export default function AttributionROI() {
 
   /* Growth channel attribution — derived from real source distribution + outcomes. */
   const channels = useMemo(() => {
-    const sources = Array.from(new Set(mockLeads.map((l) => l.source)));
+    const sources = Array.from(new Set(marketingLeads.map((l) => l.source)));
     const rows = sources.map((src) => {
-      const leads = mockLeads.filter((l) => l.source === src);
+      const leads = marketingLeads.filter((l) => l.source === src);
       const qual = leads.filter((l) => QUALIFIED.has(l.status)).length;
       const fric = leads.filter((l) => FRICTION.has(l.status)).length;
       const count = leads.length;
@@ -146,11 +146,11 @@ export default function AttributionROI() {
   /* State-level ROI. */
   const stateRows = useMemo(() => {
     return FOOTPRINT.map((state) => {
-      const leads = mockLeads.filter((l) => l.state === state);
+      const leads = marketingLeads.filter((l) => l.state === state);
       const qual = leads.filter((l) => QUALIFIED.has(l.status)).length;
       const fric = leads.filter((l) => FRICTION.has(l.status)).length;
       const refs = leads.filter((l) => l.source === "Referral").length;
-      const cands = mockCandidates.filter((c) => c.state === state);
+      const cands = marketingCandidates.filter((c) => c.state === state);
       const ready = cands.filter((c) => READY_STAGES.has(c.stage)).length;
       const hired = cands.filter((c) => c.status === "Hired").length;
       const total = leads.length;
@@ -234,10 +234,10 @@ export default function AttributionROI() {
 
   /* Recruiting visibility ROI by source. */
   const recruitingChannels = useMemo(() => {
-    const sources = Array.from(new Set(mockCandidates.map((c) => c.source)));
+    const sources = Array.from(new Set(marketingCandidates.map((c) => c.source)));
     return sources
       .map((src) => {
-        const cands = mockCandidates.filter((c) => c.source === src);
+        const cands = marketingCandidates.filter((c) => c.source === src);
         const ready = cands.filter((c) => READY_STAGES.has(c.stage)).length;
         const hired = cands.filter((c) => c.status === "Hired").length;
         const withdrew = cands.filter((c) => c.status === "Withdrawn").length;
