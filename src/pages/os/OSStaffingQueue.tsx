@@ -858,7 +858,13 @@ function ReadinessTracker({ client }: { client: Client }) {
   );
 }
 
-function MatchingEngine({ client, matches }: { client: Client; matches: ReturnType<typeof suggestStaffingMatches> }) {
+function MatchingEngine({
+  client, matches, onCardAction,
+}: {
+  client: Client;
+  matches: ReturnType<typeof suggestStaffingMatches>;
+  onCardAction: (a: CardActionKey) => void;
+}) {
   return (
     <SectionCard
       title="RBT Matching"
@@ -889,9 +895,18 @@ function MatchingEngine({ client, matches }: { client: Client; matches: ReturnTy
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <CardAction label="Assign" />
-                  <CardAction label="Compare" />
-                  <CardAction label="Contact" />
+                  <CardAction
+                    label="Assign"
+                    onClick={() => {
+                      // Open the AssignRbt dialog pre-filled with this RBT.
+                      const evt = new CustomEvent("blossom:open-pairing", {
+                        detail: { clientId: client.id, rbtName: rbt.name },
+                      });
+                      window.dispatchEvent(evt);
+                    }}
+                  />
+                  <CardAction label="Compare" onClick={() => toast.info(`Compare ${rbt.name} — coming soon.`)} />
+                  <CardAction label="Contact" onClick={() => onCardAction("contact")} />
                 </div>
               </div>
             );
@@ -948,13 +963,39 @@ function slotHours(start: string, end: string): number {
   return Math.max(0, (eh + em / 60) - (sh + sm / 60));
 }
 
-function OperationalNotes({ client }: { client: Client }) {
+function OperationalNotes({ client, onAddNote }: { client: Client; onAddNote: () => void }) {
+  const { logAction } = useSchedulingActions();
+  const [draft, setDraft] = useState("");
+  const [posting, setPosting] = useState(false);
+  const post = async () => {
+    if (!draft.trim()) return;
+    setPosting(true);
+    try {
+      await logAction({
+        clientId: client.id,
+        clientName: client.childName,
+        actionType: "staffing_note",
+        title: "Staffing note",
+        note: draft,
+        state: client.state ?? null,
+      });
+      toast.success("Note saved.");
+      setDraft("");
+    } catch { /* toast shown */ } finally { setPosting(false); }
+  };
   const events = (client.timeline ?? []).filter((e) => e.type === "staffing" || e.type === "schedule" || e.type === "note").slice(0, 5);
   return (
     <SectionCard
       title="Operational Notes"
       icon={MessageSquare}
-      action={<button className="text-[11px] text-primary hover:underline inline-flex items-center gap-1"><Plus className="size-3" />Add</button>}
+      action={
+        <button
+          onClick={onAddNote}
+          className="text-[11px] text-primary hover:underline inline-flex items-center gap-1"
+        >
+          <Plus className="size-3" />Add
+        </button>
+      }
     >
       {events.length === 0 ? (
         <p className="text-sm text-muted-foreground">No staffing notes yet.</p>
@@ -970,10 +1011,17 @@ function OperationalNotes({ client }: { client: Client }) {
       )}
       <div className="mt-4 flex items-center gap-2">
         <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && draft.trim()) { e.preventDefault(); void post(); } }}
           placeholder="Add a staffing update…"
           className="flex-1 h-9 px-3 rounded-xl bg-muted/60 border border-border text-sm placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        <button className="h-9 w-9 rounded-xl bg-primary text-primary-foreground inline-flex items-center justify-center hover:opacity-90 transition">
+        <button
+          onClick={() => void post()}
+          disabled={posting || !draft.trim()}
+          className="h-9 w-9 rounded-xl bg-primary text-primary-foreground inline-flex items-center justify-center hover:opacity-90 transition disabled:opacity-50"
+        >
           <Send className="size-4" />
         </button>
       </div>
