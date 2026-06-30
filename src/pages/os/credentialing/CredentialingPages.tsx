@@ -619,8 +619,22 @@ function RecordDetailSheet({
 
   async function setCrSync(status: CrSyncStatus) {
     if (!record) return;
+    const old = record.centralreach_sync_status;
+    if (old === status) {
+      toast.message(`CentralReach already ${status}`);
+      return;
+    }
     try {
-      await updateCredRecord(record.id, { centralreach_sync_status: status }, `CentralReach sync marked ${status}`);
+      await updateCredRecord(
+        record.id,
+        { centralreach_sync_status: status },
+        {
+          type: "cr_sync_status_change",
+          message: `CentralReach sync: ${old} → ${status}`,
+          old,
+          new: status,
+        },
+      );
       toast.success(`CentralReach: ${status}`);
       onChanged();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Update failed"); }
