@@ -261,13 +261,26 @@ function MatchQueueTab() {
   const [reject, setReject] = useState<{ id: string; reason: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [conflictFilter, setConflictFilter] = useState<string>("ALL");
+  const [capacityFilter, setCapacityFilter] = useState<string>("ALL");
   const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const states = Array.from(new Set(clients.map((c) => c.state))).sort();
   const visible = matches.filter((m) => {
     if (statusFilter !== "ALL" && m.status !== statusFilter) return false;
     const c = lookupClient(m.client_id);
     if (stateFilter !== "ALL" && c?.state !== stateFilter) return false;
+    const cap = m.capacity_remaining ?? 0;
+    if (capacityFilter === "has" && cap <= 0) return false;
+    if (capacityFilter === "limited" && (cap <= 0 || cap >= 8)) return false;
+    if (capacityFilter === "full" && cap > 0) return false;
+    const notesLow = (m.notes ?? "").toLowerCase();
+    const isBlocked = notesLow.includes("blocked") || notesLow.includes("avoid");
+    const isWarning = notesLow.includes("must") || notesLow.includes("conflict") || notesLow.includes("warning");
+    if (conflictFilter === "clean" && (isBlocked || isWarning)) return false;
+    if (conflictFilter === "warning" && !isWarning) return false;
+    if (conflictFilter === "blocked" && !isBlocked) return false;
     if (query) {
       const q = query.toLowerCase();
       if (!c?.childName.toLowerCase().includes(q) && !m.rbt_name.toLowerCase().includes(q)) return false;
@@ -287,7 +300,7 @@ function MatchQueueTab() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-8" placeholder="Search client or RBT…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <Input className="pl-8" placeholder="Search client or RBT..." value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
         <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="ALL">All statuses</option>
@@ -299,6 +312,18 @@ function MatchQueueTab() {
         <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={stateFilter} onChange={(e) => setStateFilter(e.target.value)}>
           <option value="ALL">All states</option>
           {states.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={conflictFilter} onChange={(e) => setConflictFilter(e.target.value)} title="Preference conflict filter">
+          <option value="ALL">All preference fits</option>
+          <option value="clean">Clean fit</option>
+          <option value="warning">Has warning</option>
+          <option value="blocked">Blocked</option>
+        </select>
+        <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={capacityFilter} onChange={(e) => setCapacityFilter(e.target.value)} title="Capacity filter">
+          <option value="ALL">All capacities</option>
+          <option value="has">Has capacity</option>
+          <option value="limited">Limited (&lt;8h)</option>
+          <option value="full">Full</option>
         </select>
       </div>
 
@@ -313,43 +338,73 @@ function MatchQueueTab() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <Th>Client</Th><Th>RBT</Th><Th>Score</Th><Th>Status</Th>
-                <Th>Updated</Th><Th>Actions</Th>
+                <Th>Client</Th><Th>State</Th><Th>RBT</Th><Th>Score</Th>
+                <Th>Distance</Th><Th>Capacity</Th><Th>Fit</Th>
+                <Th>Status</Th><Th>Updated</Th><Th>Actions</Th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">Loading…</td></tr>
+                <tr><td colSpan={10} className="p-6 text-center text-sm text-muted-foreground">Loading...</td></tr>
               )}
               {!loading && visible.length === 0 && (
-                <tr><td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">No match proposals yet. Open a case to propose one.</td></tr>
+                <tr><td colSpan={10} className="p-6 text-center text-sm text-muted-foreground">No match proposals yet. Open a case to propose one.</td></tr>
               )}
               {visible.map((m) => {
                 const c = lookupClient(m.client_id);
+                const notesLow = (m.notes ?? "").toLowerCase();
+                const blocked = notesLow.includes("blocked") || notesLow.includes("avoid");
+                const warning = !blocked && (notesLow.includes("must") || notesLow.includes("conflict") || notesLow.includes("warning"));
+                const fitLabel = blocked ? "Blocked" : warning ? "Warning" : "Clean";
+                const isOpen = expanded === m.id;
                 return (
-                  <tr key={m.id} className="border-t border-border/40 hover:bg-muted/20">
-                    <Td className="font-medium">{c?.childName ?? m.client_id.slice(0, 8)}</Td>
-                    <Td>{m.rbt_name}</Td>
-                    <Td>{m.match_score}%</Td>
-                    <Td><StatusPill status={m.status} /></Td>
-                    <Td className="text-xs text-muted-foreground">{new Date(m.updated_at).toLocaleDateString()}</Td>
-                    <Td>
-                      <div className="flex items-center gap-2">
-                        {m.status !== "Assigned" && (
-                          <button onClick={() => setStatus(m.id, "Assigned")} className="text-xs text-emerald-600 hover:underline">Assign</button>
-                        )}
-                        {m.status !== "Rejected" && (
-                          <button
-                            onClick={() => setReject({ id: m.id, reason: "" })}
-                            className="text-xs text-rose-600 hover:underline"
-                          >Reject</button>
-                        )}
-                        {m.status === "Rejected" && (
-                          <button onClick={() => setStatus(m.id, "Pending")} className="text-xs text-primary hover:underline">Re-open</button>
-                        )}
-                      </div>
-                    </Td>
-                  </tr>
+                  <>
+                    <tr key={m.id} className="border-t border-border/40 hover:bg-muted/20 cursor-pointer" onClick={() => setExpanded(isOpen ? null : m.id)}>
+                      <Td className="font-medium">{c?.childName ?? m.client_id.slice(0, 8)}</Td>
+                      <Td>{c?.state ?? "-"}</Td>
+                      <Td>{m.rbt_name}</Td>
+                      <Td>{m.match_score}%</Td>
+                      <Td className="text-xs">{m.distance_miles != null ? `${m.distance_miles} mi` : "-"}</Td>
+                      <Td className="text-xs">{m.capacity_remaining != null ? `${m.capacity_remaining}h` : "-"}</Td>
+                      <Td>
+                        <Badge variant={blocked ? "destructive" : warning ? "secondary" : "outline"} className="text-[10px]">{fitLabel}</Badge>
+                      </Td>
+                      <Td><StatusPill status={m.status} /></Td>
+                      <Td className="text-xs text-muted-foreground">{new Date(m.updated_at).toLocaleDateString()}</Td>
+                      <Td onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2">
+                          {m.status !== "Assigned" && (
+                            <button onClick={() => setStatus(m.id, "Assigned")} className="text-xs text-emerald-600 hover:underline">Assign</button>
+                          )}
+                          {m.status !== "Rejected" && (
+                            <button
+                              onClick={() => setReject({ id: m.id, reason: "" })}
+                              className="text-xs text-rose-600 hover:underline"
+                            >Reject</button>
+                          )}
+                          {m.status === "Rejected" && (
+                            <button onClick={() => setStatus(m.id, "Pending")} className="text-xs text-primary hover:underline">Re-open</button>
+                          )}
+                        </div>
+                      </Td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="bg-muted/10 border-t border-border/30">
+                        <td colSpan={10} className="px-6 py-3 text-xs space-y-1">
+                          <div className="grid gap-2 md:grid-cols-3">
+                            <div><span className="text-muted-foreground">Client clinic:</span> {c?.clinic ?? "-"}</div>
+                            <div><span className="text-muted-foreground">BCBA:</span> {c?.bcba ?? "-"}</div>
+                            <div><span className="text-muted-foreground">Approved hrs:</span> {c?.approvedWeeklyHours ?? "-"}</div>
+                            <div><span className="text-muted-foreground">Availability overlap:</span> {(m.availability_overlap ?? []).join(", ") || "-"}</div>
+                            <div><span className="text-muted-foreground">Created:</span> {new Date(m.created_at).toLocaleDateString()}</div>
+                            <div><span className="text-muted-foreground">Match id:</span> <code className="text-[10px]">{m.id.slice(0, 8)}</code></div>
+                          </div>
+                          {m.notes && <div><span className="text-muted-foreground">Notes:</span> {m.notes}</div>}
+                          {m.rejection_reason && <div className="text-destructive"><span className="font-medium">Rejection reason:</span> {m.rejection_reason}</div>}
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
             </tbody>
