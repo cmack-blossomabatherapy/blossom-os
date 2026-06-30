@@ -364,9 +364,8 @@ export function attachChildren(
         ? t.map((row) => ({
             id: row.id,
             title: row.title ?? "Task",
-            owner: row.owner_user ?? null,
-            dueDate: row.due_date,
-            status: (row.status as Authorization["tasks"][number]["status"]) ?? "open",
+            completed: (row.status ?? "").toLowerCase() === "completed" || (row.status ?? "").toLowerCase() === "done",
+            dueDate: row.due_date ?? undefined,
           }))
         : auth.tasks,
       timeline: [...extraTimeline, ...auth.timeline],
