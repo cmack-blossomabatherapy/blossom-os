@@ -265,7 +265,8 @@ export default function OSAuthWorkspace() {
   const [newAuthOpen, setNewAuthOpen] = useState(false);
   const actions = useAuthorizationActions();
 
-  const { items: liveItems, loading, error } = useLiveAuthorizations();
+  const live = useLiveAuthorizations();
+  const { items: liveItems, loading, error, refresh } = live;
 
   // Prompt-dialog state (replaces window.prompt)
   const [promptKind, setPromptKind] = useState<null | "assign" | "status" | "note">(null);
@@ -364,7 +365,13 @@ export default function OSAuthWorkspace() {
 
   return (
     <OSShell
-      rightRail={<RightContextPanel queueLabel={activeMeta.label} />}
+      rightRail={
+        <RightContextPanel
+          queueLabel={activeMeta.label}
+          auths={AUTHS}
+          activity={liveActivityForRail}
+        />
+      }
     >
       {/* HEADER */}
       <header className="os-rise flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -564,6 +571,7 @@ export default function OSAuthWorkspace() {
       <NewAuthorizationDialog
         open={newAuthOpen}
         onOpenChange={setNewAuthOpen}
+        onCreated={() => { void refresh(); }}
       />
 
       {/* Bulk Assign prompt */}
