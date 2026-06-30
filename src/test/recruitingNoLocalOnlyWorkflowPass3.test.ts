@@ -27,8 +27,15 @@ describe("Recruiting Pass 3 — no local-only workflow regressions", () => {
       expect(m, "moveStage function not found").toBeTruthy();
       const body = m![1];
       expect(body).toMatch(/setStageMap/);
-      // Must also reach a real mutation call.
-      expect(body).toMatch(/mutations\.(moveStage|createFollowup|resolveEscalation|markMessageRead)/);
+      // Must also reach a real mutation call OR the canonical-mapper helper
+      // (runPageStageMove internally invokes mutations.moveStage / child-table
+      // upserts and is the Pass 4 standard pattern).
+      expect(body).toMatch(
+        /(mutations\.(moveStage|createFollowup|resolveEscalation|markMessageRead)|runPageStageMove\(mutations)/,
+      );
+      // Pass 4 invariants: no unsafe casts of board substage keys onto candidate stages.
+      expect(body).not.toMatch(/as unknown as any/);
+      expect(body).not.toMatch(/\bas any\b/);
     });
   }
 
