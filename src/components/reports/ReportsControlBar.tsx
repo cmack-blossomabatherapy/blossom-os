@@ -15,6 +15,7 @@ const savedViews = [
   { id: "executive", label: "Executive Overview" },
   { id: "intake", label: "Intake" },
   { id: "auth", label: "Authorization" },
+  { id: "credentialing", label: "Credentialing" },
   { id: "qa", label: "QA" },
   { id: "scheduling", label: "Scheduling & Staffing" },
   { id: "lifecycle", label: "Client Lifecycle" },
