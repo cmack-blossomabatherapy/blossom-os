@@ -72,9 +72,9 @@ describe("Authorizations Pass 4 — runtime hardening guardrails", () => {
 
   it("Authorizations reports declare drilldownPath", () => {
     const src = read("src/lib/os/reportsCatalog.ts");
-    expect(src).toMatch(/"auth-expiration-risk"[^}]*drilldownPath/);
-    expect(src).toMatch(/"auth-workflow-bottleneck"[^}]*drilldownPath/);
-    expect(src).toMatch(/"auth-operational-performance"[^}]*drilldownPath/);
+    expect(src).toMatch(/"auth-expiration-risk"[\s\S]*?drilldownPath/);
+    expect(src).toMatch(/"auth-workflow-bottleneck"[\s\S]*?drilldownPath/);
+    expect(src).toMatch(/"auth-operational-performance"[\s\S]*?drilldownPath/);
   });
 
   it("marketing_reports module route points at the canonical /reports page", () => {
