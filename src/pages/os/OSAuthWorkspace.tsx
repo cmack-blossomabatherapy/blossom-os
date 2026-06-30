@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import type { Authorization } from "@/data/authorizations";
 import {
@@ -8,7 +8,7 @@ import {
   FileText, ClipboardCheck, FileWarning, ShieldAlert, AlertTriangle,
   CheckCircle2, Send, FileSignature, Flame, Brain, MapPin, ListFilter,
   Stamp, ArrowUpRight, BadgeCheck, BookOpen, Activity, UserCog, MessageSquare,
-  Star, Eye, Users, Workflow, RefreshCw,
+  Eye, Users, Workflow, RefreshCw,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
