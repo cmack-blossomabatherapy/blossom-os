@@ -576,10 +576,24 @@ function AuthRecords({
   );
 }
 
-function AuthRow({ a, density, onOpen }: { a: EnrichedAuth; density: "comfortable" | "compact"; onOpen: () => void }) {
+function AuthRow({
+  a,
+  density,
+  onOpen,
+  source = "manual",
+  overlayId = null,
+  liveBcba = null,
+}: {
+  a: EnrichedAuth;
+  density: "comfortable" | "compact";
+  onOpen: () => void;
+  source?: "monday" | "manual" | "centralreach";
+  overlayId?: string | null;
+  liveBcba?: string | null;
+}) {
   const compact = density === "compact";
   const actions = useAuthorizationActions();
-  const overlay = buildOverlayFromAuth(a);
+  const overlay = buildOverlayFromAuth(a, source, overlayId, liveBcba);
   const expTone = a.daysToExpire === null ? "text-muted-foreground"
     : a.daysToExpire < 15 ? "text-rose-600"
     : a.daysToExpire < 45 ? "text-amber-600"
@@ -596,7 +610,7 @@ function AuthRow({ a, density, onOpen }: { a: EnrichedAuth; density: "comfortabl
         <div className="flex items-center gap-2 mb-0.5">
           <p className="text-[15px] font-medium truncate">{a.clientName}</p>
           <span className="text-[10px] font-mono text-muted-foreground/70">{a.id}</span>
-          <SourceBadge source="monday" />
+          <SourceBadge source={source} />
         </div>
         <p className="text-xs text-muted-foreground truncate">
           {a.state} · {a.payor} · <span className="text-foreground/70">{a.requestType}</span>
