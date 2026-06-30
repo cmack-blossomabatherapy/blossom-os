@@ -70,7 +70,7 @@ interface OverlayRow {
 interface RequirementRow {
   id: string;
   authorization_id: string | null;
-  title: string | null;
+  requirement_name: string | null;
   status: string | null;
   due_date: string | null;
 }
