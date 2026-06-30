@@ -16,7 +16,8 @@ import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandid
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
 import { useRecruitingEscalations } from "@/hooks/useRecruitingCandidates";
 import { cn } from "@/lib/utils";
-import { useWorkflowStages } from "@/hooks/useWorkflowStages";
+// Escalations workflow status lives on `recruiting_escalations.status`.
+// We keep an optimistic UI-only map and persist the real status via mutations.
 
 // Recruiting → Communication → Escalations & Follow-Ups
 
