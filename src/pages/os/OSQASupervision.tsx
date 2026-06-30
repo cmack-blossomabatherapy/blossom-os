@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import { useCentralReachOps, type ClientPairing } from "@/hooks/useCentralReachOps";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
@@ -205,7 +206,7 @@ function buildSupRows(
 // ---------- page ----------
 
 export default function OSQASupervision() {
-  const { items, loading: aLoading, bcbaById } = useLiveAuthorizations();
+  const { items, loading: aLoading, bcbaById, refresh, sourceById } = useLiveAuthorizations();
   const cr = useCentralReachOps();
   const loading = aLoading || cr.loading;
 
@@ -733,7 +734,7 @@ export default function OSQASupervision() {
         </div>
       </div>
 
-      {openRow && <SupSlideout r={openRow} onClose={() => setOpenId(null)} />}
+      {openRow && <SupSlideout r={openRow} onClose={() => setOpenId(null)} onChanged={refresh} sourceSystem={openRow.auth ? sourceById.get(openRow.auth.id) : undefined} />}
     </OSShell>
   );
 }
@@ -918,7 +919,7 @@ function BucketCard({ title, rows, tone, onOpen }: { title: string; rows: SupRow
   );
 }
 
-function SupSlideout({ r, onClose }: { r: SupRow; onClose: () => void }) {
+function SupSlideout({ r, onClose, onChanged, sourceSystem }: { r: SupRow; onClose: () => void; onChanged?: () => void | Promise<void>; sourceSystem?: "monday" | "manual" | "centralreach" }) {
   useSlideout(true, onClose);
   const checklist = [
     { ok: r.lastBcbaSession !== null && (r.daysSinceSup ?? 0) < 14, label: "BCBA supervision session within 14 days" },
@@ -978,13 +979,14 @@ function SupSlideout({ r, onClose }: { r: SupRow; onClose: () => void }) {
             </Card>
           </section>
 
-          <section className="grid grid-cols-2 gap-2">
-            <ActionBtn icon={ExternalLink}  label="Open client"          to={`/clients/${encodeURIComponent(r.clientName)}`} />
-            <ActionBtn icon={StickyNote}    label="Add QA note" />
-            <ActionBtn icon={Send}          label="Send follow-up" />
-            <ActionBtn icon={Flame}         label="Escalate" tone="crit" />
-            <ActionBtn icon={FileText}      label="View PR workflow"     to="/progress-reports" />
-            <ActionBtn icon={ClipboardList} label="View authorization"   to={r.auth ? `/authorization-reviews?id=${encodeURIComponent(r.auth.id)}` : "/authorization-reviews"} />
+          <section className="space-y-2">
+            <SectionLabel>Quick actions</SectionLabel>
+            {r.auth && <QAActionsPanel auth={r.auth} sourceSystem={sourceSystem} onChanged={onChanged} />}
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <ActionBtn icon={ExternalLink}  label="Open client"          to={`/clients/${encodeURIComponent(r.clientName)}`} />
+              <ActionBtn icon={FileText}      label="View PR workflow"     to="/progress-reports" />
+              <ActionBtn icon={ClipboardList} label="View authorization"   to={r.auth ? `/authorization-reviews?id=${encodeURIComponent(r.auth.id)}` : "/authorization-reviews"} />
+            </div>
           </section>
 
           <section>

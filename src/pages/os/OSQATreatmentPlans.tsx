@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -151,7 +152,7 @@ function readinessChecklist(a: Authorization): { label: string; done: boolean }[
 
 // ---------- page ----------
 export default function OSQATreatmentPlans() {
-  const { qaItems: items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading, refresh, sourceById } = useLiveAuthorizations();
 
   const tps = useMemo(() => items.filter(isTPRelevant), [items]);
 
@@ -575,7 +576,7 @@ export default function OSQATreatmentPlans() {
         </div>
       </div>
 
-      {openItem && <TPSlideout auth={openItem} onClose={() => setOpenId(null)} />}
+      {openItem && <TPSlideout auth={openItem} onClose={() => setOpenId(null)} onChanged={refresh} sourceSystem={sourceById.get(openItem.id)} />}
     </OSShell>
   );
 }
@@ -727,7 +728,7 @@ function TPCard({ auth: a, onOpen }: { auth: Authorization; onOpen: () => void }
           </button>
 
           <div className="hidden md:flex flex-col gap-1.5 shrink-0">
-            <IconBtn title="Open record" to="/authorizations" icon={ExternalLink} />
+            <IconBtn title="Open record" to="/qa-queue" icon={ExternalLink} />
             <IconBtn title="Mark reviewed" icon={CheckCircle2} />
             <IconBtn title="Request missing info" icon={ListChecks} />
             <IconBtn title="Escalate" icon={Flame} tone="crit" />
@@ -784,7 +785,7 @@ function IconBtn({
   return <button title={title} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></button>;
 }
 
-function TPSlideout({ auth: a, onClose }: { auth: Authorization; onClose: () => void }) {
+function TPSlideout({ auth: a, onClose, onChanged, sourceSystem }: { auth: Authorization; onClose: () => void; onChanged?: () => void | Promise<void>; sourceSystem?: "monday" | "manual" | "centralreach" }) {
   useSlideout(true, onClose);
   const tone = tpUrgency(a);
   const status = tpStatus(a);
@@ -920,18 +921,11 @@ function TPSlideout({ auth: a, onClose }: { auth: Authorization; onClose: () => 
 
           <section className="space-y-2 pt-1">
             <SectionLabel>Actions</SectionLabel>
-            <div className="grid grid-cols-2 gap-2">
-              <Link to="/authorizations"
-                className="h-9 px-3 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center justify-center gap-1.5">
-                <ExternalLink className="h-3.5 w-3.5" /> Open review
-              </Link>
-              <ActionBtn icon={CheckCircle2} label="Mark reviewed" />
-              <ActionBtn icon={ListChecks}   label="Request missing info" />
-              <ActionBtn icon={Send}         label="Send follow-up" />
-              <ActionBtn icon={StickyNote}   label="Add QA note" />
-              <ActionBtn icon={UserCheck}    label="Move to submission" />
-              <ActionBtn icon={Flame}        label="Escalate" tone="crit" />
-            </div>
+            <Link to="/qa-queue"
+              className="h-9 px-3 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center justify-center gap-1.5 w-full">
+              <ExternalLink className="h-3.5 w-3.5" /> Open review
+            </Link>
+            <QAActionsPanel auth={a} variant="treatment-plan" sourceSystem={sourceSystem} onChanged={onChanged} />
           </section>
         </div>
       </aside>

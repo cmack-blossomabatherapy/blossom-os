@@ -929,11 +929,9 @@ function BCBASlideout({ b, onClose }: { b: BCBARow; onClose: () => void }) {
 
           <section className="grid grid-cols-2 gap-2">
             <ActionBtn icon={ExternalLink}  label="Open BCBA"           to={`/staff/${encodeURIComponent(b.name)}`} />
-            <ActionBtn icon={StickyNote}    label="Add QA note" />
-            <ActionBtn icon={Send}          label="Send follow-up" />
-            <ActionBtn icon={Flame}         label="Escalate" tone="crit" />
             <ActionBtn icon={FileText}      label="View PR workflows"   to="/progress-reports" />
-            <ActionBtn icon={ClipboardList} label="View timeline" />
+            <ActionBtn icon={ClipboardList} label="Open QA queue"       to="/qa-queue" />
+            <ActionBtn icon={ClipboardList} label="Open escalations"    to="/escalations-followups" />
           </section>
 
           <section>

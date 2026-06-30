@@ -323,7 +323,7 @@ export default function OSQATeam() {
                 {searchResults.map(a => (
                   <Link
                     key={a.id}
-                    to={`/authorizations`}
+                    to={`/qa-queue`}
                     className="flex items-center justify-between gap-4 px-3 py-2 rounded-lg hover:bg-muted transition"
                   >
                     <div className="min-w-0">
@@ -349,7 +349,7 @@ export default function OSQATeam() {
               count={data.counts.needsReview}
               hint="Treatment plans & PRs awaiting review"
               tone={data.counts.needsReview > 10 ? "warn" : "ok"}
-              to="/authorizations?stage=In+QA+Review"
+              to="/qa-queue"
             />
             <PriorityCard
               icon={FileWarning}
@@ -357,7 +357,7 @@ export default function OSQATeam() {
               count={data.counts.missingInfo}
               hint="Incomplete packets & signatures"
               tone={data.counts.missingInfo > 0 ? "warn" : "ok"}
-              to="/authorizations?missing=true"
+              to="/missing-information"
             />
             <PriorityCard
               icon={CalendarClock}
@@ -365,7 +365,7 @@ export default function OSQATeam() {
               count={data.counts.expiringSoon}
               hint="Within next 90 days"
               tone={data.counts.expiringSoon > 5 ? "warn" : "ok"}
-              to="/authorizations?stage=Expiring+Soon"
+              to="/expiring-items"
             />
             <PriorityCard
               icon={AlertTriangle}
@@ -373,7 +373,7 @@ export default function OSQATeam() {
               count={data.counts.overdue}
               hint="Stalled more than 5 days"
               tone={data.counts.overdue > 0 ? "warn" : "ok"}
-              to="/authorizations?overdue=true"
+              to="/qa-queue"
             />
             <PriorityCard
               icon={Flame}
@@ -381,7 +381,7 @@ export default function OSQATeam() {
               count={data.counts.escalations}
               hint="Denials, expiring <14d, stuck >10d"
               tone={data.counts.escalations > 0 ? "crit" : "ok"}
-              to="/authorizations?escalate=true"
+              to="/escalations-followups"
             />
           </div>
         </section>
@@ -398,7 +398,7 @@ export default function OSQATeam() {
                 title="Today's QA Priorities"
                 hint="Highest-risk items needing your attention now"
                 action={
-                  <Link to="/authorizations" className="text-xs font-medium text-primary hover:opacity-80 transition inline-flex items-center gap-1">
+                  <Link to="/qa-queue" className="text-xs font-medium text-primary hover:opacity-80 transition inline-flex items-center gap-1">
                     View full QA queue <ChevronRight className="h-3.5 w-3.5" />
                   </Link>
                 }
@@ -417,7 +417,7 @@ export default function OSQATeam() {
                       const due = daysUntil(a.nextTaskDue);
                       const dueLabel = due === null ? null : due < 0 ? `${Math.abs(due)}d overdue` : due === 0 ? "Due today" : `Due in ${due}d`;
                       return (
-                        <Link key={a.id} to={`/authorizations`} className="flex items-start gap-4 p-4 hover:bg-muted/40 transition">
+                        <Link key={a.id} to={`/qa-queue`} className="flex items-start gap-4 p-4 hover:bg-muted/40 transition">
                           <div className={cn("h-9 w-9 rounded-xl grid place-items-center border shrink-0", toneClasses(tone))}>
                             <FileSignature className="h-4 w-4" strokeWidth={1.75} />
                           </div>
@@ -477,7 +477,7 @@ export default function OSQATeam() {
                           <button className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
                             <Flame className="h-3 w-3" /> Escalate
                           </button>
-                          <Link to="/authorizations" className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
+                          <Link to="/qa-queue" className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
                             <ExternalLink className="h-3 w-3" /> Open record
                           </Link>
                           <button className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">

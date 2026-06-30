@@ -96,6 +96,25 @@ interface ActivityRow {
   created_by: string | null;
 }
 
+/** QA persisted overrides keyed by (source_system, source_record_id). */
+interface QAOverrideRow {
+  id: string;
+  source_system: string;
+  source_record_id: string;
+  monday_item_id: string | null;
+  client_id: string | null;
+  assigned_qa_owner: string | null;
+  qa_status: string | null;
+  priority: string | null;
+  next_action: string | null;
+  blockers: string[] | null;
+  alerts: string[] | null;
+  notes: string | null;
+  escalated: boolean | null;
+  escalation_reason: string | null;
+  last_action_at: string | null;
+}
+
 function pickIsoDate(value: unknown): string | null {
   if (typeof value !== "string" || !value) return null;
   const d = new Date(value);
@@ -399,6 +418,7 @@ export function useLiveAuthorizations(): LiveAuthorizations {
   const [reqs, setReqs] = useState<RequirementRow[]>([]);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [qaOverrides, setQaOverrides] = useState<QAOverrideRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
@@ -464,12 +484,23 @@ export function useLiveAuthorizations(): LiveAuthorizations {
         if (tasksRes.error) throw tasksRes.error;
         if (actRes.error) throw actRes.error;
 
+        // QA persisted overrides — overlay on top of monday + operational rows.
+        const { data: qaData, error: qaErr } = await supabase
+          .from("qa_work_item_overrides" as never)
+          .select(
+            "id,source_system,source_record_id,monday_item_id,client_id,assigned_qa_owner,qa_status,priority,next_action,blockers,alerts,notes,escalated,escalation_reason,last_action_at",
+          )
+          .order("last_action_at", { ascending: false, nullsFirst: false })
+          .limit(5000);
+        if (qaErr && qaErr.code !== "PGRST116") throw qaErr;
+
         if (!cancelled) {
           setRows(all);
           setOverlays((overlayData ?? []) as unknown as OverlayRow[]);
           setReqs((reqsRes.data ?? []) as unknown as RequirementRow[]);
           setTasks((tasksRes.data ?? []) as unknown as TaskRow[]);
           setActivity((actRes.data ?? []) as unknown as ActivityRow[]);
+          setQaOverrides((qaData ?? []) as unknown as QAOverrideRow[]);
         }
       } catch (e: unknown) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load authorizations");
@@ -531,6 +562,31 @@ export function useLiveAuthorizations(): LiveAuthorizations {
     // Attach child records (requirements / tasks / activity) by overlay id
     items = attachChildren(items, overlayIdByAuthId, reqs, tasks, activity);
 
+    // Overlay QA persisted state from qa_work_item_overrides.
+    // Match by source_record_id (works for monday item id, manual overlay id,
+    // and CentralReach record id since they're all stored as auth.id).
+    if (qaOverrides.length) {
+      const qaByRecord = new Map<string, QAOverrideRow>();
+      for (const q of qaOverrides) {
+        qaByRecord.set(q.source_record_id, q);
+        if (q.monday_item_id) qaByRecord.set(q.monday_item_id, q);
+      }
+      items = items.map((a) => {
+        const q = qaByRecord.get(a.id);
+        if (!q) return a;
+        const blockers = q.blockers ?? [];
+        return {
+          ...a,
+          qaOwner: q.assigned_qa_owner ?? a.qaOwner,
+          qaStatus: (q.qa_status as Authorization["qaStatus"]) ?? a.qaStatus,
+          qaNotes: q.notes ?? a.qaNotes,
+          nextAction: q.next_action ?? a.nextAction,
+          missingRequirements: blockers.length ? blockers : a.missingRequirements,
+          missingInfo: blockers.length > 0 || a.missingInfo,
+        };
+      });
+    }
+
     const qaItems: Authorization[] = items.map((a) => {
       const bcba = bcbaById.get(a.id);
       return bcba ? { ...a, coordinator: bcba } : a;
@@ -551,5 +607,5 @@ export function useLiveAuthorizations(): LiveAuthorizations {
       sourceById,
       refresh,
     };
-  }, [rows, overlays, reqs, tasks, activity, loading, error]);
+  }, [rows, overlays, reqs, tasks, activity, qaOverrides, loading, error]);
 }
