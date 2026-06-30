@@ -1825,6 +1825,9 @@ export function InsuranceCredentialingPage() {
   const { providers, records, providerById, loading, error, reload, tasks, documents } = useCredentialingData();
   const [addRec, setAddRec] = useState(false);
   const [openRecord, setOpenRecord] = useState<string | null>(null);
+  const [matrixSel, setMatrixSel] = useState<{ payer: string; state: string } | null>(null);
+  const [defaultPayer, setDefaultPayer] = useState<string | undefined>();
+  const [defaultState, setDefaultState] = useState<string | undefined>();
 
   const matrix = useMemo(() => {
     const map = new Map<string, {
@@ -1875,7 +1878,11 @@ export function InsuranceCredentialingPage() {
               </thead>
               <tbody>
                 {matrix.map((m) => (
-                  <tr key={`${m.payer}-${m.state}`} className="border-t border-border/60">
+                  <tr
+                    key={`${m.payer}-${m.state}`}
+                    className="border-t border-border/60 hover:bg-muted/30 cursor-pointer"
+                    onClick={() => setMatrixSel({ payer: m.payer, state: m.state })}
+                  >
                     <td className="px-3 py-2.5 font-medium">{m.payer}</td>
                     <td className="px-3 py-2.5 text-muted-foreground">{m.state}</td>
                     <td className="px-3 py-2.5">{m.required}</td>
@@ -1891,8 +1898,28 @@ export function InsuranceCredentialingPage() {
           </div>
         )}
       </SectionCard>
-      <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} onCreated={reload} />
+      <AddRecordDialog
+        open={addRec} onOpenChange={(o) => { setAddRec(o); if (!o) { setDefaultPayer(undefined); setDefaultState(undefined); } }}
+        providers={providers}
+        defaultPayer={defaultPayer} defaultState={defaultState}
+        onCreated={() => { setDefaultPayer(undefined); setDefaultState(undefined); reload(); }}
+      />
       <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} tasks={tasks} documents={documents} onClose={() => setOpenRecord(null)} onChanged={reload} />
+      <PayerStateDetailSheet
+        open={!!matrixSel}
+        payer={matrixSel?.payer ?? null}
+        state={matrixSel?.state === "—" ? null : matrixSel?.state ?? null}
+        records={records}
+        providerById={providerById}
+        onClose={() => setMatrixSel(null)}
+        onOpenRecord={(id) => { setMatrixSel(null); setOpenRecord(id); }}
+        onAddRecord={(payer, state) => {
+          setMatrixSel(null);
+          setDefaultPayer(payer);
+          setDefaultState(state || undefined);
+          setAddRec(true);
+        }}
+      />
     </Shell>
   );
 }
