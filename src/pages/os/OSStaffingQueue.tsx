@@ -197,6 +197,39 @@ export default function OSStaffingQueue() {
     setParams(p, { replace: true });
   };
 
+  // ---- Action dialog state (page-level so every surface can open them) ----
+  const [pairingClient, setPairingClient] = useState<Client | null>(null);
+  const [pairingDefault, setPairingDefault] = useState<string>("");
+  const [noteClient, setNoteClient] = useState<Client | null>(null);
+  const [findClient, setFindClient] = useState<Client | null>(null);
+  const [escalateClient, setEscalateClient] = useState<Client | null>(null);
+  const [contactClient, setContactClient] = useState<Client | null>(null);
+  const [contactDefault, setContactDefault] = useState<
+    "family" | "rbt" | "bcba" | "state_director" | "assistant_state_director" | "internal"
+  >("family");
+
+  const openCardAction = (action: CardActionKey, c: Client) => {
+    switch (action) {
+      case "open": selectClient(c.id); break;
+      case "pair": setPairingDefault(c.rbt ?? ""); setPairingClient(c); break;
+      case "availability":
+        setContactDefault("family"); setContactClient(c); break;
+      case "note": setNoteClient(c); break;
+      case "escalate": setEscalateClient(c); break;
+      case "find": setFindClient(c); break;
+      case "contact":
+        setContactDefault("rbt"); setContactClient(c); break;
+    }
+  };
+
+  const requireSelected = (): Client | null => {
+    if (!selected) {
+      toast.error("Select a client from the queue first.");
+      return null;
+    }
+    return selected;
+  };
+
   // Grouping
   const grouped = useMemo(() => {
     const groups = new Map<string, typeof filtered>();
