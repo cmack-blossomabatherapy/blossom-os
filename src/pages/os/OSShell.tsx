@@ -209,6 +209,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   ]),
   authorization_coordinator: new Set<string>([
     "/authorizations",
+    "/authorizations/handoff",
     "/auth-workspace",
     "/ops/approved-authorizations",
     "/ops/expiring-authorizations",
@@ -218,6 +219,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   ]),
   authorization_manager: new Set<string>([
     "/authorizations",
+    "/authorizations/handoff",
     "/auth-workspace",
     "/ops/approved-authorizations",
     "/ops/expiring-authorizations",
