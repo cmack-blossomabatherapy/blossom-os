@@ -270,7 +270,13 @@ export default function OSStaffingQueue() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const c = requireSelected();
+                  if (c) setNoteClient(c);
+                }}
+                className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2"
+              >
                 <MessageSquare className="size-4" /> Add Staffing Note
               </button>
               <Link
@@ -279,7 +285,13 @@ export default function OSStaffingQueue() {
               >
                 <CalendarClock className="size-4" /> Open Scheduling Workspace
               </Link>
-              <button className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">
+              <button
+                onClick={() => {
+                  const c = requireSelected();
+                  if (c) { setPairingDefault(c.rbt ?? ""); setPairingClient(c); }
+                }}
+                className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm"
+              >
                 <UserPlus className="size-4" /> Quick Pairing
               </button>
             </div>
