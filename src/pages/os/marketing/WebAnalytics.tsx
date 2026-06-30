@@ -53,8 +53,8 @@ export default function WebAnalytics() {
 
   /* ── digital + organic momentum ─────────────────────────────────────── */
   const digital = useMemo(() => {
-    const all = marketingLeads.filter((l) => DIGITAL_SOURCES.includes(l.source));
-    const organic = marketingLeads.filter((l) => ORGANIC_SOURCES.includes(l.source));
+    const all = marketingLeads.filter((l) => (DIGITAL_SOURCES as string[]).includes(l.source));
+    const organic = marketingLeads.filter((l) => (ORGANIC_SOURCES as string[]).includes(l.source));
     const now = Date.now();
     const within = (iso: string, d: number) => now - new Date(iso).getTime() <= d * 86_400_000;
     const between = (iso: string, lo: number, hi: number) => {
@@ -129,8 +129,8 @@ export default function WebAnalytics() {
     const map = new Map<string, { state: string; sessions: number; organic: number; recruiting: number; calls: number; qualified: number; recent: number; prior: number }>();
     marketingLeads.forEach((l) => {
       const e = map.get(l.state) ?? { state: l.state, sessions: 0, organic: 0, recruiting: 0, calls: 0, qualified: 0, recent: 0, prior: 0 };
-      if (DIGITAL_SOURCES.includes(l.source)) e.sessions += 1;
-      if (ORGANIC_SOURCES.includes(l.source)) e.organic += 1;
+      if ((DIGITAL_SOURCES as string[]).includes(l.source)) e.sessions += 1;
+      if ((ORGANIC_SOURCES as string[]).includes(l.source)) e.organic += 1;
       if (["VOB Completed", "Sent to VOB", "Form Received"].includes(l.status)) e.qualified += 1;
       const age = (Date.now() - new Date(l.createdAt).getTime()) / 86_400_000;
       if (age <= 7) e.recent += 1;
