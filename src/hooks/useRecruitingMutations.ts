@@ -266,6 +266,32 @@ export function useRecruitingMutations() {
   const markMessageRead = useCallback((messageId: string) => updateMessage(messageId, { status: "Read" }), [updateMessage]);
   const markMessageHandled = useCallback((messageId: string) => updateMessage(messageId, { status: "Handled" }), [updateMessage]);
 
+  // ---- Staffing needs (Recruiting-owned) ----
+  const createStaffingNeed = useCallback(async (data: Record<string, unknown> & { client_id?: string | null; role: string; state?: string | null }) => {
+    const res = await wrap("Create staffing need", supabase.from("recruiting_staffing_needs")
+      .insert({ status: "New", opened_at: new Date().toISOString(), ...data } as any));
+    if (res) await logActivity(null, "recruiting_staffing_needs", null, "staffing_need_created", null, data.role);
+    return res;
+  }, [logActivity]);
+  const updateStaffingNeed = useCallback(async (id: string, patch: Record<string, unknown>) => {
+    return wrap("Update staffing need", supabase.from("recruiting_staffing_needs").update(patch as any).eq("id", id));
+  }, []);
+  const markStaffingNeedWorking = useCallback((id: string) =>
+    updateStaffingNeed(id, { status: "Active" }), [updateStaffingNeed]);
+  const closeStaffingNeed = useCallback(async (id: string, reason?: string) => {
+    const res = await wrap("Close staffing need", supabase.from("recruiting_staffing_needs")
+      .update({ status: "Closed", closed_at: new Date().toISOString(), ...(reason ? { closed_reason: reason } : {}) } as any)
+      .eq("id", id));
+    if (res) await logActivity(null, "recruiting_staffing_needs", id, "staffing_need_closed", null, reason ?? null);
+    return res;
+  }, [logActivity]);
+  const linkCandidateToStaffingNeed = useCallback(async (needId: string, candidateId: string) => {
+    const res = await wrap("Link candidate", supabase.from("recruiting_staffing_needs")
+      .update({ matched_candidate_id: candidateId, status: "Match Pending" } as any).eq("id", needId));
+    if (res) await logActivity(candidateId, "recruiting_staffing_needs", needId, "candidate_linked", null, candidateId);
+    return res;
+  }, [logActivity]);
+
   return {
     moveStage,
     updateCandidateAndLog,
@@ -286,6 +312,8 @@ export function useRecruitingMutations() {
     createEscalation,
     logMessage,
     updateMessage, markMessageRead, markMessageHandled,
+    createStaffingNeed, updateStaffingNeed, markStaffingNeedWorking,
+    closeStaffingNeed, linkCandidateToStaffingNeed,
   };
 }
 

@@ -76,7 +76,7 @@ function lastContactFor(c: RecruitingCandidate): string {
   return `${Math.floor(d / 7)}w ago`;
 }
 
-function buildFollowUps(candidates: RecruitingCandidate[]): FollowUp[] {
+function buildSuggestedFollowUps(candidates: RecruitingCandidate[]): FollowUp[] {
   const items: FollowUp[] = [];
   const push = (
     c: RecruitingCandidate, type: FollowUpType, reason: string,
@@ -175,7 +175,9 @@ export default function OSRecruitingFollowUps() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
   const { items: liveFollowups } = useRecruitingFollowups();
-  const baseFollowUps = useMemo(() => buildFollowUps(recruitingCandidates), [recruitingCandidates]);
+  const liveActiveCount = liveFollowups.filter((f: any) => f.status !== "Done").length;
+  void liveActiveCount;
+  const baseFollowUps = useMemo(() => buildSuggestedFollowUps(recruitingCandidates), [recruitingCandidates]);
 
   const defaults = useMemo(() => {
     const m: Record<string, StageKey> = {};

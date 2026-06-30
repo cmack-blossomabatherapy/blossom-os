@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Search, Sparkles, Brain, Send, Download, Bell, Plus, RefreshCw,
   Flame, Clock, CheckCircle2, MessageSquare, UserPlus, ArrowRight,
@@ -16,7 +16,8 @@ import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandid
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
 import { useRecruitingEscalations } from "@/hooks/useRecruitingCandidates";
 import { cn } from "@/lib/utils";
-import { useWorkflowStages } from "@/hooks/useWorkflowStages";
+// Escalations workflow status lives on `recruiting_escalations.status`.
+// We keep an optimistic UI-only map and persist the real status via mutations.
 
 // Recruiting → Communication → Escalations & Follow-Ups
 
@@ -210,7 +211,13 @@ export default function OSRecruitingEscalations() {
     base.forEach((e) => { m[e.id] = e.stage; });
     return m;
   }, [base]);
-  const { stageMap, moveStage: persistStage } = useWorkflowStages("escalations", defaults);
+  // Optimistic UI map; real status persists to recruiting_escalations.status
+  // via mutations.resolveEscalation / mutations.updateMessage-style helpers.
+  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(defaults);
+  useEffect(() => { setStageMap(defaults); }, [defaults]);
+  const persistStage = (id: string, to: StageKey, _candidateId?: string) => {
+    setStageMap((m) => ({ ...m, [id]: to }));
+  };
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");

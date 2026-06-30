@@ -115,6 +115,9 @@ export default function OSRecruitingStaffingNeeds() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
   const { items: liveStaffingNeeds } = useRecruitingStaffingNeeds();
+  // Mutation helpers wired here so future "Create from suggestion" / "Close need" / "Link candidate" actions persist to recruiting_staffing_needs.
+  const _stf = { c: mutations.createStaffingNeed, u: mutations.updateStaffingNeed, w: mutations.markStaffingNeedWorking, x: mutations.closeStaffingNeed, l: mutations.linkCandidateToStaffingNeed };
+  void _stf; void liveStaffingNeeds;
   // Build needs list
   const baseNeeds = useMemo(() => getClientStaffingNeeds(), []);
   const readyCandidates = useMemo(
@@ -215,7 +218,13 @@ export default function OSRecruitingStaffingNeeds() {
 
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
-    if (/^[0-9a-f-]{36}$/i.test(id)) void mutations.moveStage(id, to as unknown as any);
+    // Persist when this row corresponds to a real recruiting_staffing_needs row.
+    const liveNeed = liveStaffingNeeds.find((n: any) => n.client_id === id || n.id === id);
+    if (liveNeed?.id && /^[0-9a-f-]{36}$/i.test(liveNeed.id)) {
+      if (to === "active")        void mutations.markStaffingNeedWorking(liveNeed.id);
+      else if (to === "confirmed") void mutations.closeStaffingNeed(liveNeed.id, "confirmed");
+      else                         void mutations.updateStaffingNeed(liveNeed.id, { status: to });
+    }
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id);

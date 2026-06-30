@@ -70,7 +70,7 @@ function relTime(h: number): string {
   return `${Math.floor(d / 7)}w ago`;
 }
 
-function buildMessages(candidates: RecruitingCandidate[]): Msg[] {
+function buildSuggestedMessages(candidates: RecruitingCandidate[]): Msg[] {
   const out: Msg[] = [];
   const push = (c: RecruitingCandidate, m: Omit<Msg, "id" | "candidateId" | "candidate" | "urgency">) => {
     out.push({
@@ -267,7 +267,9 @@ export default function OSRecruitingMessages() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
   const { items: liveMessages } = useRecruitingMessages();
-  const baseMessages = useMemo(() => buildMessages(recruitingCandidates), [recruitingCandidates]);
+  const liveUnreadCount = liveMessages.filter((m: any) => m.status !== "Read" && m.status !== "Handled").length;
+  void liveUnreadCount;
+  const baseMessages = useMemo(() => buildSuggestedMessages(recruitingCandidates), [recruitingCandidates]);
 
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
@@ -275,11 +277,11 @@ export default function OSRecruitingMessages() {
   const [recruiterF, setRecruiterF] = useState("all");
   const [typeF, setTypeF] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [readMap, setReadMap] = useState<Record<string, boolean>>({});
+  const [optimisticReadMap, setOptimisticReadMap] = useState<Record<string, boolean>>({});
   const [aiOpen, setAiOpen] = useState(false);
   const [aiQ, setAiQ] = useState("");
 
-  const isUnread = (m: Msg) => (readMap[m.id] !== undefined ? !readMap[m.id] : m.unread);
+  const isUnread = (m: Msg) => (optimisticReadMap[m.id] !== undefined ? !optimisticReadMap[m.id] : m.unread);
 
   const filtered = useMemo(() => {
     return baseMessages.filter((m) => {
@@ -311,7 +313,7 @@ export default function OSRecruitingMessages() {
       if (a.escalated !== b.escalated) return a.escalated ? -1 : 1;
       return a.hoursAgo - b.hoursAgo;
     });
-  }, [baseMessages, activeChip, search, stateF, recruiterF, typeF, readMap]);
+  }, [baseMessages, activeChip, search, stateF, recruiterF, typeF, optimisticReadMap]);
 
   const summary = useMemo(() => {
     const has = (pred: (m: Msg) => boolean) => baseMessages.filter(pred).length;
@@ -326,7 +328,7 @@ export default function OSRecruitingMessages() {
       high:         has((m) => m.urgency === "High"),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseMessages, readMap]);
+  }, [baseMessages, optimisticReadMap]);
 
   const staffingFeed = useMemo(
     () => baseMessages
@@ -342,7 +344,7 @@ export default function OSRecruitingMessages() {
       .sort((a, b) => b.noResponseDays - a.noResponseDays)
       .slice(0, 10),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [baseMessages, readMap]
+    [baseMessages, optimisticReadMap]
   );
 
   const selected = selectedId ? baseMessages.find((m) => m.id === selectedId) ?? null : null;
@@ -354,7 +356,7 @@ export default function OSRecruitingMessages() {
   }, [baseMessages, selected]);
 
   function toggleRead(id: string, val: boolean) {
-    setReadMap((m) => ({ ...m, [id]: val }));
+    setOptimisticReadMap((m) => ({ ...m, [id]: val }));
   }
   function persistMessageStatus(id: string, status: 'read' | 'handled') {
     if (/^[0-9a-f-]{36}$/i.test(id)) {
