@@ -559,6 +559,14 @@ export default function OSQAQueue() {
           sourceSystem={sourceById.get(openItem.id)}
         />
       )}
+      <QABulkActionDialog
+        open={bulkOpen}
+        onOpenChange={(o) => { if (!o) { setBulkOpen(false); setBulkVariant(null); } }}
+        variant={bulkVariant}
+        selectedCount={selectedRefs.length}
+        busy={bulkBusy}
+        onSubmit={handleBulkSubmit}
+      />
     </OSShell>
   );
 }
