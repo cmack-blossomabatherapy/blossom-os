@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,14 +10,16 @@ import { useSchedulingActions } from "@/hooks/useSchedulingActions";
 const CR_NOTE = "Staged in Blossom OS. CentralReach API not connected yet — change will be queued for future sync.";
 
 interface ClientLite { id: string; childName: string; state?: string; rbt?: string | null; bcba?: string | null; }
+interface ProviderLite { name: string; role: "rbt" | "bcba"; state?: string | null; }
 
 /* ---------------- Contact Attempt ---------------- */
 export function ContactAttemptDialog({
-  open, onOpenChange, client, defaultContactType = "family", onSaved,
+  open, onOpenChange, client, provider, defaultContactType = "family", onSaved,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   client?: ClientLite | null;
+  provider?: ProviderLite | null;
   defaultContactType?: "family" | "rbt" | "bcba" | "state_director" | "assistant_state_director" | "internal";
   onSaved?: () => void;
 }) {
@@ -28,16 +30,26 @@ export function ContactAttemptDialog({
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // Re-sync defaults whenever the dialog opens or the default contact type
+  // changes. Without this the persistent dialog component keeps the first
+  // value forever and Notify buttons appear to do nothing.
+  useEffect(() => {
+    if (open) setContactType(defaultContactType);
+  }, [open, defaultContactType]);
+
   const save = async () => {
     setBusy(true);
     try {
       await logContactAttempt({
         clientId: client?.id ?? null,
+        clientName: client?.childName ?? null,
+        providerName: provider?.name ?? null,
+        providerRole: provider?.role ?? null,
         contactType,
         channel,
         outcome: outcome as never,
         body,
-        state: client?.state ?? null,
+        state: client?.state ?? provider?.state ?? null,
       });
       toast.success("Contact attempt logged.");
       onOpenChange(false);
@@ -46,11 +58,12 @@ export function ContactAttemptDialog({
     } catch { /* toast already shown */ } finally { setBusy(false); }
   };
 
+  const title = client?.childName ?? provider?.name ?? "";
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Log contact attempt{client ? ` · ${client.childName}` : ""}</DialogTitle>
+          <DialogTitle>Log contact attempt{title ? ` · ${title}` : ""}</DialogTitle>
           <DialogDescription>Records to scheduling_contact_attempts.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -123,6 +136,7 @@ export function CoverageNoteDialog({
     try {
       await logAction({
         clientId: client?.id ?? null,
+        clientName: client?.childName ?? null,
         actionType: "coverage_note",
         title: "Coverage note",
         note,
@@ -170,6 +184,7 @@ export function CancellationDialog({
     try {
       const row = await logCancellation({
         clientId: client.id,
+        clientName: client.childName,
         sessionDate: date || null,
         startTime: start || null,
         endTime: end || null,
@@ -182,6 +197,7 @@ export function CancellationDialog({
       });
       await logAction({
         clientId: client.id,
+        clientName: client.childName,
         actionType: "cancellation_logged",
         title: `Cancellation (${cancelledBy})`,
         note: reason,
@@ -252,14 +268,14 @@ export function AdjustmentDialog({
     setBusy(true);
     try {
       const row = await createAdjustment({
-        clientId: client.id, adjustmentType: type, dayOfWeek: day || null, sessionDate: date || null,
+        clientId: client.id, clientName: client.childName, adjustmentType: type, dayOfWeek: day || null, sessionDate: date || null,
         oldStartTime: oldStart || null, newStartTime: newStart || null,
         oldEndTime: oldEnd || null, newEndTime: newEnd || null,
         oldRbtName: oldRbt || null, newRbtName: newRbt || null,
         newLocation: location || null, reason,
       });
       await logAction({
-        clientId: client.id, actionType: "schedule_adjustment", title: `Adjustment: ${type}`,
+        clientId: client.id, clientName: client.childName, actionType: "schedule_adjustment", title: `Adjustment: ${type}`,
         note: reason, state: client.state ?? null,
         metadata: { adjustment_id: (row as { id?: string } | null)?.id },
       });
@@ -329,7 +345,7 @@ export function CoverageCaseDialog({
     setBusy(true);
     try {
       await createCoverageCase({
-        clientId: client.id, state: client.state ?? null,
+        clientId: client.id, clientName: client.childName, state: client.state ?? null,
         caseType: mode === "escalate" ? "escalation" : "coverage_gap",
         riskLevel: mode === "escalate" ? "critical" : "high",
         rbtName: client.rbt ?? null, bcbaName: client.bcba ?? null,
@@ -338,6 +354,7 @@ export function CoverageCaseDialog({
       });
       await logAction({
         clientId: client.id,
+        clientName: client.childName,
         actionType: mode === "escalate" ? "state_director_escalated" : "coverage_case_opened",
         priority: mode === "escalate" ? "urgent" : "high",
         title: mode === "escalate" ? "Escalated to State Director" : "Coverage case opened",
@@ -380,12 +397,17 @@ export function AssignRbtDialog({
   const [rbt, setRbt] = useState(defaultRbt);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  // Re-sync defaultRbt whenever dialog opens — the dialog stays mounted, so
+  // without this a second Quick Pairing for a different RBT keeps the old name.
+  useEffect(() => {
+    if (open) setRbt(defaultRbt ?? "");
+  }, [open, defaultRbt]);
   const save = async () => {
     if (!client || !rbt.trim()) { toast.error("Select a client and RBT."); return; }
     setBusy(true);
     try {
       await logAction({
-        clientId: client.id, actionType: "rbt_assigned",
+        clientId: client.id, clientName: client.childName, actionType: "rbt_assigned",
         title: `RBT assigned: ${rbt}`, note,
         state: client.state ?? null,
         status: "completed",
@@ -433,12 +455,14 @@ export function ProviderRiskDialog({
         actionType: providerRole === "rbt" ? "rbt_capacity_risk" : "bcba_caseload_risk",
         title: providerRole === "rbt" ? `RBT capacity risk: ${providerName}` : `BCBA caseload risk: ${providerName}`,
         note: reason, state: state ?? null, priority: "high",
+        providerName, providerRole,
         metadata: { provider_name: providerName, role: providerRole },
       });
       await createCoverageCase({
         state: state ?? null,
         caseType: providerRole === "rbt" ? "rbt_capacity" : "bcba_caseload",
         riskLevel: "high",
+        providerName, providerRole,
         rbtName: providerRole === "rbt" ? providerName : null,
         bcbaName: providerRole === "bcba" ? providerName : null,
         reason,

@@ -166,7 +166,12 @@ export default function OSSchedulingRosterRBTs() {
           Source: <code>bcba_billable_sessions</code> · procedure code 97153 · window {cr.windowStart} → today.
         </p>
       </div>
-      <ContactAttemptDialog open={!!contactFor} onOpenChange={(o) => !o && setContactFor(null)} client={contactFor ? { id: "", childName: contactFor.name, state: contactFor.state ?? undefined } : null} defaultContactType="rbt" />
+      <ContactAttemptDialog
+        open={!!contactFor}
+        onOpenChange={(o) => !o && setContactFor(null)}
+        provider={contactFor ? { name: contactFor.name, role: "rbt", state: contactFor.state ?? null } : null}
+        defaultContactType="rbt"
+      />
       <ProviderRiskDialog open={!!riskFor} onOpenChange={(o) => !o && setRiskFor(null)} providerName={riskFor?.name ?? ""} providerRole="rbt" state={riskFor?.state ?? null} />
     </OSShell>
   );

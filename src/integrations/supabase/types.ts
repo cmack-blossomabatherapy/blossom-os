@@ -12338,6 +12338,8 @@ export type Database = {
           action_type: string
           assigned_to_user_id: string | null
           client_id: string | null
+          client_key: string | null
+          client_name: string | null
           completed_at: string | null
           created_at: string
           created_by: string | null
@@ -12348,6 +12350,10 @@ export type Database = {
           owner_role: string | null
           owner_user_id: string | null
           priority: string
+          provider_name: string | null
+          provider_role: string | null
+          source_record_id: string | null
+          source_system: string
           state: string | null
           status: string
           title: string | null
@@ -12357,6 +12363,8 @@ export type Database = {
           action_type: string
           assigned_to_user_id?: string | null
           client_id?: string | null
+          client_key?: string | null
+          client_name?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -12367,6 +12375,10 @@ export type Database = {
           owner_role?: string | null
           owner_user_id?: string | null
           priority?: string
+          provider_name?: string | null
+          provider_role?: string | null
+          source_record_id?: string | null
+          source_system?: string
           state?: string | null
           status?: string
           title?: string | null
@@ -12376,6 +12388,8 @@ export type Database = {
           action_type?: string
           assigned_to_user_id?: string | null
           client_id?: string | null
+          client_key?: string | null
+          client_name?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -12386,6 +12400,10 @@ export type Database = {
           owner_role?: string | null
           owner_user_id?: string | null
           priority?: string
+          provider_name?: string | null
+          provider_role?: string | null
+          source_record_id?: string | null
+          source_system?: string
           state?: string | null
           status?: string
           title?: string | null
@@ -12401,6 +12419,8 @@ export type Database = {
           centralreach_reference_id: string | null
           centralreach_sync_status: string
           client_id: string | null
+          client_key: string | null
+          client_name: string | null
           created_at: string
           created_by: string | null
           duration_hours: number | null
@@ -12415,6 +12435,8 @@ export type Database = {
           rbt_name: string | null
           reason: string | null
           session_date: string | null
+          source_record_id: string | null
+          source_system: string
           start_time: string | null
           state: string | null
           state_director_notified: boolean
@@ -12427,6 +12449,8 @@ export type Database = {
           centralreach_reference_id?: string | null
           centralreach_sync_status?: string
           client_id?: string | null
+          client_key?: string | null
+          client_name?: string | null
           created_at?: string
           created_by?: string | null
           duration_hours?: number | null
@@ -12441,6 +12465,8 @@ export type Database = {
           rbt_name?: string | null
           reason?: string | null
           session_date?: string | null
+          source_record_id?: string | null
+          source_system?: string
           start_time?: string | null
           state?: string | null
           state_director_notified?: boolean
@@ -12453,6 +12479,8 @@ export type Database = {
           centralreach_reference_id?: string | null
           centralreach_sync_status?: string
           client_id?: string | null
+          client_key?: string | null
+          client_name?: string | null
           created_at?: string
           created_by?: string | null
           duration_hours?: number | null
@@ -12467,6 +12495,8 @@ export type Database = {
           rbt_name?: string | null
           reason?: string | null
           session_date?: string | null
+          source_record_id?: string | null
+          source_system?: string
           start_time?: string | null
           state?: string | null
           state_director_notified?: boolean
@@ -12479,6 +12509,8 @@ export type Database = {
           body: string | null
           channel: string
           client_id: string | null
+          client_key: string | null
+          client_name: string | null
           contact_type: string
           created_at: string
           created_by: string | null
@@ -12487,6 +12519,10 @@ export type Database = {
           id: string
           metadata: Json
           outcome: string | null
+          provider_name: string | null
+          provider_role: string | null
+          source_record_id: string | null
+          source_system: string
           state: string | null
           subject: string | null
           updated_at: string
@@ -12495,6 +12531,8 @@ export type Database = {
           body?: string | null
           channel: string
           client_id?: string | null
+          client_key?: string | null
+          client_name?: string | null
           contact_type: string
           created_at?: string
           created_by?: string | null
@@ -12503,6 +12541,10 @@ export type Database = {
           id?: string
           metadata?: Json
           outcome?: string | null
+          provider_name?: string | null
+          provider_role?: string | null
+          source_record_id?: string | null
+          source_system?: string
           state?: string | null
           subject?: string | null
           updated_at?: string
@@ -12511,6 +12553,8 @@ export type Database = {
           body?: string | null
           channel?: string
           client_id?: string | null
+          client_key?: string | null
+          client_name?: string | null
           contact_type?: string
           created_at?: string
           created_by?: string | null
@@ -12519,6 +12563,10 @@ export type Database = {
           id?: string
           metadata?: Json
           outcome?: string | null
+          provider_name?: string | null
+          provider_role?: string | null
+          source_record_id?: string | null
+          source_system?: string
           state?: string | null
           subject?: string | null
           updated_at?: string
@@ -12532,6 +12580,8 @@ export type Database = {
           case_type: string
           centralreach_reference_id: string | null
           client_id: string | null
+          client_key: string | null
+          client_name: string | null
           created_at: string
           created_by: string | null
           delivered_hours: number | null
@@ -12541,11 +12591,15 @@ export type Database = {
           metadata: Json
           next_action: string | null
           owner_user_id: string | null
+          provider_name: string | null
+          provider_role: string | null
           rbt_name: string | null
           reason: string | null
           resolved_at: string | null
           risk_level: string
           scheduled_hours: number | null
+          source_record_id: string | null
+          source_system: string
           state: string | null
           status: string
           updated_at: string
@@ -12556,6 +12610,8 @@ export type Database = {
           case_type: string
           centralreach_reference_id?: string | null
           client_id?: string | null
+          client_key?: string | null
+          client_name?: string | null
           created_at?: string
           created_by?: string | null
           delivered_hours?: number | null
@@ -12565,11 +12621,15 @@ export type Database = {
           metadata?: Json
           next_action?: string | null
           owner_user_id?: string | null
+          provider_name?: string | null
+          provider_role?: string | null
           rbt_name?: string | null
           reason?: string | null
           resolved_at?: string | null
           risk_level?: string
           scheduled_hours?: number | null
+          source_record_id?: string | null
+          source_system?: string
           state?: string | null
           status?: string
           updated_at?: string
@@ -12580,6 +12640,8 @@ export type Database = {
           case_type?: string
           centralreach_reference_id?: string | null
           client_id?: string | null
+          client_key?: string | null
+          client_name?: string | null
           created_at?: string
           created_by?: string | null
           delivered_hours?: number | null
@@ -12589,11 +12651,15 @@ export type Database = {
           metadata?: Json
           next_action?: string | null
           owner_user_id?: string | null
+          provider_name?: string | null
+          provider_role?: string | null
           rbt_name?: string | null
           reason?: string | null
           resolved_at?: string | null
           risk_level?: string
           scheduled_hours?: number | null
+          source_record_id?: string | null
+          source_system?: string
           state?: string | null
           status?: string
           updated_at?: string
@@ -12608,6 +12674,8 @@ export type Database = {
           centralreach_reference_id: string | null
           centralreach_sync_status: string
           client_id: string | null
+          client_key: string | null
+          client_name: string | null
           created_at: string
           created_by: string | null
           day_of_week: string | null
@@ -12623,6 +12691,8 @@ export type Database = {
           old_start_time: string | null
           reason: string | null
           session_date: string | null
+          source_record_id: string | null
+          source_system: string
           updated_at: string
         }
         Insert: {
@@ -12632,6 +12702,8 @@ export type Database = {
           centralreach_reference_id?: string | null
           centralreach_sync_status?: string
           client_id?: string | null
+          client_key?: string | null
+          client_name?: string | null
           created_at?: string
           created_by?: string | null
           day_of_week?: string | null
@@ -12647,6 +12719,8 @@ export type Database = {
           old_start_time?: string | null
           reason?: string | null
           session_date?: string | null
+          source_record_id?: string | null
+          source_system?: string
           updated_at?: string
         }
         Update: {
@@ -12656,6 +12730,8 @@ export type Database = {
           centralreach_reference_id?: string | null
           centralreach_sync_status?: string
           client_id?: string | null
+          client_key?: string | null
+          client_name?: string | null
           created_at?: string
           created_by?: string | null
           day_of_week?: string | null
@@ -12671,6 +12747,8 @@ export type Database = {
           old_start_time?: string | null
           reason?: string | null
           session_date?: string | null
+          source_record_id?: string | null
+          source_system?: string
           updated_at?: string
         }
         Relationships: []
