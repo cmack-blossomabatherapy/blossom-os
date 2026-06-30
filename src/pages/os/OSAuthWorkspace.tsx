@@ -1109,7 +1109,7 @@ function AuthDetailDrawer({
         <DrawerSection title="QA Coordination">
           <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12.5px]">
             <KV label="Treatment plan">{auth.treatmentPlan.label}</KV>
-            <KV label="QA reviewer">Rachel</KV>
+            <KV label="QA reviewer">{auth.bcba || "Unassigned"}</KV>
             <KV label="QA status">{auth.qaStatus.label}</KV>
             <KV label="Ready to submit">{auth.qaStatus.tone === "ok" ? "Yes" : "No"}</KV>
           </div>
