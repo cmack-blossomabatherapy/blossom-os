@@ -211,7 +211,13 @@ export default function OSRecruitingEscalations() {
     base.forEach((e) => { m[e.id] = e.stage; });
     return m;
   }, [base]);
-  const { stageMap, moveStage: persistStage } = useWorkflowStages("escalations", defaults);
+  // Optimistic UI map; real status persists to recruiting_escalations.status
+  // via mutations.resolveEscalation / mutations.updateMessage-style helpers.
+  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(defaults);
+  useEffect(() => { setStageMap(defaults); }, [defaults]);
+  const persistStage = (id: string, to: StageKey, _candidateId?: string) => {
+    setStageMap((m) => ({ ...m, [id]: to }));
+  };
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
