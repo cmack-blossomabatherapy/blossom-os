@@ -1415,3 +1415,82 @@ function DrawerAction({ icon: Icon, label, primary, onClick }: { icon: React.Ele
     </button>
   );
 }
+
+/* ─────────── filter dropdown ─────────── */
+
+function FilterDropdown<T extends string>({
+  icon: Icon, label, value, options, onChange,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: T | null;
+  options: { value: T; label: string }[];
+  onChange: (v: T | null) => void;
+}) {
+  const active = value != null;
+  return (
+    <div className="relative">
+      <select
+        aria-label={label}
+        value={value ?? ""}
+        onChange={(e) => onChange((e.target.value || null) as T | null)}
+        className={cn(
+          "h-7 appearance-none rounded-full border bg-white/70 pl-7 pr-6 text-[11px] font-medium transition",
+          active
+            ? "border-[hsl(265_85%_60%/0.4)] text-foreground"
+            : "border-white/70 text-foreground/75 hover:text-foreground",
+        )}
+      >
+        <option value="">{label}{active ? "" : ""}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{label}: {o.label}</option>
+        ))}
+      </select>
+      <Icon className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+      {active && (
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          aria-label={`Clear ${label} filter`}
+          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ─────────── subnav: relate main + focused queue ─────────── */
+
+function AuthSubnav({ active }: { active: "main" | "focused" | "expiring" | "missing" | "payer" | "reports" }) {
+  const items: { key: typeof active; label: string; to: string }[] = [
+    { key: "main", label: "Main List", to: "/authorizations" },
+    { key: "focused", label: "Focused Queue", to: "/auth-workspace" },
+    { key: "expiring", label: "Expiring", to: "/ops/expiring-authorizations" },
+    { key: "missing", label: "Missing Docs", to: "/ops/missing-docs" },
+    { key: "payer", label: "Payer Requirements", to: "/ops/payer-requirements" },
+    { key: "reports", label: "Reports", to: "/reports" },
+  ];
+  return (
+    <nav className="os-card flex flex-wrap items-center gap-1 p-2 text-[12px]" aria-label="Authorizations navigation">
+      {items.map((it) => (
+        <Link
+          key={it.key}
+          to={it.to}
+          className={cn(
+            "rounded-lg px-2.5 py-1.5 font-medium transition",
+            it.key === active
+              ? "bg-foreground text-background"
+              : "text-foreground/75 hover:bg-foreground/[0.06] hover:text-foreground",
+          )}
+        >
+          {it.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+// FilterChip kept (legacy) — silence "unused" by re-exporting via void.
+void FilterChip;
