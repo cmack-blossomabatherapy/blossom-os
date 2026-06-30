@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Search, Sparkles, Brain, Send, Download, Bell, Plus, RefreshCw,
   Flame, Clock, CheckCircle2, MessageSquare, UserPlus, ArrowRight,
