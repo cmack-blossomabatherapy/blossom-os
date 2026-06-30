@@ -41,6 +41,13 @@ interface OverridePatch {
   notes?: string | null;
   escalated?: boolean;
   escalation_reason?: string | null;
+  // Pass-5 truth columns
+  progress_report_received_at?: string | null;
+  treatment_plan_received_at?: string | null;
+  resolved_at?: string | null;
+  resolved_reason?: string | null;
+  last_completed_action?: string | null;
+  workflow_state?: string | null;
 }
 
 async function upsertOverride(ref: QAWorkItemRef, patch: OverridePatch) {
@@ -177,6 +184,8 @@ export const qaWorkflowStore = {
         qa_status: "Ready for Submission",
         blockers: [],
         next_action: "Hand off to Authorizations",
+        last_completed_action: "marked_reviewed",
+        workflow_state: "ready_for_submission",
       },
     );
   },
@@ -234,15 +243,89 @@ export const qaWorkflowStore = {
         escalation_reason: reason,
         alerts: [reason],
         next_action: "Leadership escalation",
+        workflow_state: "escalated",
+        last_completed_action: "escalated",
       },
     );
   },
 
   async resolveMissingInfo(ref: QAWorkItemRef) {
+    const now = new Date().toISOString();
     return applyPatch(
       ref,
       { blockers: [], alerts: [] },
-      { blockers: [], alerts: [] },
+      {
+        blockers: [],
+        alerts: [],
+        resolved_at: now,
+        resolved_reason: "Missing info resolved",
+        last_completed_action: "resolved",
+        workflow_state: "resolved",
+      },
+    );
+  },
+
+  /** Mark a Progress Report as received — persists timestamp + clears PR blocker. */
+  async markProgressReportReceived(ref: QAWorkItemRef) {
+    const now = new Date().toISOString();
+    return applyPatch(
+      ref,
+      { notes: "Progress Report received" },
+      {
+        progress_report_received_at: now,
+        last_completed_action: "pr_received",
+        next_action: "Continue QA review",
+        notes: "Progress Report received",
+      },
+    );
+  },
+
+  /** Mark a Treatment Plan as received — persists timestamp + flips TP flag. */
+  async markTreatmentPlanReceived(ref: QAWorkItemRef) {
+    const now = new Date().toISOString();
+    return applyPatch(
+      ref,
+      { treatment_plan_received: true, notes: "Treatment Plan received" },
+      {
+        treatment_plan_received_at: now,
+        last_completed_action: "tp_received",
+        next_action: "Continue QA review",
+        notes: "Treatment Plan received",
+      },
+    );
+  },
+
+  /** Mark a generic work item as resolved (used by Messages "Mark resolved"). */
+  async markResolved(ref: QAWorkItemRef, reason?: string) {
+    const now = new Date().toISOString();
+    return applyPatch(
+      ref,
+      { blockers: [], alerts: [], next_action: "Resolved" },
+      {
+        blockers: [],
+        alerts: [],
+        resolved_at: now,
+        resolved_reason: reason ?? "Resolved from messages",
+        last_completed_action: "resolved",
+        workflow_state: "resolved",
+        next_action: "Resolved",
+      },
+    );
+  },
+
+  /** Explicitly clear an escalation (the inverse of escalate). */
+  async clearEscalation(ref: QAWorkItemRef) {
+    return applyPatch(
+      ref,
+      { alerts: [], status: "In Review", next_action: "Continue QA review" },
+      {
+        escalated: false,
+        escalation_reason: null,
+        alerts: [],
+        workflow_state: "in_review",
+        last_completed_action: "escalation_cleared",
+        next_action: "Continue QA review",
+      },
     );
   },
 
