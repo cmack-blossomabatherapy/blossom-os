@@ -20,6 +20,8 @@ import {
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
 import { useRecruitingStaffingNeeds } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
+import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -114,10 +116,8 @@ function fitScore(n: StaffingClientNeed, c: RecruitingCandidate): number {
 export default function OSRecruitingStaffingNeeds() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveStaffingNeeds } = useRecruitingStaffingNeeds();
-  // Mutation helpers wired here so future "Create from suggestion" / "Close need" / "Link candidate" actions persist to recruiting_staffing_needs.
-  const _stf = { c: mutations.createStaffingNeed, u: mutations.updateStaffingNeed, w: mutations.markStaffingNeedWorking, x: mutations.closeStaffingNeed, l: mutations.linkCandidateToStaffingNeed };
-  void _stf; void liveStaffingNeeds;
+  const { items: liveStaffingNeeds, loading: liveStaffingNeedsLoading } = useRecruitingStaffingNeeds();
+  const { find: findCandidate } = useRecruitingCandidateLookup();
   // Build needs list
   const baseNeeds = useMemo(() => getClientStaffingNeeds(), []);
   const readyCandidates = useMemo(
@@ -291,6 +291,54 @@ export default function OSRecruitingStaffingNeeds() {
         </div>
 
         {/* Chips */}
+        <LiveRecruitingSection
+          title="Live staffing needs"
+          subtitle="Primary source — rows from recruiting_staffing_needs"
+          tableName="recruiting_staffing_needs"
+          items={liveStaffingNeeds}
+          loading={liveStaffingNeedsLoading}
+          emptyTitle="No live staffing needs on file"
+          emptyBody="When the team logs a need to recruiting_staffing_needs, it will render here. The board below shows synthetic client demand."
+          renderRow={(row: any) => {
+            const matched = row.matched_candidate_id ? findCandidate(row.matched_candidate_id) : null;
+            const isClosed = row.status === "Closed";
+            const tone = isClosed ? "ok" : row.priority === "High" ? "crit" : row.priority === "Medium" ? "warn" : "info";
+            return (
+              <LiveRowCard
+                title={`${row.role_needed ?? "Role"} · ${row.client_label ?? "Unassigned client"}`}
+                meta={[row.state, row.hours_per_week ? `${row.hours_per_week} hrs/wk` : null, matched ? `Match: ${matched.first_name} ${matched.last_name}` : null, `Status: ${row.status}`].filter(Boolean).join(" · ")}
+                tone={tone}
+                badges={
+                  <>
+                    {row.priority && <Pill tone={tone}>{row.priority}</Pill>}
+                    {isClosed && <Pill tone="ok">Closed</Pill>}
+                  </>
+                }
+                actions={
+                  !isClosed && (
+                    <>
+                      {row.status !== "Active" && (
+                        <button
+                          onClick={() => void mutations.markStaffingNeedWorking(row.id)}
+                          className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition"
+                        >
+                          Start work
+                        </button>
+                      )}
+                      <button
+                        onClick={() => void mutations.closeStaffingNeed(row.id, "Closed via Live section")}
+                        className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition"
+                      >
+                        Close
+                      </button>
+                    </>
+                  )
+                }
+              />
+            );
+          }}
+        />
+
         <div className="flex flex-wrap gap-2">
           {CHIPS.map((c) => (
             <button

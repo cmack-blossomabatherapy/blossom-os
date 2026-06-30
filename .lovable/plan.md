@@ -1,48 +1,46 @@
-## Plan: make BCBA Productivity Uploads actually persist and show data
+## Pass 5b scope
 
-### What I found
-- The backend tables for BCBA upload batches and billing rows currently have **0 rows**, so the report and uploads page are correctly showing no dataset.
-- The browser network trace shows the file parsed and duplicate checks ran (`check_hashes`), but I do **not** see the later upload steps (`create_batch`, `append_rows`, `finalize_batch`) completing.
-- The upload UI currently treats “Parsed 46,305 rows” as success even though that is only the preview step, not a committed upload.
-- The Data API grants for the two BCBA upload tables are missing in the current database grant inspection, which can break client visibility even when policies exist.
+Pass 5 says "the rendered pages must use the real tables." 5a built the candidate-identity foundation. 5b is the first batch of page rewrites — specifically the four Recruiting pages whose lists today are still computed from synthetic builders (`buildEscalations`, etc.) or from `useLegacyRecruitingCandidates`, even though the live hooks are imported.
 
-### Fixes to implement
-1. **Restore backend table access grants**
-   - Add a database migration to explicitly grant authenticated users and backend service access to:
-     - `bcba_productivity_upload_batches`
-     - `bcba_productivity_billing_rows`
-   - Keep the existing role-based row access policies intact.
+I'm proposing four pages this pass, not all seventeen, because each page is 600–840 lines with deeply nested filters, drawers, chips, and AI panels that all read from the synthetic shape. Trying to swing all seventeen in one turn is how regressions sneak in.
 
-2. **Make the upload flow impossible to mistake for saved data**
-   - Change the preview toast from “Parsed…” success to a clear preview message: “Ready to append…”.
-   - Only show a success toast after the backend confirms rows landed.
-   - Add a clear warning/confirmation state if a file was parsed but not appended.
+### Pages in this pass
 
-3. **Harden upload persistence for 46k+ rows**
-   - Reduce upload chunk size to avoid edge function/request instability.
-   - Add retry with backoff for row chunk inserts.
-   - Refresh auth token during long uploads before retrying chunks.
-   - Treat missing/invalid `inserted` counts as a hard error, not success.
-   - Ensure `finalize_batch` verifies the actual backend row count before the UI says it worked.
+```text
+src/pages/os/OSRecruitingEscalations.tsx      → render rows from useRecruitingEscalations
+src/pages/os/OSRecruitingFollowUps.tsx        → render rows from useRecruitingFollowups
+src/pages/os/OSRecruitingMessages.tsx         → render rows from useRecruitingMessages
+src/pages/os/OSRecruitingStaffingNeeds.tsx    → render rows from useRecruitingStaffingNeeds
+```
 
-4. **Improve admin upload page visibility**
-   - Add an “Upload progress” panel that shows phases: parsing, duplicate check, creating batch, uploading rows, finalizing, verified.
-   - After upload, reload the dataset status and show the verified active row count.
-   - If active rows are still `0` after append, show an error explaining that nothing saved.
+For each page:
 
-5. **Improve report loading feedback**
-   - On `/reports/bcba-productivity-report-v3`, show a clear empty state when the shared admin dataset has no rows.
-   - Add a “Refresh shared dataset” action so the report can reload immediately after an admin upload.
+- Replace the synthetic `buildXxx(candidates)` array (or legacy candidate-derived `base`) with the live hook's `items` as the primary list source.
+- Map each live row to the page's existing card/row component using a thin `toViewModel(row, candidateLookup)` adapter so the UI stays visually identical.
+- Use `useRecruitingCandidateLookup` (from 5a) to attach candidate name / state / role to live rows that only carry a `candidate_id`.
+- Keep the existing filter chips, search, drawers, and AI panels intact — they operate on the view model, not the raw row.
+- Empty state: when the live table has zero rows, render an honest "No live records yet" panel instead of falling back to synthetic data.
+- Every row-level action already routes through `useRecruitingMutations`; no change there.
 
-6. **Validate after changes**
-   - Query the backend counts after the migration/fix.
-   - Test the upload service with a small synthetic payload first.
-   - Confirm rows appear in upload history and load in the report.
+### New / updated tests
+
+- `src/test/recruitingRenderedDataSourcePass5.test.ts` — for each of the four pages, assert the rendered list reads from the live hook's `items` (not from `buildXxx` and not from `useLegacyRecruitingCandidates`).
+- Update `src/test/recruitingNoLocalOnlyWorkflowPass3.test.ts` only if a removed symbol breaks it.
+
+### Out of scope (deferred)
+
+- The 13 board pages (Offers / Background / Orientation / Onboarding / Interviews / RBT / BCBA / Pipeline / Workspace / Team / Performance / Resources / Training Academy). Their boards already persist through `runPageStageMove` from 5a; rewriting them to render from live child tables is **Pass 5c**.
+- Deleting/redirect-collapsing `src/pages/Recruiting.tsx` and `src/pages/RecruitingDashboard.tsx` — that's the **Pass 5d** cleanup with `recruitingLegacyDemoPagesPass5.test.ts`.
 
 ### Technical notes
-- Files to update:
-  - `src/lib/os/bcbaProductivityV3/adminUploadStore.ts`
-  - `src/pages/os/system/BcbaProductivityUploads.tsx`
-  - `src/pages/os/reports/BcbaProductivityReportV3.tsx`
-  - `supabase/functions/bcba-productivity-upload/index.ts` if chunk response handling needs extra diagnostics
-- Backend migration will only adjust permissions/grants and preserve existing role visibility rules.
+
+- `recruiting_escalations` has fewer columns than the synthetic `Esc` shape, so view-model fields like `operationalImpact`, `staffingImpact`, and `leadership` get derived from `severity` + `status` + age, with honest defaults rather than fabricated values.
+- The "stage" chips on Escalations / Followups map to `status` on the live tables (`Open`, `In Progress`, `Resolved`, `Done`); `setStageMap` becomes optimistic on top of the live row's status and persists via `mutations.resolveEscalation` / `mutations.resolveFollowup` / `mutations.snoozeFollowup`.
+- Messages page swaps `buildMessages(candidates)` for `useRecruitingMessages()` and pages by `sent_at`. `markMessageRead` / `markMessageHandled` already wired.
+- Staffing Needs swaps the legacy candidate-derived list for `useRecruitingStaffingNeeds` items; `markStaffingNeedWorking`, `linkCandidateToStaffingNeed`, `closeStaffingNeed` already wired.
+
+### Verification
+
+- `bunx vitest run src/test/recruitingRenderedDataSourcePass5.test.ts src/test/recruitingApploiIdentityPass5.test.ts src/test/recruitingNoLocalOnlyWorkflowPass3.test.ts` passes.
+- `tsgo` is clean on the four edited pages.
+- Manual: each page loads with the live table empty and shows the honest empty state, then shows new rows when records exist.

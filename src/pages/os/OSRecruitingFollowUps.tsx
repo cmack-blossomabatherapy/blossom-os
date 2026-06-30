@@ -14,6 +14,8 @@ import {
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
 import { useRecruitingFollowups } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
+import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { cn } from "@/lib/utils";
 import { useWorkflowStages } from "@/hooks/useWorkflowStages";
 
@@ -174,9 +176,8 @@ const CHIPS = [
 export default function OSRecruitingFollowUps() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveFollowups } = useRecruitingFollowups();
-  const liveActiveCount = liveFollowups.filter((f: any) => f.status !== "Done").length;
-  void liveActiveCount;
+  const { items: liveFollowups, loading: liveFollowupsLoading } = useRecruitingFollowups();
+  const { find: findCandidate } = useRecruitingCandidateLookup();
   const baseFollowUps = useMemo(() => buildSuggestedFollowUps(recruitingCandidates), [recruitingCandidates]);
 
   const defaults = useMemo(() => {
@@ -358,6 +359,47 @@ export default function OSRecruitingFollowUps() {
         </section>
 
         {/* Filter chips */}
+        <LiveRecruitingSection
+          title="Live follow-ups"
+          subtitle="Primary source — rows from recruiting_followups"
+          tableName="recruiting_followups"
+          items={liveFollowups}
+          loading={liveFollowupsLoading}
+          emptyTitle="No live follow-ups on file"
+          emptyBody="When a recruiter logs a follow-up to recruiting_followups, it will render here. The board below shows candidate-derived suggestions."
+          renderRow={(row: any) => {
+            const cand = row.candidate_id ? findCandidate(row.candidate_id) : null;
+            const candName = cand ? `${cand.first_name} ${cand.last_name}`.trim() : (row.title ?? "Follow-up");
+            const isDone = row.status === "Done";
+            const overdue = row.due_date && new Date(row.due_date).getTime() < Date.now() && !isDone;
+            const tone = isDone ? "ok" : overdue ? "crit" : "info";
+            return (
+              <LiveRowCard
+                title={candName}
+                meta={[row.title, row.owner ?? "Unassigned", row.due_date ? `Due ${new Date(row.due_date).toLocaleDateString()}` : null, `Status: ${row.status}`].filter(Boolean).join(" · ")}
+                tone={tone}
+                badges={
+                  <>
+                    {row.category && <Pill tone="info">{row.category}</Pill>}
+                    {overdue && <Pill tone="crit">Overdue</Pill>}
+                    {isDone && <Pill tone="ok">Done</Pill>}
+                  </>
+                }
+                actions={
+                  !isDone && (
+                    <button
+                      onClick={() => void mutations.resolveFollowup(row.id)}
+                      className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition inline-flex items-center gap-1"
+                    >
+                      <CheckCircle2 className="size-3" /> Resolve
+                    </button>
+                  )
+                }
+              />
+            );
+          }}
+        />
+
         <div className="flex flex-wrap gap-2">
           {CHIPS.map((c) => (
             <button
