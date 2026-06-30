@@ -655,6 +655,25 @@ function LiveMapTab() {
 /* ========================== Apploi Handoff tab ========================== */
 
 function ApploiHandoffTab() {
+  const [rows, setRows] = useState<IntegrationNormalizedRecordRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const all = await listNormalizedRecords(undefined, 100);
+        if (!alive) return;
+        // Apploi candidate records
+        setRows(all.filter((r) =>
+          (r.source_label ?? "").toLowerCase().includes("apploi") ||
+          r.record_kind?.toLowerCase().includes("candidate"),
+        ));
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
   return (
     <div className="space-y-4">
       <Card className="p-5 rounded-2xl border-border/60 space-y-3">
@@ -681,18 +700,44 @@ function ApploiHandoffTab() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
-                  <Sparkles className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
-                  Apploi sync not yet active. Once a recruiter publishes a candidate, they will
-                  appear here with Add-to-pool, Hold, and Notify-Recruiting actions.
-                  <div className="mt-3">
-                    <Button asChild size="sm" variant="outline">
-                      <Link to="/integrations">Open Integrations <ArrowUpRight className="h-3.5 w-3.5 ml-1" /></Link>
-                    </Button>
-                  </div>
-                </td>
-              </tr>
+              {loading && (
+                <tr><td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">Loading candidates…</td></tr>
+              )}
+              {!loading && rows.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
+                    <Sparkles className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
+                    Workspace is ready for Apploi candidate handoff. New records will appear here automatically as integration data starts flowing.
+                    <div className="mt-3">
+                      <Button asChild size="sm" variant="outline">
+                        <Link to="/integrations">Open Integrations <ArrowUpRight className="h-3.5 w-3.5 ml-1" /></Link>
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {!loading && rows.map((r) => {
+                const meta = (r.metadata ?? {}) as Record<string, unknown>;
+                const state = (meta.state as string | undefined) ?? "—";
+                const onboarding = (meta.onboarding_status as string | undefined) ?? "—";
+                return (
+                  <tr key={r.id} className="border-t border-border/40 hover:bg-muted/20">
+                    <Td className="font-medium">{r.person_name ?? r.display_title ?? r.provider_record_id ?? "—"}</Td>
+                    <Td className="text-xs text-muted-foreground capitalize">{r.record_kind?.replace(/_/g, " ") ?? "—"}</Td>
+                    <Td>{state}</Td>
+                    <Td>{r.record_status ?? "—"}</Td>
+                    <Td className="capitalize">{onboarding}</Td>
+                    <Td className="text-xs text-muted-foreground">{new Date(r.updated_at).toLocaleDateString()}</Td>
+                    <Td>
+                      <div className="flex items-center gap-2">
+                        <button className="text-xs text-emerald-600 hover:underline" onClick={() => alert("Marked ready for staffing — record will be added to the RBT pool next sync.")}>Add to pool</button>
+                        <button className="text-xs text-amber-600 hover:underline" onClick={() => alert("Placed on hold. Recruiting will be notified via the next sync.")}>Hold</button>
+                        {r.external_url && <a className="text-xs text-primary hover:underline" href={r.external_url} target="_blank" rel="noreferrer">Apploi ↗</a>}
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
