@@ -1242,7 +1242,17 @@ function ProviderDetailSheet({
   async function toggleActive() {
     if (!provider) return;
     try {
-      await updateCredProvider(provider.id, { active: !provider.active });
+      const nowActive = !provider.active;
+      await updateCredProvider(
+        provider.id,
+        { active: nowActive },
+        {
+          type: "provider_active_change",
+          message: nowActive ? "Provider reactivated" : "Provider deactivated",
+          old: provider.active ? "Active" : "Inactive",
+          new: nowActive ? "Active" : "Inactive",
+        },
+      );
       toast.success(provider.active ? "Provider deactivated" : "Provider reactivated");
       onChanged();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
