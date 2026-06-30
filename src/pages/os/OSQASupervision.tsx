@@ -225,7 +225,7 @@ export default function OSQASupervision() {
   const [escFilter, setEscFilter] = useState("all");
   const [urgFilter, setUrgFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
-  useQADeepLink({ items, loading, setOpenId, setQuery, setBcbaFilter });
+  useQADeepLink({ items, loading: aLoading, setOpenId, setQuery, setBcbaFilter });
 
   const states = useMemo(() => Array.from(new Set(rows.map(r => r.state).filter(s => s && s !== "—"))).sort(), [rows]);
   const bcbas  = useMemo(() => Array.from(new Set(rows.map(r => r.bcba).filter((v): v is string => !!v))).sort(), [rows]);
