@@ -171,6 +171,62 @@ const leastLoadedCoordinator = (leads: Lead[]) => {
   return counts.sort((a, b) => a.count - b.count)[0]?.owner ?? INTAKE_COORDINATORS[0];
 };
 
+/**
+ * Canonical task seeds per Family / Lead pipeline stage. Used when a lead is
+ * accepted into a stage so intake & VOB work is queued up automatically
+ * without coordinators hand-building checklists. Each seed includes a
+ * suggested owner role and an SLA offset (days).
+ */
+type SeedOwnerRole = "intake" | "financial";
+interface StageSeed { title: string; owner: SeedOwnerRole; due: number }
+const STAGE_TASK_SEEDS: Partial<Record<FamilyLeadPipelineStage, StageSeed[]>> = {
+  Qualification: [
+    { title: "Confirm Diagnosis Status", owner: "intake", due: 1 },
+    { title: "Confirm Insurance Eligibility", owner: "intake", due: 1 },
+    { title: "Send Intake Packet", owner: "intake", due: 2 },
+  ],
+  "Intake Packet Sent": [
+    { title: "Follow Up on Intake Packet", owner: "intake", due: 3 },
+  ],
+  "Intake Complete": [
+    { title: "Review Intake Packet", owner: "intake", due: 1 },
+    { title: "Set Insurance", owner: "intake", due: 1 },
+    { title: "Set Form Review Status", owner: "intake", due: 1 },
+  ],
+  "Benefits Verification": [
+    { title: "Submit to Solum", owner: "financial", due: 1 },
+    { title: "Add to Eligipro", owner: "financial", due: 2 },
+    { title: "Add to CentralReach", owner: "financial", due: 2 },
+    { title: "Confirm Benefits Received", owner: "financial", due: 5 },
+  ],
+};
+
+/**
+ * Idempotently append the canonical task seeds for the given stage. Tasks are
+ * matched by title (case-insensitive) so re-entering a stage never produces
+ * duplicates. Returns `{ tasks, seeded }` — `seeded` is the list of titles
+ * that were actually added (for the automation log).
+ */
+function applyStageTaskSeeds(
+  stage: string | null | undefined,
+  existing: Lead["tasks"],
+  intakeOwner: string,
+): { tasks: Lead["tasks"]; seeded: string[] } {
+  const canonical = canonicalFamilyLeadStage(stage);
+  const seeds = STAGE_TASK_SEEDS[canonical];
+  if (!seeds || seeds.length === 0) return { tasks: existing, seeded: [] };
+  const titles = new Set(existing.map((t) => (t.title ?? "").toLowerCase()));
+  const tasks = [...existing];
+  const seeded: string[] = [];
+  for (const seed of seeds) {
+    if (titles.has(seed.title.toLowerCase())) continue;
+    const owner = seed.owner === "financial" ? FINANCIAL_OWNER : intakeOwner;
+    tasks.push(createIntakeTask(seed.title, owner, seed.due));
+    seeded.push(seed.title);
+  }
+  return { tasks, seeded };
+}
+
 const withIntakeAutomation = (lead: Lead, patch: Partial<Lead>): Lead => {
   const next: Lead = { ...lead, ...patch, updatedAt: new Date().toISOString() };
   const tasks = [...next.tasks];
