@@ -400,8 +400,8 @@ export default function OSRecruitingBCBA() {
                   { icon: AlertTriangle, label: "Escalate Staffing Delay" },
                   { icon: ArrowRight, label: "Move to Staffing Ready" },
                   { icon: Download, label: "Export BCBA Pipeline" },
-                ].map((a) => (
-                  <button key={a.label} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
+                ].map((a: { icon: any; label: string; onClick?: () => void }) => (
+                  <button key={a.label} onClick={a.onClick} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
                     <a.icon className="size-4 text-muted-foreground" />
                     {a.label}
                   </button>
