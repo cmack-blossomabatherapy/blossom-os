@@ -123,6 +123,7 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
     id: "operations", label: "Operations", items: [
       { to: "/state-operations", label: "State Operations", icon: MapPin },
       { to: "/ops/authorizations", label: "Authorizations", icon: ShieldCheck },
+      { to: "/authorizations/handoff", label: "Initial → Treatment Handoff", icon: ShieldCheck },
       { to: "/ops/approved-authorizations", label: "Approved Authorizations", icon: CheckCircle2 },
       { to: "/ops/denials", label: "Denials", icon: XCircle },
       { to: "/ops/scheduling", label: "Scheduling", icon: CalendarDays },
