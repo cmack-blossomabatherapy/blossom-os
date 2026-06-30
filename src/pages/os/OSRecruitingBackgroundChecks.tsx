@@ -346,6 +346,16 @@ export default function OSRecruitingBackgroundChecks() {
           ))}
         </div>
 
+        {/* Live vs Suggested pill summary */}
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <Pill tone="info">{liveBackground.length} live</Pill>
+          <Pill tone="muted">{Math.max(0, pool.length - liveBgByName.size)} suggested</Pill>
+          {liveBackgroundLoading && <span>Loading live background checks…</span>}
+          <span className="text-muted-foreground/70">
+            Live rows persist to <code className="text-foreground/80">recruiting_background_checks</code>; suggested rows are post-onboarding candidates without a Stellar Check record yet.
+          </span>
+        </div>
+
         {/* Main grid */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
           <div className="space-y-8">
@@ -420,6 +430,57 @@ export default function OSRecruitingBackgroundChecks() {
                 </div>
               )}
             </section>
+
+            {/* Suggested background checks — candidates needing a Stellar Check row */}
+            {(() => {
+              const suggested = pool.filter(
+                (c) => !findLiveBgFor(c) && (stageOf(c) === "needsSubmission" || stageOf(c) === "linkSent" || stageOf(c) === "notStarted"),
+              );
+              if (suggested.length === 0) return null;
+              return (
+                <section>
+                  <SectionHeader
+                    title="Suggested background checks"
+                    caption={`${suggested.length} candidate${suggested.length === 1 ? "" : "s"} ready for a recruiting_background_checks record`}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {suggested.slice(0, 8).map((c) => {
+                      const uuid = liveCandidateIdByName.get(c.name.toLowerCase()) ?? null;
+                      return (
+                        <div key={`sug-bg-${c.id}`} className="rounded-2xl bg-card border border-border/70 p-4">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">{c.name}</div>
+                              <div className="text-[11px] text-muted-foreground truncate">{c.role} · {c.state} · {c.recruiter}</div>
+                            </div>
+                            <Pill tone="muted">Suggested</Pill>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">{c.nextAction}</div>
+                          <div className="flex justify-end mt-3">
+                            <button
+                              disabled={!uuid}
+                              title={uuid ? "Initiate a Stellar Check record" : "No matching candidate record in recruiting_candidates"}
+                              onClick={() => {
+                                if (!uuid) return;
+                                void mutations.startBackgroundCheck(uuid, "Stellar Check", c.blockers[0] ?? null);
+                              }}
+                              className={cn(
+                                "h-8 px-3 rounded-lg text-xs inline-flex items-center gap-1.5 transition",
+                                uuid
+                                  ? "bg-primary text-primary-foreground hover:opacity-90"
+                                  : "bg-muted text-muted-foreground cursor-not-allowed",
+                              )}
+                            >
+                              <ShieldCheck className="size-3.5" /> Submit Background Check
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })()}
           </div>
 
           {/* Right rail */}
