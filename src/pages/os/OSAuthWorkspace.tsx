@@ -567,7 +567,7 @@ export default function OSAuthWorkspace() {
           </button>
           <SavedViewsMenu
             scope="auth_workspace"
-            currentConfig={{ activeQueue, search }}
+            currentConfig={{ activeQueue, search, wsFilters }}
             onApply={applySavedView}
           />
           <button className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/70 bg-white/70 px-3 text-[12.5px] font-semibold text-foreground/85 transition hover:text-foreground">
@@ -652,15 +652,15 @@ export default function OSAuthWorkspace() {
               <h2 className="text-[16px] font-semibold tracking-tight">{activeMeta.label}</h2>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
-              <FilterChip icon={MapPin}        label="State" />
-              <FilterChip icon={AlertTriangle} label="Risk" />
-              <FilterChip icon={CalendarClock} label="Expiring" />
-              <FilterChip icon={FileText}      label="PR" />
-              <FilterChip icon={ClipboardCheck}label="QA" />
-              <FilterChip icon={UserCog}       label="Assigned" />
-              <button className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-foreground/[0.05] hover:text-foreground" aria-label="More filters">
-                <ListFilter className="h-3.5 w-3.5" />
-              </button>
+              <FilterDropdown icon={MapPin} label="State" value={wsFilters.state} options={filterOptions.states.map((s) => ({ value: s, label: s }))} onChange={(v) => setWsFilters((f) => ({ ...f, state: v }))} />
+              <FilterDropdown icon={AlertTriangle} label="Risk" value={wsFilters.risk} options={[{ value: "High", label: "High" }, { value: "Medium", label: "Medium" }, { value: "Low", label: "Low" }]} onChange={(v) => setWsFilters((f) => ({ ...f, risk: v as WSFilters["risk"] }))} />
+              <FilterDropdown icon={CalendarClock} label="Expiring" value={wsFilters.expiring} options={[{ value: "past_due", label: "Past due" }, { value: "0_14", label: "0–14 days" }, { value: "15_30", label: "15–30 days" }, { value: "31_60", label: "31–60 days" }, { value: "61_90", label: "61–90 days" }, { value: "none", label: "No expiration" }]} onChange={(v) => setWsFilters((f) => ({ ...f, expiring: v as WSFilters["expiring"] }))} />
+              <FilterDropdown icon={FileText} label="PR" value={wsFilters.pr} options={[{ value: "needs", label: "Needs PR" }, { value: "overdue", label: "PR overdue" }, { value: "ok", label: "PR OK" }]} onChange={(v) => setWsFilters((f) => ({ ...f, pr: v as WSFilters["pr"] }))} />
+              <FilterDropdown icon={ClipboardCheck} label="QA" value={wsFilters.qa} options={[{ value: "needs", label: "Needs QA" }, { value: "in_review", label: "In QA" }, { value: "complete", label: "QA complete" }, { value: "not_started", label: "Not started" }]} onChange={(v) => setWsFilters((f) => ({ ...f, qa: v as WSFilters["qa"] }))} />
+              <FilterDropdown icon={UserCog} label="Assigned" value={wsFilters.assigned} options={filterOptions.assignees.map((s) => ({ value: s, label: s }))} onChange={(v) => setWsFilters((f) => ({ ...f, assigned: v }))} />
+              {(wsFilters.state || wsFilters.risk || wsFilters.expiring || wsFilters.pr || wsFilters.qa || wsFilters.assigned) && (
+                <button onClick={clearAllFilters} className="text-[11px] text-muted-foreground hover:text-foreground ml-1">Clear all</button>
+              )}
             </div>
           </div>
 
