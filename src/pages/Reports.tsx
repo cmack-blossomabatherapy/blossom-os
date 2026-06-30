@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { BarChart3 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSearchParams, Link } from "react-router-dom";
+import { BarChart3, Stethoscope, X } from "lucide-react";
 import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { ReportsControlBar } from "@/components/reports/ReportsControlBar";
 import { MetricCard } from "@/components/reports/MetricCard";
@@ -31,6 +32,18 @@ import {
 export default function Reports() {
   const [dateRange, setDateRange] = useState<DateRange>("month");
   const [activeView, setActiveView] = useState<string>("executive");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const category = searchParams.get("category");
+
+  useEffect(() => {
+    if (category === "credentialing") setActiveView("credentialing");
+  }, [category]);
+
+  const clearCategory = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("category");
+    setSearchParams(next, { replace: true });
+  };
 
   return (
     <GlassPageShell
@@ -39,6 +52,22 @@ export default function Reports() {
       title="Reports & insights"
       description="Growth, conversion, and operational performance — every number is clickable."
     >
+      {category === "credentialing" && (
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+          <div className="inline-flex items-center gap-2">
+            <Stethoscope className="h-4 w-4 text-primary" />
+            <span className="font-medium">Credentialing filter active</span>
+            <span className="text-muted-foreground text-xs">— showing Credentialing reports first.</span>
+          </div>
+          <button
+            onClick={clearCategory}
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            <X className="h-3 w-3" /> Clear filter · View all reports
+          </button>
+        </div>
+      )}
+
       <ReportsControlBar
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
@@ -49,6 +78,7 @@ export default function Reports() {
       {activeView === "executive" && <ExecutiveView />}
       {activeView === "intake" && <IntakeView />}
       {activeView === "auth" && <AuthView />}
+      {activeView === "credentialing" && <CredentialingView />}
       {activeView === "qa" && <QAView />}
       {activeView === "scheduling" && <SchedulingView />}
       {activeView === "lifecycle" && <LifecycleView />}
@@ -257,6 +287,39 @@ function GrowthView() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ReportFunnel title="Lead Funnel" stages={leadFunnel} />
         <ReportFunnel title="Client Funnel" stages={clientFunnel} />
+      </div>
+    </div>
+  );
+}
+
+function CredentialingView() {
+  const cards: { label: string; to: string; description: string }[] = [
+    { label: "Provider Credentialing", to: "/credentialing/providers", description: "Provider directory, NPI/CAQH, licensing." },
+    { label: "Insurance Credentialing", to: "/credentialing/insurance", description: "Payer/state credentialing pipeline and gaps." },
+    { label: "BCBA Credentials", to: "/credentialing/bcba", description: "BCBA license, payer coverage, CentralReach IDs." },
+    { label: "Uncredentialed BCBAs", to: "/credentialing/uncredentialed-bcbas", description: "Active BCBAs without approved coverage." },
+    { label: "Expiring Credentials", to: "/credentialing/expiring", description: "30 / 60 / 90 day expiration window." },
+    { label: "Credentialing Dashboard", to: "/credentialing", description: "Operational overview and follow-ups." },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-border/60 bg-card p-4">
+        <h3 className="text-sm font-semibold text-foreground">Credentialing reports</h3>
+        <p className="text-[11px] text-muted-foreground">
+          Operational credentialing views — provider, payer, BCBA coverage, and expiring credentials.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+          {cards.map((c) => (
+            <Link
+              key={c.to}
+              to={c.to}
+              className="rounded-lg border border-border/60 bg-secondary/30 p-3 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+            >
+              <p className="text-sm font-medium text-foreground">{c.label}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{c.description}</p>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

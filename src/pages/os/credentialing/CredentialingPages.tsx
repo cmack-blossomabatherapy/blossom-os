@@ -1686,12 +1686,58 @@ export function CredentialingDashboardPage() {
   const [stateFilter, setStateFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [payerFilter, setPayerFilter] = useState<string>("");
+  const [savedView, setSavedView] = useState<string>("all");
+  const [missingOnly, setMissingOnly] = useState(false);
+  const [overdueOnly, setOverdueOnly] = useState(false);
+  const [crNotReady, setCrNotReady] = useState(false);
+  const [readyToSync, setReadyToSync] = useState(false);
+
+  // Saved view presets (operational filter shortcuts)
+  const applyView = (id: string) => {
+    setSavedView(id);
+    // Reset secondary toggles before applying
+    setMissingOnly(false); setOverdueOnly(false); setCrNotReady(false); setReadyToSync(false);
+    setStatusFilter("ALL");
+    switch (id) {
+      case "missing-info": setStatusFilter("Missing Info"); setMissingOnly(true); break;
+      case "blocked-denied": setStatusFilter("Denied"); break;
+      case "overdue-followups": setOverdueOnly(true); break;
+      case "expiring-30": /* handled in filter below via savedView */ break;
+      case "cr-not-ready": setCrNotReady(true); break;
+      case "ready-to-sync": setReadyToSync(true); break;
+      case "my-open-work":
+      case "uncredentialed-bcbas":
+      case "all":
+      default: break;
+    }
+  };
+
+  const clearFilters = () => {
+    setSavedView("all"); setStateFilter("ALL"); setStatusFilter("ALL"); setPayerFilter("");
+    setMissingOnly(false); setOverdueOnly(false); setCrNotReady(false); setReadyToSync(false);
+  };
 
   const filtered = useMemo(() => records.filter((r) =>
     (stateFilter === "ALL" || r.state === stateFilter) &&
     (statusFilter === "ALL" || r.status === statusFilter) &&
-    (!payerFilter || r.payer_name.toLowerCase().includes(payerFilter.toLowerCase()))
-  ), [records, stateFilter, statusFilter, payerFilter]);
+    (!payerFilter || r.payer_name.toLowerCase().includes(payerFilter.toLowerCase())) &&
+    (!missingOnly || r.status === "Missing Info" || (r as unknown as { missing_items?: string[] }).missing_items?.length) &&
+    (!overdueOnly || (() => { const d = daysUntil(r.next_follow_up_date); return d !== null && d < 0; })()) &&
+    (!crNotReady || r.centralreach_sync_status !== "Synced") &&
+    (!readyToSync || (r.centralreach_sync_status === "Ready To Sync" && APPROVED_CRED_STATUSES.includes(r.status))) &&
+    (savedView !== "expiring-30" || (() => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 30; })())
+  ), [records, stateFilter, statusFilter, payerFilter, missingOnly, overdueOnly, crNotReady, readyToSync, savedView]);
+
+  const activeFilterCount = (
+    (stateFilter !== "ALL" ? 1 : 0) +
+    (statusFilter !== "ALL" ? 1 : 0) +
+    (payerFilter ? 1 : 0) +
+    (missingOnly ? 1 : 0) +
+    (overdueOnly ? 1 : 0) +
+    (crNotReady ? 1 : 0) +
+    (readyToSync ? 1 : 0) +
+    (savedView !== "all" ? 1 : 0)
+  );
 
   const kpis = useMemo(() => {
     const inProgress = records.filter((r) => ACTIVE_CRED_STATUSES.includes(r.status)).length;
@@ -1738,6 +1784,41 @@ export function CredentialingDashboardPage() {
       />
       <LoadErr loading={loading} error={error} />
 
+      {/* Saved views — operational filter presets */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mt-1">
+        {[
+          { id: "all", label: "All records" },
+          { id: "my-open-work", label: "My open work" },
+          { id: "missing-info", label: "Missing Info" },
+          { id: "blocked-denied", label: "Blocked / Denied" },
+          { id: "overdue-followups", label: "Overdue Follow-Ups" },
+          { id: "expiring-30", label: "Expiring in 30 Days" },
+          { id: "cr-not-ready", label: "CentralReach Not Ready" },
+          { id: "ready-to-sync", label: "Ready To Sync" },
+        ].map((v) => (
+          <button
+            key={v.id}
+            onClick={() => applyView(v.id)}
+            className={cn(
+              "px-2.5 h-7 text-xs font-medium rounded-md whitespace-nowrap transition-colors border",
+              savedView === v.id
+                ? "bg-primary/10 text-primary border-primary/30"
+                : "bg-card text-muted-foreground hover:text-foreground border-border/60",
+            )}
+          >
+            {v.label}
+          </button>
+        ))}
+        {activeFilterCount > 0 && (
+          <button
+            onClick={clearFilters}
+            className="ml-1 px-2.5 h-7 text-xs font-medium rounded-md whitespace-nowrap text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+          >
+            <X className="h-3 w-3" /> Clear filters
+          </button>
+        )}
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Active providers" value={kpis.activeProviders} tone="ok" />
         <KpiCard label="In progress" value={kpis.inProgress} tone="warn" />
@@ -1770,9 +1851,16 @@ export function CredentialingDashboardPage() {
         }
       >
         {filtered.length === 0 ? (
-          <Empty title="No credentialing records yet" action={
-            <Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1" />Create credentialing record</Button>
-          } />
+          activeFilterCount > 0 ? (
+            <Empty
+              title="No records match these filters"
+              action={<Button size="sm" variant="outline" onClick={clearFilters}><X className="h-4 w-4 mr-1" />Clear filters</Button>}
+            />
+          ) : (
+            <Empty title="No credentialing records yet" action={
+              <Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1" />Create credentialing record</Button>
+            } />
+          )
         ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
