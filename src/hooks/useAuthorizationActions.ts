@@ -296,17 +296,14 @@ export function useAuthorizationActions(): AuthorizationActions {
     (input) =>
       run("Resolve docs", async () => {
         const id = await ensureOverlay(input);
-        // Mark all open authorization_requirements as received for this auth.
-        // (best-effort: silently no-op if there are none)
-        const userId = await currentUserId();
+        // Mark any open authorization_requirements as received for this auth.
         const { error: reqErr } = await supabase
           .from("authorization_requirements")
-          .update({ status: "received", received_at: new Date().toISOString(), updated_by: userId })
+          .update({ status: "received", received_at: new Date().toISOString() })
           .eq("authorization_id", id)
-          .in("status", ["open", "pending", "requested"]);
-        // Don't throw on reqErr — table may have no rows or status enum mismatch; log instead.
+          .neq("status", "received");
+        // Don't throw if there are simply no matching rows; log other errors.
         if (reqErr && reqErr.code !== "PGRST116") {
-          // surface to activity so user knows
           await logActivity({
             recordId: id,
             activityType: "resolve_docs",
