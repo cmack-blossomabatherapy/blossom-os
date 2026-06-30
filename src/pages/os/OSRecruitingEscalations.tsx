@@ -15,6 +15,8 @@ import {
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
 import { useRecruitingEscalations } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
+import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { cn } from "@/lib/utils";
 // Escalations workflow status lives on `recruiting_escalations.status`.
 // We keep an optimistic UI-only map and persist the real status via mutations.
@@ -203,7 +205,8 @@ const QUICK_ACTIONS = [
 export default function OSRecruitingEscalations() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveEscalations } = useRecruitingEscalations();
+  const { items: liveEscalations, loading: liveEscalationsLoading } = useRecruitingEscalations();
+  const { find: findCandidate } = useRecruitingCandidateLookup();
   const base = useMemo(() => buildEscalations(recruitingCandidates), [recruitingCandidates]);
 
   const defaults = useMemo(() => {
