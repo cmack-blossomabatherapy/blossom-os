@@ -14,9 +14,8 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingEscalations } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingEscalations, type RecruitingEscalation } from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
-import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { cn } from "@/lib/utils";
 // Escalations workflow status lives on `recruiting_escalations.status`.
 // We keep an optimistic UI-only map and persist the real status via mutations.
@@ -35,6 +34,26 @@ const STAGES = [
   { key: "resolved",    label: "Resolved" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+const STAGE_TO_STATUS: Record<StageKey, string> = {
+  new: "Open",
+  recruiter: "In Progress",
+  candidate: "Waiting on Candidate",
+  staffing: "Staffing Delay",
+  leadership: "Leadership Review",
+  highrisk: "High Risk",
+  resolved: "Resolved",
+};
+const STATUS_TO_STAGE: Record<string, StageKey> = {
+  "Open": "new",
+  "New": "new",
+  "In Progress": "recruiter",
+  "Waiting on Candidate": "candidate",
+  "Staffing Delay": "staffing",
+  "Leadership Review": "leadership",
+  "High Risk": "highrisk",
+  "Resolved": "resolved",
+};
 
 type EscType =
   | "Candidate stalled"
@@ -202,25 +221,140 @@ const QUICK_ACTIONS = [
   { label: "Review High-Risk Delays",   icon: ShieldAlert },
 ];
 
+/**
+ * Map a live `recruiting_escalations` row to the rich Esc view-model used by
+ * the rest of this page. When the row references a known candidate we
+ * preferentially borrow the legacy candidate record (it carries `region`,
+ * `candidateStatus`, etc. needed by the drawer); otherwise we fall back to
+ * lookup via `findCandidate` (DB shape) or a minimal stub.
+ */
+function mapLiveEscalationToViewModel(
+  row: RecruitingEscalation,
+  findCandidate: (id: string | null | undefined) => any,
+  legacyCandidates: RecruitingCandidate[],
+): Esc {
+  const lookupCand = row.candidate_id ? findCandidate(row.candidate_id) : null;
+  const lookupName = lookupCand ? `${lookupCand.first_name} ${lookupCand.last_name}`.trim() : (row.title ?? "Escalation");
+  const legacyMatch = legacyCandidates.find(
+    (c) => c.id === row.candidate_id || c.name.toLowerCase() === lookupName.toLowerCase(),
+  );
+  const candidate: RecruitingCandidate = legacyMatch ?? ({
+    id: row.candidate_id ?? row.id,
+    name: lookupName,
+    role: (lookupCand?.role as any) ?? "RBT",
+    state: (lookupCand?.state as any) ?? "GA",
+    region: lookupCand?.city ?? "—",
+    city: lookupCand?.city ?? "—",
+    source: "Apploi",
+    recruiter: row.owner ?? lookupCand?.recruiter ?? "Unassigned",
+    interviewer: "—",
+    candidateStatus: "New Applicant",
+    interviewStatus: "Not Scheduled",
+    offerStatus: "Not Sent",
+    onboardingStatus: "Not Started",
+    readinessStatus: "Not Ready",
+    appliedDate: row.opened_at,
+    daysInStage: 0,
+    nextAction: row.notes ?? "—",
+    resume: "Received",
+    certification: "Not Required",
+    bacbCheck: "N/A",
+    kidsExperience: "Moderate",
+    screeningOutcome: "Pending",
+    eligibility: "Review",
+    noShow: false,
+    viventium: "Not Started",
+    backgroundCheck: "Not Sent",
+    orientation: "Not Scheduled",
+    training: "Not Assigned",
+    i9: "Not Started",
+    everify: "Not Started",
+    centralReach: "Needed",
+    availability: "—",
+    travelRadius: 0,
+    preferredHours: "—",
+    blockers: [],
+    interviewNotes: "",
+    followUps: [],
+    tasks: [],
+    timeline: [],
+  } as unknown as RecruitingCandidate);
+
+  const days = row.opened_at
+    ? Math.max(0, Math.floor((Date.now() - new Date(row.opened_at).getTime()) / 86400000))
+    : 0;
+  const stage: StageKey =
+    row.status === "Resolved" ? "resolved"
+    : (STATUS_TO_STAGE[row.status] ?? "new");
+  const urgency: Esc["urgency"] =
+    row.severity === "High" ? "High"
+    : row.severity === "Low" ? "Low"
+    : "Medium";
+
+  return {
+    id: row.id,
+    candidateId: candidate.id,
+    candidate,
+    type: ((row.title as EscType) ?? "Candidate stalled") as EscType,
+    reason: row.reason ?? row.title ?? "—",
+    recruiter: row.owner ?? candidate.recruiter ?? "Unassigned",
+    staffingCoord: coordFor(candidate.state ?? ""),
+    state: candidate.state ?? "—",
+    daysDelayed: days,
+    lastUpdate: days < 7 ? `${days}d ago` : `${Math.floor(days / 7)}w ago`,
+    urgency,
+    stage,
+    operationalImpact: row.notes ?? "—",
+    staffingImpact: stage === "staffing" || urgency === "High",
+    leadership: urgency === "High" || days >= 7 || stage === "leadership" || stage === "highrisk",
+  };
+}
+
 export default function OSRecruitingEscalations() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
   const { items: liveEscalations, loading: liveEscalationsLoading } = useRecruitingEscalations();
   const { find: findCandidate } = useRecruitingCandidateLookup();
-  const base = useMemo(() => buildEscalations(recruitingCandidates), [recruitingCandidates]);
+  const synthetic = useMemo(() => buildEscalations(recruitingCandidates), [recruitingCandidates]);
+
+  // Map each live row → Esc view-model. This is the primary data source for
+  // the board, summary, queues, and drawer — synthetic items are demoted to
+  // the "Suggested escalations" section below.
+  const liveBase = useMemo<Esc[]>(() => {
+    return liveEscalations.map((row) => mapLiveEscalationToViewModel(row, findCandidate, recruitingCandidates));
+  }, [liveEscalations, findCandidate, recruitingCandidates]);
+
+  // Candidate-derived items that are NOT yet represented in the live table.
+  // Match by candidate_id (uuid) when present, otherwise by candidate name.
+  const suggested = useMemo<Esc[]>(() => {
+    const liveCandIds = new Set<string>();
+    const liveCandNames = new Set<string>();
+    for (const row of liveEscalations) {
+      if (row.candidate_id) liveCandIds.add(row.candidate_id);
+      const cand = row.candidate_id ? findCandidate(row.candidate_id) : null;
+      if (cand) liveCandNames.add(`${cand.first_name} ${cand.last_name}`.trim().toLowerCase());
+    }
+    return synthetic.filter((e) => {
+      if (liveCandIds.has(e.candidate.id)) return false;
+      if (liveCandNames.has(e.candidate.name.toLowerCase())) return false;
+      return true;
+    });
+  }, [synthetic, liveEscalations, findCandidate]);
+
+  // Primary "base" the rest of the page reads from is the live set. When the
+  // table is empty (e.g. fresh tenant), fall back to synthetic so the page
+  // still demonstrates the operational shape.
+  const base = useMemo<Esc[]>(() => (liveBase.length > 0 ? liveBase : synthetic), [liveBase, synthetic]);
 
   const defaults = useMemo(() => {
     const m: Record<string, StageKey> = {};
     base.forEach((e) => { m[e.id] = e.stage; });
     return m;
   }, [base]);
-  // Optimistic UI map; real status persists to recruiting_escalations.status
-  // via mutations.resolveEscalation / mutations.updateMessage-style helpers.
+  // Optimistic UI map; real status persists via mutations.resolveEscalation /
+  // mutations.updateEscalation for rows that originated in the live table.
   const [stageMap, setStageMap] = useState<Record<string, StageKey>>(defaults);
   useEffect(() => { setStageMap(defaults); }, [defaults]);
-  const persistStage = (id: string, to: StageKey, _candidateId?: string) => {
-    setStageMap((m) => ({ ...m, [id]: to }));
-  };
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
@@ -328,8 +462,12 @@ export default function OSRecruitingEscalations() {
 
   function moveStage(id: string, to: StageKey) {
     const item = base.find((e) => e.id === id);
-    persistStage(id, to, item?.candidate.id);
-    if (item && to === 'resolved' && /^[0-9a-f-]{36}$/i.test(item.candidate.id)) void mutations.resolveEscalation(id);
+    setStageMap((m) => ({ ...m, [id]: to }));
+    // Persist for rows that originated from the live table (uuid ids).
+    if (item && /^[0-9a-f-]{36}$/i.test(id)) {
+      if (to === "resolved") void mutations.resolveEscalation(id);
+      else void mutations.updateEscalation(id, { status: STAGE_TO_STATUS[to] });
+    }
   }
   function onDragStart(ev: React.DragEvent, id: string) {
     ev.dataTransfer.setData("text/plain", id); ev.dataTransfer.effectAllowed = "move";
@@ -404,51 +542,13 @@ export default function OSRecruitingEscalations() {
           <SumCard label="High-risk staffing needs" value={summary.urgentNeeds} icon={TrendingUp} tone={summary.urgentNeeds > 0 ? "crit" : "muted"} onClick={() => setActiveChip("staffing")} hint="Client coverage at risk" />
         </section>
 
-        {/* Filter chips */}
-        <div className="flex flex-wrap gap-2">
-          {/* Live records section is intentionally above the chips so the
-              primary rendered data source is the database row, not the
-              candidate-derived synthetic suggestions below. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone={liveBase.length > 0 ? "ok" : "muted"}>
+            {liveEscalationsLoading
+              ? "Loading live escalations…"
+              : `${liveBase.length} live · ${suggested.length} suggested`}
+          </Pill>
         </div>
-
-        <LiveRecruitingSection
-          title="Live escalations"
-          subtitle="Primary source — rows from recruiting_escalations"
-          tableName="recruiting_escalations"
-          items={liveEscalations}
-          loading={liveEscalationsLoading}
-          emptyTitle="No live escalations on file"
-          emptyBody="When a recruiter or the system writes to recruiting_escalations, the row will render here. The board below shows candidate-derived suggestions."
-          renderRow={(row: any) => {
-            const cand = row.candidate_id ? findCandidate(row.candidate_id) : null;
-            const candName = cand ? `${cand.first_name} ${cand.last_name}`.trim() : (row.title ?? "Escalation");
-            const tone = row.severity === "High" ? "crit" : row.severity === "Medium" ? "warn" : "info";
-            const isResolved = row.status === "Resolved";
-            return (
-              <LiveRowCard
-                title={candName}
-                meta={[row.reason ?? row.title, row.owner ?? "Unassigned", `Status: ${row.status}`].filter(Boolean).join(" · ")}
-                tone={isResolved ? "ok" : tone}
-                badges={
-                  <>
-                    <Pill tone={isResolved ? "ok" : tone}>{row.severity ?? "Medium"}</Pill>
-                    {isResolved && <Pill tone="ok">Resolved</Pill>}
-                  </>
-                }
-                actions={
-                  !isResolved && (
-                    <button
-                      onClick={() => void mutations.resolveEscalation(row.id)}
-                      className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition inline-flex items-center gap-1"
-                    >
-                      <CheckCircle2 className="size-3" /> Resolve
-                    </button>
-                  )
-                }
-              />
-            );
-          }}
-        />
 
         <div className="flex flex-wrap gap-2">
           {CHIPS.map((c) => (
@@ -466,6 +566,51 @@ export default function OSRecruitingEscalations() {
             </button>
           ))}
         </div>
+
+        {/* Suggested escalations — candidate signals not yet logged */}
+        {suggested.length > 0 && (
+          <section className="rounded-2xl bg-gradient-to-br from-amber-500/5 to-card border border-amber-500/20 p-4">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <div>
+                <h2 className="text-base font-semibold tracking-tight">Suggested escalations</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Candidate signals not yet logged in <code className="text-[10px]">recruiting_escalations</code>. Create one to track it on the board.
+                </p>
+              </div>
+              <Pill tone="warn">{suggested.length}</Pill>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {suggested.slice(0, 12).map((e) => (
+                <div key={e.id} className="rounded-xl bg-card border border-border/60 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium truncate">{e.candidate.name}</span>
+                    <Pill tone={toneFor(e)}>{e.urgency}</Pill>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{e.type} · {e.daysDelayed}d</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{e.reason}</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-[10px] text-muted-foreground">{e.state} · {e.recruiter}</span>
+                    <button
+                      onClick={() => {
+                        const uuidLike = /^[0-9a-f-]{36}$/i.test(e.candidate.id) ? e.candidate.id : null;
+                        void mutations.createEscalation(uuidLike as any, {
+                          title: e.type,
+                          reason: e.reason,
+                          severity: e.urgency === "High" ? "High" : e.urgency === "Low" ? "Low" : "Medium",
+                          owner: e.recruiter,
+                          notes: e.operationalImpact,
+                        });
+                      }}
+                      className="h-7 px-2 rounded-lg text-[11px] bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center gap-1"
+                    >
+                      <Plus className="size-3" /> Create
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Escalation board */}
         <section className="rounded-2xl bg-card border border-border/70 p-4">
