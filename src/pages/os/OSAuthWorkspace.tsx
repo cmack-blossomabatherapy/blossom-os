@@ -854,7 +854,21 @@ function EmptyState({ queue }: { queue: string }) {
 
 /* ─────────── right context panel ─────────── */
 
-function RightContextPanel({ queueLabel }: { queueLabel: string }) {
+function RightContextPanel({
+  queueLabel,
+  auths = [],
+  activity = [],
+}: {
+  queueLabel: string;
+  auths?: AuthCard[];
+  activity?: { id: string; who: string; what: string; when: string }[];
+}) {
+  // Compute live operational summary values from auth cards.
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const workedToday = auths.filter((a) => (a.lastActivity || "").startsWith(todayISO) || /(^|\s)(now|m|h)$/.test(a.lastActivity || "")).length;
+  const overdue = auths.filter((a) => typeof a.expiresInDays === "number" && (a.expiresInDays as number) < 0).length;
+  const readyToSubmit = auths.filter((a) => /ready to submit/i.test(a.status) || /submission ready/i.test(a.status)).length;
+  const prEscalations = auths.filter((a) => a.prStatus?.tone === "crit" || /escalat/i.test(a.prStatus?.label ?? "")).length;
   return (
     <>
       {/* Operational Summary */}
@@ -864,10 +878,10 @@ function RightContextPanel({ queueLabel }: { queueLabel: string }) {
           <h3 className="text-[14px] font-semibold tracking-tight">Operational Summary</h3>
         </header>
         <dl className="grid grid-cols-2 gap-2 text-[12px]">
-          <SummaryCell label="Worked today" value="11" tone="info" />
-          <SummaryCell label="Overdue"      value="6"  tone="crit" />
-          <SummaryCell label="Ready to submit" value="4" tone="ok" />
-          <SummaryCell label="PR escalations"  value="2" tone="warn" />
+          <SummaryCell label="Worked today" value={String(workedToday)} tone="info" />
+          <SummaryCell label="Overdue"      value={String(overdue)}  tone="crit" />
+          <SummaryCell label="Ready to submit" value={String(readyToSubmit)} tone="ok" />
+          <SummaryCell label="PR escalations"  value={String(prEscalations)} tone="warn" />
         </dl>
       </section>
 
@@ -956,24 +970,22 @@ function RightContextPanel({ queueLabel }: { queueLabel: string }) {
           <RefreshCw className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
           <h3 className="text-[14px] font-semibold tracking-tight">Recent Activity</h3>
         </header>
-        <ul className="space-y-2.5">
-          {[
-            { who: "Payer",      what: "approved auth · Sample",         when: "12m" },
-            { who: "BCBA",       what: "uploaded PR · Sample",           when: "35m" },
-            { who: "QA",         what: "reviewed plan · Sample",         when: "2h" },
-            { who: "Payer",      what: "denied auth · Sample",           when: "3h" },
-            { who: "Parent",     what: "signed consent · Sample",        when: "4h" },
-          ].map((a, i) => (
-            <li key={i} className="flex items-start gap-2 text-[12px]">
-              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(220_70%_55%)]" />
-              <p className="min-w-0">
-                <span className="font-semibold">{a.who}</span>{" "}
-                <span className="text-muted-foreground">{a.what}</span>
-                <span className="ml-1 text-[10.5px] text-muted-foreground">· {a.when}</span>
-              </p>
-            </li>
-          ))}
-        </ul>
+        {activity.length === 0 ? (
+          <p className="text-[12px] text-muted-foreground">No recent authorization activity yet.</p>
+        ) : (
+          <ul className="space-y-2.5">
+            {activity.map((a) => (
+              <li key={a.id} className="flex items-start gap-2 text-[12px]">
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(220_70%_55%)]" />
+                <p className="min-w-0">
+                  <span className="font-semibold">{a.who}</span>{" "}
+                  <span className="text-muted-foreground">{a.what}</span>
+                  {a.when && <span className="ml-1 text-[10.5px] text-muted-foreground">· {a.when}</span>}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </>
   );
