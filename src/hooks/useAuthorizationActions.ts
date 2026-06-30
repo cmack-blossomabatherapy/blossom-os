@@ -191,6 +191,10 @@ export interface AuthorizationActions {
   createManualAuth: (
     input: Omit<EnsureOverlayInput, "source_system"> & { source_system?: AuthSourceSystem },
   ) => Promise<string>;
+  updateAuthorizationRecord: (input: {
+    identity: Pick<EnsureOverlayInput, "source_system" | "overlay_id" | "monday_item_id" | "centralreach_authorization_id" | "source_id"> & Partial<EnsureOverlayInput>;
+    patch: Record<string, unknown>;
+  }) => Promise<void>;
 }
 
 const CHANNEL_LABEL: Record<ExternalSendInput["channel"], string> = {
@@ -485,6 +489,52 @@ export function useAuthorizationActions(): AuthorizationActions {
     [run],
   );
 
+  const updateAuthorizationRecord: AuthorizationActions["updateAuthorizationRecord"] = useCallback(
+    ({ identity, patch }) =>
+      run("Update authorization", async () => {
+        const id = await ensureOverlay({
+          source_system: identity.source_system,
+          overlay_id: identity.overlay_id ?? null,
+          monday_item_id: identity.monday_item_id ?? null,
+          centralreach_authorization_id: identity.centralreach_authorization_id ?? null,
+          source_id: identity.source_id ?? null,
+          client_name: (patch.client_name as string | null | undefined) ?? identity.client_name ?? null,
+        });
+        const userId = await currentUserId();
+        // Whitelist columns we allow direct updates against — keep server schema safe.
+        const ALLOWED = new Set([
+          "client_name","state","payer","auth_type","status","workflow_stage",
+          "assigned_owner","assigned_bcba","assigned_auth_coordinator","qa_owner",
+          "start_date","submitted_date","approved_date","expiration_date",
+          "authorization_number","tracking_number","service_code",
+          "authorized_hours","used_hours","priority","denial_reason",
+          "next_action","next_action_due_date",
+        ]);
+        const cleanPatch: Record<string, unknown> = { updated_by: userId };
+        const changedKeys: string[] = [];
+        for (const [k, v] of Object.entries(patch)) {
+          if (!ALLOWED.has(k)) continue;
+          if (v === "" ) { cleanPatch[k] = null; changedKeys.push(k); continue; }
+          cleanPatch[k] = v;
+          changedKeys.push(k);
+        }
+        if (changedKeys.length === 0) return;
+        const { error: updErr } = await supabase
+          .from("authorization_operational_records")
+          // Cast: ALLOWED is a strict whitelist; Supabase generated types
+          // reject Record<string, unknown> as a structural overlap.
+          .update(cleanPatch as never)
+          .eq("id", id);
+        if (updErr) throw updErr;
+        await logActivity({
+          recordId: id,
+          activityType: "status_change",
+          description: `Updated ${changedKeys.length} field${changedKeys.length === 1 ? "" : "s"}: ${changedKeys.join(", ")}.`,
+        });
+      }, "Authorization updated"),
+    [run],
+  );
+
   return {
     pending,
     ensureOverlay: ensure,
@@ -500,5 +550,6 @@ export function useAuthorizationActions(): AuthorizationActions {
     bulkChangeStatus,
     bulkAssign,
     createManualAuth,
+    updateAuthorizationRecord,
   };
 }

@@ -18,6 +18,8 @@ import {
   SavedViewsMenu,
   SourceBadge,
   type AuthSourceTag,
+  CentralReachReadinessSection,
+  EditAuthorizationDialog,
 } from "@/components/authorizations/AuthorizationActionUI";
 import { AuthPromptDialog } from "@/components/authorizations/AuthPromptDialog";
 import {
@@ -144,8 +146,18 @@ type AuthCard = {
   treatmentPlan: { label: string; tone: Tone };
   lastActivity: string;
   queues: QueueKey[];
-  source?: AuthSourceTag;
+  source: AuthSourceTag;
+  overlayId?: string | null;
   mondayItemId?: string | null;
+  centralreachAuthorizationId?: string | null;
+  centralreachClientId?: string | null;
+  centralreachSyncStatus?: string | null;
+  centralreachLastSyncedAt?: string | null;
+  authorizationNumber?: string | null;
+  trackingNumber?: string | null;
+  serviceCode?: string | null;
+  authorizedHours?: number | null;
+  usedHours?: number | null;
   expirationISO?: string | null;
 };
 
@@ -177,7 +189,15 @@ function prettyActivityType(t: string | null | undefined): string {
   return t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function liveAuthToCard(a: Authorization): AuthCard {
+function liveAuthToCard(
+  a: Authorization,
+  ctx: {
+    source: "monday" | "manual" | "centralreach";
+    overlayId: string | null;
+    bcba: string | null;
+    meta?: import("@/hooks/useLiveAuthorizations").AuthRecordMeta | null;
+  },
+): AuthCard {
   const expiresInDays = daysUntilISO(a.expirationDate);
   const stateTone: AuthState =
     a.stage === "Approved" ? "approved"
@@ -230,7 +250,7 @@ function liveAuthToCard(a: Authorization): AuthCard {
     authType,
     requestType: a.nextAction ?? a.stage,
     coordinator: a.coordinator || "Unassigned",
-    bcba: a.qaOwner || "—",
+    bcba: ctx.bcba ?? a.qaOwner ?? "—",
     status: a.stage,
     stateTone,
     risk,
@@ -250,8 +270,18 @@ function liveAuthToCard(a: Authorization): AuthCard {
       : { label: "Pending", tone: "warn" },
     lastActivity: a.lastActivity ? `Updated · ${new Date(a.lastActivity).toLocaleDateString()}` : "—",
     queues,
-    source: "monday",
-    mondayItemId: a.id,
+    source: ctx.source,
+    overlayId: ctx.overlayId,
+    mondayItemId: ctx.source === "monday" ? a.id : null,
+    centralreachAuthorizationId: ctx.source === "centralreach" ? a.id : null,
+    centralreachClientId: ctx.meta?.centralreachClientId ?? null,
+    centralreachSyncStatus: ctx.meta?.centralreachSyncStatus ?? null,
+    centralreachLastSyncedAt: ctx.meta?.centralreachLastSyncedAt ?? null,
+    authorizationNumber: ctx.meta?.authorizationNumber ?? null,
+    trackingNumber: ctx.meta?.trackingNumber ?? null,
+    serviceCode: ctx.meta?.serviceCode ?? null,
+    authorizedHours: ctx.meta?.authorizedHours ?? null,
+    usedHours: ctx.meta?.usedHours ?? null,
     expirationISO: a.expirationDate ?? null,
   };
 }
@@ -319,8 +349,15 @@ export default function OSAuthWorkspace() {
   const AUTHS: AuthCard[] = useMemo(() => {
     if (loading || error) return [];
     // No fallback demo data — show empty state instead.
-    return liveItems.map(liveAuthToCard);
-  }, [liveItems, loading, error]);
+    return liveItems.map((a) =>
+      liveAuthToCard(a, {
+        source: live.sourceById.get(a.id) ?? "manual",
+        overlayId: live.overlayIdByAuthId.get(a.id) ?? null,
+        bcba: live.bcbaById.get(a.id) ?? null,
+        meta: live.metaById.get(a.id) ?? null,
+      }),
+    );
+  }, [liveItems, loading, error, live.sourceById, live.overlayIdByAuthId, live.bcbaById, live.metaById]);
 
   // Dynamic queue counts based on live data.
   const liveQueueGroups: QueueGroup[] = useMemo(() => {
@@ -362,7 +399,9 @@ export default function OSAuthWorkspace() {
 
   const buildOverlay = (a: AuthCard): EnsureOverlayInput => ({
     source_system: (a.source === "monday" || a.source === "manual" || a.source === "centralreach") ? a.source : "manual",
-    monday_item_id: a.mondayItemId ?? null,
+    overlay_id: a.overlayId ?? null,
+    monday_item_id: a.source === "monday" ? (a.mondayItemId ?? a.id) : null,
+    centralreach_authorization_id: a.source === "centralreach" ? (a.centralreachAuthorizationId ?? a.id) : null,
     source_id: a.id,
     client_name: a.client,
     state: a.state,
@@ -375,29 +414,32 @@ export default function OSAuthWorkspace() {
     expiration_date: a.expirationISO ?? null,
   });
 
+  // Run a write action and refresh live data on success so the workspace
+  // (lists, drawer, right rail counts) updates immediately. Errors surface
+  // via the action hook's own toast — we do NOT swallow them silently.
+  const runActionAndRefresh = async (fn: () => Promise<void>) => {
+    try {
+      await fn();
+      await refresh();
+    } catch {
+      /* hook already toasted; skip refresh so UI does not pretend it worked */
+    }
+  };
+
   const selectedAuths = visible.filter((a) => selected.has(a.id));
 
   const handleBulk = async (kind: "assign" | "status" | "escalate" | "qa" | "followup" | "request_docs") => {
     if (!selectedAuths.length) return;
     const overlays = selectedAuths.map(buildOverlay);
-    try {
-      if (kind === "assign") {
-        setPromptKind("assign");
-        return;
-      } else if (kind === "status") {
-        setPromptKind("status");
-        return;
-      } else if (kind === "escalate") {
-        for (const o of overlays) await actions.escalate(o);
-      } else if (kind === "qa") {
-        for (const o of overlays) await actions.sendToQA(o);
-      } else if (kind === "followup") {
-        for (const o of overlays) await actions.requestPR(o, { dueInDays: 2 });
-      } else if (kind === "request_docs") {
-        for (const o of overlays) await actions.addNote(o, "Documentation request sent to BCBA.");
-      }
-      setSelected(new Set());
-    } catch { /* hook surfaces toast */ }
+    if (kind === "assign") { setPromptKind("assign"); return; }
+    if (kind === "status") { setPromptKind("status"); return; }
+    await runActionAndRefresh(async () => {
+      if (kind === "escalate") for (const o of overlays) await actions.escalate(o);
+      else if (kind === "qa") for (const o of overlays) await actions.sendToQA(o);
+      else if (kind === "followup") for (const o of overlays) await actions.requestPR(o, { dueInDays: 2 });
+      else if (kind === "request_docs") for (const o of overlays) await actions.addNote(o, "Documentation request sent to BCBA.");
+    });
+    setSelected(new Set());
   };
 
   const applySavedView = (v: SavedView) => {
@@ -576,13 +618,13 @@ export default function OSAuthWorkspace() {
                   onOpen={() => setOpenId(a.id)}
                   onAction={(kind) => {
                     const o = buildOverlay(a);
-                    if (kind === "submit") return actions.submitAuth(o).catch(() => undefined);
-                    if (kind === "request_pr") return actions.requestPR(o, { dueInDays: 3 }).catch(() => undefined);
-                    if (kind === "send_qa") return actions.sendToQA(o).catch(() => undefined);
-                    if (kind === "escalate") return actions.escalate(o).catch(() => undefined);
-                    if (kind === "review_denial") return actions.reviewDenial(o).catch(() => undefined);
-                    if (kind === "resolve_docs") return actions.resolveDocs(o).catch(() => undefined);
-                    if (kind === "mark_reviewed") return actions.markReviewed(o).catch(() => undefined);
+                    if (kind === "submit") return runActionAndRefresh(() => actions.submitAuth(o));
+                    if (kind === "request_pr") return runActionAndRefresh(() => actions.requestPR(o, { dueInDays: 3 }));
+                    if (kind === "send_qa") return runActionAndRefresh(() => actions.sendToQA(o));
+                    if (kind === "escalate") return runActionAndRefresh(() => actions.escalate(o));
+                    if (kind === "review_denial") return runActionAndRefresh(() => actions.reviewDenial(o));
+                    if (kind === "resolve_docs") return runActionAndRefresh(() => actions.resolveDocs(o));
+                    if (kind === "mark_reviewed") return runActionAndRefresh(() => actions.markReviewed(o));
                     if (kind === "note") {
                       setNoteForId(a.id);
                     }
@@ -602,10 +644,10 @@ export default function OSAuthWorkspace() {
               auth={openAuth}
               onAction={(kind) => {
                 const o = buildOverlay(openAuth);
-                if (kind === "submit") return actions.submitAuth(o).catch(() => undefined);
-                if (kind === "request_pr") return actions.requestPR(o, { dueInDays: 3 }).catch(() => undefined);
-                if (kind === "send_qa") return actions.sendToQA(o).catch(() => undefined);
-                if (kind === "escalate") return actions.escalate(o).catch(() => undefined);
+                if (kind === "submit") return runActionAndRefresh(() => actions.submitAuth(o));
+                if (kind === "request_pr") return runActionAndRefresh(() => actions.requestPR(o, { dueInDays: 3 }));
+                if (kind === "send_qa") return runActionAndRefresh(() => actions.sendToQA(o));
+                if (kind === "escalate") return runActionAndRefresh(() => actions.escalate(o));
               }}
             />
           )}
@@ -629,7 +671,7 @@ export default function OSAuthWorkspace() {
         pending={actions.pending}
         onCancel={() => setPromptKind(null)}
         onSubmit={async (val) => {
-          await actions.bulkAssign(selectedAuths.map(buildOverlay), val).catch(() => undefined);
+          await runActionAndRefresh(() => actions.bulkAssign(selectedAuths.map(buildOverlay), val));
           setPromptKind(null);
           setSelected(new Set());
         }}
@@ -646,7 +688,7 @@ export default function OSAuthWorkspace() {
         pending={actions.pending}
         onCancel={() => setPromptKind(null)}
         onSubmit={async (val) => {
-          await actions.bulkChangeStatus(selectedAuths.map(buildOverlay), val).catch(() => undefined);
+          await runActionAndRefresh(() => actions.bulkChangeStatus(selectedAuths.map(buildOverlay), val));
           setPromptKind(null);
           setSelected(new Set());
         }}
@@ -666,7 +708,7 @@ export default function OSAuthWorkspace() {
         onSubmit={async (val) => {
           const target = visible.find((a) => a.id === noteForId);
           if (target) {
-            await actions.addNote(buildOverlay(target), val).catch(() => undefined);
+            await runActionAndRefresh(() => actions.addNote(buildOverlay(target), val));
           }
           setNoteForId(null);
         }}
@@ -1145,6 +1187,28 @@ function AuthDetailDrawer({
             ))}
           </ul>
         </DrawerSection>
+
+        {/* CentralReach Readiness */}
+        <CentralReachReadinessSection
+          source={auth.source === "sample" ? "manual" : auth.source}
+          centralreachAuthorizationId={auth.centralreachAuthorizationId}
+          centralreachClientId={auth.centralreachClientId}
+          centralreachSyncStatus={auth.centralreachSyncStatus}
+          centralreachLastSyncedAt={auth.centralreachLastSyncedAt}
+          authorizationNumber={auth.authorizationNumber}
+          trackingNumber={auth.trackingNumber}
+          serviceCode={auth.serviceCode}
+          authorizedHours={auth.authorizedHours}
+          usedHours={auth.usedHours}
+          checklist={[
+            { label: "Client name present", ok: !!auth.client },
+            { label: "Payer present", ok: !!auth.payer },
+            { label: "Auth type / service code present", ok: !!auth.authType || !!auth.serviceCode },
+            { label: "Assigned BCBA present", ok: !!auth.bcba && auth.bcba !== "—" },
+            { label: "Required documents complete", ok: auth.missingDocs.length === 0 },
+            { label: "Expiration date present", ok: !!auth.expirationISO },
+          ]}
+        />
       </div>
     </div>
   );

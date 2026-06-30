@@ -23,14 +23,26 @@ import {
 import {
   readSavedReportsV3, deleteSavedReportV3, type BcbaSavedReportV3,
 } from "@/lib/os/bcbaProductivityV3/store";
+import { useAuthorizationReportMetrics } from "@/hooks/useAuthorizationReportMetrics";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
   const reports = useMemo(() => visibleReportsForRole(role), [role]);
+  const authReportMetrics = useAuthorizationReportMetrics();
+  // Overlay live Authorizations KPI previews so report cards never render
+  // the catalog's bare "-" placeholders for those three reports.
+  const reportsWithLive = useMemo(() => {
+    const overrides = authReportMetrics.byReportId;
+    return reports.map((r) => {
+      const live = overrides[r.id];
+      if (!live) return r;
+      return { ...r, kpiPreviews: live };
+    });
+  }, [reports, authReportMetrics.byReportId]);
   const categories = useMemo(() => visibleCategoriesForRole(role), [role]);
   const featured = useMemo(() => {
     const qaPriority = ["bcba-productivity-report", "qa-supervision-pt", "qa-auth-utilization", "qa-cancellation"];
-    return reports
+    return reportsWithLive
       .filter(r => r.featured)
       .sort((a, b) => {
         if (role === "qa_team") {
@@ -40,18 +52,18 @@ export default function ReportsHome() {
         }
         return b.popularity - a.popularity;
       });
-  }, [reports, role]);
+  }, [reportsWithLive, role]);
   const aiSummary = ROLE_AI_SUMMARY[role];
   const roleLabel = OS_ROLES.find(r => r.id === role)?.label || role;
 
   const [favs, setFavs] = useState<string[]>(() => readFavorites());
-  const favReports = favs.map(id => reports.find(r => r.id === id)).filter(Boolean) as ReportDef[];
+  const favReports = favs.map(id => reportsWithLive.find(r => r.id === id)).filter(Boolean) as ReportDef[];
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [search, setSearch] = useState("");
   const filteredReports = search
-    ? reports.filter(r => (r.title + r.description + (r.tags || []).join(" ")).toLowerCase().includes(search.toLowerCase()))
-    : reports;
+    ? reportsWithLive.filter(r => (r.title + r.description + (r.tags || []).join(" ")).toLowerCase().includes(search.toLowerCase()))
+    : reportsWithLive;
 
   function onFav(id: string) { setFavs(toggleFavorite(id)); }
 
