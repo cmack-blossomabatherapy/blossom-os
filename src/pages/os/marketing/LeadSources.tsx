@@ -15,8 +15,6 @@ import {
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { LeadSourceActions } from "@/components/marketing/LeadSourceActions";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
-import { mockLeads, pipelineStages, type LeadSource } from "@/data/leads";
-import { mockCandidates } from "@/data/recruiting";
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * Lead Sources — operational intelligence on how families and staff find
@@ -56,7 +54,7 @@ export default function LeadSources() {
   const sourceMomentum = useMemo(() => {
     const now = Date.now();
     const map = new Map<LeadSource, { recent: number; prior: number }>();
-    mockLeads.forEach((l) => {
+    marketingLeads.forEach((l) => {
       const age = (now - new Date(l.createdAt).getTime()) / 86_400_000;
       const m = map.get(l.source) ?? { recent: 0, prior: 0 };
       if (age <= 7) m.recent += 1;
@@ -76,7 +74,7 @@ export default function LeadSources() {
   /* ── intake funnel (real pipeline stages) ───────────────────────────── */
   const funnel = useMemo(() => {
     const stageCount = new Map<string, number>();
-    mockLeads.forEach((l) => stageCount.set(l.status, (stageCount.get(l.status) ?? 0) + 1));
+    marketingLeads.forEach((l) => stageCount.set(l.status, (stageCount.get(l.status) ?? 0) + 1));
     return pipelineStages.map((s) => ({
       stage: s.name,
       count: stageCount.get(s.name) ?? 0,
@@ -87,7 +85,7 @@ export default function LeadSources() {
   /* ── recruiting sources (real candidate.source) ─────────────────────── */
   const recruiting = useMemo(() => {
     const map = new Map<string, { source: string; total: number; staged: number }>();
-    mockCandidates.forEach((c) => {
+    marketingCandidates.forEach((c) => {
       const r = map.get(c.source) ?? { source: c.source, total: 0, staged: 0 };
       r.total += 1;
       if (["Offer Accepted", "Training", "Credentialing", "Ready for Staffing"].includes(c.stage)) {
@@ -100,7 +98,7 @@ export default function LeadSources() {
   const recruitingMax = Math.max(1, ...recruiting.map((r) => r.total));
 
   /* ── filter for source-state cross-section ─────────────────────────── */
-  const filteredLeads = activeSource ? mockLeads.filter((l) => l.source === activeSource) : mockLeads;
+  const filteredLeads = activeSource ? marketingLeads.filter((l) => l.source === activeSource) : marketingLeads;
   const filteredByState = useMemo(() => {
     const m = new Map<string, number>();
     filteredLeads.forEach((l) => m.set(l.state, (m.get(l.state) ?? 0) + 1));

@@ -20,9 +20,6 @@ import {
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
-import { mockLeads, type LeadSource } from "@/data/leads";
-import { mockPhoneCalls } from "@/data/calls";
-import { mockCandidates } from "@/data/recruiting";
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * Web Analytics — operational web intelligence. Derived from real lead,
@@ -53,8 +50,8 @@ export default function WebAnalytics() {
 
   /* ── digital + organic momentum ─────────────────────────────────────── */
   const digital = useMemo(() => {
-    const all = mockLeads.filter((l) => DIGITAL_SOURCES.includes(l.source));
-    const organic = mockLeads.filter((l) => ORGANIC_SOURCES.includes(l.source));
+    const all = marketingLeads.filter((l) => DIGITAL_SOURCES.includes(l.source));
+    const organic = marketingLeads.filter((l) => ORGANIC_SOURCES.includes(l.source));
     const now = Date.now();
     const within = (iso: string, d: number) => now - new Date(iso).getTime() <= d * 86_400_000;
     const between = (iso: string, lo: number, hi: number) => {
@@ -108,7 +105,7 @@ export default function WebAnalytics() {
       mi.pipeline.filter((p) => names.includes(p.stage)).reduce((s, p) => s + p.count, 0);
     const surfaces = [
       { id: "state", title: "State pages", icon: MapPin, signal: digital.organic.length, hint: "Organic entry surfaces" },
-      { id: "clinic", title: "Clinic & service pages", icon: Building2, signal: mockPhoneCalls.length, hint: "Drive inbound calls" },
+      { id: "clinic", title: "Clinic & service pages", icon: Building2, signal: marketingCalls.length, hint: "Drive inbound calls" },
       { id: "parent", title: "Parent education", icon: FileText, signal: mi.bySource.find((s) => s.source === "Website")?.count ?? 0, hint: "Trust-building content" },
       { id: "faq", title: "Insurance & FAQ", icon: HelpCircle, signal: stageOf(["Form Received", "Sent to VOB"]), hint: "Reduces intake friction" },
       { id: "referral", title: "Referral landing", icon: Link2, signal: mi.referrals.total, hint: "Relationship-driven entry" },
@@ -127,7 +124,7 @@ export default function WebAnalytics() {
   /* ── state traffic map ──────────────────────────────────────────────── */
   const stateRows = useMemo(() => {
     const map = new Map<string, { state: string; sessions: number; organic: number; recruiting: number; calls: number; qualified: number; recent: number; prior: number }>();
-    mockLeads.forEach((l) => {
+    marketingLeads.forEach((l) => {
       const e = map.get(l.state) ?? { state: l.state, sessions: 0, organic: 0, recruiting: 0, calls: 0, qualified: 0, recent: 0, prior: 0 };
       if (DIGITAL_SOURCES.includes(l.source)) e.sessions += 1;
       if (ORGANIC_SOURCES.includes(l.source)) e.organic += 1;
@@ -137,13 +134,13 @@ export default function WebAnalytics() {
       else if (age <= 14) e.prior += 1;
       map.set(l.state, e);
     });
-    mockPhoneCalls.forEach((c) => {
+    marketingCalls.forEach((c) => {
       if (!c.state) return;
       const e = map.get(c.state) ?? { state: c.state, sessions: 0, organic: 0, recruiting: 0, calls: 0, qualified: 0, recent: 0, prior: 0 };
       e.calls += 1;
       map.set(c.state, e);
     });
-    mockCandidates.forEach((c) => {
+    marketingCandidates.forEach((c) => {
       if (!c.state) return;
       const e = map.get(c.state) ?? { state: c.state, sessions: 0, organic: 0, recruiting: 0, calls: 0, qualified: 0, recent: 0, prior: 0 };
       e.recruiting += 1;
@@ -159,7 +156,7 @@ export default function WebAnalytics() {
   const recruitingTraffic = useMemo(() => {
     const total = mi.recruitingBySource.reduce((s, r) => s + r.count, 0);
     const byState = new Map<string, number>();
-    mockCandidates.forEach((c) => {
+    marketingCandidates.forEach((c) => {
       if (!c.state) return;
       byState.set(c.state, (byState.get(c.state) ?? 0) + 1);
     });
@@ -445,7 +442,7 @@ export default function WebAnalytics() {
             {[
               { title: "Parent education", signal: mi.bySource.find((s) => s.source === "Website")?.count ?? 0, note: "Trust + intent" },
               { title: "Insurance & FAQ", signal: (mi.pipeline.find((p) => p.stage === "Form Received")?.count ?? 0) + (mi.pipeline.find((p) => p.stage === "Sent to VOB")?.count ?? 0), note: "Reduces intake friction" },
-              { title: "Clinic & service pages", signal: mockPhoneCalls.length, note: "Drives inbound calls" },
+              { title: "Clinic & service pages", signal: marketingCalls.length, note: "Drives inbound calls" },
               { title: "Referral content", signal: mi.referrals.total, note: "Relationship-driven entry" },
               { title: "Recruiting pages", signal: recruitingTraffic.total, note: "Staffing visibility" },
             ]
