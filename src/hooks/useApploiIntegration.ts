@@ -188,13 +188,14 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
   return { imported, skipped };
 }
 
-// Look up the Apploi integration by display name (no provider/slug column on the catalog).
+// Deterministic Apploi lookup: integration_catalog seeds Apploi as id = 'apploi'.
+// Avoid fuzzy display-name matching, which can return the wrong row.
 async function findApploiIntegrationId(): Promise<string | null> {
   try {
     const { data } = await supabase
       .from("integration_catalog")
-      .select("id,display_name")
-      .ilike("display_name", "%apploi%")
+      .select("id")
+      .eq("id", "apploi")
       .maybeSingle();
     return (data as any)?.id ?? null;
   } catch {
