@@ -627,7 +627,9 @@ const App = () => (
                   <Route path="/auth-risk-center" element={<OSAuthRiskCenter />} />
                   <Route path="/supervision-tracking" element={<OSSupervisionTracking />} />
                   <Route path="/parent-training-97156" element={<OSParentTraining97156 />} />
-                  <Route path="/scheduling-team" element={<OSSchedulingTeam />} />
+                  {/* Pass 3 — /scheduling-team is no longer a distinct product surface.
+                     The canonical Scheduling dashboard is /scheduling. */}
+                  <Route path="/scheduling-team" element={<Navigate to="/scheduling" replace />} />
                   <Route path="/scheduling-workspace" element={<OSSchedulingWorkspace />} />
                   {/* Pass 2 — /staffing is no longer the source of truth.
                      Canonical staffing workspace is /ops/staffing. Redirect to
@@ -835,7 +837,7 @@ const App = () => (
                   <Route path="/credentialing/bcba" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><BCBACredentialsPage /></PermissionRoute>} />
                   <Route path="/credentialing/uncredentialed-bcbas" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><UncredentialedBCBAsPage /></PermissionRoute>} />
                   <Route path="/credentialing/expiring" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><ExpiringCredentialsPage /></PermissionRoute>} />
-                  <Route path="/credentialing/reports" element={<CredentialingReportsRedirect />} />
+                  <Route path="/credentialing/reports" element={<Navigate to="/reports?category=credentialing" replace />} />
                   {/* Phase 6 — Core ABA Operations */}
                   <Route path="/state-operations" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director"]}><StateOperationsPage /></PermissionRoute>} />
                   {/* Authorizations consolidation — these three were static phase-6 tables.

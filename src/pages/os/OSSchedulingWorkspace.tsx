@@ -157,7 +157,7 @@ export default function OSSchedulingWorkspace() {
               <button onClick={() => setCoverageOpen(true)} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
                 <MessageSquare className="size-4" /> Add Coverage Note
               </button>
-              <Link to="/scheduling-team" className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
+              <Link to="/scheduling" className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
                 <ListChecks className="size-4" /> Open Coverage Queue
               </Link>
               <button onClick={() => setPairingOpen(true)} className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">

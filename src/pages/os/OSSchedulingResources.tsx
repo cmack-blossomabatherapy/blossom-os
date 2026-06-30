@@ -125,7 +125,7 @@
    // Category 8 — Systems & Tools
    { id: "y1", title: "Blossom OS Scheduling Workspace Guide", description: "Every panel, filter, and action in the Scheduling workspace.", category: "Systems & Tools", type: "Guide", minutes: 6, updated: "2026-05-18", href: "/scheduling", system: "Blossom OS", owner: "Operations" },
    { id: "y2", title: "Staffing Queue Usage Guide", description: "How to work the staffing queue end-to-end.", category: "Systems & Tools", type: "Guide", minutes: 5, updated: "2026-05-15", href: "/staffing", system: "Blossom OS", owner: "Operations" },
-   { id: "y3", title: "Scheduling Dashboard Guide", description: "Reading the scheduling team dashboard.", category: "Systems & Tools", type: "Guide", minutes: 4, updated: "2026-05-11", href: "/scheduling-team", system: "Blossom OS", owner: "Operations" },
+   { id: "y3", title: "Scheduling Dashboard Guide", description: "Reading the scheduling team dashboard.", category: "Systems & Tools", type: "Guide", minutes: 4, updated: "2026-05-11", href: "/scheduling", system: "Blossom OS", owner: "Operations" },
    { id: "y4", title: "Operational Insights Usage Guide", description: "Using AI for scheduling questions and operational lookups.", category: "Systems & Tools", type: "Guide", minutes: 4, updated: "2026-05-08", href: "/ai/assistant", system: "Blossom OS", owner: "Operations" },
    { id: "y5", title: "CentralReach Scheduling Reference", description: "Source-of-truth scheduling reference in CR.", category: "Systems & Tools", type: "Reference", minutes: 6, updated: "2026-04-26", system: "CentralReach", owner: "Operations" },
    { id: "y6", title: "Monday Legacy Workflow Reference", description: "Legacy monday.com scheduling workflows.", category: "Systems & Tools", type: "Reference", minutes: 5, updated: "2026-04-12", system: "monday.com", owner: "Operations" },
@@ -549,7 +549,7 @@
          <div className="mt-2 space-y-1">
            <RailLink to="/scheduling" label="Scheduling workspace" icon={CalendarDays} />
            <RailLink to="/staffing" label="Staffing Queue" icon={UserPlus} />
-           <RailLink to="/scheduling-team" label="Scheduling dashboard" icon={Layers} />
+           <RailLink to="/scheduling" label="Scheduling dashboard" icon={Layers} />
            <RailLink to="/ai/assistant" label="Operational Insights" icon={Bot} />
            <RailLink to="/training" label="Training Academy" icon={GraduationCap} />
          </div>

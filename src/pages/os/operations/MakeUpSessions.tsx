@@ -18,6 +18,8 @@ const STATUSES: { key: Status; label: string }[] = [
 type Row = {
   id: string;
   client_id: string | null;
+  client_key: string | null;
+  client_name: string | null;
   session_date: string | null;
   start_time: string | null;
   end_time: string | null;
@@ -112,7 +114,7 @@ export default function MakeUpSessions() {
               )}
               {filtered.map((r) => (
                 <tr key={r.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-2.5 text-foreground">{r.client_id ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-foreground">{r.client_name ?? r.client_key ?? r.client_id ?? "—"}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{r.session_date ?? "—"} {r.start_time ?? ""}</td>
                   <td className="px-4 py-2.5">
                     <DateCell value={r.make_up_date ?? ""} onChange={(v) => setStatus(r.id, "scheduled", v)} />

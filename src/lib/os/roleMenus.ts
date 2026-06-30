@@ -373,7 +373,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       {
         id: "scheduling", label: "Scheduling", items: [
           { label: "Scheduling Dashboard", path: "/scheduling",                              icon: LayoutDashboard },
-          { label: "Schedule Gaps",        path: "/ops/scheduling",                          icon: AlertTriangle },
+          { label: "Schedule Gaps",        path: "/scheduling-workspace?view=coverage_risk", icon: AlertTriangle },
           { label: "Session Coverage",     path: "/scheduling-workspace",                    icon: Calendar },
           { label: "RBT Roster",           path: "/scheduling/rbts",                         icon: UserCheck },
           { label: "BCBA Roster",          path: "/scheduling/bcbas",                        icon: UserCheck },

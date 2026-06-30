@@ -86,7 +86,7 @@ export const ALL_ROLE_DASHBOARDS: { to: string; label: string }[] = [
   { to: "/state-director", label: "State Director" },
   { to: "/intake-coordinator", label: "Intake Coordinator" },
   { to: "/auth-coordinator", label: "Auth Coordinator" },
-  { to: "/scheduling-team", label: "Scheduling Team" },
+  { to: "/scheduling", label: "Scheduling Team" },
   { to: "/recruiting-team", label: "Recruiting Team" },
   { to: "/hr-team", label: "HR Team" },
   { to: "/billing-finance", label: "Billing & Finance" },
