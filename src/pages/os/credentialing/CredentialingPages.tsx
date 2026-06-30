@@ -515,13 +515,13 @@ function CentralReachIdsDialog({ open, onOpenChange, record, onSaved }: {
 /* Record detail sheet                                                        */
 /* -------------------------------------------------------------------------- */
 function RecordDetailSheet({
-  recordId, records, providerById, tasks, documents, onClose, onChanged,
+  recordId, records, providerById, tasks = [], documents = [], onClose, onChanged,
 }: {
   recordId: string | null;
   records: CredentialingRecord[];
   providerById: Map<string, CredentialingProvider>;
-  tasks: ReturnType<typeof useCredentialingData>["tasks"];
-  documents: ReturnType<typeof useCredentialingData>["documents"];
+  tasks?: ReturnType<typeof useCredentialingData>["tasks"];
+  documents?: ReturnType<typeof useCredentialingData>["documents"];
   onClose: () => void;
   onChanged: () => void;
 }) {
