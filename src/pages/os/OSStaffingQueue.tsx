@@ -15,6 +15,32 @@ import {
   type StaffingClientNeed,
 } from "@/data/staffing";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import {
+  AssignRbtDialog, ContactAttemptDialog, CoverageNoteDialog,
+  CoverageCaseDialog,
+} from "@/components/scheduling/SchedulingDialogs";
+import { useSchedulingActions } from "@/hooks/useSchedulingActions";
+import { toast } from "sonner";
+
+type CardActionKey =
+  | "open"
+  | "pair"
+  | "availability"
+  | "note"
+  | "escalate"
+  | "find"
+  | "contact";
+
+function toLite(c: Client | null | undefined) {
+  if (!c) return null;
+  return {
+    id: c.id,
+    childName: c.childName,
+    state: c.state,
+    rbt: c.rbt ?? null,
+    bcba: c.bcba ?? null,
+  };
+}
 
 /* ---------------- priority + helpers ---------------- */
 
@@ -171,6 +197,44 @@ export default function OSStaffingQueue() {
     setParams(p, { replace: true });
   };
 
+  // ---- Action dialog state (page-level so every surface can open them) ----
+  const [pairingClient, setPairingClient] = useState<Client | null>(null);
+  const [pairingDefault, setPairingDefault] = useState<string>("");
+  const [noteClient, setNoteClient] = useState<Client | null>(null);
+  const [findClient, setFindClient] = useState<Client | null>(null);
+  const [escalateClient, setEscalateClient] = useState<Client | null>(null);
+  const [contactClient, setContactClient] = useState<Client | null>(null);
+  const [contactDefault, setContactDefault] = useState<
+    "family" | "rbt" | "bcba" | "state_director" | "assistant_state_director" | "internal"
+  >("family");
+
+  const openCardAction = (action: CardActionKey, c: Client) => {
+    switch (action) {
+      case "open": selectClient(c.id); break;
+      case "pair": setPairingDefault(c.rbt ?? ""); setPairingClient(c); break;
+      case "availability":
+        setContactDefault("family"); setContactClient(c); break;
+      case "note": setNoteClient(c); break;
+      case "escalate": setEscalateClient(c); break;
+      case "find": setFindClient(c); break;
+      case "contact":
+        setContactDefault("rbt"); setContactClient(c); break;
+    }
+  };
+
+  const openPairingFor = (c: Client, rbtName: string) => {
+    setPairingDefault(rbtName);
+    setPairingClient(c);
+  };
+
+  const requireSelected = (): Client | null => {
+    if (!selected) {
+      toast.error("Select a client from the queue first.");
+      return null;
+    }
+    return selected;
+  };
+
   // Grouping
   const grouped = useMemo(() => {
     const groups = new Map<string, typeof filtered>();
@@ -211,7 +275,13 @@ export default function OSStaffingQueue() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const c = requireSelected();
+                  if (c) setNoteClient(c);
+                }}
+                className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2"
+              >
                 <MessageSquare className="size-4" /> Add Staffing Note
               </button>
               <Link
@@ -220,7 +290,13 @@ export default function OSStaffingQueue() {
               >
                 <CalendarClock className="size-4" /> Open Scheduling Workspace
               </Link>
-              <button className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">
+              <button
+                onClick={() => {
+                  const c = requireSelected();
+                  if (c) { setPairingDefault(c.rbt ?? ""); setPairingClient(c); }
+                }}
+                className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm"
+              >
                 <UserPlus className="size-4" /> Quick Pairing
               </button>
             </div>
@@ -396,6 +472,7 @@ export default function OSStaffingQueue() {
                             row={row}
                             active={row.c.id === selectedId}
                             onSelect={() => selectClient(row.c.id)}
+                            onAction={(a) => openCardAction(a, row.c)}
                           />
                         ))}
                       </div>
@@ -414,11 +491,46 @@ export default function OSStaffingQueue() {
                 <p className="mt-3 text-sm text-muted-foreground">Select a staffing case to begin coordination.</p>
               </div>
             ) : (
-              <CaseWorkspace client={selected} />
+              <CaseWorkspace
+                client={selected}
+                onCardAction={(a) => openCardAction(a, selected)}
+                onAssignRbt={(rbtName) => openPairingFor(selected, rbtName)}
+              />
             )}
           </section>
         </div>
       </div>
+
+      {/* ---- Mounted scheduling action dialogs ---- */}
+      <AssignRbtDialog
+        open={!!pairingClient}
+        onOpenChange={(o) => !o && setPairingClient(null)}
+        client={toLite(pairingClient) ?? undefined}
+        defaultRbt={pairingDefault}
+      />
+      <CoverageNoteDialog
+        open={!!noteClient}
+        onOpenChange={(o) => !o && setNoteClient(null)}
+        client={toLite(noteClient) ?? undefined}
+      />
+      <CoverageCaseDialog
+        open={!!findClient}
+        onOpenChange={(o) => !o && setFindClient(null)}
+        client={toLite(findClient) ?? undefined}
+        mode="find"
+      />
+      <CoverageCaseDialog
+        open={!!escalateClient}
+        onOpenChange={(o) => !o && setEscalateClient(null)}
+        client={toLite(escalateClient) ?? undefined}
+        mode="escalate"
+      />
+      <ContactAttemptDialog
+        open={!!contactClient}
+        onOpenChange={(o) => !o && setContactClient(null)}
+        client={toLite(contactClient) ?? undefined}
+        defaultContactType={contactDefault}
+      />
     </OSShell>
   );
 }
@@ -520,11 +632,12 @@ function _FilterSelectImpl({
 }
 
 function QueueCard({
-  row, active, onSelect,
+  row, active, onSelect, onAction,
 }: {
   row: { c: Client; priority: Priority; status: StatusKey; days: number; need?: StaffingClientNeed };
   active: boolean;
   onSelect: () => void;
+  onAction: (a: CardActionKey) => void;
 }) {
   const { c, priority, status, days } = row;
   const setting = (c.serviceLocation ?? "Home") as keyof typeof LOCATION_ICON;
@@ -574,11 +687,11 @@ function QueueCard({
 
       {/* Bottom actions */}
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        <CardAction label="Open Case" />
-        <CardAction label="Begin Pairing" />
-        <CardAction label="Availability" />
-        <CardAction label="Note" />
-        <CardAction label="Escalate" />
+        <CardAction label="Open Case" onClick={() => onAction("open")} />
+        <CardAction label="Begin Pairing" onClick={() => onAction("pair")} />
+        <CardAction label="Availability" onClick={() => onAction("availability")} />
+        <CardAction label="Note" onClick={() => onAction("note")} />
+        <CardAction label="Escalate" onClick={() => onAction("escalate")} />
       </div>
     </button>
   );
@@ -594,10 +707,15 @@ function Readiness({ label, value, ok, warn, bad }: { label: string; value: stri
   );
 }
 
-function CardAction({ label }: { label: string }) {
+function CardAction({ label, onClick }: { label: string; onClick?: () => void }) {
   return (
     <span
-      onClick={(e) => e.stopPropagation()}
+      role="button"
+      tabIndex={0}
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onClick?.(); }
+      }}
       className="h-7 px-2.5 rounded-full bg-muted/60 border border-border/60 text-[11px] text-foreground/80 hover:bg-muted hover:text-foreground transition inline-flex items-center"
     >
       {label}
@@ -617,7 +735,13 @@ function EmptyState({ icon: Icon, title, description }: { icon: typeof CheckCirc
 
 /* ---------------- workspace ---------------- */
 
-function CaseWorkspace({ client }: { client: Client }) {
+function CaseWorkspace({
+  client, onCardAction, onAssignRbt,
+}: {
+  client: Client;
+  onCardAction: (a: CardActionKey) => void;
+  onAssignRbt: (rbtName: string) => void;
+}) {
   const need = useMemo(() => getClientStaffingNeeds([client])[0], [client]);
   const matches = useMemo(() => (need ? suggestStaffingMatches(need) : []), [need]);
 
@@ -625,10 +749,10 @@ function CaseWorkspace({ client }: { client: Client }) {
     <div className="space-y-4">
       <ClientOverview client={client} />
       <ReadinessTracker client={client} />
-      <MatchingEngine client={client} matches={matches} />
+      <MatchingEngine client={client} matches={matches} onCardAction={onCardAction} onAssignRbt={onAssignRbt} />
       <ScheduleBuilder client={client} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <OperationalNotes client={client} />
+        <OperationalNotes client={client} onAddNote={() => onCardAction("note")} />
         <OperationalRisks client={client} />
       </div>
       <AskBlossomPanel client={client} />
@@ -741,7 +865,14 @@ function ReadinessTracker({ client }: { client: Client }) {
   );
 }
 
-function MatchingEngine({ client, matches }: { client: Client; matches: ReturnType<typeof suggestStaffingMatches> }) {
+function MatchingEngine({
+  client, matches, onCardAction, onAssignRbt,
+}: {
+  client: Client;
+  matches: ReturnType<typeof suggestStaffingMatches>;
+  onCardAction: (a: CardActionKey) => void;
+  onAssignRbt: (rbtName: string) => void;
+}) {
   return (
     <SectionCard
       title="RBT Matching"
@@ -772,9 +903,12 @@ function MatchingEngine({ client, matches }: { client: Client; matches: ReturnTy
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <CardAction label="Assign" />
-                  <CardAction label="Compare" />
-                  <CardAction label="Contact" />
+                  <CardAction
+                    label="Assign"
+                    onClick={() => onAssignRbt(rbt.name)}
+                  />
+                  <CardAction label="Compare" onClick={() => toast.info(`Compare ${rbt.name} — coming soon.`)} />
+                  <CardAction label="Contact" onClick={() => onCardAction("contact")} />
                 </div>
               </div>
             );
@@ -831,13 +965,39 @@ function slotHours(start: string, end: string): number {
   return Math.max(0, (eh + em / 60) - (sh + sm / 60));
 }
 
-function OperationalNotes({ client }: { client: Client }) {
+function OperationalNotes({ client, onAddNote }: { client: Client; onAddNote: () => void }) {
+  const { logAction } = useSchedulingActions();
+  const [draft, setDraft] = useState("");
+  const [posting, setPosting] = useState(false);
+  const post = async () => {
+    if (!draft.trim()) return;
+    setPosting(true);
+    try {
+      await logAction({
+        clientId: client.id,
+        clientName: client.childName,
+        actionType: "staffing_note",
+        title: "Staffing note",
+        note: draft,
+        state: client.state ?? null,
+      });
+      toast.success("Note saved.");
+      setDraft("");
+    } catch { /* toast shown */ } finally { setPosting(false); }
+  };
   const events = (client.timeline ?? []).filter((e) => e.type === "staffing" || e.type === "schedule" || e.type === "note").slice(0, 5);
   return (
     <SectionCard
       title="Operational Notes"
       icon={MessageSquare}
-      action={<button className="text-[11px] text-primary hover:underline inline-flex items-center gap-1"><Plus className="size-3" />Add</button>}
+      action={
+        <button
+          onClick={onAddNote}
+          className="text-[11px] text-primary hover:underline inline-flex items-center gap-1"
+        >
+          <Plus className="size-3" />Add
+        </button>
+      }
     >
       {events.length === 0 ? (
         <p className="text-sm text-muted-foreground">No staffing notes yet.</p>
@@ -853,10 +1013,17 @@ function OperationalNotes({ client }: { client: Client }) {
       )}
       <div className="mt-4 flex items-center gap-2">
         <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && draft.trim()) { e.preventDefault(); void post(); } }}
           placeholder="Add a staffing update…"
           className="flex-1 h-9 px-3 rounded-xl bg-muted/60 border border-border text-sm placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        <button className="h-9 w-9 rounded-xl bg-primary text-primary-foreground inline-flex items-center justify-center hover:opacity-90 transition">
+        <button
+          onClick={() => void post()}
+          disabled={posting || !draft.trim()}
+          className="h-9 w-9 rounded-xl bg-primary text-primary-foreground inline-flex items-center justify-center hover:opacity-90 transition disabled:opacity-50"
+        >
           <Send className="size-4" />
         </button>
       </div>
