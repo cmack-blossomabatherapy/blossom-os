@@ -49,7 +49,7 @@ export async function proposeMatch(input: ProposeMatchInput): Promise<StaffingMa
   };
   const { data, error } = await supabase
     .from("staffing_matches")
-    .insert(payload as never)
+    .insert(payload)
     .select()
     .single();
   if (error) throw error;
@@ -63,7 +63,7 @@ export async function updateMatchStatus(
 ): Promise<StaffingMatchRow> {
   const { data, error } = await supabase
     .from("staffing_matches")
-    .update({ status, ...(extra ?? {}) } as never)
+    .update({ status, ...(extra ?? {}) })
     .eq("id", id)
     .select()
     .single();
