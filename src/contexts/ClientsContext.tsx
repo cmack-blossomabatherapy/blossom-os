@@ -12,6 +12,11 @@ import {
   groupAuthsByClient, mondayRowToClient,
   type MondayAuthRow, type MondayClientRow,
 } from "@/lib/clients/mondayClientMapper";
+import {
+  listSchedulingClientOverrides, listSchedulingScheduleSlots,
+  upsertSchedulingClientOverride, upsertSchedulingScheduleSlot,
+  removeSchedulingScheduleSlotsByClientDay, setSchedulingSchedule,
+} from "@/hooks/useSchedulingClientState";
 
 type Row<T> = T & Record<string, unknown>;
 
@@ -363,7 +368,54 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
       const built = clientRows.map((row) =>
         mondayRowToClient(row, authByClient.get(row.monday_item_id ?? row.id) ?? []),
       );
-      setClients(built);
+      // Merge durable Scheduling overlay state (Pass 5).
+      // Client ids here come from Monday and are NOT real public.clients.id —
+      // overlays are keyed by the same id so we can rehydrate after refresh.
+      const keys = built.map((c) => c.id);
+      try {
+        const [overrides, overlaySlots] = await Promise.all([
+          listSchedulingClientOverrides(keys),
+          listSchedulingScheduleSlots(keys),
+        ]);
+        const overrideByKey = new Map(overrides.map((o) => [o.client_key, o]));
+        const slotsByKey = new Map<string, typeof overlaySlots>();
+        for (const s of overlaySlots) {
+          const arr = slotsByKey.get(s.client_key) ?? [];
+          arr.push(s);
+          slotsByKey.set(s.client_key, arr);
+        }
+        const merged = built.map((c) => {
+          const ov = overrideByKey.get(c.id);
+          const slots = slotsByKey.get(c.id);
+          if (!ov && !slots) return c;
+          const next: Client = { ...c };
+          if (ov?.rbt_name) next.rbt = ov.rbt_name;
+          if (ov?.start_date) next.startDate = ov.start_date;
+          if (ov?.staffing_status) {
+            const allowed: StaffingStatus[] = ["Not Needed", "In Progress", "Needed", "Assigned"];
+            if (allowed.includes(ov.staffing_status as StaffingStatus)) {
+              next.staffingStatus = ov.staffing_status as StaffingStatus;
+            }
+          }
+          if (ov?.scheduling_status) {
+            next.schedulingStatus = ov.scheduling_status as ClientSchedulingStatus;
+          }
+          if (slots && slots.length > 0) {
+            next.schedule = slots.map((s) => ({
+              day: s.day, start: s.start_time, end: s.end_time,
+              rbt: s.rbt_name ?? undefined,
+              location: (s.location as ScheduleSlot["location"]) ?? undefined,
+              notes: s.notes ?? undefined,
+            }));
+            next.automationLog = [...next.automationLog, "Scheduling overlay applied from Blossom OS"];
+          }
+          return next;
+        });
+        setClients(merged);
+      } catch (overlayErr) {
+        console.warn("Scheduling overlay merge failed", overlayErr);
+        setClients(built);
+      }
     } catch (e) {
       console.error("Clients fetch (Monday) error", e);
       setClients(mockClients);
@@ -381,9 +433,14 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
 
   const getClient = useCallback((id: string) => clients.find((c) => c.id === id), [clients]);
 
-  // ─── Local-state mutation helpers ───────────────────────────────────
-  // Monday is the source of truth — mutations apply optimistically to
-  // local state only. Re-importing the Monday board will refresh values.
+  // ─── Mutation helpers ───────────────────────────────────────────────
+  // Monday is still the import baseline for client identity, but
+  // Scheduling-critical mutations (assignRbt, setStartDate, schedule
+  // slot helpers) ALSO persist to the durable Scheduling overlay tables
+  // (scheduling_client_overrides, scheduling_client_schedule_slots) so
+  // they survive refresh and Monday re-import. Other helpers remain
+  // optimistic in-memory updates until those workflows get their own
+  // overlays.
 
   const applyPatch = (id: string, patch: Partial<Client>) =>
     setClients((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
@@ -459,16 +516,45 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
       applyPatch(id, { rbt, staffingStatus: "Assigned" });
       pushAutomation(id, `RBT assigned: ${rbt}`);
       pushTimeline(id, `${rbt} assigned as RBT`, "staffing");
+      const c = clients.find((x) => x.id === id);
+      try {
+        await upsertSchedulingClientOverride({
+          clientKey: id,
+          clientName: c?.childName ?? null,
+          state: c?.state ?? null,
+          sourceRecordId: id,
+          rbtName: rbt,
+          staffingStatus: "Assigned",
+          centralReachSyncStatus: "not_ready",
+          metadata: { source: "scheduling_assign_rbt" },
+        });
+      } catch (err) {
+        console.warn("assignRbt overlay persist failed", err);
+      }
     }
-  }, []);
+  }, [clients]);
 
   const setStartDate = useCallback(async (ids: string[], date: string) => {
     for (const id of ids) {
       applyPatch(id, { startDate: date });
       pushAutomation(id, `Start date set to ${date}`);
       pushTimeline(id, `Start date set to ${date}`, "schedule");
+      const c = clients.find((x) => x.id === id);
+      try {
+        await upsertSchedulingClientOverride({
+          clientKey: id,
+          clientName: c?.childName ?? null,
+          state: c?.state ?? null,
+          sourceRecordId: id,
+          startDate: date,
+          centralReachSyncStatus: "not_ready",
+          metadata: { source: "scheduling_start_date" },
+        });
+      } catch (err) {
+        console.warn("setStartDate overlay persist failed", err);
+      }
     }
-  }, []);
+  }, [clients]);
 
   const toggleTask = useCallback(async (clientId: string, taskId: string) => {
     setClients((prev) => prev.map((c) => c.id !== clientId ? c : {
@@ -502,15 +588,46 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
 
   const addScheduleSlot = useCallback(async (clientId: string, slot: ScheduleSlot) => {
     setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, schedule: [...c.schedule.filter((s) => s.day !== slot.day), slot] }));
-  }, []);
+    const c = clients.find((x) => x.id === clientId);
+    try {
+      // Replace any existing overlay slot(s) for this day before inserting
+      // the new one so the unique (client_key, day, start, end) constraint
+      // does not conflict and so the client only has one slot per day in
+      // the overlay table.
+      await removeSchedulingScheduleSlotsByClientDay(clientId, slot.day);
+      await upsertSchedulingScheduleSlot({
+        clientKey: clientId,
+        clientName: c?.childName ?? null,
+        state: c?.state ?? null,
+        sourceRecordId: clientId,
+        slot,
+      });
+    } catch (err) {
+      console.warn("addScheduleSlot overlay persist failed", err);
+    }
+  }, [clients]);
 
   const removeScheduleSlot = useCallback(async (clientId: string, day: ScheduleSlot["day"]) => {
     setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, schedule: c.schedule.filter((s) => s.day !== day) }));
+    try {
+      await removeSchedulingScheduleSlotsByClientDay(clientId, day);
+    } catch (err) {
+      console.warn("removeScheduleSlot overlay persist failed", err);
+    }
   }, []);
 
   const setSchedule = useCallback(async (clientId: string, slots: ScheduleSlot[]) => {
     setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, schedule: slots }));
-  }, []);
+    const c = clients.find((x) => x.id === clientId);
+    try {
+      await setSchedulingSchedule(
+        { clientKey: clientId, clientName: c?.childName ?? null, state: c?.state ?? null, sourceRecordId: clientId },
+        slots,
+      );
+    } catch (err) {
+      console.warn("setSchedule overlay persist failed", err);
+    }
+  }, [clients]);
 
   const value = useMemo<ClientsContextValue>(() => ({
     clients, loading, getClient,
