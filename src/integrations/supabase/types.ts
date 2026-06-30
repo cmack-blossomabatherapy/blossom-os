@@ -12474,6 +12474,57 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduling_contact_attempts: {
+        Row: {
+          body: string | null
+          channel: string
+          client_id: string | null
+          contact_type: string
+          created_at: string
+          created_by: string | null
+          direction: string
+          follow_up_at: string | null
+          id: string
+          metadata: Json
+          outcome: string | null
+          state: string | null
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          channel: string
+          client_id?: string | null
+          contact_type: string
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          follow_up_at?: string | null
+          id?: string
+          metadata?: Json
+          outcome?: string | null
+          state?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          channel?: string
+          client_id?: string | null
+          contact_type?: string
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          follow_up_at?: string | null
+          id?: string
+          metadata?: Json
+          outcome?: string | null
+          state?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scheduling_coverage_cases: {
         Row: {
           approved_hours: number | null
