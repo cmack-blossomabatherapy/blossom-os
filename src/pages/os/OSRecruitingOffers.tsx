@@ -1,5 +1,5 @@
 import { runPageStageMove } from "@/lib/recruiting/stageMapping";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Search, X, FileSignature, AlertTriangle, CheckCircle2, Clock, Sparkles,
   Brain, RefreshCw, Send, MessageSquare, UserPlus, Download,
