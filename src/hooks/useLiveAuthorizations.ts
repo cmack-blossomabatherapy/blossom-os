@@ -575,18 +575,14 @@ export function useLiveAuthorizations(): LiveAuthorizations {
         const q = qaByRecord.get(a.id);
         if (!q) return a;
         const blockers = q.blockers ?? [];
-        const alerts = q.alerts ?? [];
         return {
           ...a,
           qaOwner: q.assigned_qa_owner ?? a.qaOwner,
           qaStatus: (q.qa_status as Authorization["qaStatus"]) ?? a.qaStatus,
           qaNotes: q.notes ?? a.qaNotes,
-          priority: (q.priority as Authorization["priority"]) ?? a.priority,
           nextAction: q.next_action ?? a.nextAction,
-          escalated: q.escalated ?? a.escalated,
           missingRequirements: blockers.length ? blockers : a.missingRequirements,
           missingInfo: blockers.length > 0 || a.missingInfo,
-          alerts: alerts.length ? alerts : a.alerts,
         };
       });
     }
