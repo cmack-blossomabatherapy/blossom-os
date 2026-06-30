@@ -582,12 +582,34 @@ function PreferencesTab() {
 
 function LiveMapTab() {
   const { clients } = useClients();
+  const { propose } = useStaffingWorkspace();
   const needs = useMemo(() => getClientStaffingNeeds(clients), [clients]);
   const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   const states = Array.from(new Set([...needs.map((n) => n.client.state), ...mockRBTProfiles.map((r) => r.state)])).sort();
   const visibleNeeds = needs.filter((n) => stateFilter === "ALL" || n.client.state === stateFilter);
   const visibleRBTs = mockRBTProfiles.filter((r) => stateFilter === "ALL" || r.state === stateFilter);
+
+  const selectedNeed = visibleNeeds.find((n) => n.client.id === selectedClientId) ?? null;
+
+  const rankedRBTs = useMemo(() => {
+    if (!selectedNeed) return visibleRBTs.map((r) => ({ rbt: r, miles: null as number | null }));
+    const clientPoint: StaffingMapPoint = {
+      id: selectedNeed.client.id, kind: "client", name: selectedNeed.client.childName,
+      state: selectedNeed.client.state, city: selectedNeed.client.clinic ?? null, zip: null,
+      lat: null, lon: null, hours: selectedNeed.requiredHours,
+    };
+    return visibleRBTs
+      .map((r) => {
+        const rbtPoint: StaffingMapPoint = {
+          id: r.id, kind: "rbt", name: r.name, state: r.state, city: r.clinic ?? null,
+          zip: r.zip ?? null, lat: null, lon: null, hours: r.capacityHours - r.assignedHours,
+        };
+        return { rbt: r, miles: distanceBetween(clientPoint, rbtPoint) };
+      })
+      .sort((a, b) => (a.miles ?? 9e9) - (b.miles ?? 9e9));
+  }, [selectedNeed, visibleRBTs]);
 
   return (
     <div className="space-y-4">
@@ -595,7 +617,7 @@ function LiveMapTab() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> Live Staffing Map</h2>
-            <p className="text-xs text-muted-foreground">State / clinic clustering view. Geocoded map (Mapbox) plugs in next pass — adapter ready in <code>staffingStore</code>.</p>
+            <p className="text-xs text-muted-foreground">State / city centroid view. Select a client to surface nearby RBTs (Haversine miles).</p>
           </div>
           <select
             className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm"
@@ -613,7 +635,15 @@ function LiveMapTab() {
           <h3 className="text-sm font-semibold inline-flex items-center gap-2"><Briefcase className="h-4 w-4 text-warning" /> Open cases ({visibleNeeds.length})</h3>
           <div className="space-y-2 max-h-[520px] overflow-y-auto">
             {visibleNeeds.map((n) => (
-              <div key={n.client.id} className="rounded-lg border border-border/40 bg-muted/20 p-3 flex items-center justify-between">
+              <button
+                key={n.client.id}
+                type="button"
+                onClick={() => setSelectedClientId(n.client.id === selectedClientId ? null : n.client.id)}
+                className={cn(
+                  "w-full text-left rounded-lg border bg-muted/20 p-3 flex items-center justify-between transition-colors",
+                  selectedClientId === n.client.id ? "border-primary ring-1 ring-primary/40" : "border-border/40 hover:border-primary/30",
+                )}
+              >
                 <div className="min-w-0">
                   <div className="text-sm font-medium truncate">{n.client.childName}</div>
                   <div className="text-[11px] text-muted-foreground inline-flex items-center gap-2">
@@ -622,26 +652,49 @@ function LiveMapTab() {
                   </div>
                 </div>
                 <Badge variant={n.priority === "High" ? "destructive" : "secondary"}>{n.priority}</Badge>
-              </div>
+              </button>
             ))}
             {visibleNeeds.length === 0 && <p className="text-xs text-muted-foreground italic">No open cases here.</p>}
           </div>
         </Card>
 
         <Card className="p-5 rounded-2xl border-border/60 space-y-3">
-          <h3 className="text-sm font-semibold inline-flex items-center gap-2"><Users className="h-4 w-4 text-emerald-600" /> Available RBTs ({visibleRBTs.length})</h3>
+          <h3 className="text-sm font-semibold inline-flex items-center gap-2">
+            <Users className="h-4 w-4 text-emerald-600" />
+            {selectedNeed ? `RBTs near ${selectedNeed.client.childName}` : `Available RBTs (${visibleRBTs.length})`}
+          </h3>
           <div className="space-y-2 max-h-[520px] overflow-y-auto">
-            {visibleRBTs.map((r) => {
+            {rankedRBTs.map(({ rbt: r, miles }) => {
               const remaining = r.capacityHours - r.assignedHours;
               return (
                 <div key={r.id} className="rounded-lg border border-border/40 bg-muted/20 p-3 flex items-center justify-between">
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{r.name}</div>
-                    <div className="text-[11px] text-muted-foreground">{r.state} · {r.clinic} · ZIP {r.zip}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {r.state} · {r.clinic} · ZIP {r.zip}
+                      {miles !== null && <span className="ml-2">· {miles} mi</span>}
+                    </div>
                   </div>
-                  <span className={cn("text-[11px] font-medium", remaining <= 0 ? "text-destructive" : remaining < 8 ? "text-warning" : "text-success")}>
-                    {remaining}h open
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={cn("text-[11px] font-medium", remaining <= 0 ? "text-destructive" : remaining < 8 ? "text-warning" : "text-success")}>
+                      {remaining}h open
+                    </span>
+                    {selectedNeed && (
+                      <button
+                        type="button"
+                        className="text-[11px] text-primary hover:underline"
+                        onClick={() => void propose({
+                          client_id: selectedNeed.client.id,
+                          rbt_id: r.id,
+                          rbt_name: r.name,
+                          match_score: 60,
+                          distance_miles: miles ?? null,
+                          capacity_remaining: remaining,
+                          notes: "Proposed from Live Staffing Map",
+                        })}
+                      >Propose</button>
+                    )}
+                  </div>
                 </div>
               );
             })}
