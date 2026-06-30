@@ -277,16 +277,16 @@ export default function OSAuthWorkspace() {
     (async () => {
       const { data } = await supabase
         .from("authorization_activity")
-        .select("id, activity_type, description, created_at, created_by")
+        .select("id, activity_type, title, body, created_at, created_by")
         .order("created_at", { ascending: false })
         .limit(8);
       if (cancelled || !data) return;
       setLiveActivityForRail(
         data.map((row) => ({
           id: row.id,
-          who: row.activity_type ?? "Activity",
-          what: row.description ?? "",
-          when: relTime(row.created_at),
+          who: prettyActivityType(row.activity_type),
+          what: row.title ?? row.body ?? "",
+          when: relTimeShort(row.created_at),
         })),
       );
     })();
