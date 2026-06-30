@@ -1,5 +1,5 @@
 import { runPageStageMove } from "@/lib/recruiting/stageMapping";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Search, X, AlertTriangle, CheckCircle2, Clock, Sparkles,
   Brain, Send, MessageSquare, UserPlus, Download,
@@ -15,7 +15,8 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingOrientation } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingOrientation, fullName, type RecruitingOrientationSlot } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,39 @@ const STAGES = [
   { key: "blocked",           label: "Blocked" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+// Round-trip mapping between recruiting_orientation_slots.status and the
+// board's stage keys. Live rows always win over the synthetic classifier.
+const ORIENT_STATUS_TO_STAGE: Record<string, StageKey> = {
+  Pending: "readyForOrientation",
+  Ready: "readyForOrientation",
+  Sent: "linkSent",
+  "Link Sent": "linkSent",
+  Scheduled: "scheduled",
+  Today: "today",
+  "Attendance Pending": "attendancePending",
+  Attended: "complete",
+  Completed: "complete",
+  Complete: "complete",
+  Missed: "blocked",
+  Blocked: "blocked",
+  "Staffing Ready": "staffingReady",
+};
+const STAGE_TO_ORIENT_STATUS: Partial<Record<StageKey, string>> = {
+  waitingReadiness: "Pending",
+  readyForOrientation: "Pending",
+  linkSent: "Sent",
+  scheduled: "Scheduled",
+  today: "Scheduled",
+  attendancePending: "Attendance Pending",
+  complete: "Completed",
+  staffingReady: "Completed",
+  blocked: "Missed",
+};
+function orientStatusToStage(status: string | null | undefined, fallback: StageKey): StageKey {
+  if (!status) return fallback;
+  return ORIENT_STATUS_TO_STAGE[status] ?? fallback;
+}
 
 function onboardingDone(c: RecruitingCandidate) {
   return c.onboardingStatus === "Complete" || c.viventium === "Complete";
@@ -117,7 +151,31 @@ const CHIPS: Array<{ key: string; label: string }> = [
 export default function OSRecruitingOrientation() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveOrientation } = useRecruitingOrientation();
+  const { items: liveOrientation, loading: liveOrientLoading } = useRecruitingOrientation();
+  const { candidates: liveCandidates } = useRecruitingCandidateLookup();
+
+  // Cross-reference live orientation slot rows with live candidate rows so
+  // legacy in-page candidates can be matched to real DB rows by full name.
+  const liveOrientByName = useMemo(() => {
+    const candidateNameById = new Map<string, string>();
+    for (const lc of liveCandidates) candidateNameById.set(lc.id, fullName(lc).toLowerCase());
+    const m = new Map<string, RecruitingOrientationSlot>();
+    for (const o of liveOrientation) {
+      const name = candidateNameById.get(o.candidate_id);
+      if (name && !m.has(name)) m.set(name, o);
+    }
+    return m;
+  }, [liveOrientation, liveCandidates]);
+  const liveCandidateIdByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const lc of liveCandidates) m.set(fullName(lc).toLowerCase(), lc.id);
+    return m;
+  }, [liveCandidates]);
+  const findLiveOrientFor = useCallback(
+    (c: RecruitingCandidate) => liveOrientByName.get(c.name.toLowerCase()) ?? null,
+    [liveOrientByName],
+  );
+
   const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
     Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
   );
@@ -128,7 +186,13 @@ export default function OSRecruitingOrientation() {
   const [recruiter, setRecruiter] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => {
+    const override = stageMap[c.id];
+    if (override) return override;
+    const live = findLiveOrientFor(c);
+    if (live) return orientStatusToStage(live.status, classify(c));
+    return classify(c);
+  };
 
   // Pool: anyone past offer acceptance — orientation lifecycle eligible.
   const pool = useMemo(
@@ -200,6 +264,19 @@ export default function OSRecruitingOrientation() {
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
     void runPageStageMove(mutations, "orientation", id, to);
+    const candidate = recruitingCandidates.find((c) => c.id === id);
+    if (!candidate) return;
+    const live = findLiveOrientFor(candidate);
+    const nextStatus = STAGE_TO_ORIENT_STATUS[to];
+    if (live && nextStatus && live.status !== nextStatus) {
+      if (to === "complete" || to === "staffingReady") void mutations.markOrientationCompleted(live.id);
+      else if (to === "blocked") {
+        const uuid = liveCandidateIdByName.get(candidate.name.toLowerCase());
+        if (uuid) void mutations.markOrientationMissed(uuid, "Marked missed from board");
+        else void mutations.updateOrientation(live.id, { status: "Missed" });
+      }
+      else void mutations.updateOrientation(live.id, { status: nextStatus });
+    }
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id);
