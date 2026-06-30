@@ -242,6 +242,7 @@ export default function OSAuthorizations() {
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [newAuthOpen, setNewAuthOpen] = useState(false);
   const actions = useAuthorizationActions();
+  const { displayName } = useAuth();
 
   const [filters, setFilters] = useState<Filters>({
     state: searchParams.get("state"),
@@ -277,13 +278,16 @@ export default function OSAuthorizations() {
 
   const live = useLiveAuthorizations();
   const enriched = useMemo(
-    () => live.items.map((a) => enrich(a, live.bcbaById.get(a.id))),
+    () => live.items.map((a) => {
+      const e = enrich(a, live.bcbaById.get(a.id));
+      return { ...e, coordinator: safeNameLabel(e.coordinator) };
+    }),
     [live.items, live.bcbaById],
   );
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let arr = applyView(enriched, view);
+    let arr = applyView(enriched, view, displayName || null);
     if (filters.state) arr = arr.filter(a => a.state === filters.state);
     if (filters.payor) arr = arr.filter(a => a.payor === filters.payor);
     if (filters.coordinator) arr = arr.filter(a => a.coordinator === filters.coordinator);
