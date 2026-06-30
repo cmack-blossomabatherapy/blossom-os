@@ -312,9 +312,9 @@ export default function ReportsHome() {
 
       {/* ============== CATEGORIES ============== */}
       <section className="mt-10">
-        <SectionHeader title="Browse by category" subtitle={`${categories.length} categories available for ${roleLabel}.`} />
+        <SectionHeader title="Browse by category" subtitle={`${categories.length} categories available for ${roleLabel}.${activeCategory ? ` Filtered to ${activeCategory}.` : ""}`} />
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {categories.map(cat => <CategoryCard key={cat.id} cat={cat} />)}
+          {categoriesOrdered.map(cat => <CategoryCard key={cat.id} cat={cat} />)}
         </div>
       </section>
 
@@ -325,7 +325,7 @@ export default function ReportsHome() {
           subtitle={`Every report available for ${roleLabel}, grouped by category.`}
         />
         <div className="mt-4 space-y-6">
-          {categories.map(cat => {
+          {categoriesOrdered.map(cat => {
             const inCat = reports
               .filter(r => r.category === cat.id)
               .sort((a, b) => b.popularity - a.popularity);
