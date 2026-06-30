@@ -1,4 +1,4 @@
- import { useMemo, useState } from "react";
+ import { useEffect, useMemo, useState } from "react";
  import { Link, useSearchParams } from "react-router-dom";
  import {
    Search, CalendarClock, Plus, ListChecks, AlertTriangle, Sparkles,
@@ -16,7 +16,6 @@ import {
   CoverageCaseDialog, CoverageNoteDialog, CRSyncBadge,
 } from "@/components/scheduling/SchedulingDialogs";
 import { useSchedulingActions } from "@/hooks/useSchedulingActions";
-import { useEffect } from "react";
 
  /* ---------------- helpers ---------------- */
 
