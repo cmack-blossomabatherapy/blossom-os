@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { useQADeepLink } from "@/hooks/useQADeepLink";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
@@ -201,6 +202,9 @@ export default function OSQAClients() {
   const [expFilter, setExpFilter] = useState("all");
   const [escFilter, setEscFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
+
+  // QA Pass 5 deep links — bcba/client/query routing.
+  useQADeepLink({ items, loading, setQuery, setBcbaFilter });
 
   const states  = useMemo(() => Array.from(new Set(allClients.map(c => c.state).filter(Boolean))).sort(), [allClients]);
   const bcbas   = useMemo(() => Array.from(new Set(allClients.map(c => c.bcba).filter(Boolean))).sort(), [allClients]);

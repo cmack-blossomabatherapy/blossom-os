@@ -10748,14 +10748,20 @@ export type Database = {
           escalation_reason: string | null
           id: string
           last_action_at: string | null
+          last_completed_action: string | null
           monday_item_id: string | null
           next_action: string | null
           notes: string | null
           priority: string | null
+          progress_report_received_at: string | null
           qa_status: string | null
+          resolved_at: string | null
+          resolved_reason: string | null
           source_record_id: string
           source_system: string
+          treatment_plan_received_at: string | null
           updated_at: string
+          workflow_state: string | null
         }
         Insert: {
           alerts?: string[]
@@ -10768,14 +10774,20 @@ export type Database = {
           escalation_reason?: string | null
           id?: string
           last_action_at?: string | null
+          last_completed_action?: string | null
           monday_item_id?: string | null
           next_action?: string | null
           notes?: string | null
           priority?: string | null
+          progress_report_received_at?: string | null
           qa_status?: string | null
+          resolved_at?: string | null
+          resolved_reason?: string | null
           source_record_id: string
           source_system?: string
+          treatment_plan_received_at?: string | null
           updated_at?: string
+          workflow_state?: string | null
         }
         Update: {
           alerts?: string[]
@@ -10788,14 +10800,20 @@ export type Database = {
           escalation_reason?: string | null
           id?: string
           last_action_at?: string | null
+          last_completed_action?: string | null
           monday_item_id?: string | null
           next_action?: string | null
           notes?: string | null
           priority?: string | null
+          progress_report_received_at?: string | null
           qa_status?: string | null
+          resolved_at?: string | null
+          resolved_reason?: string | null
           source_record_id?: string
           source_system?: string
+          treatment_plan_received_at?: string | null
           updated_at?: string
+          workflow_state?: string | null
         }
         Relationships: [
           {

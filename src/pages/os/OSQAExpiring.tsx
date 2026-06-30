@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { useQADeepLink } from "@/hooks/useQADeepLink";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
@@ -167,6 +168,7 @@ export default function OSQAExpiring() {
   const [escFilter, setEscFilter] = useState("all");
   const [urgencyFilter, setUrgencyFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  useQADeepLink({ items, loading, setOpenId, setQuery, setBcbaFilter });
 
   const states  = useMemo(() => Array.from(new Set(expiring.map(a => a.state).filter(Boolean))).sort(), [expiring]);
   const payors  = useMemo(() => Array.from(new Set(expiring.map(a => a.payor).filter(Boolean))).sort(), [expiring]);

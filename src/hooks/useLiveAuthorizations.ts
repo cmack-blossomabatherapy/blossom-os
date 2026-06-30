@@ -113,6 +113,11 @@ interface QAOverrideRow {
   escalated: boolean | null;
   escalation_reason: string | null;
   last_action_at: string | null;
+  progress_report_received_at?: string | null;
+  treatment_plan_received_at?: string | null;
+  resolved_at?: string | null;
+  resolved_reason?: string | null;
+  workflow_state?: string | null;
 }
 
 function pickIsoDate(value: unknown): string | null {
@@ -622,7 +627,7 @@ export function useLiveAuthorizations(): LiveAuthorizations {
       items = items.map((a) => {
         const q = qaByRecord.get(a.id);
         if (!q) return a;
-        const blockers = q.blockers ?? [];
+        let blockers = q.blockers ?? [];
         // qa_status is persisted as text; validate against the canonical QAStatus
         // union and fall back to the existing value if the row is stale or empty.
         const VALID: ReadonlyArray<Authorization["qaStatus"]> = [
@@ -633,14 +638,37 @@ export function useLiveAuthorizations(): LiveAuthorizations {
         const nextStatus = (persistedStatus && (VALID as readonly string[]).includes(persistedStatus))
           ? (persistedStatus as Authorization["qaStatus"])
           : a.qaStatus;
+
+        // Pass-5 truth columns: if PR or TP was explicitly received, strip the
+        // corresponding entries from the missing-requirements list so the UI
+        // stops claiming the item is still outstanding after refresh.
+        const prReceived = !!q.progress_report_received_at;
+        const tpReceived = !!q.treatment_plan_received_at;
+        const resolved = !!q.resolved_at;
+        const baseMissing = blockers.length ? blockers : a.missingRequirements;
+        const filteredMissing = baseMissing.filter((r) => {
+          if (prReceived && /progress report|\bpr\b/i.test(r)) return false;
+          if (tpReceived && /treatment plan|\btp\b/i.test(r)) return false;
+          return true;
+        });
+        blockers = blockers.filter((r) => {
+          if (prReceived && /progress report|\bpr\b/i.test(r)) return false;
+          if (tpReceived && /treatment plan|\btp\b/i.test(r)) return false;
+          return true;
+        });
+        const missingInfo = resolved
+          ? false
+          : (filteredMissing.length > 0 || (a.missingInfo && !prReceived && !tpReceived));
+
         return {
           ...a,
           qaOwner: q.assigned_qa_owner ?? a.qaOwner,
           qaStatus: nextStatus,
           qaNotes: q.notes ?? a.qaNotes,
           nextAction: q.next_action ?? a.nextAction,
-          missingRequirements: blockers.length ? blockers : a.missingRequirements,
-          missingInfo: blockers.length > 0 || a.missingInfo,
+          missingRequirements: filteredMissing,
+          missingInfo,
+          treatmentPlanReceived: tpReceived ? true : a.treatmentPlanReceived,
         };
       });
     }

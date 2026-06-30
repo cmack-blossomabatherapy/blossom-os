@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { useQADeepLink } from "@/hooks/useQADeepLink";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
@@ -193,6 +194,7 @@ export default function OSQAMissingInfo() {
   const [urgencyFilter, setUrgencyFilter] = useState("all");
   const [daysFilter, setDaysFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  useQADeepLink({ items, loading, setOpenId, setQuery, setBcbaFilter });
 
   const states    = useMemo(() => Array.from(new Set(allRows.map(r => r.auth.state).filter(Boolean))).sort(), [allRows]);
   const bcbas     = useMemo(() => Array.from(new Set(allRows.map(r => r.auth.coordinator).filter(Boolean))).sort(), [allRows]);

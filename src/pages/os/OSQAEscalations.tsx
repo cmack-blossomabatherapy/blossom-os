@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { useQADeepLink } from "@/hooks/useQADeepLink";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
@@ -431,6 +432,9 @@ export default function OSQAEscalations() {
   const [type, setType] = useState("");
   const [urgency, setUrgency] = useState("");
   const [open, setOpen] = useState<Escalation | null>(null);
+
+  // QA Pass 5 deep links — supports ?bcba=, ?client=, ?id=/?focus= via search.
+  useQADeepLink({ items, setQuery });
 
   const filtered = useMemo(() => {
     return all.filter(e => {

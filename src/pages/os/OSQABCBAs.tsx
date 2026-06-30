@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { useQADeepLink } from "@/hooks/useQADeepLink";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
@@ -204,6 +205,7 @@ export default function OSQABCBAs() {
   const [qaFilter, setQaFilter] = useState("all");
   const [urgencyFilter, setUrgencyFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  useQADeepLink({ items, loading, setOpenId, setQuery, setBcbaFilter });
 
   const states  = useMemo(() => Array.from(new Set(allBcbas.flatMap(b => b.states))).sort(), [allBcbas]);
   const names   = useMemo(() => allBcbas.map(b => b.name).sort(), [allBcbas]);

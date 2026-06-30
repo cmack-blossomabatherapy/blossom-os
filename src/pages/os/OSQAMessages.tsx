@@ -13,6 +13,11 @@ import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
+import { useQAWorkflow } from "@/hooks/useQAWorkflow";
+import { toQAWorkItemRef } from "@/lib/os/qa/qaRefs";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 
 // QA → Messages & Updates.
 // Real data only — operational threads derived from live authorization workflows
@@ -303,6 +308,8 @@ function fillTemplate(body: string, t: Thread): string {
 
 export default function OSQAMessages() {
   const { qaItems: items, loading, refresh, sourceById } = useLiveAuthorizations();
+  const wf = useQAWorkflow();
+  const { toast } = useToast();
   const threads = useMemo(() => buildThreads(items), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");
@@ -317,6 +324,39 @@ export default function OSQAMessages() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [composer, setComposer] = useState("");
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
+  const [actionBusy, setActionBusy] = useState<"resolve" | "escalate" | "send" | null>(null);
+
+  // QA Pass 5 — deep links: ?id=/?focus= open thread by auth id; ?bcba= filters; ?client= searches.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const consumedRef = useRef(false);
+  useEffect(() => {
+    if (consumedRef.current || loading || threads.length === 0) return;
+    const idP = searchParams.get("id") ?? searchParams.get("focus");
+    const bcbaP = searchParams.get("bcba");
+    const clientP = searchParams.get("client");
+    if (!idP && !bcbaP && !clientP) { consumedRef.current = true; return; }
+    const missed: string[] = [];
+    if (idP) {
+      const t = threads.find(x => x.auth.id === idP);
+      if (t) setOpenId(t.id); else missed.push(`record ${idP}`);
+    }
+    if (bcbaP) {
+      if (threads.some(x => (x.bcba ?? "").toLowerCase() === bcbaP.toLowerCase())) setBcbaFilter(bcbaP);
+      else { setQuery(bcbaP); missed.push(`BCBA "${bcbaP}"`); }
+    }
+    if (clientP) {
+      setQuery(clientP);
+      const t = threads.find(x => x.client?.toLowerCase() === clientP.toLowerCase());
+      if (t && !idP) setOpenId(t.id);
+    }
+    if (missed.length) {
+      toast({ title: "Deep link partially resolved", description: `Could not locate ${missed.join(", ")}.` });
+    }
+    const next = new URLSearchParams(searchParams);
+    ["id", "focus", "bcba", "client"].forEach(k => next.delete(k));
+    setSearchParams(next, { replace: true });
+    consumedRef.current = true;
+  }, [threads, loading, searchParams, setSearchParams, toast]);
 
   const states = useMemo(() => Array.from(new Set(threads.map(t => t.state).filter(Boolean))).sort(), [threads]);
   const bcbas  = useMemo(() => Array.from(new Set(threads.map(t => t.bcba).filter(Boolean))).sort(), [threads]);
@@ -715,11 +755,70 @@ export default function OSQAMessages() {
                         <ComposerIcon icon={StickyNote} title="Add internal QA note" />
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <ActionPill icon={MailCheck} label="Mark resolved" />
-                        <ActionPill icon={Flame} label="Escalate" tone="crit" />
-                        <button className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-2 hover:opacity-90 transition">
+                        <ActionPill
+                          icon={MailCheck}
+                          label="Mark resolved"
+                          title="Persist a 'resolved' workflow update for this thread's authorization"
+                          disabled={actionBusy !== null}
+                          loading={actionBusy === "resolve"}
+                          onClick={async () => {
+                            if (!active) return;
+                            setActionBusy("resolve");
+                            try {
+                              await wf.markResolved(
+                                toQAWorkItemRef(active.auth, sourceById.get(active.auth.id)),
+                                composer.trim() || undefined,
+                              );
+                              await refresh();
+                            } finally { setActionBusy(null); }
+                          }}
+                        />
+                        <ActionPill
+                          icon={Flame}
+                          label="Escalate"
+                          tone="crit"
+                          title="Escalate this thread's authorization to leadership"
+                          disabled={actionBusy !== null}
+                          loading={actionBusy === "escalate"}
+                          onClick={async () => {
+                            if (!active) return;
+                            const reason = composer.trim() || `Escalated from messages: ${active.subject}`;
+                            setActionBusy("escalate");
+                            try {
+                              await wf.escalate(
+                                toQAWorkItemRef(active.auth, sourceById.get(active.auth.id)),
+                                reason,
+                              );
+                              await refresh();
+                            } finally { setActionBusy(null); }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          title="Send a follow-up note that persists to the QA workflow"
+                          disabled={!active || actionBusy !== null || composer.trim().length === 0}
+                          aria-label="Send follow-up"
+                          onClick={async () => {
+                            if (!active) return;
+                            const note = composer.trim();
+                            if (!note) {
+                              toast({ title: "Add a note", description: "Type a follow-up message before sending." });
+                              return;
+                            }
+                            setActionBusy("send");
+                            try {
+                              await wf.sendFollowUp(
+                                toQAWorkItemRef(active.auth, sourceById.get(active.auth.id)),
+                                note,
+                              );
+                              setComposer("");
+                              await refresh();
+                            } finally { setActionBusy(null); }
+                          }}
+                          className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-2 hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                           <Send className="h-4 w-4" strokeWidth={1.75} />
-                          Send follow-up
+                          {actionBusy === "send" ? "Sending…" : "Send follow-up"}
                         </button>
                       </div>
                     </div>
@@ -937,14 +1036,37 @@ function ComposerIcon({ icon: Icon, title }: { icon: React.ElementType; title: s
     </button>
   );
 }
-function ActionPill({ icon: Icon, label, tone }: { icon: React.ElementType; label: string; tone?: Tone }) {
+function ActionPill({
+  icon: Icon, label, tone, onClick, disabled, loading, title,
+}: {
+  icon: React.ElementType;
+  label: string;
+  tone?: Tone;
+  onClick?: () => void | Promise<void>;
+  disabled?: boolean;
+  loading?: boolean;
+  title?: string;
+}) {
   const cls = cn(
     "h-9 px-3 rounded-xl border text-xs font-medium inline-flex items-center gap-1.5 transition",
     tone === "crit"
       ? "border-destructive/20 text-destructive hover:bg-destructive/5"
       : "border-border/70 text-foreground hover:bg-muted",
+    (disabled || loading) && "opacity-50 cursor-not-allowed hover:bg-transparent",
   );
-  return <button className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} />{label}</button>;
+  return (
+    <button
+      type="button"
+      className={cls}
+      onClick={onClick}
+      disabled={disabled || loading}
+      title={title ?? label}
+      aria-label={label}
+    >
+      <Icon className={cn("h-3.5 w-3.5", loading && "animate-pulse")} strokeWidth={1.75} />
+      {loading ? "Saving…" : label}
+    </button>
+  );
 }
 function Avatar({ name, primary }: { name: string; primary?: boolean }) {
   return (

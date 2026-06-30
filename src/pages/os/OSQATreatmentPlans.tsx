@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { useQADeepLink } from "@/hooks/useQADeepLink";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
@@ -165,6 +166,7 @@ export default function OSQATreatmentPlans() {
   const [escFilter, setEscFilter] = useState("all");
   const [urgencyFilter, setUrgencyFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  useQADeepLink({ items, loading, setOpenId, setQuery, setBcbaFilter });
 
   const states = useMemo(() => Array.from(new Set(tps.map(a => a.state).filter(Boolean))).sort(), [tps]);
   const bcbas  = useMemo(() => Array.from(new Set(tps.map(a => a.coordinator).filter(Boolean))).sort(), [tps]);
