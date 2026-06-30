@@ -15,6 +15,32 @@ import {
   type StaffingClientNeed,
 } from "@/data/staffing";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import {
+  AssignRbtDialog, ContactAttemptDialog, CoverageNoteDialog,
+  CoverageCaseDialog,
+} from "@/components/scheduling/SchedulingDialogs";
+import { useSchedulingActions } from "@/hooks/useSchedulingActions";
+import { toast } from "sonner";
+
+type CardActionKey =
+  | "open"
+  | "pair"
+  | "availability"
+  | "note"
+  | "escalate"
+  | "find"
+  | "contact";
+
+function toLite(c: Client | null | undefined) {
+  if (!c) return null;
+  return {
+    id: c.id,
+    childName: c.childName,
+    state: c.state,
+    rbt: c.rbt ?? null,
+    bcba: c.bcba ?? null,
+  };
+}
 
 /* ---------------- priority + helpers ---------------- */
 
