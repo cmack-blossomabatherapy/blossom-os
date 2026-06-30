@@ -1,5 +1,5 @@
 import { runPageStageMove } from "@/lib/recruiting/stageMapping";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Search, X, AlertTriangle, CheckCircle2, Clock, Sparkles,
   Brain, RefreshCw, Send, MessageSquare, UserPlus, Download,
@@ -15,7 +15,8 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingOnboarding } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingOnboarding, fullName, type RecruitingOnboardingTask } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,26 @@ const STAGES = [
   { key: "orientationReady",    label: "Orientation Ready" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+// Per-candidate live onboarding task summary aggregated from
+// recruiting_onboarding_tasks. The presence of any live task means we
+// prefer the live aggregate over the synthetic classifier.
+type LiveOnboardingSummary = {
+  total: number;
+  completed: number;
+  open: number;
+};
+function aggregateOnboarding(tasks: RecruitingOnboardingTask[]): LiveOnboardingSummary {
+  const total = tasks.length;
+  const completed = tasks.filter((t) => t.completed).length;
+  return { total, completed, open: total - completed };
+}
+function onboardingSummaryToStage(s: LiveOnboardingSummary, fallback: StageKey): StageKey {
+  if (s.total === 0) return fallback;
+  if (s.completed === 0) return "onboardingSent";
+  if (s.completed >= s.total) return "onboardingComplete";
+  return "onboardingProgress";
+}
 
 // Operational mapping of real data → onboarding stage.
 function classify(c: RecruitingCandidate): StageKey {
@@ -148,7 +169,40 @@ const ONBOARDING_STEPS = [
 export default function OSRecruitingOnboarding() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveOnboarding } = useRecruitingOnboarding();
+  const { items: liveOnboarding, loading: liveOnboardingLoading } = useRecruitingOnboarding();
+  const { candidates: liveCandidates } = useRecruitingCandidateLookup();
+
+  // Cross-reference live onboarding tasks with live candidate rows so legacy
+  // in-page candidates can be matched to real DB rows by full name.
+  const liveTasksByCandidateId = useMemo(() => {
+    const m = new Map<string, RecruitingOnboardingTask[]>();
+    for (const t of liveOnboarding) {
+      const arr = m.get(t.candidate_id) ?? [];
+      arr.push(t);
+      m.set(t.candidate_id, arr);
+    }
+    return m;
+  }, [liveOnboarding]);
+  const liveOnboardingByName = useMemo(() => {
+    const m = new Map<string, LiveOnboardingSummary>();
+    for (const lc of liveCandidates) {
+      const tasks = liveTasksByCandidateId.get(lc.id);
+      if (tasks && tasks.length > 0) {
+        m.set(fullName(lc).toLowerCase(), aggregateOnboarding(tasks));
+      }
+    }
+    return m;
+  }, [liveCandidates, liveTasksByCandidateId]);
+  const liveCandidateIdByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const lc of liveCandidates) m.set(fullName(lc).toLowerCase(), lc.id);
+    return m;
+  }, [liveCandidates]);
+  const findLiveOnboardingFor = useCallback(
+    (c: RecruitingCandidate) => liveOnboardingByName.get(c.name.toLowerCase()) ?? null,
+    [liveOnboardingByName],
+  );
+
   const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
     Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
   );
@@ -160,7 +214,13 @@ export default function OSRecruitingOnboarding() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checks, setChecks] = useState<Record<string, boolean[]>>({});
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => {
+    const override = stageMap[c.id];
+    if (override) return override;
+    const live = findLiveOnboardingFor(c);
+    if (live) return onboardingSummaryToStage(live, classify(c));
+    return classify(c);
+  };
 
   // Pool: candidates that have signed (or are at) onboarding stages.
   const pool = useMemo(
