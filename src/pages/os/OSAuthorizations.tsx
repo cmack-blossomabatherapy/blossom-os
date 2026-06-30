@@ -26,6 +26,16 @@ import {
   type EnsureOverlayInput,
 } from "@/hooks/useAuthorizationActions";
 import type { SavedView } from "@/hooks/useAuthorizationSavedViews";
+import { useAuth } from "@/auth/AuthContext";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function safeNameLabel(value: string | null | undefined, fallback = "Unassigned"): string {
+  if (!value) return fallback;
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  if (UUID_RE.test(trimmed)) return "Assigned coordinator";
+  return trimmed;
+}
 
 /* ------------------------------ helpers ------------------------------ */
 function hash(s: string) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -61,10 +71,17 @@ type EnrichedAuth = Authorization & {
   requestType: ReturnType<typeof requestType>;
 };
 
-function buildOverlayFromAuth(a: Authorization): EnsureOverlayInput {
+function buildOverlayFromAuth(
+  a: Authorization,
+  source: "monday" | "manual" | "centralreach" = "monday",
+  overlayId?: string | null,
+  liveBcba?: string | null,
+): EnsureOverlayInput {
   return {
-    source_system: "monday",
-    monday_item_id: a.id,
+    source_system: source,
+    overlay_id: overlayId ?? null,
+    monday_item_id: source === "monday" ? a.id : null,
+    centralreach_authorization_id: source === "centralreach" ? a.id : null,
     source_id: a.id,
     client_name: a.clientName,
     state: a.state,
@@ -73,7 +90,7 @@ function buildOverlayFromAuth(a: Authorization): EnsureOverlayInput {
     status: a.stage,
     workflow_stage: a.stage,
     assigned_owner: a.coordinator ?? null,
-    assigned_bcba: a.qaOwner ?? null,
+    assigned_bcba: liveBcba ?? null,
     expiration_date: a.expirationDate ?? null,
   };
 }
@@ -171,7 +188,7 @@ const VIEW_GROUPS = [
 
 type ViewId = (typeof VIEW_GROUPS)[number]["views"][number]["id"];
 
-function applyView(items: EnrichedAuth[], v: ViewId, me = "Priya K."): EnrichedAuth[] {
+function applyView(items: EnrichedAuth[], v: ViewId, me: string | null = null): EnrichedAuth[] {
   switch (v) {
     case "all": return items;
     case "awaiting": return items.filter(a => a.stage === "Awaiting Submission");
@@ -191,7 +208,7 @@ function applyView(items: EnrichedAuth[], v: ViewId, me = "Priya K."): EnrichedA
     case "missing_docs": return items.filter(a => a.missingInfo || a.missingRequirements.length > 0 || !a.treatmentPlanReceived);
     case "needs_sd": return items.filter(a => a.urgency === "high" && (a.lastPRDays > 45 || a.stage === "Denied"));
     case "high_risk": return items.filter(a => a.urgency === "high");
-    case "mine": return items.filter(a => a.coordinator === me);
+    case "mine": return me ? items.filter(a => a.coordinator === me) : [];
     case "recent": return [...items].sort((x, y) => new Date(y.lastActivity ?? 0).getTime() - new Date(x.lastActivity ?? 0).getTime()).slice(0, 25);
     default: return items;
   }
