@@ -26,6 +26,16 @@ import {
   type EnsureOverlayInput,
 } from "@/hooks/useAuthorizationActions";
 import type { SavedView } from "@/hooks/useAuthorizationSavedViews";
+import { useAuth } from "@/contexts/AuthContext";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function safeNameLabel(value: string | null | undefined, fallback = "Unassigned"): string {
+  if (!value) return fallback;
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  if (UUID_RE.test(trimmed)) return "Assigned coordinator";
+  return trimmed;
+}
 
 /* ------------------------------ helpers ------------------------------ */
 function hash(s: string) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -61,10 +71,17 @@ type EnrichedAuth = Authorization & {
   requestType: ReturnType<typeof requestType>;
 };
 
-function buildOverlayFromAuth(a: Authorization): EnsureOverlayInput {
+function buildOverlayFromAuth(
+  a: Authorization,
+  source: "monday" | "manual" | "centralreach" = "monday",
+  overlayId?: string | null,
+  liveBcba?: string | null,
+): EnsureOverlayInput {
   return {
-    source_system: "monday",
-    monday_item_id: a.id,
+    source_system: source,
+    overlay_id: overlayId ?? null,
+    monday_item_id: source === "monday" ? a.id : null,
+    centralreach_authorization_id: source === "centralreach" ? a.id : null,
     source_id: a.id,
     client_name: a.clientName,
     state: a.state,
@@ -73,7 +90,7 @@ function buildOverlayFromAuth(a: Authorization): EnsureOverlayInput {
     status: a.stage,
     workflow_stage: a.stage,
     assigned_owner: a.coordinator ?? null,
-    assigned_bcba: a.qaOwner ?? null,
+    assigned_bcba: liveBcba ?? null,
     expiration_date: a.expirationDate ?? null,
   };
 }
@@ -171,7 +188,7 @@ const VIEW_GROUPS = [
 
 type ViewId = (typeof VIEW_GROUPS)[number]["views"][number]["id"];
 
-function applyView(items: EnrichedAuth[], v: ViewId, me = "Priya K."): EnrichedAuth[] {
+function applyView(items: EnrichedAuth[], v: ViewId, me: string | null = null): EnrichedAuth[] {
   switch (v) {
     case "all": return items;
     case "awaiting": return items.filter(a => a.stage === "Awaiting Submission");
@@ -191,7 +208,7 @@ function applyView(items: EnrichedAuth[], v: ViewId, me = "Priya K."): EnrichedA
     case "missing_docs": return items.filter(a => a.missingInfo || a.missingRequirements.length > 0 || !a.treatmentPlanReceived);
     case "needs_sd": return items.filter(a => a.urgency === "high" && (a.lastPRDays > 45 || a.stage === "Denied"));
     case "high_risk": return items.filter(a => a.urgency === "high");
-    case "mine": return items.filter(a => a.coordinator === me);
+    case "mine": return me ? items.filter(a => a.coordinator === me) : [];
     case "recent": return [...items].sort((x, y) => new Date(y.lastActivity ?? 0).getTime() - new Date(x.lastActivity ?? 0).getTime()).slice(0, 25);
     default: return items;
   }
@@ -225,6 +242,7 @@ export default function OSAuthorizations() {
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [newAuthOpen, setNewAuthOpen] = useState(false);
   const actions = useAuthorizationActions();
+  const { displayName } = useAuth();
 
   const [filters, setFilters] = useState<Filters>({
     state: searchParams.get("state"),
@@ -260,13 +278,16 @@ export default function OSAuthorizations() {
 
   const live = useLiveAuthorizations();
   const enriched = useMemo(
-    () => live.items.map((a) => enrich(a, live.bcbaById.get(a.id))),
+    () => live.items.map((a) => {
+      const e = enrich(a, live.bcbaById.get(a.id));
+      return { ...e, coordinator: safeNameLabel(e.coordinator) };
+    }),
     [live.items, live.bcbaById],
   );
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let arr = applyView(enriched, view);
+    let arr = applyView(enriched, view, displayName || null);
     if (filters.state) arr = arr.filter(a => a.state === filters.state);
     if (filters.payor) arr = arr.filter(a => a.payor === filters.payor);
     if (filters.coordinator) arr = arr.filter(a => a.coordinator === filters.coordinator);
@@ -356,19 +377,29 @@ export default function OSAuthorizations() {
         </div>
 
         {/* Records */}
-        <AuthRecords auths={visible} density={density} onOpen={setOpenId} />
+        <AuthRecords
+          auths={visible}
+          density={density}
+          onOpen={setOpenId}
+          sourceById={live.sourceById}
+          overlayIdByAuthId={live.overlayIdByAuthId}
+          bcbaById={live.bcbaById}
+        />
       </div>
 
       {openId && (
         <AuthDrawer
           auth={live.items.find((x) => x.id === openId) ?? null}
           liveBcba={live.bcbaById.get(openId) ?? null}
+          sourceSystem={live.sourceById.get(openId) ?? "manual"}
+          overlayId={live.overlayIdByAuthId.get(openId) ?? null}
           onClose={closeDrawer}
         />
       )}
       <NewAuthorizationDialog
         open={newAuthOpen}
         onOpenChange={setNewAuthOpen}
+        onCreated={() => { void live.refresh(); }}
       />
     </OSShell>
   );
@@ -445,7 +476,21 @@ function DensityBtn({ icon: Icon, active, onClick }: { icon: any; active: boolea
 /* ------------------------------ records list ------------------------------ */
 const PAGE_SIZE = 25;
 
-function AuthRecords({ auths, density, onOpen }: { auths: EnrichedAuth[]; density: "comfortable" | "compact"; onOpen: (id: string) => void }) {
+function AuthRecords({
+  auths,
+  density,
+  onOpen,
+  sourceById,
+  overlayIdByAuthId,
+  bcbaById,
+}: {
+  auths: EnrichedAuth[];
+  density: "comfortable" | "compact";
+  onOpen: (id: string) => void;
+  sourceById: Map<string, "monday" | "manual" | "centralreach">;
+  overlayIdByAuthId: Map<string, string>;
+  bcbaById: Map<string, string>;
+}) {
   const [count, setCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -500,7 +545,15 @@ function AuthRecords({ auths, density, onOpen }: { auths: EnrichedAuth[]; densit
       </div>
       <div className={cn("rounded-2xl border border-border/70 bg-card overflow-hidden divide-y divide-border/50")}>
         {shown.map((a) => (
-          <AuthRow key={a.id} a={a} density={density} onOpen={() => onOpen(a.id)} />
+          <AuthRow
+            key={a.id}
+            a={a}
+            density={density}
+            onOpen={() => onOpen(a.id)}
+            source={sourceById.get(a.id) ?? "manual"}
+            overlayId={overlayIdByAuthId.get(a.id) ?? null}
+            liveBcba={bcbaById.get(a.id) ?? null}
+          />
         ))}
       </div>
       {hasMore ? (
@@ -523,10 +576,24 @@ function AuthRecords({ auths, density, onOpen }: { auths: EnrichedAuth[]; densit
   );
 }
 
-function AuthRow({ a, density, onOpen }: { a: EnrichedAuth; density: "comfortable" | "compact"; onOpen: () => void }) {
+function AuthRow({
+  a,
+  density,
+  onOpen,
+  source = "manual",
+  overlayId = null,
+  liveBcba = null,
+}: {
+  a: EnrichedAuth;
+  density: "comfortable" | "compact";
+  onOpen: () => void;
+  source?: "monday" | "manual" | "centralreach";
+  overlayId?: string | null;
+  liveBcba?: string | null;
+}) {
   const compact = density === "compact";
   const actions = useAuthorizationActions();
-  const overlay = buildOverlayFromAuth(a);
+  const overlay = buildOverlayFromAuth(a, source, overlayId, liveBcba);
   const expTone = a.daysToExpire === null ? "text-muted-foreground"
     : a.daysToExpire < 15 ? "text-rose-600"
     : a.daysToExpire < 45 ? "text-amber-600"
@@ -543,7 +610,7 @@ function AuthRow({ a, density, onOpen }: { a: EnrichedAuth; density: "comfortabl
         <div className="flex items-center gap-2 mb-0.5">
           <p className="text-[15px] font-medium truncate">{a.clientName}</p>
           <span className="text-[10px] font-mono text-muted-foreground/70">{a.id}</span>
-          <SourceBadge source="monday" />
+          <SourceBadge source={source} />
         </div>
         <p className="text-xs text-muted-foreground truncate">
           {a.state} · {a.payor} · <span className="text-foreground/70">{a.requestType}</span>
@@ -616,13 +683,25 @@ function IconAction({ icon: Icon, title, onClick }: { icon: any; title: string; 
 }
 
 /* ------------------------------ drawer ------------------------------ */
-function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; liveBcba: string | null; onClose: () => void }) {
+function AuthDrawer({
+  auth,
+  liveBcba,
+  sourceSystem = "manual",
+  overlayId = null,
+  onClose,
+}: {
+  auth: Authorization | null;
+  liveBcba: string | null;
+  sourceSystem?: "monday" | "manual" | "centralreach";
+  overlayId?: string | null;
+  onClose: () => void;
+}) {
   const actions = useAuthorizationActions();
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   if (!auth) return null;
   const a = auth;
   const e = enrich(a, liveBcba);
-  const overlay = buildOverlayFromAuth(a);
+  const overlay = buildOverlayFromAuth(a, sourceSystem, overlayId, liveBcba);
 
   return (
     <div className="fixed inset-0 z-50 flex">

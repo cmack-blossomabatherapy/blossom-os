@@ -85,6 +85,7 @@ export function NewAuthorizationDialog({
         .addNote(
           {
             source_system: "manual",
+            overlay_id: id,
             source_id: id,
             client_name: form.client_name.trim(),
           },

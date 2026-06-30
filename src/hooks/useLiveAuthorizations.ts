@@ -70,7 +70,7 @@ interface OverlayRow {
 interface RequirementRow {
   id: string;
   authorization_id: string | null;
-  title: string | null;
+  requirement_name: string | null;
   status: string | null;
   due_date: string | null;
 }
@@ -365,7 +365,10 @@ export function attachChildren(
     const r = reqByAuth.get(overlayId) ?? [];
     const t = tasksByAuth.get(overlayId) ?? [];
     const a = activityByAuth.get(overlayId) ?? [];
-    const openReqs = r.filter((row) => (row.status ?? "open").toLowerCase() !== "received" && (row.status ?? "open").toLowerCase() !== "waived");
+    const openReqs = r.filter((row) => {
+      const s = (row.status ?? "open").toLowerCase();
+      return s !== "received" && s !== "waived" && s !== "not applicable";
+    });
     const extraTimeline = a
       .sort((x, y) => (x.created_at < y.created_at ? 1 : -1))
       .map((row) => ({
@@ -377,7 +380,7 @@ export function attachChildren(
     return {
       ...auth,
       missingRequirements: openReqs.length
-        ? openReqs.map((row) => row.title ?? "Missing requirement")
+        ? openReqs.map((row) => row.requirement_name ?? "Missing requirement")
         : auth.missingRequirements,
       tasks: t.length
         ? t.map((row) => ({
@@ -462,7 +465,7 @@ export function useLiveAuthorizations(): LiveAuthorizations {
           overlayIds.length
             ? supabase
                 .from("authorization_requirements")
-                .select("id,authorization_id,title,status,due_date")
+                .select("id,authorization_id,requirement_name,status,due_date")
                 .in("authorization_id", overlayIds)
             : Promise.resolve({ data: [], error: null }),
           overlayIds.length

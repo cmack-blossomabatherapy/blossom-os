@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import type { Authorization } from "@/data/authorizations";
@@ -157,6 +158,25 @@ function daysUntilISO(iso: string | null): number | null {
   return Math.floor((t - Date.now()) / 86_400_000);
 }
 
+function relTimeShort(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+  const diff = Date.now() - t;
+  const m = Math.floor(diff / 60_000);
+  if (m < 1) return "now";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  return `${d}d`;
+}
+
+function prettyActivityType(t: string | null | undefined): string {
+  if (!t) return "Activity";
+  return t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function liveAuthToCard(a: Authorization): AuthCard {
   const expiresInDays = daysUntilISO(a.expirationDate);
   const stateTone: AuthState =
@@ -265,7 +285,32 @@ export default function OSAuthWorkspace() {
   const [newAuthOpen, setNewAuthOpen] = useState(false);
   const actions = useAuthorizationActions();
 
-  const { items: liveItems, loading, error } = useLiveAuthorizations();
+  const live = useLiveAuthorizations();
+  const { items: liveItems, loading, error, refresh } = live;
+
+  // Live recent activity for the right rail.
+  type RailActivity = { id: string; who: string; what: string; when: string };
+  const [liveActivityForRail, setLiveActivityForRail] = useState<RailActivity[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("authorization_activity")
+        .select("id, activity_type, title, body, created_at, created_by")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (cancelled || !data) return;
+      setLiveActivityForRail(
+        data.map((row) => ({
+          id: row.id,
+          who: prettyActivityType(row.activity_type),
+          what: row.title ?? row.body ?? "",
+          when: relTimeShort(row.created_at),
+        })),
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [liveItems.length]);
 
   // Prompt-dialog state (replaces window.prompt)
   const [promptKind, setPromptKind] = useState<null | "assign" | "status" | "note">(null);
@@ -364,7 +409,13 @@ export default function OSAuthWorkspace() {
 
   return (
     <OSShell
-      rightRail={<RightContextPanel queueLabel={activeMeta.label} />}
+      rightRail={
+        <RightContextPanel
+          queueLabel={activeMeta.label}
+          auths={AUTHS}
+          activity={liveActivityForRail}
+        />
+      }
     >
       {/* HEADER */}
       <header className="os-rise flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -564,6 +615,7 @@ export default function OSAuthWorkspace() {
       <NewAuthorizationDialog
         open={newAuthOpen}
         onOpenChange={setNewAuthOpen}
+        onCreated={() => { void refresh(); }}
       />
 
       {/* Bulk Assign prompt */}
@@ -802,7 +854,21 @@ function EmptyState({ queue }: { queue: string }) {
 
 /* ─────────── right context panel ─────────── */
 
-function RightContextPanel({ queueLabel }: { queueLabel: string }) {
+function RightContextPanel({
+  queueLabel,
+  auths = [],
+  activity = [],
+}: {
+  queueLabel: string;
+  auths?: AuthCard[];
+  activity?: { id: string; who: string; what: string; when: string }[];
+}) {
+  // Compute live operational summary values from auth cards.
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const workedToday = auths.filter((a) => (a.lastActivity || "").startsWith(todayISO) || /(^|\s)(now|m|h)$/.test(a.lastActivity || "")).length;
+  const overdue = auths.filter((a) => typeof a.expiresInDays === "number" && (a.expiresInDays as number) < 0).length;
+  const readyToSubmit = auths.filter((a) => /ready to submit/i.test(a.status) || /submission ready/i.test(a.status)).length;
+  const prEscalations = auths.filter((a) => a.prStatus?.tone === "crit" || /escalat/i.test(a.prStatus?.label ?? "")).length;
   return (
     <>
       {/* Operational Summary */}
@@ -812,10 +878,10 @@ function RightContextPanel({ queueLabel }: { queueLabel: string }) {
           <h3 className="text-[14px] font-semibold tracking-tight">Operational Summary</h3>
         </header>
         <dl className="grid grid-cols-2 gap-2 text-[12px]">
-          <SummaryCell label="Worked today" value="11" tone="info" />
-          <SummaryCell label="Overdue"      value="6"  tone="crit" />
-          <SummaryCell label="Ready to submit" value="4" tone="ok" />
-          <SummaryCell label="PR escalations"  value="2" tone="warn" />
+          <SummaryCell label="Worked today" value={String(workedToday)} tone="info" />
+          <SummaryCell label="Overdue"      value={String(overdue)}  tone="crit" />
+          <SummaryCell label="Ready to submit" value={String(readyToSubmit)} tone="ok" />
+          <SummaryCell label="PR escalations"  value={String(prEscalations)} tone="warn" />
         </dl>
       </section>
 
@@ -904,24 +970,22 @@ function RightContextPanel({ queueLabel }: { queueLabel: string }) {
           <RefreshCw className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
           <h3 className="text-[14px] font-semibold tracking-tight">Recent Activity</h3>
         </header>
-        <ul className="space-y-2.5">
-          {[
-            { who: "Payer",      what: "approved auth · Sample",         when: "12m" },
-            { who: "BCBA",       what: "uploaded PR · Sample",           when: "35m" },
-            { who: "QA",         what: "reviewed plan · Sample",         when: "2h" },
-            { who: "Payer",      what: "denied auth · Sample",           when: "3h" },
-            { who: "Parent",     what: "signed consent · Sample",        when: "4h" },
-          ].map((a, i) => (
-            <li key={i} className="flex items-start gap-2 text-[12px]">
-              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(220_70%_55%)]" />
-              <p className="min-w-0">
-                <span className="font-semibold">{a.who}</span>{" "}
-                <span className="text-muted-foreground">{a.what}</span>
-                <span className="ml-1 text-[10.5px] text-muted-foreground">· {a.when}</span>
-              </p>
-            </li>
-          ))}
-        </ul>
+        {activity.length === 0 ? (
+          <p className="text-[12px] text-muted-foreground">No recent authorization activity yet.</p>
+        ) : (
+          <ul className="space-y-2.5">
+            {activity.map((a) => (
+              <li key={a.id} className="flex items-start gap-2 text-[12px]">
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(220_70%_55%)]" />
+                <p className="min-w-0">
+                  <span className="font-semibold">{a.who}</span>{" "}
+                  <span className="text-muted-foreground">{a.what}</span>
+                  {a.when && <span className="ml-1 text-[10.5px] text-muted-foreground">· {a.when}</span>}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </>
   );
@@ -1045,7 +1109,7 @@ function AuthDetailDrawer({
         <DrawerSection title="QA Coordination">
           <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12.5px]">
             <KV label="Treatment plan">{auth.treatmentPlan.label}</KV>
-            <KV label="QA reviewer">Rachel</KV>
+            <KV label="QA reviewer">{auth.bcba || "Unassigned"}</KV>
             <KV label="QA status">{auth.qaStatus.label}</KV>
             <KV label="Ready to submit">{auth.qaStatus.tone === "ok" ? "Yes" : "No"}</KV>
           </div>
