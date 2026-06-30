@@ -286,6 +286,7 @@ export default function OSRecruitingFollowUps() {
   function moveStage(id: string, to: StageKey) {
     const item = baseFollowUps.find((f) => f.id === id);
     persistStage(id, to, item?.candidate.id);
+    if (item && /^[0-9a-f-]{36}$/i.test(item.candidate.id)) void mutations.createFollowup(item.candidate.id, { title: `Stage \u2192 ${to}` });
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move";

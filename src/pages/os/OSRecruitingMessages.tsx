@@ -356,6 +356,12 @@ export default function OSRecruitingMessages() {
   function toggleRead(id: string, val: boolean) {
     setReadMap((m) => ({ ...m, [id]: val }));
   }
+  function persistMessageStatus(id: string, status: 'read' | 'handled') {
+    if (/^[0-9a-f-]{36}$/i.test(id)) {
+      if (status === 'read') void mutations.markMessageRead(id);
+      else void mutations.markMessageHandled(id);
+    }
+  }
 
   return (
     <OSShell>
