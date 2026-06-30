@@ -360,6 +360,16 @@ export default function OSRecruitingOrientation() {
           ))}
         </div>
 
+        {/* Live vs Suggested pill summary */}
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <Pill tone="info">{liveOrientation.length} live</Pill>
+          <Pill tone="muted">{Math.max(0, pool.length - liveOrientByName.size)} suggested</Pill>
+          {liveOrientLoading && <span>Loading live orientation slots…</span>}
+          <span className="text-muted-foreground/70">
+            Live rows persist to <code className="text-foreground/80">recruiting_orientation_slots</code>; suggested rows are orientation-ready candidates without a scheduled slot yet.
+          </span>
+        </div>
+
         {/* Main grid */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
           <div className="space-y-8">
