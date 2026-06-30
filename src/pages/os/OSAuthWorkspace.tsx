@@ -1165,8 +1165,25 @@ function SummaryCell({ label, value, tone }: { label: string; value: string; ton
 
 function AuthDetailDrawer({
   auth,
+  liveAuth,
+  noteValue,
+  onNoteChange,
+  noteError,
+  noteSaving,
+  onSaveNote,
+  onFocusNote,
   onAction,
-}: { auth: AuthCard; onAction?: (kind: "submit" | "request_pr" | "send_qa" | "escalate") => void }) {
+}: {
+  auth: AuthCard;
+  liveAuth?: Authorization | null;
+  noteValue?: string;
+  onNoteChange?: (v: string) => void;
+  noteError?: string | null;
+  noteSaving?: boolean;
+  onSaveNote?: () => void | Promise<void>;
+  onFocusNote?: () => void;
+  onAction?: (kind: "submit" | "request_pr" | "send_qa" | "escalate") => void;
+}) {
   const stateToToneKey: Record<AuthState, Tone> = {
     awaiting: "info", expiring: "crit", denied: "warn",
     missing: "warn", qa: "info", approved: "ok",
@@ -1190,8 +1207,8 @@ function AuthDetailDrawer({
           <DrawerAction icon={FileText}        label="Request PR"         onClick={() => onAction?.("request_pr")} />
           <DrawerAction icon={ClipboardCheck}  label="Send to QA"         onClick={() => onAction?.("send_qa")} />
           <DrawerAction icon={Flame}           label="Escalate"           onClick={() => onAction?.("escalate")} />
-          <DrawerAction icon={MessageSquare}   label="Note" />
-          <DrawerAction icon={Star}            label="Follow" />
+          <DrawerAction icon={MessageSquare}   label="Note" onClick={() => onFocusNote?.()} />
+          {/* Follow tracking is not yet persisted — removed honest empty until follow table exists. */}
         </div>
       </div>
 
@@ -1213,36 +1230,42 @@ function AuthDetailDrawer({
 
         {/* Timeline */}
         <DrawerSection title="Timeline">
-          <ol className="space-y-2">
-            {[
-              { t: "3d", text: "Authorization created", dot: "info" as Tone },
-              { t: "2d", text: "PR requested from BCBA", dot: "warn" as Tone },
-              { t: "1d", text: "Escalated to State Director", dot: "crit" as Tone },
-              { t: "4h", text: "Parent contacted for signature", dot: "warn" as Tone },
-              { t: "2h", text: "Last update from coordinator", dot: "info" as Tone },
-            ].map((e, i) => (
-              <li key={i} className="flex items-start gap-2 text-[12.5px]">
-                <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", toneDot[e.dot])} />
-                <span className="text-foreground/85">{e.text}</span>
-                <span className="ml-auto text-[11px] text-muted-foreground">{e.t} ago</span>
-              </li>
-            ))}
-          </ol>
+          {liveAuth?.timeline?.length ? (
+            <ol className="space-y-2">
+              {liveAuth.timeline.slice(0, 12).map((e) => {
+                const dot: Tone =
+                  e.type === "denial" ? "crit" :
+                  e.type === "approval" ? "ok" :
+                  e.type === "qa" || e.type === "submission" ? "info" :
+                  e.type === "document" || e.type === "renewal" ? "warn" :
+                  "neutral";
+                return (
+                  <li key={e.id} className="flex items-start gap-2 text-[12.5px]">
+                    <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", toneDot[dot])} />
+                    <span className="text-foreground/85">{e.description}</span>
+                    <span className="ml-auto text-[11px] text-muted-foreground">{relTimeShort(e.timestamp)}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <p className="text-[12.5px] text-muted-foreground">No activity logged yet.</p>
+          )}
         </DrawerSection>
 
         {/* Missing Documentation */}
         <DrawerSection title="Missing Documentation">
-          {auth.missingDocs.length === 0 ? (
+          {(liveAuth?.missingRequirements?.length ?? auth.missingDocs.length) === 0 ? (
             <p className="text-[12.5px] text-muted-foreground">All required documents on file.</p>
           ) : (
             <ul className="space-y-1.5">
-              {auth.missingDocs.map((d) => (
+              {(liveAuth?.missingRequirements?.length ? liveAuth.missingRequirements : auth.missingDocs).map((d) => (
                 <li key={d} className="flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/60 px-3 py-2 text-[12.5px]">
                   <span className="flex items-center gap-2">
                     <FileWarning className="h-3.5 w-3.5 text-[hsl(30_75%_40%)]" />
                     <span className="font-medium">{d}</span>
                   </span>
-                  <span className="text-[11px] text-muted-foreground">Owner: {d === "Parent signature" ? "Parent" : "BCBA"}</span>
+                  <span className="text-[11px] text-muted-foreground">Owner: {/Parent/i.test(d) ? "Parent" : "BCBA"}</span>
                 </li>
               ))}
             </ul>
@@ -1251,17 +1274,22 @@ function AuthDetailDrawer({
 
         {/* PR Tracking */}
         <DrawerSection title="Progress Report Tracking">
-          <ul className="space-y-1.5 text-[12.5px]">
-            <RowKv label="PR requested">10 days ago</RowKv>
-            <RowKv label="PR due">In 4 days</RowKv>
-            <RowKv label="BCBA contacted">3 pings · last 4h</RowKv>
-            <RowKv label="State Director">—</RowKv>
-            <RowKv label="Parent signature">{auth.parentSig}</RowKv>
-            <RowKv label="QA review">{auth.qaStatus.label}</RowKv>
-          </ul>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Outreach cadence and escalation owners are configured per state. Update state ownership in admin to populate.
-          </p>
+          {(() => {
+            const tl = liveAuth?.timeline ?? [];
+            const prRequested = tl.find((e) => /PR requested|Progress report requested/i.test(e.description));
+            const escalated = tl.find((e) => /Escalat/i.test(e.description));
+            if (!prRequested && !escalated && !liveAuth) {
+              return <p className="text-[12.5px] text-muted-foreground">No PR tracking activity has been logged yet.</p>;
+            }
+            return (
+              <ul className="space-y-1.5 text-[12.5px]">
+                <RowKv label="PR requested">{prRequested ? relTimeShort(prRequested.timestamp) : "—"}</RowKv>
+                <RowKv label="Last escalation">{escalated ? relTimeShort(escalated.timestamp) : "—"}</RowKv>
+                <RowKv label="Parent signature">{auth.parentSig}</RowKv>
+                <RowKv label="QA review">{auth.qaStatus.label}</RowKv>
+              </ul>
+            );
+          })()}
         </DrawerSection>
 
         {/* QA */}
@@ -1277,12 +1305,26 @@ function AuthDetailDrawer({
         {/* Notes */}
         <DrawerSection title="Notes & Activity">
           <textarea
+            id="ws-drawer-note"
+            value={noteValue ?? ""}
+            onChange={(e) => onNoteChange?.(e.target.value)}
             placeholder="Add an internal note…"
             className="h-20 w-full resize-none rounded-xl border border-white/70 bg-white/70 p-2.5 text-[12.5px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-[hsl(265_85%_60%/0.4)]"
           />
-          <p className="mt-2 rounded-xl border border-dashed border-white/60 bg-white/40 px-3 py-2 text-[12px] text-muted-foreground">
-            Notes will appear here as coordinators add them to this authorization.
-          </p>
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-[11px] text-muted-foreground">Notes are appended to this authorization's activity timeline.</p>
+            <button
+              type="button"
+              onClick={() => onSaveNote?.()}
+              disabled={!noteValue?.trim() || noteSaving}
+              className="rounded-lg bg-foreground/90 px-3 py-1.5 text-[12px] font-semibold text-background transition hover:bg-foreground disabled:opacity-50"
+            >
+              {noteSaving ? "Saving…" : "Add Note"}
+            </button>
+          </div>
+          {noteError && (
+            <p className="mt-2 text-[11.5px] text-rose-600">Failed to save note: {noteError}</p>
+          )}
         </DrawerSection>
 
         {/* AI */}
