@@ -11,6 +11,12 @@
  import { type Client, type ScheduleSlot } from "@/data/clients";
  import { useCentralReachOps, type ClientPairing } from "@/hooks/useCentralReachOps";
 import { useOSRole } from "@/contexts/OSRoleContext";
+import {
+  AdjustmentDialog, CancellationDialog, ContactAttemptDialog,
+  CoverageCaseDialog, CoverageNoteDialog, CRSyncBadge,
+} from "@/components/scheduling/SchedulingDialogs";
+import { useSchedulingActions } from "@/hooks/useSchedulingActions";
+import { useEffect } from "react";
 
  /* ---------------- helpers ---------------- */
 
@@ -139,6 +145,8 @@ import { useOSRole } from "@/contexts/OSRoleContext";
    const cr = useCentralReachOps();
   const { activeState } = useOSRole();
    const [params, setParams] = useSearchParams();
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
    const [stateFilter, setStateFilter] = useState<string>(params.get("state") ?? "all");
    const [statusFilter, setStatusFilter] = useState<SessionStatus | "all">(
@@ -217,10 +225,10 @@ import { useOSRole } from "@/contexts/OSRoleContext";
                </p>
              </div>
              <div className="flex items-center gap-2">
-               <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
+                <button onClick={() => setAdjustOpen(true)} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
                  <Plus className="size-4" /> Add Adjustment
                </button>
-               <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
+                <button onClick={() => setCancelOpen(true)} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
                  <MessageSquare className="size-4" /> Log Cancellation
                </button>
                <Link to="/staffing" className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">
@@ -329,6 +337,8 @@ import { useOSRole } from "@/contexts/OSRoleContext";
            <ProviderLoadCard clients={clients} />
          </section>
        </div>
+       <AdjustmentDialog open={adjustOpen} onOpenChange={setAdjustOpen} client={selectedClient ? { id: selectedClient.id, childName: selectedClient.childName, state: selectedClient.state, rbt: selectedClient.rbt, bcba: selectedClient.bcba } : null} />
+       <CancellationDialog open={cancelOpen} onOpenChange={setCancelOpen} client={selectedClient ? { id: selectedClient.id, childName: selectedClient.childName, state: selectedClient.state, rbt: selectedClient.rbt, bcba: selectedClient.bcba } : null} />
      </OSShell>
    );
  }
