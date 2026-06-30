@@ -272,12 +272,12 @@ export default function Recruiting() {
       actions={
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <Button size="sm" onClick={() => toast.success("New candidate shell created", { description: "New applicants start in New Applicant status." })}><Plus className="h-4 w-4 mr-1.5" />New Candidate</Button>
-          <Button size="sm" variant="outline" onClick={() => { setSyncing(true); setTimeout(() => setSyncing(false), 900); toast.info("Apploi sync queued"); }}><RefreshCw className={cn("h-4 w-4 mr-1.5", syncing && "animate-spin")} />Import from Apploi</Button>
+          <Button size="sm" variant="outline" onClick={() => toast.info("Apploi is not connected yet. Request setup in System Tools \u203A Integrations.")}><RefreshCw className={cn("h-4 w-4 mr-1.5", syncing && "animate-spin")} />Import from Apploi</Button>
           <Button size="sm" variant="outline" onClick={() => toast.info("Select rows in Queue or Table to bulk edit.")}><Users className="h-4 w-4 mr-1.5" />Bulk Actions</Button>
           <Button size="sm" variant="outline" onClick={() => toast.success("Export prepared") }><Download className="h-4 w-4 mr-1.5" />Export</Button>
           <Button size="sm" variant="outline" onClick={() => setActiveKpi("all")}><Filter className="h-4 w-4 mr-1.5" />Saved Views</Button>
           <Button size="sm" variant="outline" onClick={() => setViewMode("interview")}><CalendarClock className="h-4 w-4 mr-1.5" />Interview Calendar</Button>
-          <Button size="sm" variant="outline" onClick={() => toast.info("Apploi sync is simulated for demo operations.")}><ExternalLink className="h-4 w-4 mr-1.5" />Apploi Sync</Button>
+          <Button size="sm" variant="outline" onClick={() => toast.info("Apploi is not connected yet. Request setup in System Tools \u203A Integrations.")}><ExternalLink className="h-4 w-4 mr-1.5" />Apploi</Button>
         </div>
       }
     >
