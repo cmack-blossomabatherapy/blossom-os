@@ -2997,7 +2997,10 @@ export type Database = {
           document_type: string
           expiration_date: string | null
           file_name: string | null
+          file_size_bytes: number | null
           id: string
+          mime_type: string | null
+          notes: string | null
           provider_id: string | null
           storage_path: string | null
           uploaded_by: string | null
@@ -3009,7 +3012,10 @@ export type Database = {
           document_type: string
           expiration_date?: string | null
           file_name?: string | null
+          file_size_bytes?: number | null
           id?: string
+          mime_type?: string | null
+          notes?: string | null
           provider_id?: string | null
           storage_path?: string | null
           uploaded_by?: string | null
@@ -3021,7 +3027,10 @@ export type Database = {
           document_type?: string
           expiration_date?: string | null
           file_name?: string | null
+          file_size_bytes?: number | null
           id?: string
+          mime_type?: string | null
+          notes?: string | null
           provider_id?: string | null
           storage_path?: string | null
           uploaded_by?: string | null

@@ -26,14 +26,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   useCredentialingData, useCredentialingActivity,
-  createCredProvider, createCredRecord, updateCredRecord,
+  createCredProvider, updateCredProvider, createCredRecord, updateCredRecord,
   createCredTask, updateCredTask, addCredDocument, updateCredDocument,
   logCredActivity,
-  fetchLegacyRaw, importLegacyRows, type LegacyRawRow,
+  uploadCredDocumentFile, getCredDocumentSignedUrl,
+  fetchLegacyRaw, importLegacyRows, previewLegacyImport, type LegacyRawRow, type LegacyImportPreview,
   CRED_STATUSES, CRED_TYPES, CRED_PRIORITIES, CRED_PROVIDER_TYPES, CRED_STATES,
   ACTIVE_CRED_STATUSES, APPROVED_CRED_STATUSES,
   daysUntil,
-  type CredentialingProvider, type CredentialingRecord,
+  type CredentialingProvider, type CredentialingRecord, type CredentialingDocument,
   type CredStatus, type CredType, type CredPriority, type CredProviderType,
   type CrSyncStatus,
 } from "@/hooks/useCredentialing";
@@ -140,13 +141,18 @@ function Empty({ icon: Icon = FileSignature, title, action }: { icon?: LucideIco
 function AddProviderDialog({ open, onOpenChange, onCreated }: {
   open: boolean; onOpenChange: (v: boolean) => void; onCreated: () => void;
 }) {
-  const [form, setForm] = useState({
+  const blankProvider = {
     provider_name: "", provider_type: "BCBA" as CredProviderType,
     email: "", phone: "", npi: "", caqh_id: "",
     license_number: "", license_state: "GA", license_expiration_date: "",
     centralreach_provider_id: "", active: true, notes: "",
-  });
+  };
+  const [form, setForm] = useState(blankProvider);
   const [saving, setSaving] = useState(false);
+
+  // Always reset every field when the dialog opens or closes so a previous
+  // create doesn't leave stale values around.
+  useEffect(() => { if (open) setForm(blankProvider); }, [open]);
 
   async function submit() {
     if (!form.provider_name.trim()) { toast.error("Provider name is required"); return; }
@@ -165,6 +171,7 @@ function AddProviderDialog({ open, onOpenChange, onCreated }: {
       });
       toast.success("Provider added");
       onCreated();
+      setForm(blankProvider);
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to add provider");
@@ -226,33 +233,39 @@ function AddProviderDialog({ open, onOpenChange, onCreated }: {
 /* Add / edit Credentialing Record dialog                                     */
 /* -------------------------------------------------------------------------- */
 function AddRecordDialog({
-  open, onOpenChange, providers, defaultProviderId, defaultProviderType, onCreated,
+  open, onOpenChange, providers, defaultProviderId, defaultProviderType,
+  defaultPayer, defaultState, defaultCredentialingType, onCreated,
 }: {
   open: boolean; onOpenChange: (v: boolean) => void;
   providers: CredentialingProvider[];
   defaultProviderId?: string;
   defaultProviderType?: CredProviderType;
+  defaultPayer?: string;
+  defaultState?: string;
+  defaultCredentialingType?: CredType;
   onCreated: () => void;
 }) {
-  const [form, setForm] = useState({
+  const buildBlank = () => ({
     provider_id: defaultProviderId ?? "",
-    payer_name: "", state: "GA", plan_type: "",
-    credentialing_type: "Initial" as CredType, status: "Not Started" as CredStatus,
-    priority: "Normal" as CredPriority, payer_reference_number: "",
+    payer_name: defaultPayer ?? "",
+    state: defaultState ?? "GA",
+    plan_type: "",
+    credentialing_type: (defaultCredentialingType ?? "Initial") as CredType,
+    status: "Not Started" as CredStatus,
+    priority: "Normal" as CredPriority,
+    payer_reference_number: "",
     submitted_date: "", expiration_date: "", next_follow_up_date: "",
     blocker_reason: "", notes: "", owner_name: "",
   });
+  const [form, setForm] = useState(buildBlank);
   const [saving, setSaving] = useState(false);
 
-  // Keep provider in sync with the caller when the dialog re-opens for a
-  // different provider. Without this the form retains stale provider state.
+  // Always rebuild the form from defaults on each open so dates, notes,
+  // payer, status, etc. from the previous create do not persist.
   useEffect(() => {
-    if (!open) return;
-    setForm((f) => ({
-      ...f,
-      provider_id: defaultProviderId ?? f.provider_id,
-    }));
-  }, [open, defaultProviderId]);
+    if (open) setForm(buildBlank());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultProviderId, defaultPayer, defaultState, defaultCredentialingType]);
 
   // Prefer BCBA-typed providers when the caller has signalled that intent
   // (e.g. "Add BCBA" flow). Used only to pick a sensible default in an
@@ -419,24 +432,49 @@ type DocStatus = typeof DOC_VERIFICATION_STATUSES[number];
 
 function AddDocumentDialog({ open, onOpenChange, recordId, providerId, onCreated }: {
   open: boolean; onOpenChange: (v: boolean) => void;
-  recordId: string; providerId: string; onCreated: () => void;
+  recordId: string | null; providerId: string | null; onCreated: () => void;
 }) {
-  const [form, setForm] = useState({ document_type: "", file_name: "", verification_status: "Needed" as DocStatus, expiration_date: "" });
+  const [form, setForm] = useState({
+    document_type: "", file_name: "",
+    verification_status: "Needed" as DocStatus,
+    expiration_date: "", notes: "",
+  });
+  const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  useEffect(() => { if (open) setForm({ document_type: "", file_name: "", verification_status: "Needed", expiration_date: "" }); }, [open]);
+  useEffect(() => {
+    if (open) {
+      setForm({ document_type: "", file_name: "", verification_status: "Needed", expiration_date: "", notes: "" });
+      setFile(null);
+    }
+  }, [open]);
   async function submit() {
     if (!form.document_type.trim()) { toast.error("Document type is required"); return; }
+    if (!recordId && !providerId) { toast.error("Document must be attached to a provider or record"); return; }
     setSaving(true);
     try {
-      await addCredDocument({
-        credentialing_record_id: recordId,
-        provider_id: providerId,
-        document_type: form.document_type.trim(),
-        file_name: form.file_name || null,
-        verification_status: form.verification_status,
-        expiration_date: form.expiration_date || null,
-      });
-      toast.success("Document tracked");
+      if (file) {
+        await uploadCredDocumentFile({
+          file,
+          document_type: form.document_type.trim(),
+          provider_id: providerId,
+          credentialing_record_id: recordId,
+          verification_status: form.verification_status,
+          expiration_date: form.expiration_date || null,
+          notes: form.notes || null,
+        });
+        toast.success("Document uploaded");
+      } else {
+        await addCredDocument({
+          credentialing_record_id: recordId,
+          provider_id: providerId,
+          document_type: form.document_type.trim(),
+          file_name: form.file_name || null,
+          verification_status: form.verification_status,
+          expiration_date: form.expiration_date || null,
+          notes: form.notes || null,
+        });
+        toast.success("Document tracked");
+      }
       onCreated();
       onOpenChange(false);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
@@ -446,12 +484,28 @@ function AddDocumentDialog({ open, onOpenChange, recordId, providerId, onCreated
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Track document</DialogTitle>
-          <DialogDescription>Document tracking only — file upload to storage is not wired yet.</DialogDescription>
+          <DialogTitle>Add document</DialogTitle>
+          <DialogDescription>
+            Upload a file to secure credentialing storage, or track the document
+            without a file if it lives elsewhere.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div><Label>Document type</Label><Input value={form.document_type} onChange={(e) => setForm({ ...form, document_type: e.target.value })} placeholder="CAQH attestation, License, W9…" /></div>
-          <div><Label>File name (reference)</Label><Input value={form.file_name} onChange={(e) => setForm({ ...form, file_name: e.target.value })} placeholder="optional" /></div>
+          <div>
+            <Label>File (optional)</Label>
+            <Input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            {file ? (
+              <div className="text-xs text-muted-foreground mt-1">
+                {file.name} · {(file.size / 1024).toFixed(0)} KB
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground mt-1">No file selected — saves as metadata-only.</div>
+            )}
+          </div>
+          {!file ? (
+            <div><Label>File name reference</Label><Input value={form.file_name} onChange={(e) => setForm({ ...form, file_name: e.target.value })} placeholder="optional" /></div>
+          ) : null}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Verification status</Label>
@@ -462,10 +516,11 @@ function AddDocumentDialog({ open, onOpenChange, recordId, providerId, onCreated
             </div>
             <div><Label>Expiration date</Label><Input type="date" value={form.expiration_date} onChange={(e) => setForm({ ...form, expiration_date: e.target.value })} /></div>
           </div>
+          <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : "Track document"}</Button>
+          <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : file ? "Upload" : "Track document"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -547,6 +602,7 @@ function RecordDetailSheet({
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [addDocOpen, setAddDocOpen] = useState(false);
   const [crIdsOpen, setCrIdsOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [newMissing, setNewMissing] = useState("");
   const [ownerDraft, setOwnerDraft] = useState("");
   const [followUpDraft, setFollowUpDraft] = useState("");
@@ -672,6 +728,11 @@ function RecordDetailSheet({
                 {record.payer_name} · {record.state ?? "—"} · {record.credentialing_type}
               </SheetDescription>
             </SheetHeader>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>Edit record</Button>
+              <Button size="sm" variant="outline" onClick={() => setAddTaskOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" />Add task</Button>
+              <Button size="sm" variant="outline" onClick={() => setAddDocOpen(true)}><FileText className="h-3.5 w-3.5 mr-1" />Add document</Button>
+            </div>
             <Tabs defaultValue="overview" className="mt-4">
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -764,7 +825,7 @@ function RecordDetailSheet({
               <TabsContent value="documents" className="mt-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-muted-foreground">
-                    Document tracking. File upload to storage is not wired yet — use this list to record what has been collected and verified.
+                    Upload real files to the private credentialing bucket, or keep metadata-only entries for items stored elsewhere.
                   </p>
                   <Button size="sm" variant="outline" onClick={() => setAddDocOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" />Add document</Button>
                 </div>
@@ -776,7 +837,7 @@ function RecordDetailSheet({
                   <div className="overflow-x-auto -mx-2">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-                        <tr>{["Type","File","Status","Expires","Added"].map((h) => (
+                        <tr>{["Type","File","Status","Expires","Added",""].map((h) => (
                           <th key={h} className="text-left font-medium px-3 py-2">{h}</th>
                         ))}</tr>
                       </thead>
@@ -793,6 +854,13 @@ function RecordDetailSheet({
                             </td>
                             <td className="px-3 py-2 text-muted-foreground">{d.expiration_date ?? "—"}</td>
                             <td className="px-3 py-2 text-muted-foreground">{new Date(d.created_at).toLocaleDateString()}</td>
+                            <td className="px-3 py-2 text-right">
+                              {d.storage_path ? (
+                                <Button size="sm" variant="ghost" onClick={() => openCredDocument(d)}>View</Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">metadata-only</span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -867,7 +935,8 @@ function RecordDetailSheet({
               {/* CENTRALREACH */}
               <TabsContent value="cr" className="mt-4 space-y-3 text-sm">
                 <div className="rounded-lg border border-sky-200 bg-sky-50 text-sky-900 text-xs p-3">
-                  API sync not active yet. This is readiness tracking — CentralReach remains the EMR of record.
+                  Readiness tracking only — no live CentralReach API sync is wired up.
+                  Every status or ID change here is written to the activity log below.
                 </div>
                 <Field label="CentralReach provider id" value={provider.centralreach_provider_id} />
                 <Field label="CentralReach record id" value={record.centralreach_external_id} />
@@ -875,6 +944,7 @@ function RecordDetailSheet({
                   <span className="text-xs uppercase tracking-wider text-muted-foreground">Sync status</span>
                   <StatusBadge status={record.centralreach_sync_status} />
                 </div>
+                <Field label="Last record update" value={record.updated_at ? new Date(record.updated_at).toLocaleString() : null} />
                 <div className="flex flex-wrap gap-2 pt-2">
                   <Button size="sm" variant="outline" onClick={() => setCrSync("Ready To Sync")}>Mark Ready To Sync</Button>
                   <Button size="sm" variant="outline" onClick={() => setCrSync("Synced")}>Mark Synced</Button>
@@ -887,6 +957,7 @@ function RecordDetailSheet({
             <AddTaskDialog open={addTaskOpen} onOpenChange={setAddTaskOpen} recordId={record.id} onCreated={onChanged} />
             <AddDocumentDialog open={addDocOpen} onOpenChange={setAddDocOpen} recordId={record.id} providerId={record.provider_id} onCreated={onChanged} />
             <CentralReachIdsDialog open={crIdsOpen} onOpenChange={setCrIdsOpen} record={record} onSaved={onChanged} />
+            <EditRecordDialog open={editOpen} onOpenChange={setEditOpen} record={record} onSaved={onChanged} />
           </>
         ) : null}
       </SheetContent>
@@ -901,6 +972,509 @@ function Field({ label, value }: { label: string; value: string | null | undefin
       <div className="text-sm">{value && value.length ? value : "—"}</div>
     </div>
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Edit Record dialog                                                         */
+/* -------------------------------------------------------------------------- */
+function EditRecordDialog({ open, onOpenChange, record, onSaved }: {
+  open: boolean; onOpenChange: (v: boolean) => void;
+  record: CredentialingRecord; onSaved: () => void;
+}) {
+  const [form, setForm] = useState({
+    payer_name: record.payer_name,
+    state: record.state ?? "GA",
+    plan_type: record.plan_type ?? "",
+    credentialing_type: record.credentialing_type,
+    priority: record.priority,
+    payer_reference_number: record.payer_reference_number ?? "",
+    submitted_date: record.submitted_date ?? "",
+    approved_date: record.approved_date ?? "",
+    effective_date: record.effective_date ?? "",
+    expiration_date: record.expiration_date ?? "",
+    next_follow_up_date: record.next_follow_up_date ?? "",
+    owner_name: record.owner_name ?? "",
+    blocker_reason: record.blocker_reason ?? "",
+    notes: record.notes ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    setForm({
+      payer_name: record.payer_name,
+      state: record.state ?? "GA",
+      plan_type: record.plan_type ?? "",
+      credentialing_type: record.credentialing_type,
+      priority: record.priority,
+      payer_reference_number: record.payer_reference_number ?? "",
+      submitted_date: record.submitted_date ?? "",
+      approved_date: record.approved_date ?? "",
+      effective_date: record.effective_date ?? "",
+      expiration_date: record.expiration_date ?? "",
+      next_follow_up_date: record.next_follow_up_date ?? "",
+      owner_name: record.owner_name ?? "",
+      blocker_reason: record.blocker_reason ?? "",
+      notes: record.notes ?? "",
+    });
+  }, [open, record]);
+
+  async function save() {
+    setSaving(true);
+    try {
+      await updateCredRecord(
+        record.id,
+        {
+          payer_name: form.payer_name.trim() || record.payer_name,
+          state: form.state || null,
+          plan_type: form.plan_type || null,
+          credentialing_type: form.credentialing_type,
+          priority: form.priority,
+          payer_reference_number: form.payer_reference_number || null,
+          submitted_date: form.submitted_date || null,
+          approved_date: form.approved_date || null,
+          effective_date: form.effective_date || null,
+          expiration_date: form.expiration_date || null,
+          next_follow_up_date: form.next_follow_up_date || null,
+          owner_name: form.owner_name || null,
+          blocker_reason: form.blocker_reason || null,
+          notes: form.notes || null,
+        },
+        { type: "record_edit", message: "Record fields edited" },
+      );
+      toast.success("Record updated");
+      onSaved();
+      onOpenChange(false);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Edit credentialing record</DialogTitle>
+          <DialogDescription>Update key fields. An activity entry is written for traceability.</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Payer</Label><Input value={form.payer_name} onChange={(e) => setForm({ ...form, payer_name: e.target.value })} /></div>
+          <div>
+            <Label>State</Label>
+            <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Plan type</Label><Input value={form.plan_type} onChange={(e) => setForm({ ...form, plan_type: e.target.value })} /></div>
+          <div>
+            <Label>Credentialing type</Label>
+            <Select value={form.credentialing_type} onValueChange={(v) => setForm({ ...form, credentialing_type: v as CredType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Priority</Label>
+            <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v as CredPriority })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Payer reference #</Label><Input value={form.payer_reference_number} onChange={(e) => setForm({ ...form, payer_reference_number: e.target.value })} /></div>
+          <div><Label>Submitted</Label><Input type="date" value={form.submitted_date} onChange={(e) => setForm({ ...form, submitted_date: e.target.value })} /></div>
+          <div><Label>Approved</Label><Input type="date" value={form.approved_date} onChange={(e) => setForm({ ...form, approved_date: e.target.value })} /></div>
+          <div><Label>Effective</Label><Input type="date" value={form.effective_date} onChange={(e) => setForm({ ...form, effective_date: e.target.value })} /></div>
+          <div><Label>Expiration</Label><Input type="date" value={form.expiration_date} onChange={(e) => setForm({ ...form, expiration_date: e.target.value })} /></div>
+          <div><Label>Next follow-up</Label><Input type="date" value={form.next_follow_up_date} onChange={(e) => setForm({ ...form, next_follow_up_date: e.target.value })} /></div>
+          <div><Label>Owner</Label><Input value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Blocker reason</Label><Input value={form.blocker_reason} onChange={(e) => setForm({ ...form, blocker_reason: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Edit Provider dialog                                                       */
+/* -------------------------------------------------------------------------- */
+function EditProviderDialog({ open, onOpenChange, provider, onSaved }: {
+  open: boolean; onOpenChange: (v: boolean) => void;
+  provider: CredentialingProvider; onSaved: () => void;
+}) {
+  const [form, setForm] = useState({
+    provider_name: provider.provider_name,
+    provider_type: provider.provider_type,
+    email: provider.email ?? "",
+    phone: provider.phone ?? "",
+    npi: provider.npi ?? "",
+    caqh_id: provider.caqh_id ?? "",
+    license_number: provider.license_number ?? "",
+    license_state: provider.license_state ?? "GA",
+    license_expiration_date: provider.license_expiration_date ?? "",
+    centralreach_provider_id: provider.centralreach_provider_id ?? "",
+    active: provider.active,
+    notes: provider.notes ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    setForm({
+      provider_name: provider.provider_name,
+      provider_type: provider.provider_type,
+      email: provider.email ?? "",
+      phone: provider.phone ?? "",
+      npi: provider.npi ?? "",
+      caqh_id: provider.caqh_id ?? "",
+      license_number: provider.license_number ?? "",
+      license_state: provider.license_state ?? "GA",
+      license_expiration_date: provider.license_expiration_date ?? "",
+      centralreach_provider_id: provider.centralreach_provider_id ?? "",
+      active: provider.active,
+      notes: provider.notes ?? "",
+    });
+  }, [open, provider]);
+
+  async function save() {
+    if (!form.provider_name.trim()) { toast.error("Provider name is required"); return; }
+    setSaving(true);
+    try {
+      await updateCredProvider(provider.id, {
+        provider_name: form.provider_name.trim(),
+        provider_type: form.provider_type,
+        email: form.email || null, phone: form.phone || null,
+        npi: form.npi || null, caqh_id: form.caqh_id || null,
+        license_number: form.license_number || null,
+        license_state: form.license_state || null,
+        license_expiration_date: form.license_expiration_date || null,
+        centralreach_provider_id: form.centralreach_provider_id || null,
+        active: form.active, notes: form.notes || null,
+      });
+      toast.success("Provider updated");
+      onSaved();
+      onOpenChange(false);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Edit provider</DialogTitle>
+          <DialogDescription>Update provider profile fields. Deactivate instead of deleting.</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2"><Label>Provider name</Label><Input value={form.provider_name} onChange={(e) => setForm({ ...form, provider_name: e.target.value })} /></div>
+          <div>
+            <Label>Type</Label>
+            <Select value={form.provider_type} onValueChange={(v) => setForm({ ...form, provider_type: v as CredProviderType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_PROVIDER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>License state</Label>
+            <Select value={form.license_state} onValueChange={(v) => setForm({ ...form, license_state: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+          <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+          <div><Label>NPI</Label><Input value={form.npi} onChange={(e) => setForm({ ...form, npi: e.target.value })} /></div>
+          <div><Label>CAQH ID</Label><Input value={form.caqh_id} onChange={(e) => setForm({ ...form, caqh_id: e.target.value })} /></div>
+          <div><Label>License number</Label><Input value={form.license_number} onChange={(e) => setForm({ ...form, license_number: e.target.value })} /></div>
+          <div><Label>License expiration</Label><Input type="date" value={form.license_expiration_date} onChange={(e) => setForm({ ...form, license_expiration_date: e.target.value })} /></div>
+          <div><Label>CentralReach provider id</Label><Input value={form.centralreach_provider_id} onChange={(e) => setForm({ ...form, centralreach_provider_id: e.target.value })} /></div>
+          <div className="flex items-center gap-3 pt-6">
+            <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
+            <Label className="!mt-0">Active</Label>
+          </div>
+          <div className="col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save provider"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Provider Detail Sheet (used by Providers page + BCBA page)                 */
+/* -------------------------------------------------------------------------- */
+function ProviderDetailSheet({
+  providerId, providers, records, documents, tasks,
+  onClose, onChanged, onOpenRecord, onStartCredentialing,
+}: {
+  providerId: string | null;
+  providers: CredentialingProvider[];
+  records: CredentialingRecord[];
+  documents: CredentialingDocument[];
+  tasks: ReturnType<typeof useCredentialingData>["tasks"];
+  onClose: () => void;
+  onChanged: () => void;
+  onOpenRecord: (id: string) => void;
+  onStartCredentialing: (providerId: string) => void;
+}) {
+  const provider = useMemo(() => providers.find((p) => p.id === providerId) ?? null, [providers, providerId]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [docOpen, setDocOpen] = useState(false);
+  const provRecords = useMemo(
+    () => (provider ? records.filter((r) => r.provider_id === provider.id) : []),
+    [records, provider],
+  );
+  const provDocs = useMemo(
+    () => (provider ? documents.filter((d) => d.provider_id === provider.id) : []),
+    [documents, provider],
+  );
+  const provRecordIds = useMemo(() => new Set(provRecords.map((r) => r.id)), [provRecords]);
+  const provTasks = useMemo(
+    () => tasks.filter((t) => t.status !== "Done" && t.credentialing_record_id && provRecordIds.has(t.credentialing_record_id)),
+    [tasks, provRecordIds],
+  );
+
+  async function toggleActive() {
+    if (!provider) return;
+    try {
+      await updateCredProvider(provider.id, { active: !provider.active });
+      toast.success(provider.active ? "Provider deactivated" : "Provider reactivated");
+      onChanged();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+  }
+
+  return (
+    <Sheet open={!!provider} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        {provider ? (
+          <>
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                {provider.provider_name}
+                {!provider.active ? <Badge variant="outline">Inactive</Badge> : null}
+              </SheetTitle>
+              <SheetDescription>
+                {provider.provider_type}{provider.license_state ? ` · ${provider.license_state}` : ""}
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>Edit provider</Button>
+              <Button size="sm" onClick={() => onStartCredentialing(provider.id)}>
+                <Plus className="h-3.5 w-3.5 mr-1" />Start credentialing
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setDocOpen(true)}>
+                <FileText className="h-3.5 w-3.5 mr-1" />Add document
+              </Button>
+              <Button size="sm" variant={provider.active ? "outline" : "default"} onClick={toggleActive}>
+                {provider.active ? "Deactivate" : "Reactivate"}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-5 text-sm">
+              <Field label="Email" value={provider.email} />
+              <Field label="Phone" value={provider.phone} />
+              <Field label="NPI" value={provider.npi} />
+              <Field label="CAQH ID" value={provider.caqh_id} />
+              <Field label="License #" value={provider.license_number} />
+              <Field label="License state" value={provider.license_state} />
+              <Field label="License exp" value={provider.license_expiration_date} />
+              <Field label="CentralReach provider id" value={provider.centralreach_provider_id} />
+            </div>
+            {provider.notes ? (
+              <div className="mt-3 text-sm text-muted-foreground whitespace-pre-wrap">{provider.notes}</div>
+            ) : null}
+
+            <div className="mt-6">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                Credentialing records ({provRecords.length})
+              </div>
+              {provRecords.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No payer records yet.</div>
+              ) : (
+                <div className="divide-y rounded-lg border border-border/60 overflow-hidden">
+                  {provRecords.map((r) => (
+                    <button
+                      key={r.id}
+                      onClick={() => onOpenRecord(r.id)}
+                      className="w-full text-left px-3 py-2 hover:bg-muted/40 flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate">{r.payer_name} · {r.state ?? "—"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {r.credentialing_type}
+                          {r.expiration_date ? ` · exp ${r.expiration_date}` : ""}
+                          {r.next_follow_up_date ? ` · follow-up ${r.next_follow_up_date}` : ""}
+                        </div>
+                      </div>
+                      <StatusBadge status={r.status} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                Documents ({provDocs.length})
+              </div>
+              {provDocs.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No documents on file.</div>
+              ) : (
+                <ul className="text-sm space-y-1">
+                  {provDocs.map((d) => (
+                    <li key={d.id} className="flex items-center justify-between gap-2 border-b border-border/60 py-1.5">
+                      <span className="truncate">{d.document_type}{d.file_name ? ` · ${d.file_name}` : ""}</span>
+                      <Badge variant="outline" className="text-[10px]">{d.verification_status}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="mt-6">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                Open tasks ({provTasks.length})
+              </div>
+              {provTasks.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No open tasks.</div>
+              ) : (
+                <ul className="text-sm space-y-1">
+                  {provTasks.map((t) => (
+                    <li key={t.id} className="border-b border-border/60 py-1.5">
+                      <div className="font-medium">{t.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {t.owner_name ?? "Unassigned"}{t.due_date ? ` · due ${t.due_date}` : ""} · {t.status}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <EditProviderDialog open={editOpen} onOpenChange={setEditOpen} provider={provider} onSaved={onChanged} />
+            <AddDocumentDialog
+              open={docOpen} onOpenChange={setDocOpen}
+              recordId={null} providerId={provider.id} onCreated={onChanged}
+            />
+          </>
+        ) : null}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Payer / State Detail Sheet (Insurance page drilldown)                      */
+/* -------------------------------------------------------------------------- */
+function PayerStateDetailSheet({
+  open, onClose, payer, state, records, providerById, onOpenRecord, onAddRecord,
+}: {
+  open: boolean; onClose: () => void;
+  payer: string | null; state: string | null;
+  records: CredentialingRecord[];
+  providerById: Map<string, CredentialingProvider>;
+  onOpenRecord: (id: string) => void;
+  onAddRecord: (payer: string, state: string) => void;
+}) {
+  const rows = useMemo(() => {
+    if (!payer) return [];
+    return records.filter((r) => r.payer_name === payer && (r.state ?? "—") === (state ?? "—"));
+  }, [records, payer, state]);
+  const credentialed = rows.filter((r) => APPROVED_CRED_STATUSES.includes(r.status)).length;
+  const blocked = rows.filter((r) => r.status === "Blocked" || r.status === "Denied").length;
+  const pending = rows.filter((r) => ACTIVE_CRED_STATUSES.includes(r.status)).length;
+  const expiring = rows.filter((r) => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 90; }).length;
+
+  function exportRows() {
+    exportCsv(`${payer ?? "payer"}-${state ?? "state"}.csv`, rows.map((r) => ({
+      provider: providerById.get(r.provider_id)?.provider_name ?? "",
+      payer: r.payer_name,
+      state: r.state ?? "",
+      status: r.status,
+      type: r.credentialing_type,
+      owner: r.owner_name ?? "",
+      submitted: r.submitted_date ?? "",
+      approved: r.approved_date ?? "",
+      expiration: r.expiration_date ?? "",
+      next_follow_up: r.next_follow_up_date ?? "",
+      blocker_reason: r.blocker_reason ?? "",
+    })));
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        {payer ? (
+          <>
+            <SheetHeader>
+              <SheetTitle>{payer} · {state ?? "—"}</SheetTitle>
+              <SheetDescription>All credentialing records for this payer/state.</SheetDescription>
+            </SheetHeader>
+
+            <div className="grid grid-cols-5 gap-2 mt-4">
+              <KpiCard label="Total" value={rows.length} />
+              <KpiCard label="Credentialed" value={credentialed} tone="ok" />
+              <KpiCard label="Pending" value={pending} />
+              <KpiCard label="Blocked" value={blocked} tone="danger" />
+              <KpiCard label="Expiring" value={expiring} tone="warn" />
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <Button size="sm" onClick={() => onAddRecord(payer, state ?? "")}>
+                <Plus className="h-3.5 w-3.5 mr-1" />Add credentialing record
+              </Button>
+              <Button size="sm" variant="outline" onClick={exportRows}>
+                <Download className="h-3.5 w-3.5 mr-1" />Export CSV
+              </Button>
+            </div>
+
+            <div className="mt-5 divide-y rounded-lg border border-border/60 overflow-hidden">
+              {rows.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">No records yet for this payer/state.</div>
+              ) : rows.map((r) => {
+                const p = providerById.get(r.provider_id);
+                return (
+                  <button
+                    key={r.id} onClick={() => onOpenRecord(r.id)}
+                    className="w-full text-left px-3 py-2 hover:bg-muted/40 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{p?.provider_name ?? "Unknown"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {r.owner_name ? `Owner ${r.owner_name}` : "Unassigned"}
+                        {r.next_follow_up_date ? ` · follow-up ${r.next_follow_up_date}` : ""}
+                        {r.blocker_reason ? ` · ${r.blocker_reason}` : ""}
+                      </div>
+                    </div>
+                    <StatusBadge status={r.status} />
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Document download helper                                                   */
+/* -------------------------------------------------------------------------- */
+async function openCredDocument(doc: CredentialingDocument) {
+  if (!doc.storage_path) {
+    toast.message("No file attached — metadata only");
+    return;
+  }
+  const url = await getCredDocumentSignedUrl(doc.storage_path, 300);
+  if (!url) { toast.error("Could not generate download link"); return; }
+  window.open(url, "_blank", "noopener");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -931,12 +1505,16 @@ function LegacyImportDialog({ open, onOpenChange, onImported }: {
   const [rows, setRows] = useState<LegacyRawRow[]>([]);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<LegacyImportPreview | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setRows([]); setError(null); setLoading(true);
+    setRows([]); setError(null); setPreview(null); setLoading(true);
     fetchLegacyRaw(500)
-      .then((data) => setRows(data))
+      .then(async (data) => {
+        setRows(data);
+        try { setPreview(await previewLegacyImport(data)); } catch { /* ignore */ }
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load legacy data"))
       .finally(() => setLoading(false));
   }, [open]);
@@ -976,6 +1554,15 @@ function LegacyImportDialog({ open, onOpenChange, onImported }: {
             <div className="text-sm">
               <strong>{rows.length}</strong> legacy row{rows.length === 1 ? "" : "s"} available.
             </div>
+            {preview ? (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
+                <div className="rounded-lg border border-border/60 p-2"><div className="text-muted-foreground">Total rows</div><div className="font-medium text-sm">{preview.totalRows}</div></div>
+                <div className="rounded-lg border border-border/60 p-2"><div className="text-muted-foreground">Already imported</div><div className="font-medium text-sm">{preview.alreadyImported}</div></div>
+                <div className="rounded-lg border border-border/60 p-2"><div className="text-muted-foreground">New providers</div><div className="font-medium text-sm">{preview.willCreateProviders}</div></div>
+                <div className="rounded-lg border border-border/60 p-2"><div className="text-muted-foreground">New records</div><div className="font-medium text-sm">{preview.willCreateRecords}</div></div>
+                <div className="rounded-lg border border-border/60 p-2"><div className="text-muted-foreground">Missing provider/payer</div><div className="font-medium text-sm">{preview.missingProviderOrPayer}</div></div>
+              </div>
+            ) : null}
             <div className="overflow-auto max-h-60 border rounded-lg text-xs">
               <table className="w-full">
                 <thead className="bg-muted/40">
@@ -997,7 +1584,7 @@ function LegacyImportDialog({ open, onOpenChange, onImported }: {
               </table>
             </div>
             <p className="text-xs text-muted-foreground">
-              Each row becomes a provider (if missing) and a credentialing record tagged with source “Legacy import”.
+              Rows already imported (matched on legacy id) are skipped automatically. Running this import multiple times is safe.
             </p>
           </div>
         )}
@@ -1165,6 +1752,7 @@ export function ProviderCredentialingPage() {
   const [addRec, setAddRec] = useState(false);
   const [defaultProv, setDefaultProv] = useState<string | undefined>();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
+  const [openProvider, setOpenProvider] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   const list = providers.filter((p) =>
@@ -1208,7 +1796,7 @@ export function ProviderCredentialingPage() {
                   const expiring = provRecs.filter((r) => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 90; }).length;
                   const cr = p.centralreach_provider_id ? "ID present" : "Not Connected";
                   return (
-                    <tr key={p.id} className="border-t border-border/60 hover:bg-muted/30">
+                    <tr key={p.id} className="border-t border-border/60 hover:bg-muted/30 cursor-pointer" onClick={() => setOpenProvider(p.id)}>
                       <td className="px-3 py-2.5 font-medium">{p.provider_name}{!p.active && <Badge variant="outline" className="ml-2 text-[10px]">Inactive</Badge>}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{p.provider_type}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{p.license_state ?? "—"} {p.license_number ? `· ${p.license_number}` : ""}</td>
@@ -1218,7 +1806,7 @@ export function ProviderCredentialingPage() {
                       <td className="px-3 py-2.5">{missing}</td>
                       <td className="px-3 py-2.5">{expiring}</td>
                       <td className="px-3 py-2.5"><StatusBadge status={cr} /></td>
-                      <td className="px-3 py-2.5 text-right">
+                      <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                         <Button size="sm" variant="outline" onClick={() => startFor(p.id)}>Start credentialing</Button>
                       </td>
                     </tr>
@@ -1232,6 +1820,13 @@ export function ProviderCredentialingPage() {
       <AddProviderDialog open={addProv} onOpenChange={setAddProv} onCreated={reload} />
       <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} defaultProviderId={defaultProv} onCreated={() => { setDefaultProv(undefined); reload(); }} />
       <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} tasks={tasks} documents={documents} onClose={() => setOpenRecord(null)} onChanged={reload} />
+      <ProviderDetailSheet
+        providerId={openProvider} providers={providers} records={records}
+        documents={documents} tasks={tasks}
+        onClose={() => setOpenProvider(null)} onChanged={reload}
+        onOpenRecord={(id) => { setOpenProvider(null); setOpenRecord(id); }}
+        onStartCredentialing={(pid) => { setOpenProvider(null); startFor(pid); }}
+      />
     </Shell>
   );
 }
@@ -1243,6 +1838,9 @@ export function InsuranceCredentialingPage() {
   const { providers, records, providerById, loading, error, reload, tasks, documents } = useCredentialingData();
   const [addRec, setAddRec] = useState(false);
   const [openRecord, setOpenRecord] = useState<string | null>(null);
+  const [matrixSel, setMatrixSel] = useState<{ payer: string; state: string } | null>(null);
+  const [defaultPayer, setDefaultPayer] = useState<string | undefined>();
+  const [defaultState, setDefaultState] = useState<string | undefined>();
 
   const matrix = useMemo(() => {
     const map = new Map<string, {
@@ -1293,7 +1891,11 @@ export function InsuranceCredentialingPage() {
               </thead>
               <tbody>
                 {matrix.map((m) => (
-                  <tr key={`${m.payer}-${m.state}`} className="border-t border-border/60">
+                  <tr
+                    key={`${m.payer}-${m.state}`}
+                    className="border-t border-border/60 hover:bg-muted/30 cursor-pointer"
+                    onClick={() => setMatrixSel({ payer: m.payer, state: m.state })}
+                  >
                     <td className="px-3 py-2.5 font-medium">{m.payer}</td>
                     <td className="px-3 py-2.5 text-muted-foreground">{m.state}</td>
                     <td className="px-3 py-2.5">{m.required}</td>
@@ -1309,8 +1911,28 @@ export function InsuranceCredentialingPage() {
           </div>
         )}
       </SectionCard>
-      <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} onCreated={reload} />
+      <AddRecordDialog
+        open={addRec} onOpenChange={(o) => { setAddRec(o); if (!o) { setDefaultPayer(undefined); setDefaultState(undefined); } }}
+        providers={providers}
+        defaultPayer={defaultPayer} defaultState={defaultState}
+        onCreated={() => { setDefaultPayer(undefined); setDefaultState(undefined); reload(); }}
+      />
       <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} tasks={tasks} documents={documents} onClose={() => setOpenRecord(null)} onChanged={reload} />
+      <PayerStateDetailSheet
+        open={!!matrixSel}
+        payer={matrixSel?.payer ?? null}
+        state={matrixSel?.state === "—" ? null : matrixSel?.state ?? null}
+        records={records}
+        providerById={providerById}
+        onClose={() => setMatrixSel(null)}
+        onOpenRecord={(id) => { setMatrixSel(null); setOpenRecord(id); }}
+        onAddRecord={(payer, state) => {
+          setMatrixSel(null);
+          setDefaultPayer(payer);
+          setDefaultState(state || undefined);
+          setAddRec(true);
+        }}
+      />
     </Shell>
   );
 }
@@ -1324,6 +1946,7 @@ export function BCBACredentialsPage() {
   const [addRec, setAddRec] = useState(false);
   const [defaultProv, setDefaultProv] = useState<string | undefined>();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
+  const [openProvider, setOpenProvider] = useState<string | null>(null);
 
   const bcbaProviders = providers.filter((p) => p.provider_type === "BCBA");
 
@@ -1358,7 +1981,7 @@ export function BCBACredentialsPage() {
                   const openTasks = tasks.filter((t) => t.status !== "Done" && provRecs.some((r) => r.id === t.credentialing_record_id)).length;
                   const cr = p.centralreach_provider_id ? "ID present" : "Not Connected";
                   return (
-                    <tr key={p.id} className="border-t border-border/60">
+                    <tr key={p.id} className="border-t border-border/60 hover:bg-muted/30 cursor-pointer" onClick={() => setOpenProvider(p.id)}>
                       <td className="px-3 py-2.5 font-medium">{p.provider_name}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{p.license_state ?? "—"} {p.license_number ? `· ${p.license_number}` : ""}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{p.license_expiration_date ?? "—"}</td>
@@ -1367,7 +1990,7 @@ export function BCBACredentialsPage() {
                       <td className="px-3 py-2.5">{docs}</td>
                       <td className="px-3 py-2.5">{openTasks}</td>
                       <td className="px-3 py-2.5"><StatusBadge status={cr} /></td>
-                      <td className="px-3 py-2.5 text-right">
+                      <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                         <Button size="sm" variant="outline" onClick={() => { setDefaultProv(p.id); setAddRec(true); }}>
                           Start credentialing
                         </Button>
@@ -1383,6 +2006,13 @@ export function BCBACredentialsPage() {
       <AddProviderDialog open={addProv} onOpenChange={setAddProv} onCreated={reload} />
       <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} defaultProviderId={defaultProv} defaultProviderType="BCBA" onCreated={() => { setDefaultProv(undefined); reload(); }} />
       <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} tasks={tasks} documents={documents} onClose={() => setOpenRecord(null)} onChanged={reload} />
+      <ProviderDetailSheet
+        providerId={openProvider} providers={providers} records={records}
+        documents={documents} tasks={tasks}
+        onClose={() => setOpenProvider(null)} onChanged={reload}
+        onOpenRecord={(id) => { setOpenProvider(null); setOpenRecord(id); }}
+        onStartCredentialing={(pid) => { setOpenProvider(null); setDefaultProv(pid); setAddRec(true); }}
+      />
     </Shell>
   );
 }
@@ -1402,8 +2032,17 @@ export function UncredentialedBCBAsPage() {
       const provRecs = records.filter((r) => r.provider_id === p.id);
       const blocked = provRecs.filter((r) => r.status === "Blocked" || r.status === "Denied");
       const missingPayerRecs = provRecs.filter((r) => !APPROVED_CRED_STATUSES.includes(r.status));
+      // Most relevant existing record to open when the user clicks the row:
+      // prefer blocked > missing-info > any non-approved.
+      const blockedFirst = blocked[0];
+      const missingInfo = provRecs.find((r) => r.status === "Missing Info");
+      const activeFirst = provRecs.find((r) => !APPROVED_CRED_STATUSES.includes(r.status));
+      const focus = blockedFirst ?? missingInfo ?? activeFirst ?? null;
+      const missingItemsCount = provRecs.reduce((n, r) => n + (r.missing_items?.length ?? 0), 0);
       return {
         provider: p, state: p.license_state, blocked, missingPayerRecs,
+        focusRecordId: focus?.id ?? null,
+        missingItemsCount,
         hasGap: provRecs.length === 0 || missingPayerRecs.length > 0 || blocked.length > 0,
       };
     }).filter((g) => g.hasGap);
@@ -1434,18 +2073,42 @@ export function UncredentialedBCBAsPage() {
                     ? g.missingPayerRecs.map((r) => `${r.payer_name} (${r.status})`).join(", ")
                     : "No payer records yet";
                   const blocker = g.blocked[0]?.blocker_reason ?? "—";
+                  const hasRecord = !!g.focusRecordId;
+                  const nextAction = g.blocked.length
+                    ? "Resolve blocker"
+                    : hasRecord
+                      ? "Open active record"
+                      : "Create payer record";
                   return (
-                    <tr key={g.provider.id} className="border-t border-border/60">
+                    <tr
+                      key={g.provider.id}
+                      className="border-t border-border/60 hover:bg-muted/30 cursor-pointer"
+                      onClick={() => {
+                        if (g.focusRecordId) setOpenRecord(g.focusRecordId);
+                        else { setDefaultProv(g.provider.id); setAddRec(true); }
+                      }}
+                    >
                       <td className="px-3 py-2.5 font-medium">{g.provider.provider_name}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{g.state ?? "—"}</td>
-                      <td className="px-3 py-2.5">{missingList}</td>
+                      <td className="px-3 py-2.5">
+                        {missingList}
+                        {g.missingItemsCount > 0 ? (
+                          <span className="ml-2 text-xs text-amber-700">· {g.missingItemsCount} missing item{g.missingItemsCount === 1 ? "" : "s"}</span>
+                        ) : null}
+                      </td>
                       <td className="px-3 py-2.5 text-red-700">{blocker}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{g.missingPayerRecs[0]?.owner_name ?? g.blocked[0]?.owner_name ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground">Create credentialing record</td>
-                      <td className="px-3 py-2.5 text-right">
-                        <Button size="sm" variant="outline" onClick={() => { setDefaultProv(g.provider.id); setAddRec(true); }}>
-                          <Plus className="h-3.5 w-3.5 mr-1" />Create record
-                        </Button>
+                      <td className="px-3 py-2.5 text-muted-foreground">{nextAction}</td>
+                      <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                        {hasRecord ? (
+                          <Button size="sm" variant="outline" onClick={() => g.focusRecordId && setOpenRecord(g.focusRecordId)}>
+                            Open active record
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" onClick={() => { setDefaultProv(g.provider.id); setAddRec(true); }}>
+                            <Plus className="h-3.5 w-3.5 mr-1" />Create payer record
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -1468,6 +2131,32 @@ export function ExpiringCredentialsPage() {
   const { records, providerById, loading, error, reload, tasks, documents } = useCredentialingData();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
   const [windowDays, setWindowDays] = useState<30 | 60 | 90>(90);
+
+  async function startRenewal(r: CredentialingRecord) {
+    try {
+      const patch: Partial<CredentialingRecord> = { status: "Renewal In Progress" };
+      if (r.credentialing_type !== "Recredentialing") patch.credentialing_type = "Renewal";
+      await updateCredRecord(
+        r.id,
+        patch,
+        {
+          type: "renewal_started",
+          message: `Renewal started · expires ${r.expiration_date ?? "—"}`,
+          old: r.status,
+          new: "Renewal In Progress",
+        },
+      );
+      toast.success("Renewal started");
+      reload();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+  }
+
+  async function quickFollowUp(r: CredentialingRecord, date: string) {
+    try {
+      await updateCredRecord(r.id, { next_follow_up_date: date || null }, `Follow-up set to ${date || "(cleared)"}`);
+      reload();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+  }
 
   const grouped = useMemo(() => {
     const buckets = { d15: [] as CredentialingRecord[], d30: [] as CredentialingRecord[], d60: [] as CredentialingRecord[], d90: [] as CredentialingRecord[] };
@@ -1531,8 +2220,22 @@ export function ExpiringCredentialsPage() {
                       <td className={cn("px-3 py-2.5 font-medium", d <= 15 ? "text-red-700" : d <= 30 ? "text-amber-700" : "text-muted-foreground")}>{d}d</td>
                       <td className="px-3 py-2.5"><StatusBadge status={r.status} /></td>
                       <td className="px-3 py-2.5 text-muted-foreground">{r.owner_name ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground">{r.next_follow_up_date ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-right"><Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setOpenRecord(r.id); }}>Open</Button></td>
+                      <td className="px-3 py-2.5 text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                        <Input
+                          type="date"
+                          value={r.next_follow_up_date ?? ""}
+                          onChange={(e) => quickFollowUp(r, e.target.value)}
+                          className="h-8 w-36"
+                        />
+                      </td>
+                      <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1 justify-end">
+                          {r.status !== "Renewal In Progress" ? (
+                            <Button size="sm" variant="outline" onClick={() => startRenewal(r)}>Start Renewal</Button>
+                          ) : null}
+                          <Button size="sm" variant="ghost" onClick={() => setOpenRecord(r.id)}>Open</Button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}

@@ -274,6 +274,53 @@ export async function addCredDocument(input: Partial<CredentialingDocument>) {
   return data as CredentialingDocument;
 }
 
+/**
+ * Upload a real file to the private `credentialing-documents` bucket and
+ * create a matching credentialing_documents row pointing at the storage path.
+ * Falls back gracefully — callers can still use {@link addCredDocument} for
+ * metadata-only entries.
+ */
+export const CRED_DOC_BUCKET = "credentialing-documents";
+
+export async function uploadCredDocumentFile(params: {
+  file: File;
+  document_type: string;
+  provider_id: string | null;
+  credentialing_record_id: string | null;
+  verification_status?: CredentialingDocument["verification_status"];
+  expiration_date?: string | null;
+  notes?: string | null;
+}): Promise<CredentialingDocument> {
+  const safeName = params.file.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  const folder = params.credentialing_record_id ?? params.provider_id ?? "unsorted";
+  const path = `${folder}/${Date.now()}-${safeName}`;
+  const up = await sb.storage.from(CRED_DOC_BUCKET).upload(path, params.file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: params.file.type || undefined,
+  });
+  if (up.error) throw up.error;
+  return addCredDocument({
+    provider_id: params.provider_id,
+    credentialing_record_id: params.credentialing_record_id,
+    document_type: params.document_type,
+    file_name: params.file.name,
+    storage_path: path,
+    verification_status: params.verification_status ?? "Received",
+    expiration_date: params.expiration_date ?? null,
+    notes: params.notes ?? null,
+    mime_type: params.file.type || null,
+    file_size_bytes: params.file.size,
+  } as Partial<CredentialingDocument>);
+}
+
+export async function getCredDocumentSignedUrl(storage_path: string, expiresInSeconds = 300): Promise<string | null> {
+  if (!storage_path) return null;
+  const { data, error } = await sb.storage.from(CRED_DOC_BUCKET).createSignedUrl(storage_path, expiresInSeconds);
+  if (error) return null;
+  return data?.signedUrl ?? null;
+}
+
 export async function updateCredDocument(id: string, patch: Partial<CredentialingDocument>) {
   const { data, error } = await sb.from(TABLE_DOCS).update(patch).eq("id", id).select("*").single();
   if (error) throw error;
@@ -313,6 +360,53 @@ export interface LegacyImportResult {
   skipped: number;
 }
 
+export interface LegacyImportPreview {
+  totalRows: number;
+  alreadyImported: number;
+  willCreateProviders: number;
+  willCreateRecords: number;
+  missingProviderOrPayer: number;
+}
+
+export async function previewLegacyImport(rows: LegacyRawRow[]): Promise<LegacyImportPreview> {
+  const ids = rows.map((r) => r.id).filter(Boolean);
+  const { data: existingRecs } = ids.length
+    ? await sb.from(TABLE_RECORDS).select("legacy_monday_raw_id").in("legacy_monday_raw_id", ids)
+    : { data: [] as Array<{ legacy_monday_raw_id: string }> };
+  const importedSet = new Set<string>(
+    (existingRecs ?? []).map((x: { legacy_monday_raw_id: string }) => x.legacy_monday_raw_id),
+  );
+  const { data: existingProvs } = await sb.from(TABLE_PROVIDERS).select("provider_name");
+  const provSet = new Set<string>(
+    (existingProvs ?? []).map((p: { provider_name: string }) => p.provider_name.toLowerCase()),
+  );
+  let alreadyImported = 0;
+  let willCreateProviders = 0;
+  let willCreateRecords = 0;
+  let missingProviderOrPayer = 0;
+  const planned = new Set<string>();
+  for (const raw of rows) {
+    if (importedSet.has(raw.id)) { alreadyImported += 1; continue; }
+    const row = raw as Record<string, unknown>;
+    const name = pickField(row, ["provider_name", "provider", "name", "bcba", "clinician"]);
+    const payer = pickField(row, ["payer", "payer_name", "insurance", "plan"]);
+    if (!name || !payer) { missingProviderOrPayer += 1; continue; }
+    const lower = name.toLowerCase();
+    if (!provSet.has(lower) && !planned.has(lower)) {
+      planned.add(lower);
+      willCreateProviders += 1;
+    }
+    willCreateRecords += 1;
+  }
+  return {
+    totalRows: rows.length,
+    alreadyImported,
+    willCreateProviders,
+    willCreateRecords,
+    missingProviderOrPayer,
+  };
+}
+
 export async function importLegacyRows(rows: LegacyRawRow[]): Promise<LegacyImportResult> {
   let providersCreated = 0;
   let recordsCreated = 0;
@@ -325,7 +419,17 @@ export async function importLegacyRows(rows: LegacyRawRow[]): Promise<LegacyImpo
     byName.set(p.provider_name.toLowerCase(), p.id);
   });
 
+  // Find legacy raw ids that were already imported so we don't duplicate records.
+  const ids = rows.map((r) => r.id).filter(Boolean);
+  const { data: existingRecs } = ids.length
+    ? await sb.from(TABLE_RECORDS).select("legacy_monday_raw_id").in("legacy_monday_raw_id", ids)
+    : { data: [] as Array<{ legacy_monday_raw_id: string }> };
+  const alreadyImported = new Set<string>(
+    (existingRecs ?? []).map((x: { legacy_monday_raw_id: string }) => x.legacy_monday_raw_id),
+  );
+
   for (const raw of rows) {
+    if (alreadyImported.has(raw.id)) { skipped += 1; continue; }
     const row = raw as Record<string, unknown>;
     const name = pickField(row, ["provider_name", "provider", "name", "bcba", "clinician"]);
     const payer = pickField(row, ["payer", "payer_name", "insurance", "plan"]);
