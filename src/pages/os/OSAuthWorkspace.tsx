@@ -1057,16 +1057,9 @@ function AuthDetailDrawer({
             placeholder="Add an internal note…"
             className="h-20 w-full resize-none rounded-xl border border-white/70 bg-white/70 p-2.5 text-[12.5px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-[hsl(265_85%_60%/0.4)]"
           />
-          <ul className="mt-2 space-y-1.5 text-[12px]">
-            <li className="rounded-xl border border-white/60 bg-white/60 px-3 py-2">
-              <p className="text-foreground/85">Pinged Dr. Cole again about treatment plan; ETA tomorrow.</p>
-              <p className="mt-0.5 text-[10.5px] text-muted-foreground">Rivky · 2h</p>
-            </li>
-            <li className="rounded-xl border border-white/60 bg-white/60 px-3 py-2">
-              <p className="text-foreground/85">Parent acknowledged signature request via email.</p>
-              <p className="mt-0.5 text-[10.5px] text-muted-foreground">System · 4h</p>
-            </li>
-          </ul>
+          <p className="mt-2 rounded-xl border border-dashed border-white/60 bg-white/40 px-3 py-2 text-[12px] text-muted-foreground">
+            Notes will appear here as coordinators add them to this authorization.
+          </p>
         </DrawerSection>
 
         {/* AI */}
