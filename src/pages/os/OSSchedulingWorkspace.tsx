@@ -12,6 +12,7 @@ import { useClients } from "@/contexts/ClientsContext";
 import { useCentralReachOps, type ProviderRosterEntry, type CoverageRiskRow } from "@/hooks/useCentralReachOps";
 import {
   AssignRbtDialog, ContactAttemptDialog, CoverageNoteDialog,
+  StartDateDialog,
 } from "@/components/scheduling/SchedulingDialogs";
 import { useSchedulingActions } from "@/hooks/useSchedulingActions";
 
@@ -313,18 +314,27 @@ function QueueCard({ client, bucket, active, onSelect }: { client: Client; bucke
 }
 
 function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: ProviderRosterEntry[] }) {
-  const { listClientSchedulingActions, listClientContactAttempts } = useSchedulingActions();
+  const { listClientSchedulingActions, listClientContactAttempts, listOpenCoverageCases, updateCoverageCase } = useSchedulingActions();
   const [assignFor, setAssignFor] = useState<string | null>(null);
   const [contactFor, setContactFor] = useState<string | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
+  const [startDateOpen, setStartDateOpen] = useState(false);
   const [activity, setActivity] = useState<Array<{ id: string; description: string; timestamp: string }>>([]);
+  const [clientCoverageCases, setClientCoverageCases] = useState<Array<Record<string, unknown>>>([]);
   const lite = { id: client.id, childName: client.childName, state: client.state, rbt: client.rbt, bcba: client.bcba };
   const reload = async () => {
-    const [a, c] = await Promise.all([listClientSchedulingActions(client.id), listClientContactAttempts(client.id)]);
+    const [a, c, cases] = await Promise.all([
+      listClientSchedulingActions(client.id),
+      listClientContactAttempts(client.id),
+      listOpenCoverageCases(),
+    ]);
     setActivity([
       ...a.map((r) => ({ id: `a-${r.id}`, description: `${(r.action_type as string).replace(/_/g, " ")} — ${(r.note ?? r.title) as string ?? ""}`, timestamp: new Date(r.created_at as string).toLocaleString() })),
       ...c.map((r) => ({ id: `c-${r.id}`, description: `Contact (${r.contact_type}/${r.channel}) — ${(r.body ?? r.outcome) as string ?? ""}`, timestamp: new Date(r.created_at as string).toLocaleString() })),
     ].sort((x, y) => (x.timestamp < y.timestamp ? 1 : -1)).slice(0, 6));
+    setClientCoverageCases(
+      (cases as Array<Record<string, unknown>>).filter((cs) => cs.client_id === client.id || cs.client_key === client.id),
+    );
   };
   useEffect(() => { void reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [client.id]);
 
@@ -350,6 +360,8 @@ function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: Prov
     { label: "Start date confirmed", ok: !!client.startDate },
   ];
 
+  const canConfirmStartDate = !!client.rbt && !!client.bcba && client.authStatus === "Approved";
+
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
   return (
@@ -361,9 +373,19 @@ function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: Prov
             <h2 className="text-lg font-semibold tracking-tight text-foreground">{client.childName}</h2>
             <p className="text-xs text-muted-foreground mt-0.5">{client.state} · {client.clinic} · {client.serviceLocation ?? "Home"}</p>
           </div>
-          <Link to={`/clients/${client.id}`} className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
-            Open client <ArrowUpRight className="size-3" />
-          </Link>
+          <div className="flex items-center gap-2">
+            {canConfirmStartDate && !client.startDate && (
+              <button
+                onClick={() => setStartDateOpen(true)}
+                className="h-7 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition inline-flex items-center gap-1"
+              >
+                <CalendarClock className="size-3" /> Confirm Start Date
+              </button>
+            )}
+            <Link to={`/clients/${client.id}`} className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
+              Open client <ArrowUpRight className="size-3" />
+            </Link>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
           <InfoCell label="BCBA" value={client.bcba ?? "—"} />
@@ -372,6 +394,56 @@ function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: Prov
           <InfoCell label="Start date" value={client.startDate ?? "Pending"} />
         </div>
       </div>
+
+      {/* Coverage Cases for this client */}
+      {clientCoverageCases.length > 0 && (
+        <div className="rounded-2xl bg-card border border-border/70 p-5">
+          <h3 className="text-sm font-semibold tracking-tight text-foreground inline-flex items-center gap-2">
+            <AlertTriangle className="size-4 text-warning" /> Open Coverage Cases ({clientCoverageCases.length})
+          </h3>
+          <ul className="mt-3 space-y-2">
+            {clientCoverageCases.map((cs) => {
+              const id = String(cs.id ?? "");
+              const caseType = String(cs.case_type ?? "coverage_gap").replace(/_/g, " ");
+              const risk = String(cs.risk_level ?? "—");
+              const status = String(cs.status ?? "open");
+              const reason = (cs.reason as string) ?? "";
+              const next = (cs.next_action as string) ?? "";
+              const created = cs.created_at ? new Date(cs.created_at as string).toLocaleDateString() : "—";
+              const isEscalation = caseType === "escalation";
+              return (
+                <li key={id} className="rounded-xl border border-border/60 bg-muted/30 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={cn(
+                          "text-[10px] font-medium px-1.5 py-0.5 rounded",
+                          isEscalation ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning",
+                        )}>{caseType}</span>
+                        <span className="text-[10px] text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-border/60">risk: {risk}</span>
+                        <span className="text-[10px] text-muted-foreground">status: {status}</span>
+                        <span className="text-[10px] text-muted-foreground ml-auto">opened {created}</span>
+                      </div>
+                      {reason && <p className="text-sm text-foreground mt-1.5">{reason}</p>}
+                      {next && <p className="text-[11px] text-muted-foreground mt-0.5">Next: {next}</p>}
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <button
+                        onClick={async () => { await updateCoverageCase(id, { status: "watching" } as never); void reload(); }}
+                        className="h-7 px-2.5 rounded-lg text-[11px] text-muted-foreground hover:bg-muted transition"
+                      >Mark Watching</button>
+                      <button
+                        onClick={async () => { await updateCoverageCase(id, { status: "resolved" } as never); void reload(); }}
+                        className="h-7 px-2.5 rounded-lg bg-success/10 text-success text-[11px] font-medium hover:opacity-90 transition"
+                      >Resolve</button>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* Readiness */}
       <div className="rounded-2xl bg-card border border-border/70 p-5">
@@ -487,6 +559,7 @@ function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: Prov
       <AssignRbtDialog open={!!assignFor} onOpenChange={(o) => !o && setAssignFor(null)} client={lite} defaultRbt={assignFor ?? ""} onSaved={() => { setAssignFor(null); void reload(); }} />
       <ContactAttemptDialog open={!!contactFor} onOpenChange={(o) => !o && setContactFor(null)} client={lite} defaultContactType="rbt" onSaved={() => { void reload(); }} />
       <CoverageNoteDialog open={noteOpen} onOpenChange={setNoteOpen} client={lite} onSaved={reload} />
+      <StartDateDialog open={startDateOpen} onOpenChange={setStartDateOpen} client={lite} onSaved={() => { setStartDateOpen(false); void reload(); }} />
     </>
   );
 }
