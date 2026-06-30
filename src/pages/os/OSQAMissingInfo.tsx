@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -178,7 +179,7 @@ function buildRows(items: Authorization[]): BlockerRow[] {
 
 // ---------- page ----------
 export default function OSQAMissingInfo() {
-  const { qaItems: items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading, refresh, sourceById } = useLiveAuthorizations();
   const allRows = useMemo(() => buildRows(items), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");
@@ -661,7 +662,7 @@ export default function OSQAMissingInfo() {
         </div>
       </div>
 
-      {openRow && <BlockerSlideout row={openRow} onClose={() => setOpenId(null)} />}
+      {openRow && <BlockerSlideout row={openRow} onClose={() => setOpenId(null)} onChanged={refresh} sourceSystem={sourceById.get(openRow.auth.id)} />}
     </OSShell>
   );
 }
@@ -813,7 +814,7 @@ function BlockerCard({ row: r, onOpen }: { row: BlockerRow; onOpen: () => void }
           </button>
 
           <div className="hidden md:flex flex-col gap-1.5 shrink-0">
-            <IconBtn title="Open workflow"  to="/authorizations" icon={ExternalLink} />
+            <IconBtn title="Open workflow"  to="/qa-queue" icon={ExternalLink} />
             <IconBtn title="Send follow-up" icon={Send} />
             <IconBtn title="Add QA note"    icon={StickyNote} />
             <IconBtn title="Mark resolved"  icon={CheckCircle2} />
@@ -825,7 +826,7 @@ function BlockerCard({ row: r, onOpen }: { row: BlockerRow; onOpen: () => void }
   );
 }
 
-function BlockerSlideout({ row: r, onClose }: { row: BlockerRow; onClose: () => void }) {
+function BlockerSlideout({ row: r, onClose, onChanged, sourceSystem }: { row: BlockerRow; onClose: () => void; onChanged?: () => void | Promise<void>; sourceSystem?: "monday" | "manual" | "centralreach" }) {
   useSlideout(true, onClose);
   const a = r.auth;
 
@@ -948,13 +949,9 @@ function BlockerSlideout({ row: r, onClose }: { row: BlockerRow; onClose: () => 
 
           <section>
             <SectionLabel>Quick actions</SectionLabel>
-            <div className="flex flex-wrap gap-2">
-              <ActionBtn icon={Send}        label="Send follow-up" />
-              <ActionBtn icon={StickyNote}  label="Add QA note" />
-              <ActionBtn icon={UserCheck}   label="Assign owner" />
-              <ActionBtn icon={CheckCircle2} label="Mark resolved" />
-              <ActionBtn icon={Flame}       label="Escalate" tone="crit" />
-              <Link to="/authorizations" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-medium border border-border/70 bg-card hover:bg-muted transition">
+            <QAActionsPanel auth={r.auth} variant="missing-info" sourceSystem={sourceSystem} onChanged={onChanged} />
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Link to="/qa-queue" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-medium border border-border/70 bg-card hover:bg-muted transition">
                 <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} /> Open record
               </Link>
             </div>

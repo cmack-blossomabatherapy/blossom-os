@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -187,7 +188,7 @@ function buildClients(items: Authorization[]): ClientRow[] {
 
 // ---------- page ----------
 export default function OSQAClients() {
-  const { qaItems: items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading, refresh, sourceById } = useLiveAuthorizations();
   const allClients = useMemo(() => buildClients(items), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");
@@ -684,7 +685,7 @@ export default function OSQAClients() {
         </div>
       </div>
 
-      {openClient && <ClientSlideout c={openClient} onClose={() => setOpenId(null)} />}
+      {openClient && <ClientSlideout c={openClient} onClose={() => setOpenId(null)} onChanged={refresh} sourceSystem={sourceById.get(openClient.primary.id)} />}
     </OSShell>
   );
 }
@@ -897,7 +898,7 @@ function ClientCard({ c, onOpen }: { c: ClientRow; onOpen: () => void }) {
   );
 }
 
-function ClientSlideout({ c, onClose }: { c: ClientRow; onClose: () => void }) {
+function ClientSlideout({ c, onClose, onChanged, sourceSystem }: { c: ClientRow; onClose: () => void; onChanged?: () => void | Promise<void>; sourceSystem?: "monday" | "manual" | "centralreach" }) {
   useSlideout(true, onClose);
   const checklist = [
     { ok: !c.primary.missingInfo, label: "All required information received" },
@@ -945,13 +946,14 @@ function ClientSlideout({ c, onClose }: { c: ClientRow; onClose: () => void }) {
           </section>
 
           {/* Quick actions */}
-          <section className="grid grid-cols-2 gap-2">
-            <ActionBtn icon={ExternalLink} label="Open client" to={`/clients/${c.primary.clientId}`} />
-            <ActionBtn icon={StickyNote}   label="Add QA note" />
-            <ActionBtn icon={Send}         label="Send follow-up" />
-            <ActionBtn icon={Flame}        label="Escalate" tone="crit" />
-            <ActionBtn icon={ClipboardList} label="View authorization" to={`/authorizations/${c.primary.id}`} />
-            <ActionBtn icon={FileText}     label="View PR workflow" to="/progress-reports" />
+          <section className="space-y-2">
+            <SectionLabel>Quick actions</SectionLabel>
+            <QAActionsPanel auth={c.primary} sourceSystem={sourceSystem} onChanged={onChanged} />
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <ActionBtn icon={ExternalLink} label="Open client" to={`/clients/${c.primary.clientId}`} />
+              <ActionBtn icon={ClipboardList} label="View authorization" to="/authorization-reviews" />
+              <ActionBtn icon={FileText}     label="View PR workflow" to="/progress-reports" />
+            </div>
           </section>
 
           {/* Workflow timeline */}

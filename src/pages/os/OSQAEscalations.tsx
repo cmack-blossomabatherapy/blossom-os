@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -326,7 +327,7 @@ function Select({ value, onChange, options, label }: { value: string; onChange: 
 }
 
 // ---------- slideout ----------
-function EscalationSlideout({ e, onClose }: { e: Escalation; onClose: () => void }) {
+function EscalationSlideout({ e, onClose, onChanged, sourceSystem }: { e: Escalation; onClose: () => void; onChanged?: () => void | Promise<void>; sourceSystem?: "monday" | "manual" | "centralreach" }) {
   useSlideout(true, onClose);
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -406,13 +407,11 @@ function EscalationSlideout({ e, onClose }: { e: Escalation; onClose: () => void
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Link to={`/authorizations`} className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-4 h-9 text-xs font-medium shadow-sm hover:opacity-90 transition">
-              <ExternalLink className="size-3" /> Open in Authorizations
+          <div className="space-y-2 pt-2">
+            <Link to={`/qa-queue`} className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-4 h-9 text-xs font-medium shadow-sm hover:opacity-90 transition">
+              <ExternalLink className="size-3" /> Open in QA Queue
             </Link>
-            <button className="inline-flex items-center gap-1 rounded-full border border-border/70 px-4 h-9 text-xs hover:bg-muted transition"><Send className="size-3" /> Send follow-up</button>
-            <button className="inline-flex items-center gap-1 rounded-full border border-border/70 px-4 h-9 text-xs hover:bg-muted transition"><Flame className="size-3" /> Escalate further</button>
-            <button className="inline-flex items-center gap-1 rounded-full border border-border/70 px-4 h-9 text-xs hover:bg-muted transition"><CheckCircle2 className="size-3" /> Mark resolved</button>
+            <QAActionsPanel auth={e.auth} sourceSystem={sourceSystem} onChanged={onChanged} />
           </div>
         </div>
       </aside>
@@ -422,7 +421,7 @@ function EscalationSlideout({ e, onClose }: { e: Escalation; onClose: () => void
 
 // ---------- main page ----------
 export default function OSQAEscalations() {
-  const { qaItems: items } = useLiveAuthorizations();
+  const { qaItems: items, refresh, sourceById } = useLiveAuthorizations();
   const all = useMemo(() => buildEscalations(items), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");
@@ -671,7 +670,7 @@ export default function OSQAEscalations() {
         </div>
       </div>
 
-      {open && <EscalationSlideout e={open} onClose={() => setOpen(null)} />}
+      {open && <EscalationSlideout e={open} onClose={() => setOpen(null)} onChanged={refresh} sourceSystem={sourceById.get(open.auth.id)} />}
     </OSShell>
   );
 }

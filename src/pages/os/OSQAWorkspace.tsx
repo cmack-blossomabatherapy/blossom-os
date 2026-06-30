@@ -337,8 +337,8 @@ export default function OSQAWorkspace() {
                   { label: "Send Follow-Up", icon: Send, to: "#" },
                   { label: "Escalate Workflow", icon: Flame, to: "#" },
                   { label: "Open QA Queue", icon: Inbox, to: "/qa" },
-                  { label: "View Expiring Items", icon: CalendarClock, to: "/authorizations?stage=Expiring+Soon" },
-                  { label: "Open Progress Reports", icon: ScrollText, to: "/authorizations" },
+                  { label: "View Expiring Items", icon: CalendarClock, to: "/expiring-items" },
+                  { label: "Open Progress Reports", icon: ScrollText, to: "/qa-queue" },
                 ].map(a => (
                   <Link key={a.label} to={a.to}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted transition">
@@ -362,7 +362,7 @@ export default function OSQAWorkspace() {
                   {(stateFilter !== "all" || urgencyFilter !== "all" || query) && " (filtered)"}
                 </p>
               </div>
-              <Link to="/authorizations" className="text-xs font-medium text-primary hover:opacity-80 transition inline-flex items-center gap-1">
+              <Link to="/qa-queue" className="text-xs font-medium text-primary hover:opacity-80 transition inline-flex items-center gap-1">
                 Full queue <ChevronRight className="h-3.5 w-3.5" />
               </Link>
             </div>
@@ -472,7 +472,7 @@ export default function OSQAWorkspace() {
                           </div>
 
                           <div className="flex items-center gap-2 flex-wrap pt-1">
-                            <Link to="/authorizations"
+                            <Link to="/qa-queue"
                               className="h-8 px-3 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center gap-1.5">
                               <ExternalLink className="h-3 w-3" /> Open record
                             </Link>

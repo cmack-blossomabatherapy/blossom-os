@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -301,7 +302,7 @@ function fillTemplate(body: string, t: Thread): string {
 // ---------- page ----------
 
 export default function OSQAMessages() {
-  const { qaItems: items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading, refresh, sourceById } = useLiveAuthorizations();
   const threads = useMemo(() => buildThreads(items), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");
@@ -857,7 +858,7 @@ export default function OSQAMessages() {
 
       {/* Workflow detail slideout for any thread */}
       {active && openId === active.id && (
-        <ThreadSlideout t={active} onClose={() => setOpenId(null)} />
+        <ThreadSlideout t={active} onClose={() => setOpenId(null)} onChanged={refresh} sourceSystem={sourceById.get(active.auth.id)} />
       )}
     </OSShell>
   );
@@ -988,7 +989,7 @@ function CategoryIcon({ category }: { category: Category }) {
   }
 }
 
-function ThreadSlideout({ t, onClose }: { t: Thread; onClose: () => void }) {
+function ThreadSlideout({ t, onClose, onChanged, sourceSystem }: { t: Thread; onClose: () => void; onChanged?: () => void | Promise<void>; sourceSystem?: "monday" | "manual" | "centralreach" }) {
   useSlideout(true, onClose);
   return (
     <>
@@ -1063,11 +1064,15 @@ function ThreadSlideout({ t, onClose }: { t: Thread; onClose: () => void }) {
             </section>
           )}
 
-          <section className="grid grid-cols-2 gap-2">
-            <CtxBtn icon={ExternalLink}  label="Open client"          to={`/clients/${encodeURIComponent(t.client)}`} />
-            <CtxBtn icon={ClipboardList} label="Open authorization"   to={`/authorization-reviews?id=${encodeURIComponent(t.auth.id)}`} />
-            <CtxBtn icon={FileText}      label="Open PR workflow"     to="/progress-reports" />
-            <CtxBtn icon={ShieldAlert}   label="Open TP review"       to="/treatment-plan-reviews" />
+          <section className="space-y-2">
+            <SectionLabel>Quick actions</SectionLabel>
+            <QAActionsPanel auth={t.auth} sourceSystem={sourceSystem} onChanged={onChanged} />
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <CtxBtn icon={ExternalLink}  label="Open client"          to={`/clients/${encodeURIComponent(t.client)}`} />
+              <CtxBtn icon={ClipboardList} label="Open authorization"   to={`/authorization-reviews?id=${encodeURIComponent(t.auth.id)}`} />
+              <CtxBtn icon={FileText}      label="Open PR workflow"     to="/progress-reports" />
+              <CtxBtn icon={ShieldAlert}   label="Open TP review"       to="/treatment-plan-reviews" />
+            </div>
           </section>
         </div>
       </aside>

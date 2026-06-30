@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -124,7 +125,7 @@ function isActive(a: Authorization): boolean {
 
 // ---------- Page ----------
 export default function OSQAAuthReviews() {
-  const { qaItems: items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading, refresh, sourceById } = useLiveAuthorizations();
 
   const [query, setQuery] = useState("");
   const [stateFilter, setStateFilter] = useState("all");
@@ -499,7 +500,7 @@ export default function OSQAAuthReviews() {
         </div>
       </div>
 
-      {openItem && <DetailSlideout auth={openItem} onClose={() => setOpenId(null)} />}
+      {openItem && <DetailSlideout auth={openItem} onClose={() => setOpenId(null)} onChanged={refresh} sourceSystem={sourceById.get(openItem.id)} />}
     </OSShell>
   );
 }
@@ -680,7 +681,7 @@ function ExpiringGroup({
   );
 }
 
-function DetailSlideout({ auth: a, onClose }: { auth: Authorization; onClose: () => void }) {
+function DetailSlideout({ auth: a, onClose, onChanged, sourceSystem }: { auth: Authorization; onClose: () => void; onChanged?: () => void | Promise<void>; sourceSystem?: "monday" | "manual" | "centralreach" }) {
   useSlideout(true, onClose);
   const tone = urgencyOf(a);
   const status = workflowStatus(a);
@@ -805,19 +806,7 @@ function DetailSlideout({ auth: a, onClose }: { auth: Authorization; onClose: ()
 
           <section className="space-y-2 pt-1">
             <SectionLabel>Actions</SectionLabel>
-            <div className="grid grid-cols-2 gap-2">
-              <Link to="/authorizations"
-                className="h-9 px-3 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center justify-center gap-1.5">
-                <ExternalLink className="h-3.5 w-3.5" /> Open record
-              </Link>
-              <ActionBtn icon={CheckCircle2}      label="Mark reviewed" />
-              <ActionBtn icon={ArrowRightCircle}  label="Move to submission" />
-              <ActionBtn icon={FileWarning}       label="Request missing info" />
-              <ActionBtn icon={Send}              label="Send follow-up" />
-              <ActionBtn icon={StickyNote}        label="Add QA note" />
-              <ActionBtn icon={UserCheck}         label="Assign owner" />
-              <ActionBtn icon={Flame}             label="Escalate" tone="crit" />
-            </div>
+<QAActionsPanel auth={a} variant="auth-review" sourceSystem={sourceSystem} onChanged={onChanged} />
           </section>
         </div>
       </aside>

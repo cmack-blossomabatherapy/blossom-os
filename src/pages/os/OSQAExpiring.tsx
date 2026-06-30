@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -152,7 +153,7 @@ function readinessChecklist(a: Authorization): { label: string; done: boolean }[
 
 // ---------- page ----------
 export default function OSQAExpiring() {
-  const { qaItems: items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading, refresh, sourceById } = useLiveAuthorizations();
   const expiring = useMemo(() => items.filter(isExpirationRelevant), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");
@@ -638,7 +639,7 @@ export default function OSQAExpiring() {
         </div>
       </div>
 
-      {openItem && <ExpSlideout auth={openItem} onClose={() => setOpenId(null)} />}
+      {openItem && <ExpSlideout auth={openItem} onClose={() => setOpenId(null)} onChanged={refresh} sourceSystem={sourceById.get(openItem.id)} />}
     </OSShell>
   );
 }
@@ -820,7 +821,7 @@ function ExpCard({ auth: a, onOpen }: { auth: Authorization; onOpen: () => void 
           </button>
 
           <div className="hidden md:flex flex-col gap-1.5 shrink-0">
-            <IconBtn title="Open record"               to="/authorizations" icon={ExternalLink} />
+            <IconBtn title="Open record"               to="/qa-queue" icon={ExternalLink} />
             <IconBtn title="Send follow-up"            icon={Send} />
             <IconBtn title="Add QA note"               icon={StickyNote} />
             <IconBtn title="Mark PR received"          icon={CheckCircle2} />
@@ -832,7 +833,7 @@ function ExpCard({ auth: a, onOpen }: { auth: Authorization; onOpen: () => void 
   );
 }
 
-function ExpSlideout({ auth: a, onClose }: { auth: Authorization; onClose: () => void }) {
+function ExpSlideout({ auth: a, onClose, onChanged, sourceSystem }: { auth: Authorization; onClose: () => void; onChanged?: () => void | Promise<void>; sourceSystem?: "monday" | "manual" | "centralreach" }) {
   useSlideout(true, onClose);
   const tone = urgencyOf(a);
   const status = wfStatus(a);
@@ -955,13 +956,9 @@ function ExpSlideout({ auth: a, onClose }: { auth: Authorization; onClose: () =>
 
           <section>
             <SectionLabel>Quick actions</SectionLabel>
-            <div className="flex flex-wrap gap-2">
-              <ActionBtn icon={Send}        label="Send follow-up" />
-              <ActionBtn icon={StickyNote}  label="Add QA note" />
-              <ActionBtn icon={CheckCircle2} label="Mark PR received" />
-              <ActionBtn icon={ClipboardCheck} label="Move to ready" />
-              <ActionBtn icon={Flame}       label="Escalate" tone="crit" />
-              <Link to="/authorizations" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-medium border border-border/70 bg-card hover:bg-muted transition">
+            <QAActionsPanel auth={a} variant="expiring" sourceSystem={sourceSystem} onChanged={onChanged} />
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Link to="/qa-queue" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-medium border border-border/70 bg-card hover:bg-muted transition">
                 <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} /> Open record
               </Link>
             </div>
