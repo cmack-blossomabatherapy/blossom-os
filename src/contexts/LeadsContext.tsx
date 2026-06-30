@@ -3,6 +3,7 @@ import { createIntakeTask, FINANCIAL_OWNER, INTAKE_COORDINATORS, Lead, LeadStatu
 import { supabase } from "@/integrations/supabase/client";
 import { mondayRowToLead, type MondayLeadRow } from "@/lib/leads/mondayMapper";
 import { intakeLeadRowToLead, type IntakeLeadRow } from "@/lib/leads/intakeLeadMapper";
+import { canonicalFamilyLeadStage, type FamilyLeadPipelineStage } from "@/lib/intake/intakeWorkflow";
 
 /** Columns selected from public.intake_leads — must include every extended field
  *  read by IntakeLeadRow / intakeLeadRowToLead so the round-trip is lossless. */
