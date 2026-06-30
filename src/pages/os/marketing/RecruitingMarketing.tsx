@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Candidate, CandidateStage } from "@/data/recruiting";
-import { useMarketingData } from "@/hooks/useMarketingData";
+import { useMarketingData, type MktCandidate } from "@/hooks/useMarketingData";
 import {
   Sparkles,
   Users,
