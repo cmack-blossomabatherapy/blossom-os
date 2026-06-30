@@ -2019,8 +2019,17 @@ export function UncredentialedBCBAsPage() {
       const provRecs = records.filter((r) => r.provider_id === p.id);
       const blocked = provRecs.filter((r) => r.status === "Blocked" || r.status === "Denied");
       const missingPayerRecs = provRecs.filter((r) => !APPROVED_CRED_STATUSES.includes(r.status));
+      // Most relevant existing record to open when the user clicks the row:
+      // prefer blocked > missing-info > any non-approved.
+      const blockedFirst = blocked[0];
+      const missingInfo = provRecs.find((r) => r.status === "Missing Info");
+      const activeFirst = provRecs.find((r) => !APPROVED_CRED_STATUSES.includes(r.status));
+      const focus = blockedFirst ?? missingInfo ?? activeFirst ?? null;
+      const missingItemsCount = provRecs.reduce((n, r) => n + (r.missing_items?.length ?? 0), 0);
       return {
         provider: p, state: p.license_state, blocked, missingPayerRecs,
+        focusRecordId: focus?.id ?? null,
+        missingItemsCount,
         hasGap: provRecs.length === 0 || missingPayerRecs.length > 0 || blocked.length > 0,
       };
     }).filter((g) => g.hasGap);
@@ -2051,18 +2060,42 @@ export function UncredentialedBCBAsPage() {
                     ? g.missingPayerRecs.map((r) => `${r.payer_name} (${r.status})`).join(", ")
                     : "No payer records yet";
                   const blocker = g.blocked[0]?.blocker_reason ?? "—";
+                  const hasRecord = !!g.focusRecordId;
+                  const nextAction = g.blocked.length
+                    ? "Resolve blocker"
+                    : hasRecord
+                      ? "Open active record"
+                      : "Create payer record";
                   return (
-                    <tr key={g.provider.id} className="border-t border-border/60">
+                    <tr
+                      key={g.provider.id}
+                      className="border-t border-border/60 hover:bg-muted/30 cursor-pointer"
+                      onClick={() => {
+                        if (g.focusRecordId) setOpenRecord(g.focusRecordId);
+                        else { setDefaultProv(g.provider.id); setAddRec(true); }
+                      }}
+                    >
                       <td className="px-3 py-2.5 font-medium">{g.provider.provider_name}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{g.state ?? "—"}</td>
-                      <td className="px-3 py-2.5">{missingList}</td>
+                      <td className="px-3 py-2.5">
+                        {missingList}
+                        {g.missingItemsCount > 0 ? (
+                          <span className="ml-2 text-xs text-amber-700">· {g.missingItemsCount} missing item{g.missingItemsCount === 1 ? "" : "s"}</span>
+                        ) : null}
+                      </td>
                       <td className="px-3 py-2.5 text-red-700">{blocker}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{g.missingPayerRecs[0]?.owner_name ?? g.blocked[0]?.owner_name ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground">Create credentialing record</td>
-                      <td className="px-3 py-2.5 text-right">
-                        <Button size="sm" variant="outline" onClick={() => { setDefaultProv(g.provider.id); setAddRec(true); }}>
-                          <Plus className="h-3.5 w-3.5 mr-1" />Create record
-                        </Button>
+                      <td className="px-3 py-2.5 text-muted-foreground">{nextAction}</td>
+                      <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                        {hasRecord ? (
+                          <Button size="sm" variant="outline" onClick={() => g.focusRecordId && setOpenRecord(g.focusRecordId)}>
+                            Open active record
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" onClick={() => { setDefaultProv(g.provider.id); setAddRec(true); }}>
+                            <Plus className="h-3.5 w-3.5 mr-1" />Create payer record
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   );
