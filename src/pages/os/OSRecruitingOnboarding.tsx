@@ -1,5 +1,5 @@
 import { runPageStageMove } from "@/lib/recruiting/stageMapping";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Search, X, AlertTriangle, CheckCircle2, Clock, Sparkles,
   Brain, RefreshCw, Send, MessageSquare, UserPlus, Download,
@@ -15,7 +15,8 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingOnboarding } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingOnboarding, fullName, type RecruitingOnboardingTask } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,26 @@ const STAGES = [
   { key: "orientationReady",    label: "Orientation Ready" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+// Per-candidate live onboarding task summary aggregated from
+// recruiting_onboarding_tasks. The presence of any live task means we
+// prefer the live aggregate over the synthetic classifier.
+type LiveOnboardingSummary = {
+  total: number;
+  completed: number;
+  open: number;
+};
+function aggregateOnboarding(tasks: RecruitingOnboardingTask[]): LiveOnboardingSummary {
+  const total = tasks.length;
+  const completed = tasks.filter((t) => t.completed).length;
+  return { total, completed, open: total - completed };
+}
+function onboardingSummaryToStage(s: LiveOnboardingSummary, fallback: StageKey): StageKey {
+  if (s.total === 0) return fallback;
+  if (s.completed === 0) return "onboardingSent";
+  if (s.completed >= s.total) return "onboardingComplete";
+  return "onboardingProgress";
+}
 
 // Operational mapping of real data → onboarding stage.
 function classify(c: RecruitingCandidate): StageKey {
@@ -148,7 +169,40 @@ const ONBOARDING_STEPS = [
 export default function OSRecruitingOnboarding() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveOnboarding } = useRecruitingOnboarding();
+  const { items: liveOnboarding, loading: liveOnboardingLoading } = useRecruitingOnboarding();
+  const { candidates: liveCandidates } = useRecruitingCandidateLookup();
+
+  // Cross-reference live onboarding tasks with live candidate rows so legacy
+  // in-page candidates can be matched to real DB rows by full name.
+  const liveTasksByCandidateId = useMemo(() => {
+    const m = new Map<string, RecruitingOnboardingTask[]>();
+    for (const t of liveOnboarding) {
+      const arr = m.get(t.candidate_id) ?? [];
+      arr.push(t);
+      m.set(t.candidate_id, arr);
+    }
+    return m;
+  }, [liveOnboarding]);
+  const liveOnboardingByName = useMemo(() => {
+    const m = new Map<string, LiveOnboardingSummary>();
+    for (const lc of liveCandidates) {
+      const tasks = liveTasksByCandidateId.get(lc.id);
+      if (tasks && tasks.length > 0) {
+        m.set(fullName(lc).toLowerCase(), aggregateOnboarding(tasks));
+      }
+    }
+    return m;
+  }, [liveCandidates, liveTasksByCandidateId]);
+  const liveCandidateIdByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const lc of liveCandidates) m.set(fullName(lc).toLowerCase(), lc.id);
+    return m;
+  }, [liveCandidates]);
+  const findLiveOnboardingFor = useCallback(
+    (c: RecruitingCandidate) => liveOnboardingByName.get(c.name.toLowerCase()) ?? null,
+    [liveOnboardingByName],
+  );
+
   const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
     Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
   );
@@ -160,7 +214,13 @@ export default function OSRecruitingOnboarding() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checks, setChecks] = useState<Record<string, boolean[]>>({});
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => {
+    const override = stageMap[c.id];
+    if (override) return override;
+    const live = findLiveOnboardingFor(c);
+    if (live) return onboardingSummaryToStage(live, classify(c));
+    return classify(c);
+  };
 
   // Pool: candidates that have signed (or are at) onboarding stages.
   const pool = useMemo(
@@ -331,6 +391,16 @@ export default function OSRecruitingOnboarding() {
           ))}
         </div>
 
+        {/* Live vs Suggested pill summary */}
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <Pill tone="info">{liveOnboardingByName.size} live</Pill>
+          <Pill tone="muted">{Math.max(0, pool.length - liveOnboardingByName.size)} suggested</Pill>
+          {liveOnboardingLoading && <span>Loading live onboarding tasks…</span>}
+          <span className="text-muted-foreground/70">
+            Live rows persist to <code className="text-foreground/80">recruiting_onboarding_tasks</code>; suggested rows are accepted-offer candidates without a task list yet.
+          </span>
+        </div>
+
         {/* Main grid */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
           <div className="space-y-8">
@@ -405,6 +475,57 @@ export default function OSRecruitingOnboarding() {
                 </div>
               )}
             </section>
+
+            {/* Suggested onboarding — accepted candidates without a task list */}
+            {(() => {
+              const suggested = pool.filter(
+                (c) => !findLiveOnboardingFor(c) && c.onboardingStatus !== "Complete",
+              );
+              if (suggested.length === 0) return null;
+              return (
+                <section>
+                  <SectionHeader
+                    title="Suggested onboarding"
+                    caption={`${suggested.length} candidate${suggested.length === 1 ? "" : "s"} ready for a recruiting_onboarding_tasks task list`}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {suggested.slice(0, 8).map((c) => {
+                      const uuid = liveCandidateIdByName.get(c.name.toLowerCase()) ?? null;
+                      return (
+                        <div key={`sug-onb-${c.id}`} className="rounded-2xl bg-card border border-border/70 p-4">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">{c.name}</div>
+                              <div className="text-[11px] text-muted-foreground truncate">{c.role} · {c.state} · {c.recruiter}</div>
+                            </div>
+                            <Pill tone="muted">Suggested</Pill>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">{c.nextAction}</div>
+                          <div className="flex justify-end mt-3">
+                            <button
+                              disabled={!uuid}
+                              title={uuid ? "Seed default onboarding tasks" : "No matching candidate record in recruiting_candidates"}
+                              onClick={() => {
+                                if (!uuid) return;
+                                void mutations.ensureDefaultOnboardingTasks(uuid);
+                              }}
+                              className={cn(
+                                "h-8 px-3 rounded-lg text-xs inline-flex items-center gap-1.5 transition",
+                                uuid
+                                  ? "bg-primary text-primary-foreground hover:opacity-90"
+                                  : "bg-muted text-muted-foreground cursor-not-allowed",
+                              )}
+                            >
+                              <ClipboardList className="size-3.5" /> Seed Onboarding Tasks
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })()}
           </div>
 
           {/* Right rail */}
