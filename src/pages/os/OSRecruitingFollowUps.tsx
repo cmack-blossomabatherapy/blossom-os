@@ -12,6 +12,8 @@ import {
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
+import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
+import { useRecruitingFollowups } from "@/hooks/useRecruitingCandidates";
 import { cn } from "@/lib/utils";
 import { useWorkflowStages } from "@/hooks/useWorkflowStages";
 
@@ -171,6 +173,8 @@ const CHIPS = [
 
 export default function OSRecruitingFollowUps() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
+  const mutations = useRecruitingMutations();
+  const { items: liveFollowups } = useRecruitingFollowups();
   const baseFollowUps = useMemo(() => buildFollowUps(recruitingCandidates), [recruitingCandidates]);
 
   const defaults = useMemo(() => {

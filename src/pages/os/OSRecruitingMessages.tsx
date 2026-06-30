@@ -13,6 +13,8 @@ import {
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
+import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
+import { useRecruitingMessages } from "@/hooks/useRecruitingCandidates";
 import { cn } from "@/lib/utils";
 
 // Recruiting → Communication → Messages & Updates
@@ -263,6 +265,8 @@ const QUICK_ACTIONS = [
 
 export default function OSRecruitingMessages() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
+  const mutations = useRecruitingMutations();
+  const { items: liveMessages } = useRecruitingMessages();
   const baseMessages = useMemo(() => buildMessages(recruitingCandidates), [recruitingCandidates]);
 
   const [activeChip, setActiveChip] = useState("all");
