@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Users, AlertTriangle } from "lucide-react";
+import { Search, Users, AlertTriangle, Phone } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import { useCentralReachOps, type ProviderRosterEntry } from "@/hooks/useCentralReachOps";
+import { ContactAttemptDialog, ProviderRiskDialog } from "@/components/scheduling/SchedulingDialogs";
 
 const CASELOAD_CAP = 12;
 
@@ -27,6 +28,8 @@ export default function OSSchedulingRosterBCBAs() {
 
   const overCap = cr.bcbaRoster.filter((r) => r.distinctClients > CASELOAD_CAP).length;
   const inactiveBcbas = cr.bcbaRoster.filter((r) => r.sessionsLast7d === 0).length;
+  const [contactFor, setContactFor] = useState<ProviderRosterEntry | null>(null);
+  const [riskFor, setRiskFor] = useState<ProviderRosterEntry | null>(null);
 
   return (
     <OSShell>
@@ -86,14 +89,15 @@ export default function OSSchedulingRosterBCBAs() {
                   <th className="text-right font-medium px-4 py-2.5">Sessions / 30d</th>
                   <th className="text-left font-medium px-4 py-2.5">Last session</th>
                   <th className="text-left font-medium px-4 py-2.5">Caseload</th>
+                  <th className="text-right font-medium px-4 py-2.5">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {cr.loading && (
-                  <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">Loading CentralReach roster…</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-12 text-center text-sm text-muted-foreground">Loading CentralReach roster…</td></tr>
                 )}
                 {!cr.loading && filtered.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">No BCBAs match your filters.</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-12 text-center text-sm text-muted-foreground">No BCBAs match your filters.</td></tr>
                 )}
                 {filtered.map((r) => {
                   const pct = Math.round((r.distinctClients / CASELOAD_CAP) * 100);
@@ -120,6 +124,13 @@ export default function OSSchedulingRosterBCBAs() {
                           )}>{pct}%</span>
                         </div>
                       </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1">
+                          <button onClick={() => setContactFor(r)} className="h-7 px-2 rounded-md text-[11px] border border-border/70 hover:bg-muted inline-flex items-center gap-1"><Phone className="size-3" /> Notify</button>
+                          <button onClick={() => setRiskFor(r)} className="h-7 px-2 rounded-md text-[11px] border border-border/70 hover:bg-muted">Flag risk</button>
+                          <Link to={`/scheduling?q=${encodeURIComponent(r.name)}`} className="h-7 px-2 rounded-md text-[11px] border border-border/70 hover:bg-muted">Clients</Link>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -132,6 +143,8 @@ export default function OSSchedulingRosterBCBAs() {
           Source: <code>bcba_billable_sessions</code> · codes 97155 / 97151 / 97156 · window {cr.windowStart} → today.
         </p>
       </div>
+      <ContactAttemptDialog open={!!contactFor} onOpenChange={(o) => !o && setContactFor(null)} client={contactFor ? { id: "", childName: contactFor.name, state: contactFor.state ?? undefined } : null} defaultContactType="bcba" />
+      <ProviderRiskDialog open={!!riskFor} onOpenChange={(o) => !o && setRiskFor(null)} providerName={riskFor?.name ?? ""} providerRole="bcba" state={riskFor?.state ?? null} />
     </OSShell>
   );
 }
