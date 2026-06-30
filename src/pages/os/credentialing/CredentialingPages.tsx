@@ -1,9 +1,9 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import {
   Stethoscope, Building2, IdCard, AlertTriangle, Calendar, Plus, Filter,
   Download, RefreshCw, ListChecks, FileSignature, ShieldCheck, Activity,
-  Search, X, type LucideIcon,
+  Search, X, Trash2, Upload, FileText, ListTodo, type LucideIcon,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -26,12 +26,16 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   useCredentialingData, useCredentialingActivity,
-  createCredProvider, createCredRecord, updateCredRecord, createCredTask, addCredDocument,
+  createCredProvider, createCredRecord, updateCredRecord,
+  createCredTask, updateCredTask, addCredDocument, updateCredDocument,
+  logCredActivity,
+  fetchLegacyRaw, importLegacyRows, type LegacyRawRow,
   CRED_STATUSES, CRED_TYPES, CRED_PRIORITIES, CRED_PROVIDER_TYPES, CRED_STATES,
   ACTIVE_CRED_STATUSES, APPROVED_CRED_STATUSES,
   daysUntil,
   type CredentialingProvider, type CredentialingRecord,
   type CredStatus, type CredType, type CredPriority, type CredProviderType,
+  type CrSyncStatus,
 } from "@/hooks/useCredentialing";
 
 /* -------------------------------------------------------------------------- */
