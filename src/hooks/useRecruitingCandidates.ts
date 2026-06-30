@@ -90,15 +90,31 @@ export function useRecruitingCandidates() {
 
   const updateStage = useCallback(async (id: string, stage: PipelineStage) => {
     const prev = candidates;
-    setCandidates((cs) => cs.map((c) => (c.id === id ? { ...c, pipeline_stage: stage, stage_entered_at: new Date().toISOString() } : c)));
+    const from = prev.find((c) => c.id === id)?.pipeline_stage ?? null;
+    const now = new Date().toISOString();
+    setCandidates((cs) => cs.map((c) => (c.id === id ? { ...c, pipeline_stage: stage, stage_entered_at: now } : c)));
     const { error } = await supabase
       .from("recruiting_candidates")
-      .update({ pipeline_stage: stage })
+      .update({ pipeline_stage: stage, stage_entered_at: now })
       .eq("id", id);
     if (error) {
       console.error(error);
       toast.error("Failed to update stage");
       setCandidates(prev);
+      return;
+    }
+    // Best-effort activity log; ignore failures so UI stays responsive.
+    try {
+      await supabase.from("recruiting_activity_events").insert({
+        candidate_id: id,
+        entity_table: "recruiting_candidates",
+        entity_id: id,
+        event_type: "stage_changed",
+        from_value: from,
+        to_value: stage,
+      } as any);
+    } catch (e) {
+      console.warn("activity log failed", e);
     }
   }, [candidates]);
 
