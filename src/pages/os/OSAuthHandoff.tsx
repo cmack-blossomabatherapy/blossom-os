@@ -56,7 +56,7 @@ function classifyLane(a: Authorization): LaneId | null {
   // Initial side
   if (isInitial && (a.stage === "Awaiting Submission" || a.stage === "Submitted")) return "initial_submitted";
   if (isInitial && a.stage === "Approved" && !a.treatmentPlanReceived) return "initial_approved";
-  if (isInitial && a.stage === "Approved" && a.treatmentPlanReceived && a.stage !== "In QA Review") return "tx_plan_drafting";
+  if (isInitial && a.stage === "Approved" && a.treatmentPlanReceived) return "tx_plan_drafting";
 
   // Treatment side
   if (isTx && a.stage === "In QA Review") return "tx_plan_qa";
