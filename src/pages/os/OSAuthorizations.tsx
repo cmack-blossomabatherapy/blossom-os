@@ -640,13 +640,25 @@ function IconAction({ icon: Icon, title, onClick }: { icon: any; title: string; 
 }
 
 /* ------------------------------ drawer ------------------------------ */
-function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; liveBcba: string | null; onClose: () => void }) {
+function AuthDrawer({
+  auth,
+  liveBcba,
+  sourceSystem = "manual",
+  overlayId = null,
+  onClose,
+}: {
+  auth: Authorization | null;
+  liveBcba: string | null;
+  sourceSystem?: "monday" | "manual" | "centralreach";
+  overlayId?: string | null;
+  onClose: () => void;
+}) {
   const actions = useAuthorizationActions();
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   if (!auth) return null;
   const a = auth;
   const e = enrich(a, liveBcba);
-  const overlay = buildOverlayFromAuth(a);
+  const overlay = buildOverlayFromAuth(a, sourceSystem, overlayId, liveBcba);
 
   return (
     <div className="fixed inset-0 z-50 flex">
