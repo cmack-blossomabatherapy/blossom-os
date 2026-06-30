@@ -141,13 +141,18 @@ function Empty({ icon: Icon = FileSignature, title, action }: { icon?: LucideIco
 function AddProviderDialog({ open, onOpenChange, onCreated }: {
   open: boolean; onOpenChange: (v: boolean) => void; onCreated: () => void;
 }) {
-  const [form, setForm] = useState({
+  const blankProvider = {
     provider_name: "", provider_type: "BCBA" as CredProviderType,
     email: "", phone: "", npi: "", caqh_id: "",
     license_number: "", license_state: "GA", license_expiration_date: "",
     centralreach_provider_id: "", active: true, notes: "",
-  });
+  };
+  const [form, setForm] = useState(blankProvider);
   const [saving, setSaving] = useState(false);
+
+  // Always reset every field when the dialog opens or closes so a previous
+  // create doesn't leave stale values around.
+  useEffect(() => { if (open) setForm(blankProvider); }, [open]);
 
   async function submit() {
     if (!form.provider_name.trim()) { toast.error("Provider name is required"); return; }
@@ -166,6 +171,7 @@ function AddProviderDialog({ open, onOpenChange, onCreated }: {
       });
       toast.success("Provider added");
       onCreated();
+      setForm(blankProvider);
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to add provider");
