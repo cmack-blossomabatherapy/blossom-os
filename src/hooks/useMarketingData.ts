@@ -54,7 +54,7 @@ const UNKNOWN_STATE = "Unknown";
 
 type IntakeLeadRow = Pick<
   Database["public"]["Tables"]["intake_leads"]["Row"],
-  "id" | "referral_source" | "state" | "pipeline_stage" | "created_at"
+  "id" | "referral_source" | "state" | "pipeline_stage" | "created_at" | "last_contacted_at" | "last_contact_date"
 >;
 type RecruitingCandidateRow = Pick<
   Database["public"]["Tables"]["recruiting_candidates"]["Row"],
@@ -82,6 +82,8 @@ export type MktLead = {
   state: string;
   status: string;
   createdAt: string;
+  /** Most recent contact timestamp; falls back to `createdAt` when never contacted. */
+  lastContacted: string | null;
 };
 export type MktCandidate = {
   id: string;
@@ -124,7 +126,7 @@ export function useMarketingData(): UseMarketingDataResult {
       const [leadsRes, candRes, callsRes] = await Promise.all([
         supabase
           .from("intake_leads")
-          .select("id, referral_source, state, pipeline_stage, created_at")
+          .select("id, referral_source, state, pipeline_stage, created_at, last_contacted_at, last_contact_date")
           .limit(2000),
         supabase
           .from("recruiting_candidates")
@@ -150,6 +152,7 @@ export function useMarketingData(): UseMarketingDataResult {
           state: l.state ?? UNKNOWN_STATE,
           status: l.pipeline_stage ?? "Lead Captured",
           createdAt: l.created_at,
+          lastContacted: l.last_contacted_at ?? l.last_contact_date ?? null,
         })),
       );
       setCandidates(
