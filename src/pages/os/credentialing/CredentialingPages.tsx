@@ -233,33 +233,39 @@ function AddProviderDialog({ open, onOpenChange, onCreated }: {
 /* Add / edit Credentialing Record dialog                                     */
 /* -------------------------------------------------------------------------- */
 function AddRecordDialog({
-  open, onOpenChange, providers, defaultProviderId, defaultProviderType, onCreated,
+  open, onOpenChange, providers, defaultProviderId, defaultProviderType,
+  defaultPayer, defaultState, defaultCredentialingType, onCreated,
 }: {
   open: boolean; onOpenChange: (v: boolean) => void;
   providers: CredentialingProvider[];
   defaultProviderId?: string;
   defaultProviderType?: CredProviderType;
+  defaultPayer?: string;
+  defaultState?: string;
+  defaultCredentialingType?: CredType;
   onCreated: () => void;
 }) {
-  const [form, setForm] = useState({
+  const buildBlank = () => ({
     provider_id: defaultProviderId ?? "",
-    payer_name: "", state: "GA", plan_type: "",
-    credentialing_type: "Initial" as CredType, status: "Not Started" as CredStatus,
-    priority: "Normal" as CredPriority, payer_reference_number: "",
+    payer_name: defaultPayer ?? "",
+    state: defaultState ?? "GA",
+    plan_type: "",
+    credentialing_type: (defaultCredentialingType ?? "Initial") as CredType,
+    status: "Not Started" as CredStatus,
+    priority: "Normal" as CredPriority,
+    payer_reference_number: "",
     submitted_date: "", expiration_date: "", next_follow_up_date: "",
     blocker_reason: "", notes: "", owner_name: "",
   });
+  const [form, setForm] = useState(buildBlank);
   const [saving, setSaving] = useState(false);
 
-  // Keep provider in sync with the caller when the dialog re-opens for a
-  // different provider. Without this the form retains stale provider state.
+  // Always rebuild the form from defaults on each open so dates, notes,
+  // payer, status, etc. from the previous create do not persist.
   useEffect(() => {
-    if (!open) return;
-    setForm((f) => ({
-      ...f,
-      provider_id: defaultProviderId ?? f.provider_id,
-    }));
-  }, [open, defaultProviderId]);
+    if (open) setForm(buildBlank());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultProviderId, defaultPayer, defaultState, defaultCredentialingType]);
 
   // Prefer BCBA-typed providers when the caller has signalled that intent
   // (e.g. "Add BCBA" flow). Used only to pick a sensible default in an
