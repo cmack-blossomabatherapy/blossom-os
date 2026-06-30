@@ -15,6 +15,8 @@ import {
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
 import { useRecruitingMessages } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
+import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { cn } from "@/lib/utils";
 
 // Recruiting → Communication → Messages & Updates
@@ -266,9 +268,8 @@ const QUICK_ACTIONS = [
 export default function OSRecruitingMessages() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveMessages } = useRecruitingMessages();
-  const liveUnreadCount = liveMessages.filter((m: any) => m.status !== "Read" && m.status !== "Handled").length;
-  void liveUnreadCount;
+  const { items: liveMessages, loading: liveMessagesLoading } = useRecruitingMessages();
+  const { find: findCandidate } = useRecruitingCandidateLookup();
   const baseMessages = useMemo(() => buildSuggestedMessages(recruitingCandidates), [recruitingCandidates]);
 
   const [activeChip, setActiveChip] = useState("all");
