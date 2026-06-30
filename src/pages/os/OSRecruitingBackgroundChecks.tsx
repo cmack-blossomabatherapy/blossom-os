@@ -1,5 +1,5 @@
 import { runPageStageMove } from "@/lib/recruiting/stageMapping";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Search, X, AlertTriangle, CheckCircle2, Clock, Sparkles,
   Brain, Send, MessageSquare, UserPlus, Download,
@@ -15,7 +15,8 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingBackgroundChecks } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingBackgroundChecks, fullName, type RecruitingBackgroundCheck } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,38 @@ const STAGES = [
   { key: "orientationReady",label: "Orientation Ready" },
 ] as const;
 type StageKey = typeof STAGES[number]["key"];
+
+// Round-trip mapping between recruiting_background_checks.status and the
+// board's stage keys. Live rows always win over the synthetic classifier.
+const BG_STATUS_TO_STAGE: Record<string, StageKey> = {
+  Pending: "pending",
+  "In Review": "pending",
+  Initiated: "initiated",
+  Submitted: "initiated",
+  Sent: "linkSent",
+  "Link Sent": "linkSent",
+  "Not Started": "notStarted",
+  Blocked: "flagged",
+  Flagged: "flagged",
+  Delayed: "flagged",
+  Cleared: "cleared",
+  Clear: "cleared",
+  Complete: "cleared",
+};
+const STAGE_TO_BG_STATUS: Partial<Record<StageKey, string>> = {
+  needsSubmission: "Pending",
+  linkSent: "Sent",
+  notStarted: "Not Started",
+  initiated: "Submitted",
+  pending: "Pending",
+  flagged: "Blocked",
+  cleared: "Cleared",
+  orientationReady: "Cleared",
+};
+function bgStatusToStage(status: string | null | undefined, fallback: StageKey): StageKey {
+  if (!status) return fallback;
+  return BG_STATUS_TO_STAGE[status] ?? fallback;
+}
 
 function classify(c: RecruitingCandidate): StageKey {
   if (c.backgroundCheck === "Delayed") return "flagged";
@@ -102,7 +135,31 @@ const CHIPS: Array<{ key: string; label: string }> = [
 export default function OSRecruitingBackgroundChecks() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveBackground } = useRecruitingBackgroundChecks();
+  const { items: liveBackground, loading: liveBackgroundLoading } = useRecruitingBackgroundChecks();
+  const { candidates: liveCandidates } = useRecruitingCandidateLookup();
+
+  // Cross-reference live background-check rows with live candidate rows so
+  // legacy in-page candidates can be matched to real DB rows by full name.
+  const liveBgByName = useMemo(() => {
+    const candidateNameById = new Map<string, string>();
+    for (const lc of liveCandidates) candidateNameById.set(lc.id, fullName(lc).toLowerCase());
+    const m = new Map<string, RecruitingBackgroundCheck>();
+    for (const b of liveBackground) {
+      const name = candidateNameById.get(b.candidate_id);
+      if (name && !m.has(name)) m.set(name, b);
+    }
+    return m;
+  }, [liveBackground, liveCandidates]);
+  const liveCandidateIdByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const lc of liveCandidates) m.set(fullName(lc).toLowerCase(), lc.id);
+    return m;
+  }, [liveCandidates]);
+  const findLiveBgFor = useCallback(
+    (c: RecruitingCandidate) => liveBgByName.get(c.name.toLowerCase()) ?? null,
+    [liveBgByName],
+  );
+
   const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
     Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
   );
@@ -113,7 +170,13 @@ export default function OSRecruitingBackgroundChecks() {
   const [recruiter, setRecruiter] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => {
+    const override = stageMap[c.id];
+    if (override) return override;
+    const live = findLiveBgFor(c);
+    if (live) return bgStatusToStage(live.status, classify(c));
+    return classify(c);
+  };
 
   // Pool: candidates eligible for background check (post-onboarding-handoff).
   const pool = useMemo(
@@ -191,6 +254,15 @@ export default function OSRecruitingBackgroundChecks() {
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
     void runPageStageMove(mutations, "background", id, to);
+    const candidate = recruitingCandidates.find((c) => c.id === id);
+    if (!candidate) return;
+    const live = findLiveBgFor(candidate);
+    const nextStatus = STAGE_TO_BG_STATUS[to];
+    if (live && nextStatus && live.status !== nextStatus) {
+      if (to === "cleared" || to === "orientationReady") void mutations.markBackgroundCleared(live.id);
+      else if (to === "flagged") void mutations.flagBackgroundBlocker(live.id, "Flagged from board");
+      else void mutations.updateBackground(live.id, { status: nextStatus });
+    }
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id);
@@ -274,6 +346,16 @@ export default function OSRecruitingBackgroundChecks() {
           ))}
         </div>
 
+        {/* Live vs Suggested pill summary */}
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <Pill tone="info">{liveBackground.length} live</Pill>
+          <Pill tone="muted">{Math.max(0, pool.length - liveBgByName.size)} suggested</Pill>
+          {liveBackgroundLoading && <span>Loading live background checks…</span>}
+          <span className="text-muted-foreground/70">
+            Live rows persist to <code className="text-foreground/80">recruiting_background_checks</code>; suggested rows are post-onboarding candidates without a Stellar Check record yet.
+          </span>
+        </div>
+
         {/* Main grid */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
           <div className="space-y-8">
@@ -348,6 +430,57 @@ export default function OSRecruitingBackgroundChecks() {
                 </div>
               )}
             </section>
+
+            {/* Suggested background checks — candidates needing a Stellar Check row */}
+            {(() => {
+              const suggested = pool.filter(
+                (c) => !findLiveBgFor(c) && (stageOf(c) === "needsSubmission" || stageOf(c) === "linkSent" || stageOf(c) === "notStarted"),
+              );
+              if (suggested.length === 0) return null;
+              return (
+                <section>
+                  <SectionHeader
+                    title="Suggested background checks"
+                    caption={`${suggested.length} candidate${suggested.length === 1 ? "" : "s"} ready for a recruiting_background_checks record`}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {suggested.slice(0, 8).map((c) => {
+                      const uuid = liveCandidateIdByName.get(c.name.toLowerCase()) ?? null;
+                      return (
+                        <div key={`sug-bg-${c.id}`} className="rounded-2xl bg-card border border-border/70 p-4">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">{c.name}</div>
+                              <div className="text-[11px] text-muted-foreground truncate">{c.role} · {c.state} · {c.recruiter}</div>
+                            </div>
+                            <Pill tone="muted">Suggested</Pill>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">{c.nextAction}</div>
+                          <div className="flex justify-end mt-3">
+                            <button
+                              disabled={!uuid}
+                              title={uuid ? "Initiate a Stellar Check record" : "No matching candidate record in recruiting_candidates"}
+                              onClick={() => {
+                                if (!uuid) return;
+                                void mutations.startBackgroundCheck(uuid, "Stellar Check", c.blockers[0] ?? undefined);
+                              }}
+                              className={cn(
+                                "h-8 px-3 rounded-lg text-xs inline-flex items-center gap-1.5 transition",
+                                uuid
+                                  ? "bg-primary text-primary-foreground hover:opacity-90"
+                                  : "bg-muted text-muted-foreground cursor-not-allowed",
+                              )}
+                            >
+                              <ShieldCheck className="size-3.5" /> Submit Background Check
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })()}
           </div>
 
           {/* Right rail */}
