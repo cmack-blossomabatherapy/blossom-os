@@ -959,6 +959,509 @@ function Field({ label, value }: { label: string; value: string | null | undefin
 }
 
 /* -------------------------------------------------------------------------- */
+/* Edit Record dialog                                                         */
+/* -------------------------------------------------------------------------- */
+function EditRecordDialog({ open, onOpenChange, record, onSaved }: {
+  open: boolean; onOpenChange: (v: boolean) => void;
+  record: CredentialingRecord; onSaved: () => void;
+}) {
+  const [form, setForm] = useState({
+    payer_name: record.payer_name,
+    state: record.state ?? "GA",
+    plan_type: record.plan_type ?? "",
+    credentialing_type: record.credentialing_type,
+    priority: record.priority,
+    payer_reference_number: record.payer_reference_number ?? "",
+    submitted_date: record.submitted_date ?? "",
+    approved_date: record.approved_date ?? "",
+    effective_date: record.effective_date ?? "",
+    expiration_date: record.expiration_date ?? "",
+    next_follow_up_date: record.next_follow_up_date ?? "",
+    owner_name: record.owner_name ?? "",
+    blocker_reason: record.blocker_reason ?? "",
+    notes: record.notes ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    setForm({
+      payer_name: record.payer_name,
+      state: record.state ?? "GA",
+      plan_type: record.plan_type ?? "",
+      credentialing_type: record.credentialing_type,
+      priority: record.priority,
+      payer_reference_number: record.payer_reference_number ?? "",
+      submitted_date: record.submitted_date ?? "",
+      approved_date: record.approved_date ?? "",
+      effective_date: record.effective_date ?? "",
+      expiration_date: record.expiration_date ?? "",
+      next_follow_up_date: record.next_follow_up_date ?? "",
+      owner_name: record.owner_name ?? "",
+      blocker_reason: record.blocker_reason ?? "",
+      notes: record.notes ?? "",
+    });
+  }, [open, record]);
+
+  async function save() {
+    setSaving(true);
+    try {
+      await updateCredRecord(
+        record.id,
+        {
+          payer_name: form.payer_name.trim() || record.payer_name,
+          state: form.state || null,
+          plan_type: form.plan_type || null,
+          credentialing_type: form.credentialing_type,
+          priority: form.priority,
+          payer_reference_number: form.payer_reference_number || null,
+          submitted_date: form.submitted_date || null,
+          approved_date: form.approved_date || null,
+          effective_date: form.effective_date || null,
+          expiration_date: form.expiration_date || null,
+          next_follow_up_date: form.next_follow_up_date || null,
+          owner_name: form.owner_name || null,
+          blocker_reason: form.blocker_reason || null,
+          notes: form.notes || null,
+        },
+        { type: "record_edit", message: "Record fields edited" },
+      );
+      toast.success("Record updated");
+      onSaved();
+      onOpenChange(false);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Edit credentialing record</DialogTitle>
+          <DialogDescription>Update key fields. An activity entry is written for traceability.</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Payer</Label><Input value={form.payer_name} onChange={(e) => setForm({ ...form, payer_name: e.target.value })} /></div>
+          <div>
+            <Label>State</Label>
+            <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Plan type</Label><Input value={form.plan_type} onChange={(e) => setForm({ ...form, plan_type: e.target.value })} /></div>
+          <div>
+            <Label>Credentialing type</Label>
+            <Select value={form.credentialing_type} onValueChange={(v) => setForm({ ...form, credentialing_type: v as CredType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Priority</Label>
+            <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v as CredPriority })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Payer reference #</Label><Input value={form.payer_reference_number} onChange={(e) => setForm({ ...form, payer_reference_number: e.target.value })} /></div>
+          <div><Label>Submitted</Label><Input type="date" value={form.submitted_date} onChange={(e) => setForm({ ...form, submitted_date: e.target.value })} /></div>
+          <div><Label>Approved</Label><Input type="date" value={form.approved_date} onChange={(e) => setForm({ ...form, approved_date: e.target.value })} /></div>
+          <div><Label>Effective</Label><Input type="date" value={form.effective_date} onChange={(e) => setForm({ ...form, effective_date: e.target.value })} /></div>
+          <div><Label>Expiration</Label><Input type="date" value={form.expiration_date} onChange={(e) => setForm({ ...form, expiration_date: e.target.value })} /></div>
+          <div><Label>Next follow-up</Label><Input type="date" value={form.next_follow_up_date} onChange={(e) => setForm({ ...form, next_follow_up_date: e.target.value })} /></div>
+          <div><Label>Owner</Label><Input value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Blocker reason</Label><Input value={form.blocker_reason} onChange={(e) => setForm({ ...form, blocker_reason: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Edit Provider dialog                                                       */
+/* -------------------------------------------------------------------------- */
+function EditProviderDialog({ open, onOpenChange, provider, onSaved }: {
+  open: boolean; onOpenChange: (v: boolean) => void;
+  provider: CredentialingProvider; onSaved: () => void;
+}) {
+  const [form, setForm] = useState({
+    provider_name: provider.provider_name,
+    provider_type: provider.provider_type,
+    email: provider.email ?? "",
+    phone: provider.phone ?? "",
+    npi: provider.npi ?? "",
+    caqh_id: provider.caqh_id ?? "",
+    license_number: provider.license_number ?? "",
+    license_state: provider.license_state ?? "GA",
+    license_expiration_date: provider.license_expiration_date ?? "",
+    centralreach_provider_id: provider.centralreach_provider_id ?? "",
+    active: provider.active,
+    notes: provider.notes ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    setForm({
+      provider_name: provider.provider_name,
+      provider_type: provider.provider_type,
+      email: provider.email ?? "",
+      phone: provider.phone ?? "",
+      npi: provider.npi ?? "",
+      caqh_id: provider.caqh_id ?? "",
+      license_number: provider.license_number ?? "",
+      license_state: provider.license_state ?? "GA",
+      license_expiration_date: provider.license_expiration_date ?? "",
+      centralreach_provider_id: provider.centralreach_provider_id ?? "",
+      active: provider.active,
+      notes: provider.notes ?? "",
+    });
+  }, [open, provider]);
+
+  async function save() {
+    if (!form.provider_name.trim()) { toast.error("Provider name is required"); return; }
+    setSaving(true);
+    try {
+      await updateCredProvider(provider.id, {
+        provider_name: form.provider_name.trim(),
+        provider_type: form.provider_type,
+        email: form.email || null, phone: form.phone || null,
+        npi: form.npi || null, caqh_id: form.caqh_id || null,
+        license_number: form.license_number || null,
+        license_state: form.license_state || null,
+        license_expiration_date: form.license_expiration_date || null,
+        centralreach_provider_id: form.centralreach_provider_id || null,
+        active: form.active, notes: form.notes || null,
+      });
+      toast.success("Provider updated");
+      onSaved();
+      onOpenChange(false);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Edit provider</DialogTitle>
+          <DialogDescription>Update provider profile fields. Deactivate instead of deleting.</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2"><Label>Provider name</Label><Input value={form.provider_name} onChange={(e) => setForm({ ...form, provider_name: e.target.value })} /></div>
+          <div>
+            <Label>Type</Label>
+            <Select value={form.provider_type} onValueChange={(v) => setForm({ ...form, provider_type: v as CredProviderType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_PROVIDER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>License state</Label>
+            <Select value={form.license_state} onValueChange={(v) => setForm({ ...form, license_state: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+          <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+          <div><Label>NPI</Label><Input value={form.npi} onChange={(e) => setForm({ ...form, npi: e.target.value })} /></div>
+          <div><Label>CAQH ID</Label><Input value={form.caqh_id} onChange={(e) => setForm({ ...form, caqh_id: e.target.value })} /></div>
+          <div><Label>License number</Label><Input value={form.license_number} onChange={(e) => setForm({ ...form, license_number: e.target.value })} /></div>
+          <div><Label>License expiration</Label><Input type="date" value={form.license_expiration_date} onChange={(e) => setForm({ ...form, license_expiration_date: e.target.value })} /></div>
+          <div><Label>CentralReach provider id</Label><Input value={form.centralreach_provider_id} onChange={(e) => setForm({ ...form, centralreach_provider_id: e.target.value })} /></div>
+          <div className="flex items-center gap-3 pt-6">
+            <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
+            <Label className="!mt-0">Active</Label>
+          </div>
+          <div className="col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save provider"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Provider Detail Sheet (used by Providers page + BCBA page)                 */
+/* -------------------------------------------------------------------------- */
+function ProviderDetailSheet({
+  providerId, providers, records, documents, tasks,
+  onClose, onChanged, onOpenRecord, onStartCredentialing,
+}: {
+  providerId: string | null;
+  providers: CredentialingProvider[];
+  records: CredentialingRecord[];
+  documents: CredentialingDocument[];
+  tasks: ReturnType<typeof useCredentialingData>["tasks"];
+  onClose: () => void;
+  onChanged: () => void;
+  onOpenRecord: (id: string) => void;
+  onStartCredentialing: (providerId: string) => void;
+}) {
+  const provider = useMemo(() => providers.find((p) => p.id === providerId) ?? null, [providers, providerId]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [docOpen, setDocOpen] = useState(false);
+  const provRecords = useMemo(
+    () => (provider ? records.filter((r) => r.provider_id === provider.id) : []),
+    [records, provider],
+  );
+  const provDocs = useMemo(
+    () => (provider ? documents.filter((d) => d.provider_id === provider.id) : []),
+    [documents, provider],
+  );
+  const provRecordIds = useMemo(() => new Set(provRecords.map((r) => r.id)), [provRecords]);
+  const provTasks = useMemo(
+    () => tasks.filter((t) => t.status !== "Done" && t.credentialing_record_id && provRecordIds.has(t.credentialing_record_id)),
+    [tasks, provRecordIds],
+  );
+
+  async function toggleActive() {
+    if (!provider) return;
+    try {
+      await updateCredProvider(provider.id, { active: !provider.active });
+      toast.success(provider.active ? "Provider deactivated" : "Provider reactivated");
+      onChanged();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+  }
+
+  return (
+    <Sheet open={!!provider} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        {provider ? (
+          <>
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                {provider.provider_name}
+                {!provider.active ? <Badge variant="outline">Inactive</Badge> : null}
+              </SheetTitle>
+              <SheetDescription>
+                {provider.provider_type}{provider.license_state ? ` · ${provider.license_state}` : ""}
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>Edit provider</Button>
+              <Button size="sm" onClick={() => onStartCredentialing(provider.id)}>
+                <Plus className="h-3.5 w-3.5 mr-1" />Start credentialing
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setDocOpen(true)}>
+                <FileText className="h-3.5 w-3.5 mr-1" />Add document
+              </Button>
+              <Button size="sm" variant={provider.active ? "outline" : "default"} onClick={toggleActive}>
+                {provider.active ? "Deactivate" : "Reactivate"}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-5 text-sm">
+              <Field label="Email" value={provider.email} />
+              <Field label="Phone" value={provider.phone} />
+              <Field label="NPI" value={provider.npi} />
+              <Field label="CAQH ID" value={provider.caqh_id} />
+              <Field label="License #" value={provider.license_number} />
+              <Field label="License state" value={provider.license_state} />
+              <Field label="License exp" value={provider.license_expiration_date} />
+              <Field label="CentralReach provider id" value={provider.centralreach_provider_id} />
+            </div>
+            {provider.notes ? (
+              <div className="mt-3 text-sm text-muted-foreground whitespace-pre-wrap">{provider.notes}</div>
+            ) : null}
+
+            <div className="mt-6">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                Credentialing records ({provRecords.length})
+              </div>
+              {provRecords.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No payer records yet.</div>
+              ) : (
+                <div className="divide-y rounded-lg border border-border/60 overflow-hidden">
+                  {provRecords.map((r) => (
+                    <button
+                      key={r.id}
+                      onClick={() => onOpenRecord(r.id)}
+                      className="w-full text-left px-3 py-2 hover:bg-muted/40 flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate">{r.payer_name} · {r.state ?? "—"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {r.credentialing_type}
+                          {r.expiration_date ? ` · exp ${r.expiration_date}` : ""}
+                          {r.next_follow_up_date ? ` · follow-up ${r.next_follow_up_date}` : ""}
+                        </div>
+                      </div>
+                      <StatusBadge status={r.status} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                Documents ({provDocs.length})
+              </div>
+              {provDocs.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No documents on file.</div>
+              ) : (
+                <ul className="text-sm space-y-1">
+                  {provDocs.map((d) => (
+                    <li key={d.id} className="flex items-center justify-between gap-2 border-b border-border/60 py-1.5">
+                      <span className="truncate">{d.document_type}{d.file_name ? ` · ${d.file_name}` : ""}</span>
+                      <Badge variant="outline" className="text-[10px]">{d.verification_status}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="mt-6">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                Open tasks ({provTasks.length})
+              </div>
+              {provTasks.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No open tasks.</div>
+              ) : (
+                <ul className="text-sm space-y-1">
+                  {provTasks.map((t) => (
+                    <li key={t.id} className="border-b border-border/60 py-1.5">
+                      <div className="font-medium">{t.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {t.owner_name ?? "Unassigned"}{t.due_date ? ` · due ${t.due_date}` : ""} · {t.status}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <EditProviderDialog open={editOpen} onOpenChange={setEditOpen} provider={provider} onSaved={onChanged} />
+            <AddDocumentDialog
+              open={docOpen} onOpenChange={setDocOpen}
+              recordId={null} providerId={provider.id} onCreated={onChanged}
+            />
+          </>
+        ) : null}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Payer / State Detail Sheet (Insurance page drilldown)                      */
+/* -------------------------------------------------------------------------- */
+function PayerStateDetailSheet({
+  open, onClose, payer, state, records, providerById, onOpenRecord, onAddRecord,
+}: {
+  open: boolean; onClose: () => void;
+  payer: string | null; state: string | null;
+  records: CredentialingRecord[];
+  providerById: Map<string, CredentialingProvider>;
+  onOpenRecord: (id: string) => void;
+  onAddRecord: (payer: string, state: string) => void;
+}) {
+  const rows = useMemo(() => {
+    if (!payer) return [];
+    return records.filter((r) => r.payer_name === payer && (r.state ?? "—") === (state ?? "—"));
+  }, [records, payer, state]);
+  const credentialed = rows.filter((r) => APPROVED_CRED_STATUSES.includes(r.status)).length;
+  const blocked = rows.filter((r) => r.status === "Blocked" || r.status === "Denied").length;
+  const pending = rows.filter((r) => ACTIVE_CRED_STATUSES.includes(r.status)).length;
+  const expiring = rows.filter((r) => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 90; }).length;
+
+  function exportRows() {
+    exportCsv(`${payer ?? "payer"}-${state ?? "state"}.csv`, rows.map((r) => ({
+      provider: providerById.get(r.provider_id)?.provider_name ?? "",
+      payer: r.payer_name,
+      state: r.state ?? "",
+      status: r.status,
+      type: r.credentialing_type,
+      owner: r.owner_name ?? "",
+      submitted: r.submitted_date ?? "",
+      approved: r.approved_date ?? "",
+      expiration: r.expiration_date ?? "",
+      next_follow_up: r.next_follow_up_date ?? "",
+      blocker_reason: r.blocker_reason ?? "",
+    })));
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        {payer ? (
+          <>
+            <SheetHeader>
+              <SheetTitle>{payer} · {state ?? "—"}</SheetTitle>
+              <SheetDescription>All credentialing records for this payer/state.</SheetDescription>
+            </SheetHeader>
+
+            <div className="grid grid-cols-5 gap-2 mt-4">
+              <KpiCard label="Total" value={rows.length} />
+              <KpiCard label="Credentialed" value={credentialed} tone="ok" />
+              <KpiCard label="Pending" value={pending} />
+              <KpiCard label="Blocked" value={blocked} tone="danger" />
+              <KpiCard label="Expiring" value={expiring} tone="warn" />
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <Button size="sm" onClick={() => onAddRecord(payer, state ?? "")}>
+                <Plus className="h-3.5 w-3.5 mr-1" />Add credentialing record
+              </Button>
+              <Button size="sm" variant="outline" onClick={exportRows}>
+                <Download className="h-3.5 w-3.5 mr-1" />Export CSV
+              </Button>
+            </div>
+
+            <div className="mt-5 divide-y rounded-lg border border-border/60 overflow-hidden">
+              {rows.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">No records yet for this payer/state.</div>
+              ) : rows.map((r) => {
+                const p = providerById.get(r.provider_id);
+                return (
+                  <button
+                    key={r.id} onClick={() => onOpenRecord(r.id)}
+                    className="w-full text-left px-3 py-2 hover:bg-muted/40 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{p?.provider_name ?? "Unknown"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {r.owner_name ? `Owner ${r.owner_name}` : "Unassigned"}
+                        {r.next_follow_up_date ? ` · follow-up ${r.next_follow_up_date}` : ""}
+                        {r.blocker_reason ? ` · ${r.blocker_reason}` : ""}
+                      </div>
+                    </div>
+                    <StatusBadge status={r.status} />
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Document download helper                                                   */
+/* -------------------------------------------------------------------------- */
+async function openCredDocument(doc: CredentialingDocument) {
+  if (!doc.storage_path) {
+    toast.message("No file attached — metadata only");
+    return;
+  }
+  const url = await getCredDocumentSignedUrl(doc.storage_path, 300);
+  if (!url) { toast.error("Could not generate download link"); return; }
+  window.open(url, "_blank", "noopener");
+}
+
+/* -------------------------------------------------------------------------- */
 /* CSV export helper                                                          */
 /* -------------------------------------------------------------------------- */
 function exportCsv(filename: string, rows: Record<string, unknown>[]) {
