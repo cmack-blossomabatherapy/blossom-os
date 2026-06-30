@@ -9,6 +9,8 @@ import {
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
+import { useQAWorkflow } from "@/hooks/useQAWorkflow";
+import { toQAWorkItemRef } from "@/lib/os/qa/qaRefs";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -135,6 +137,7 @@ function isExpiringSoon(a: Authorization): boolean {
 // ---------- Page ----------
 export default function OSQAQueue() {
   const { qaItems: items, loading, refresh, sourceById } = useLiveAuthorizations();
+  const wf = useQAWorkflow();
 
   const [tab, setTab] = useState<TabKey>("active");
   const [query, setQuery] = useState("");
@@ -215,6 +218,48 @@ export default function OSQAQueue() {
   const toggleSelectAll = () => {
     if (allVisibleSelected) setSelected(new Set());
     else setSelected(new Set(visible.map(a => a.id)));
+  };
+
+  const selectedRefs = useMemo(
+    () =>
+      items
+        .filter(a => selected.has(a.id))
+        .map(a => toQAWorkItemRef(a, sourceById.get(a.id))),
+    [items, selected, sourceById],
+  );
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const runBulk = async (fn: () => Promise<unknown>) => {
+    if (bulkBusy || selectedRefs.length === 0) return;
+    setBulkBusy(true);
+    try {
+      await fn();
+      setSelected(new Set());
+      await refresh();
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+  const bulkAssign = () => {
+    const owner = window.prompt("Assign QA owner to selected items (leave empty to clear):", "");
+    if (owner === null) return;
+    void runBulk(() => wf.bulkAssign(selectedRefs, owner.trim() || null));
+  };
+  const bulkFollowUp = () => {
+    const note = window.prompt("Follow-up note for selected items:", "Follow-up requested");
+    if (!note) return;
+    void runBulk(async () => {
+      for (const ref of selectedRefs) await wf.sendFollowUp(ref, note);
+    });
+  };
+  const bulkMarkReviewed = () => {
+    void runBulk(() => wf.bulkStartReview(selectedRefs, null));
+  };
+  const bulkEscalate = () => {
+    const reason = window.prompt("Escalation reason for selected items:", "Escalated from QA queue");
+    if (!reason) return;
+    void runBulk(async () => {
+      for (const ref of selectedRefs) await wf.escalate(ref, reason);
+    });
   };
 
   const priorities = useMemo(() => {
@@ -347,10 +392,10 @@ export default function OSQAQueue() {
               </label>
               {selected.size > 0 && (
                 <div className="flex items-center gap-1.5">
-                  <BulkBtn icon={UserCheck} label="Assign" />
-                  <BulkBtn icon={Send} label="Follow-up" />
-                  <BulkBtn icon={CheckCircle2} label="Mark reviewed" />
-                  <BulkBtn icon={Flame} label="Escalate" tone="crit" />
+                  <BulkBtn icon={UserCheck} label="Assign"        onClick={bulkAssign}      disabled={bulkBusy} />
+                  <BulkBtn icon={Send}      label="Follow-up"     onClick={bulkFollowUp}    disabled={bulkBusy} />
+                  <BulkBtn icon={CheckCircle2} label="Mark reviewed" onClick={bulkMarkReviewed} disabled={bulkBusy} />
+                  <BulkBtn icon={Flame}     label="Escalate" tone="crit" onClick={bulkEscalate} disabled={bulkBusy} />
                 </div>
               )}
             </div>
@@ -530,10 +575,11 @@ function FilterSelect({
   );
 }
 
-function BulkBtn({ icon: Icon, label, tone }: { icon: React.ElementType; label: string; tone?: Tone }) {
+function BulkBtn({ icon: Icon, label, tone, onClick, disabled }: { icon: React.ElementType; label: string; tone?: Tone; onClick?: () => void; disabled?: boolean }) {
   return (
-    <button className={cn(
+    <button onClick={onClick} disabled={disabled} className={cn(
       "h-8 px-3 rounded-lg text-xs font-medium border transition inline-flex items-center gap-1.5",
+      disabled && "opacity-50 cursor-not-allowed",
       tone === "crit"
         ? "border-destructive/20 text-destructive hover:bg-destructive/5"
         : "border-border/70 text-foreground bg-card hover:bg-muted",
@@ -635,10 +681,10 @@ function QueueCard({
           </button>
 
           <div className="hidden md:flex flex-col gap-1.5 shrink-0">
-            <IconBtn title="Open record" to="/qa-queue" icon={ExternalLink} />
-            <IconBtn title="Mark reviewed" icon={CheckCircle2} />
-            <IconBtn title="Send follow-up" icon={Send} />
-            <IconBtn title="Escalate" icon={Flame} tone="crit" />
+            <IconBtn title="Open record"   icon={ExternalLink}   onClick={onOpen} />
+            <IconBtn title="Mark reviewed" icon={CheckCircle2}   onClick={onOpen} />
+            <IconBtn title="Send follow-up" icon={Send}          onClick={onOpen} />
+            <IconBtn title="Escalate"      icon={Flame} tone="crit" onClick={onOpen} />
           </div>
         </div>
       </Card>
@@ -647,8 +693,8 @@ function QueueCard({
 }
 
 function IconBtn({
-  icon: Icon, title, tone, to,
-}: { icon: React.ElementType; title: string; tone?: Tone; to?: string }) {
+  icon: Icon, title, tone, to, onClick,
+}: { icon: React.ElementType; title: string; tone?: Tone; to?: string; onClick?: () => void }) {
   const cls = cn(
     "h-8 w-8 rounded-lg grid place-items-center border transition",
     tone === "crit"
@@ -656,7 +702,7 @@ function IconBtn({
       : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted",
   );
   if (to) return <Link to={to} title={title} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>;
-  return <button title={title} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></button>;
+  return <button title={title} onClick={onClick} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></button>;
 }
 
 function DetailSlideout({ auth: a, onClose, onChanged, sourceSystem }: { auth: Authorization; onClose: () => void; onChanged?: () => void | Promise<void>; sourceSystem?: "monday" | "manual" | "centralreach" }) {

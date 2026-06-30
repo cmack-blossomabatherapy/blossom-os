@@ -1,13 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Search, ClipboardCheck, FileWarning, CalendarClock, AlertTriangle,
   Flame, ChevronRight, Sparkles, ShieldCheck, CheckCircle2, Send,
-  ExternalLink, MessageSquare, FileSignature, ScrollText, Clock, Brain,
+  ExternalLink, MessageSquare, FileSignature, ScrollText, Clock, Brain, X,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
+import { useSlideout } from "@/hooks/useSlideout";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -136,8 +138,10 @@ function EmptyState({ icon: Icon, title, hint }: { icon: React.ElementType; titl
 
 export default function OSQATeam() {
   const { user } = useAuth();
-  const { qaItems: items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading, refresh, sourceById } = useLiveAuthorizations();
   const [query, setQuery] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const openAuth = useMemo(() => items.find(a => a.id === openId) ?? null, [items, openId]);
 
   const data = useMemo(() => {
     const all = items;
@@ -321,10 +325,10 @@ export default function OSQATeam() {
             {searchResults.length > 0 && (
               <Card className="absolute top-full mt-2 w-full z-20 p-2 max-h-80 overflow-auto">
                 {searchResults.map(a => (
-                  <Link
+                  <button
                     key={a.id}
-                    to={`/qa-queue`}
-                    className="flex items-center justify-between gap-4 px-3 py-2 rounded-lg hover:bg-muted transition"
+                    onClick={() => setOpenId(a.id)}
+                    className="flex w-full text-left items-center justify-between gap-4 px-3 py-2 rounded-lg hover:bg-muted transition"
                   >
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-foreground truncate">{a.clientName}</div>
@@ -333,7 +337,7 @@ export default function OSQATeam() {
                       </div>
                     </div>
                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  </Link>
+                  </button>
                 ))}
               </Card>
             )}
@@ -417,7 +421,7 @@ export default function OSQATeam() {
                       const due = daysUntil(a.nextTaskDue);
                       const dueLabel = due === null ? null : due < 0 ? `${Math.abs(due)}d overdue` : due === 0 ? "Due today" : `Due in ${due}d`;
                       return (
-                        <Link key={a.id} to={`/qa-queue`} className="flex items-start gap-4 p-4 hover:bg-muted/40 transition">
+                        <button key={a.id} onClick={() => setOpenId(a.id)} className="w-full text-left flex items-start gap-4 p-4 hover:bg-muted/40 transition">
                           <div className={cn("h-9 w-9 rounded-xl grid place-items-center border shrink-0", toneClasses(tone))}>
                             <FileSignature className="h-4 w-4" strokeWidth={1.75} />
                           </div>
@@ -438,7 +442,7 @@ export default function OSQATeam() {
                             </div>
                           </div>
                           <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                        </Link>
+                        </button>
                       );
                     })}
                   </div>
@@ -471,30 +475,18 @@ export default function OSQATeam() {
                           </StatusPill>
                         </div>
                         <div className="flex items-center gap-2 mt-3 flex-wrap">
-                          <Link
-                            to={`/qa-queue?focus=${encodeURIComponent(a.id)}`}
-                            className="h-8 px-3 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-1.5"
-                          >
+                          <button onClick={() => setOpenId(a.id)} className="h-8 px-3 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-1.5">
                             <Send className="h-3 w-3" /> Send follow-up
-                          </Link>
-                          <Link
-                            to={`/escalations-followups?focus=${encodeURIComponent(a.id)}`}
-                            className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground"
-                          >
+                          </button>
+                          <button onClick={() => setOpenId(a.id)} className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
                             <Flame className="h-3 w-3" /> Escalate
-                          </Link>
-                          <Link
-                            to={`/qa-queue?focus=${encodeURIComponent(a.id)}`}
-                            className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground"
-                          >
+                          </button>
+                          <button onClick={() => setOpenId(a.id)} className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
                             <ExternalLink className="h-3 w-3" /> Open record
-                          </Link>
-                          <Link
-                            to={`/qa-queue?focus=${encodeURIComponent(a.id)}`}
-                            className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground"
-                          >
+                          </button>
+                          <button onClick={() => setOpenId(a.id)} className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted transition inline-flex items-center gap-1.5 text-foreground">
                             <CheckCircle2 className="h-3 w-3" /> Mark updated
-                          </Link>
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -662,6 +654,51 @@ export default function OSQATeam() {
           </div>
         </div>
       </div>
+      {openAuth && (
+        <TeamSlideout
+          auth={openAuth}
+          onClose={() => setOpenId(null)}
+          onChanged={refresh}
+          sourceSystem={sourceById.get(openAuth.id)}
+        />
+      )}
     </OSShell>
+  );
+}
+
+function TeamSlideout({
+  auth, onClose, onChanged, sourceSystem,
+}: {
+  auth: Authorization;
+  onClose: () => void;
+  onChanged?: () => void | Promise<void>;
+  sourceSystem?: "monday" | "manual" | "centralreach";
+}) {
+  useSlideout(true, onClose);
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+  return (
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-foreground/30 backdrop-blur-[2px]" onClick={onClose} />
+      <aside className="absolute right-0 top-0 h-full w-full sm:w-[480px] bg-card border-l border-border/70 shadow-2xl overflow-y-auto">
+        <div className="sticky top-0 z-10 bg-card/95 backdrop-blur border-b border-border/60 px-5 py-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-foreground truncate">{auth.clientName}</h2>
+            <p className="text-xs text-muted-foreground truncate">
+              {auth.payor} · {auth.state} · {auth.stage}
+            </p>
+          </div>
+          <button onClick={onClose} className="h-8 w-8 rounded-lg hover:bg-muted grid place-items-center shrink-0">
+            <X className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <QAActionsPanel auth={auth} sourceSystem={sourceSystem} onChanged={onChanged} />
+        </div>
+      </aside>
+    </div>
   );
 }

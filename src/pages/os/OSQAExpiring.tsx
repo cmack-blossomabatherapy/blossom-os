@@ -500,9 +500,9 @@ export default function OSQAExpiring() {
                           </div>
                           <Pill tone={tone}>{weeks}w</Pill>
                           <div className="hidden md:flex items-center gap-1.5 shrink-0">
-                            <IconBtn title="Send follow-up" icon={SendIcon} />
-                            <IconBtn title="Mark received"  icon={CheckCircle2} />
-                            <IconBtn title="Escalate"       icon={Flame} tone="crit" />
+                            <IconBtn title="Send follow-up" icon={SendIcon} onClick={() => setOpenId(a.id)} />
+                            <IconBtn title="Mark received"  icon={CheckCircle2} onClick={() => setOpenId(a.id)} />
+                            <IconBtn title="Escalate"       icon={Flame} tone="crit" onClick={() => setOpenId(a.id)} />
                           </div>
                         </li>
                       );
@@ -715,8 +715,8 @@ function AwareCard({
   );
 }
 function IconBtn({
-  icon: Icon, title, tone, to,
-}: { icon: React.ElementType; title: string; tone?: Tone; to?: string }) {
+  icon: Icon, title, tone, to, onClick,
+}: { icon: React.ElementType; title: string; tone?: Tone; to?: string; onClick?: () => void }) {
   const cls = cn(
     "h-8 w-8 rounded-lg grid place-items-center border transition",
     tone === "crit"
@@ -724,7 +724,7 @@ function IconBtn({
       : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted",
   );
   if (to) return <Link to={to} title={title} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>;
-  return <button title={title} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></button>;
+  return <button type="button" title={title} onClick={onClick} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></button>;
 }
 
 function ExpGroup({
@@ -822,10 +822,10 @@ function ExpCard({ auth: a, onOpen }: { auth: Authorization; onOpen: () => void 
 
           <div className="hidden md:flex flex-col gap-1.5 shrink-0">
             <IconBtn title="Open record"               to="/qa-queue" icon={ExternalLink} />
-            <IconBtn title="Send follow-up"            icon={Send} />
-            <IconBtn title="Add QA note"               icon={StickyNote} />
-            <IconBtn title="Mark PR received"          icon={CheckCircle2} />
-            <IconBtn title="Escalate"                  icon={Flame} tone="crit" />
+            <IconBtn title="Send follow-up"            icon={Send}         onClick={onOpen} />
+            <IconBtn title="Add QA note"               icon={StickyNote}   onClick={onOpen} />
+            <IconBtn title="Mark PR received"          icon={CheckCircle2} onClick={onOpen} />
+            <IconBtn title="Escalate"                  icon={Flame} tone="crit" onClick={onOpen} />
           </div>
         </div>
       </Card>

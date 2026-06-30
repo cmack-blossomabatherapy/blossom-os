@@ -392,10 +392,10 @@ export default function OSQAAuthReviews() {
                             </div>
                           </div>
                           <div className="hidden md:flex flex-col gap-1.5 shrink-0">
-                            <IconBtn title="Send reminder" icon={Send} />
-                            <IconBtn title="Add note" icon={StickyNote} />
+                            <IconBtn title="Send reminder" icon={Send} onClick={() => setOpenId(a.id)} />
+                            <IconBtn title="Add note" icon={StickyNote} onClick={() => setOpenId(a.id)} />
                             <IconBtn title="Open record" icon={ExternalLink} onClick={() => setOpenId(a.id)} />
-                            <IconBtn title="Escalate" icon={Flame} tone="crit" />
+                            <IconBtn title="Escalate" icon={Flame} tone="crit" onClick={() => setOpenId(a.id)} />
                           </div>
                         </li>
                       );
