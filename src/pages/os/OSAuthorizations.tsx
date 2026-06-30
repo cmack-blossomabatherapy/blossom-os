@@ -20,11 +20,15 @@ import {
   NewAuthorizationDialog,
   SavedViewsMenu,
   SourceBadge,
+  EditAuthorizationDialog,
+  CentralReachReadinessSection,
 } from "@/components/authorizations/AuthorizationActionUI";
 import {
   useAuthorizationActions,
   type EnsureOverlayInput,
 } from "@/hooks/useAuthorizationActions";
+import type { AuthRecordMeta } from "@/hooks/useLiveAuthorizations";
+import { Pencil } from "lucide-react";
 import type { SavedView } from "@/hooks/useAuthorizationSavedViews";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -393,6 +397,8 @@ export default function OSAuthorizations() {
           liveBcba={live.bcbaById.get(openId) ?? null}
           sourceSystem={live.sourceById.get(openId) ?? "manual"}
           overlayId={live.overlayIdByAuthId.get(openId) ?? null}
+          meta={live.metaById.get(openId) ?? null}
+          onRefresh={() => { void live.refresh(); }}
           onClose={closeDrawer}
         />
       )}
@@ -688,20 +694,31 @@ function AuthDrawer({
   liveBcba,
   sourceSystem = "manual",
   overlayId = null,
+  meta = null,
+  onRefresh,
   onClose,
 }: {
   auth: Authorization | null;
   liveBcba: string | null;
   sourceSystem?: "monday" | "manual" | "centralreach";
   overlayId?: string | null;
+  meta?: AuthRecordMeta | null;
+  onRefresh?: () => void;
   onClose: () => void;
 }) {
   const actions = useAuthorizationActions();
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   if (!auth) return null;
   const a = auth;
   const e = enrich(a, liveBcba);
   const overlay = buildOverlayFromAuth(a, sourceSystem, overlayId, liveBcba);
+
+  // Run-and-refresh: re-fetch live data after a successful write so the
+  // drawer body, list rows, and right rail counts update without reload.
+  const runRefresh = async (fn: () => Promise<void>) => {
+    try { await fn(); onRefresh?.(); } catch { /* hook toasts */ }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -737,10 +754,10 @@ function AuthDrawer({
 
         {/* Quick action bar */}
         <div className="px-6 py-3 border-b border-border/60 flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => void actions.requestPR(overlay, { dueInDays: 3 })}>
+          <Button size="sm" variant="outline" onClick={() => void runRefresh(() => actions.requestPR(overlay, { dueInDays: 3 }))}>
             <Send className="mr-1.5 h-3.5 w-3.5" /> Request PR
           </Button>
-          <Button size="sm" variant="outline" onClick={() => void actions.sendToQA(overlay)}>
+          <Button size="sm" variant="outline" onClick={() => void runRefresh(() => actions.sendToQA(overlay))}>
             <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Send to QA
           </Button>
           <Button
@@ -748,7 +765,7 @@ function AuthDrawer({
             variant="outline"
             title="Outbound email/SMS integration is pending — message is logged to the activity feed."
             onClick={() => {
-              void actions.queueExternalSend(overlay, { channel: "email", summary: `Message BCBA ${e.bcba}` });
+              void runRefresh(() => actions.queueExternalSend(overlay, { channel: "email", summary: `Message BCBA ${e.bcba}` }));
               toast.info("Message queued", { description: "External send integration pending — logged to activity feed." });
             }}
           >
@@ -758,8 +775,11 @@ function AuthDrawer({
           <Button size="sm" variant="outline" onClick={() => setNoteDialogOpen(true)}>
             <StickyNote className="mr-1.5 h-3.5 w-3.5" /> Note
           </Button>
-          <Button size="sm" variant="outline" onClick={() => void actions.escalate(overlay)}>
+          <Button size="sm" variant="outline" onClick={() => void runRefresh(() => actions.escalate(overlay))}>
             <AlertTriangle className="mr-1.5 h-3.5 w-3.5" /> Escalate
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
           </Button>
         </div>
 
@@ -774,9 +794,45 @@ function AuthDrawer({
           pending={actions.pending}
           onCancel={() => setNoteDialogOpen(false)}
           onSubmit={async (val) => {
-            await actions.addNote(overlay, val).catch(() => undefined);
+            await runRefresh(() => actions.addNote(overlay, val));
             setNoteDialogOpen(false);
           }}
+        />
+
+        <EditAuthorizationDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          identity={{
+            source_system: sourceSystem,
+            overlay_id: overlayId,
+            monday_item_id: sourceSystem === "monday" ? a.id : null,
+            centralreach_authorization_id: sourceSystem === "centralreach" ? a.id : null,
+            source_id: a.id,
+          }}
+          initial={{
+            client_name: a.clientName,
+            state: a.state,
+            payer: a.payor,
+            auth_type: a.authType,
+            workflow_stage: a.stage,
+            status: a.stage,
+            assigned_owner: a.coordinator,
+            assigned_bcba: e.bcba,
+            assigned_auth_coordinator: meta?.assignedAuthCoordinator ?? null,
+            qa_owner: a.qaOwner,
+            submitted_date: a.submittedDate,
+            approved_date: a.approvedDate,
+            expiration_date: a.expirationDate,
+            authorization_number: meta?.authorizationNumber ?? null,
+            tracking_number: meta?.trackingNumber ?? null,
+            service_code: meta?.serviceCode ?? null,
+            authorized_hours: meta?.authorizedHours ?? null,
+            used_hours: meta?.usedHours ?? null,
+            priority: meta?.priority ?? null,
+            next_action: meta?.nextAction ?? null,
+            next_action_due_date: meta?.nextActionDueDate ?? null,
+          }}
+          onSaved={() => onRefresh?.()}
         />
 
         <div className="p-6 space-y-7">
@@ -864,6 +920,28 @@ function AuthDrawer({
           <DrawerSection title="Operational Insights" icon={Sparkles}>
             <AskBlossomAuthPanel a={e} />
           </DrawerSection>
+
+          {/* 8 — CentralReach readiness */}
+          <CentralReachReadinessSection
+            source={sourceSystem}
+            centralreachAuthorizationId={meta?.centralreachAuthorizationId}
+            centralreachClientId={meta?.centralreachClientId}
+            centralreachSyncStatus={meta?.centralreachSyncStatus}
+            centralreachLastSyncedAt={meta?.centralreachLastSyncedAt}
+            authorizationNumber={meta?.authorizationNumber}
+            trackingNumber={meta?.trackingNumber}
+            serviceCode={meta?.serviceCode}
+            authorizedHours={meta?.authorizedHours}
+            usedHours={meta?.usedHours}
+            checklist={[
+              { label: "Client name present", ok: !!a.clientName },
+              { label: "Payer present", ok: !!a.payor },
+              { label: "Auth type / service code present", ok: !!a.authType || !!meta?.serviceCode },
+              { label: "Assigned BCBA present", ok: !!e.bcba && e.bcba !== "—" },
+              { label: "Required documents complete", ok: a.missingRequirements.length === 0 && a.treatmentPlanReceived !== false },
+              { label: "Expiration date present", ok: !!a.expirationDate },
+            ]}
+          />
         </div>
       </aside>
     </div>

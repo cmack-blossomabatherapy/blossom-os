@@ -395,6 +395,25 @@ export function attachChildren(
   });
 }
 
+/** Operational metadata enriched from the overlay row, exposed for drawers. */
+export interface AuthRecordMeta {
+  source: "monday" | "manual" | "centralreach";
+  centralreachAuthorizationId: string | null;
+  centralreachClientId: string | null;
+  centralreachSyncStatus: string | null;
+  centralreachLastSyncedAt: string | null;
+  authorizationNumber: string | null;
+  trackingNumber: string | null;
+  serviceCode: string | null;
+  authorizedHours: number | null;
+  usedHours: number | null;
+  assignedAuthCoordinator: string | null;
+  qaOwner: string | null;
+  nextAction: string | null;
+  nextActionDueDate: string | null;
+  priority: string | null;
+}
+
 export interface LiveAuthorizations {
   loading: boolean;
   error: string | null;
@@ -412,6 +431,8 @@ export interface LiveAuthorizations {
   overlayIdByAuthId: Map<string, string>;
   /** Source system per auth id (monday | manual | centralreach). */
   sourceById: Map<string, "monday" | "manual" | "centralreach">;
+  /** Per-auth operational metadata enriched from the overlay row. */
+  metaById: Map<string, AuthRecordMeta>;
   refresh: () => Promise<void>;
 }
 
@@ -544,6 +565,7 @@ export function useLiveAuthorizations(): LiveAuthorizations {
     const bcbaById = new Map<string, string>();
     const overlayIdByAuthId = new Map<string, string>();
     const sourceById = new Map<string, "monday" | "manual" | "centralreach">();
+    const metaById = new Map<string, AuthRecordMeta>();
 
     for (const m of mondayMapped) {
       sourceById.set(m.id, "monday");
@@ -555,6 +577,29 @@ export function useLiveAuthorizations(): LiveAuthorizations {
     }
     for (const o of overlays) {
       if (o.monday_item_id) overlayIdByAuthId.set(o.monday_item_id, o.id);
+    }
+    // Build a meta map keyed by the public auth id so drawers can surface
+    // CentralReach + operational fields without re-fetching.
+    for (const o of overlays) {
+      const publicId = o.monday_item_id ?? o.id;
+      const src = (o.source_system as "monday" | "manual" | "centralreach") ?? (o.monday_item_id ? "monday" : "manual");
+      metaById.set(publicId, {
+        source: src,
+        centralreachAuthorizationId: o.centralreach_authorization_id,
+        centralreachClientId: o.centralreach_client_id,
+        centralreachSyncStatus: o.centralreach_sync_status,
+        centralreachLastSyncedAt: o.centralreach_last_synced_at,
+        authorizationNumber: o.authorization_number,
+        trackingNumber: o.tracking_number,
+        serviceCode: o.service_code,
+        authorizedHours: o.authorized_hours,
+        usedHours: o.used_hours,
+        assignedAuthCoordinator: o.assigned_auth_coordinator,
+        qaOwner: o.qa_owner,
+        nextAction: o.next_action,
+        nextActionDueDate: o.next_action_due_date,
+        priority: o.priority,
+      });
     }
 
     let items: Authorization[] = combined.map(({ liveBcba, ...auth }) => {
@@ -618,6 +663,7 @@ export function useLiveAuthorizations(): LiveAuthorizations {
       totalRows: rows.length + standaloneOverlays.length,
       overlayIdByAuthId,
       sourceById,
+      metaById,
       refresh,
     };
   }, [rows, overlays, reqs, tasks, activity, qaOverrides, loading, error]);

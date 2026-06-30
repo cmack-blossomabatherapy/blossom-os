@@ -1,4 +1,5 @@
-import { FileWarning } from "lucide-react";
+import { FileWarning, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import OpsRecordsWorkspace from "./OpsRecordsWorkspace";
 import { OPS_STORE_KEYS } from "@/lib/os/operations/recordsStore";
 
@@ -52,6 +53,15 @@ export default function MissingDocs() {
       ]}
       rowActions={(r, { update, remove }) => (
         <>
+          {r.authorization_id ? (
+            <Link
+              to={`/authorizations?authId=${encodeURIComponent(String(r.authorization_id))}`}
+              className="inline-flex items-center gap-1 text-xs text-sky-600 hover:underline"
+              title="Open the linked authorization record"
+            >
+              <ExternalLink className="h-3 w-3" /> Open Auth
+            </Link>
+          ) : null}
           <button onClick={() => update(r.id, { status: "Received" })} className="text-xs text-emerald-600 hover:underline">Received</button>
           <button onClick={() => update(r.id, { status: "Waived" })} className="text-xs text-slate-600 hover:underline">Waive</button>
           <button onClick={() => remove(r.id)} className="text-xs text-muted-foreground hover:text-rose-600">Delete</button>
