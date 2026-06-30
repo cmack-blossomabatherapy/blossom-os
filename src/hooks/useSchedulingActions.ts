@@ -301,6 +301,105 @@ export function useSchedulingActions() {
     [],
   );
 
+  // ---- contact attempts ----------------------------------------------------
+  const logContactAttempt = useCallback(
+    async (params: {
+      clientId?: string | null;
+      contactType: "family" | "rbt" | "bcba" | "state_director" | "assistant_state_director" | "internal";
+      channel: "phone" | "sms" | "email" | "teams" | "internal_note";
+      direction?: "outbound" | "inbound";
+      subject?: string | null;
+      body?: string | null;
+      outcome?:
+        | "left_message"
+        | "connected"
+        | "no_answer"
+        | "confirmed"
+        | "declined"
+        | "needs_follow_up"
+        | null;
+      followUpAt?: string | null;
+      state?: string | null;
+      metadata?: Record<string, unknown>;
+    }) => {
+      const { data, error } = await supabase
+        .from("scheduling_contact_attempts")
+        .insert([{
+          client_id: params.clientId ?? null,
+          contact_type: params.contactType,
+          channel: params.channel,
+          direction: params.direction ?? "outbound",
+          subject: params.subject ?? null,
+          body: params.body ?? null,
+          outcome: params.outcome ?? null,
+          follow_up_at: params.followUpAt ?? null,
+          state: params.state ?? null,
+          created_by: userId,
+          metadata: (params.metadata ?? {}) as never,
+        }] as never)
+        .select()
+        .single();
+      if (error) {
+        toast.error(`Could not log contact attempt: ${error.message}`);
+        throw error;
+      }
+      return data;
+    },
+    [userId],
+  );
+
+  // ---- read helpers --------------------------------------------------------
+  const listClientSchedulingActions = useCallback(async (clientId: string) => {
+    const { data, error } = await supabase
+      .from("scheduling_actions")
+      .select("*")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) { toast.error(error.message); return []; }
+    return data ?? [];
+  }, []);
+
+  const listClientContactAttempts = useCallback(async (clientId: string) => {
+    const { data, error } = await supabase
+      .from("scheduling_contact_attempts")
+      .select("*")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) { toast.error(error.message); return []; }
+    return data ?? [];
+  }, []);
+
+  const listOpenCoverageCases = useCallback(
+    async (filters?: { state?: string | null; status?: string | null }) => {
+      let q = supabase.from("scheduling_coverage_cases").select("*").order("created_at", { ascending: false });
+      if (filters?.state) q = q.eq("state", filters.state);
+      if (filters?.status) q = q.eq("status", filters.status);
+      else q = q.neq("status", "resolved");
+      const { data, error } = await q;
+      if (error) { toast.error(error.message); return []; }
+      return data ?? [];
+    },
+    [],
+  );
+
+  const listMakeUpCancellations = useCallback(
+    async (filters?: { status?: string | null }) => {
+      let q = supabase
+        .from("scheduling_cancellations")
+        .select("*")
+        .eq("make_up_required", true)
+        .order("session_date", { ascending: false, nullsFirst: false })
+        .limit(200);
+      if (filters?.status) q = q.eq("make_up_status", filters.status);
+      const { data, error } = await q;
+      if (error) { toast.error(error.message); return []; }
+      return data ?? [];
+    },
+    [],
+  );
+
   return {
     logAction,
     createCoverageCase,
@@ -311,5 +410,10 @@ export function useSchedulingActions() {
     queueSchedulingChangeForCentralReach,
     markSchedulingChangeSynced,
     markSchedulingChangeFailed,
+    logContactAttempt,
+    listClientSchedulingActions,
+    listClientContactAttempts,
+    listOpenCoverageCases,
+    listMakeUpCancellations,
   };
 }
