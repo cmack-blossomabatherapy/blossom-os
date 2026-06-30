@@ -384,12 +384,15 @@ export default function OSAuthorizations() {
         <AuthDrawer
           auth={live.items.find((x) => x.id === openId) ?? null}
           liveBcba={live.bcbaById.get(openId) ?? null}
+          sourceSystem={live.sourceById.get(openId) ?? "manual"}
+          overlayId={live.overlayIdByAuthId.get(openId) ?? null}
           onClose={closeDrawer}
         />
       )}
       <NewAuthorizationDialog
         open={newAuthOpen}
         onOpenChange={setNewAuthOpen}
+        onCreated={() => { void live.refresh(); }}
       />
     </OSShell>
   );
