@@ -14,9 +14,12 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingMessages } from "@/hooks/useRecruitingCandidates";
+import {
+  useRecruitingMessages,
+  type RecruitingMessage,
+  type RecruitingCandidate as DbRecruitingCandidate,
+} from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
-import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { cn } from "@/lib/utils";
 
 // Recruiting → Communication → Messages & Updates
@@ -213,6 +216,71 @@ function buildSuggestedMessages(candidates: RecruitingCandidate[]): Msg[] {
   return out;
 }
 
+// Map a live recruiting_messages row into the visual Msg view-model.
+function mapLiveMessageToViewModel(
+  row: RecruitingMessage,
+  findCandidate: (id: string | null | undefined) => DbRecruitingCandidate | null,
+  legacyCandidates: RecruitingCandidate[],
+): Msg {
+  const liveCand = row.candidate_id ? findCandidate(row.candidate_id) : null;
+  const fallback: RecruitingCandidate =
+    legacyCandidates.find((c) => c.id === row.candidate_id) ??
+    ({
+      id: row.candidate_id ?? row.id,
+      name: liveCand ? `${liveCand.first_name} ${liveCand.last_name}`.trim() : (row.sender || "Unknown candidate"),
+      role: (liveCand?.role ?? "RBT") as any,
+      state: (liveCand?.state ?? "GA") as any,
+      region: liveCand?.city ?? "—",
+      recruiter: liveCand?.recruiter ?? row.sender ?? "Unassigned",
+      candidateStatus: "New Applicant",
+      readinessStatus: "Active",
+      daysInStage: 0,
+      nextAction: "—",
+      interviewStatus: "Not Scheduled",
+      offerStatus: "None",
+      backgroundCheck: "Not Started",
+      orientation: "Not Scheduled",
+      onboardingStatus: "Pending",
+      followUps: [],
+    } as unknown as RecruitingCandidate);
+
+  const sentMs = row.sent_at ? new Date(row.sent_at).getTime() : Date.now();
+  const hoursAgo = Math.max(0, Math.floor((Date.now() - sentMs) / (1000 * 60 * 60)));
+  const direction: Direction =
+    row.direction === "inbound" || row.direction === "in" ? "in"
+    : row.direction === "system" ? "system"
+    : "out";
+  const status = (row.status ?? "").toLowerCase();
+  const unread = !(status === "read" || status === "handled");
+  const channelMap: Record<string, Msg["source"]> = {
+    sms: "SMS", email: "Email", apploi: "Apploi", monday: "Monday",
+    internal: "Internal", calendly: "Calendly",
+  };
+  const source = channelMap[(row.channel ?? "").toLowerCase()] ?? "Email";
+  const escalated = status === "escalated";
+  const noResponseDays = direction === "out" && unread ? Math.floor(hoursAgo / 24) : 0;
+  const urgency: Msg["urgency"] = escalated || noResponseDays >= 5 ? "High" : noResponseDays >= 2 || unread ? "Medium" : "Low";
+
+  return {
+    id: row.id,
+    candidateId: row.candidate_id ?? row.id,
+    candidate: fallback,
+    type: "Candidate Message",
+    direction,
+    sender: row.sender ?? (direction === "in" ? fallback.name : fallback.recruiter ?? "System"),
+    recipient: direction === "in" ? (fallback.recruiter ?? "Recruiter") : fallback.name,
+    preview: row.subject ?? row.body?.slice(0, 140) ?? "",
+    hoursAgo,
+    unread,
+    awaitingResponse: direction === "out" && unread,
+    noResponseDays,
+    urgency,
+    staffingImpact: false,
+    escalated,
+    source,
+  };
+}
+
 function toneFor(m: Msg): Tone {
   if (m.escalated || m.urgency === "High") return "crit";
   if (m.unread || m.noResponseDays >= 3 || m.urgency === "Medium") return "warn";
@@ -270,7 +338,23 @@ export default function OSRecruitingMessages() {
   const mutations = useRecruitingMutations();
   const { items: liveMessages, loading: liveMessagesLoading } = useRecruitingMessages();
   const { find: findCandidate } = useRecruitingCandidateLookup();
-  const baseMessages = useMemo(() => buildSuggestedMessages(recruitingCandidates), [recruitingCandidates]);
+
+  // Active feed = live recruiting_messages rows.
+  const baseMessages = useMemo<Msg[]>(
+    () => liveMessages.map((row) => mapLiveMessageToViewModel(row, findCandidate, recruitingCandidates)),
+    [liveMessages, findCandidate, recruitingCandidates],
+  );
+
+  // Suggested outreach = candidate-derived items for candidates without any live messages.
+  const suggestedMessages = useMemo<Msg[]>(() => {
+    const liveCandidateIds = new Set(
+      liveMessages.map((r) => r.candidate_id).filter((x): x is string => Boolean(x)),
+    );
+    return buildSuggestedMessages(recruitingCandidates).filter(
+      (s) => !liveCandidateIds.has(s.candidateId),
+    );
+  }, [liveMessages, recruitingCandidates]);
+  const [sendingId, setSendingId] = useState<string | null>(null);
 
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
@@ -366,6 +450,24 @@ export default function OSRecruitingMessages() {
     }
   }
 
+  async function sendFromSuggestion(s: Msg) {
+    const cid = s.candidate.id;
+    if (!/^[0-9a-f-]{36}$/i.test(cid)) return;
+    setSendingId(s.id);
+    try {
+      await mutations.logMessage({
+        candidate_id: cid,
+        direction: s.direction === "in" ? "inbound" : s.direction === "system" ? "system" : "outbound",
+        channel: (s.source ?? "Email").toLowerCase(),
+        subject: s.type,
+        body: s.preview,
+        sender: s.sender,
+      });
+    } finally {
+      setSendingId(null);
+    }
+  }
+
   return (
     <OSShell>
       <div className="px-6 md:px-10 py-8 max-w-[1600px] mx-auto space-y-8">
@@ -423,51 +525,14 @@ export default function OSRecruitingMessages() {
         </section>
 
         {/* Filter chips */}
-        <LiveRecruitingSection
-          title="Live messages"
-          subtitle="Primary source — rows from recruiting_messages"
-          tableName="recruiting_messages"
-          items={liveMessages}
-          loading={liveMessagesLoading}
-          emptyTitle="No live messages on file"
-          emptyBody="Inbound and outbound messages logged to recruiting_messages will render here. The board below shows candidate-derived suggestions."
-          renderRow={(row: any) => {
-            const cand = row.candidate_id ? findCandidate(row.candidate_id) : null;
-            const candName = cand ? `${cand.first_name} ${cand.last_name}`.trim() : "Message";
-            const isRead = row.status === "Read" || row.status === "Handled";
-            return (
-              <LiveRowCard
-                title={candName}
-                meta={[row.subject ?? row.body?.slice(0, 80), row.channel, row.sender, new Date(row.sent_at).toLocaleString()].filter(Boolean).join(" · ")}
-                tone={isRead ? "ok" : "warn"}
-                badges={
-                  <>
-                    <Pill tone="info">{row.direction}</Pill>
-                    <Pill tone={isRead ? "ok" : "warn"}>{row.status}</Pill>
-                  </>
-                }
-                actions={
-                  !isRead && (
-                    <>
-                      <button
-                        onClick={() => void mutations.markMessageRead(row.id)}
-                        className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition"
-                      >
-                        Mark read
-                      </button>
-                      <button
-                        onClick={() => void mutations.markMessageHandled(row.id)}
-                        className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition"
-                      >
-                        Handled
-                      </button>
-                    </>
-                  )
-                }
-              />
-            );
-          }}
-        />
+        {liveMessagesLoading && (
+          <div className="text-xs text-muted-foreground">Loading live messages…</div>
+        )}
+        {!liveMessagesLoading && baseMessages.length === 0 && suggestedMessages.length > 0 && (
+          <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 p-4 text-sm text-muted-foreground">
+            No live messages yet. Use the <span className="font-medium text-foreground">Suggested Outreach</span> section below to log one from a candidate signal.
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           {CHIPS.map((c) => (
@@ -618,8 +683,50 @@ export default function OSRecruitingMessages() {
           </div>
         </section>
 
+        {/* Suggested outreach (candidate-derived, not yet in recruiting_messages) */}
+        <section className="rounded-2xl bg-card border border-border/70 p-4 space-y-3">
+          <header className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold">Suggested Outreach</h2>
+              <p className="text-xs text-muted-foreground">
+                Candidate-derived suggestions. Click <span className="font-medium text-foreground">Log</span> to record in recruiting_messages.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground">{suggestedMessages.length} suggested</span>
+          </header>
+          {suggestedMessages.length === 0 ? (
+            <div className="text-xs text-muted-foreground">No suggestions right now.</div>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {suggestedMessages.slice(0, 12).map((s) => {
+                const canLog = /^[0-9a-f-]{36}$/i.test(s.candidate.id);
+                const isSending = sendingId === s.id;
+                return (
+                  <li key={s.id} className="flex items-center justify-between py-2 gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{s.candidate.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {s.type} · {s.source} · {s.preview}
+                      </div>
+                    </div>
+                    <button
+                      disabled={!canLog || isSending}
+                      onClick={() => void sendFromSuggestion(s)}
+                      className="h-8 px-3 rounded-lg text-xs bg-primary text-primary-foreground hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                      title={canLog ? "Log to recruiting_messages" : "Candidate not in live table yet"}
+                    >
+                      <Send className="size-3" /> {isSending ? "Logging…" : "Log"}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
         {/* Quick actions + AI */}
         <section className="grid lg:grid-cols-3 gap-4">
+          {/* (intentional: suggested outreach lives just above) */}
           <div className="lg:col-span-2 rounded-2xl bg-card border border-border/70 p-4">
             <div className="flex items-center justify-between mb-3 px-1">
               <h2 className="text-base font-semibold tracking-tight">Quick actions</h2>
