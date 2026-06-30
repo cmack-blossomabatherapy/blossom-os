@@ -1,4 +1,4 @@
- import { useMemo, useState } from "react";
+ import { useEffect, useMemo, useState } from "react";
  import { Link, useSearchParams } from "react-router-dom";
  import {
    Search, CalendarClock, Plus, ListChecks, AlertTriangle, Sparkles,
@@ -11,6 +11,11 @@
  import { type Client, type ScheduleSlot } from "@/data/clients";
  import { useCentralReachOps, type ClientPairing } from "@/hooks/useCentralReachOps";
 import { useOSRole } from "@/contexts/OSRoleContext";
+import {
+  AdjustmentDialog, CancellationDialog, ContactAttemptDialog,
+  CoverageCaseDialog, CoverageNoteDialog, CRSyncBadge,
+} from "@/components/scheduling/SchedulingDialogs";
+import { useSchedulingActions } from "@/hooks/useSchedulingActions";
 
  /* ---------------- helpers ---------------- */
 
@@ -139,6 +144,8 @@ import { useOSRole } from "@/contexts/OSRoleContext";
    const cr = useCentralReachOps();
   const { activeState } = useOSRole();
    const [params, setParams] = useSearchParams();
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
    const [stateFilter, setStateFilter] = useState<string>(params.get("state") ?? "all");
    const [statusFilter, setStatusFilter] = useState<SessionStatus | "all">(
@@ -217,10 +224,10 @@ import { useOSRole } from "@/contexts/OSRoleContext";
                </p>
              </div>
              <div className="flex items-center gap-2">
-               <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
+                <button onClick={() => setAdjustOpen(true)} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
                  <Plus className="size-4" /> Add Adjustment
                </button>
-               <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
+                <button onClick={() => setCancelOpen(true)} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
                  <MessageSquare className="size-4" /> Log Cancellation
                </button>
                <Link to="/staffing" className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">
@@ -329,6 +336,8 @@ import { useOSRole } from "@/contexts/OSRoleContext";
            <ProviderLoadCard clients={clients} />
          </section>
        </div>
+       <AdjustmentDialog open={adjustOpen} onOpenChange={setAdjustOpen} client={selectedClient ? { id: selectedClient.id, childName: selectedClient.childName, state: selectedClient.state, rbt: selectedClient.rbt, bcba: selectedClient.bcba } : null} />
+       <CancellationDialog open={cancelOpen} onOpenChange={setCancelOpen} client={selectedClient ? { id: selectedClient.id, childName: selectedClient.childName, state: selectedClient.state, rbt: selectedClient.rbt, bcba: selectedClient.bcba } : null} />
      </OSShell>
    );
  }
@@ -361,6 +370,44 @@ import { useOSRole } from "@/contexts/OSRoleContext";
  }
 
  function CoordinationWorkspace({ client }: { client: Client }) {
+    const { logAction, listClientSchedulingActions, listClientContactAttempts } = useSchedulingActions();
+    const [findOpen, setFindOpen] = useState(false);
+    const [escalateOpen, setEscalateOpen] = useState(false);
+    const [notifyOpen, setNotifyOpen] = useState(false);
+    const [notes, setNotes] = useState<Array<{ id: string; author: string; ts: string; body: string }>>([]);
+    const [draft, setDraft] = useState("");
+    const [posting, setPosting] = useState(false);
+    const lite = { id: client.id, childName: client.childName, state: client.state, rbt: client.rbt, bcba: client.bcba };
+    const reload = async () => {
+      const [a, c] = await Promise.all([listClientSchedulingActions(client.id), listClientContactAttempts(client.id)]);
+      const merged = [
+        ...a.map((r) => ({
+          id: `a-${r.id}`,
+          author: (r.action_type as string).replace(/_/g, " "),
+          ts: new Date(r.created_at as string).toLocaleString(),
+          body: (r.note as string) ?? (r.title as string) ?? "",
+        })),
+        ...c.map((r) => ({
+          id: `c-${r.id}`,
+          author: `${r.contact_type} · ${r.channel}`,
+          ts: new Date(r.created_at as string).toLocaleString(),
+          body: (r.body as string) ?? (r.outcome as string) ?? "",
+        })),
+      ].sort((x, y) => (x.ts < y.ts ? 1 : -1)).slice(0, 8);
+      setNotes(merged);
+    };
+    useEffect(() => { void reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [client.id]);
+
+    const postNote = async () => {
+      if (!draft.trim()) return;
+      setPosting(true);
+      try {
+        await logAction({ clientId: client.id, actionType: "coverage_note", note: draft, state: client.state });
+        setDraft("");
+        await reload();
+      } finally { setPosting(false); }
+    };
+
    const scheduledHrs = client.scheduledWeeklyHours ?? client.schedule.reduce((a, s) => {
      const [sh, sm] = s.start.split(":").map(Number);
      const [eh, em] = s.end.split(":").map(Number);
@@ -439,23 +486,32 @@ import { useOSRole } from "@/contexts/OSRoleContext";
        <div className="rounded-2xl bg-card border border-border/70 p-5">
          <div className="flex items-center justify-between">
            <h3 className="text-sm font-semibold tracking-tight text-foreground">Coverage Management</h3>
-           <span className="text-[11px] text-muted-foreground">Operational impact + next action</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-muted-foreground">Operational impact + next action</span>
+              <CRSyncBadge status="not_ready" />
+            </div>
          </div>
          <div className="mt-3 space-y-2">
            {uncovered > 0 ? (
              <CoverageRow
                title={`${uncovered.toFixed(1)}h uncovered this week`}
                impact={uncovered >= approved * 0.3 ? "High service continuity risk" : "Moderate service gap"}
+                onFind={() => setFindOpen(true)}
+                onNotify={() => setNotifyOpen(true)}
+                onEscalate={() => setEscalateOpen(true)}
              />
            ) : null}
            {client.activeServiceStatus === "Flaked" && (
-             <CoverageRow title="Repeated cancellations detected" impact="Parent communication recommended" />
+              <CoverageRow title="Repeated cancellations detected" impact="Parent communication recommended"
+                onFind={() => setFindOpen(true)} onNotify={() => setNotifyOpen(true)} onEscalate={() => setEscalateOpen(true)} />
            )}
            {client.activeServiceStatus === "Services on Pause" && (
-             <CoverageRow title="Services paused" impact="Confirm resumption date with family" />
+              <CoverageRow title="Services paused" impact="Confirm resumption date with family"
+                onFind={() => setFindOpen(true)} onNotify={() => setNotifyOpen(true)} onEscalate={() => setEscalateOpen(true)} />
            )}
            {!client.rbt && (
-             <CoverageRow title="No RBT assigned" impact="Open Staffing Queue to find matches" />
+              <CoverageRow title="No RBT assigned" impact="Open Staffing Queue to find matches"
+                onFind={() => setFindOpen(true)} onNotify={() => setNotifyOpen(true)} onEscalate={() => setEscalateOpen(true)} />
            )}
            {uncovered === 0 && client.activeServiceStatus !== "Flaked" && client.activeServiceStatus !== "Services on Pause" && client.rbt && (
              <p className="text-sm text-muted-foreground">All sessions are currently covered.</p>
@@ -484,14 +540,18 @@ import { useOSRole } from "@/contexts/OSRoleContext";
        <div className="rounded-2xl bg-card border border-border/70 p-5">
          <h3 className="text-sm font-semibold tracking-tight text-foreground">Scheduling Notes</h3>
          <div className="mt-3 space-y-2">
-           <NoteRow author="Scheduling" time="2h ago" body="Confirmed Tuesday session move to 1pm; parent acknowledged." />
-           <NoteRow author="BCBA" time="Yesterday" body="Available for supervision overlap Wed afternoon." />
+            {notes.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No scheduling activity yet — posts and contact attempts will appear here.</p>
+            ) : notes.map((n) => <NoteRow key={n.id} author={n.author} time={n.ts} body={n.body} />)}
          </div>
          <div className="mt-3 flex items-center gap-2">
-           <input placeholder="Add a coordination note…" className="flex-1 h-9 px-3 rounded-xl bg-muted/60 border border-border text-sm placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring" />
-           <button className="h-9 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5 hover:opacity-90"><Send className="size-3.5" /> Post</button>
+            <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Add a coordination note…" className="flex-1 h-9 px-3 rounded-xl bg-muted/60 border border-border text-sm placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring" />
+            <button onClick={postNote} disabled={posting || !draft.trim()} className="h-9 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50"><Send className="size-3.5" /> {posting ? "Posting…" : "Post"}</button>
          </div>
        </div>
+       <CoverageCaseDialog open={findOpen} onOpenChange={setFindOpen} client={lite} mode="find" onSaved={reload} />
+       <CoverageCaseDialog open={escalateOpen} onOpenChange={setEscalateOpen} client={lite} mode="escalate" onSaved={reload} />
+       <ContactAttemptDialog open={notifyOpen} onOpenChange={setNotifyOpen} client={lite} defaultContactType="family" onSaved={reload} />
      </div>
    );
  }
@@ -506,7 +566,7 @@ import { useOSRole } from "@/contexts/OSRoleContext";
    );
  }
 
- function CoverageRow({ title, impact }: { title: string; impact: string }) {
+  function CoverageRow({ title, impact, onFind, onNotify, onEscalate }: { title: string; impact: string; onFind?: () => void; onNotify?: () => void; onEscalate?: () => void }) {
    return (
      <div className="rounded-xl bg-muted/40 border border-border/50 p-3 flex items-start justify-between gap-3">
        <div className="min-w-0">
@@ -514,9 +574,9 @@ import { useOSRole } from "@/contexts/OSRoleContext";
          <p className="text-xs text-muted-foreground mt-0.5">{impact}</p>
        </div>
        <div className="flex items-center gap-1.5 shrink-0">
-         <button className="h-8 px-2.5 rounded-lg bg-card border border-border/70 text-xs hover:bg-muted">Find Coverage</button>
-         <button className="h-8 px-2.5 rounded-lg bg-card border border-border/70 text-xs hover:bg-muted">Notify</button>
-         <button className="h-8 px-2.5 rounded-lg bg-card border border-border/70 text-xs hover:bg-muted">Escalate</button>
+          <button onClick={onFind} className="h-8 px-2.5 rounded-lg bg-card border border-border/70 text-xs hover:bg-muted">Find Coverage</button>
+          <button onClick={onNotify} className="h-8 px-2.5 rounded-lg bg-card border border-border/70 text-xs hover:bg-muted">Notify</button>
+          <button onClick={onEscalate} className="h-8 px-2.5 rounded-lg bg-card border border-border/70 text-xs hover:bg-muted">Escalate</button>
        </div>
      </div>
    );

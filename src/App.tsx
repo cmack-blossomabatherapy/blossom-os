@@ -33,7 +33,6 @@ import Documents from "./pages/Documents";
 import Tasks from "./pages/Tasks";
 import Reports from "./pages/Reports";
 import ReportsHome from "./pages/os/reports/ReportsHome";
-import ReportsLanding from "./pages/os/reports/ReportsLanding";
 import BusinessDevelopmentDashboard from "./pages/os/growth/BusinessDevelopmentDashboard";
 import LeadTrap from "./pages/os/growth/LeadTrap";
 import FacebookAds from "./pages/os/growth/FacebookAds";
@@ -104,7 +103,6 @@ import Training from "./pages/hr/Training";
 import Payroll from "./pages/hr/Payroll";
 import Announcements from "./pages/hr/Announcements";
 import ResourceUploadCenter from "./pages/hr/ResourceUploadCenter";
-import HRReports from "./pages/hr/HRReports";
 import HRSettings from "./pages/hr/HRSettings";
 import NotificationSettings from "./pages/hr/NotificationSettings";
 import HRAssistant from "./pages/hr/HRAssistant";
@@ -357,7 +355,6 @@ import MarketingOutreach from "./pages/os/marketing/CommunityOutreach";
 import MarketingReputation from "./pages/os/marketing/Reputation";
 import MarketingAttribution from "./pages/os/marketing/AttributionROI";
 import MarketingStateGrowth from "./pages/os/marketing/StateGrowth";
-import MarketingReports from "./pages/os/marketing/MarketingReports";
 import EmailMarketing from "./pages/os/marketing/EmailMarketing";
 import OSReportBcbaPerformance from "./pages/os/OSReportBcbaPerformance";
 import OSTraining from "./pages/os/OSTraining";
@@ -382,7 +379,7 @@ import {
 } from "./pages/os/credentialing/CredentialingPages";
 import {
   StateOperationsPage, AuthorizationsPhase6Page, ApprovedAuthorizationsPage,
-  DenialsPage, SchedulingPhase6Page, NoOONBenefitsPage,
+  DenialsPage, NoOONBenefitsPage,
   CaseManagementPhase6Page, QAPhase6OpsPage,
   StateEscalationsPage, OperationalTasksPage,
 } from "./pages/os/operations-phase6/OperationsPages";
@@ -768,7 +765,7 @@ const App = () => (
                   {/* Canonical single Reports page (Authorizations Team + every role uses this). */}
                   <Route path="/reports" element={<ReportsHome />} />
                   <Route path="/reports/catalog" element={<Navigate to="/reports" replace />} />
-                  <Route path="/reports/landing" element={<ReportsLanding />} />
+                  <Route path="/reports/landing" element={<Navigate to="/reports" replace />} />
                   <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
                   <Route path="/reports/qa-supervision-pt" element={<QaSupervisionPtDashboard />} />
                   <Route path="/reports/qa-auth-utilization" element={<QaAuthUtilizationDashboard />} />
@@ -847,7 +844,7 @@ const App = () => (
                   <Route path="/ops/authorizations" element={<Navigate to="/authorizations" replace />} />
                   <Route path="/ops/approved-authorizations" element={<Navigate to="/authorizations?stage=approved" replace />} />
                   <Route path="/ops/denials" element={<Navigate to="/authorizations?stage=denied" replace />} />
-                  <Route path="/ops/scheduling" element={<PermissionRoute allowedRoles={["admin", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "state_director", "assistant_state_director", "scheduling", "scheduling_lead", "scheduling_coordinator"]}><SchedulingPhase6Page /></PermissionRoute>} />
+                 <Route path="/ops/scheduling" element={<Navigate to="/scheduling-workspace?bucket=coverage_risk" replace />} />
                   <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><OSStaffingWorkspace /></PermissionRoute>} />
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
                   <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
@@ -908,7 +905,7 @@ const App = () => (
                   <Route path="/marketing/reputation" element={<PermissionRoute allowedRoles={["marketing"]}><MarketingReputation /></PermissionRoute>} />
                   <Route path="/marketing/attribution" element={<MarketingAttribution />} />
                   <Route path="/marketing/state-growth" element={<MarketingStateGrowth />} />
-                  <Route path="/marketing/reports" element={<MarketingReports />} />
+                 <Route path="/marketing/reports" element={<Navigate to="/reports?category=marketing" replace />} />
                   {/* Phase 4 — Growth & Admissions */}
                   <Route path="/business-development" element={<BusinessDevelopmentDashboard />} />
                   <Route path="/marketing/leadtrap" element={<LeadTrap />} />
@@ -1101,7 +1098,7 @@ const App = () => (
                   <Route path="/enterprise/automations" element={<PermissionRoute permission="automations.view" allowedRoles={AUTOMATIONS_ROLES}><EnterpriseAutomations /></PermissionRoute>} />
                   <Route path="/hr/journey" element={<PermissionRoute allowedRoles={["rbt", "bcba"]}><JourneyHub /></PermissionRoute>} />
                   <Route path="/hr/journey/drive" element={<PermissionRoute allowedRoles={["rbt", "bcba"]}><JourneyDrive /></PermissionRoute>} />
-                  <Route path="/hr/reports" element={<PermissionRoute permission="hr.reports.view"><HRReports /></PermissionRoute>} />
+                 <Route path="/hr/reports" element={<Navigate to="/reports?category=hr" replace />} />
                   <Route path="/hr/settings" element={<PermissionRoute permission="hr.settings.manage"><HRSettings /></PermissionRoute>} />
                   <Route path="/hr/notifications" element={<PermissionRoute permission="hr.settings.manage"><NotificationSettings /></PermissionRoute>} />
                   <Route path="/enterprise/*" element={<NotFound />} />

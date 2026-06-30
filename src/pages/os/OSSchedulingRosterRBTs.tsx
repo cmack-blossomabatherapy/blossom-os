@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Users, Sparkles, AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
+import { Search, AlertTriangle, TrendingDown, TrendingUp, Phone } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import { useCentralReachOps, type ProviderRosterEntry } from "@/hooks/useCentralReachOps";
+import { ContactAttemptDialog, ProviderRiskDialog } from "@/components/scheduling/SchedulingDialogs";
 
 const TARGET = 32;
 
@@ -38,6 +39,8 @@ export default function OSSchedulingRosterRBTs() {
   const overloaded = cr.rbtRoster.filter((r) => r.hoursLast7d > 35).length;
   const underUtilized = cr.rbtRoster.filter((r) => r.hoursLast7d < TARGET - 4).length;
   const totalHours7d = cr.rbtRoster.reduce((s, r) => s + r.hoursLast7d, 0);
+  const [contactFor, setContactFor] = useState<ProviderRosterEntry | null>(null);
+  const [riskFor, setRiskFor] = useState<ProviderRosterEntry | null>(null);
 
   return (
     <OSShell>
@@ -107,14 +110,15 @@ export default function OSSchedulingRosterRBTs() {
                   <th className="text-right font-medium px-4 py-2.5">Clients (30d)</th>
                   <th className="text-left font-medium px-4 py-2.5">Last session</th>
                   <th className="text-left font-medium px-4 py-2.5">Load</th>
+                  <th className="text-right font-medium px-4 py-2.5">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {cr.loading && (
-                  <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-muted-foreground">Loading CentralReach roster…</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">Loading CentralReach roster…</td></tr>
                 )}
                 {!cr.loading && filtered.length === 0 && (
-                  <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-muted-foreground">No RBTs match your filters.</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">No RBTs match your filters.</td></tr>
                 )}
                 {filtered.map((r) => {
                   const b = bandOf(r);
@@ -143,6 +147,13 @@ export default function OSSchedulingRosterRBTs() {
                           )}>{util}%</span>
                         </div>
                       </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1">
+                          <button onClick={() => setContactFor(r)} className="h-7 px-2 rounded-md text-[11px] border border-border/70 hover:bg-muted inline-flex items-center gap-1"><Phone className="size-3" /> Contact</button>
+                          <button onClick={() => setRiskFor(r)} className="h-7 px-2 rounded-md text-[11px] border border-border/70 hover:bg-muted">Flag risk</button>
+                          <Link to={`/scheduling?q=${encodeURIComponent(r.name)}`} className="h-7 px-2 rounded-md text-[11px] border border-border/70 hover:bg-muted">Clients</Link>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -155,6 +166,8 @@ export default function OSSchedulingRosterRBTs() {
           Source: <code>bcba_billable_sessions</code> · procedure code 97153 · window {cr.windowStart} → today.
         </p>
       </div>
+      <ContactAttemptDialog open={!!contactFor} onOpenChange={(o) => !o && setContactFor(null)} client={contactFor ? { id: "", childName: contactFor.name, state: contactFor.state ?? undefined } : null} defaultContactType="rbt" />
+      <ProviderRiskDialog open={!!riskFor} onOpenChange={(o) => !o && setRiskFor(null)} providerName={riskFor?.name ?? ""} providerRole="rbt" state={riskFor?.state ?? null} />
     </OSShell>
   );
 }

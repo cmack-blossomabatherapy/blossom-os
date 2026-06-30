@@ -10,6 +10,10 @@ import { cn } from "@/lib/utils";
 import { type Client } from "@/data/clients";
 import { useClients } from "@/contexts/ClientsContext";
 import { useCentralReachOps, type ProviderRosterEntry, type CoverageRiskRow } from "@/hooks/useCentralReachOps";
+import {
+  AssignRbtDialog, ContactAttemptDialog, CoverageNoteDialog,
+} from "@/components/scheduling/SchedulingDialogs";
+import { useSchedulingActions } from "@/hooks/useSchedulingActions";
 
 const RBT_TARGET_HOURS = 32;
 
@@ -70,6 +74,8 @@ export default function OSSchedulingWorkspace() {
   const { clients } = useClients();
   const cr = useCentralReachOps();
   const [params, setParams] = useSearchParams();
+  const [coverageOpen, setCoverageOpen] = useState(false);
+  const [pairingOpen, setPairingOpen] = useState(false);
 
   // Initialize filters from URL so deep links pre-apply correctly.
   const initialBucket = (() => {
@@ -113,6 +119,7 @@ export default function OSSchedulingWorkspace() {
 
   const selectedId = params.get("clientId") ?? filtered[0]?.c.id ?? null;
   const selected = selectedId ? clients.find((c) => c.id === selectedId) ?? null : null;
+  const liteSelected = selected ? { id: selected.id, childName: selected.childName, state: selected.state, rbt: selected.rbt, bcba: selected.bcba } : null;
 
   const selectClient = (id: string) => {
     const next = new URLSearchParams(params);
@@ -147,13 +154,13 @@ export default function OSSchedulingWorkspace() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
+              <button onClick={() => setCoverageOpen(true)} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
                 <MessageSquare className="size-4" /> Add Coverage Note
               </button>
               <Link to="/scheduling-team" className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
-                <ListChecks className="size-4" /> Open Staffing Queue
+                <ListChecks className="size-4" /> Open Coverage Queue
               </Link>
-              <button className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">
+              <button onClick={() => setPairingOpen(true)} className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">
                 <UserPlus className="size-4" /> Quick Pairing
               </button>
             </div>
@@ -176,7 +183,7 @@ export default function OSSchedulingWorkspace() {
             <div className="rounded-2xl bg-card border border-border/70 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)] overflow-hidden">
               <div className="p-4 border-b border-border/60 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold tracking-tight text-foreground">Staffing Queue</h2>
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground">Coverage Queue</h2>
                   <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{filtered.length}</span>
                 </div>
                 <div className="relative">
@@ -210,7 +217,7 @@ export default function OSSchedulingWorkspace() {
 
               <div className="max-h-[680px] overflow-y-auto divide-y divide-border/50">
                 {filtered.length === 0 && (
-                  <EmptyState label="No staffing cases match your filters." />
+                  <EmptyState label="No coverage cases match your filters." />
                 )}
                 {filtered.map(({ c, b }) => (
                   <QueueCard
@@ -243,6 +250,8 @@ export default function OSSchedulingWorkspace() {
             <AskBlossomPanel cr={cr} counts={counts} availableRbts={availableRbts} />
           </aside>
         </div>
+        <CoverageNoteDialog open={coverageOpen} onOpenChange={setCoverageOpen} client={liteSelected ?? undefined} />
+        <AssignRbtDialog open={pairingOpen} onOpenChange={setPairingOpen} client={liteSelected ?? undefined} />
       </div>
     </OSShell>
   );
@@ -304,6 +313,21 @@ function QueueCard({ client, bucket, active, onSelect }: { client: Client; bucke
 }
 
 function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: ProviderRosterEntry[] }) {
+  const { listClientSchedulingActions, listClientContactAttempts } = useSchedulingActions();
+  const [assignFor, setAssignFor] = useState<string | null>(null);
+  const [contactFor, setContactFor] = useState<string | null>(null);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [activity, setActivity] = useState<Array<{ id: string; description: string; timestamp: string }>>([]);
+  const lite = { id: client.id, childName: client.childName, state: client.state, rbt: client.rbt, bcba: client.bcba };
+  const reload = async () => {
+    const [a, c] = await Promise.all([listClientSchedulingActions(client.id), listClientContactAttempts(client.id)]);
+    setActivity([
+      ...a.map((r) => ({ id: `a-${r.id}`, description: `${(r.action_type as string).replace(/_/g, " ")} — ${(r.note ?? r.title) as string ?? ""}`, timestamp: new Date(r.created_at as string).toLocaleString() })),
+      ...c.map((r) => ({ id: `c-${r.id}`, description: `Contact (${r.contact_type}/${r.channel}) — ${(r.body ?? r.outcome) as string ?? ""}`, timestamp: new Date(r.created_at as string).toLocaleString() })),
+    ].sort((x, y) => (x.timestamp < y.timestamp ? 1 : -1)).slice(0, 6));
+  };
+  useEffect(() => { void reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [client.id]);
+
   // Real CR-derived suggestions: same-state RBTs with capacity remaining vs a 32h/wk soft cap.
   const suggestions = useMemo(() => {
     const inState = rbtRoster.filter((r) => !client.state || !r.state || r.state === client.state);
@@ -399,8 +423,8 @@ function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: Prov
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <button className="h-7 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition">Assign</button>
-                      <button className="h-7 px-3 rounded-lg text-xs text-muted-foreground hover:bg-muted transition inline-flex items-center gap-1">
+                      <button onClick={() => setAssignFor(rbt.name)} className="h-7 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition">Assign</button>
+                      <button onClick={() => setContactFor(rbt.name)} className="h-7 px-3 rounded-lg text-xs text-muted-foreground hover:bg-muted transition inline-flex items-center gap-1">
                         <Phone className="size-3" /> Contact
                       </button>
                     </div>
@@ -442,12 +466,14 @@ function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: Prov
       <div className="rounded-2xl bg-card border border-border/70 p-5">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold tracking-tight text-foreground">Operational Notes</h3>
-          <button className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
+          <button onClick={() => setNoteOpen(true)} className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
             <Plus className="size-3" /> Add note
           </button>
         </div>
         <ul className="mt-3 space-y-2.5">
-          {(client.timeline ?? []).slice(0, 4).map((t) => (
+          {activity.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">No scheduling activity logged yet.</p>
+          ) : activity.map((t) => (
             <li key={t.id} className="flex items-start gap-2.5 text-sm">
               <FileText className="size-3.5 mt-0.5 text-muted-foreground shrink-0" />
               <div className="min-w-0">
@@ -456,11 +482,11 @@ function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: Prov
               </div>
             </li>
           ))}
-          {(client.timeline ?? []).length === 0 && (
-            <p className="text-sm text-muted-foreground">No activity logged yet.</p>
-          )}
         </ul>
       </div>
+      <AssignRbtDialog open={!!assignFor} onOpenChange={(o) => !o && setAssignFor(null)} client={lite} defaultRbt={assignFor ?? ""} onSaved={() => { setAssignFor(null); void reload(); }} />
+      <ContactAttemptDialog open={!!contactFor} onOpenChange={(o) => !o && setContactFor(null)} client={lite} defaultContactType="rbt" onSaved={() => { void reload(); }} />
+      <CoverageNoteDialog open={noteOpen} onOpenChange={setNoteOpen} client={lite} onSaved={reload} />
     </>
   );
 }
