@@ -252,10 +252,21 @@ export function useAuthorizationActions(): AuthorizationActions {
     (input) =>
       run("Send to QA", async () => {
         const id = await ensureOverlay(input);
+        const userId = await currentUserId();
+        const { error: updErr } = await supabase
+          .from("authorization_operational_records")
+          .update({
+            workflow_stage: "In QA Review",
+            status: "In QA Review",
+            updated_by: userId,
+          })
+          .eq("id", id);
+        if (updErr) throw updErr;
         await logActivity({
           recordId: id,
           activityType: "send_to_qa",
           description: `Sent to QA review.`,
+          newValue: "In QA Review",
         });
       }, "Sent to QA"),
     [run],
@@ -333,7 +344,7 @@ export function useAuthorizationActions(): AuthorizationActions {
             : "Documentation reviewed — no open requirements to resolve.",
           newValue: String(resolvedCount),
         });
-        return resolvedCount;
+          // Intentionally no return — interface is Promise<void>.
       }, "Documentation reviewed"),
     [run],
   );
