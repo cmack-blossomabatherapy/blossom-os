@@ -159,7 +159,7 @@ export default function Reputation() {
       .forEach((l) => {
         items.push({
           id: `q-${l.id}`,
-          date: (l as any).lastContacted ?? l.createdAt,
+          date: l.lastContacted ?? l.createdAt,
           state: l.state,
           title: `Family completed intake in ${STATE_NAMES[l.state] ?? l.state}`,
           kind: "Trust",
@@ -185,7 +185,7 @@ export default function Reputation() {
       .forEach((l) => {
         items.push({
           id: `f-${l.id}`,
-          date: (l as any).lastContacted ?? l.createdAt,
+          date: l.lastContacted ?? l.createdAt,
           state: l.state,
           title: `Communication friction in ${STATE_NAMES[l.state] ?? l.state}`,
           kind: "Concern",
