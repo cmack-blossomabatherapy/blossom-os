@@ -129,7 +129,7 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = [
       { to: "/ops/staffing", label: "Staffing", icon: Users },
       { to: "/ops/case-management", label: "Case Management", icon: HeartHandshake },
       { to: "/ops/no-oon-benefits", label: "No OON Benefits", icon: ShieldCheck },
-      { to: "/ops/family-staffing-preferences", label: "Family Staffing Preferences", icon: HeartHandshake },
+      { to: "/ops/staffing?tab=preferences", label: "Family Staffing Preferences", icon: HeartHandshake },
       { to: "/ops/state-escalations", label: "State Escalations", icon: AlertTriangle },
       { to: "/ops/tasks", label: "Operational Tasks", icon: ListTodo },
       { to: "/work-queue/escalations", label: "Escalation Center", icon: Sparkles },

@@ -261,13 +261,26 @@ function MatchQueueTab() {
   const [reject, setReject] = useState<{ id: string; reason: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [conflictFilter, setConflictFilter] = useState<string>("ALL");
+  const [capacityFilter, setCapacityFilter] = useState<string>("ALL");
   const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const states = Array.from(new Set(clients.map((c) => c.state))).sort();
   const visible = matches.filter((m) => {
     if (statusFilter !== "ALL" && m.status !== statusFilter) return false;
     const c = lookupClient(m.client_id);
     if (stateFilter !== "ALL" && c?.state !== stateFilter) return false;
+    const cap = m.capacity_remaining ?? 0;
+    if (capacityFilter === "has" && cap <= 0) return false;
+    if (capacityFilter === "limited" && (cap <= 0 || cap >= 8)) return false;
+    if (capacityFilter === "full" && cap > 0) return false;
+    const notesLow = (m.notes ?? "").toLowerCase();
+    const isBlocked = notesLow.includes("blocked") || notesLow.includes("avoid");
+    const isWarning = notesLow.includes("must") || notesLow.includes("conflict") || notesLow.includes("warning");
+    if (conflictFilter === "clean" && (isBlocked || isWarning)) return false;
+    if (conflictFilter === "warning" && !isWarning) return false;
+    if (conflictFilter === "blocked" && !isBlocked) return false;
     if (query) {
       const q = query.toLowerCase();
       if (!c?.childName.toLowerCase().includes(q) && !m.rbt_name.toLowerCase().includes(q)) return false;
@@ -287,7 +300,7 @@ function MatchQueueTab() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-8" placeholder="Search client or RBT…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <Input className="pl-8" placeholder="Search client or RBT..." value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
         <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="ALL">All statuses</option>
@@ -299,6 +312,18 @@ function MatchQueueTab() {
         <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={stateFilter} onChange={(e) => setStateFilter(e.target.value)}>
           <option value="ALL">All states</option>
           {states.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={conflictFilter} onChange={(e) => setConflictFilter(e.target.value)} title="Preference conflict filter">
+          <option value="ALL">All preference fits</option>
+          <option value="clean">Clean fit</option>
+          <option value="warning">Has warning</option>
+          <option value="blocked">Blocked</option>
+        </select>
+        <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={capacityFilter} onChange={(e) => setCapacityFilter(e.target.value)} title="Capacity filter">
+          <option value="ALL">All capacities</option>
+          <option value="has">Has capacity</option>
+          <option value="limited">Limited (&lt;8h)</option>
+          <option value="full">Full</option>
         </select>
       </div>
 
@@ -313,43 +338,73 @@ function MatchQueueTab() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <Th>Client</Th><Th>RBT</Th><Th>Score</Th><Th>Status</Th>
-                <Th>Updated</Th><Th>Actions</Th>
+                <Th>Client</Th><Th>State</Th><Th>RBT</Th><Th>Score</Th>
+                <Th>Distance</Th><Th>Capacity</Th><Th>Fit</Th>
+                <Th>Status</Th><Th>Updated</Th><Th>Actions</Th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">Loading…</td></tr>
+                <tr><td colSpan={10} className="p-6 text-center text-sm text-muted-foreground">Loading...</td></tr>
               )}
               {!loading && visible.length === 0 && (
-                <tr><td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">No match proposals yet. Open a case to propose one.</td></tr>
+                <tr><td colSpan={10} className="p-6 text-center text-sm text-muted-foreground">No match proposals yet. Open a case to propose one.</td></tr>
               )}
               {visible.map((m) => {
                 const c = lookupClient(m.client_id);
+                const notesLow = (m.notes ?? "").toLowerCase();
+                const blocked = notesLow.includes("blocked") || notesLow.includes("avoid");
+                const warning = !blocked && (notesLow.includes("must") || notesLow.includes("conflict") || notesLow.includes("warning"));
+                const fitLabel = blocked ? "Blocked" : warning ? "Warning" : "Clean";
+                const isOpen = expanded === m.id;
                 return (
-                  <tr key={m.id} className="border-t border-border/40 hover:bg-muted/20">
-                    <Td className="font-medium">{c?.childName ?? m.client_id.slice(0, 8)}</Td>
-                    <Td>{m.rbt_name}</Td>
-                    <Td>{m.match_score}%</Td>
-                    <Td><StatusPill status={m.status} /></Td>
-                    <Td className="text-xs text-muted-foreground">{new Date(m.updated_at).toLocaleDateString()}</Td>
-                    <Td>
-                      <div className="flex items-center gap-2">
-                        {m.status !== "Assigned" && (
-                          <button onClick={() => setStatus(m.id, "Assigned")} className="text-xs text-emerald-600 hover:underline">Assign</button>
-                        )}
-                        {m.status !== "Rejected" && (
-                          <button
-                            onClick={() => setReject({ id: m.id, reason: "" })}
-                            className="text-xs text-rose-600 hover:underline"
-                          >Reject</button>
-                        )}
-                        {m.status === "Rejected" && (
-                          <button onClick={() => setStatus(m.id, "Pending")} className="text-xs text-primary hover:underline">Re-open</button>
-                        )}
-                      </div>
-                    </Td>
-                  </tr>
+                  <>
+                    <tr key={m.id} className="border-t border-border/40 hover:bg-muted/20 cursor-pointer" onClick={() => setExpanded(isOpen ? null : m.id)}>
+                      <Td className="font-medium">{c?.childName ?? m.client_id.slice(0, 8)}</Td>
+                      <Td>{c?.state ?? "-"}</Td>
+                      <Td>{m.rbt_name}</Td>
+                      <Td>{m.match_score}%</Td>
+                      <Td className="text-xs">{m.distance_miles != null ? `${m.distance_miles} mi` : "-"}</Td>
+                      <Td className="text-xs">{m.capacity_remaining != null ? `${m.capacity_remaining}h` : "-"}</Td>
+                      <Td>
+                        <Badge variant={blocked ? "destructive" : warning ? "secondary" : "outline"} className="text-[10px]">{fitLabel}</Badge>
+                      </Td>
+                      <Td><StatusPill status={m.status} /></Td>
+                      <Td className="text-xs text-muted-foreground">{new Date(m.updated_at).toLocaleDateString()}</Td>
+                      <Td onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2">
+                          {m.status !== "Assigned" && (
+                            <button onClick={() => setStatus(m.id, "Assigned")} className="text-xs text-emerald-600 hover:underline">Assign</button>
+                          )}
+                          {m.status !== "Rejected" && (
+                            <button
+                              onClick={() => setReject({ id: m.id, reason: "" })}
+                              className="text-xs text-rose-600 hover:underline"
+                            >Reject</button>
+                          )}
+                          {m.status === "Rejected" && (
+                            <button onClick={() => setStatus(m.id, "Pending")} className="text-xs text-primary hover:underline">Re-open</button>
+                          )}
+                        </div>
+                      </Td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="bg-muted/10 border-t border-border/30">
+                        <td colSpan={10} className="px-6 py-3 text-xs space-y-1">
+                          <div className="grid gap-2 md:grid-cols-3">
+                            <div><span className="text-muted-foreground">Client clinic:</span> {c?.clinic ?? "-"}</div>
+                            <div><span className="text-muted-foreground">BCBA:</span> {c?.bcba ?? "-"}</div>
+                            <div><span className="text-muted-foreground">Approved hrs:</span> {c?.approvedWeeklyHours ?? "-"}</div>
+                            <div><span className="text-muted-foreground">Availability overlap:</span> {(m.availability_overlap ?? []).join(", ") || "-"}</div>
+                            <div><span className="text-muted-foreground">Created:</span> {new Date(m.created_at).toLocaleDateString()}</div>
+                            <div><span className="text-muted-foreground">Match id:</span> <code className="text-[10px]">{m.id.slice(0, 8)}</code></div>
+                          </div>
+                          {m.notes && <div><span className="text-muted-foreground">Notes:</span> {m.notes}</div>}
+                          {m.rejection_reason && <div className="text-destructive"><span className="font-medium">Rejection reason:</span> {m.rejection_reason}</div>}
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
             </tbody>
@@ -870,6 +925,9 @@ function ApploiHandoffTab() {
   const [actionFor, setActionFor] = useState<{ row: IntegrationNormalizedRecordRow; status: IntegrationHandoffStatus } | null>(null);
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
+  const [owner, setOwner] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const handoffByRecordId = useMemo(() => {
     const m = new Map<string, typeof handoffs[number]>();
@@ -899,7 +957,9 @@ function ApploiHandoffTab() {
     if (!actionFor) return;
     const { row, status } = actionFor;
     const meta = (row.metadata ?? {}) as Record<string, unknown>;
+    const existing = handoffByRecordId.get(row.id);
     await saveHandoff({
+      id: existing?.id,
       integration_record_id: row.id,
       provider: row.source_label ?? "apploi",
       candidate_name: row.person_name ?? row.display_title ?? "Unknown candidate",
@@ -908,8 +968,9 @@ function ApploiHandoffTab() {
       status,
       hold_reason: status === "hold" ? reason.trim() : null,
       notes: notes.trim() || null,
+      assigned_owner: owner.trim() || null,
     });
-    setActionFor(null); setReason(""); setNotes("");
+    setActionFor(null); setReason(""); setNotes(""); setOwner("");
   };
 
   return (
@@ -922,9 +983,19 @@ function ApploiHandoffTab() {
             <p className="text-xs text-muted-foreground max-w-2xl">
               New-hire RBTs and BCBAs appear here as Apploi sync publishes into
               <code> integration_normalized_records</code>. Handoff decisions persist to
-              <code> staffing_integration_handoffs</code> and respect role-based RLS.
+              <code> staffing_integration_handoffs</code>. Marking a candidate "ready for the Staffing pool" records the
+              decision; the actual RBT pool record will be created once the integration schema is wired.
             </p>
           </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="ALL">All handoff statuses</option>
+            <option value="none">No decision yet</option>
+            <option value="added_to_pool">Ready for Staffing pool</option>
+            <option value="hold">On hold</option>
+            <option value="returned_to_recruiting">Returned to Recruiting</option>
+          </select>
         </div>
       </Card>
 
@@ -933,17 +1004,17 @@ function ApploiHandoffTab() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <Th>Candidate</Th><Th>Role</Th><Th>State</Th><Th>Apploi status</Th>
-                <Th>Onboarding</Th><Th>Last synced</Th><Th>Action</Th>
+                <Th>Candidate</Th><Th>Role</Th><Th>State</Th><Th>Handoff status</Th>
+                <Th>Owner</Th><Th>Hold reason</Th><Th>Onboarding</Th><Th>Last synced</Th><Th>Action</Th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">Loading candidates...</td></tr>
+                <tr><td colSpan={9} className="p-6 text-center text-sm text-muted-foreground">Loading candidates...</td></tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={9} className="p-8 text-center text-sm text-muted-foreground">
                     <Sparkles className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
                     Workspace is ready for Apploi candidate handoff. New records will appear here automatically as integration data starts flowing.
                     <div className="mt-3">
@@ -954,28 +1025,56 @@ function ApploiHandoffTab() {
                   </td>
                 </tr>
               )}
-              {!loading && rows.map((r) => {
+              {!loading && rows
+                .filter((r) => {
+                  const ex = handoffByRecordId.get(r.id);
+                  if (statusFilter === "ALL") return true;
+                  if (statusFilter === "none") return !ex;
+                  return ex?.status === statusFilter;
+                })
+                .map((r) => {
                 const meta = (r.metadata ?? {}) as Record<string, unknown>;
                 const state = (meta.state as string | undefined) ?? "-";
                 const onboarding = (meta.onboarding_status as string | undefined) ?? "-";
                 const existing = handoffByRecordId.get(r.id);
+                const isOpen = expanded === r.id;
                 return (
-                  <tr key={r.id} className="border-t border-border/40 hover:bg-muted/20">
-                    <Td className="font-medium">{r.person_name ?? r.display_title ?? r.provider_record_id ?? "-"}</Td>
-                    <Td className="text-xs text-muted-foreground capitalize">{r.record_kind?.replace(/_/g, " ") ?? "-"}</Td>
-                    <Td>{state}</Td>
-                    <Td>{existing ? <Badge variant="outline" className="capitalize">{existing.status.replace(/_/g, " ")}</Badge> : (r.record_status ?? "-")}</Td>
-                    <Td className="capitalize">{onboarding}</Td>
-                    <Td className="text-xs text-muted-foreground">{new Date(r.updated_at).toLocaleDateString()}</Td>
-                    <Td>
-                      <div className="flex items-center gap-2">
-                        <button className="text-xs text-emerald-600 hover:underline" onClick={() => setActionFor({ row: r, status: "added_to_pool" })}>Add to pool</button>
-                        <button className="text-xs text-amber-600 hover:underline" onClick={() => setActionFor({ row: r, status: "hold" })}>Hold</button>
-                        <button className="text-xs text-rose-600 hover:underline" onClick={() => setActionFor({ row: r, status: "returned_to_recruiting" })}>Return</button>
-                        {r.external_url && <a className="text-xs text-primary hover:underline" href={r.external_url} target="_blank" rel="noreferrer">Apploi (open)</a>}
-                      </div>
-                    </Td>
-                  </tr>
+                  <>
+                    <tr key={r.id} className="border-t border-border/40 hover:bg-muted/20 cursor-pointer" onClick={() => setExpanded(isOpen ? null : r.id)}>
+                      <Td className="font-medium">{r.person_name ?? r.display_title ?? r.provider_record_id ?? "-"}</Td>
+                      <Td className="text-xs text-muted-foreground capitalize">{r.record_kind?.replace(/_/g, " ") ?? "-"}</Td>
+                      <Td>{state}</Td>
+                      <Td>{existing ? <Badge variant="outline" className="capitalize">{existing.status === "added_to_pool" ? "Ready for pool" : existing.status.replace(/_/g, " ")}</Badge> : <span className="text-xs text-muted-foreground">No decision</span>}</Td>
+                      <Td className="text-xs">{existing?.assigned_owner ?? "-"}</Td>
+                      <Td className="text-xs">{existing?.hold_reason ?? "-"}</Td>
+                      <Td className="capitalize">{onboarding}</Td>
+                      <Td className="text-xs text-muted-foreground">{new Date(r.updated_at).toLocaleDateString()}</Td>
+                      <Td onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button className="text-xs text-emerald-600 hover:underline" onClick={() => { setOwner(existing?.assigned_owner ?? ""); setNotes(existing?.notes ?? ""); setActionFor({ row: r, status: "added_to_pool" }); }}>{existing?.status === "added_to_pool" ? "Update" : "Mark ready"}</button>
+                          <button className="text-xs text-amber-600 hover:underline" onClick={() => { setOwner(existing?.assigned_owner ?? ""); setReason(existing?.hold_reason ?? ""); setNotes(existing?.notes ?? ""); setActionFor({ row: r, status: "hold" }); }}>Hold</button>
+                          <button className="text-xs text-rose-600 hover:underline" onClick={() => { setOwner(existing?.assigned_owner ?? ""); setNotes(existing?.notes ?? ""); setActionFor({ row: r, status: "returned_to_recruiting" }); }}>Return</button>
+                          {r.external_url && <a className="text-xs text-primary hover:underline" href={r.external_url} target="_blank" rel="noreferrer">Apploi</a>}
+                        </div>
+                      </Td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="bg-muted/10 border-t border-border/30">
+                        <td colSpan={9} className="px-6 py-3 text-xs space-y-1">
+                          <div className="grid gap-2 md:grid-cols-2">
+                            <div><span className="text-muted-foreground">Source record id:</span> <code className="text-[10px]">{r.provider_record_id ?? r.id.slice(0, 8)}</code></div>
+                            <div><span className="text-muted-foreground">Provider:</span> {existing?.provider ?? r.source_label ?? "-"}</div>
+                          </div>
+                          {existing?.notes && <div><span className="text-muted-foreground">Handoff notes:</span> {existing.notes}</div>}
+                          {existing?.status === "added_to_pool" && (
+                            <div className="text-[11px] text-amber-700 dark:text-amber-400 italic">
+                              Marked ready for Staffing pool. The actual RBT pool record will be created when integration schema lands.
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
             </tbody>
@@ -983,11 +1082,11 @@ function ApploiHandoffTab() {
         </div>
       </Card>
 
-      <Dialog open={!!actionFor} onOpenChange={(o) => { if (!o) { setActionFor(null); setReason(""); setNotes(""); } }}>
+      <Dialog open={!!actionFor} onOpenChange={(o) => { if (!o) { setActionFor(null); setReason(""); setNotes(""); setOwner(""); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {actionFor?.status === "added_to_pool" && "Add to staffing pool"}
+              {actionFor?.status === "added_to_pool" && "Mark ready for Staffing pool"}
               {actionFor?.status === "hold" && "Place on hold"}
               {actionFor?.status === "returned_to_recruiting" && "Return to Recruiting"}
             </DialogTitle>
@@ -1004,11 +1103,13 @@ function ApploiHandoffTab() {
                 <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why on hold?" />
               </>
             )}
+            <Label className="text-xs">Assigned owner (optional)</Label>
+            <Input value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Staffing teammate to own follow-up" />
             <Label className="text-xs">Notes (optional)</Label>
             <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => { setActionFor(null); setReason(""); setNotes(""); }}>Cancel</Button>
+            <Button variant="outline" size="sm" onClick={() => { setActionFor(null); setReason(""); setNotes(""); setOwner(""); }}>Cancel</Button>
             <Button size="sm" disabled={actionFor?.status === "hold" && !reason.trim()} onClick={submitAction}>Confirm</Button>
           </DialogFooter>
         </DialogContent>
@@ -1022,8 +1123,8 @@ function ApploiHandoffTab() {
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="text-left font-medium px-3 py-2 whitespace-nowrap">{children}</th>;
 }
-function Td({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <td className={cn("px-3 py-2 align-middle", className)}>{children}</td>;
+function Td({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent) => void }) {
+  return <td className={cn("px-3 py-2 align-middle", className)} onClick={onClick}>{children}</td>;
 }
 
 function KPI({ label, value, tone, icon: Icon, onClick }: { label: string; value: number | string; tone: "ok" | "warn" | "danger" | "info" | "muted"; icon: typeof Users; onClick?: () => void }) {

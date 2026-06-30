@@ -10,7 +10,7 @@
 const CATEGORY_FALLBACKS: Record<string, string> = {
   authorizations: "/authorizations",
   qa: "/qa",
-  staffing: "/staffing",
+  staffing: "/ops/staffing?tab=open-cases",
   intake: "/leads",
   billing: "/billing-finance",
   compliance: "/qa-workspace",

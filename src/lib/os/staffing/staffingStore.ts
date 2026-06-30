@@ -49,7 +49,7 @@ export async function proposeMatch(input: ProposeMatchInput): Promise<StaffingMa
   };
   const { data, error } = await supabase
     .from("staffing_matches")
-    .insert(payload as never)
+    .insert(payload)
     .select()
     .single();
   if (error) throw error;
@@ -63,7 +63,7 @@ export async function updateMatchStatus(
 ): Promise<StaffingMatchRow> {
   const { data, error } = await supabase
     .from("staffing_matches")
-    .update({ status, ...(extra ?? {}) } as never)
+    .update({ status, ...(extra ?? {}) })
     .eq("id", id)
     .select()
     .single();
@@ -73,11 +73,9 @@ export async function updateMatchStatus(
 
 /* --------------------------- family preferences -------------------------- */
 
-const PREFS_TABLE = "family_staffing_preferences" as never; // table not yet in generated types
-
 export async function listFamilyPreferences(): Promise<FamilyStaffingPreferenceRow[]> {
   const { data, error } = await supabase
-    .from(PREFS_TABLE)
+    .from("family_staffing_preferences")
     .select("*")
     .order("updated_at", { ascending: false });
   if (error) throw error;
@@ -110,24 +108,22 @@ export async function upsertFamilyPreference(
     notes: input.notes ?? null,
   };
   const query = input.id
-    ? supabase.from(PREFS_TABLE).update(payload as never).eq("id", input.id).select().single()
-    : supabase.from(PREFS_TABLE).insert(payload as never).select().single();
+    ? supabase.from("family_staffing_preferences").update(payload).eq("id", input.id).select().single()
+    : supabase.from("family_staffing_preferences").insert(payload).select().single();
   const { data, error } = await query;
   if (error) throw error;
   return data as unknown as FamilyStaffingPreferenceRow;
 }
 
 export async function deleteFamilyPreference(id: string): Promise<void> {
-  const { error } = await supabase.from(PREFS_TABLE).delete().eq("id", id);
+  const { error } = await supabase.from("family_staffing_preferences").delete().eq("id", id);
   if (error) throw error;
 }
 
 /* ---------------------- staffing case activity -------------------------- */
 
-const ACTIVITY_TABLE = "staffing_case_activity" as never;
-
 export async function listCaseActivity(clientId?: string): Promise<StaffingCaseActivityRow[]> {
-  let q = supabase.from(ACTIVITY_TABLE).select("*").order("created_at", { ascending: false });
+  let q = supabase.from("staffing_case_activity").select("*").order("created_at", { ascending: false });
   if (clientId) q = q.eq("client_id", clientId);
   const { data, error } = await q;
   if (error) throw error;
@@ -158,25 +154,23 @@ export async function upsertCaseActivity(input: UpsertCaseActivityInput): Promis
     status: input.status ?? "open",
   };
   const query = input.id
-    ? supabase.from(ACTIVITY_TABLE).update(payload as never).eq("id", input.id).select().single()
-    : supabase.from(ACTIVITY_TABLE).insert(payload as never).select().single();
+    ? supabase.from("staffing_case_activity").update(payload).eq("id", input.id).select().single()
+    : supabase.from("staffing_case_activity").insert(payload).select().single();
   const { data, error } = await query;
   if (error) throw error;
   return data as unknown as StaffingCaseActivityRow;
 }
 
 export async function deleteCaseActivity(id: string): Promise<void> {
-  const { error } = await supabase.from(ACTIVITY_TABLE).delete().eq("id", id);
+  const { error } = await supabase.from("staffing_case_activity").delete().eq("id", id);
   if (error) throw error;
 }
 
 /* --------------------- integration handoffs (Apploi) -------------------- */
 
-const HANDOFF_TABLE = "staffing_integration_handoffs" as never;
-
 export async function listIntegrationHandoffs(): Promise<StaffingIntegrationHandoffRow[]> {
   const { data, error } = await supabase
-    .from(HANDOFF_TABLE)
+    .from("staffing_integration_handoffs")
     .select("*")
     .order("updated_at", { ascending: false });
   if (error) throw error;
@@ -211,8 +205,8 @@ export async function upsertIntegrationHandoff(
     assigned_owner: input.assigned_owner ?? null,
   };
   const query = input.id
-    ? supabase.from(HANDOFF_TABLE).update(payload as never).eq("id", input.id).select().single()
-    : supabase.from(HANDOFF_TABLE).insert(payload as never).select().single();
+    ? supabase.from("staffing_integration_handoffs").update(payload).eq("id", input.id).select().single()
+    : supabase.from("staffing_integration_handoffs").insert(payload).select().single();
   const { data, error } = await query;
   if (error) throw error;
   return data as unknown as StaffingIntegrationHandoffRow;
