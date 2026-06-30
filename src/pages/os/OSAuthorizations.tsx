@@ -476,7 +476,21 @@ function DensityBtn({ icon: Icon, active, onClick }: { icon: any; active: boolea
 /* ------------------------------ records list ------------------------------ */
 const PAGE_SIZE = 25;
 
-function AuthRecords({ auths, density, onOpen }: { auths: EnrichedAuth[]; density: "comfortable" | "compact"; onOpen: (id: string) => void }) {
+function AuthRecords({
+  auths,
+  density,
+  onOpen,
+  sourceById,
+  overlayIdByAuthId,
+  bcbaById,
+}: {
+  auths: EnrichedAuth[];
+  density: "comfortable" | "compact";
+  onOpen: (id: string) => void;
+  sourceById: Map<string, "monday" | "manual" | "centralreach">;
+  overlayIdByAuthId: Map<string, string>;
+  bcbaById: Map<string, string>;
+}) {
   const [count, setCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -531,7 +545,15 @@ function AuthRecords({ auths, density, onOpen }: { auths: EnrichedAuth[]; densit
       </div>
       <div className={cn("rounded-2xl border border-border/70 bg-card overflow-hidden divide-y divide-border/50")}>
         {shown.map((a) => (
-          <AuthRow key={a.id} a={a} density={density} onOpen={() => onOpen(a.id)} />
+          <AuthRow
+            key={a.id}
+            a={a}
+            density={density}
+            onOpen={() => onOpen(a.id)}
+            source={sourceById.get(a.id) ?? "manual"}
+            overlayId={overlayIdByAuthId.get(a.id) ?? null}
+            liveBcba={bcbaById.get(a.id) ?? null}
+          />
         ))}
       </div>
       {hasMore ? (
