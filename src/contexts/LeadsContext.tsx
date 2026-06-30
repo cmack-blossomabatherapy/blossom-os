@@ -322,6 +322,18 @@ const withIntakeAutomation = (lead: Lead, patch: Partial<Lead>): Lead => {
   }
 
   if (patch.status && patch.status !== lead.status) next.daysInStage = 0;
+
+  // Auto-seed canonical intake & VOB tasks whenever the lead lands in a
+  // stage that has a defined work checklist. Idempotent by title so repeat
+  // transitions don't duplicate work.
+  if (next.status && next.status !== lead.status) {
+    const seed = applyStageTaskSeeds(next.status, tasks, next.owner);
+    if (seed.seeded.length) {
+      tasks.splice(0, tasks.length, ...seed.tasks);
+      log.push(`Seeded ${seed.seeded.length} task(s) for ${canonicalFamilyLeadStage(next.status)}: ${seed.seeded.join(", ")}`);
+    }
+  }
+
   return {
     ...next,
     tasks,
