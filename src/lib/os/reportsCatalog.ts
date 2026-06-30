@@ -160,9 +160,26 @@ export function visibleReportsForRole(role: OSRole): ReportDef[] {
     "state_director",
     "qa_team",
   ];
+  const CRED_OPERATIONAL_IDS = [
+    "cred-status",
+    "cred-bcba-coverage",
+    "cred-uncredentialed-bcbas",
+    "cred-expiring",
+    "cred-payer-matrix",
+  ];
+  const CRED_VISIBLE_ROLES: OSRole[] = [
+    "super_admin",
+    "credentialing_team",
+    "credentialing_lead",
+    "operations_leadership",
+    "executive_leadership",
+  ];
   const ids = new Set<string>(SHARED_IDS);
   if (AUTH_VISIBLE_ROLES.includes(role)) {
     for (const id of AUTH_OPERATIONAL_IDS) ids.add(id);
+  }
+  if (CRED_VISIBLE_ROLES.includes(role)) {
+    for (const id of CRED_OPERATIONAL_IDS) ids.add(id);
   }
   return Array.from(ids)
     .map(id => REPORTS.find(r => r.id === id))
