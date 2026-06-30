@@ -130,12 +130,34 @@ export const REPORTS: ReportDef[] = [
 ];
 
 export function visibleReportsForRole(role: OSRole): ReportDef[] {
-  // Reports is currently a shared experience across every role: only the
-  // BCBA Productivity Report and the Cancellation Command Center are surfaced.
-  // Role-based scoping will be re-introduced in a later iteration.
-  void role;
+  // Reports is a shared experience: the three core CR-upload dashboards
+  // are always surfaced. Pass 2 also surfaces the Authorization
+  // operational-reporting tiles for authorization / leadership roles so
+  // the deferred Pass 1 item ("auth-specific report tiles in /reports")
+  // is fully covered.
   const SHARED_IDS = ["bcba-productivity-report", "bcba-productivity-report-v3", "cancellation-command-center"];
-  return SHARED_IDS
+  const AUTH_OPERATIONAL_IDS = [
+    "auth-expiration-risk",
+    "auth-workflow-bottleneck",
+    "auth-operational-performance",
+    "auth-denials-rework",
+    "auth-missing-documentation",
+    "auth-payer-requirement-risk",
+    "auth-expiring",
+  ];
+  const AUTH_VISIBLE_ROLES: OSRole[] = [
+    "super_admin",
+    "authorization_coordinator",
+    "operations_leadership",
+    "executive_leadership",
+    "state_director",
+    "qa_team",
+  ];
+  const ids = new Set<string>(SHARED_IDS);
+  if (AUTH_VISIBLE_ROLES.includes(role)) {
+    for (const id of AUTH_OPERATIONAL_IDS) ids.add(id);
+  }
+  return Array.from(ids)
     .map(id => REPORTS.find(r => r.id === id))
     .filter((r): r is ReportDef => Boolean(r));
 }
