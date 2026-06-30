@@ -18,6 +18,14 @@ const BANNED_NAV_PATHS = [
   "/marketing/reports",
   "/credentialing/reports",
   "/blossom/reports",
+  "/intelligence/reports",
+  "/admin/hr/reports",
+];
+
+const REDIRECT_ONLY = [
+  "/blossom/reports",
+  "/intelligence/reports",
+  "/admin/hr/reports",
 ];
 
 describe("Reports — canonical /reports nav (Pass 2)", () => {
@@ -42,4 +50,12 @@ describe("Reports — canonical /reports nav (Pass 2)", () => {
     const app = read("src/App.tsx");
     expect(app).toContain('path="/reports"');
   });
+
+  for (const p of REDIRECT_ONLY) {
+    it(`legacy route ${p} is only mounted as a Navigate redirect`, () => {
+      const app = read("src/App.tsx");
+      const route = new RegExp(`<Route\\s+path="${p.replace(/\//g, "\\/")}"\\s+element=\\{<Navigate`);
+      expect(app).toMatch(route);
+    });
+  }
 });
