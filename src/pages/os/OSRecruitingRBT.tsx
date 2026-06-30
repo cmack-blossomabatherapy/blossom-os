@@ -221,6 +221,9 @@ export default function OSRecruitingRBT() {
 
   function moveStage(id: string, to: StageKey) { setStageMap((m) => ({ ...m, [id]: to }));
     void runPageStageMove(mutations, "rbt", id, to); }
+  // expose canonical mapping for downstream UI badges
+  const canonicalFor = (k: StageKey) => mapRbtStageToCanonical(k);
+  void canonicalFor;
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move";
   }
