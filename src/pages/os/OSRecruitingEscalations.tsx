@@ -373,8 +373,12 @@ export default function OSRecruitingEscalations() {
 
   function moveStage(id: string, to: StageKey) {
     const item = base.find((e) => e.id === id);
-    persistStage(id, to, item?.candidate.id);
-    if (item && to === 'resolved' && /^[0-9a-f-]{36}$/i.test(item.candidate.id)) void mutations.resolveEscalation(id);
+    setStageMap((m) => ({ ...m, [id]: to }));
+    // Persist for rows that originated from the live table (uuid ids).
+    if (item && /^[0-9a-f-]{36}$/i.test(id)) {
+      if (to === "resolved") void mutations.resolveEscalation(id);
+      else void mutations.updateEscalation(id, { status: STAGE_TO_STATUS[to] });
+    }
   }
   function onDragStart(ev: React.DragEvent, id: string) {
     ev.dataTransfer.setData("text/plain", id); ev.dataTransfer.effectAllowed = "move";
