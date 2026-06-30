@@ -399,6 +399,7 @@ import OSKpiScorecards from "./pages/os/OSKpiScorecards";
 import OSAskBlossom from "./pages/os/OSAskBlossom";
 import OSResourceLibrary from "./pages/os/OSResourceLibrary";
 import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
+import OSAuthHandoff from "./pages/os/OSAuthHandoff";
 import OSBCBAResources from "./pages/os/OSBCBAResources";
 import OSBCBATrainingAcademy from "./pages/os/OSBCBATrainingAcademy";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
@@ -742,6 +743,7 @@ const App = () => (
                   <Route path="/intake/vob-decision" element={<Navigate to="/vob-decision-center" replace />} />
                   <Route path="/intake/authorizations" element={<OSIntakeAuthorizations />} />
                   <Route path="/authorizations" element={<AuthorizationsRouter />} />
+                  <Route path="/authorizations/handoff" element={<OSAuthHandoff />} />
                   <Route path="/scheduling" element={<OSScheduling />} />
                   <Route path="/scheduling/resources" element={<OSSchedulingResources />} />
                   <Route path="/scheduling/rbts" element={<OSSchedulingRosterRBTs />} />
