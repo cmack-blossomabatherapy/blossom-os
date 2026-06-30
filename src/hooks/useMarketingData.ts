@@ -68,7 +68,7 @@ export type MktLead = {
 };
 export type MktCandidate = {
   id: string;
-  source: LeadSource;
+  source: string;
   state: string | null;
   role: string;
   stage: string;
@@ -137,7 +137,7 @@ export function useMarketingData(): UseMarketingDataResult {
       setCandidates(
         (candRes.data ?? []).map((c: any) => ({
           id: c.id,
-          source: normalizeLeadSource(c.source),
+          source: (c.source ?? "Direct") as string,
           state: (c.state as string) ?? null,
           role: c.role,
           stage: c.pipeline_stage,
