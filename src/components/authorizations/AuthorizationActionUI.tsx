@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { useAuthorizationActions, type AuthSourceSystem, type EnsureOverlayInput } from "@/hooks/useAuthorizationActions";
 import { useAuthorizationSavedViews, type SavedView, type SavedViewScope } from "@/hooks/useAuthorizationSavedViews";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 /* ─── Source badge (Monday / CentralReach / Manual / Sample) ─── */
 
@@ -61,28 +62,36 @@ export function NewAuthorizationDialog({
     assigned_owner: initial?.assigned_owner ?? "",
     workflow_stage: "Awaiting Submission",
   });
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   const update = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((p) => ({ ...p, [k]: v }));
 
   async function handleCreate() {
     if (!form.client_name?.trim()) return;
-    const id = await actions.createManualAuth({
-      client_name: form.client_name.trim(),
-      state: form.state || null,
-      payer: form.payer || null,
-      auth_type: form.auth_type || null,
-      expiration_date: form.expiration_date || null,
-      assigned_owner: form.assigned_owner || null,
-      workflow_stage: form.workflow_stage || null,
-      status: form.workflow_stage || null,
-    });
-    // Persist the initial note (if any) by writing an activity entry
-    // against the just-created overlay record.
+    setNoteError(null);
+    // If we already created the auth on a previous attempt, do NOT re-create
+    // it — only retry the note. This prevents duplicate authorizations when
+    // the user retries after a note failure.
+    let id = createdId;
+    if (!id) {
+      id = await actions.createManualAuth({
+        client_name: form.client_name.trim(),
+        state: form.state || null,
+        payer: form.payer || null,
+        auth_type: form.auth_type || null,
+        expiration_date: form.expiration_date || null,
+        assigned_owner: form.assigned_owner || null,
+        workflow_stage: form.workflow_stage || null,
+        status: form.workflow_stage || null,
+      });
+      setCreatedId(id);
+    }
     const note = form.notes?.trim();
     if (note) {
-      await actions
-        .addNote(
+      try {
+        await actions.addNote(
           {
             source_system: "manual",
             overlay_id: id,
@@ -90,9 +99,21 @@ export function NewAuthorizationDialog({
             client_name: form.client_name.trim(),
           },
           note,
-        )
-        .catch(() => undefined);
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        setNoteError(msg);
+        toast.error("Authorization created, but the initial note did not save", {
+          description: "Edit the note below and click Retry note. We won't create a duplicate authorization.",
+        });
+        // Keep dialog open so user can retry the note — do NOT close.
+        onCreated?.(id);
+        return;
+      }
     }
+    // Reset retry state on success.
+    setCreatedId(null);
+    setNoteError(null);
     onOpenChange(false);
     onCreated?.(id);
   }
@@ -165,13 +186,19 @@ export function NewAuthorizationDialog({
           <div className="grid gap-1.5">
             <Label htmlFor="notes">Notes</Label>
             <Textarea id="notes" rows={2} value={form.notes ?? ""} onChange={(e) => update("notes", e.target.value)} />
+            {noteError && (
+              <p className="text-xs text-rose-600">
+                Note failed to save: {noteError}. The authorization was created — fix the note and click Retry note.
+              </p>
+            )}
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleCreate} disabled={!form.client_name?.trim() || actions.pending}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" /> Create authorization
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            {createdId ? "Retry note" : "Create authorization"}
           </Button>
         </DialogFooter>
       </DialogContent>
