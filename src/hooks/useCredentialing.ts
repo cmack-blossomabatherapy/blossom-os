@@ -63,6 +63,8 @@ export interface CredentialingRecord {
   source_system: string | null;
   centralreach_sync_status: CrSyncStatus;
   centralreach_external_id: string | null;
+  centralreach_sync_error?: string | null;
+  centralreach_last_readiness_at?: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -71,7 +73,8 @@ export interface CredentialingRecord {
 
 export interface CredentialingActivity {
   id: string;
-  credentialing_record_id: string;
+  credentialing_record_id: string | null;
+  provider_id?: string | null;
   activity_type: string;
   message: string | null;
   old_status: string | null;
@@ -195,10 +198,45 @@ export async function createCredProvider(input: Partial<CredentialingProvider>) 
   if (error) throw error;
   return data as CredentialingProvider;
 }
-export async function updateCredProvider(id: string, patch: Partial<CredentialingProvider>) {
+export async function updateCredProvider(
+  id: string,
+  patch: Partial<CredentialingProvider>,
+  activity?: { type: string; message: string; old?: string | null; new?: string | null },
+) {
   const { data, error } = await sb.from(TABLE_PROVIDERS).update(patch).eq("id", id).select("*").single();
   if (error) throw error;
+  if (activity) {
+    await sb.from(TABLE_ACTIVITY).insert({
+      provider_id: id,
+      credentialing_record_id: null,
+      activity_type: activity.type,
+      message: activity.message,
+      old_status: activity.old ?? null,
+      new_status: activity.new ?? null,
+    });
+  } else {
+    // Auto-log a generic edit so provider history is always captured.
+    await sb.from(TABLE_ACTIVITY).insert({
+      provider_id: id,
+      credentialing_record_id: null,
+      activity_type: "provider_edit",
+      message: `Provider updated (${Object.keys(patch).join(", ")})`,
+    });
+  }
   return data as CredentialingProvider;
+}
+
+export async function logCredProviderActivity(
+  providerId: string,
+  message: string,
+  type = "note",
+) {
+  await sb.from(TABLE_ACTIVITY).insert({
+    provider_id: providerId,
+    credentialing_record_id: null,
+    activity_type: type,
+    message,
+  });
 }
 
 export async function createCredRecord(input: Partial<CredentialingRecord>) {
