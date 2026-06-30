@@ -1739,6 +1739,7 @@ export function ProviderCredentialingPage() {
   const [addRec, setAddRec] = useState(false);
   const [defaultProv, setDefaultProv] = useState<string | undefined>();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
+  const [openProvider, setOpenProvider] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   const list = providers.filter((p) =>
@@ -1782,7 +1783,7 @@ export function ProviderCredentialingPage() {
                   const expiring = provRecs.filter((r) => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 90; }).length;
                   const cr = p.centralreach_provider_id ? "ID present" : "Not Connected";
                   return (
-                    <tr key={p.id} className="border-t border-border/60 hover:bg-muted/30">
+                    <tr key={p.id} className="border-t border-border/60 hover:bg-muted/30 cursor-pointer" onClick={() => setOpenProvider(p.id)}>
                       <td className="px-3 py-2.5 font-medium">{p.provider_name}{!p.active && <Badge variant="outline" className="ml-2 text-[10px]">Inactive</Badge>}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{p.provider_type}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{p.license_state ?? "—"} {p.license_number ? `· ${p.license_number}` : ""}</td>
@@ -1792,7 +1793,7 @@ export function ProviderCredentialingPage() {
                       <td className="px-3 py-2.5">{missing}</td>
                       <td className="px-3 py-2.5">{expiring}</td>
                       <td className="px-3 py-2.5"><StatusBadge status={cr} /></td>
-                      <td className="px-3 py-2.5 text-right">
+                      <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                         <Button size="sm" variant="outline" onClick={() => startFor(p.id)}>Start credentialing</Button>
                       </td>
                     </tr>
@@ -1806,6 +1807,13 @@ export function ProviderCredentialingPage() {
       <AddProviderDialog open={addProv} onOpenChange={setAddProv} onCreated={reload} />
       <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} defaultProviderId={defaultProv} onCreated={() => { setDefaultProv(undefined); reload(); }} />
       <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} tasks={tasks} documents={documents} onClose={() => setOpenRecord(null)} onChanged={reload} />
+      <ProviderDetailSheet
+        providerId={openProvider} providers={providers} records={records}
+        documents={documents} tasks={tasks}
+        onClose={() => setOpenProvider(null)} onChanged={reload}
+        onOpenRecord={(id) => { setOpenProvider(null); setOpenRecord(id); }}
+        onStartCredentialing={(pid) => { setOpenProvider(null); startFor(pid); }}
+      />
     </Shell>
   );
 }
