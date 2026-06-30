@@ -1036,14 +1036,37 @@ function ComposerIcon({ icon: Icon, title }: { icon: React.ElementType; title: s
     </button>
   );
 }
-function ActionPill({ icon: Icon, label, tone }: { icon: React.ElementType; label: string; tone?: Tone }) {
+function ActionPill({
+  icon: Icon, label, tone, onClick, disabled, loading, title,
+}: {
+  icon: React.ElementType;
+  label: string;
+  tone?: Tone;
+  onClick?: () => void | Promise<void>;
+  disabled?: boolean;
+  loading?: boolean;
+  title?: string;
+}) {
   const cls = cn(
     "h-9 px-3 rounded-xl border text-xs font-medium inline-flex items-center gap-1.5 transition",
     tone === "crit"
       ? "border-destructive/20 text-destructive hover:bg-destructive/5"
       : "border-border/70 text-foreground hover:bg-muted",
+    (disabled || loading) && "opacity-50 cursor-not-allowed hover:bg-transparent",
   );
-  return <button className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} />{label}</button>;
+  return (
+    <button
+      type="button"
+      className={cls}
+      onClick={onClick}
+      disabled={disabled || loading}
+      title={title ?? label}
+      aria-label={label}
+    >
+      <Icon className={cn("h-3.5 w-3.5", loading && "animate-pulse")} strokeWidth={1.75} />
+      {loading ? "Saving…" : label}
+    </button>
+  );
 }
 function Avatar({ name, primary }: { name: string; primary?: boolean }) {
   return (
