@@ -889,6 +889,97 @@ function exportCsv(filename: string, rows: Record<string, unknown>[]) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Legacy import dialog (va_credentialing_raw -> normalized records)          */
+/* -------------------------------------------------------------------------- */
+function LegacyImportDialog({ open, onOpenChange, onImported }: {
+  open: boolean; onOpenChange: (v: boolean) => void; onImported: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState<LegacyRawRow[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setRows([]); setError(null); setLoading(true);
+    fetchLegacyRaw(500)
+      .then((data) => setRows(data))
+      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load legacy data"))
+      .finally(() => setLoading(false));
+  }, [open]);
+
+  async function runImport() {
+    setImporting(true);
+    try {
+      const result = await importLegacyRows(rows);
+      toast.success(`Legacy import: ${result.providersCreated} providers, ${result.recordsCreated} records (${result.skipped} skipped)`);
+      onImported();
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Import failed");
+    } finally { setImporting(false); }
+  }
+
+  const sample = rows.slice(0, 5);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Import legacy credentialing data</DialogTitle>
+          <DialogDescription>
+            Reads from the raw legacy credentialing table and normalizes providers/payer records.
+            Raw rows are preserved.
+          </DialogDescription>
+        </DialogHeader>
+        {loading ? (
+          <div className="text-sm text-muted-foreground py-6">Loading legacy rows…</div>
+        ) : error ? (
+          <div className="text-sm text-red-600 py-4">{error}</div>
+        ) : rows.length === 0 ? (
+          <div className="text-sm text-muted-foreground py-4">No legacy rows found.</div>
+        ) : (
+          <div className="space-y-3">
+            <div className="text-sm">
+              <strong>{rows.length}</strong> legacy row{rows.length === 1 ? "" : "s"} available.
+            </div>
+            <div className="overflow-auto max-h-60 border rounded-lg text-xs">
+              <table className="w-full">
+                <thead className="bg-muted/40">
+                  <tr>{Object.keys(sample[0] ?? {}).slice(0, 6).map((k) => (
+                    <th key={k} className="text-left px-2 py-1 font-medium">{k}</th>
+                  ))}</tr>
+                </thead>
+                <tbody>
+                  {sample.map((r, i) => (
+                    <tr key={i} className="border-t border-border/60">
+                      {Object.keys(sample[0] ?? {}).slice(0, 6).map((k) => (
+                        <td key={k} className="px-2 py-1 text-muted-foreground truncate max-w-[14ch]">
+                          {String((r as Record<string, unknown>)[k] ?? "")}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Each row becomes a provider (if missing) and a credentialing record tagged with source “Legacy import”.
+            </p>
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={runImport} disabled={importing || loading || rows.length === 0}>
+            {importing ? "Importing…" : `Import ${rows.length} row${rows.length === 1 ? "" : "s"}`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* Page 1: Dashboard                                                          */
 /* -------------------------------------------------------------------------- */
 export function CredentialingDashboardPage() {
