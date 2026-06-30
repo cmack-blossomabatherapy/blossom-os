@@ -380,6 +380,16 @@ export default function OSRecruitingOffers() {
           ))}
         </div>
 
+        {/* Live vs Suggested pill summary */}
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <Pill tone="info">{liveOffers.length} live offers</Pill>
+          <Pill tone="muted">{Math.max(0, hiringPool.length - liveOfferByName.size)} suggested</Pill>
+          {liveOffersLoading && <span>Loading live offers…</span>}
+          <span className="text-muted-foreground/70">
+            Live rows persist to <code className="text-foreground/80">recruiting_offers</code>; suggested candidates are post-interview leads without an offer record yet.
+          </span>
+        </div>
+
         {/* Main grid */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
           <div className="space-y-8">
