@@ -13,6 +13,8 @@ import {
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
+import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
+import { useRecruitingEscalations } from "@/hooks/useRecruitingCandidates";
 import { cn } from "@/lib/utils";
 import { useWorkflowStages } from "@/hooks/useWorkflowStages";
 
@@ -199,6 +201,8 @@ const QUICK_ACTIONS = [
 
 export default function OSRecruitingEscalations() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
+  const mutations = useRecruitingMutations();
+  const { items: liveEscalations } = useRecruitingEscalations();
   const base = useMemo(() => buildEscalations(recruitingCandidates), [recruitingCandidates]);
 
   const defaults = useMemo(() => {
@@ -315,6 +319,7 @@ export default function OSRecruitingEscalations() {
   function moveStage(id: string, to: StageKey) {
     const item = base.find((e) => e.id === id);
     persistStage(id, to, item?.candidate.id);
+    if (item && to === 'resolved' && /^[0-9a-f-]{36}$/i.test(item.candidate.id)) void mutations.resolveEscalation(id);
   }
   function onDragStart(ev: React.DragEvent, id: string) {
     ev.dataTransfer.setData("text/plain", id); ev.dataTransfer.effectAllowed = "move";

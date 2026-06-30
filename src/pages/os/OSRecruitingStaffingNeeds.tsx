@@ -18,6 +18,8 @@ import {
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
+import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
+import { useRecruitingStaffingNeeds } from "@/hooks/useRecruitingCandidates";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -111,6 +113,8 @@ function fitScore(n: StaffingClientNeed, c: RecruitingCandidate): number {
 
 export default function OSRecruitingStaffingNeeds() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
+  const mutations = useRecruitingMutations();
+  const { items: liveStaffingNeeds } = useRecruitingStaffingNeeds();
   // Build needs list
   const baseNeeds = useMemo(() => getClientStaffingNeeds(), []);
   const readyCandidates = useMemo(
@@ -211,6 +215,7 @@ export default function OSRecruitingStaffingNeeds() {
 
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
+    if (/^[0-9a-f-]{36}$/i.test(id)) void mutations.moveStage(id, to as unknown as any);
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id);

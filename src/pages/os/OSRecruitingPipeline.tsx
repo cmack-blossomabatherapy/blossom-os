@@ -16,6 +16,10 @@ import {
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 import { notifyApploiNotConnected } from "@/lib/recruiting/apploi";
+import {
+  useApploiIntegrationStatus,
+  importApploiNormalizedRecords,
+} from "@/hooks/useApploiIntegration";
 
 // Recruiting → Candidates → Applicant Pipeline
 // Real backend (recruiting_candidates). DnD persists pipeline_stage.
@@ -72,6 +76,11 @@ function initials(n: string) {
 
 export default function OSRecruitingPipeline() {
   const { candidates, loading, updateStage } = useRecruitingCandidates();
+  const { status: apploiStatus } = useApploiIntegrationStatus();
+  const handleApploiImport = async () => {
+    if (apploiStatus !== "connected") { notifyApploiNotConnected(); return; }
+    await importApploiNormalizedRecords();
+  };
   const [selected, setSelected] = useState<RecruitingCandidate | null>(null);
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
@@ -172,7 +181,7 @@ export default function OSRecruitingPipeline() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
-                  onClick={notifyApploiNotConnected}
+                  onClick={handleApploiImport}
                   className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl border border-border/70 bg-card text-sm font-medium text-foreground hover:bg-muted/40 transition"
                 >
                   <UserPlus className="h-3.5 w-3.5" /> Import from Apploi

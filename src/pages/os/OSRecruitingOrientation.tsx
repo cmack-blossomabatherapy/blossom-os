@@ -13,6 +13,8 @@ import {
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
+import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
+import { useRecruitingOrientation } from "@/hooks/useRecruitingCandidates";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -113,6 +115,8 @@ const CHIPS: Array<{ key: string; label: string }> = [
 
 export default function OSRecruitingOrientation() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
+  const mutations = useRecruitingMutations();
+  const { items: liveOrientation } = useRecruitingOrientation();
   const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
     Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
   );
@@ -194,6 +198,7 @@ export default function OSRecruitingOrientation() {
 
   function moveStage(id: string, to: StageKey) {
     setStageMap((m) => ({ ...m, [id]: to }));
+    if (/^[0-9a-f-]{36}$/i.test(id)) void mutations.moveStage(id, to as unknown as any);
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id);

@@ -12,6 +12,8 @@ import {
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
+import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
+import { useRecruitingFollowups } from "@/hooks/useRecruitingCandidates";
 import { cn } from "@/lib/utils";
 import { useWorkflowStages } from "@/hooks/useWorkflowStages";
 
@@ -171,6 +173,8 @@ const CHIPS = [
 
 export default function OSRecruitingFollowUps() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
+  const mutations = useRecruitingMutations();
+  const { items: liveFollowups } = useRecruitingFollowups();
   const baseFollowUps = useMemo(() => buildFollowUps(recruitingCandidates), [recruitingCandidates]);
 
   const defaults = useMemo(() => {
@@ -282,6 +286,7 @@ export default function OSRecruitingFollowUps() {
   function moveStage(id: string, to: StageKey) {
     const item = baseFollowUps.find((f) => f.id === id);
     persistStage(id, to, item?.candidate.id);
+    if (item && /^[0-9a-f-]{36}$/i.test(item.candidate.id)) void mutations.createFollowup(item.candidate.id, { title: `Stage \u2192 ${to}` });
   }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move";
