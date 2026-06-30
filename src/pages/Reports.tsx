@@ -292,6 +292,39 @@ function GrowthView() {
   );
 }
 
+function CredentialingView() {
+  const cards: { label: string; to: string; description: string }[] = [
+    { label: "Provider Credentialing", to: "/credentialing/providers", description: "Provider directory, NPI/CAQH, licensing." },
+    { label: "Insurance Credentialing", to: "/credentialing/insurance", description: "Payer/state credentialing pipeline and gaps." },
+    { label: "BCBA Credentials", to: "/credentialing/bcba", description: "BCBA license, payer coverage, CentralReach IDs." },
+    { label: "Uncredentialed BCBAs", to: "/credentialing/uncredentialed-bcbas", description: "Active BCBAs without approved coverage." },
+    { label: "Expiring Credentials", to: "/credentialing/expiring", description: "30 / 60 / 90 day expiration window." },
+    { label: "Credentialing Dashboard", to: "/credentialing", description: "Operational overview and follow-ups." },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-border/60 bg-card p-4">
+        <h3 className="text-sm font-semibold text-foreground">Credentialing reports</h3>
+        <p className="text-[11px] text-muted-foreground">
+          Operational credentialing views — provider, payer, BCBA coverage, and expiring credentials.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+          {cards.map((c) => (
+            <Link
+              key={c.to}
+              to={c.to}
+              className="rounded-lg border border-border/60 bg-secondary/30 p-3 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+            >
+              <p className="text-sm font-medium text-foreground">{c.label}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{c.description}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ImpactCard({
   label, value, detail, tone = "default",
 }: {
