@@ -203,6 +203,9 @@ export default function OSQAClients() {
   const [escFilter, setEscFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
 
+  // QA Pass 5 deep links — bcba/client/query routing.
+  useQADeepLink({ items, loading, setQuery, setBcbaFilter });
+
   const states  = useMemo(() => Array.from(new Set(allClients.map(c => c.state).filter(Boolean))).sort(), [allClients]);
   const bcbas   = useMemo(() => Array.from(new Set(allClients.map(c => c.bcba).filter(Boolean))).sort(), [allClients]);
   const qaList  = useMemo(() => {
