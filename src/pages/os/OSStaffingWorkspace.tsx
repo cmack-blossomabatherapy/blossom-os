@@ -925,6 +925,9 @@ function ApploiHandoffTab() {
   const [actionFor, setActionFor] = useState<{ row: IntegrationNormalizedRecordRow; status: IntegrationHandoffStatus } | null>(null);
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
+  const [owner, setOwner] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const handoffByRecordId = useMemo(() => {
     const m = new Map<string, typeof handoffs[number]>();
@@ -954,7 +957,9 @@ function ApploiHandoffTab() {
     if (!actionFor) return;
     const { row, status } = actionFor;
     const meta = (row.metadata ?? {}) as Record<string, unknown>;
+    const existing = handoffByRecordId.get(row.id);
     await saveHandoff({
+      id: existing?.id,
       integration_record_id: row.id,
       provider: row.source_label ?? "apploi",
       candidate_name: row.person_name ?? row.display_title ?? "Unknown candidate",
@@ -963,8 +968,9 @@ function ApploiHandoffTab() {
       status,
       hold_reason: status === "hold" ? reason.trim() : null,
       notes: notes.trim() || null,
+      assigned_owner: owner.trim() || null,
     });
-    setActionFor(null); setReason(""); setNotes("");
+    setActionFor(null); setReason(""); setNotes(""); setOwner("");
   };
 
   return (
@@ -977,9 +983,19 @@ function ApploiHandoffTab() {
             <p className="text-xs text-muted-foreground max-w-2xl">
               New-hire RBTs and BCBAs appear here as Apploi sync publishes into
               <code> integration_normalized_records</code>. Handoff decisions persist to
-              <code> staffing_integration_handoffs</code> and respect role-based RLS.
+              <code> staffing_integration_handoffs</code>. Marking a candidate "ready for the Staffing pool" records the
+              decision; the actual RBT pool record will be created once the integration schema is wired.
             </p>
           </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="ALL">All handoff statuses</option>
+            <option value="none">No decision yet</option>
+            <option value="added_to_pool">Ready for Staffing pool</option>
+            <option value="hold">On hold</option>
+            <option value="returned_to_recruiting">Returned to Recruiting</option>
+          </select>
         </div>
       </Card>
 
@@ -988,17 +1004,17 @@ function ApploiHandoffTab() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <Th>Candidate</Th><Th>Role</Th><Th>State</Th><Th>Apploi status</Th>
-                <Th>Onboarding</Th><Th>Last synced</Th><Th>Action</Th>
+                <Th>Candidate</Th><Th>Role</Th><Th>State</Th><Th>Handoff status</Th>
+                <Th>Owner</Th><Th>Hold reason</Th><Th>Onboarding</Th><Th>Last synced</Th><Th>Action</Th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">Loading candidates...</td></tr>
+                <tr><td colSpan={9} className="p-6 text-center text-sm text-muted-foreground">Loading candidates...</td></tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={9} className="p-8 text-center text-sm text-muted-foreground">
                     <Sparkles className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
                     Workspace is ready for Apploi candidate handoff. New records will appear here automatically as integration data starts flowing.
                     <div className="mt-3">
@@ -1009,28 +1025,56 @@ function ApploiHandoffTab() {
                   </td>
                 </tr>
               )}
-              {!loading && rows.map((r) => {
+              {!loading && rows
+                .filter((r) => {
+                  const ex = handoffByRecordId.get(r.id);
+                  if (statusFilter === "ALL") return true;
+                  if (statusFilter === "none") return !ex;
+                  return ex?.status === statusFilter;
+                })
+                .map((r) => {
                 const meta = (r.metadata ?? {}) as Record<string, unknown>;
                 const state = (meta.state as string | undefined) ?? "-";
                 const onboarding = (meta.onboarding_status as string | undefined) ?? "-";
                 const existing = handoffByRecordId.get(r.id);
+                const isOpen = expanded === r.id;
                 return (
-                  <tr key={r.id} className="border-t border-border/40 hover:bg-muted/20">
-                    <Td className="font-medium">{r.person_name ?? r.display_title ?? r.provider_record_id ?? "-"}</Td>
-                    <Td className="text-xs text-muted-foreground capitalize">{r.record_kind?.replace(/_/g, " ") ?? "-"}</Td>
-                    <Td>{state}</Td>
-                    <Td>{existing ? <Badge variant="outline" className="capitalize">{existing.status.replace(/_/g, " ")}</Badge> : (r.record_status ?? "-")}</Td>
-                    <Td className="capitalize">{onboarding}</Td>
-                    <Td className="text-xs text-muted-foreground">{new Date(r.updated_at).toLocaleDateString()}</Td>
-                    <Td>
-                      <div className="flex items-center gap-2">
-                        <button className="text-xs text-emerald-600 hover:underline" onClick={() => setActionFor({ row: r, status: "added_to_pool" })}>Add to pool</button>
-                        <button className="text-xs text-amber-600 hover:underline" onClick={() => setActionFor({ row: r, status: "hold" })}>Hold</button>
-                        <button className="text-xs text-rose-600 hover:underline" onClick={() => setActionFor({ row: r, status: "returned_to_recruiting" })}>Return</button>
-                        {r.external_url && <a className="text-xs text-primary hover:underline" href={r.external_url} target="_blank" rel="noreferrer">Apploi (open)</a>}
-                      </div>
-                    </Td>
-                  </tr>
+                  <>
+                    <tr key={r.id} className="border-t border-border/40 hover:bg-muted/20 cursor-pointer" onClick={() => setExpanded(isOpen ? null : r.id)}>
+                      <Td className="font-medium">{r.person_name ?? r.display_title ?? r.provider_record_id ?? "-"}</Td>
+                      <Td className="text-xs text-muted-foreground capitalize">{r.record_kind?.replace(/_/g, " ") ?? "-"}</Td>
+                      <Td>{state}</Td>
+                      <Td>{existing ? <Badge variant="outline" className="capitalize">{existing.status === "added_to_pool" ? "Ready for pool" : existing.status.replace(/_/g, " ")}</Badge> : <span className="text-xs text-muted-foreground">No decision</span>}</Td>
+                      <Td className="text-xs">{existing?.assigned_owner ?? "-"}</Td>
+                      <Td className="text-xs">{existing?.hold_reason ?? "-"}</Td>
+                      <Td className="capitalize">{onboarding}</Td>
+                      <Td className="text-xs text-muted-foreground">{new Date(r.updated_at).toLocaleDateString()}</Td>
+                      <Td onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button className="text-xs text-emerald-600 hover:underline" onClick={() => { setOwner(existing?.assigned_owner ?? ""); setNotes(existing?.notes ?? ""); setActionFor({ row: r, status: "added_to_pool" }); }}>{existing?.status === "added_to_pool" ? "Update" : "Mark ready"}</button>
+                          <button className="text-xs text-amber-600 hover:underline" onClick={() => { setOwner(existing?.assigned_owner ?? ""); setReason(existing?.hold_reason ?? ""); setNotes(existing?.notes ?? ""); setActionFor({ row: r, status: "hold" }); }}>Hold</button>
+                          <button className="text-xs text-rose-600 hover:underline" onClick={() => { setOwner(existing?.assigned_owner ?? ""); setNotes(existing?.notes ?? ""); setActionFor({ row: r, status: "returned_to_recruiting" }); }}>Return</button>
+                          {r.external_url && <a className="text-xs text-primary hover:underline" href={r.external_url} target="_blank" rel="noreferrer">Apploi</a>}
+                        </div>
+                      </Td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="bg-muted/10 border-t border-border/30">
+                        <td colSpan={9} className="px-6 py-3 text-xs space-y-1">
+                          <div className="grid gap-2 md:grid-cols-2">
+                            <div><span className="text-muted-foreground">Source record id:</span> <code className="text-[10px]">{r.provider_record_id ?? r.id.slice(0, 8)}</code></div>
+                            <div><span className="text-muted-foreground">Provider:</span> {existing?.provider ?? r.source_label ?? "-"}</div>
+                          </div>
+                          {existing?.notes && <div><span className="text-muted-foreground">Handoff notes:</span> {existing.notes}</div>}
+                          {existing?.status === "added_to_pool" && (
+                            <div className="text-[11px] text-amber-700 dark:text-amber-400 italic">
+                              Marked ready for Staffing pool. The actual RBT pool record will be created when integration schema lands.
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
             </tbody>
@@ -1038,11 +1082,11 @@ function ApploiHandoffTab() {
         </div>
       </Card>
 
-      <Dialog open={!!actionFor} onOpenChange={(o) => { if (!o) { setActionFor(null); setReason(""); setNotes(""); } }}>
+      <Dialog open={!!actionFor} onOpenChange={(o) => { if (!o) { setActionFor(null); setReason(""); setNotes(""); setOwner(""); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {actionFor?.status === "added_to_pool" && "Add to staffing pool"}
+              {actionFor?.status === "added_to_pool" && "Mark ready for Staffing pool"}
               {actionFor?.status === "hold" && "Place on hold"}
               {actionFor?.status === "returned_to_recruiting" && "Return to Recruiting"}
             </DialogTitle>
@@ -1059,11 +1103,13 @@ function ApploiHandoffTab() {
                 <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why on hold?" />
               </>
             )}
+            <Label className="text-xs">Assigned owner (optional)</Label>
+            <Input value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Staffing teammate to own follow-up" />
             <Label className="text-xs">Notes (optional)</Label>
             <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => { setActionFor(null); setReason(""); setNotes(""); }}>Cancel</Button>
+            <Button variant="outline" size="sm" onClick={() => { setActionFor(null); setReason(""); setNotes(""); setOwner(""); }}>Cancel</Button>
             <Button size="sm" disabled={actionFor?.status === "hold" && !reason.trim()} onClick={submitAction}>Confirm</Button>
           </DialogFooter>
         </DialogContent>
