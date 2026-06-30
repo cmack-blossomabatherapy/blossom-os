@@ -658,6 +658,47 @@ export default function OSRecruitingFollowUps() {
           <QA icon={Download} label="Export queue" />
         </section>
 
+        {/* Suggested Follow-Ups (candidate-derived, not yet in recruiting_followups) */}
+        <section className="rounded-2xl bg-card border border-border/70 p-4 space-y-3">
+          <header className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold">Suggested Follow-Ups</h2>
+              <p className="text-xs text-muted-foreground">
+                Candidate-derived signals. Click <span className="font-medium text-foreground">Create</span> to add to recruiting_followups.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground">{suggestedFollowUps.length} suggested</span>
+          </header>
+          {suggestedFollowUps.length === 0 ? (
+            <div className="text-xs text-muted-foreground">No suggestions right now.</div>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {suggestedFollowUps.slice(0, 12).map((s) => {
+                const canCreate = /^[0-9a-f-]{36}$/i.test(s.candidate.id);
+                const isCreating = creatingId === s.id;
+                return (
+                  <li key={s.id} className="flex items-center justify-between py-2 gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{s.candidate.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {s.type} · {s.recruiter} · {s.state} · {s.reason}
+                      </div>
+                    </div>
+                    <button
+                      disabled={!canCreate || isCreating}
+                      onClick={() => void createFromSuggestion(s)}
+                      className="h-8 px-3 rounded-lg text-xs bg-primary text-primary-foreground hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                      title={canCreate ? "Create follow-up" : "Candidate not in live table yet"}
+                    >
+                      <Plus className="size-3" /> {isCreating ? "Creating…" : "Create"}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
         {/* AI floating */}
         <button
           onClick={() => setAiOpen((v) => !v)}
