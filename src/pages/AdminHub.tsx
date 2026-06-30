@@ -74,7 +74,6 @@ const groups: AdminGroup[] = [
       { to: "/intelligence", label: "Executive Center", desc: "Leadership intelligence", icon: BarChart3 },
       { to: "/intelligence/training", label: "Training Intelligence", desc: "Learning analytics", icon: GraduationCap },
       { to: "/intelligence/compliance", label: "Compliance Intelligence", desc: "Audit readiness", icon: ShieldCheck },
-      { to: "/hr/reports", label: "HR Reports", desc: "People analytics", icon: HeartHandshake },
       { to: "/intelligence/reports", label: "Report Builder", desc: "Custom reports", icon: FileText },
     ],
   },
