@@ -233,7 +233,7 @@ function buildSections(args: {
           { label: "Staffing",                    path: "/ops/staffing",                    icon: UsersIcon },
           { label: "Case Management",             path: "/ops/case-management",             icon: HeartHandshake },
           { label: "No OON Benefits",             path: "/ops/no-oon-benefits",             icon: ShieldCheck },
-          { label: "Family Staffing Preferences", path: "/ops/family-staffing-preferences", icon: HeartHandshake },
+          { label: "Family Staffing Preferences", path: "/ops/staffing?tab=preferences", icon: HeartHandshake },
           { label: "QA Dashboard",                path: "/ops/qa",                          icon: ClipboardCheck },
           { label: "State Escalations",           path: "/ops/state-escalations",           icon: AlertTriangle },
           { label: "Operational Tasks",           path: "/ops/tasks",                       icon: ListTodo },

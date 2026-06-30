@@ -4,8 +4,8 @@ const actions = [
   { label: "New Lead", icon: UserPlus, href: "/leads" },
   { label: "New Client", icon: Users, href: "/clients" },
   { label: "New Authorization", icon: ShieldCheck, href: "/authorizations" },
-  { label: "Assign BCBA", icon: UserCheck, href: "/staffing" },
-  { label: "Assign RBT", icon: UserCheck, href: "/staffing" },
+  { label: "Assign BCBA", icon: UserCheck, href: "/ops/staffing?tab=open-cases" },
+  { label: "Assign RBT", icon: UserCheck, href: "/ops/staffing?tab=match-queue" },
   { label: "Schedule Assessment", icon: Calendar, href: "/scheduling" },
 ];
 

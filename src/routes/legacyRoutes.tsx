@@ -13,7 +13,7 @@ export const LegacyDashboardRedirects = (
     <Route path="/intake-dashboard" element={<Navigate to="/intake" replace />} />
     <Route path="/authorizations-dashboard" element={<Navigate to="/authorizations" replace />} />
     <Route path="/scheduling-dashboard" element={<Navigate to="/scheduling" replace />} />
-    <Route path="/staffing-dashboard" element={<Navigate to="/staffing" replace />} />
+    <Route path="/staffing-dashboard" element={<Navigate to="/ops/staffing?tab=open-cases" replace />} />
     <Route path="/qa-dashboard" element={<Navigate to="/qa-workspace" replace />} />
     <Route path="/finance-dashboard" element={<Navigate to="/billing-finance" replace />} />
     <Route path="/recruiting-dashboard" element={<Navigate to="/recruiting/workspace" replace />} />
