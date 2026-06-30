@@ -313,7 +313,7 @@ function QueueCard({ client, bucket, active, onSelect }: { client: Client; bucke
 }
 
 function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: ProviderRosterEntry[] }) {
-  const { listClientSchedulingActions, listClientContactAttempts, logAction } = useSchedulingActions();
+  const { listClientSchedulingActions, listClientContactAttempts } = useSchedulingActions();
   const [assignFor, setAssignFor] = useState<string | null>(null);
   const [contactFor, setContactFor] = useState<string | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
