@@ -406,6 +406,51 @@ export default function OSRecruitingEscalations() {
 
         {/* Filter chips */}
         <div className="flex flex-wrap gap-2">
+          {/* Live records section is intentionally above the chips so the
+              primary rendered data source is the database row, not the
+              candidate-derived synthetic suggestions below. */}
+        </div>
+
+        <LiveRecruitingSection
+          title="Live escalations"
+          subtitle="Primary source — rows from recruiting_escalations"
+          tableName="recruiting_escalations"
+          items={liveEscalations}
+          loading={liveEscalationsLoading}
+          emptyTitle="No live escalations on file"
+          emptyBody="When a recruiter or the system writes to recruiting_escalations, the row will render here. The board below shows candidate-derived suggestions."
+          renderRow={(row: any) => {
+            const cand = row.candidate_id ? findCandidate(row.candidate_id) : null;
+            const candName = cand ? `${cand.first_name} ${cand.last_name}`.trim() : (row.title ?? "Escalation");
+            const tone = row.severity === "High" ? "crit" : row.severity === "Medium" ? "warn" : "info";
+            const isResolved = row.status === "Resolved";
+            return (
+              <LiveRowCard
+                title={candName}
+                meta={[row.reason ?? row.title, row.owner ?? "Unassigned", `Status: ${row.status}`].filter(Boolean).join(" · ")}
+                tone={isResolved ? "ok" : tone}
+                badges={
+                  <>
+                    <Pill tone={isResolved ? "ok" : tone}>{row.severity ?? "Medium"}</Pill>
+                    {isResolved && <Pill tone="ok">Resolved</Pill>}
+                  </>
+                }
+                actions={
+                  !isResolved && (
+                    <button
+                      onClick={() => void mutations.resolveEscalation(row.id)}
+                      className="h-8 px-3 rounded-lg text-xs bg-secondary border border-border/60 hover:bg-muted transition inline-flex items-center gap-1"
+                    >
+                      <CheckCircle2 className="size-3" /> Resolve
+                    </button>
+                  )
+                }
+              />
+            );
+          }}
+        />
+
+        <div className="flex flex-wrap gap-2">
           {CHIPS.map((c) => (
             <button
               key={c.key}
