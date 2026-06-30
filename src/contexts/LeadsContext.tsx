@@ -571,12 +571,20 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       const event = makeTimelineEvent(`Stage moved to ${status}`);
       logLeadActivity(l.id, "note", `Stage moved from ${l.status} → ${status}`);
       persistLeadPatch(l.id, { pipeline_stage: status });
+      const seed = applyStageTaskSeeds(status, l.tasks, l.owner);
+      const seededLog = seed.seeded.length
+        ? [`Seeded ${seed.seeded.length} task(s) for ${status}: ${seed.seeded.join(", ")}`]
+        : [];
+      const seededEvents = seed.seeded.length
+        ? [makeTimelineEvent(`Auto-seeded ${seed.seeded.length} task(s) for ${status}`)]
+        : [];
       return {
         ...l,
         status,
         daysInStage: 0,
-        automationLog: [...l.automationLog, `Stage moved to ${status} (manual)`],
-        timeline: [event, ...l.timeline],
+        tasks: seed.tasks,
+        automationLog: [...l.automationLog, `Stage moved to ${status} (manual)`, ...seededLog],
+        timeline: [...seededEvents, event, ...l.timeline],
         updatedAt: new Date().toISOString(),
       };
     }));
