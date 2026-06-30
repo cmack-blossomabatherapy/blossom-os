@@ -10654,6 +10654,77 @@ export type Database = {
         }
         Relationships: []
       }
+      qa_work_item_overrides: {
+        Row: {
+          alerts: string[]
+          assigned_qa_owner: string | null
+          blockers: string[]
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          escalated: boolean
+          escalation_reason: string | null
+          id: string
+          last_action_at: string | null
+          monday_item_id: string | null
+          next_action: string | null
+          notes: string | null
+          priority: string | null
+          qa_status: string | null
+          source_record_id: string
+          source_system: string
+          updated_at: string
+        }
+        Insert: {
+          alerts?: string[]
+          assigned_qa_owner?: string | null
+          blockers?: string[]
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          escalated?: boolean
+          escalation_reason?: string | null
+          id?: string
+          last_action_at?: string | null
+          monday_item_id?: string | null
+          next_action?: string | null
+          notes?: string | null
+          priority?: string | null
+          qa_status?: string | null
+          source_record_id: string
+          source_system?: string
+          updated_at?: string
+        }
+        Update: {
+          alerts?: string[]
+          assigned_qa_owner?: string | null
+          blockers?: string[]
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          escalated?: boolean
+          escalation_reason?: string | null
+          id?: string
+          last_action_at?: string | null
+          monday_item_id?: string | null
+          next_action?: string | null
+          notes?: string | null
+          priority?: string | null
+          qa_status?: string | null
+          source_record_id?: string
+          source_system?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qa_work_item_overrides_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recruiting_activity_events: {
         Row: {
           actor_label: string | null
