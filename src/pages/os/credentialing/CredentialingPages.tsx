@@ -892,7 +892,7 @@ function exportCsv(filename: string, rows: Record<string, unknown>[]) {
 /* Page 1: Dashboard                                                          */
 /* -------------------------------------------------------------------------- */
 export function CredentialingDashboardPage() {
-  const { providers, records, providerById, loading, error, reload } = useCredentialingData();
+  const { providers, records, providerById, loading, error, reload, tasks, documents } = useCredentialingData();
   const [addProv, setAddProv] = useState(false);
   const [addRec, setAddRec] = useState(false);
   const [openRecord, setOpenRecord] = useState<string | null>(null);
@@ -1020,6 +1020,7 @@ export function CredentialingDashboardPage() {
       <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} onCreated={reload} />
       <RecordDetailSheet
         recordId={openRecord} records={records} providerById={providerById}
+        tasks={tasks} documents={documents}
         onClose={() => setOpenRecord(null)} onChanged={reload}
       />
     </Shell>
@@ -1030,7 +1031,7 @@ export function CredentialingDashboardPage() {
 /* Page 2: Provider workspace                                                 */
 /* -------------------------------------------------------------------------- */
 export function ProviderCredentialingPage() {
-  const { providers, records, loading, error, reload, providerById } = useCredentialingData();
+  const { providers, records, loading, error, reload, providerById, tasks, documents } = useCredentialingData();
   const [addProv, setAddProv] = useState(false);
   const [addRec, setAddRec] = useState(false);
   const [defaultProv, setDefaultProv] = useState<string | undefined>();
@@ -1101,7 +1102,7 @@ export function ProviderCredentialingPage() {
       </SectionCard>
       <AddProviderDialog open={addProv} onOpenChange={setAddProv} onCreated={reload} />
       <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} defaultProviderId={defaultProv} onCreated={() => { setDefaultProv(undefined); reload(); }} />
-      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} onClose={() => setOpenRecord(null)} onChanged={reload} />
+      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} tasks={tasks} documents={documents} onClose={() => setOpenRecord(null)} onChanged={reload} />
     </Shell>
   );
 }
@@ -1110,7 +1111,7 @@ export function ProviderCredentialingPage() {
 /* Page 3: Insurance / Payer matrix                                           */
 /* -------------------------------------------------------------------------- */
 export function InsuranceCredentialingPage() {
-  const { providers, records, providerById, loading, error, reload } = useCredentialingData();
+  const { providers, records, providerById, loading, error, reload, tasks, documents } = useCredentialingData();
   const [addRec, setAddRec] = useState(false);
   const [openRecord, setOpenRecord] = useState<string | null>(null);
 
@@ -1180,7 +1181,7 @@ export function InsuranceCredentialingPage() {
         )}
       </SectionCard>
       <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} onCreated={reload} />
-      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} onClose={() => setOpenRecord(null)} onChanged={reload} />
+      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} tasks={tasks} documents={documents} onClose={() => setOpenRecord(null)} onChanged={reload} />
     </Shell>
   );
 }
@@ -1252,7 +1253,7 @@ export function BCBACredentialsPage() {
       </SectionCard>
       <AddProviderDialog open={addProv} onOpenChange={setAddProv} onCreated={reload} />
       <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} defaultProviderId={defaultProv} onCreated={() => { setDefaultProv(undefined); reload(); }} />
-      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} onClose={() => setOpenRecord(null)} onChanged={reload} />
+      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} tasks={tasks} documents={documents} onClose={() => setOpenRecord(null)} onChanged={reload} />
     </Shell>
   );
 }
@@ -1261,7 +1262,7 @@ export function BCBACredentialsPage() {
 /* Page 5: Uncredentialed BCBAs                                               */
 /* -------------------------------------------------------------------------- */
 export function UncredentialedBCBAsPage() {
-  const { providers, records, providerById, loading, error, reload } = useCredentialingData();
+  const { providers, records, providerById, loading, error, reload, tasks, documents } = useCredentialingData();
   const [addRec, setAddRec] = useState(false);
   const [defaultProv, setDefaultProv] = useState<string | undefined>();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
@@ -1326,7 +1327,7 @@ export function UncredentialedBCBAsPage() {
         )}
       </SectionCard>
       <AddRecordDialog open={addRec} onOpenChange={setAddRec} providers={providers} defaultProviderId={defaultProv} onCreated={() => { setDefaultProv(undefined); reload(); }} />
-      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} onClose={() => setOpenRecord(null)} onChanged={reload} />
+      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} tasks={tasks} documents={documents} onClose={() => setOpenRecord(null)} onChanged={reload} />
     </Shell>
   );
 }
@@ -1335,7 +1336,7 @@ export function UncredentialedBCBAsPage() {
 /* Page 6: Expiring credentials                                               */
 /* -------------------------------------------------------------------------- */
 export function ExpiringCredentialsPage() {
-  const { records, providerById, loading, error, reload } = useCredentialingData();
+  const { records, providerById, loading, error, reload, tasks, documents } = useCredentialingData();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
   const [windowDays, setWindowDays] = useState<30 | 60 | 90>(90);
 
@@ -1411,7 +1412,7 @@ export function ExpiringCredentialsPage() {
           </div>
         )}
       </SectionCard>
-      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} onClose={() => setOpenRecord(null)} onChanged={reload} />
+      <RecordDetailSheet recordId={openRecord} records={records} providerById={providerById} tasks={tasks} documents={documents} onClose={() => setOpenRecord(null)} onChanged={reload} />
     </Shell>
   );
 }
