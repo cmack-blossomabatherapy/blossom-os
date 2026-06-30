@@ -392,13 +392,14 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "staffing", label: "Staffing", items: [
-          { label: "Staffing Dashboard",          path: "/ops/staffing",                    icon: LayoutDashboard },
-          { label: "Open Cases",                  path: "/staffing",                        icon: Briefcase },
-          { label: "RBT Match Queue",             path: "/ops/rbt-match-queue",             icon: UserCheck },
-          { label: "Coverage Needs",              path: "/ops/staffing?tab=coverage",       icon: Calendar },
-          { label: "Family Staffing Preferences", path: "/ops/family-staffing-preferences", icon: HeartHandshake },
-          { label: "Live Staffing Map",           path: "/ops/staffing?tab=map",            icon: MapPin },
-          { label: "Reports",                     path: "/reports",                         icon: BarChart3 },
+          { label: "Staffing Dashboard",          path: "/ops/staffing",                       icon: LayoutDashboard },
+          { label: "Open Cases",                  path: "/ops/staffing?tab=open-cases",        icon: Briefcase },
+          { label: "RBT Match Queue",             path: "/ops/staffing?tab=match-queue",       icon: UserCheck },
+          { label: "Coverage Needs",              path: "/ops/staffing?tab=coverage",          icon: Calendar },
+          { label: "Family Staffing Preferences", path: "/ops/staffing?tab=preferences",       icon: HeartHandshake },
+          { label: "Live Staffing Map",           path: "/ops/staffing?tab=map",               icon: MapPin },
+          { label: "Apploi Handoff",              path: "/ops/staffing?tab=apploi",            icon: UserCheck },
+          { label: "Reports",                     path: "/reports",                            icon: BarChart3 },
         ],
       },
       TRAINING_AND_RESOURCES,
