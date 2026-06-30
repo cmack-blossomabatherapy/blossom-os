@@ -467,6 +467,7 @@ export default function OSStaffingQueue() {
                             row={row}
                             active={row.c.id === selectedId}
                             onSelect={() => selectClient(row.c.id)}
+                            onAction={(a) => openCardAction(a, row.c)}
                           />
                         ))}
                       </div>
@@ -485,11 +486,45 @@ export default function OSStaffingQueue() {
                 <p className="mt-3 text-sm text-muted-foreground">Select a staffing case to begin coordination.</p>
               </div>
             ) : (
-              <CaseWorkspace client={selected} />
+              <CaseWorkspace
+                client={selected}
+                onCardAction={(a) => openCardAction(a, selected)}
+              />
             )}
           </section>
         </div>
       </div>
+
+      {/* ---- Mounted scheduling action dialogs ---- */}
+      <AssignRbtDialog
+        open={!!pairingClient}
+        onOpenChange={(o) => !o && setPairingClient(null)}
+        client={toLite(pairingClient) ?? undefined}
+        defaultRbt={pairingDefault}
+      />
+      <CoverageNoteDialog
+        open={!!noteClient}
+        onOpenChange={(o) => !o && setNoteClient(null)}
+        client={toLite(noteClient) ?? undefined}
+      />
+      <CoverageCaseDialog
+        open={!!findClient}
+        onOpenChange={(o) => !o && setFindClient(null)}
+        client={toLite(findClient) ?? undefined}
+        mode="find"
+      />
+      <CoverageCaseDialog
+        open={!!escalateClient}
+        onOpenChange={(o) => !o && setEscalateClient(null)}
+        client={toLite(escalateClient) ?? undefined}
+        mode="escalate"
+      />
+      <ContactAttemptDialog
+        open={!!contactClient}
+        onOpenChange={(o) => !o && setContactClient(null)}
+        client={toLite(contactClient) ?? undefined}
+        defaultContactType={contactDefault}
+      />
     </OSShell>
   );
 }
