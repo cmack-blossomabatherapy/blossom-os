@@ -439,7 +439,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/marketing/reputation",
     "/marketing/attribution",
     "/marketing/state-growth",
-    "/marketing/reports",
+    "/reports",
     "/phone",
   ]),
   marketing_growth_lead: new Set<string>([
@@ -462,7 +462,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/marketing/reputation",
     "/marketing/attribution",
     "/marketing/state-growth",
-    "/marketing/reports",
+    "/reports",
     "/phone",
   ]),
   business_development: new Set<string>([
