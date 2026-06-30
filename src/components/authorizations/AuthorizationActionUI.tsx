@@ -77,6 +77,21 @@ export function NewAuthorizationDialog({
       workflow_stage: form.workflow_stage || null,
       status: form.workflow_stage || null,
     });
+    // Persist the initial note (if any) by writing an activity entry
+    // against the just-created overlay record.
+    const note = form.notes?.trim();
+    if (note) {
+      await actions
+        .addNote(
+          {
+            source_system: "manual",
+            source_id: id,
+            client_name: form.client_name.trim(),
+          },
+          note,
+        )
+        .catch(() => undefined);
+    }
     onOpenChange(false);
     onCreated?.(id);
   }
