@@ -222,6 +222,11 @@ export default function OSStaffingQueue() {
     }
   };
 
+  const openPairingFor = (c: Client, rbtName: string) => {
+    setPairingDefault(rbtName);
+    setPairingClient(c);
+  };
+
   const requireSelected = (): Client | null => {
     if (!selected) {
       toast.error("Select a client from the queue first.");
@@ -489,6 +494,7 @@ export default function OSStaffingQueue() {
               <CaseWorkspace
                 client={selected}
                 onCardAction={(a) => openCardAction(a, selected)}
+                onAssignRbt={(rbtName) => openPairingFor(selected, rbtName)}
               />
             )}
           </section>
