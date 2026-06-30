@@ -33,7 +33,7 @@ function supervisionPct(a: Authorization) { return 55 + (hash(a.id) % 45); }
 function lastPRDays(a: Authorization) { return hash(a.id + "pr") % 95; }
 function bcbaName(a: Authorization, liveBcba?: string | null) {
   if (liveBcba) return liveBcba;
-  return ["Dr. Kim", "Dr. Lee", "Dr. Patel", "Dr. Rivera", "Dr. Wright"][hash(a.id + "b") % 5];
+  return "Unassigned BCBA";
 }
 function requestType(a: Authorization): "Initial" | "Treatment Auth" | "Reassessment" | "Parent Training 97156" {
   if (a.authType === "Initial") return "Initial";
