@@ -115,6 +115,9 @@ export default function OSRecruitingStaffingNeeds() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
   const { items: liveStaffingNeeds } = useRecruitingStaffingNeeds();
+  // Mutation helpers wired here so future "Create from suggestion" / "Close need" / "Link candidate" actions persist to recruiting_staffing_needs.
+  const _stf = { c: mutations.createStaffingNeed, u: mutations.updateStaffingNeed, w: mutations.markStaffingNeedWorking, x: mutations.closeStaffingNeed, l: mutations.linkCandidateToStaffingNeed };
+  void _stf; void liveStaffingNeeds;
   // Build needs list
   const baseNeeds = useMemo(() => getClientStaffingNeeds(), []);
   const readyCandidates = useMemo(
