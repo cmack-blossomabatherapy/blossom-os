@@ -593,13 +593,16 @@ export default function OSAuthWorkspace() {
           <span>
             {error ? `Live data error: ${error}` :
              loading ? "Loading live authorizations…" :
-             "No imported authorizations yet — showing sample queue layout."}
+             "No live authorizations found yet. Import Monday authorizations, create a manual authorization, or connect CentralReach when ready."}
           </span>
           <Link to="/authorizations" className="font-semibold hover:underline">
             Open Authorizations workspace →
           </Link>
         </div>
       )}
+
+      {/* Subnav — relate the canonical daily dashboard and focused queue */}
+      <AuthSubnav active="focused" />
 
       {/* THREE-ZONE LAYOUT */}
       <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
