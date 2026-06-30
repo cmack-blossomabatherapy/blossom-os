@@ -377,7 +377,14 @@ export default function OSAuthorizations() {
         </div>
 
         {/* Records */}
-        <AuthRecords auths={visible} density={density} onOpen={setOpenId} />
+        <AuthRecords
+          auths={visible}
+          density={density}
+          onOpen={setOpenId}
+          sourceById={live.sourceById}
+          overlayIdByAuthId={live.overlayIdByAuthId}
+          bcbaById={live.bcbaById}
+        />
       </div>
 
       {openId && (
