@@ -19,10 +19,12 @@ import { useInterviewChecklist } from "@/hooks/useInterviewChecklist";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { notifyApploiNotConnected } from "@/lib/recruiting/apploi";
 
 // Recruiting → Candidates → Interviews
-// Calm operational interview coordination center. Wired to recruitingDashboard.ts
-// (operational scaffolding until Apploi ingest lands).
+// Calm operational interview coordination center. Wired to recruitingDashboard.ts.
+// Apploi-driven ingest is gated behind a real integration_connection — see
+// notifyApploiNotConnected().
 
 type Tone = "ok" | "warn" | "crit" | "muted" | "info";
 
@@ -288,8 +290,8 @@ export default function OSRecruitingInterviews() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-2 text-sm">
-              <RefreshCw className="size-4" /> Sync Apploi
+            <button onClick={notifyApploiNotConnected} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-2 text-sm">
+              <RefreshCw className="size-4" /> Import from Apploi
             </button>
             <button className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center gap-2 text-sm font-medium">
               <CalendarPlus className="size-4" /> Schedule Interview
@@ -419,15 +421,15 @@ export default function OSRecruitingInterviews() {
               <div className="space-y-1.5">
                 {[
                   { icon: CalendarPlus, label: "Schedule Interview" },
-                  { icon: RefreshCw, label: "Sync Apploi Interviews" },
+                  { icon: RefreshCw, label: "Import from Apploi", onClick: notifyApploiNotConnected },
                   { icon: Bell, label: "Send Reminder" },
                   { icon: CalendarClock, label: "Reschedule Interview" },
                   { icon: XCircle, label: "Mark No-Show" },
                   { icon: ThumbsUp, label: "Recommend Offer" },
                   { icon: X, label: "Mark Not Moving Forward" },
                   { icon: Download, label: "Export Interview List" },
-                ].map((a) => (
-                  <button key={a.label} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
+                ].map((a: { icon: any; label: string; onClick?: () => void }) => (
+                  <button key={a.label} onClick={a.onClick} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
                     <a.icon className="size-4 text-muted-foreground" />
                     {a.label}
                   </button>
