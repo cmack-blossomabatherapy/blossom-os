@@ -3,6 +3,47 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isUuid(value: string | null | undefined): value is string {
+  return !!value && UUID_RE.test(value);
+}
+
+/**
+ * Normalize Scheduling identity inputs so we never push an empty string or a
+ * non-UUID Monday/imported key into a UUID column.
+ */
+export function normalizeSchedulingIdentity(input: {
+  clientId?: string | null;
+  clientKey?: string | null;
+  clientName?: string | null;
+  providerName?: string | null;
+  providerRole?: "rbt" | "bcba" | null;
+  sourceSystem?: string;
+}) {
+  const raw = (input.clientId ?? "").trim() || null;
+  const explicitKey = (input.clientKey ?? "").trim() || null;
+  const valid = raw && UUID_RE.test(raw) ? raw : null;
+  const key = explicitKey ?? (raw && !valid ? raw : null);
+  return {
+    client_id: valid,
+    client_key: key,
+    client_name: input.clientName?.trim() || null,
+    source_system: input.sourceSystem ?? "blossom_os",
+    source_record_id: raw,
+    provider_name: input.providerName?.trim() || null,
+    provider_role: input.providerRole ?? null,
+  };
+}
+
+type IdentityFields = {
+  clientId?: string | null;
+  clientKey?: string | null;
+  clientName?: string | null;
+  providerName?: string | null;
+  providerRole?: "rbt" | "bcba" | null;
+};
+
 /**
  * Persistent Scheduling workflow layer.
  *
@@ -21,8 +62,7 @@ export function useSchedulingActions() {
 
   // ---- generic scheduling_actions -----------------------------------------
   const logAction = useCallback(
-    async (params: {
-      clientId?: string | null;
+    async (params: IdentityFields & {
       actionType: string;
       title?: string;
       note?: string;
@@ -34,10 +74,11 @@ export function useSchedulingActions() {
       dueAt?: string | null;
       metadata?: Record<string, unknown>;
     }) => {
+      const identity = normalizeSchedulingIdentity(params);
       const { data, error } = await supabase
         .from("scheduling_actions")
         .insert([{
-          client_id: params.clientId ?? null,
+          ...identity,
           action_type: params.actionType,
           title: params.title ?? null,
           note: params.note ?? null,
@@ -64,8 +105,7 @@ export function useSchedulingActions() {
 
   // ---- coverage cases ------------------------------------------------------
   const createCoverageCase = useCallback(
-    async (params: {
-      clientId?: string | null;
+    async (params: IdentityFields & {
       state?: string | null;
       caseType: string;
       riskLevel?: "low" | "medium" | "high" | "critical";
@@ -79,10 +119,11 @@ export function useSchedulingActions() {
       nextAction?: string | null;
       metadata?: Record<string, unknown>;
     }) => {
+      const identity = normalizeSchedulingIdentity(params);
       const { data, error } = await supabase
         .from("scheduling_coverage_cases")
         .insert([{
-          client_id: params.clientId ?? null,
+          ...identity,
           state: params.state ?? null,
           case_type: params.caseType,
           risk_level: params.riskLevel ?? "medium",
@@ -129,8 +170,7 @@ export function useSchedulingActions() {
 
   // ---- cancellations + make-ups -------------------------------------------
   const logCancellation = useCallback(
-    async (params: {
-      clientId?: string | null;
+    async (params: IdentityFields & {
       sessionDate?: string | null;
       startTime?: string | null;
       endTime?: string | null;
@@ -144,10 +184,13 @@ export function useSchedulingActions() {
       makeUpRequired?: boolean;
       metadata?: Record<string, unknown>;
     }) => {
+      const identity = normalizeSchedulingIdentity(params);
+      const { provider_name: _pn, provider_role: _pr, ...cancelIdentity } = identity;
+      void _pn; void _pr;
       const { data, error } = await supabase
         .from("scheduling_cancellations")
         .insert([{
-          client_id: params.clientId ?? null,
+          ...cancelIdentity,
           session_date: params.sessionDate ?? null,
           start_time: params.startTime ?? null,
           end_time: params.endTime ?? null,
@@ -205,8 +248,7 @@ export function useSchedulingActions() {
 
   // ---- schedule adjustments ------------------------------------------------
   const createAdjustment = useCallback(
-    async (params: {
-      clientId?: string | null;
+    async (params: IdentityFields & {
       adjustmentType:
         | "add_session"
         | "remove_session"
@@ -228,10 +270,13 @@ export function useSchedulingActions() {
       approvalStatus?: "draft" | "ready" | "approved" | "rejected" | "synced";
       metadata?: Record<string, unknown>;
     }) => {
+      const identity = normalizeSchedulingIdentity(params);
+      const { provider_name: _pn, provider_role: _pr, ...adjIdentity } = identity;
+      void _pn; void _pr;
       const { data, error } = await supabase
         .from("scheduling_session_adjustments")
         .insert([{
-          client_id: params.clientId ?? null,
+          ...adjIdentity,
           adjustment_type: params.adjustmentType,
           day_of_week: params.dayOfWeek ?? null,
           session_date: params.sessionDate ?? null,
@@ -303,8 +348,7 @@ export function useSchedulingActions() {
 
   // ---- contact attempts ----------------------------------------------------
   const logContactAttempt = useCallback(
-    async (params: {
-      clientId?: string | null;
+    async (params: IdentityFields & {
       contactType: "family" | "rbt" | "bcba" | "state_director" | "assistant_state_director" | "internal";
       channel: "phone" | "sms" | "email" | "teams" | "internal_note";
       direction?: "outbound" | "inbound";
@@ -322,10 +366,11 @@ export function useSchedulingActions() {
       state?: string | null;
       metadata?: Record<string, unknown>;
     }) => {
+      const identity = normalizeSchedulingIdentity(params);
       const { data, error } = await supabase
         .from("scheduling_contact_attempts")
         .insert([{
-          client_id: params.clientId ?? null,
+          ...identity,
           contact_type: params.contactType,
           channel: params.channel,
           direction: params.direction ?? "outbound",
@@ -349,22 +394,24 @@ export function useSchedulingActions() {
   );
 
   // ---- read helpers --------------------------------------------------------
-  const listClientSchedulingActions = useCallback(async (clientId: string) => {
+  const listClientSchedulingActions = useCallback(async (clientIdOrKey: string) => {
+    const ident = normalizeSchedulingIdentity({ clientId: clientIdOrKey });
     const { data, error } = await supabase
       .from("scheduling_actions")
       .select("*")
-      .eq("client_id", clientId)
+      .or(ident.client_id ? `client_id.eq.${ident.client_id}` : `client_key.eq.${ident.client_key ?? clientIdOrKey}`)
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) { toast.error(error.message); return []; }
     return data ?? [];
   }, []);
 
-  const listClientContactAttempts = useCallback(async (clientId: string) => {
+  const listClientContactAttempts = useCallback(async (clientIdOrKey: string) => {
+    const ident = normalizeSchedulingIdentity({ clientId: clientIdOrKey });
     const { data, error } = await supabase
       .from("scheduling_contact_attempts")
       .select("*")
-      .eq("client_id", clientId)
+      .or(ident.client_id ? `client_id.eq.${ident.client_id}` : `client_key.eq.${ident.client_key ?? clientIdOrKey}`)
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) { toast.error(error.message); return []; }
