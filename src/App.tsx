@@ -379,7 +379,7 @@ import {
 } from "./pages/os/credentialing/CredentialingPages";
 import {
   StateOperationsPage, AuthorizationsPhase6Page, ApprovedAuthorizationsPage,
-  DenialsPage, SchedulingPhase6Page, NoOONBenefitsPage,
+  DenialsPage, NoOONBenefitsPage,
   CaseManagementPhase6Page, QAPhase6OpsPage,
   StateEscalationsPage, OperationalTasksPage,
 } from "./pages/os/operations-phase6/OperationsPages";
