@@ -16,6 +16,7 @@ import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandid
 import { getClientStaffingNeeds, type StaffingClientNeed } from "@/data/staffing";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
+import { notifyApploiNotConnected } from "@/lib/recruiting/apploi";
 
 // Recruiting → Staffing & Operations → RBT Recruiting
 // Operational command center for RBT pipeline health, staffing demand,
@@ -237,8 +238,8 @@ export default function OSRecruitingRBT() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-2 text-sm">
-              <RefreshCw className="size-4" /> Sync Apploi Candidates
+            <button onClick={notifyApploiNotConnected} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-2 text-sm">
+              <RefreshCw className="size-4" /> Import from Apploi
             </button>
             <button className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center gap-2 text-sm font-medium">
               <Plus className="size-4" /> Add RBT Candidate
@@ -382,15 +383,15 @@ export default function OSRecruitingRBT() {
               <div className="space-y-1.5">
                 {[
                   { icon: Plus, label: "Add RBT Candidate" },
-                  { icon: RefreshCw, label: "Sync Apploi Candidates" },
+                  { icon: RefreshCw, label: "Import from Apploi", onClick: notifyApploiNotConnected },
                   { icon: ShieldCheck, label: "Verify BACB" },
                   { icon: GraduationCap, label: "Send 40-Hour Course Link" },
                   { icon: CalendarClock, label: "Schedule Interview" },
                   { icon: Bell, label: "Notify Staffing" },
                   { icon: AlertTriangle, label: "Escalate Staffing Delay" },
                   { icon: Download, label: "Export RBT Pipeline" },
-                ].map((a) => (
-                  <button key={a.label} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
+                ].map((a: { icon: any; label: string; onClick?: () => void }) => (
+                  <button key={a.label} onClick={a.onClick} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
                     <a.icon className="size-4 text-muted-foreground" />
                     {a.label}
                   </button>
