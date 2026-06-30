@@ -25,22 +25,24 @@ export function useApploiIntegrationStatus(): ApploiIntegrationState {
 
   const refetch = useCallback(async () => {
     try {
+      const integrationId = await findApploiIntegrationId();
+      if (!integrationId) { setStatus("not_configured"); setLastSyncAt(null); return; }
       const { data: conn } = await supabase
         .from("integration_connections")
-        .select("id,status,provider")
-        .eq("provider", "apploi")
+        .select("id,status,enabled")
+        .eq("integration_id", integrationId)
         .maybeSingle();
-      const isConnected = !!conn && (conn as any).status === "connected";
+      const isConnected = !!conn && (conn as any).status === "connected" && (conn as any).enabled !== false;
       setStatus(isConnected ? "connected" : "not_configured");
       if (isConnected) {
         const { data: run } = await supabase
           .from("integration_sync_runs")
-          .select("finished_at,started_at")
+          .select("completed_at,started_at")
           .eq("connection_id", (conn as any).id)
           .order("started_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        setLastSyncAt((run as any)?.finished_at ?? (run as any)?.started_at ?? null);
+        setLastSyncAt((run as any)?.completed_at ?? (run as any)?.started_at ?? null);
       } else {
         setLastSyncAt(null);
       }
@@ -79,20 +81,22 @@ export function useApploiNormalizedCandidates() {
   const refetch = useCallback(async () => {
     setLoading(true);
     try {
+      const integrationId = await findApploiIntegrationId();
+      if (!integrationId) { setItems([]); return; }
       const { data } = await supabase
         .from("integration_normalized_records")
         .select("*")
-        .eq("provider", "apploi")
-        .eq("entity_type", "candidate");
+        .eq("integration_id", integrationId)
+        .eq("record_kind", "candidate");
       const mapped = (data ?? []).map((r: any): ApploiNormalizedCandidate => {
-        const p = (r.normalized_payload ?? {}) as Record<string, unknown>;
+        const p = (r.metadata ?? {}) as Record<string, unknown>;
         const s = (v: unknown) => (typeof v === "string" ? v : null);
         return {
-          external_id: String(r.external_id ?? p.id ?? ""),
+          external_id: String(r.provider_record_id ?? p.id ?? ""),
           first_name: s(p.first_name),
           last_name: s(p.last_name),
-          email: s(p.email),
-          phone: s(p.phone),
+          email: s(p.email) ?? s(r.person_email),
+          phone: s(p.phone) ?? s(r.person_phone),
           role: s(p.role),
           state: s(p.state),
           city: s(p.city),
@@ -100,7 +104,7 @@ export function useApploiNormalizedCandidates() {
           external_status: s(p.external_status),
           recruiter: s(p.recruiter),
           next_action: s(p.next_action),
-          profile_url: s(p.profile_url),
+          profile_url: s(p.profile_url) ?? s(r.external_url),
           raw: r,
         };
       });
@@ -124,35 +128,37 @@ export function useApploiNormalizedCandidates() {
  * directly from the browser.
  */
 export async function importApploiNormalizedRecords(): Promise<{ imported: number; skipped: number } | null> {
+  const integrationId = await findApploiIntegrationId();
+  if (!integrationId) { notifyApploiNotConnected(); return null; }
   const { data: conn } = await supabase
     .from("integration_connections")
-    .select("id,status,provider")
-    .eq("provider", "apploi")
+    .select("id,status,enabled")
+    .eq("integration_id", integrationId)
     .maybeSingle();
-  if (!conn || (conn as any).status !== "connected") {
+  if (!conn || (conn as any).status !== "connected" || (conn as any).enabled === false) {
     notifyApploiNotConnected();
     return null;
   }
   const { data: records } = await supabase
     .from("integration_normalized_records")
     .select("*")
-    .eq("provider", "apploi")
-    .eq("entity_type", "candidate");
+    .eq("integration_id", integrationId)
+    .eq("record_kind", "candidate");
   if (!records || records.length === 0) {
     toast.info("No Apploi records available to import yet.");
     return { imported: 0, skipped: 0 };
   }
   let imported = 0; let skipped = 0;
   for (const r of records) {
-    const p = ((r as any).normalized_payload ?? {}) as Record<string, any>;
-    const email = p.email ?? null;
-    const externalId = (r as any).external_id ?? p.id ?? null;
+    const p = ((r as any).metadata ?? {}) as Record<string, any>;
+    const email = p.email ?? (r as any).person_email ?? null;
+    const externalId = (r as any).provider_record_id ?? p.id ?? null;
     if (!p.first_name && !p.last_name && !email) { skipped++; continue; }
     const row: Record<string, unknown> = {
       first_name: p.first_name ?? "(unknown)",
       last_name: p.last_name ?? "(unknown)",
       email,
-      phone: p.phone ?? null,
+      phone: p.phone ?? (r as any).person_phone ?? null,
       role: p.role ?? "Other",
       state: p.state ?? "Other",
       city: p.city ?? null,
@@ -180,4 +186,18 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
   }
   toast.success(`Apploi import: ${imported} imported, ${skipped} skipped`);
   return { imported, skipped };
+}
+
+// Look up the Apploi integration by display name (no provider/slug column on the catalog).
+async function findApploiIntegrationId(): Promise<string | null> {
+  try {
+    const { data } = await supabase
+      .from("integration_catalog")
+      .select("id,display_name")
+      .ilike("display_name", "%apploi%")
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
 }
