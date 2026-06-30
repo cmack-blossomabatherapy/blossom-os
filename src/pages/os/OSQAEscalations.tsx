@@ -294,10 +294,10 @@ function EscalationCard({ e, onOpen }: { e: Escalation; onOpen: (e: Escalation) 
         <button onClick={() => onOpen(e)} className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-3 h-8 text-xs font-medium shadow-sm hover:opacity-90 transition">
           Open workflow <ChevronRight className="size-3" />
         </button>
-        <button className="inline-flex items-center gap-1 rounded-full border border-border/70 px-3 h-8 text-xs hover:bg-muted transition"><Send className="size-3" /> Send follow-up</button>
-        <button className="inline-flex items-center gap-1 rounded-full border border-border/70 px-3 h-8 text-xs hover:bg-muted transition"><Flame className="size-3" /> Escalate</button>
-        <button className="inline-flex items-center gap-1 rounded-full border border-border/70 px-3 h-8 text-xs hover:bg-muted transition"><StickyNote className="size-3" /> Add note</button>
-        <button className="inline-flex items-center gap-1 rounded-full border border-border/70 px-3 h-8 text-xs hover:bg-muted transition"><CheckCircle2 className="size-3" /> Mark resolved</button>
+        <button onClick={() => onOpen(e)} title="Open workflow to send a follow-up" className="inline-flex items-center gap-1 rounded-full border border-border/70 px-3 h-8 text-xs hover:bg-muted transition"><Send className="size-3" /> Send follow-up</button>
+        <button onClick={() => onOpen(e)} title="Open workflow to escalate" className="inline-flex items-center gap-1 rounded-full border border-border/70 px-3 h-8 text-xs hover:bg-muted transition"><Flame className="size-3" /> Escalate</button>
+        <button onClick={() => onOpen(e)} title="Open workflow to add a QA note" className="inline-flex items-center gap-1 rounded-full border border-border/70 px-3 h-8 text-xs hover:bg-muted transition"><StickyNote className="size-3" /> Add note</button>
+        <button onClick={() => onOpen(e)} title="Open workflow to mark resolved" className="inline-flex items-center gap-1 rounded-full border border-border/70 px-3 h-8 text-xs hover:bg-muted transition"><CheckCircle2 className="size-3" /> Mark resolved</button>
       </div>
     </div>
   );

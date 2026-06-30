@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useSlideout } from "@/hooks/useSlideout";
 import { Link } from "react-router-dom";
 import {
@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -189,7 +190,7 @@ function buildBCBAsWithMap(items: Authorization[], bcbaById: Map<string, string>
 
 // ---------- page ----------
 export default function OSQABCBAs() {
-  const { items, loading, bcbaById } = useLiveAuthorizations();
+  const { items, loading, bcbaById, refresh, sourceById } = useLiveAuthorizations();
   const allBcbas = useMemo(() => buildBCBAsWithMap(items, bcbaById), [items, bcbaById]);
 
   const [tab, setTab] = useState<TabKey>("all");
@@ -687,7 +688,14 @@ export default function OSQABCBAs() {
         </div>
       </div>
 
-      {openRow && <BCBASlideout b={openRow} onClose={() => setOpenId(null)} />}
+      {openRow && (
+        <BCBASlideout
+          b={openRow}
+          onClose={() => setOpenId(null)}
+          onChanged={refresh}
+          sourceById={sourceById}
+        />
+      )}
     </OSShell>
   );
 }
@@ -853,7 +861,14 @@ function BCBACard({ b, onOpen }: { b: BCBARow; onOpen: () => void }) {
   );
 }
 
-function BCBASlideout({ b, onClose }: { b: BCBARow; onClose: () => void }) {
+function BCBASlideout({
+  b, onClose, onChanged, sourceById,
+}: {
+  b: BCBARow;
+  onClose: () => void;
+  onChanged?: () => void | Promise<void>;
+  sourceById: Map<string, "monday" | "manual" | "centralreach">;
+}) {
   useSlideout(true, onClose);
   const checklist = [
     { ok: b.prOverdue === 0, label: "No overdue progress reports" },
@@ -879,6 +894,26 @@ function BCBASlideout({ b, onClose }: { b: BCBARow; onClose: () => void }) {
     });
     return Array.from(by.values());
   }, [b]);
+
+  // Pick a primary authorization for BCBA-level workflow actions:
+  // escalated > nearest expiration > most recent active.
+  const primaryAuth = useMemo<Authorization | null>(() => {
+    const auths = b.auths ?? [];
+    if (auths.length === 0) return null;
+    const score = (a: Authorization) => {
+      const d = daysUntil(a.expirationDate);
+      const expScore = d !== null && d >= 0 ? Math.max(0, 365 - d) : 0;
+      const lastTs = new Date(a.lastActivity ?? 0).getTime() || 0;
+      return (a.stage === "Denied" ? 100000 : 0)
+        + (a.missingInfo ? 5000 : 0)
+        + expScore * 10
+        + (lastTs / 1e10);
+    };
+    return [...auths].sort((x, y) => score(y) - score(x))[0];
+  }, [b]);
+  const [selectedAuthId, setSelectedAuthId] = useState<string | null>(primaryAuth?.id ?? null);
+  useEffect(() => { setSelectedAuthId(primaryAuth?.id ?? null); }, [primaryAuth?.id]);
+  const activeAuth = b.auths.find(a => a.id === selectedAuthId) ?? primaryAuth ?? null;
 
   return (
     <>
@@ -935,6 +970,36 @@ function BCBASlideout({ b, onClose }: { b: BCBARow; onClose: () => void }) {
             <ActionBtn icon={ClipboardList} label="Open escalations"    to={`/escalations-followups?bcba=${encodeURIComponent(b.name)}`} />
             <ActionBtn icon={ExternalLink}  label="QA clients"          to={`/qa-clients?bcba=${encodeURIComponent(b.name)}`} />
           </section>
+
+          {activeAuth && (
+            <section>
+              <SectionLabel>QA actions (BCBA-level context)</SectionLabel>
+              <Card className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground shrink-0">Acting on</label>
+                  <select
+                    value={activeAuth.id}
+                    onChange={(e) => setSelectedAuthId(e.target.value)}
+                    className="flex-1 h-8 rounded-lg border border-border/60 bg-card px-2 text-xs"
+                  >
+                    {b.auths.map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.clientName} · {a.stage}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Notes, follow-ups, and escalations are persisted against the selected client authorization with BCBA-level context.
+                </p>
+                <QAActionsPanel
+                  auth={activeAuth}
+                  sourceSystem={sourceById.get(activeAuth.id)}
+                  onChanged={onChanged}
+                />
+              </Card>
+            </section>
+          )}
 
           <section>
             <SectionLabel>Assigned clients ({clientRows.length})</SectionLabel>

@@ -730,10 +730,10 @@ function PRCard({ auth: a, onOpen }: { auth: Authorization; onOpen: () => void }
           </button>
 
           <div className="hidden md:flex flex-col gap-1.5 shrink-0">
-            <IconBtn title="Open authorization" to="/qa-queue" icon={ExternalLink} />
-            <IconBtn title="Send follow-up" icon={Send} />
-            <IconBtn title="Mark PR received" icon={CheckCircle2} />
-            <IconBtn title="Escalate" icon={Flame} tone="crit" />
+            <IconBtn title="Open authorization" icon={ExternalLink} onClick={onOpen} />
+            <IconBtn title="Send follow-up" icon={Send} onClick={onOpen} />
+            <IconBtn title="Mark PR received" icon={CheckCircle2} onClick={onOpen} />
+            <IconBtn title="Escalate" icon={Flame} tone="crit" onClick={onOpen} />
           </div>
         </div>
       </Card>
@@ -742,8 +742,8 @@ function PRCard({ auth: a, onOpen }: { auth: Authorization; onOpen: () => void }
 }
 
 function IconBtn({
-  icon: Icon, title, tone, to,
-}: { icon: React.ElementType; title: string; tone?: Tone; to?: string }) {
+  icon: Icon, title, tone, to, onClick,
+}: { icon: React.ElementType; title: string; tone?: Tone; to?: string; onClick?: () => void }) {
   const cls = cn(
     "h-8 w-8 rounded-lg grid place-items-center border transition",
     tone === "crit"
@@ -751,7 +751,7 @@ function IconBtn({
       : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted",
   );
   if (to) return <Link to={to} title={title} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>;
-  return <button title={title} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></button>;
+  return <button title={title} onClick={onClick} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></button>;
 }
 
 function PRSlideout({ auth: a, onClose, onChanged, sourceSystem }: { auth: Authorization; onClose: () => void; onChanged?: () => void | Promise<void>; sourceSystem?: "monday" | "manual" | "centralreach" }) {

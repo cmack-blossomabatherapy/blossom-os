@@ -883,9 +883,9 @@ function ClientCard({ c, onOpen }: { c: ClientRow; onOpen: () => void }) {
           </button>
           <div className="hidden md:flex flex-col items-end gap-1.5 shrink-0">
             <div className="flex items-center gap-1.5">
-              <IconBtn title="Add QA note"    icon={StickyNote} />
-              <IconBtn title="Send follow-up" icon={Send} />
-              <IconBtn title="Escalate"       icon={Flame} tone="crit" />
+              <IconBtn title="Add QA note"    icon={StickyNote} onClick={onOpen} />
+              <IconBtn title="Send follow-up" icon={Send} onClick={onOpen} />
+              <IconBtn title="Escalate"       icon={Flame} tone="crit" onClick={onOpen} />
             </div>
             <button onClick={onOpen}
               className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition">
@@ -950,7 +950,7 @@ function ClientSlideout({ c, onClose, onChanged, sourceSystem }: { c: ClientRow;
             <SectionLabel>Quick actions</SectionLabel>
             <QAActionsPanel auth={c.primary} sourceSystem={sourceSystem} onChanged={onChanged} />
             <div className="grid grid-cols-2 gap-2 pt-2">
-              <ActionBtn icon={ExternalLink} label="Open client" to={`/clients/${c.primary.clientId}`} />
+              <ActionBtn icon={ExternalLink} label="Open client" to={`/qa-clients?client=${encodeURIComponent(c.primary.clientName ?? c.primary.clientId)}`} />
               <ActionBtn icon={ClipboardList} label="View authorization" to="/authorization-reviews" />
               <ActionBtn icon={FileText}     label="View PR workflow" to="/progress-reports" />
             </div>

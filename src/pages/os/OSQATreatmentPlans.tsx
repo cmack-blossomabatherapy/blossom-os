@@ -423,9 +423,9 @@ export default function OSQATreatmentPlans() {
                             {a.daysInStage}d
                           </Pill>
                           <div className="hidden md:flex items-center gap-1.5 shrink-0">
-                            <IconBtn title="Send reminder" icon={Send} />
-                            <IconBtn title="Add note" icon={StickyNote} />
-                            <IconBtn title="Escalate" icon={Flame} tone="crit" />
+                            <IconBtn title="Send reminder" icon={Send} onClick={() => setOpenId(a.id)} />
+                            <IconBtn title="Add note" icon={StickyNote} onClick={() => setOpenId(a.id)} />
+                            <IconBtn title="Escalate" icon={Flame} tone="crit" onClick={() => setOpenId(a.id)} />
                           </div>
                         </li>
                       );
@@ -728,10 +728,10 @@ function TPCard({ auth: a, onOpen }: { auth: Authorization; onOpen: () => void }
           </button>
 
           <div className="hidden md:flex flex-col gap-1.5 shrink-0">
-            <IconBtn title="Open record" to="/qa-queue" icon={ExternalLink} />
-            <IconBtn title="Mark reviewed" icon={CheckCircle2} />
-            <IconBtn title="Request missing info" icon={ListChecks} />
-            <IconBtn title="Escalate" icon={Flame} tone="crit" />
+            <IconBtn title="Open record" icon={ExternalLink} onClick={onOpen} />
+            <IconBtn title="Mark reviewed" icon={CheckCircle2} onClick={onOpen} />
+            <IconBtn title="Request missing info" icon={ListChecks} onClick={onOpen} />
+            <IconBtn title="Escalate" icon={Flame} tone="crit" onClick={onOpen} />
           </div>
         </div>
       </Card>
@@ -773,8 +773,8 @@ function ExpGroup({
 }
 
 function IconBtn({
-  icon: Icon, title, tone, to,
-}: { icon: React.ElementType; title: string; tone?: Tone; to?: string }) {
+  icon: Icon, title, tone, to, onClick,
+}: { icon: React.ElementType; title: string; tone?: Tone; to?: string; onClick?: () => void }) {
   const cls = cn(
     "h-8 w-8 rounded-lg grid place-items-center border transition",
     tone === "crit"
@@ -782,7 +782,7 @@ function IconBtn({
       : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted",
   );
   if (to) return <Link to={to} title={title} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>;
-  return <button title={title} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></button>;
+  return <button title={title} onClick={onClick} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></button>;
 }
 
 function TPSlideout({ auth: a, onClose, onChanged, sourceSystem }: { auth: Authorization; onClose: () => void; onChanged?: () => void | Promise<void>; sourceSystem?: "monday" | "manual" | "centralreach" }) {

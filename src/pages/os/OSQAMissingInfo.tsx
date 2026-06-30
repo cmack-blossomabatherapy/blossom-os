@@ -498,9 +498,9 @@ export default function OSQAMissingInfo() {
                         </div>
                         <Pill tone={r.urgency}>{r.daysBlocked}d</Pill>
                         <div className="hidden md:flex items-center gap-1.5 shrink-0">
-                          <IconBtn title="Send reminder" icon={Send} />
-                          <IconBtn title="Add note"      icon={StickyNote} />
-                          <IconBtn title="Escalate"     icon={Flame} tone="crit" />
+                          <IconBtn title="Send reminder" icon={Send} onClick={() => setOpenId(r.id)} />
+                          <IconBtn title="Add note"      icon={StickyNote} onClick={() => setOpenId(r.id)} />
+                          <IconBtn title="Escalate"     icon={Flame} tone="crit" onClick={() => setOpenId(r.id)} />
                         </div>
                       </li>
                     ))}
@@ -530,8 +530,8 @@ export default function OSQAMissingInfo() {
                           </div>
                           <Pill tone={worst.urgency}>{worst.daysBlocked}d</Pill>
                           <div className="hidden md:flex items-center gap-1.5 shrink-0">
-                            <IconBtn title="Send follow-up" icon={Send} />
-                            <IconBtn title="Escalate"      icon={Flame} tone="crit" />
+                            <IconBtn title="Send follow-up" icon={Send} onClick={() => setOpenId(worst.id)} />
+                            <IconBtn title="Escalate"      icon={Flame} tone="crit" onClick={() => setOpenId(worst.id)} />
                           </div>
                         </li>
                       );
@@ -738,8 +738,8 @@ function AwareCard({
   );
 }
 function IconBtn({
-  icon: Icon, title, tone, to,
-}: { icon: React.ElementType; title: string; tone?: Tone; to?: string }) {
+  icon: Icon, title, tone, to, onClick,
+}: { icon: React.ElementType; title: string; tone?: Tone; to?: string; onClick?: () => void }) {
   const cls = cn(
     "h-8 w-8 rounded-lg grid place-items-center border transition",
     tone === "crit"
@@ -747,7 +747,7 @@ function IconBtn({
       : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted",
   );
   if (to) return <Link to={to} title={title} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></Link>;
-  return <button title={title} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></button>;
+  return <button title={title} onClick={onClick} className={cls}><Icon className="h-3.5 w-3.5" strokeWidth={1.75} /></button>;
 }
 
 function BlockerCard({ row: r, onOpen }: { row: BlockerRow; onOpen: () => void }) {
@@ -814,11 +814,11 @@ function BlockerCard({ row: r, onOpen }: { row: BlockerRow; onOpen: () => void }
           </button>
 
           <div className="hidden md:flex flex-col gap-1.5 shrink-0">
-            <IconBtn title="Open workflow"  to="/qa-queue" icon={ExternalLink} />
-            <IconBtn title="Send follow-up" icon={Send} />
-            <IconBtn title="Add QA note"    icon={StickyNote} />
-            <IconBtn title="Mark resolved"  icon={CheckCircle2} />
-            <IconBtn title="Escalate"       icon={Flame} tone="crit" />
+            <IconBtn title="Open workflow"  icon={ExternalLink} onClick={onOpen} />
+            <IconBtn title="Send follow-up" icon={Send} onClick={onOpen} />
+            <IconBtn title="Add QA note"    icon={StickyNote} onClick={onOpen} />
+            <IconBtn title="Mark resolved"  icon={CheckCircle2} onClick={onOpen} />
+            <IconBtn title="Escalate"       icon={Flame} tone="crit" onClick={onOpen} />
           </div>
         </div>
       </Card>
