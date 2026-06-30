@@ -6,6 +6,11 @@ import type {
   FamilyPreferenceType,
   FamilyPreferenceImportance,
   FamilyPreferenceStatus,
+  StaffingCaseActivityRow,
+  StaffingActivityType,
+  StaffingActivityStatus,
+  StaffingIntegrationHandoffRow,
+  IntegrationHandoffStatus,
 } from "./types";
 
 /* ------------------------------- matches -------------------------------- */
@@ -115,4 +120,100 @@ export async function upsertFamilyPreference(
 export async function deleteFamilyPreference(id: string): Promise<void> {
   const { error } = await supabase.from(PREFS_TABLE).delete().eq("id", id);
   if (error) throw error;
+}
+
+/* ---------------------- staffing case activity -------------------------- */
+
+const ACTIVITY_TABLE = "staffing_case_activity" as never;
+
+export async function listCaseActivity(clientId?: string): Promise<StaffingCaseActivityRow[]> {
+  let q = supabase.from(ACTIVITY_TABLE).select("*").order("created_at", { ascending: false });
+  if (clientId) q = q.eq("client_id", clientId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data as unknown as StaffingCaseActivityRow[]) ?? [];
+}
+
+export interface UpsertCaseActivityInput {
+  id?: string;
+  client_id?: string | null;
+  client_name: string;
+  activity_type: StaffingActivityType;
+  title: string;
+  detail?: string | null;
+  owner?: string | null;
+  due_date?: string | null;
+  status?: StaffingActivityStatus;
+}
+
+export async function upsertCaseActivity(input: UpsertCaseActivityInput): Promise<StaffingCaseActivityRow> {
+  const payload = {
+    client_id: input.client_id ?? null,
+    client_name: input.client_name,
+    activity_type: input.activity_type,
+    title: input.title,
+    detail: input.detail ?? null,
+    owner: input.owner ?? null,
+    due_date: input.due_date ?? null,
+    status: input.status ?? "open",
+  };
+  const query = input.id
+    ? supabase.from(ACTIVITY_TABLE).update(payload as never).eq("id", input.id).select().single()
+    : supabase.from(ACTIVITY_TABLE).insert(payload as never).select().single();
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as unknown as StaffingCaseActivityRow;
+}
+
+export async function deleteCaseActivity(id: string): Promise<void> {
+  const { error } = await supabase.from(ACTIVITY_TABLE).delete().eq("id", id);
+  if (error) throw error;
+}
+
+/* --------------------- integration handoffs (Apploi) -------------------- */
+
+const HANDOFF_TABLE = "staffing_integration_handoffs" as never;
+
+export async function listIntegrationHandoffs(): Promise<StaffingIntegrationHandoffRow[]> {
+  const { data, error } = await supabase
+    .from(HANDOFF_TABLE)
+    .select("*")
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+  return (data as unknown as StaffingIntegrationHandoffRow[]) ?? [];
+}
+
+export interface UpsertIntegrationHandoffInput {
+  id?: string;
+  integration_record_id?: string | null;
+  provider?: string | null;
+  candidate_name: string;
+  candidate_role?: string | null;
+  state?: string | null;
+  status: IntegrationHandoffStatus;
+  hold_reason?: string | null;
+  notes?: string | null;
+  assigned_owner?: string | null;
+}
+
+export async function upsertIntegrationHandoff(
+  input: UpsertIntegrationHandoffInput,
+): Promise<StaffingIntegrationHandoffRow> {
+  const payload = {
+    integration_record_id: input.integration_record_id ?? null,
+    provider: input.provider ?? null,
+    candidate_name: input.candidate_name,
+    candidate_role: input.candidate_role ?? null,
+    state: input.state ?? null,
+    status: input.status,
+    hold_reason: input.hold_reason ?? null,
+    notes: input.notes ?? null,
+    assigned_owner: input.assigned_owner ?? null,
+  };
+  const query = input.id
+    ? supabase.from(HANDOFF_TABLE).update(payload as never).eq("id", input.id).select().single()
+    : supabase.from(HANDOFF_TABLE).insert(payload as never).select().single();
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as unknown as StaffingIntegrationHandoffRow;
 }

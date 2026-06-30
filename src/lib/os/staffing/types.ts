@@ -30,7 +30,7 @@ export type FamilyPreferenceType =
   | "family_request"
   | "other";
 
-export type FamilyPreferenceImportance = "must_have" | "nice_to_have";
+export type FamilyPreferenceImportance = "must_have" | "nice_to_have" | "avoid";
 export type FamilyPreferenceStatus = "active" | "resolved" | "no_longer_applicable";
 
 export interface FamilyStaffingPreferenceRow {
@@ -58,3 +58,57 @@ export const STAFFING_TABS = [
   "apploi",
 ] as const;
 export type StaffingTab = (typeof STAFFING_TABS)[number];
+
+/* ---------------------- case activity & handoffs ----------------------- */
+
+export type StaffingActivityType =
+  | "note"
+  | "escalation"
+  | "blocked"
+  | "task"
+  | "handoff"
+  | "status_change";
+
+export type StaffingActivityStatus =
+  | "open"
+  | "in_progress"
+  | "resolved"
+  | "watching"
+  | "cancelled";
+
+export interface StaffingCaseActivityRow {
+  id: string;
+  client_id: string | null;
+  client_name: string;
+  activity_type: StaffingActivityType;
+  title: string;
+  detail: string | null;
+  owner: string | null;
+  due_date: string | null;
+  status: StaffingActivityStatus;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type IntegrationHandoffStatus =
+  | "ready_for_staffing"
+  | "added_to_pool"
+  | "hold"
+  | "returned_to_recruiting";
+
+export interface StaffingIntegrationHandoffRow {
+  id: string;
+  integration_record_id: string | null;
+  provider: string | null;
+  candidate_name: string;
+  candidate_role: string | null;
+  state: string | null;
+  status: IntegrationHandoffStatus;
+  hold_reason: string | null;
+  notes: string | null;
+  assigned_owner: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}

@@ -46,7 +46,9 @@ export function applyPreferenceScoring(
 
   for (const p of preferences) {
     if (p.status !== "active") continue;
-    const isAvoid = p.preference_detail.trim().toUpperCase().startsWith("AVOID:");
+    const isAvoid =
+      p.importance === "avoid" ||
+      p.preference_detail.trim().toUpperCase().startsWith("AVOID:");
     const matched = detailMatches(p.preference_detail, ctx);
     let impact = 0;
     if (isAvoid && matched) {

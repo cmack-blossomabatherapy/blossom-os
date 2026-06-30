@@ -12964,6 +12964,99 @@ export type Database = {
           },
         ]
       }
+      staffing_case_activity: {
+        Row: {
+          activity_type: string
+          client_id: string | null
+          client_name: string
+          created_at: string
+          created_by: string | null
+          detail: string | null
+          due_date: string | null
+          id: string
+          owner: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activity_type: string
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          created_by?: string | null
+          detail?: string | null
+          due_date?: string | null
+          id?: string
+          owner?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: string
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          created_by?: string | null
+          detail?: string | null
+          due_date?: string | null
+          id?: string
+          owner?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      staffing_integration_handoffs: {
+        Row: {
+          assigned_owner: string | null
+          candidate_name: string
+          candidate_role: string | null
+          created_at: string
+          created_by: string | null
+          hold_reason: string | null
+          id: string
+          integration_record_id: string | null
+          notes: string | null
+          provider: string | null
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_owner?: string | null
+          candidate_name: string
+          candidate_role?: string | null
+          created_at?: string
+          created_by?: string | null
+          hold_reason?: string | null
+          id?: string
+          integration_record_id?: string | null
+          notes?: string | null
+          provider?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_owner?: string | null
+          candidate_name?: string
+          candidate_role?: string | null
+          created_at?: string
+          created_by?: string | null
+          hold_reason?: string | null
+          id?: string
+          integration_record_id?: string | null
+          notes?: string | null
+          provider?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       staffing_matches: {
         Row: {
           availability_overlap: string[]
@@ -14846,7 +14939,7 @@ export type Database = {
         | "terminated"
         | "resigned"
       employment_type: "full_time" | "part_time" | "contractor" | "prn"
-      family_pref_importance: "must_have" | "nice_to_have"
+      family_pref_importance: "must_have" | "nice_to_have" | "avoid"
       family_pref_status: "active" | "resolved" | "no_longer_applicable"
       family_pref_type:
         | "schedule"
@@ -15578,7 +15671,7 @@ export const Constants = {
         "resigned",
       ],
       employment_type: ["full_time", "part_time", "contractor", "prn"],
-      family_pref_importance: ["must_have", "nice_to_have"],
+      family_pref_importance: ["must_have", "nice_to_have", "avoid"],
       family_pref_status: ["active", "resolved", "no_longer_applicable"],
       family_pref_type: [
         "schedule",

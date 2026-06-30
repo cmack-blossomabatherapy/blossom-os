@@ -827,7 +827,7 @@ const App = () => (
                   <Route path="/hr/compliance-items" element={<AdminRoute><HRComplianceItemsPage /></AdminRoute>} />
                   <Route path="/hr/nfc-badge-support" element={<Navigate to="/user-management" replace />} />
                   {/* /hr/reports canonical PermissionRoute defined later; legacy admin variant retired. */}
-                  <Route path="/admin/hr/reports" element={<AdminRoute><HRReportsPage /></AdminRoute>} />
+                  <Route path="/admin/hr/reports" element={<Navigate to="/reports?category=hr" replace />} />
                   {/* Phase 5 — Credentialing */}
                   <Route path="/credentialing" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><CredentialingDashboardPage /></PermissionRoute>} />
                   <Route path="/credentialing/providers" element={<PermissionRoute allowedRoles={["admin", "credentialing_lead", "credentialing_team", "credentialing", "credentialing_coordinator"]}><ProviderCredentialingPage /></PermissionRoute>} />
@@ -1005,7 +1005,7 @@ const App = () => (
                   <Route path="/blossom/locations" element={<BlossomLocations />} />
                   <Route path="/blossom/locations/:id" element={<LocationDetail />} />
                   <Route path="/blossom/users" element={<Navigate to="/user-management" replace />} />
-                  <Route path="/blossom/reports" element={<PermissionRoute permission="reports.view" allowedRoles={ANALYTICS_ROLES}><BlossomReports /></PermissionRoute>} />
+                  <Route path="/blossom/reports" element={<Navigate to="/reports" replace />} />
                   <Route path="/intelligence" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><ExecutiveCommandCenter /></PermissionRoute>} />
                   <Route path="/intelligence/workforce" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><WorkforceIntelligence /></PermissionRoute>} />
                   <Route path="/intelligence/training" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><TrainingIntelligence /></PermissionRoute>} />
@@ -1017,7 +1017,7 @@ const App = () => (
                   <Route path="/intelligence/states/:id" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><StateDashboardDetail /></PermissionRoute>} />
                   <Route path="/intelligence/scorecards" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><Scorecards /></PermissionRoute>} />
                   <Route path="/intelligence/risk" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><RiskInsights /></PermissionRoute>} />
-                  <Route path="/intelligence/reports" element={<PermissionRoute permission="reports.view" allowedRoles={ANALYTICS_ROLES}><ReportBuilder /></PermissionRoute>} />
+                  <Route path="/intelligence/reports" element={<Navigate to="/reports" replace />} />
                   <Route path="/intelligence/assistant" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><AssistantAnalytics /></PermissionRoute>} />
                   <Route path="/leadership-dashboard" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/bcba-performance-dashboard" element={<PermissionRoute allowedRoles={["admin", "exec"]}><CeoDashboardV2 /></PermissionRoute>} />
