@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AuthPromptDialog } from "@/components/authorizations/AuthPromptDialog";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Sparkles, AlertTriangle, ChevronRight, ClipboardCheck,
