@@ -626,11 +626,12 @@ function _FilterSelectImpl({
 }
 
 function QueueCard({
-  row, active, onSelect,
+  row, active, onSelect, onAction,
 }: {
   row: { c: Client; priority: Priority; status: StatusKey; days: number; need?: StaffingClientNeed };
   active: boolean;
   onSelect: () => void;
+  onAction: (a: CardActionKey) => void;
 }) {
   const { c, priority, status, days } = row;
   const setting = (c.serviceLocation ?? "Home") as keyof typeof LOCATION_ICON;
@@ -680,11 +681,11 @@ function QueueCard({
 
       {/* Bottom actions */}
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        <CardAction label="Open Case" />
-        <CardAction label="Begin Pairing" />
-        <CardAction label="Availability" />
-        <CardAction label="Note" />
-        <CardAction label="Escalate" />
+        <CardAction label="Open Case" onClick={() => onAction("open")} />
+        <CardAction label="Begin Pairing" onClick={() => onAction("pair")} />
+        <CardAction label="Availability" onClick={() => onAction("availability")} />
+        <CardAction label="Note" onClick={() => onAction("note")} />
+        <CardAction label="Escalate" onClick={() => onAction("escalate")} />
       </div>
     </button>
   );
@@ -700,10 +701,15 @@ function Readiness({ label, value, ok, warn, bad }: { label: string; value: stri
   );
 }
 
-function CardAction({ label }: { label: string }) {
+function CardAction({ label, onClick }: { label: string; onClick?: () => void }) {
   return (
     <span
-      onClick={(e) => e.stopPropagation()}
+      role="button"
+      tabIndex={0}
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onClick?.(); }
+      }}
       className="h-7 px-2.5 rounded-full bg-muted/60 border border-border/60 text-[11px] text-foreground/80 hover:bg-muted hover:text-foreground transition inline-flex items-center"
     >
       {label}
@@ -723,7 +729,12 @@ function EmptyState({ icon: Icon, title, description }: { icon: typeof CheckCirc
 
 /* ---------------- workspace ---------------- */
 
-function CaseWorkspace({ client }: { client: Client }) {
+function CaseWorkspace({
+  client, onCardAction,
+}: {
+  client: Client;
+  onCardAction: (a: CardActionKey) => void;
+}) {
   const need = useMemo(() => getClientStaffingNeeds([client])[0], [client]);
   const matches = useMemo(() => (need ? suggestStaffingMatches(need) : []), [need]);
 
@@ -731,10 +742,10 @@ function CaseWorkspace({ client }: { client: Client }) {
     <div className="space-y-4">
       <ClientOverview client={client} />
       <ReadinessTracker client={client} />
-      <MatchingEngine client={client} matches={matches} />
+      <MatchingEngine client={client} matches={matches} onCardAction={onCardAction} />
       <ScheduleBuilder client={client} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <OperationalNotes client={client} />
+        <OperationalNotes client={client} onAddNote={() => onCardAction("note")} />
         <OperationalRisks client={client} />
       </div>
       <AskBlossomPanel client={client} />
