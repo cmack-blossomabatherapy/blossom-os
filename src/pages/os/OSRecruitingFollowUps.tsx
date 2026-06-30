@@ -13,11 +13,9 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
-import { useRecruitingFollowups } from "@/hooks/useRecruitingCandidates";
+import { useRecruitingFollowups, type RecruitingFollowup } from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
-import { LiveRecruitingSection, LiveRowCard } from "@/components/recruiting/LiveRecruitingSection";
 import { cn } from "@/lib/utils";
-import { useWorkflowStages } from "@/hooks/useWorkflowStages";
 
 // Recruiting → Staffing & Operations → Hiring Follow-Ups
 
@@ -178,24 +176,34 @@ export default function OSRecruitingFollowUps() {
   const mutations = useRecruitingMutations();
   const { items: liveFollowups, loading: liveFollowupsLoading } = useRecruitingFollowups();
   const { find: findCandidate } = useRecruitingCandidateLookup();
-  const baseFollowUps = useMemo(() => buildSuggestedFollowUps(recruitingCandidates), [recruitingCandidates]);
 
-  const defaults = useMemo(() => {
-    const m: Record<string, StageKey> = {};
-    baseFollowUps.forEach((f) => { m[f.id] = f.stage; });
-    return m;
-  }, [baseFollowUps]);
-  const { stageMap, moveStage: persistStage } = useWorkflowStages("follow-ups", defaults);
+  // Active board = mapped rows from recruiting_followups. Source of truth.
+  const baseFollowUps = useMemo<FollowUp[]>(
+    () => liveFollowups.map((row) => mapLiveFollowupToViewModel(row, findCandidate, recruitingCandidates)),
+    [liveFollowups, findCandidate, recruitingCandidates],
+  );
+
+  // Suggested = candidate-derived items NOT yet represented by a live row for that candidate.
+  const suggestedFollowUps = useMemo<FollowUp[]>(() => {
+    const liveCandidateIds = new Set(
+      liveFollowups.map((r) => r.candidate_id).filter((x): x is string => Boolean(x)),
+    );
+    return buildSuggestedFollowUps(recruitingCandidates).filter(
+      (s) => !liveCandidateIds.has(s.candidateId),
+    );
+  }, [liveFollowups, recruitingCandidates]);
+
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
   const [recruiterF, setRecruiterF] = useState("all");
   const [urgencyF, setUrgencyF] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creatingId, setCreatingId] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiQ, setAiQ] = useState("");
 
-  const stageOf = (f: FollowUp): StageKey => stageMap[f.id] ?? f.stage;
+  const stageOf = (f: FollowUp): StageKey => f.stage;
 
   const filtered = useMemo(() => {
     return baseFollowUps.filter((f) => {
@@ -222,7 +230,7 @@ export default function OSRecruitingFollowUps() {
         default:            return true;
       }
     });
-  }, [baseFollowUps, stageMap, activeChip, search, stateF, recruiterF, urgencyF]);
+  }, [baseFollowUps, activeChip, search, stateF, recruiterF, urgencyF]);
 
   const summary = useMemo(() => {
     const has = (pred: (f: FollowUp) => boolean) => baseFollowUps.filter(pred).length;
@@ -236,8 +244,7 @@ export default function OSRecruitingFollowUps() {
       staffing:        has((f) => stageOf(f) === "staffing" || f.staffingImpact),
       escalated:       has((f) => stageOf(f) === "escalated"),
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseFollowUps, stageMap]);
+  }, [baseFollowUps]);
 
   const grouped = useMemo(() => {
     const g: Record<StageKey, FollowUp[]> = {
@@ -246,7 +253,7 @@ export default function OSRecruitingFollowUps() {
     filtered.forEach((f) => { g[stageOf(f)].push(f); });
     Object.values(g).forEach((arr) => arr.sort((a, b) => b.daysOverdue - a.daysOverdue));
     return g;
-  }, [filtered, stageMap]);
+  }, [filtered]);
 
   const overdueQueue = useMemo(
     () => filtered.filter((f) => f.daysOverdue >= 3 || f.urgency === "High").sort((a, b) => b.daysOverdue - a.daysOverdue).slice(0, 10),
@@ -255,7 +262,7 @@ export default function OSRecruitingFollowUps() {
 
   const staffingDelays = useMemo(
     () => filtered.filter((f) => f.staffingImpact || stageOf(f) === "staffing").sort((a, b) => b.daysOverdue - a.daysOverdue).slice(0, 8),
-    [filtered, stageMap]
+    [filtered]
   );
 
   const recruiterRows = useMemo(() => {
@@ -270,8 +277,7 @@ export default function OSRecruitingFollowUps() {
         completed: owned.filter((f) => stageOf(f) === "completed").length,
       };
     }).filter((r) => r.active + r.completed > 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseFollowUps, stageMap]);
+  }, [baseFollowUps]);
 
   const activityFeed = useMemo(() => {
     return filtered.slice(0, 12).map((f) => ({
@@ -287,10 +293,33 @@ export default function OSRecruitingFollowUps() {
   const selected = selectedId ? baseFollowUps.find((f) => f.id === selectedId) ?? null : null;
 
   function moveStage(id: string, to: StageKey) {
-    const item = baseFollowUps.find((f) => f.id === id);
-    persistStage(id, to, item?.candidate.id);
-    if (item && /^[0-9a-f-]{36}$/i.test(item.candidate.id)) void mutations.createFollowup(item.candidate.id, { title: `Stage \u2192 ${to}` });
+    // id is the live recruiting_followups.id since baseFollowUps now maps live rows.
+    if (to === "completed") {
+      void mutations.resolveFollowup(id);
+      return;
+    }
+    void mutations.updateFollowup(id, { status: STAGE_TO_STATUS[to] });
   }
+
+  async function createFromSuggestion(s: FollowUp) {
+    const cid = s.candidate.id;
+    if (!/^[0-9a-f-]{36}$/i.test(cid)) {
+      return;
+    }
+    setCreatingId(s.id);
+    try {
+      await mutations.createFollowup(cid, {
+        title: s.type,
+        category: s.type,
+        owner: s.recruiter,
+        status: STAGE_TO_STATUS[s.stage] ?? "Open",
+        notes: s.reason,
+      });
+    } finally {
+      setCreatingId(null);
+    }
+  }
+
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move";
   }
