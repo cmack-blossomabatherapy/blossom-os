@@ -58,7 +58,12 @@ export type AppRole =
   | "billing_lead"
   | "credentialing_lead"
   | "rcm_team"
-  | "assistant_state_director";
+  | "assistant_state_director"
+  // Credentialing Team (operational, not lead)
+  | "credentialing_team"
+  // Legacy aliases preserved for backwards compatibility
+  | "credentialing"
+  | "credentialing_coordinator";
 
 export interface RoleMeta {
   key: AppRole;
@@ -142,6 +147,9 @@ export const ROLE_META: RoleMeta[] = [
   // Revenue / Back Office
   { key: "billing_lead", label: "Billing Lead", group: "Service", description: "Owns billing and claims.", permissionLevel: "Full Module Control", scope: "Billing & claims", owners: [], owns: ["Claims", "Billing KPIs"], can: ["Manage claims", "Resolve denials", "Approve write-offs"] },
   { key: "credentialing_lead", label: "Credentialing Lead", group: "Service", description: "Owns credentialing with payors.", permissionLevel: "Full Module Control", scope: "Credentialing", owners: [], owns: ["Payor enrollment", "Credentialing status"], can: ["Manage credentialing records", "Track payor approvals"] },
+  { key: "credentialing_team", label: "Credentialing Team", group: "Service", description: "Day-to-day credentialing execution across providers and payers.", permissionLevel: "Edit Scoped", scope: "Credentialing module", owners: [], owns: ["Provider records", "Payer applications", "Documents", "Tasks"], can: ["Create and update credentialing records", "Manage documents and tasks", "Track follow-ups and renewals"] },
+  { key: "credentialing", label: "Credentialing (legacy)", group: "Legacy", description: "Legacy alias for the Credentialing Team role.", permissionLevel: "Edit Scoped", scope: "Credentialing module", owners: [], owns: ["Credentialing execution"], can: ["Manage credentialing records"] },
+  { key: "credentialing_coordinator", label: "Credentialing Coordinator (legacy)", group: "Legacy", description: "Legacy alias for the Credentialing Team role.", permissionLevel: "Edit Scoped", scope: "Credentialing module", owners: [], owns: ["Credentialing execution"], can: ["Manage credentialing records"] },
   { key: "rcm_team", label: "RCM Team", group: "Service", description: "Revenue cycle management execution.", permissionLevel: "Edit Scoped", scope: "Billing & RCM queue", owners: [], owns: ["RCM execution"], can: ["Work claims queue", "Follow up on AR"] },
 
   // State Operations

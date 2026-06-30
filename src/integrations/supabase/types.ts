@@ -3125,6 +3125,7 @@ export type Database = {
           next_follow_up_date: string | null
           notes: string | null
           owner_id: string | null
+          owner_name: string | null
           payer_name: string
           payer_reference_number: string | null
           plan_type: string | null
@@ -3155,6 +3156,7 @@ export type Database = {
           next_follow_up_date?: string | null
           notes?: string | null
           owner_id?: string | null
+          owner_name?: string | null
           payer_name: string
           payer_reference_number?: string | null
           plan_type?: string | null
@@ -3185,6 +3187,7 @@ export type Database = {
           next_follow_up_date?: string | null
           notes?: string | null
           owner_id?: string | null
+          owner_name?: string | null
           payer_name?: string
           payer_reference_number?: string | null
           plan_type?: string | null
@@ -3216,6 +3219,7 @@ export type Database = {
           due_date: string | null
           id: string
           owner_id: string | null
+          owner_name: string | null
           status: string
           title: string
           updated_at: string
@@ -3227,6 +3231,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           owner_id?: string | null
+          owner_name?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -3238,6 +3243,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           owner_id?: string | null
+          owner_name?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -14575,6 +14581,9 @@ export type Database = {
         | "credentialing_lead"
         | "rcm_team"
         | "assistant_state_director"
+        | "credentialing_team"
+        | "credentialing"
+        | "credentialing_coordinator"
       assessment_document_type: "Assessment Notes" | "Treatment Plan"
       assessment_location: "Home" | "School" | "Clinic"
       assessment_status:
@@ -15293,6 +15302,9 @@ export const Constants = {
         "credentialing_lead",
         "rcm_team",
         "assistant_state_director",
+        "credentialing_team",
+        "credentialing",
+        "credentialing_coordinator",
       ],
       assessment_document_type: ["Assessment Notes", "Treatment Plan"],
       assessment_location: ["Home", "School", "Clinic"],

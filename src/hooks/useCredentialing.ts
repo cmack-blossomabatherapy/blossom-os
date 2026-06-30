@@ -49,6 +49,7 @@ export interface CredentialingRecord {
   status: CredStatus;
   priority: CredPriority;
   owner_id: string | null;
+  owner_name: string | null;
   submitted_date: string | null;
   approved_date: string | null;
   effective_date: string | null;
@@ -65,6 +66,7 @@ export interface CredentialingRecord {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  legacy_monday_raw_id?: string | null;
 }
 
 export interface CredentialingActivity {
@@ -84,6 +86,7 @@ export interface CredentialingTask {
   title: string;
   description: string | null;
   owner_id: string | null;
+  owner_name: string | null;
   due_date: string | null;
   status: "Open" | "In Progress" | "Done" | "Blocked";
   created_at: string;
@@ -101,6 +104,7 @@ export interface CredentialingDocument {
   expiration_date: string | null;
   uploaded_by: string | null;
   created_at: string;
+  notes?: string | null;
 }
 
 const TABLE_PROVIDERS = "credentialing_providers" as const;
@@ -219,13 +223,124 @@ export async function logCredActivity(recordId: string, message: string, type = 
 }
 
 export async function createCredTask(input: Partial<CredentialingTask>) {
-  const { error } = await sb.from(TABLE_TASKS).insert(input);
+  const { data, error } = await sb.from(TABLE_TASKS).insert(input).select("*").single();
   if (error) throw error;
+  if (input.credentialing_record_id) {
+    await logCredActivity(input.credentialing_record_id, `Task added: ${input.title ?? "Untitled"}`, "task_added");
+  }
+  return data as CredentialingTask;
+}
+
+export async function updateCredTask(id: string, patch: Partial<CredentialingTask>) {
+  const { data, error } = await sb.from(TABLE_TASKS).update(patch).eq("id", id).select("*").single();
+  if (error) throw error;
+  if (data?.credentialing_record_id && patch.status === "Done") {
+    await logCredActivity(data.credentialing_record_id, `Task completed: ${data.title}`, "task_completed");
+  }
+  return data as CredentialingTask;
 }
 
 export async function addCredDocument(input: Partial<CredentialingDocument>) {
-  const { error } = await sb.from(TABLE_DOCS).insert(input);
+  const { data, error } = await sb.from(TABLE_DOCS).insert(input).select("*").single();
   if (error) throw error;
+  if (input.credentialing_record_id) {
+    await logCredActivity(
+      input.credentialing_record_id,
+      `Document added: ${input.document_type}${input.file_name ? ` (${input.file_name})` : ""}`,
+      "document_added",
+    );
+  }
+  return data as CredentialingDocument;
+}
+
+export async function updateCredDocument(id: string, patch: Partial<CredentialingDocument>) {
+  const { data, error } = await sb.from(TABLE_DOCS).update(patch).eq("id", id).select("*").single();
+  if (error) throw error;
+  if (data?.credentialing_record_id && patch.verification_status) {
+    await logCredActivity(
+      data.credentialing_record_id,
+      `Document ${data.document_type} marked ${patch.verification_status}`,
+      "document_status",
+    );
+  }
+  return data as CredentialingDocument;
+}
+
+// ---- Legacy import from va_credentialing_raw ------------------------------
+export interface LegacyRawRow {
+  id: string;
+  // raw legacy fields are flexible
+  [key: string]: unknown;
+}
+export async function fetchLegacyRaw(limit = 500): Promise<LegacyRawRow[]> {
+  const { data, error } = await sb.from("va_credentialing_raw").select("*").limit(limit);
+  if (error) throw error;
+  return (data ?? []) as LegacyRawRow[];
+}
+
+function pickField(row: Record<string, unknown>, keys: string[]): string | null {
+  for (const k of keys) {
+    const v = row[k];
+    if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+  }
+  return null;
+}
+
+export interface LegacyImportResult {
+  providersCreated: number;
+  recordsCreated: number;
+  skipped: number;
+}
+
+export async function importLegacyRows(rows: LegacyRawRow[]): Promise<LegacyImportResult> {
+  let providersCreated = 0;
+  let recordsCreated = 0;
+  let skipped = 0;
+
+  // Cache existing providers by name (lowercased) for this run
+  const { data: existing } = await sb.from(TABLE_PROVIDERS).select("id, provider_name");
+  const byName = new Map<string, string>();
+  (existing ?? []).forEach((p: { id: string; provider_name: string }) => {
+    byName.set(p.provider_name.toLowerCase(), p.id);
+  });
+
+  for (const raw of rows) {
+    const row = raw as Record<string, unknown>;
+    const name = pickField(row, ["provider_name", "provider", "name", "bcba", "clinician"]);
+    const payer = pickField(row, ["payer", "payer_name", "insurance", "plan"]);
+    if (!name || !payer) { skipped += 1; continue; }
+    const state = pickField(row, ["state", "license_state"]);
+    const status = pickField(row, ["status", "credentialing_status"]) ?? "Not Started";
+    const notes = pickField(row, ["notes", "comments"]);
+
+    let providerId = byName.get(name.toLowerCase());
+    if (!providerId) {
+      const created = await createCredProvider({
+        provider_name: name,
+        provider_type: "BCBA",
+        active: true,
+        notes: "Imported from legacy credentialing data",
+      });
+      providerId = created.id;
+      byName.set(name.toLowerCase(), providerId);
+      providersCreated += 1;
+    }
+
+    await createCredRecord({
+      provider_id: providerId,
+      payer_name: payer,
+      state,
+      status: (CRED_STATUSES as string[]).includes(status) ? (status as CredStatus) : "Not Started",
+      credentialing_type: "Initial",
+      priority: "Normal",
+      source_system: "Legacy import",
+      legacy_monday_raw_id: raw.id,
+      notes,
+    } as Partial<CredentialingRecord>);
+    recordsCreated += 1;
+  }
+
+  return { providersCreated, recordsCreated, skipped };
 }
 
 // ---- Derived helpers -------------------------------------------------------

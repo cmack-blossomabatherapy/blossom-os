@@ -2,9 +2,8 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   Users, ShieldCheck, IdCard, KeyRound, Smartphone, Box, Eye, EyeOff,
-  Copy, Search, Plus, Lock, FileSignature, HeartHandshake, Briefcase,
-  ClipboardList, AlertTriangle, CheckCircle2, Calendar, Stethoscope,
-  Building2, BarChart3, type LucideIcon,
+  Copy, Search, Plus, Lock, HeartHandshake, Briefcase,
+  ClipboardList, CheckCircle2, BarChart3, type LucideIcon,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -470,109 +469,9 @@ export const HRNFCBadgeSupportPage = () => <HRPlaceholder title="NFC Badge Suppo
 export const HRReportsPage = () => <HRPlaceholder title="HR Reports" icon={BarChart3} />;
 
 /* -------------------------------------------------------------------------- */
-/* 7. Credentialing Pages                                                     */
+/* Credentialing pages                                                        */
 /* -------------------------------------------------------------------------- */
-
-const CRED_KPIS = [
-  { label: "Active providers", value: "42", tone: "ok" },
-  { label: "In progress", value: "7", tone: "warn" },
-  { label: "Uncredentialed BCBAs", value: "3", tone: "warn" },
-  { label: "Expiring < 60 days", value: "5", tone: "warn" },
-];
-
-const CRED_RECORDS = [
-  { provider: "Ashley Tran, BCBA", payer: "Aetna", status: "Approved", submitted: "2024-09-12", approved: "2024-11-04", expires: "2026-11-04" },
-  { provider: "Marcus Hill, BCBA", payer: "BCBS NC", status: "In Progress", submitted: "2025-01-21", approved: "—", expires: "—" },
-  { provider: "Priya Patel, BCBA", payer: "Cigna", status: "Uncredentialed", submitted: "—", approved: "—", expires: "—" },
-  { provider: "Sam Cohen, BCBA", payer: "United", status: "Expiring", submitted: "2023-07-10", approved: "2023-09-02", expires: "2026-07-10" },
-];
-
-export function CredentialingDashboardPage() {
-  return (
-    <Shell>
-      <PageHeader
-        eyebrow="Credentialing"
-        title="Credentialing Dashboard"
-        subtitle="Track provider readiness, payer credentialing, BCBA credentials, expiration risk, and uncredentialed provider issues."
-        icon={Stethoscope}
-        actions={<Button size="sm"><Plus className="h-4 w-4 mr-1.5" />Add credentialing record</Button>}
-      />
-      <ActionRow actions={["Add credentialing record", "Update status", "Upload credential file", "Track submitted date", "Track approved date", "Track expiration date", "Flag uncredentialed BCBA", "Assign follow-up"]} />
-
-      <div className="grid gap-4 md:grid-cols-4">
-        {CRED_KPIS.map((k) => (
-          <Card key={k.label} className="p-5 rounded-2xl border-border/60">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">{k.label}</div>
-            <div className={cn("text-3xl font-semibold tracking-tight mt-2",
-              k.tone === "ok" && "text-emerald-600",
-              k.tone === "warn" && "text-amber-600",
-            )}>{k.value}</div>
-          </Card>
-        ))}
-      </div>
-
-      <SectionCard title="Recent records" description="Latest provider credentialing activity across payers.">
-        <div className="overflow-x-auto -mx-2">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>{["Provider", "Payer", "Status", "Submitted", "Approved", "Expires"].map((h) => (
-                <th key={h} className="text-left font-medium px-4 py-3">{h}</th>
-              ))}</tr>
-            </thead>
-            <tbody>
-              {CRED_RECORDS.map((r) => (
-                <tr key={r.provider + r.payer} className="border-t border-border/60">
-                  <td className="px-4 py-3 font-medium">{r.provider}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{r.payer}</td>
-                  <td className="px-4 py-3">
-                    <Badge variant="outline" className={cn(
-                      r.status === "Approved" && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                      r.status === "In Progress" && "bg-sky-50 text-sky-700 border-sky-200",
-                      r.status === "Uncredentialed" && "bg-red-50 text-red-700 border-red-200",
-                      r.status === "Expiring" && "bg-amber-50 text-amber-800 border-amber-200",
-                    )}>{r.status}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{r.submitted}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{r.approved}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{r.expires}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
-    </Shell>
-  );
-}
-
-function CredPlaceholder({ title, icon, sub }: { title: string; icon: LucideIcon; sub?: string }) {
-  return (
-    <Shell>
-      <PageHeader
-        eyebrow="Credentialing"
-        title={title}
-        subtitle={sub ?? "Track provider readiness, payer credentialing, BCBA credentials, expiration risk, and uncredentialed provider issues."}
-        icon={icon}
-      />
-      <Card className="p-10 rounded-2xl border-border/60 text-center">
-        <div className="h-12 w-12 mx-auto rounded-full bg-muted grid place-items-center mb-4">
-          <FileSignature className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <h2 className="text-lg font-semibold tracking-tight">Ready for Blossom OS data</h2>
-        <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-          Once this workflow is connected, this view will show live status, trends, ownership, and action items.
-        </p>
-        <Button asChild variant="outline" size="sm" className="mt-5">
-          <Link to="/dashboard">Back to Dashboard</Link>
-        </Button>
-      </Card>
-    </Shell>
-  );
-}
-
-export const ProviderCredentialingPage = () => <CredPlaceholder title="Provider Credentialing" icon={Stethoscope} />;
-export const InsuranceCredentialingPage = () => <CredPlaceholder title="Insurance Credentialing" icon={Building2} />;
-export const BCBACredentialsPage = () => <CredPlaceholder title="BCBA Credentials" icon={IdCard} />;
-export const UncredentialedBCBAsPage = () => <CredPlaceholder title="Uncredentialed BCBAs" icon={AlertTriangle} sub="BCBAs missing payer credentialing across one or more contracted payers." />;
-export const ExpiringCredentialsPage = () => <CredPlaceholder title="Expiring Credentials" icon={Calendar} sub="Credentials within the next 90 days needing renewal." />;
-export const CredentialingReportsPage = () => <CredPlaceholder title="Credentialing Reports" icon={BarChart3} />;
+// Canonical Credentialing pages now live in
+// `src/pages/os/credentialing/CredentialingPages.tsx`. The stale placeholder
+// exports that used to live here were removed in Credentialing Pass 2 to
+// avoid accidental imports.
