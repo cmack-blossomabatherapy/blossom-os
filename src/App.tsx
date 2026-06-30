@@ -849,7 +849,7 @@ const App = () => (
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
                   <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
                   <Route path="/ops/qa" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_director", "qa_specialist"]}><QAPhase6OpsPage /></PermissionRoute>} />
-                  <Route path="/ops/family-staffing-preferences" element={<Navigate to="/ops/staffing?tab=preferences" replace />} />
+                  <Route path="/ops/family-staffing-preferences" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><Navigate to="/ops/staffing?tab=preferences" replace /></PermissionRoute>} />
                   {/* Staffing reports always route through the unified Reports page */}
                   <Route path="/staffing/reports" element={<Navigate to="/reports" replace />} />
                   <Route path="/ops/staffing/reports" element={<Navigate to="/reports" replace />} />
