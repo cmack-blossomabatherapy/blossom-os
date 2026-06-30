@@ -853,6 +853,10 @@ function RecordDetailSheet({
                     <div className="font-medium">
                       {a.activity_type === "status_change"
                         ? `Status: ${a.old_status ?? "—"} → ${a.new_status ?? "—"}`
+                        : a.activity_type === "cr_sync_status_change"
+                        ? `CentralReach sync: ${a.old_status ?? "—"} → ${a.new_status ?? "—"}`
+                        : a.activity_type === "cr_id_change"
+                        ? `CentralReach record id: ${a.old_status ?? "(empty)"} → ${a.new_status ?? "(cleared)"}`
                         : a.message ?? a.activity_type}
                     </div>
                     <div className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleString()}</div>
