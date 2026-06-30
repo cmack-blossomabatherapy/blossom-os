@@ -232,6 +232,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   scheduling_team: new Set<string>([
     "/scheduling",
     "/scheduling-workspace",
+    "/scheduling/board",
     "/scheduling/rbts",
     "/scheduling/bcbas",
     "/scheduling/resources",
@@ -242,6 +243,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   scheduling_lead: new Set<string>([
     "/scheduling",
     "/scheduling-workspace",
+    "/scheduling/board",
     "/scheduling/rbts",
     "/scheduling/bcbas",
     "/scheduling/resources",
@@ -252,6 +254,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   scheduling_coordinator: new Set<string>([
     "/scheduling",
     "/scheduling-workspace",
+    "/scheduling/board",
     "/scheduling/rbts",
     "/scheduling/bcbas",
     "/scheduling/resources",
