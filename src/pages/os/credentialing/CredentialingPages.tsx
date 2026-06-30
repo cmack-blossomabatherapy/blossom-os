@@ -978,10 +978,17 @@ function RecordDetailSheet({
                   <StatusBadge status={record.centralreach_sync_status} />
                 </div>
                 <Field label="Last record update" value={record.updated_at ? new Date(record.updated_at).toLocaleString() : null} />
+                <Field label="Last readiness update" value={record.centralreach_last_readiness_at ? new Date(record.centralreach_last_readiness_at).toLocaleString() : null} />
+                {record.centralreach_sync_status === "Sync Error" && record.centralreach_sync_error ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs p-3">
+                    <div className="font-medium mb-0.5">Sync error</div>
+                    {record.centralreach_sync_error}
+                  </div>
+                ) : null}
                 <div className="flex flex-wrap gap-2 pt-2">
                   <Button size="sm" variant="outline" onClick={() => setCrSync("Ready To Sync")}>Mark Ready To Sync</Button>
                   <Button size="sm" variant="outline" onClick={() => setCrSync("Synced")}>Mark Synced</Button>
-                  <Button size="sm" variant="outline" onClick={() => setCrSync("Sync Error")}>Mark Sync Error</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setSyncErrorNote(record.centralreach_sync_error ?? ""); setSyncErrorOpen(true); }}>Mark Sync Error…</Button>
                   <Button size="sm" variant="outline" onClick={() => setCrIdsOpen(true)}>Edit CentralReach IDs</Button>
                 </div>
               </TabsContent>
