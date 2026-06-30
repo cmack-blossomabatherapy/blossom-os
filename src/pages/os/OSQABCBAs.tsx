@@ -961,6 +961,13 @@ function BCBASlideout({ b, onClose }: { b: BCBARow; onClose: () => void }) {
                         {hasPR && <Pill tone="warn">PR</Pill>}
                         {hasTP && <Pill tone="warn">TP</Pill>}
                         {a.missingInfo && !hasPR && !hasTP && <Pill tone="warn">Missing</Pill>}
+                        <Link
+                          to={`/qa-queue?focus=${encodeURIComponent(a.id)}`}
+                          className="ml-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                          title="Open in QA queue"
+                        >
+                          Open <ChevronRight className="h-3 w-3" strokeWidth={1.75} />
+                        </Link>
                       </div>
                     </li>
                   );
