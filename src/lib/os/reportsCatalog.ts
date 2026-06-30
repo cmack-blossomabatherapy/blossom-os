@@ -52,6 +52,11 @@ export interface ReportDef {
   tags?: string[];
   /** Maps to one of the legacy detail views to render real content. */
   detailView?: "executive" | "intake" | "auth" | "qa" | "scheduling" | "lifecycle" | "revenue" | "team" | "growth";
+  /**
+   * Optional drilldown route. When set, report tiles on /reports navigate
+   * straight to this filtered detail view instead of the generic ReportDetail.
+   */
+  drilldownPath?: string;
 }
 
 export const REPORTS: ReportDef[] = [
