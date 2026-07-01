@@ -52,6 +52,8 @@ function TrendIcon({ delta }: { delta: number }) {
 export default function Reputation() {
   const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
+  const [contactSort, setContactSort] = useState<"recent" | "oldest">("recent");
+  const [contactWindow, setContactWindow] = useState<"all" | "7" | "30" | "90">("all");
 
   /* Trust signals derived from real operational data. */
   const signals = useMemo(() => {
@@ -211,6 +213,23 @@ export default function Reputation() {
       .sort((a, b) => +new Date(b.date) - +new Date(a.date))
       .slice(0, 10);
   }, []);
+
+  /* Apply user sort + last-contacted window to the timeline. */
+  const visibleTimeline = useMemo(() => {
+    const windowDays = contactWindow === "all" ? null : Number(contactWindow);
+    const now = Date.now();
+    return timeline
+      .filter((t) => {
+        if (!windowDays) return true;
+        const ts = new Date(t.date).getTime();
+        if (isNaN(ts)) return false;
+        return (now - ts) / 86_400_000 <= windowDays;
+      })
+      .sort((a, b) => {
+        const delta = +new Date(b.date) - +new Date(a.date);
+        return contactSort === "recent" ? delta : -delta;
+      });
+  }, [timeline, contactSort, contactWindow]);
 
   /* Family experience themes — derived from real status distribution. */
   const themes = useMemo(() => {
@@ -458,11 +477,43 @@ export default function Reputation() {
 
       {/* 3. COMMUNITY SENTIMENT TIMELINE */}
       <MktgCard title="Community sentiment" hint="Real trust signals — most recent first">
-        {timeline.length === 0 ? (
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-[11.5px]">
+          <span className="uppercase tracking-wider text-muted-foreground">Last contacted</span>
+          {(["all", "7", "30", "90"] as const).map((w) => (
+            <button
+              key={w}
+              type="button"
+              onClick={() => setContactWindow(w)}
+              className={`rounded-full border px-2.5 py-0.5 transition ${
+                contactWindow === w
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "border-border/60 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {w === "all" ? "Any time" : `Last ${w}d`}
+            </button>
+          ))}
+          <span className="ml-auto uppercase tracking-wider text-muted-foreground">Sort</span>
+          {(["recent", "oldest"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setContactSort(s)}
+              className={`rounded-full border px-2.5 py-0.5 transition ${
+                contactSort === s
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "border-border/60 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {s === "recent" ? "Newest first" : "Oldest first"}
+            </button>
+          ))}
+        </div>
+        {visibleTimeline.length === 0 ? (
           <EmptyRow>No sentiment signal yet — connect review feeds in Admin.</EmptyRow>
         ) : (
           <ol className="relative space-y-3 border-l border-border/60 pl-5">
-            {timeline.map((t) => {
+            {visibleTimeline.map((t) => {
               const Icon =
                 t.kind === "Praise"
                   ? Star
