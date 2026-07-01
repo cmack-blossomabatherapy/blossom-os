@@ -9,9 +9,9 @@ type EmailEvent = {
   id: string;
   campaign_id: string | null;
   lead_id: string | null;
-  event_type: string;
+  event_type: string | null;
   occurred_at: string;
-  email_address: string | null;
+  recipient_email: string | null;
 };
 
 type Campaign = {
@@ -38,7 +38,7 @@ export default function EmailMarketing() {
       const [eRes, cRes] = await Promise.all([
         supabase
           .from("marketing_email_events")
-          .select("id, campaign_id, lead_id, event_type, occurred_at, email_address")
+          .select("id, campaign_id, lead_id, event_type, occurred_at, recipient_email")
           .order("occurred_at", { ascending: false })
           .limit(100),
         supabase
@@ -57,7 +57,7 @@ export default function EmailMarketing() {
   const buckets = useMemo(() => {
     const b = { sent: 0, open: 0, click: 0, bounce: 0, unsubscribe: 0 };
     events.forEach((e) => {
-      const t = e.event_type.toLowerCase();
+      const t = (e.event_type ?? "").toLowerCase();
       if (t.includes("sent")) b.sent += 1;
       else if (t.includes("open")) b.open += 1;
       else if (t.includes("click")) b.click += 1;
@@ -158,8 +158,8 @@ export default function EmailMarketing() {
                       <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
                         {new Date(e.occurred_at).toLocaleString("en-US", { timeZone: "America/New_York" })}
                       </td>
-                      <td className="px-3 py-2">{e.event_type}</td>
-                      <td className="px-3 py-2">{e.email_address ?? "—"}</td>
+                      <td className="px-3 py-2">{e.event_type ?? "—"}</td>
+                      <td className="px-3 py-2">{e.recipient_email ?? "—"}</td>
                       <td className="px-3 py-2">{camp?.name ?? "—"}</td>
                       <td className="px-3 py-2">
                         {e.lead_id ? (
