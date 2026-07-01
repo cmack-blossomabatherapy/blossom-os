@@ -4637,7 +4637,7 @@ export default function ReferralCRM() {
       case "dashboard": return <DashboardModule />;
       case "contacts": return <ContactsModule onOpenContact={setContactId} onOpenCompany={setCompanyId} />;
       case "companies": return <CompaniesModule onOpen={setCompanyId} />;
-      case "referrals": return <ReferralsModule />;
+      case "referrals": return <ReferralsModule onOpenContact={setContactId} />;
       case "patient-pipeline": return <PatientPipelineModule onOpenContact={setContactId} onOpenCompany={setCompanyId} />;
       case "tasks": return <TasksModule />;
       case "lists": return <ListsModule />;
