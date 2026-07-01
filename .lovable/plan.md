@@ -1,29 +1,24 @@
-# Mapsly Integration Plan (Confirmed Direction)
+**Answer:** partially. The referral contacts list does open a no-name contact by email, and the referrals spreadsheet cleanup appears present. However, the referrals table still does not open the source referral partner by email when the source contact has no name, and I need to verify the Add Lead backend error path before saying it is fixed.
 
-**Decision:** Mapsly for **all** mapping across Blossom OS (Business Development, BCBA/RBT mileage, Recruiting). Mapbox will not be used.
+**Plan**
+1. **Add Lead failure**
+   - Inspect the exact lead/company save path and recent backend errors for the failure shown in the attachment.
+   - Fix only the schema or insert payload mismatch that is blocking lead creation.
+   - Keep optional side effects non-blocking so the lead saves first.
 
-## Phase 1 — Foundation (this pass)
-- DB tables: `mapsly_object_map`, `mapsly_sync_log`, `mileage_trips`, `mileage_reimbursement_exports`, `bd_territories`, `bd_territory_leads`.
-- Edge function `mapsly-proxy` — server-side gateway that forwards authenticated requests to `https://api.mapsly.com` using `MAPSLY_API_KEY`.
-- Admin hub page `/admin/mapsly` — connection test, sync buttons (clients / employees / leads / candidates), sync log.
-- Waiting on user to add `MAPSLY_API_KEY` secret.
+2. **Referral partner open-by-email**
+   - Update `/marketing/referral-crm` so any referral source contact opens the partner drawer using the contact ID even when the visible label is only an email.
+   - Apply this consistently in Contacts, Referrals, Patient Pipeline, Search, Tasks, and Activity surfaces where referral contacts appear.
 
-## Phase 2 — Mileage tracking (`/mileage`)
-- Staff self-service view of their trips + status.
-- Admin view: approve / reject trips, generate reimbursement export (CSV for Viventium), track rate/mile.
-- Webhook endpoint to ingest trips from Mapsly mobile tracker.
+3. **Referral spreadsheet polish check**
+   - Preserve the existing cleaner table styling already present: fixed row height, table-fixed widths, status pills, and dedicated actions.
+   - Patch any remaining uneven cells/tags if found during verification.
 
-## Phase 3 — BD Territory + Routing (`/bd/territories`)
-- Territory list (state/region/owner), pins for leads/prospects/referrals.
-- Territory editor (color, owner, boundary) — admin/BD lead.
-- Route planning entry point (deep link into Mapsly).
+4. **Validation**
+   - Run targeted checks for Add Lead hardening and Referral CRM rendering.
+   - Run TypeScript validation.
 
-## Phase 4 — Recruiting Map (`/recruiting/map`)
-- Candidate proximity view: plot candidates and clients, filter by role/state, drive-time radius via Mapsly.
-- Deep link into Mapsly for route + list building.
-
-## Phase 5 — Retire Mapbox
-- **Verified: no Mapbox dependency or code exists** in the repo. Nothing to remove.
-
-## Next step
-Add `MAPSLY_API_KEY` in Project Secrets, then click **Test Connection** on `/admin/mapsly` to validate.
+**Files likely involved**
+- `src/pages/os/marketing/ReferralCRM.tsx`
+- `src/contexts/LeadsContext.tsx`
+- A small database migration if the Add Lead error is caused by a backend column/default mismatch.
