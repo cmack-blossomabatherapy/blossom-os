@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface MarketingWebMetric {
@@ -47,6 +47,13 @@ export function useMarketingWebMetrics(opts: UseMarketingWebMetricsOptions = {})
   const [rows, setRows] = useState<MarketingWebMetric[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelId = useMemo(
+    () =>
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2),
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,7 +80,7 @@ export function useMarketingWebMetrics(opts: UseMarketingWebMetricsOptions = {})
     void load();
     if (!realtime) return;
     const ch = supabase
-      .channel(`mwm-${sourceSystem ?? "all"}`)
+      .channel(`mwm-${sourceSystem ?? "all"}-${channelId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "marketing_web_metrics" }, () => {
         void load();
       })
@@ -81,7 +88,7 @@ export function useMarketingWebMetrics(opts: UseMarketingWebMetricsOptions = {})
     return () => {
       void supabase.removeChannel(ch);
     };
-  }, [load, realtime, sourceSystem]);
+  }, [load, realtime, sourceSystem, channelId]);
 
   return { rows, loading, error, refetch: load, refresh: load };
 }
