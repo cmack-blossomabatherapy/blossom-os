@@ -141,8 +141,8 @@ function ActionButton({
 }
 
 export function LeadDetailDrawer({
-  leadId, onClose,
-}: { leadId: string | null; onClose: () => void }) {
+  leadId, onClose, focusStage,
+}: { leadId: string | null; onClose: () => void; focusStage?: string | null }) {
   const { leads, updateLead } = useLeads();
   const lead = leads.find((l) => l.id === leadId) ?? null;
   const [tab, setTab] = useState<Tab>("overview");
@@ -269,7 +269,7 @@ export function LeadDetailDrawer({
           </div>
 
           {/* Pipeline progress strip */}
-          <PipelineProgress status={lead.status} />
+          <PipelineProgress status={lead.status} focusStage={focusStage ?? null} />
 
           {/* Quick contact */}
           <LeadContactActions
