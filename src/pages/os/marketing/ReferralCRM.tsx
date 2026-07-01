@@ -107,6 +107,11 @@ function daysSince(d?: string) {
   return Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000);
 }
 
+function contactDisplayName(c?: Contact): string {
+  if (!c) return "—";
+  return fullName(c) || c.email || c.phone || c.mobilePhone || "(No name)";
+}
+
 // Colored tone for a Referral.referralStatus badge.
 function referralStatusTone(status?: string): string {
   switch (status) {
@@ -356,11 +361,11 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     if (stateFilter !== "all") r = r.filter((c) => c.state === stateFilter);
     if (q) {
       const ql = q.toLowerCase();
-      r = r.filter((c) => fullName(c).toLowerCase().includes(ql) || c.email?.toLowerCase().includes(ql) || c.jobTitle?.toLowerCase().includes(ql));
+      r = r.filter((c) => contactDisplayName(c).toLowerCase().includes(ql) || c.email?.toLowerCase().includes(ql) || c.jobTitle?.toLowerCase().includes(ql));
     }
     const getKey = (c: typeof r[number]): string | number => {
       switch (sort.key) {
-        case "name": return (fullName(c) || c.email || "").toLowerCase();
+        case "name": return contactDisplayName(c).toLowerCase();
         case "company": return (companyName(s, c.companyId) || "").toLowerCase();
         case "title": return (c.jobTitle || "").toLowerCase();
         case "state": return (c.state || "").toLowerCase();
@@ -509,9 +514,9 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
                   <td className="px-3 py-2"><Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggleOne(c.id)} /></td>
                   <td className="px-3 py-2">
                     <button className="font-medium hover:text-primary text-left" onClick={() => onOpenContact(c.id)}>
-                      {fullName(c) || c.email || <span className="text-muted-foreground italic">(No name)</span>}
+                      {contactDisplayName(c)}
                     </button>
-                    {fullName(c) && <p className="text-xs text-muted-foreground">{c.email || "-"}</p>}
+                    {(fullName(c) || c.email) && <p className="text-xs text-muted-foreground">{fullName(c) ? (c.email || "-") : "Email-only contact"}</p>}
                   </td>
                   <td className="px-3 py-2">
                     {c.companyId ? (
@@ -598,7 +603,7 @@ function NewContactDialogInner({ open, onOpenChange }: { open: boolean; onOpenCh
   const [newCo, setNewCo] = useState({ name: "", companyType: "", state: "" });
   const creatingCo = f.companyId === "__create__";
   const submit = () => {
-    if (!f.firstName || !f.lastName) { toast({ title: "First + last name required", variant: "destructive" as never }); return; }
+    if (!f.firstName && !f.lastName && !f.email) { toast({ title: "Name or email required", variant: "destructive" as never }); return; }
     let companyId: string | undefined = f.companyId && f.companyId !== "__create__" ? f.companyId : undefined;
     if (creatingCo) {
       if (!newCo.name.trim()) { toast({ title: "New company name required", variant: "destructive" as never }); return; }
@@ -1038,7 +1043,7 @@ function ReferralStatusPill({ status }: { status?: string | null }) {
   );
 }
 
-function ReferralsModule() {
+function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
@@ -1075,7 +1080,7 @@ function ReferralsModule() {
     const data = s.referrals.filter((r) => selected.has(r.id)).map((r) => ({
       id: r.id, name: r.name, referralDate: r.referralDate,
       companyName: companyName(s, r.companyId),
-      contactName: r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "",
+      contactName: r.contactId ? contactDisplayName(s.contacts.find((c) => c.id === r.contactId)) : "",
       state: r.state, serviceType: r.serviceType, referralStatus: r.referralStatus,
       intakeStatus: r.intakeStatus, insuranceType: r.insuranceType,
       intakeOwner: userName(s, r.assignedIntakeOwnerId),
@@ -1163,7 +1168,13 @@ function ReferralsModule() {
                     </div>
                   </td>
                   <td className="px-3 align-middle truncate">{companyName(s, r.companyId) || <span className="text-muted-foreground">—</span>}</td>
-                  <td className="px-3 align-middle truncate">{r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : <span className="text-muted-foreground">—</span>}</td>
+                  <td className="px-3 align-middle truncate">
+                    {r.contactId ? (
+                      <button className="max-w-full truncate text-left font-medium hover:text-primary" onClick={() => onOpenContact(r.contactId!)}>
+                        {contactDisplayName(s.contacts.find((c) => c.id === r.contactId))}
+                      </button>
+                    ) : <span className="text-muted-foreground">—</span>}
+                  </td>
                   <td className="px-3 align-middle">{r.state || <span className="text-muted-foreground">—</span>}</td>
                   <td className="px-3 align-middle truncate">{r.serviceType || <span className="text-muted-foreground">—</span>}</td>
                   <td className="px-3 align-middle"><ReferralStatusPill status={r.referralStatus} /></td>
@@ -1243,7 +1254,7 @@ function NewReferralDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           <div><Label className="text-xs">Source contact</Label>
             <Select value={f.contactId} onValueChange={(v) => setF({ ...f, contactId: v })}>
               <SelectTrigger><SelectValue placeholder="Pick contact" /></SelectTrigger>
-              <SelectContent>{eligibleContacts.map((c) => <SelectItem key={c.id} value={c.id}>{fullName(c)}</SelectItem>)}</SelectContent>
+              <SelectContent>{eligibleContacts.map((c) => <SelectItem key={c.id} value={c.id}>{contactDisplayName(c)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label className="text-xs">State</Label>
@@ -1267,7 +1278,7 @@ function NewReferralDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 // ===========================================================
 // Tasks
 // ===========================================================
-function TasksModule() {
+function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
   const [groupBy, setGroupBy] = useState<"owner" | "state" | "status">("owner");
   const [creating, setCreating] = useState(false);
@@ -1320,7 +1331,7 @@ function TasksModule() {
       id: t.id, title: t.title, type: t.type, priority: t.priority, status: t.status,
       dueDate: t.dueDate, assignedUser: userName(s, t.assignedUserId),
       company: companyName(s, t.companyId),
-      contact: t.contactId ? fullName(s.contacts.find((c) => c.id === t.contactId)!) : "",
+      contact: t.contactId ? contactDisplayName(s.contacts.find((c) => c.id === t.contactId)) : "",
       referralId: t.referralId, notes: t.notes, createdAt: t.createdAt,
     }));
     downloadCsv(`tasks-selected-${Date.now()}.csv`, rowsToCsv(data));
@@ -1385,6 +1396,7 @@ function TasksModule() {
             <div className="divide-y">
               {items.map((t) => {
                 const overdue = t.dueDate && new Date(t.dueDate).getTime() < Date.now() && t.status !== "Completed";
+                const contact = t.contactId ? s.contacts.find((c) => c.id === t.contactId) : undefined;
                 return (
                   <div key={t.id} className="px-4 py-2.5 flex items-center gap-3 text-sm">
                     <Checkbox checked={selected.has(t.id)} onCheckedChange={() => toggleOne(t.id)} />
@@ -1399,6 +1411,14 @@ function TasksModule() {
                       <p className={cn("font-medium", t.status === "Completed" && "line-through text-muted-foreground")}>{t.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {t.type} - {companyName(s, t.companyId)} - {userName(s, t.assignedUserId)}
+                        {contact && (
+                          <>
+                            {" - "}
+                            <button className="font-medium hover:text-primary" onClick={() => onOpenContact(contact.id)}>
+                              {contactDisplayName(contact)}
+                            </button>
+                          </>
+                        )}
                       </p>
                     </div>
                     <Badge variant="secondary" className={cn(t.priority === "High" && "bg-destructive/10 text-destructive")}>{t.priority}</Badge>
@@ -2082,7 +2102,7 @@ function ReportsModule() {
   })).filter((x) => x.referrals > 0).sort((a, b) => b.referrals - a.referrals).slice(0, 15);
 
   const byContact = cts.map((c) => ({
-    name: fullName(c), company: companyName(s, c.companyId), state: c.state,
+    name: contactDisplayName(c), company: companyName(s, c.companyId), state: c.state,
     referrals: refs.filter((r) => r.contactId === c.id).length,
   })).filter((x) => x.referrals > 0).sort((a, b) => b.referrals - a.referrals).slice(0, 15);
 
@@ -2328,7 +2348,7 @@ function ExportsModule() {
     const data = activeReferrals(s).map((r) => ({
       id: r.id, patient: r.name, referralDate: r.referralDate,
       sourceCompany: companyName(s, r.companyId),
-      sourceContact: r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "",
+      sourceContact: r.contactId ? contactDisplayName(s.contacts.find((c) => c.id === r.contactId)) : "",
       state: r.state, serviceType: r.serviceType, status: r.referralStatus,
       intakeStatus: r.intakeStatus, insurance: r.insuranceType,
       intakeOwner: userName(s, r.assignedIntakeOwnerId),
@@ -2782,7 +2802,7 @@ function DuplicatesModule() {
                     const other = idx === 0 ? p.b : p.a;
                     return (
                       <div key={c.id} className="rounded-xl border p-3 text-sm space-y-1">
-                        <p className="font-medium">{fullName(c)}</p>
+                        <p className="font-medium">{contactDisplayName(c)}</p>
                         <p className="text-xs text-muted-foreground">{c.email || "no email"}</p>
                         <p className="text-xs text-muted-foreground">{c.phone || "no phone"}</p>
                         <p className="text-xs text-muted-foreground">{c.jobTitle || "-"} - {c.referralCount} referrals</p>
@@ -2928,7 +2948,7 @@ function FilesModule() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const objectLabel = (a: Attachment): string => {
     if (a.objectType === "contact") {
-      const c = s.contacts.find((x) => x.id === a.objectId); return c ? fullName(c) : a.objectId;
+      const c = s.contacts.find((x) => x.id === a.objectId); return c ? contactDisplayName(c) : a.objectId;
     }
     if (a.objectType === "company") return s.companies.find((x) => x.id === a.objectId)?.name ?? a.objectId;
     if (a.objectType === "referral") return s.referrals.find((x) => x.id === a.objectId)?.name ?? a.objectId;
@@ -3035,7 +3055,7 @@ function UploadFileDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
   const [busy, setBusy] = useState(false);
 
   const options = (() => {
-    if (objectType === "contact") return s.contacts.filter((c) => !c.deletedAt).map((c) => ({ id: c.id, label: fullName(c) }));
+    if (objectType === "contact") return s.contacts.filter((c) => !c.deletedAt).map((c) => ({ id: c.id, label: contactDisplayName(c) }));
     if (objectType === "company") return s.companies.filter((c) => !c.deletedAt).map((c) => ({ id: c.id, label: c.name }));
     if (objectType === "referral") return s.referrals.filter((r) => !r.deletedAt).map((r) => ({ id: r.id, label: r.name }));
     return [];
@@ -3243,7 +3263,7 @@ function ActivitiesModule() {
         {rows.map((a) => {
           const Icon = ACTIVITY_ICON[a.type] ?? Activity;
           const targetName = a.contactId
-            ? fullName(s.contacts.find((c) => c.id === a.contactId) ?? { firstName: "?", lastName: "" } as Contact)
+            ? contactDisplayName(s.contacts.find((c) => c.id === a.contactId))
             : a.companyId
               ? companyName(s, a.companyId)
               : a.referralId
@@ -4074,7 +4094,7 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
     <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{fullName(c)}</SheetTitle>
+          <SheetTitle>{contactDisplayName(c)}</SheetTitle>
         </SheetHeader>
         <div className="mt-2 space-y-4 text-sm">
           <div className="text-xs text-muted-foreground">{c.jobTitle || "-"}{c.companyId ? <> - <button className="hover:text-primary" onClick={() => onOpenCompany(c.companyId!)}>{companyName(s, c.companyId)}</button></> : null}</div>
@@ -4283,7 +4303,7 @@ function GlobalSearchModule({
       c.referralPartnerStatus, c.tags.join(" "), c.notes,
     ].filter(Boolean).join(" ")));
     const contacts = activeContacts(s).filter((c) => match([
-      fullName(c), c.email, c.phone, c.mobilePhone, c.jobTitle, c.specialty,
+      contactDisplayName(c), c.email, c.phone, c.mobilePhone, c.jobTitle, c.specialty,
       c.state, c.referralSourceType, c.referralPartnerStatus,
       companyName(s, c.companyId), c.tags.join(" "), c.notes,
     ].filter(Boolean).join(" ")));
@@ -4298,7 +4318,7 @@ function GlobalSearchModule({
     ].filter(Boolean).join(" ")));
     const activities = s.activity.filter((a) => match([
       a.message, a.type,
-      a.contactId ? fullName(s.contacts.find((c) => c.id === a.contactId)!) : "",
+      a.contactId ? contactDisplayName(s.contacts.find((c) => c.id === a.contactId)) : "",
       companyName(s, a.companyId),
     ].filter(Boolean).join(" ")));
     return { companies, contacts, referrals, tasks, activities };
@@ -4353,7 +4373,7 @@ function GlobalSearchModule({
         <ResultGroup label="Contacts" count={results.contacts.length} icon={Users}>
           {results.contacts.slice(0, 25).map((c) => (
             <ResultRow key={c.id} onClick={() => onOpenContact(c.id)}
-              title={fullName(c)}
+              title={contactDisplayName(c)}
               meta={`${c.jobTitle ?? "-"} - ${companyName(s, c.companyId)} - ${c.state ?? "-"}`}
               detail={[c.email, c.phone, c.referralSourceType, c.tags.join(", ")].filter(Boolean).join(" - ")} />
           ))}
@@ -4365,9 +4385,9 @@ function GlobalSearchModule({
           onJump={() => onJumpModule("referrals")}>
           {results.referrals.slice(0, 25).map((r) => (
             <ResultRow key={r.id}
-              onClick={() => r.companyId && onOpenCompany(r.companyId)}
+              onClick={() => r.contactId ? onOpenContact(r.contactId) : r.companyId && onOpenCompany(r.companyId)}
               title={r.name}
-              meta={`${companyName(s, r.companyId)} - ${r.state ?? "-"} - ${r.referralStatus}`}
+              meta={`${r.contactId ? contactDisplayName(s.contacts.find((c) => c.id === r.contactId)) : companyName(s, r.companyId)} - ${r.state ?? "-"} - ${r.referralStatus}`}
               detail={`${fmtDate(r.referralDate)}${r.serviceType ? ` - ${r.serviceType}` : ""}${r.insuranceType ? ` - ${r.insuranceType}` : ""}`} />
           ))}
         </ResultGroup>
@@ -4378,7 +4398,7 @@ function GlobalSearchModule({
           onJump={() => onJumpModule("tasks")}>
           {results.tasks.slice(0, 25).map((t) => (
             <ResultRow key={t.id}
-              onClick={() => t.companyId ? onOpenCompany(t.companyId) : t.contactId && onOpenContact(t.contactId)}
+              onClick={() => t.contactId ? onOpenContact(t.contactId) : t.companyId && onOpenCompany(t.companyId)}
               title={t.title}
               meta={`${t.type} - ${t.status} - ${userName(s, t.assignedUserId)}`}
               detail={`${t.dueDate ? `due ${fmtDate(t.dueDate)}` : "no due date"}${t.companyId ? ` - ${companyName(s, t.companyId)}` : ""}`} />
@@ -4393,10 +4413,10 @@ function GlobalSearchModule({
             const ct = a.contactId ? s.contacts.find((c) => c.id === a.contactId) : undefined;
             return (
               <ResultRow key={a.id}
-                onClick={() => a.companyId ? onOpenCompany(a.companyId) : a.contactId && onOpenContact(a.contactId)}
+              onClick={() => a.contactId ? onOpenContact(a.contactId) : a.companyId && onOpenCompany(a.companyId)}
                 title={a.message}
                 meta={`${a.type.replace("_", " ")} - ${fmtDate(a.createdAt)}`}
-                detail={[ct ? fullName(ct) : "", companyName(s, a.companyId)].filter((x) => x && x !== "-").join(" - ")} />
+                detail={[ct ? contactDisplayName(ct) : "", companyName(s, a.companyId)].filter((x) => x && x !== "-").join(" - ")} />
             );
           })}
         </ResultGroup>
@@ -4546,7 +4566,7 @@ function PatientPipelineModule({
                     <td className="px-3 py-2 font-medium">{patientDisplayName(r)}</td>
                     <td className="px-3 py-2">
                       {contact ? (
-                        <button className="hover:text-primary" onClick={() => onOpenContact(contact.id)}>{fullName(contact)}</button>
+                        <button className="hover:text-primary" onClick={() => onOpenContact(contact.id)}>{contactDisplayName(contact)}</button>
                       ) : <span className="text-muted-foreground">-</span>}
                     </td>
                     <td className="px-3 py-2">
@@ -4626,9 +4646,9 @@ export default function ReferralCRM() {
       case "dashboard": return <DashboardModule />;
       case "contacts": return <ContactsModule onOpenContact={setContactId} onOpenCompany={setCompanyId} />;
       case "companies": return <CompaniesModule onOpen={setCompanyId} />;
-      case "referrals": return <ReferralsModule />;
+      case "referrals": return <ReferralsModule onOpenContact={setContactId} />;
       case "patient-pipeline": return <PatientPipelineModule onOpenContact={setContactId} onOpenCompany={setCompanyId} />;
-      case "tasks": return <TasksModule />;
+      case "tasks": return <TasksModule onOpenContact={setContactId} />;
       case "lists": return <ListsModule />;
       case "workflows": return <WorkflowsModule />;
       case "reports": return <ReportsModule />;

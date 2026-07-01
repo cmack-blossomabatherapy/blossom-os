@@ -633,8 +633,11 @@ function contactToRow(c: Contact) {
     source: c.source ?? "CRM",
     direct_phone: c.directPhone ?? null,
     contact_owner: c.contactOwner ?? null,
-    number_of_sales_activities: c.numberOfSalesActivities ?? null,
-    number_of_times_contacted: c.numberOfTimesContacted ?? null,
+    // Production hardening: several production databases still enforce NOT NULL
+    // on these HubSpot-style counters. Never send null for a newly-created
+    // referral partner/contact, even if newer migrations relax the constraint.
+    number_of_sales_activities: c.numberOfSalesActivities ?? 0,
+    number_of_times_contacted: c.numberOfTimesContacted ?? 0,
     original_record_id: c.originalRecordId ?? null,
     import_batch_id: c.importBatchId ?? null,
     recent_email_opened_at: c.recentEmailOpenedAt ?? null,
@@ -716,8 +719,8 @@ function contactPatchToRow(patch: Partial<Contact>): Record<string, unknown> {
   set("notes", "notes");
   set("directPhone", "direct_phone");
   set("contactOwner", "contact_owner");
-  set("numberOfSalesActivities", "number_of_sales_activities");
-  set("numberOfTimesContacted", "number_of_times_contacted");
+  if ("numberOfSalesActivities" in patch) out.number_of_sales_activities = patch.numberOfSalesActivities ?? 0;
+  if ("numberOfTimesContacted" in patch) out.number_of_times_contacted = patch.numberOfTimesContacted ?? 0;
   set("originalRecordId", "original_record_id");
   set("importBatchId", "import_batch_id");
   set("recentEmailOpenedAt", "recent_email_opened_at");
