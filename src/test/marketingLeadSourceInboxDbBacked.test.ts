@@ -29,7 +29,7 @@ describe("Marketing — Lead Source Inbox is Supabase-backed", () => {
     expect(src).toMatch(/linkLead\([^)]*converted_to_lead/);
     expect(src).toMatch(/linkLead\([^)]*attached_to_existing_lead/);
     const hook = read("src/hooks/useMarketingSourceEvents.ts");
-    expect(hook).toMatch(/lead_id: patch\.lead_id/);
+    expect(hook).toMatch(/update\.lead_id\s*=/);
   });
 
   it("PatientLifetimeJourney reads marketing_source_events, marketing_call_events, and marketing_email_events", () => {
