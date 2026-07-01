@@ -23,8 +23,8 @@ import type { Candidate } from "@/data/recruiting";
 // Referral CRM and Recruiting marketing metrics flow through useMarketingIntelligence.
 // The narrative arrays below are intentionally empty on production — the page renders
 // honest empty states until referral/community events are captured.
-const mockLeads: Lead[] = [];
-const mockCandidates: Candidate[] = [];
+const shimLeads: Lead[] = [];
+const shimCandidates: Candidate[] = [];
 
 /* Community Outreach — operational community relationship intelligence.
  * Derived from real referral and recruiting-outreach signal. Event and
@@ -50,8 +50,8 @@ function TrendIcon({ delta }: { delta: number }) {
 export default function CommunityOutreach() {
   const [activeState, setActiveState] = useState<string | null>(null);
 
-  const referralLeads = useMemo(() => mockLeads.filter((l) => l.source === "Referral"), []);
-  const referralCands = useMemo(() => mockCandidates.filter((c) => c.source === "Referral"), []);
+  const referralLeads = useMemo(() => shimLeads.filter((l) => l.source === "Referral"), []);
+  const referralCands = useMemo(() => shimCandidates.filter((c) => c.source === "Referral"), []);
 
   const momentum = useMemo(() => {
     const now = Date.now();
@@ -78,8 +78,8 @@ export default function CommunityOutreach() {
       const fam = referralLeads.filter((l) => l.state === state).length;
       const qual = referralLeads.filter((l) => l.state === state && QUALIFIED.has(l.status)).length;
       const recCands = referralCands.filter((c) => c.state === state).length;
-      const allCands = mockCandidates.filter((c) => c.state === state).length;
-      const allLeads = mockLeads.filter((l) => l.state === state).length;
+      const allCands = shimCandidates.filter((c) => c.state === state).length;
+      const allLeads = shimLeads.filter((l) => l.state === state).length;
       const visibility = fam * 2 + qual * 3 + recCands * 2 + Math.round(allCands * 0.4);
       return { state, fam, qual, recCands, allCands, allLeads, visibility };
     }).sort((a, b) => b.visibility - a.visibility);
@@ -523,7 +523,7 @@ export default function CommunityOutreach() {
                 : "No community-sourced applicants yet — expand recruiting outreach into local universities and BCBA programs."}
             </div>
             <div className="mt-3 text-[12px] text-muted-foreground">
-              {referralCands.length} staff referrals · {Math.round((referralCands.length / Math.max(1, mockCandidates.length)) * 100)}% of total pipeline
+              {referralCands.length} staff referrals · {Math.round((referralCands.length / Math.max(1, shimCandidates.length)) * 100)}% of total pipeline
             </div>
           </div>
         </div>

@@ -21,9 +21,9 @@ import type { Candidate } from "@/data/recruiting";
 // Campaign KPIs are sourced from useMarketingIntelligence + marketing_campaigns / marketing_campaign_metrics.
 // The narrative arrays below are intentionally empty on production — the page renders honest empty
 // states until source events, call events, and candidates are linked to campaigns.
-const mockLeads: Lead[] = [];
-const mockPhoneCalls: PhoneCall[] = [];
-const mockCandidates: Candidate[] = [];
+const shimLeads: Lead[] = [];
+const shimCalls: PhoneCall[] = [];
+const shimCandidates: Candidate[] = [];
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * Campaigns — operational growth intelligence.
@@ -98,7 +98,7 @@ export default function Campaigns() {
     const now = Date.now();
     const buckets = new Map<string, { leads: number; qualified: number; recent: number; prior: number; source: string; state: string }>();
 
-    mockLeads.forEach((l) => {
+    shimLeads.forEach((l) => {
       const key = `${l.source}|${l.state}`;
       const b = buckets.get(key) ?? { leads: 0, qualified: 0, recent: 0, prior: 0, source: l.source, state: l.state };
       b.leads += 1;
@@ -150,7 +150,7 @@ export default function Campaigns() {
     type Event = { ts: number; label: string; meta: string; icon: typeof Megaphone };
     const events: Event[] = [];
 
-    mockLeads.slice(0, 6).forEach((l) => {
+    shimLeads.slice(0, 6).forEach((l) => {
       events.push({
         ts: new Date(l.createdAt).getTime(),
         label: `${l.source} lead in ${STATE_NAMES[l.state] ?? l.state}`,
@@ -158,7 +158,7 @@ export default function Campaigns() {
         icon: iconForType(l.source === "Referral" ? "Referral" : l.source),
       });
     });
-    mockPhoneCalls.slice(0, 4).forEach((c) => {
+    shimCalls.slice(0, 4).forEach((c) => {
       if (!c.state) return;
       events.push({
         ts: new Date(c.callTime).getTime(),
@@ -167,7 +167,7 @@ export default function Campaigns() {
         icon: Phone,
       });
     });
-    mockCandidates.slice(0, 4).forEach((c) => {
+    shimCandidates.slice(0, 4).forEach((c) => {
       events.push({
         ts: now - Math.random() * 86_400_000 * 3,
         label: `${c.source} applicant · ${STATE_NAMES[c.state] ?? c.state}`,
@@ -190,7 +190,7 @@ export default function Campaigns() {
   /* ── recruiting campaigns (real candidate source × state) ───────────── */
   const recruitingCampaigns = useMemo(() => {
     const buckets = new Map<string, { source: string; state: string; count: number; staged: number }>();
-    mockCandidates.forEach((c) => {
+    shimCandidates.forEach((c) => {
       if (!c.state) return;
       const key = `${c.source}|${c.state}`;
       const b = buckets.get(key) ?? { source: c.source, state: c.state, count: 0, staged: 0 };
@@ -225,7 +225,7 @@ export default function Campaigns() {
               { label: "Active campaigns", value: campaigns.length },
               { label: "Leads · 7d", value: mi.velocity.leadsLast7 },
               { label: "Qualified rate", value: `${mi.velocity.qualifiedRate}%` },
-              { label: "Recruiting reach", value: mockCandidates.length },
+              { label: "Recruiting reach", value: shimCandidates.length },
             ].map((m) => (
               <div key={m.label} className="rounded-xl bg-card/60 backdrop-blur border border-border/50 p-3">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{m.label}</div>

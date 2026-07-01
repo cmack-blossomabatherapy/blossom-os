@@ -25,8 +25,8 @@ import type { Lead } from "@/data/leads";
 // Real call/lead metrics flow through useMarketingIntelligence (marketing_call_events + intake_leads).
 // The legacy per-call detail arrays below are intentionally empty on production — the
 // page renders honest empty states until CTM/Jivetel/RetellAI/manual events are captured.
-const mockPhoneCalls: PhoneCall[] = [];
-const mockLeads: Lead[] = [];
+const shimCalls: PhoneCall[] = [];
+const shimLeads: Lead[] = [];
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * Call Tracking — operational communication intelligence. Derived entirely
@@ -60,8 +60,8 @@ export default function CallTracking() {
 
   /* ── momentum across all calls (7d vs prior 7d) ────────────────────── */
   const momentum = useMemo(() => {
-    const recent = mockPhoneCalls.filter((c) => ageDays(c.callTime) <= 7);
-    const prior = mockPhoneCalls.filter((c) => {
+    const recent = shimCalls.filter((c) => ageDays(c.callTime) <= 7);
+    const prior = shimCalls.filter((c) => {
       const a = ageDays(c.callTime);
       return a > 7 && a <= 14;
     });
@@ -87,20 +87,20 @@ export default function CallTracking() {
 
   /* ── intake vs recruiting vs referral splits ───────────────────────── */
   const splits = useMemo(() => {
-    const intake = mockPhoneCalls.filter((c) => c.type === "Lead");
-    const recruiting = mockPhoneCalls.filter((c) => c.type === "Staff");
-    const client = mockPhoneCalls.filter((c) => c.type === "Client");
-    const connected = mockPhoneCalls.filter((c) => c.status === "Connected" || c.status === "Contacted").length;
-    const missed = mockPhoneCalls.filter(
+    const intake = shimCalls.filter((c) => c.type === "Lead");
+    const recruiting = shimCalls.filter((c) => c.type === "Staff");
+    const client = shimCalls.filter((c) => c.type === "Client");
+    const connected = shimCalls.filter((c) => c.status === "Connected" || c.status === "Contacted").length;
+    const missed = shimCalls.filter(
       (c) => c.direction === "Inbound" && (c.status === "New" || c.outcome === "No Answer"),
     ).length;
-    const afterHours = mockPhoneCalls.filter((c) => {
+    const afterHours = shimCalls.filter((c) => {
       const h = hourOf(c.callTime);
       return h >= 18 || h < 8;
     }).length;
     const intakeConverted = intake.filter((c) => {
       if (!c.linkedLeadId) return false;
-      const lead = mockLeads.find((l) => l.id === c.linkedLeadId);
+      const lead = shimLeads.find((l) => l.id === c.linkedLeadId);
       return lead && QUALIFIED_STATUSES.has(lead.status);
     }).length;
     const intakeWithLead = intake.filter((c) => c.linkedLeadId).length;
@@ -122,7 +122,7 @@ export default function CallTracking() {
   /* ── state call rollup ─────────────────────────────────────────────── */
   const stateRows = useMemo(() => {
     const map = new Map<string, { state: string; total: number; intake: number; recruiting: number; missed: number; recent: number; prior: number }>();
-    mockPhoneCalls.forEach((c) => {
+    shimCalls.forEach((c) => {
       if (!c.state) return;
       const e = map.get(c.state) ?? { state: c.state, total: 0, intake: 0, recruiting: 0, missed: 0, recent: 0, prior: 0 };
       e.total += 1;
@@ -146,7 +146,7 @@ export default function CallTracking() {
     const stageCount = new Map<string, number>();
     splits.intake.forEach((c) => {
       if (!c.linkedLeadId) return;
-      const lead = mockLeads.find((l) => l.id === c.linkedLeadId);
+      const lead = shimLeads.find((l) => l.id === c.linkedLeadId);
       if (!lead) return;
       stageCount.set(lead.status, (stageCount.get(lead.status) ?? 0) + 1);
     });
@@ -161,7 +161,7 @@ export default function CallTracking() {
     const map = new Map<string, { source: string; calls: number; qualified: number }>();
     splits.intake.forEach((c) => {
       if (!c.linkedLeadId) return;
-      const lead = mockLeads.find((l) => l.id === c.linkedLeadId);
+      const lead = shimLeads.find((l) => l.id === c.linkedLeadId);
       if (!lead) return;
       const e = map.get(lead.source) ?? { source: lead.source, calls: 0, qualified: 0 };
       e.calls += 1;
@@ -176,7 +176,7 @@ export default function CallTracking() {
   /* ── after-hours by state ──────────────────────────────────────────── */
   const afterHoursByState = useMemo(() => {
     const map = new Map<string, number>();
-    mockPhoneCalls.forEach((c) => {
+    shimCalls.forEach((c) => {
       if (!c.state) return;
       const h = hourOf(c.callTime);
       if (h >= 18 || h < 8) map.set(c.state, (map.get(c.state) ?? 0) + 1);
@@ -261,7 +261,7 @@ export default function CallTracking() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Inbound calls", value: mi.calls.inbound, sub: `${mi.calls.last24h} in last 24h`, icon: PhoneIncoming, delta: momentum.inboundDelta },
-            { label: "Connected", value: splits.connected, sub: `${mockPhoneCalls.length ? Math.round((splits.connected / mockPhoneCalls.length) * 100) : 0}% answer rate`, icon: PhoneIcon, delta: 0 },
+            { label: "Connected", value: splits.connected, sub: `${shimCalls.length ? Math.round((splits.connected / shimCalls.length) * 100) : 0}% answer rate`, icon: PhoneIcon, delta: 0 },
             { label: "Missed / new", value: splits.missed, sub: "Inbound awaiting callback", icon: PhoneMissed, delta: momentum.missedDelta },
             { label: "Intake calls", value: splits.intake.length, sub: `${splits.callToLead}% linked to lead`, icon: Users, delta: 0 },
             { label: "Recruiting calls", value: splits.recruiting.length, sub: "Staff inquiries", icon: Briefcase, delta: 0 },
@@ -446,7 +446,7 @@ export default function CallTracking() {
               <div className="text-[12.5px] text-muted-foreground">
                 Demand share:{" "}
                 <span className="text-foreground font-medium">
-                  {Math.round((activeRow.total / Math.max(1, mockPhoneCalls.length)) * 100)}%
+                  {Math.round((activeRow.total / Math.max(1, shimCalls.length)) * 100)}%
                 </span>{" "}
                 of company call volume
               </div>
