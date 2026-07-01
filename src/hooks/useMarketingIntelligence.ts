@@ -1,12 +1,18 @@
-import { useMemo } from "react";
-import { mockLeads, pipelineStages, type Lead, type LeadSource, type LeadStatus } from "@/data/leads";
-import { mockPhoneCalls } from "@/data/calls";
-import { mockCandidates } from "@/data/recruiting";
+import { useEffect, useMemo, useState } from "react";
+import { pipelineStages, type LeadSource, type LeadStatus } from "@/data/leads";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  useMarketingData,
+  type MktLead,
+  type MktCall,
+  type MktCandidate,
+} from "@/hooks/useMarketingData";
 
 /**
- * Marketing intelligence — derived entirely from the same real data the rest
- * of Blossom OS consumes. No mock marketing numbers; no fake campaigns.
- * Empty fields render calm empty states downstream.
+ * Marketing intelligence — derived entirely from persisted Blossom OS data
+ * (intake_leads, recruiting_candidates, marketing_* operating tables).
+ * No mock arrays. When tables are empty, every field returns zeroed/empty
+ * so pages render calm empty states downstream.
  */
 export interface SourceShare {
   source: LeadSource;
@@ -30,14 +36,85 @@ const QUALIFIED_STATUSES = new Set([
   "Sent to VOB",
 ]);
 
-const isQualified = (l: Lead) => QUALIFIED_STATUSES.has(l.status);
+const isQualified = (l: MktLead) => QUALIFIED_STATUSES.has(l.status);
+
+export interface MarketingLiveExtras {
+  sources: number;
+  activeSources: number;
+  campaigns: number;
+  activeCampaigns: number;
+  sourceEvents: number;
+  newSourceEvents: number;
+  emailEvents: number;
+  totalSpendCents: number;
+  totalImpressions: number;
+  totalClicks: number;
+}
+
+const EMPTY_EXTRAS: MarketingLiveExtras = {
+  sources: 0,
+  activeSources: 0,
+  campaigns: 0,
+  activeCampaigns: 0,
+  sourceEvents: 0,
+  newSourceEvents: 0,
+  emailEvents: 0,
+  totalSpendCents: 0,
+  totalImpressions: 0,
+  totalClicks: 0,
+};
+
+function useMarketingLiveExtras(): MarketingLiveExtras {
+  const [extras, setExtras] = useState<MarketingLiveExtras>(EMPTY_EXTRAS);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [srcRes, campRes, evtRes, emailRes, metRes] = await Promise.all([
+          supabase.from("marketing_sources").select("id, is_active"),
+          supabase.from("marketing_campaigns").select("id, status"),
+          supabase.from("marketing_source_events").select("id, status"),
+          supabase.from("marketing_email_events").select("id"),
+          supabase.from("marketing_campaign_metrics").select("impressions, clicks, spend_cents"),
+        ]);
+        if (cancelled) return;
+        const sources = (srcRes.data ?? []) as Array<{ is_active: boolean | null }>;
+        const campaigns = (campRes.data ?? []) as Array<{ status: string | null }>;
+        const events = (evtRes.data ?? []) as Array<{ status: string | null }>;
+        const emails = (emailRes.data ?? []) as Array<unknown>;
+        const metrics = (metRes.data ?? []) as Array<{
+          impressions: number | null;
+          clicks: number | null;
+          spend_cents: number | null;
+        }>;
+        setExtras({
+          sources: sources.length,
+          activeSources: sources.filter((s) => s.is_active).length,
+          campaigns: campaigns.length,
+          activeCampaigns: campaigns.filter((c) => c.status === "active").length,
+          sourceEvents: events.length,
+          newSourceEvents: events.filter((e) => e.status === "new").length,
+          emailEvents: emails.length,
+          totalImpressions: metrics.reduce((a, m) => a + (m.impressions ?? 0), 0),
+          totalClicks: metrics.reduce((a, m) => a + (m.clicks ?? 0), 0),
+          totalSpendCents: metrics.reduce((a, m) => a + (m.spend_cents ?? 0), 0),
+        });
+      } catch {
+        /* leave extras empty — page shows empty state */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return extras;
+}
 
 export function useMarketingIntelligence() {
-  return useMemo(() => {
-    const leads = mockLeads;
-    const calls = mockPhoneCalls;
-    const candidates = mockCandidates;
+  const { leads, calls, candidates, loading, error } = useMarketingData();
+  const extras = useMarketingLiveExtras();
 
+  return useMemo(() => {
     // ---- by source ---------------------------------------------------------
     const sourceMap = new Map<LeadSource, { count: number; qualified: number }>();
     leads.forEach((l) => {
@@ -81,21 +158,22 @@ export function useMarketingIntelligence() {
 
     // ---- velocity / momentum ----------------------------------------------
     const now = Date.now();
-    const within = (l: Lead, days: number) =>
+    const within = (l: MktLead, days: number) =>
       now - new Date(l.createdAt).getTime() <= days * 86_400_000;
     const leadsLast7 = leads.filter((l) => within(l, 7)).length;
     const leadsLast30 = leads.filter((l) => within(l, 30)).length;
     const qualifiedLast30 = leads.filter((l) => within(l, 30) && isQualified(l)).length;
     const qualifiedRate = leadsLast30 ? Math.round((qualifiedLast30 / leadsLast30) * 100) : 0;
 
-    // ---- calls -------------------------------------------------------------
+    // ---- calls (from marketing_call_events) -------------------------------
     const callsLast24h = calls.filter(
-      (c) => now - new Date(c.callTime).getTime() <= 86_400_000,
+      (c) => now - new Date(c.createdAt).getTime() <= 86_400_000,
     ).length;
+    const isMissed = (s: string) => /new|missed|no.?answer/i.test(s);
     const missedCalls = calls.filter(
-      (c) => c.direction === "Inbound" && (c.status === "New" || c.outcome === "No Answer"),
+      (c) => isMissed(c.status),
     ).length;
-    const inboundCalls = calls.filter((c) => c.direction === "Inbound").length;
+    const inboundCalls = calls.length;
 
     // ---- recruiting marketing ---------------------------------------------
     const recruitingSourceMap = new Map<string, number>();
@@ -114,19 +192,18 @@ export function useMarketingIntelligence() {
     });
 
     // ---- pipeline ---------------------------------------------------------
-    const stageCounts = new Map<LeadStatus, number>();
+    const stageCounts = new Map<string, number>();
     leads.forEach((l) => stageCounts.set(l.status, (stageCounts.get(l.status) ?? 0) + 1));
     const pipeline = pipelineStages.map((s) => ({
       stage: s.name,
-      count: stageCounts.get(s.name) ?? 0,
+      count: stageCounts.get(s.name as unknown as string) ?? 0,
     }));
-    const stuckThreshold = 7;
-    const stuck = leads.filter((l) => l.daysInStage >= stuckThreshold);
-    const stuckByStage = new Map<LeadStatus, number>();
-    stuck.forEach((l) => stuckByStage.set(l.status, (stuckByStage.get(l.status) ?? 0) + 1));
-    const bottlenecks = Array.from(stuckByStage.entries())
-      .map(([stage, count]) => ({ stage, count }))
-      .sort((a, b) => b.count - a.count);
+    // Bottlenecks: fall back to top-heavy stage buckets since we don't yet
+    // persist per-lead "days in stage" on the live schema.
+    const bottlenecks = Array.from(stageCounts.entries())
+      .map(([stage, count]) => ({ stage: stage as LeadStatus, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
 
     // ---- state momentum (7d vs prior 7d) ----------------------------------
     const stateMomentum = new Map<string, { recent: number; prior: number }>();
@@ -173,8 +250,11 @@ export function useMarketingIntelligence() {
           .map(([state, count]) => ({ state, count }))
           .sort((a, b) => b.count - a.count),
       },
+      extras,
+      loading,
+      error,
     };
-  }, []);
+  }, [leads, calls, candidates, extras, loading, error]);
 }
 
 export type MarketingIntelligence = ReturnType<typeof useMarketingIntelligence>;

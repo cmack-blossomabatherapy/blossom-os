@@ -416,8 +416,8 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
       "campaigns", "lead_sources", "seo_content", "web_analytics", "call_tracking",
       // Relationships
       "referrals", "recruiting_marketing", "community_outreach", "reputation",
-      // Intelligence
-      "attribution_roi", "state_growth", "marketing_reports", "ai_assistant",
+      // Intelligence — reports lives on the canonical /reports page (module id "reports").
+      "attribution_roi", "state_growth", "reports",
       "settings",
     ],
     scope: "company",
@@ -435,10 +435,11 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
       reputation: VIEW_EDIT,
       community_outreach: VIEW_EDIT,
       attribution_roi: ["view", "export"],
-      marketing_reports: ["view", "export"],
+      reports: ["view", "export"],
       training: VIEW,
     },
-    leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: false, workflowBottlenecks: false, aiInsights: true },
+    // Marketing does not currently expose an AI surface — keep aiInsights off.
+    leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
   },
   case_manager: {
     modules: [
