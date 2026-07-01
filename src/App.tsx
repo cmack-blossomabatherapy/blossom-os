@@ -468,6 +468,21 @@ function OSShellPage({ children }: { children: React.ReactNode }) {
   return <OSShell>{children}</OSShell>;
 }
 
+// Canonical Marketing access model. Every /marketing/* route below must be
+// wrapped with PermissionRoute using one of these constants so the access
+// model stays uniform across every Marketing workspace.
+const MARKETING_ROLES = [
+  "admin",
+  "super_admin",
+  "marketing",
+  "marketing_team",
+  "marketing_growth_lead",
+] as const;
+const MARKETING_ROLES_WITH_BD = [
+  ...MARKETING_ROLES,
+  "business_development",
+] as const;
+
 import { LeadsProvider } from "@/contexts/LeadsContext";
 import { LeadDrawerProvider } from "@/contexts/LeadDrawerContext";
 import { ClientsProvider } from "@/contexts/ClientsContext";
