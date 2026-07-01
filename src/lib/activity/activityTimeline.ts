@@ -116,6 +116,7 @@ export interface ActivityEvent {
   summary?: string;
   sourceSystem?: string;
   sourceUrl?: string;
+  campaign?: string;
   severity?: ActivitySeverity;
   status?: ActivityStatus;
   metadata?: Record<string, unknown>;
@@ -143,6 +144,7 @@ export function normalizeActivityEvent(input: Partial<ActivityEvent>): ActivityE
     summary: input.summary,
     sourceSystem: input.sourceSystem,
     sourceUrl: input.sourceUrl,
+    campaign: input.campaign,
     severity: input.severity ?? "info",
     status: input.status,
     metadata: input.metadata,
