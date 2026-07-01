@@ -2,13 +2,14 @@ import { PhoneCall } from "lucide-react";
 import { GrowthPageShell, StatCard } from "@/components/os/growth/GrowthPageShell";
 import { LeadSourceActions } from "@/components/marketing/LeadSourceActions";
 import { SourceEventInbox } from "@/components/marketing/SourceEventInbox";
+import { SourceOpsPanel } from "@/components/marketing/SourceOpsPanel";
 import { useSourceStats } from "@/hooks/useSourceStats";
 
 const LEADTRAP_SOURCES = ["leadtrap"];
 
 export default function LeadTrap() {
   const s = useSourceStats(LEADTRAP_SOURCES);
-  const fmt = (n: number) => (n ? n.toString() : "—");
+  const fmt = (n: number) => (n ? n.toString() : "-");
   const st = (n: number): "live" | "needs_data" => (n ? "live" : "needs_data");
   return (
     <GrowthPageShell
@@ -23,6 +24,11 @@ export default function LeadTrap() {
         <StatCard label="Converted to leads" value={fmt(s.converted)} status={st(s.converted)} />
         <StatCard label="Awaiting review" value={fmt(s.newCount)} status={st(s.newCount)} />
       </div>
+      <SourceOpsPanel
+        sourceSlugs={["leadtrap"]}
+        showMetrics={false}
+        nextActionCopy="Review inbound web form submissions and convert qualified captures to intake leads."
+      />
       <SourceEventInbox sourceSystems={LEADTRAP_SOURCES} />
     </GrowthPageShell>
   );

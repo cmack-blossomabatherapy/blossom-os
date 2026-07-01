@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { LeadSourceActions } from "@/components/marketing/LeadSourceActions";
+import { CallQueueSection } from "@/components/marketing/CallQueueSection";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 import { useMarketingData } from "@/hooks/useMarketingData";
 // Detailed call/lead metrics read directly from marketing_call_events +
@@ -233,6 +234,8 @@ export default function CallTracking() {
       actions={<AIPrompt label="Where is call demand accelerating?" variant="card" />}
     >
       <LeadSourceActions sourceLabel="CTM / CallTrackingMetrics" sourceValue="CTM" integrationId="ctm" sourcePage="call-tracking" />
+      {/* ── OPERATING CALL QUEUE (Pass 102) ──────────────────────────── */}
+      <CallQueueSection />
       {/* ── 1. COMMUNICATION INTELLIGENCE HERO ───────────────────────── */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
         <div className="absolute -top-24 -right-24 size-72 rounded-full bg-primary/10 blur-3xl" aria-hidden />

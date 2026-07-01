@@ -19,6 +19,7 @@ const INTEGRATIONS: Integration[] = [
   { slug: "google_ads",   label: "Google Ads",           table: "marketing_source_events / marketing_campaign_metrics", nextStep: "Import Google Ads campaign metrics daily." },
   { slug: "meta_ads",     label: "Meta / Facebook Ads",  table: "marketing_source_events / marketing_campaign_metrics", nextStep: "Import Meta ad campaign metrics daily." },
   { slug: "mailchimp",    label: "Mailchimp",            table: "marketing_email_events", nextStep: "Enable Mailchimp webhook or bulk import." },
+  { slug: "ms365",        label: "Outlook / Microsoft 365", table: "marketing_email_events", nextStep: "Authorize Outlook mailbox for outbound email attribution." },
   { slug: "centralreach", label: "CentralReach",         table: "marketing_source_events", nextStep: "Reconcile CentralReach client identifiers." },
   { slug: "website",      label: "Website / manual",     table: "marketing_source_events", nextStep: "Log or bulk-import inbound web submissions." },
 ];
