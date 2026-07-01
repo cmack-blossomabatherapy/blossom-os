@@ -416,7 +416,7 @@ export default function LeadSourceInbox() {
       return;
     }
 
-    // Lead is created — success is committed regardless of what happens next.
+    // Lead is created - success is committed regardless of what happens next.
     toast.success(`Lead created from ${s.event.sourceLabel}`, {
       description: lead.childName,
     });
