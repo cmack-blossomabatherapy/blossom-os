@@ -4425,6 +4425,142 @@ function ResultRow({ title, meta, detail, onClick }: {
 }
 
 // ===========================================================
+// Patient Pipeline - dashboard of every referred patient
+// ===========================================================
+function PatientPipelineModule({
+  onOpenContact, onOpenCompany,
+}: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
+  const s = useCrm();
+  const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [stateFilter, setStateFilter] = useState<string>("all");
+
+  const rows = useMemo(() => {
+    let r = scopedReferrals(s);
+    if (statusFilter !== "all") r = r.filter((x) => x.referralStatus === statusFilter);
+    if (stateFilter !== "all") r = r.filter((x) => x.state === stateFilter);
+    if (q) {
+      const ql = q.toLowerCase();
+      r = r.filter((x) =>
+        patientDisplayName(x).toLowerCase().includes(ql) ||
+        (x.contactId ? (s.contacts.find((c) => c.id === x.contactId) ?? { firstName: "", lastName: "" }) : { firstName: "", lastName: "" }) &&
+        `${x.name} ${companyName(s, x.companyId)}`.toLowerCase().includes(ql)
+      );
+    }
+    return [...r].sort((a, b) => (b.referralDate || "").localeCompare(a.referralDate || ""));
+  }, [s, q, statusFilter, stateFilter]);
+
+  const byStatus = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const r of scopedReferrals(s)) map[r.referralStatus] = (map[r.referralStatus] ?? 0) + 1;
+    return map;
+  }, [s]);
+
+  const STATUSES: Referral["referralStatus"][] = ["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"];
+
+  return (
+    <div className="space-y-4">
+      <SectionHeader
+        title="Patient Pipeline"
+        subtitle="Every referred patient across the CRM - their pipeline status, source, and (soon) revenue."
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+        {STATUSES.map((st) => (
+          <button
+            key={st}
+            onClick={() => setStatusFilter((cur) => (cur === st ? "all" : st))}
+            className={cn(
+              "rounded-xl border bg-card p-3 text-left transition-colors hover:bg-muted/40",
+              statusFilter === st && "border-primary/40 bg-primary/5",
+            )}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{st}</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">{byStatus[st] ?? 0}</p>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search patient, company..." className="pl-8 h-9 text-sm" />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[170px] h-9 text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {STATUSES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="w-[110px] h-9 text-sm"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All states</SelectItem>
+            {STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium">Patient</th>
+                <th className="px-3 py-2 text-left font-medium">Referring Contact</th>
+                <th className="px-3 py-2 text-left font-medium">Company</th>
+                <th className="px-3 py-2 text-left font-medium">State</th>
+                <th className="px-3 py-2 text-left font-medium">Pipeline Status</th>
+                <th className="px-3 py-2 text-left font-medium">Intake Status</th>
+                <th className="px-3 py-2 text-left font-medium">Referred</th>
+                <th className="px-3 py-2 text-right font-medium">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const contact = r.contactId ? s.contacts.find((c) => c.id === r.contactId) : undefined;
+                return (
+                  <tr key={r.id} className="border-t hover:bg-muted/30">
+                    <td className="px-3 py-2 font-medium">{patientDisplayName(r)}</td>
+                    <td className="px-3 py-2">
+                      {contact ? (
+                        <button className="hover:text-primary" onClick={() => onOpenContact(contact.id)}>{fullName(contact)}</button>
+                      ) : <span className="text-muted-foreground">-</span>}
+                    </td>
+                    <td className="px-3 py-2">
+                      {r.companyId ? (
+                        <button className="hover:text-primary" onClick={() => onOpenCompany(r.companyId!)}>{companyName(s, r.companyId)}</button>
+                      ) : <span className="text-muted-foreground">-</span>}
+                    </td>
+                    <td className="px-3 py-2">{r.state || "-"}</td>
+                    <td className="px-3 py-2">
+                      <span className={cn("text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border", referralStatusTone(r.referralStatus))}>
+                        {r.referralStatus}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">{r.intakeStatus || "-"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.referralDate)}</td>
+                    <td className="px-3 py-2 text-right text-muted-foreground tabular-nums" title="Revenue reporting coming soon">-</td>
+                  </tr>
+                );
+              })}
+              {rows.length === 0 && (
+                <tr><td colSpan={8} className="text-center text-muted-foreground py-10">No referred patients match.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">
+        Revenue per patient will populate automatically once CentralReach billing sync is wired in.
+      </p>
+    </div>
+  );
+}
+
+// ===========================================================
 // Page shell with internal nav
 // ===========================================================
 export default function ReferralCRM() {
