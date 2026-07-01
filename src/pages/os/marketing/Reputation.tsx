@@ -1,5 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMarketingData } from "@/hooks/useMarketingData";
+import {
+  useReputationLeads,
+  type ReputationContactSort,
+  type ReputationContactWindow,
+} from "@/hooks/useReputationLeads";
 import {
   Sparkles,
   Heart,
@@ -17,9 +22,11 @@ import {
   Building2,
   Megaphone,
   CheckCircle2,
+  Loader2,
+  CheckCheck,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
-import { fmtMktgShortDate } from "@/lib/os/referrals/utils";
+import { fmtMktgShortDate, fmtMktgRelative } from "@/lib/os/referrals/utils";
 
 /* Reputation — operational trust intelligence.
  * Derives community perception from real operational signal: intake
@@ -49,11 +56,56 @@ function TrendIcon({ delta }: { delta: number }) {
   return <Minus className="size-3.5 text-muted-foreground" />;
 }
 
+const REPUTATION_PREFS_KEY = "reputation.contactPrefs.v1";
+type ReputationPrefs = {
+  contactWindow: ReputationContactWindow;
+  contactSort: ReputationContactSort;
+};
+function readReputationPrefs(): ReputationPrefs {
+  if (typeof window === "undefined") return { contactWindow: "all", contactSort: "recent" };
+  try {
+    const raw = window.localStorage.getItem(REPUTATION_PREFS_KEY);
+    if (!raw) return { contactWindow: "all", contactSort: "recent" };
+    const parsed = JSON.parse(raw) as Partial<ReputationPrefs>;
+    const win: ReputationContactWindow = ["all", "7", "30", "90"].includes(parsed.contactWindow as string)
+      ? (parsed.contactWindow as ReputationContactWindow)
+      : "all";
+    const sort: ReputationContactSort =
+      parsed.contactSort === "oldest" ? "oldest" : "recent";
+    return { contactWindow: win, contactSort: sort };
+  } catch {
+    return { contactWindow: "all", contactSort: "recent" };
+  }
+}
+
 export default function Reputation() {
   const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
-  const [contactSort, setContactSort] = useState<"recent" | "oldest">("recent");
-  const [contactWindow, setContactWindow] = useState<"all" | "7" | "30" | "90">("all");
+  const initialPrefs = useMemo(readReputationPrefs, []);
+  const [contactSort, setContactSort] = useState<ReputationContactSort>(initialPrefs.contactSort);
+  const [contactWindow, setContactWindow] = useState<ReputationContactWindow>(initialPrefs.contactWindow);
+
+  // Persist window + sort so they survive refresh / navigation.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        REPUTATION_PREFS_KEY,
+        JSON.stringify({ contactWindow, contactSort }),
+      );
+    } catch {
+      /* ignore quota / private-mode errors */
+    }
+  }, [contactWindow, contactSort]);
+
+  // Server-side filtered + sorted leads for the Reputation leads table.
+  const {
+    rows: reputationLeads,
+    loading: reputationLoading,
+    error: reputationError,
+    marking: markingLeadId,
+    markContacted,
+  } = useReputationLeads({ contactWindow, contactSort, limit: 100 });
 
   /* Trust signals derived from real operational data. */
   const signals = useMemo(() => {
