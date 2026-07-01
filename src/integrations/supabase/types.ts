@@ -2053,6 +2053,182 @@ export type Database = {
         }
         Relationships: []
       }
+      bd_territories: {
+        Row: {
+          boundary_geojson: Json | null
+          center_lat: number | null
+          center_lon: number | null
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          owner_id: string | null
+          owner_name: string | null
+          region: string | null
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          boundary_geojson?: Json | null
+          center_lat?: number | null
+          center_lon?: number | null
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          region?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          boundary_geojson?: Json | null
+          center_lat?: number | null
+          center_lon?: number | null
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          region?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bd_territories_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bd_territories_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "bd_territories_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bd_territories_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bd_territory_leads: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          id: string
+          kind: string
+          last_visit_at: string | null
+          lat: number | null
+          lon: number | null
+          name: string
+          next_visit_at: string | null
+          notes: string | null
+          owner_id: string | null
+          state: string | null
+          status: string
+          territory_id: string | null
+          updated_at: string
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          last_visit_at?: string | null
+          lat?: number | null
+          lon?: number | null
+          name: string
+          next_visit_at?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          state?: string | null
+          status?: string
+          territory_id?: string | null
+          updated_at?: string
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          last_visit_at?: string | null
+          lat?: number | null
+          lon?: number | null
+          name?: string
+          next_visit_at?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          state?: string | null
+          status?: string
+          territory_id?: string | null
+          updated_at?: string
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bd_territory_leads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bd_territory_leads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "bd_territory_leads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bd_territory_leads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bd_territory_leads_territory_id_fkey"
+            columns: ["territory_id"]
+            isOneToOne: false
+            referencedRelation: "bd_territories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -8848,6 +9024,96 @@ export type Database = {
           },
         ]
       }
+      mapsly_object_map: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          error: string | null
+          id: string
+          last_hash: string | null
+          last_pulled_at: string | null
+          last_pushed_at: string | null
+          mapsly_object_type: string
+          mapsly_record_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          error?: string | null
+          id?: string
+          last_hash?: string | null
+          last_pulled_at?: string | null
+          last_pushed_at?: string | null
+          mapsly_object_type: string
+          mapsly_record_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          error?: string | null
+          id?: string
+          last_hash?: string | null
+          last_pulled_at?: string | null
+          last_pushed_at?: string | null
+          mapsly_object_type?: string
+          mapsly_record_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mapsly_sync_log: {
+        Row: {
+          created_at: string
+          direction: string
+          entity_type: string | null
+          finished_at: string | null
+          id: string
+          message: string | null
+          payload: Json | null
+          records_failed: number
+          records_processed: number
+          records_succeeded: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          entity_type?: string | null
+          finished_at?: string | null
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          records_failed?: number
+          records_processed?: number
+          records_succeeded?: number
+          started_at?: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          entity_type?: string | null
+          finished_at?: string | null
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          records_failed?: number
+          records_processed?: number
+          records_succeeded?: number
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       marketing_call_events: {
         Row: {
           assigned_owner_id: string | null
@@ -9495,6 +9761,180 @@ export type Database = {
           work_type?: string
         }
         Relationships: []
+      }
+      mileage_reimbursement_exports: {
+        Row: {
+          created_at: string
+          export_file_path: string | null
+          exported_at: string | null
+          exported_by: string | null
+          id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          rate_per_mile: number
+          status: string
+          total_amount: number
+          total_miles: number
+          trip_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          export_file_path?: string | null
+          exported_at?: string | null
+          exported_by?: string | null
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          rate_per_mile?: number
+          status?: string
+          total_amount?: number
+          total_miles?: number
+          trip_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          export_file_path?: string | null
+          exported_at?: string | null
+          exported_by?: string | null
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          rate_per_mile?: number
+          status?: string
+          total_amount?: number
+          total_miles?: number
+          trip_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mileage_trips: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          client_id: string | null
+          created_at: string
+          destination_address: string | null
+          destination_lat: number | null
+          destination_lon: number | null
+          employee_id: string | null
+          employee_name: string | null
+          end_time: string | null
+          id: string
+          mapsly_trip_id: string | null
+          miles: number
+          notes: string | null
+          origin_address: string | null
+          origin_lat: number | null
+          origin_lon: number | null
+          purpose: string
+          reimbursement_export_id: string | null
+          rejection_reason: string | null
+          role: string | null
+          source: string
+          start_time: string | null
+          status: string
+          trip_date: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          client_id?: string | null
+          created_at?: string
+          destination_address?: string | null
+          destination_lat?: number | null
+          destination_lon?: number | null
+          employee_id?: string | null
+          employee_name?: string | null
+          end_time?: string | null
+          id?: string
+          mapsly_trip_id?: string | null
+          miles?: number
+          notes?: string | null
+          origin_address?: string | null
+          origin_lat?: number | null
+          origin_lon?: number | null
+          purpose?: string
+          reimbursement_export_id?: string | null
+          rejection_reason?: string | null
+          role?: string | null
+          source?: string
+          start_time?: string | null
+          status?: string
+          trip_date: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          client_id?: string | null
+          created_at?: string
+          destination_address?: string | null
+          destination_lat?: number | null
+          destination_lon?: number | null
+          employee_id?: string | null
+          employee_name?: string | null
+          end_time?: string | null
+          id?: string
+          mapsly_trip_id?: string | null
+          miles?: number
+          notes?: string | null
+          origin_address?: string | null
+          origin_lat?: number | null
+          origin_lon?: number | null
+          purpose?: string
+          reimbursement_export_id?: string | null
+          rejection_reason?: string | null
+          role?: string | null
+          source?: string
+          start_time?: string | null
+          status?: string
+          trip_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mileage_trips_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mileage_trips_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mileage_trips_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "mileage_trips_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mileage_trips_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mobile_alert_dismissals: {
         Row: {
