@@ -4740,7 +4740,9 @@ export default function ReferralCRM() {
   const s = useCrm();
   const me = currentUser(s);
   const { isAdmin, loading: authLoading } = useAuth();
-  const [module, setModule] = useState<ModuleId>("dashboard");
+  const [moduleRaw, setModuleRaw] = useUrlState("m", "dashboard");
+  const module = moduleRaw as ModuleId;
+  const setModule = (id: ModuleId) => setModuleRaw(id);
   const [contactId, setContactId] = useState<ID | null>(null);
   const [companyId, setCompanyId] = useState<ID | null>(null);
   const [backendMissing, setBackendMissing] = useState<string[]>([]);
