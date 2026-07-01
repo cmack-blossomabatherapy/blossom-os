@@ -441,6 +441,14 @@ export default function LeadSourceInbox() {
       toast.error(e instanceof Error ? e.message : "Could not update event");
     }
   };
+  const onAssign = async (id: string, userId: string | null) => {
+    try {
+      await assignOwner(id, userId);
+      toast.success(userId ? "Owner assigned" : "Owner cleared");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not assign owner");
+    }
+  };
   const onCopy = (s: typeof scored[number]) => {
     const text = JSON.stringify(s.event, null, 2);
     navigator.clipboard.writeText(text).then(() => toast.success("Source details copied"));
