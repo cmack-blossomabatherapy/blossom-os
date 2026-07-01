@@ -18,13 +18,10 @@ import {
   Handshake,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
-import type { Lead } from "@/data/leads";
-import type { Candidate } from "@/data/recruiting";
-// Referral CRM and Recruiting marketing metrics flow through useMarketingIntelligence.
-// The narrative arrays below are intentionally empty on production — the page renders
-// honest empty states until referral/community events are captured.
-const shimLeads: Lead[] = [];
-const shimCandidates: Candidate[] = [];
+import { useMarketingData } from "@/hooks/useMarketingData";
+// Community/referral signal is DB-backed via intake_leads + recruiting_candidates
+// through useMarketingData. When those tables are empty the page renders an
+// honest empty state — no shim arrays.
 
 /* Community Outreach — operational community relationship intelligence.
  * Derived from real referral and recruiting-outreach signal. Event and
@@ -48,10 +45,17 @@ function TrendIcon({ delta }: { delta: number }) {
 }
 
 export default function CommunityOutreach() {
+  const { leads: marketingLeads, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
 
-  const referralLeads = useMemo(() => shimLeads.filter((l) => l.source === "Referral"), []);
-  const referralCands = useMemo(() => shimCandidates.filter((c) => c.source === "Referral"), []);
+  const referralLeads = useMemo(
+    () => marketingLeads.filter((l) => l.source === "Referral"),
+    [marketingLeads],
+  );
+  const referralCands = useMemo(
+    () => marketingCandidates.filter((c) => c.source === "Referral"),
+    [marketingCandidates],
+  );
 
   const momentum = useMemo(() => {
     const now = Date.now();
@@ -78,12 +82,12 @@ export default function CommunityOutreach() {
       const fam = referralLeads.filter((l) => l.state === state).length;
       const qual = referralLeads.filter((l) => l.state === state && QUALIFIED.has(l.status)).length;
       const recCands = referralCands.filter((c) => c.state === state).length;
-      const allCands = shimCandidates.filter((c) => c.state === state).length;
-      const allLeads = shimLeads.filter((l) => l.state === state).length;
+      const allCands = marketingCandidates.filter((c) => c.state === state).length;
+      const allLeads = marketingLeads.filter((l) => l.state === state).length;
       const visibility = fam * 2 + qual * 3 + recCands * 2 + Math.round(allCands * 0.4);
       return { state, fam, qual, recCands, allCands, allLeads, visibility };
     }).sort((a, b) => b.visibility - a.visibility);
-  }, [referralLeads, referralCands]);
+  }, [referralLeads, referralCands, marketingLeads, marketingCandidates]);
 
   const activeRow = stateRows.find((s) => s.state === activeState);
   const topState = stateRows[0];
@@ -113,10 +117,10 @@ export default function CommunityOutreach() {
       items.push({
         id: `rc-${c.id}`,
         date: c.appliedDate,
-        state: c.state,
-        title: `Staff-referred applicant in ${STATE_NAMES[c.state] ?? c.state}`,
+        state: c.state ?? "",
+        title: `Staff-referred applicant in ${STATE_NAMES[c.state ?? ""] ?? c.state ?? "Unknown"}`,
         kind: "Recruiting",
-        detail: `${c.role} · referred by community network`,
+        detail: `${c.role ?? "Applicant"} · referred by community network`,
       });
     });
     return items
@@ -523,7 +527,7 @@ export default function CommunityOutreach() {
                 : "No community-sourced applicants yet — expand recruiting outreach into local universities and BCBA programs."}
             </div>
             <div className="mt-3 text-[12px] text-muted-foreground">
-              {referralCands.length} staff referrals · {Math.round((referralCands.length / Math.max(1, shimCandidates.length)) * 100)}% of total pipeline
+              {referralCands.length} staff referrals · {Math.round((referralCands.length / Math.max(1, marketingCandidates.length)) * 100)}% of total pipeline
             </div>
           </div>
         </div>

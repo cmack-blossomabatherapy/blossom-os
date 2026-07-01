@@ -154,7 +154,7 @@ export default function Reputation() {
       trustScore,
       starAverage,
     };
-  }, []);
+  }, [marketingLeads, marketingCandidates]);
 
   /* State-by-state trust visibility. */
   const stateRows = useMemo(() => {
@@ -191,7 +191,7 @@ export default function Reputation() {
         stars,
       };
     }).sort((a, b) => b.trust - a.trust);
-  }, []);
+  }, [marketingLeads, marketingCandidates]);
 
   const activeRow = stateRows.find((s) => s.state === activeState);
   const topState = stateRows[0];
@@ -264,7 +264,7 @@ export default function Reputation() {
       .filter((i) => FOOTPRINT.includes(i.state as (typeof FOOTPRINT)[number]))
       .sort((a, b) => +new Date(b.date) - +new Date(a.date))
       .slice(0, 10);
-  }, []);
+  }, [marketingLeads, marketingCandidates]);
 
   /* Apply user sort + last-contacted window to the timeline. */
   const visibleTimeline = useMemo(() => {
@@ -320,7 +320,7 @@ export default function Reputation() {
         note: `${cantReach} families unreachable — friction risk`,
       },
     ];
-  }, []);
+  }, [marketingLeads]);
 
   /* Outreach → trust correlation — partnership tracks. */
   const outreach = useMemo(() => {

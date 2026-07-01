@@ -15,15 +15,12 @@ import {
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
-import type { Lead } from "@/data/leads";
-import type { PhoneCall } from "@/data/calls";
-import type { Candidate } from "@/data/recruiting";
-// Campaign KPIs are sourced from useMarketingIntelligence + marketing_campaigns / marketing_campaign_metrics.
-// The narrative arrays below are intentionally empty on production — the page renders honest empty
-// states until source events, call events, and candidates are linked to campaigns.
-const shimLeads: Lead[] = [];
-const shimCalls: PhoneCall[] = [];
-const shimCandidates: Candidate[] = [];
+import { useMarketingData } from "@/hooks/useMarketingData";
+// Campaign KPIs blend useMarketingIntelligence (marketing_campaigns +
+// marketing_campaign_metrics + marketing_source_events) with the live
+// intake_leads / marketing_call_events / recruiting_candidates rows exposed
+// by useMarketingData. No shim arrays, no fabricated metrics — empty tables
+// simply render empty states.
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * Campaigns — operational growth intelligence.
@@ -91,6 +88,7 @@ function TrendIcon({ delta }: { delta: number }) {
 
 export default function Campaigns() {
   const mi = useMarketingIntelligence();
+  const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
 
   /* ── derive campaigns from real source × state activity ─────────────── */
@@ -98,7 +96,7 @@ export default function Campaigns() {
     const now = Date.now();
     const buckets = new Map<string, { leads: number; qualified: number; recent: number; prior: number; source: string; state: string }>();
 
-    shimLeads.forEach((l) => {
+    marketingLeads.forEach((l) => {
       const key = `${l.source}|${l.state}`;
       const b = buckets.get(key) ?? { leads: 0, qualified: 0, recent: 0, prior: 0, source: l.source, state: l.state };
       b.leads += 1;
@@ -138,7 +136,7 @@ export default function Campaigns() {
     });
 
     return list.sort((a, b) => b.leads - a.leads);
-  }, []);
+  }, [marketingLeads]);
 
   const filteredCampaigns = activeState
     ? campaigns.filter((c) => c.state === activeState)
@@ -146,11 +144,13 @@ export default function Campaigns() {
 
   /* ── intelligence timeline (real recent activity) ───────────────────── */
   const timeline = useMemo(() => {
-    const now = Date.now();
     type Event = { ts: number; label: string; meta: string; icon: typeof Megaphone };
     const events: Event[] = [];
 
-    shimLeads.slice(0, 6).forEach((l) => {
+    [...marketingLeads]
+      .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+      .slice(0, 6)
+      .forEach((l) => {
       events.push({
         ts: new Date(l.createdAt).getTime(),
         label: `${l.source} lead in ${STATE_NAMES[l.state] ?? l.state}`,
@@ -158,18 +158,25 @@ export default function Campaigns() {
         icon: iconForType(l.source === "Referral" ? "Referral" : l.source),
       });
     });
-    shimCalls.slice(0, 4).forEach((c) => {
+    [...marketingCalls]
+      .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+      .slice(0, 4)
+      .forEach((c) => {
       if (!c.state) return;
       events.push({
-        ts: new Date(c.callTime).getTime(),
-        label: `${c.direction} call · ${STATE_NAMES[c.state] ?? c.state}`,
-        meta: c.outcome,
+        ts: new Date(c.createdAt).getTime(),
+        label: `${c.direction ?? "Call"} · ${STATE_NAMES[c.state] ?? c.state}`,
+        meta: c.status,
         icon: Phone,
       });
     });
-    shimCandidates.slice(0, 4).forEach((c) => {
+    [...marketingCandidates]
+      .sort((a, b) => +new Date(b.appliedDate) - +new Date(a.appliedDate))
+      .slice(0, 4)
+      .forEach((c) => {
+      if (!c.state) return;
       events.push({
-        ts: now - Math.random() * 86_400_000 * 3,
+        ts: new Date(c.appliedDate).getTime(),
         label: `${c.source} applicant · ${STATE_NAMES[c.state] ?? c.state}`,
         meta: c.stage,
         icon: Users,
@@ -177,7 +184,7 @@ export default function Campaigns() {
     });
 
     return events.sort((a, b) => b.ts - a.ts).slice(0, 8);
-  }, []);
+  }, [marketingLeads, marketingCalls, marketingCandidates]);
 
   /* ── strongest state for hero summary ───────────────────────────────── */
   const topState = mi.stateTrend[0];
@@ -190,7 +197,7 @@ export default function Campaigns() {
   /* ── recruiting campaigns (real candidate source × state) ───────────── */
   const recruitingCampaigns = useMemo(() => {
     const buckets = new Map<string, { source: string; state: string; count: number; staged: number }>();
-    shimCandidates.forEach((c) => {
+    marketingCandidates.forEach((c) => {
       if (!c.state) return;
       const key = `${c.source}|${c.state}`;
       const b = buckets.get(key) ?? { source: c.source, state: c.state, count: 0, staged: 0 };
@@ -199,7 +206,7 @@ export default function Campaigns() {
       buckets.set(key, b);
     });
     return Array.from(buckets.values()).sort((a, b) => b.count - a.count).slice(0, 6);
-  }, []);
+  }, [marketingCandidates]);
 
   const states = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 
@@ -225,7 +232,7 @@ export default function Campaigns() {
               { label: "Active campaigns", value: campaigns.length },
               { label: "Leads · 7d", value: mi.velocity.leadsLast7 },
               { label: "Qualified rate", value: `${mi.velocity.qualifiedRate}%` },
-              { label: "Recruiting reach", value: shimCandidates.length },
+              { label: "Recruiting reach", value: marketingCandidates.length },
             ].map((m) => (
               <div key={m.label} className="rounded-xl bg-card/60 backdrop-blur border border-border/50 p-3">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{m.label}</div>

@@ -52,6 +52,28 @@ export function normalizeLeadSource(raw: string | null | undefined): LeadSource 
 
 const UNKNOWN_STATE = "Unknown";
 
+/**
+ * marketing_call_events does not yet carry a dedicated `direction` column, so
+ * we infer inbound/outbound from the status text produced by CTM/Jivetel/
+ * Retell webhooks. Unknown → null so downstream UIs stay honest.
+ */
+function inferDirection(status: string | null | undefined): "inbound" | "outbound" | null {
+  if (!status) return null;
+  const s = status.toLowerCase();
+  if (s.includes("outbound") || s.includes("outgoing")) return "outbound";
+  if (
+    s.includes("inbound") ||
+    s.includes("incoming") ||
+    s.includes("missed") ||
+    s.includes("no_answer") ||
+    s.includes("no answer") ||
+    s.includes("voicemail") ||
+    s.includes("new")
+  )
+    return "inbound";
+  return null;
+}
+
 type IntakeLeadRow = Pick<
   Database["public"]["Tables"]["intake_leads"]["Row"],
   "id" | "referral_source" | "state" | "pipeline_stage" | "created_at" | "last_contacted_at" | "last_contact_date"
@@ -62,7 +84,7 @@ type RecruitingCandidateRow = Pick<
 >;
 type MarketingCallEventRow = Pick<
   Database["public"]["Tables"]["marketing_call_events"]["Row"],
-  "id" | "occurred_at" | "source_system" | "state" | "status"
+  "id" | "occurred_at" | "source_system" | "state" | "status" | "lead_id" | "duration_seconds"
 >;
 
 /**
@@ -101,6 +123,12 @@ export type MktCall = {
   source: LeadSource;
   state: string | null;
   status: string;
+  /** "inbound" | "outbound" | null — mirrors marketing_call_events.direction. */
+  direction: string | null;
+  /** intake_leads.id when the call was linked to an intake lead. */
+  leadId: string | null;
+  /** call length in seconds; null when unknown. */
+  durationSeconds: number | null;
 };
 
 export interface UseMarketingDataResult {
@@ -134,7 +162,7 @@ export function useMarketingData(): UseMarketingDataResult {
           .limit(2000),
         supabase
           .from("marketing_call_events")
-          .select("id, occurred_at, source_system, state, status")
+          .select("id, occurred_at, source_system, state, status, lead_id, duration_seconds")
           .limit(2000),
       ]);
 
@@ -173,6 +201,9 @@ export function useMarketingData(): UseMarketingDataResult {
           source: normalizeLeadSource(c.source_system),
           state: c.state ?? null,
           status: c.status ?? "Unknown",
+          direction: inferDirection(c.status),
+          leadId: c.lead_id ?? null,
+          durationSeconds: c.duration_seconds ?? null,
         })),
       );
     } catch (e: any) {

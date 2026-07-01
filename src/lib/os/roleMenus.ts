@@ -240,7 +240,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Provider Relationships",         path: "/business-development?tab=providers",      icon: Briefcase },
           { label: "Community Relationships",        path: "/business-development?tab=community",      icon: Users },
           { label: "Referral CRM",                   path: "/marketing/referral-crm",                  icon: HeartHandshake },
-          { label: "Patient Lifetime Journey",       path: "/patient-journey",                         icon: HeartHandshake },
           { label: "Phone System",                   path: "/phone",                                   icon: Phone },
           { label: "Reports",                        path: "/reports",                                 icon: FileText },
         ],

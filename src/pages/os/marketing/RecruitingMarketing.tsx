@@ -89,7 +89,7 @@ export default function RecruitingMarketing() {
         ? Math.round((qualified / marketingCandidates.length) * 100)
         : 0,
     };
-  }, []);
+  }, [marketingCandidates]);
 
   const sourceRows = useMemo(() => {
     const map = new Map<
@@ -108,7 +108,7 @@ export default function RecruitingMarketing() {
       map.set(c.source, e);
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, []);
+  }, [marketingCandidates]);
 
   const stateRows = useMemo(() => {
     return FOOTPRINT.map((state) => {
@@ -123,7 +123,7 @@ export default function RecruitingMarketing() {
       const pressure = Math.max(0, demand - ready);
       return { state, total: cands.length, rbt, bcba, ready, onboarding, demand, pressure };
     }).sort((a, b) => b.pressure - a.pressure);
-  }, []);
+  }, [marketingCandidates, marketingLeads]);
 
   const activeRow = stateRows.find((s) => s.state === activeState);
   const strongestState = [...stateRows].sort((a, b) => b.total - a.total)[0];
@@ -154,7 +154,7 @@ export default function RecruitingMarketing() {
       { label: "Ready for Staffing", match: (c) => READY_STAGES.has(c.stage) },
     ];
     return buckets.map((b) => ({ label: b.label, count: marketingCandidates.filter(b.match).length }));
-  }, []);
+  }, [marketingCandidates]);
   const maxFunnel = Math.max(1, ...funnel.map((f) => f.count));
 
   const roleRows = useMemo(() => {
@@ -167,7 +167,7 @@ export default function RecruitingMarketing() {
       })).sort((a, b) => b.count - a.count);
       return { role, total: cands.length, ready, byState };
     });
-  }, []);
+  }, [marketingCandidates]);
 
   const campaigns = useMemo(() => {
     const referralCount = marketingCandidates.filter((c) => c.source === "Referral").length;
@@ -223,7 +223,7 @@ export default function RecruitingMarketing() {
         hint: "Connect events calendar",
       },
     ].sort((a, b) => b.signal - a.signal);
-  }, []);
+  }, [marketingCandidates]);
 
   const insights = useMemo(() => {
     const out: string[] = [];
