@@ -2,13 +2,14 @@ import { Megaphone } from "lucide-react";
 import { GrowthPageShell, StatCard } from "@/components/os/growth/GrowthPageShell";
 import { LeadSourceActions } from "@/components/marketing/LeadSourceActions";
 import { SourceEventInbox } from "@/components/marketing/SourceEventInbox";
+import { SourceOpsPanel } from "@/components/marketing/SourceOpsPanel";
 import { useSourceStats } from "@/hooks/useSourceStats";
 
 const FB_SOURCES = ["facebook_ads", "meta_ads"];
 
 export default function FacebookAds() {
   const s = useSourceStats(FB_SOURCES);
-  const fmt = (n: number) => (n ? n.toString() : "—");
+  const fmt = (n: number) => (n ? n.toString() : "-");
   const st = (n: number): "live" | "needs_data" => (n ? "live" : "needs_data");
   return (
     <GrowthPageShell
@@ -23,6 +24,10 @@ export default function FacebookAds() {
         <StatCard label="Converted to leads" value={fmt(s.converted)} status={st(s.converted)} />
         <StatCard label="Awaiting review" value={fmt(s.newCount)} status={st(s.newCount)} />
       </div>
+      <SourceOpsPanel
+        sourceSlugs={["facebook_ads", "meta_ads", "facebook ads", "meta ads"]}
+        nextActionCopy="Import daily Meta ad campaign metrics (spend, impressions, leads) under Campaigns."
+      />
       <SourceEventInbox sourceSystems={FB_SOURCES} />
     </GrowthPageShell>
   );
