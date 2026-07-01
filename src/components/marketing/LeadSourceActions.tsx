@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Upload, ArrowRight, HeartHandshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
+import { ManualSourceEventDialog } from "@/components/marketing/ManualSourceEventDialog";
 import {
   buildLeadSourceDefaults,
   getLeadSourceOption,
@@ -49,6 +49,7 @@ export function LeadSourceActions({
   sourcePage,
 }: LeadSourceActionsProps) {
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const filteredLeadsHref = `/leads?source=${encodeURIComponent(sourceValue)}`;
   const opt = getLeadSourceOption(sourceValue);
   const resolvedIntegrationId = integrationId ?? opt?.integrationId;
@@ -76,20 +77,15 @@ export function LeadSourceActions({
           <Plus className="mr-1.5 h-4 w-4" />
           Add Lead
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() =>
-            toast.info(`${sourceLabel} importer coming soon`, {
-              description:
-                resolvedIntegrationId
-                  ? `Connector "${resolvedIntegrationId}" will accept webhook/API events here.`
-                  : "This page is wired and ready — the live connector will plug in here.",
-            })
-          }
-        >
+        <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
           <Upload className="mr-1.5 h-4 w-4" />
-          Import Leads
+          Log Event
+        </Button>
+        <Button size="sm" variant="ghost" asChild>
+          <Link to={`/marketing/lead-source-inbox?source=${encodeURIComponent(resolvedIntegrationId ?? sourceValue)}`}>
+            <ArrowRight className="mr-1.5 h-4 w-4" />
+            Open Lead Source Inbox
+          </Link>
         </Button>
         <Button size="sm" variant="ghost" asChild>
           <Link to={filteredLeadsHref}>
@@ -109,6 +105,12 @@ export function LeadSourceActions({
         open={addOpen}
         onOpenChange={setAddOpen}
         defaults={dialogDefaults}
+      />
+      <ManualSourceEventDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        sourceSystem={resolvedIntegrationId ?? sourceValue}
+        sourceLabel={sourceLabel}
       />
     </>
   );
