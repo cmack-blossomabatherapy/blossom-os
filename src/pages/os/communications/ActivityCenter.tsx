@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Activity, AlertTriangle, CheckCircle2, ClipboardList, Inbox,
   PhoneCall, ShieldCheck, Sparkles, X,
