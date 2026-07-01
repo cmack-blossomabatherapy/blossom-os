@@ -1152,6 +1152,10 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
   const [drawerFocusStage, setDrawerFocusStage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useUrlState("rs", "all");
   const [stageFilter, setStageFilter] = useUrlState("rp", "all");
+  const [rQuery, setRQuery] = useUrlState("rq", "");
+  const [rStateFilter, setRStateFilter] = useUrlState("rst", "all");
+  const [rServiceFilter, setRServiceFilter] = useUrlState("rsv", "all");
+  const [rIntakeOwnerFilter, setRIntakeOwnerFilter] = useUrlState("rio", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
   const allRows = scopedReferrals(s);
@@ -1167,10 +1171,34 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
           return false;
         }
       }
+      if (rStateFilter !== "all" && r.state !== rStateFilter) return false;
+      if (rServiceFilter !== "all" && (r.serviceType || "") !== rServiceFilter) return false;
+      if (rIntakeOwnerFilter !== "all") {
+        if (rIntakeOwnerFilter === "__unassigned__") {
+          if (r.assignedIntakeOwnerId) return false;
+        } else if (r.assignedIntakeOwnerId !== rIntakeOwnerFilter) return false;
+      }
+      if (rQuery) {
+        const ql = rQuery.toLowerCase();
+        const co = companyName(s, r.companyId).toLowerCase();
+        const con = r.contactId ? contactDisplayName(s.contacts.find((c) => c.id === r.contactId)).toLowerCase() : "";
+        if (!r.name.toLowerCase().includes(ql) && !co.includes(ql) && !con.includes(ql)) return false;
+      }
       return true;
     });
-  }, [allRows, statusFilter, stageFilter, leadById]);
-  const filtersActive = statusFilter !== "all" || stageFilter !== "all";
+  }, [allRows, statusFilter, stageFilter, leadById, rStateFilter, rServiceFilter, rIntakeOwnerFilter, rQuery, s]);
+  const filtersActive =
+    statusFilter !== "all" || stageFilter !== "all" ||
+    rStateFilter !== "all" || rServiceFilter !== "all" ||
+    rIntakeOwnerFilter !== "all" || !!rQuery;
+  const referralServices = useMemo(() => Array.from(new Set(s.referrals.map((r) => r.serviceType).filter((x): x is string => !!x))).sort(), [s.referrals]);
+  const referralFilters: FilterDef[] = [
+    { key: "rs", label: "Status", value: statusFilter, onChange: setStatusFilter, options: [{ value: "all", label: "All statuses" }, ...["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"].map((v) => ({ value: v, label: v }))], width: 160 },
+    { key: "rp", label: "Pipeline", value: stageFilter, onChange: setStageFilter, options: [{ value: "all", label: "All stages" }, { value: "__none__", label: "Not linked" }, ...FAMILY_LEAD_PIPELINE_STAGES.map((v) => ({ value: v, label: v }))], width: 200 },
+    { key: "rst", label: "State", value: rStateFilter, onChange: setRStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
+    { key: "rsv", label: "Service", value: rServiceFilter, onChange: setRServiceFilter, options: [{ value: "all", label: "All services" }, ...referralServices.map((v) => ({ value: v, label: v }))], width: 160 },
+    { key: "rio", label: "Intake owner", value: rIntakeOwnerFilter, onChange: setRIntakeOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 180 },
+  ];
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
@@ -1219,38 +1247,22 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 w-[180px] text-xs"><SelectValue placeholder="Referral status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              {["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"].map((v) => (
-                <SelectItem key={v} value={v}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={stageFilter} onValueChange={setStageFilter}>
-            <SelectTrigger className="h-9 w-[220px] text-xs"><SelectValue placeholder="Patient pipeline stage" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All pipeline stages</SelectItem>
-              <SelectItem value="__none__">Not linked</SelectItem>
-              {FAMILY_LEAD_PIPELINE_STAGES.map((v) => (
-                <SelectItem key={v} value={v}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {filtersActive && (
-            <Button variant="ghost" size="sm" className="h-9 text-xs" onClick={() => { setStatusFilter("all"); setStageFilter("all"); }}>
-              Clear filters
-            </Button>
-          )}
-          <span className="text-xs text-muted-foreground">{rows.length} of {allRows.length}</span>
-        </div>
-        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
-          <Plus className="size-3.5" /> New Referral
-        </Button>
-      </div>
+      <TableFilterBar
+        search={{ value: rQuery, onChange: setRQuery, placeholder: "Search patient, company, contact..." }}
+        filters={referralFilters}
+        resultCount={rows.length}
+        totalCount={allRows.length}
+        onClear={() => {
+          setStatusFilter("all"); setStageFilter("all");
+          setRStateFilter("all"); setRServiceFilter("all");
+          setRIntakeOwnerFilter("all"); setRQuery("");
+        }}
+        extra={
+          <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
+            <Plus className="size-3.5" /> New Referral
+          </Button>
+        }
+      />
 
       {selected.size > 0 && (
         <div className="rounded-xl bg-foreground text-background px-3 py-2 flex flex-wrap items-center gap-2 text-sm">
