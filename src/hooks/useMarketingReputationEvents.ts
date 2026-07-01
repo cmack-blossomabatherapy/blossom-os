@@ -17,8 +17,30 @@ export interface MarketingReputationEvent {
   updated_at: string;
 }
 
-export function useMarketingReputationEvents(opts: { limit?: number } = {}) {
-  const { limit = 200 } = opts;
+export interface UseMarketingReputationEventsOptions {
+  limit?: number;
+  sourceSystem?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  state?: string;
+  rating?: number;
+  sentiment?: string;
+  responseStatus?: string;
+  realtime?: boolean;
+}
+
+export function useMarketingReputationEvents(opts: UseMarketingReputationEventsOptions = {}) {
+  const {
+    limit = 200,
+    sourceSystem,
+    dateFrom,
+    dateTo,
+    state,
+    rating,
+    sentiment,
+    responseStatus,
+    realtime = false,
+  } = opts;
   const [rows, setRows] = useState<MarketingReputationEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,19 +48,37 @@ export function useMarketingReputationEvents(opts: { limit?: number } = {}) {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data, error: err } = await supabase
+    let q = supabase
       .from("marketing_reputation_events" as never)
       .select("*")
       .order("occurred_at", { ascending: false })
       .limit(limit);
+    if (sourceSystem) q = q.eq("source_system", sourceSystem);
+    if (state) q = q.eq("state", state);
+    if (rating != null) q = q.eq("rating", rating);
+    if (sentiment) q = q.eq("sentiment", sentiment);
+    if (responseStatus) q = q.eq("response_status", responseStatus);
+    if (dateFrom) q = q.gte("occurred_at", dateFrom);
+    if (dateTo) q = q.lte("occurred_at", dateTo);
+    const { data, error: err } = await q;
     if (err) setError(err.message);
     setRows(((data as unknown) as MarketingReputationEvent[]) ?? []);
     setLoading(false);
-  }, [limit]);
+  }, [limit, sourceSystem, dateFrom, dateTo, state, rating, sentiment, responseStatus]);
 
   useEffect(() => {
     void load();
-  }, [load]);
+    if (!realtime) return;
+    const ch = supabase
+      .channel(`mre-${sourceSystem ?? "all"}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "marketing_reputation_events" }, () => {
+        void load();
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [load, realtime, sourceSystem]);
 
-  return { rows, loading, error, refetch: load };
+  return { rows, loading, error, refetch: load, refresh: load };
 }

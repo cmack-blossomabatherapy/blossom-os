@@ -20,8 +20,30 @@ export interface MarketingWebMetric {
   updated_at: string;
 }
 
-export function useMarketingWebMetrics(opts: { limit?: number; sourceSystem?: string } = {}) {
-  const { limit = 500, sourceSystem } = opts;
+export interface UseMarketingWebMetricsOptions {
+  limit?: number;
+  sourceSystem?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  state?: string;
+  campaignId?: string;
+  pagePath?: string;
+  query?: string;
+  realtime?: boolean;
+}
+
+export function useMarketingWebMetrics(opts: UseMarketingWebMetricsOptions = {}) {
+  const {
+    limit = 500,
+    sourceSystem,
+    dateFrom,
+    dateTo,
+    state,
+    campaignId,
+    pagePath,
+    query,
+    realtime = false,
+  } = opts;
   const [rows, setRows] = useState<MarketingWebMetric[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,15 +57,31 @@ export function useMarketingWebMetrics(opts: { limit?: number; sourceSystem?: st
       .order("metric_date", { ascending: false })
       .limit(limit);
     if (sourceSystem) q = q.eq("source_system", sourceSystem);
+    if (state) q = q.eq("state", state);
+    if (campaignId) q = q.eq("campaign_id", campaignId);
+    if (pagePath) q = q.eq("page_path", pagePath);
+    if (query) q = q.eq("query", query);
+    if (dateFrom) q = q.gte("metric_date", dateFrom);
+    if (dateTo) q = q.lte("metric_date", dateTo);
     const { data, error: err } = await q;
     if (err) setError(err.message);
     setRows(((data as unknown) as MarketingWebMetric[]) ?? []);
     setLoading(false);
-  }, [limit, sourceSystem]);
+  }, [limit, sourceSystem, dateFrom, dateTo, state, campaignId, pagePath, query]);
 
   useEffect(() => {
     void load();
-  }, [load]);
+    if (!realtime) return;
+    const ch = supabase
+      .channel(`mwm-${sourceSystem ?? "all"}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "marketing_web_metrics" }, () => {
+        void load();
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [load, realtime, sourceSystem]);
 
-  return { rows, loading, error, refetch: load };
+  return { rows, loading, error, refetch: load, refresh: load };
 }
