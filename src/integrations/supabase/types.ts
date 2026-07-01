@@ -16065,6 +16065,7 @@ export type Database = {
         | "credentialing_team"
         | "credentialing"
         | "credentialing_coordinator"
+        | "business_development"
       assessment_document_type: "Assessment Notes" | "Treatment Plan"
       assessment_location: "Home" | "School" | "Clinic"
       assessment_status:
@@ -16786,6 +16787,7 @@ export const Constants = {
         "credentialing_team",
         "credentialing",
         "credentialing_coordinator",
+        "business_development",
       ],
       assessment_document_type: ["Assessment Notes", "Treatment Plan"],
       assessment_location: ["Home", "School", "Clinic"],
