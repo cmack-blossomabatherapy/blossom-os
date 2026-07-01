@@ -151,7 +151,7 @@ describe("Marketing Pass 103 — no mojibake in touched files", () => {
   ];
   it.each(files)("%s has no mojibake sequences", (p) => {
     const src = read(p);
-    for (const bad of ["â€", "Â\u0080", "â\u0080\u0093", "â\u0080\u0094"]) {
+    for (const bad of ["€", "\u0080", "\u0080\u0093", "\u0080\u0094"]) {
       expect(src, `${p} contains mojibake`).not.toContain(bad);
     }
   });
