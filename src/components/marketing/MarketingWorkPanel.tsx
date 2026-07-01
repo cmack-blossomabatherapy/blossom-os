@@ -167,7 +167,7 @@ function WorkRow({
   onArchive: () => Promise<void> | void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const { employees } = useEmployeeDirectory();
+  const { members } = useEmployeeDirectory();
   return (
     <li className="py-2.5">
       <div className="flex items-center gap-2 flex-wrap">
@@ -247,8 +247,8 @@ function WorkRow({
               <SelectTrigger className="h-8"><SelectValue placeholder="Unassigned" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__unassigned__">Unassigned</SelectItem>
-                {employees.slice(0, 100).map((e) => (
-                  <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                {members.slice(0, 200).map((e) => (
+                  <SelectItem key={e.uuid ?? e.id} value={e.uuid ?? e.id}>{e.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
