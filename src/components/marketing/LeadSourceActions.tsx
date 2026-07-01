@@ -34,10 +34,12 @@ interface LeadSourceActionsProps {
 
 /**
  * Standard action bar surfaced on every marketing/lead-source page.
- * - Add Lead → opens the canonical NewLeadDialog with this source pre-filled.
- * - Import Leads → stub; structural placeholder for the real importer.
- * - View Leads From This Source → /leads?source=<value>
- * - Open Patient Journey → /patient-journey
+ * - Add Lead -> opens the canonical NewLeadDialog with this source pre-filled.
+ * - Log Event -> opens ManualSourceEventDialog and inserts a real row into marketing_source_events.
+ * - Bulk Import Events -> opens BulkSourceEventImportDialog for CSV import into marketing_source_events.
+ * - Open Lead Source Inbox -> /marketing/lead-source-inbox?source=<integration|value>.
+ * - View Leads From This Source -> /leads?source=<value>
+ * - Open Patient Journey -> /patient-journey
  */
 export function LeadSourceActions({
   sourceLabel,
