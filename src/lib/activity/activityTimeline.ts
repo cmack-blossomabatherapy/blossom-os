@@ -13,8 +13,8 @@
  *   - Work Queue (live in-memory store, DB-backed pass pending)
  *
  * `activityFromSourceEvent` remains a pure type helper for callers that
- * already have a normalized LeadSourceEvent shape. No production feed
- * uses in-memory `leadSourceEventsStore` or seeded mock events.
+ * already have a normalized LeadSourceEvent shape. No production feed uses
+ * any in-memory source-event store or seeded mock activity.
  */
 import { useEffect, useState } from "react";
 import {
