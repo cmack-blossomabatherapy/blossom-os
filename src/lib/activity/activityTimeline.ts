@@ -227,11 +227,14 @@ export function activityFromSourceEvent(event: LeadSourceEvent): ActivityEvent {
     occurredAt: event.resolvedAt ?? event.receivedAt,
     sourceSystem: event.sourceLabel,
     sourceUrl: event.externalUrl,
+    campaign: event.campaign ?? event.utmCampaign,
     status: event.status === "ignored" ? "ignored" : undefined,
     metadata: {
       sourceEventType: event.sourceEventType,
       externalId: event.externalId,
       callRecordingUrl: event.callRecordingUrl,
+      campaignId: event.campaignId,
+      sourceRowId: event.sourceRowId,
     },
   });
 }
