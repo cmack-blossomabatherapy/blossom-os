@@ -1,34 +1,36 @@
 ## Problem
 
-On any `/marketing/...` sub-route (Referral CRM, Lead Sources, Campaigns, Call Tracking, etc.), the "Marketing Dashboard" item in the sidebar stays highlighted alongside the actual sub-page.
-
-Root cause in `src/components/layout/AppSidebar.tsx` (`isItemActive`, line 505):
-
-```ts
-return location.pathname === bare || location.pathname.startsWith(`${bare}/`);
-```
-
-Because the Marketing Dashboard's path is `/marketing`, every `/marketing/<child>` route passes the `startsWith` check, so the dashboard row is marked active on every marketing sub-page. The same pattern also affects other "hub" entries whose path is a prefix of sibling items (e.g. `/intake`, `/os`, etc.).
+`TRAINING_AND_RESOURCES` (and `STATE_TRAINING_AND_RESOURCES`) already appends a **Reports → `/reports`** entry to every non–super-admin menu in `src/lib/os/roleMenus.ts`. Several role sections also declare their own generic "Reports → `/reports`" item, so those roles see Reports twice (e.g. Marketing Team lists it under *Growth & Marketing* and again under *Training & Resources*).
 
 ## Fix
 
-Update `isItemActive` so a prefix match only wins when no more-specific sibling item also matches. Concretely:
+In `src/lib/os/roleMenus.ts`, remove every item whose **label is exactly "Reports"** and whose **path is exactly `/reports`** from role-specific sections. Keep the two entries inside `TRAINING_AND_RESOURCES` / `STATE_TRAINING_AND_RESOURCES` as the single canonical location.
 
-1. Collect the full list of item paths from all sections (`sections` + `mobileSections`) once per render into a memoized `allItemPaths: string[]`.
-2. In `isItemActive(path)`:
-   - Keep the query-string branch unchanged.
-   - Exact match (`location.pathname === bare`) → active.
-   - Prefix match (`location.pathname.startsWith(bare + "/")`) → active **only if** no other registered item path is a longer prefix of `location.pathname`. This way `/marketing/referral-crm` deactivates `/marketing`, but `/marketing/campaigns/123` (a detail route with no dedicated menu item) still highlights `Campaigns`.
+Rows to remove (all currently `{ label: "Reports", path: "/reports", ... }`):
 
-This is a localized change to one helper and its memoized inputs — no route, no menu-config, and no styling changes.
+- Line 124 — Executive Leadership → Executive Command
+- Line 196 — Marketing Team → Growth & Marketing
+- Line 223 — Marketing Growth Lead → Growth Command
+- Line 244 — Business Development → Business Development
+- Line 382 — (role section, `Reports` → `/reports`)
+- Line 401 — (role section, `Reports` → `/reports`)
+- Line 459, 476, 595, 660 — same pattern in remaining role sections
+
+### Explicitly **kept** (not duplicates — role-specific labels)
+
+- "Authorization Reports" (line 362)
+- "HR Reports" (lines 420, 440)
+- "Clinical Reports" (line 572)
+- "Progress Reports" → `/progress-reports` (different route entirely)
+
+These aren't the same as the generic Reports entry the user is asking to consolidate; removing them would silently strip role-specific report labels. I'll leave them and can remove them in a follow-up if the user wants full consolidation.
 
 ## Files touched
 
-- `src/components/layout/AppSidebar.tsx` — add `allItemPaths` memo, update `isItemActive` logic. No other files.
+- `src/lib/os/roleMenus.ts` — delete the duplicate `Reports → /reports` lines listed above. No other files.
 
 ## Verification
 
-- Navigate to `/marketing/referral-crm`, `/marketing/lead-sources`, `/marketing/campaigns`, `/marketing/call-tracking`: only that specific row is highlighted; "Marketing Dashboard" is not.
-- Navigate to `/marketing`: "Marketing Dashboard" is highlighted.
-- Spot-check the Intake section (which also has an `/intake` overview + `/intake/...` children) behaves the same way.
-- A deep detail route like `/marketing/campaigns/<id>` (no dedicated menu item) still highlights the closest parent (`Campaigns`).
+- Sign in as Marketing Team: "Reports" appears only once, under *Training & Resources*.
+- Spot-check Executive Leadership, Marketing Growth Lead, Business Development, and the other affected roles: exactly one "Reports" entry in the sidebar, under *Training & Resources*.
+- Role-specific report labels ("Authorization Reports", "HR Reports", "Clinical Reports", "Progress Reports") still appear where they did before.
