@@ -213,6 +213,10 @@ export function mapRowToEvent(row: MarketingSourceEventRow): LeadSourceEvent {
     resolvedLeadId: row.lead_id ?? undefined,
     matchedLeadId: row.lead_id ?? undefined,
     resolvedAt: row.reviewed_at ?? undefined,
+    sourceRowId: row.source_id ?? undefined,
+    campaignId: row.campaign_id ?? undefined,
+    assignedTo: row.assigned_to ?? undefined,
+    assignedAt: row.assigned_at ?? undefined,
   };
 }
 
