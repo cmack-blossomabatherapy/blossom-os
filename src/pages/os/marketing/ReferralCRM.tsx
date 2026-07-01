@@ -107,6 +107,27 @@ function daysSince(d?: string) {
   return Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000);
 }
 
+// Colored tone for a Referral.referralStatus badge.
+function referralStatusTone(status?: string): string {
+  switch (status) {
+    case "New": return "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300";
+    case "In Review": return "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-300";
+    case "Intake Form Sent": return "bg-violet-500/10 text-violet-700 border-violet-500/20 dark:text-violet-300";
+    case "Scheduled": return "bg-teal-500/10 text-teal-700 border-teal-500/20 dark:text-teal-300";
+    case "Active": return "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-300";
+    case "Closed": return "bg-muted text-muted-foreground border-border";
+    case "Lost": return "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:text-rose-300";
+    default: return "bg-muted text-muted-foreground border-border";
+  }
+}
+
+function patientDisplayName(r: { patientFirstName?: string; patientLastInitial?: string; name?: string }): string {
+  if (r.patientFirstName || r.patientLastInitial) {
+    return `${r.patientFirstName ?? ""} ${r.patientLastInitial ? r.patientLastInitial + "." : ""}`.trim();
+  }
+  return r.name ?? "Unnamed patient";
+}
+
 // ===========================================================
 // Dashboard
 // ===========================================================
