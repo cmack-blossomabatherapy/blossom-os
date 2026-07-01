@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Inbox, Plus, Phone, Mail, MessageSquare, Search, Filter, AlertTriangle,
   CheckCircle2, ExternalLink, Link2, FileText, Copy, ShieldCheck, Radio,
@@ -28,11 +28,8 @@ import {
   getEventSourceBadge,
   shouldRequireReview,
 } from "@/lib/leads/leadSourceEvents";
-import {
-  addLeadSourceEvent,
-  subscribeLeadSourceEvents,
-  updateLeadSourceEventStatus,
-} from "@/lib/leads/leadSourceEventsStore";
+import { useMarketingSourceEvents } from "@/hooks/useMarketingSourceEvents";
+import { sourceSystemToSourceValue } from "@/lib/marketing/sourceEventMapper";
 import { BLOSSOM_INTEGRATIONS } from "@/lib/os/integrations/integrationRegistry";
 
 const STATUS_LABEL: Record<LeadSourceEventStatus, string> = {
