@@ -4,6 +4,7 @@ import { Plus, Upload, ArrowRight, HeartHandshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { ManualSourceEventDialog } from "@/components/marketing/ManualSourceEventDialog";
+import { BulkSourceEventImportDialog } from "@/components/marketing/BulkSourceEventImportDialog";
 import {
   buildLeadSourceDefaults,
   getLeadSourceOption,
@@ -50,6 +51,7 @@ export function LeadSourceActions({
 }: LeadSourceActionsProps) {
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const filteredLeadsHref = `/leads?source=${encodeURIComponent(sourceValue)}`;
   const opt = getLeadSourceOption(sourceValue);
   const resolvedIntegrationId = integrationId ?? opt?.integrationId;
@@ -81,6 +83,10 @@ export function LeadSourceActions({
           <Upload className="mr-1.5 h-4 w-4" />
           Log Event
         </Button>
+        <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}>
+          <Upload className="mr-1.5 h-4 w-4" />
+          Bulk Import Events
+        </Button>
         <Button size="sm" variant="ghost" asChild>
           <Link to={`/marketing/lead-source-inbox?source=${encodeURIComponent(resolvedIntegrationId ?? sourceValue)}`}>
             <ArrowRight className="mr-1.5 h-4 w-4" />
@@ -111,6 +117,11 @@ export function LeadSourceActions({
         onOpenChange={setImportOpen}
         sourceSystem={resolvedIntegrationId ?? sourceValue}
         sourceLabel={sourceLabel}
+      />
+      <BulkSourceEventImportDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        defaultSourceSystem={resolvedIntegrationId ?? sourceValue}
       />
     </>
   );
