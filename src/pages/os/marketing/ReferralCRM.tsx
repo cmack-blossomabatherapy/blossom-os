@@ -41,6 +41,7 @@ import { parseReferralsCsv, type ParsedCsv } from "@/lib/os/referrals/csv";
 import { importReferralRows, failedRowsToCsv } from "@/lib/os/referrals/importer";
 import { REFERRAL_PARTNER_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
@@ -4607,6 +4608,7 @@ function PatientPipelineModule({
 export default function ReferralCRM() {
   const s = useCrm();
   const me = currentUser(s);
+  const { isAdmin, loading: authLoading } = useAuth();
   const [module, setModule] = useState<ModuleId>("dashboard");
   const [contactId, setContactId] = useState<ID | null>(null);
   const [companyId, setCompanyId] = useState<ID | null>(null);
@@ -4675,25 +4677,27 @@ export default function ReferralCRM() {
           <span className="font-medium">Heads up:</span> the following backend tables are unavailable or blocked by access rules - {backendMissing.join(", ")}. Contacts, companies, and imports loaded normally, but those modules will show empty until access is restored.
         </div>
       )}
-      {/* Impersonation switcher - lets admins preview the CRM as any role */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs">
-        <span className="text-muted-foreground">Acting as:</span>
-        <Select value={s.currentUserId} onValueChange={(v) => crm.setCurrentUser(v)}>
-          <SelectTrigger className="h-7 w-[260px] text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {s.users.map((u) => (
-              <SelectItem key={u.id} value={u.id}>
-                {u.name} - {u.role.replace(/_/g, " ")}{u.states?.length ? ` - ${u.states.join(",")}` : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {me && (
-          <Badge variant="outline" className="ml-auto">
-            {me.role.replace(/_/g, " ")}{me.states?.length ? ` - ${me.states.join(", ")}` : " - all states"}
-          </Badge>
-        )}
-      </div>
+      {/* Impersonation switcher — Super Admin only. */}
+      {!authLoading && isAdmin && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs">
+          <span className="text-muted-foreground">Acting as:</span>
+          <Select value={s.currentUserId} onValueChange={(v) => crm.setCurrentUser(v)}>
+            <SelectTrigger className="h-7 w-[260px] text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {s.users.map((u) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.name} - {u.role.replace(/_/g, " ")}{u.states?.length ? ` - ${u.states.join(",")}` : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {me && (
+            <Badge variant="outline" className="ml-auto">
+              {me.role.replace(/_/g, " ")}{me.states?.length ? ` - ${me.states.join(", ")}` : " - all states"}
+            </Badge>
+          )}
+        </div>
+      )}
 
       {/* mobile / tablet: horizontal scroll tab bar */}
       <div className="lg:hidden -mx-1 mb-4 overflow-x-auto">
