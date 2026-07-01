@@ -377,6 +377,8 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     : "all") as (typeof CONTACT_VIEWS)[number]["id"];
   const [q, setQ] = useUrlState("cq", "");
   const [stateFilter, setStateFilter] = useUrlState("cs", "all");
+  const [ownerFilter, setOwnerFilter] = useUrlState("co", "all");
+  const [partnerFilter, setPartnerFilter] = useUrlState("cp", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
@@ -390,6 +392,11 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     if (view === "ll-needed") r = r.filter((c) =>
       c.lunchLearnStatus === "Not Scheduled" && (c.relationshipStrength === "Warm" || c.relationshipStrength === "Strong"));
     if (stateFilter !== "all") r = r.filter((c) => c.state === stateFilter);
+    if (ownerFilter !== "all") {
+      if (ownerFilter === "__unassigned__") r = r.filter((c) => !c.ownerId);
+      else r = r.filter((c) => c.ownerId === ownerFilter);
+    }
+    if (partnerFilter !== "all") r = r.filter((c) => (c.referralPartnerStatus || "") === partnerFilter);
     if (q) {
       const ql = q.toLowerCase();
       r = r.filter((c) => contactDisplayName(c).toLowerCase().includes(ql) || c.email?.toLowerCase().includes(ql) || c.jobTitle?.toLowerCase().includes(ql));
@@ -414,7 +421,14 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
       return 0;
     });
     return sorted;
-  }, [s, view, q, stateFilter, sort]);
+  }, [s, view, q, stateFilter, ownerFilter, partnerFilter, sort]);
+
+  const totalContacts = scopedContacts(s).length;
+  const contactFilters: FilterDef[] = [
+    { key: "cs", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
+    { key: "co", label: "Owner", value: ownerFilter, onChange: setOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
+    { key: "cp", label: "Partner", value: partnerFilter, onChange: setPartnerFilter, options: [{ value: "all", label: "All statuses" }, ...["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => ({ value: v, label: v }))], width: 170 },
+  ];
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => {
@@ -455,23 +469,18 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts..." className="pl-8 h-9 text-sm" />
-        </div>
-        <Select value={stateFilter} onValueChange={setStateFilter}>
-          <SelectTrigger className="w-[110px] h-9 text-sm"><SelectValue placeholder="State" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All states</SelectItem>
-            {STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
-          <Plus className="size-3.5" /> New Contact
-        </Button>
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search contacts..." }}
+        filters={contactFilters}
+        resultCount={rows.length}
+        totalCount={totalContacts}
+        onClear={() => { setQ(""); setStateFilter("all"); setOwnerFilter("all"); setPartnerFilter("all"); }}
+        extra={
+          <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
+            <Plus className="size-3.5" /> New Contact
+          </Button>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-1.5">
         {CONTACT_VIEWS.map((v) => (
