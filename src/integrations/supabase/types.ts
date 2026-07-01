@@ -12708,9 +12708,9 @@ export type Database = {
           mobile_phone: string | null
           next_follow_up_at: string | null
           notes: string | null
-          number_of_referrals_sent: number
-          number_of_sales_activities: number
-          number_of_times_contacted: number
+          number_of_referrals_sent: number | null
+          number_of_sales_activities: number | null
+          number_of_times_contacted: number | null
           original_record_id: string | null
           phone: string | null
           preferred_contact_method: string | null
@@ -12747,9 +12747,9 @@ export type Database = {
           mobile_phone?: string | null
           next_follow_up_at?: string | null
           notes?: string | null
-          number_of_referrals_sent?: number
-          number_of_sales_activities?: number
-          number_of_times_contacted?: number
+          number_of_referrals_sent?: number | null
+          number_of_sales_activities?: number | null
+          number_of_times_contacted?: number | null
           original_record_id?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
@@ -12786,9 +12786,9 @@ export type Database = {
           mobile_phone?: string | null
           next_follow_up_at?: string | null
           notes?: string | null
-          number_of_referrals_sent?: number
-          number_of_sales_activities?: number
-          number_of_times_contacted?: number
+          number_of_referrals_sent?: number | null
+          number_of_sales_activities?: number | null
+          number_of_times_contacted?: number | null
           original_record_id?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
