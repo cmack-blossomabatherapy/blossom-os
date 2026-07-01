@@ -84,20 +84,20 @@ export function EditSourceEventDialog({ open, onOpenChange, event, updateFields 
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-1">
             <Label className="text-xs">Source</Label>
-            <Select value={sourceId} onValueChange={setSourceId}>
+            <Select value={sourceId || "__none__"} onValueChange={(v) => setSourceId(v === "__none__" ? "" : v)}>
               <SelectTrigger className="h-9"><SelectValue placeholder="(unassigned)" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">(unassigned)</SelectItem>
+                <SelectItem value="__none__">(unassigned)</SelectItem>
                 {sources.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
           <div className="col-span-1">
             <Label className="text-xs">Campaign</Label>
-            <Select value={campaignId} onValueChange={setCampaignId}>
+            <Select value={campaignId || "__none__"} onValueChange={(v) => setCampaignId(v === "__none__" ? "" : v)}>
               <SelectTrigger className="h-9"><SelectValue placeholder="(no campaign)" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">(no campaign)</SelectItem>
+                <SelectItem value="__none__">(no campaign)</SelectItem>
                 {campaigns.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
               </SelectContent>
             </Select>
