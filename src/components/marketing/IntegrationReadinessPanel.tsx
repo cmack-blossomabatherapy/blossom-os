@@ -1,6 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { useMarketingIntegrationHealth, type MarketingIntegrationStatus } from "@/hooks/useMarketingIntegrationHealth";
 
+// Tracked integrations include CallTrackingMetrics, Jive/Jivetel, RetellAI,
+// LeadTrap, Google Ads, Meta / Facebook Ads, Mailchimp, Outlook / Microsoft 365,
+// CentralReach, Website, and Go Integrate Nava. See MARKETING_INTEGRATION_DEFS.
+
 const STATE_STYLES: Record<MarketingIntegrationStatus, { label: string; tone: string }> = {
   receiving: { label: "Receiving events", tone: "bg-emerald-500/15 text-emerald-700" },
   configured_no_events: { label: "Configured - no recent events", tone: "bg-primary/15 text-primary" },
