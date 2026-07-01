@@ -636,7 +636,12 @@ export default function RecruitingMarketing() {
           </div>
         </div>
       </section>
-          <MarketingWorkPanel workType="recruiting_marketing" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
+          <MarketingWorkPanel
+            workType="recruiting_marketing"
+            title="Open work"
+            description="Track follow-ups, opportunities, and fixes for this area."
+            seedFactory={() => ({ title: "Recruiting marketing follow-up", priority: "medium" })}
+          />
     </MktgPage>
   );
 }
