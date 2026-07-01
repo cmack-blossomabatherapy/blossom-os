@@ -379,10 +379,11 @@ export default function LeadSourceInbox() {
       );
       if (!ok) return;
     }
+    let lead: Awaited<ReturnType<typeof createLead>> | null = null;
     try {
       const defaults = eventToLeadDefaults(s.event);
       const tags = (defaults.tags || "").split(",").map((t) => t.trim()).filter(Boolean);
-      const lead = await createLead({
+      lead = await createLead({
         patientFirstName: defaults.patientFirstName,
         patientLastName:  defaults.patientLastName,
         childName:        defaults.childName,
@@ -406,12 +407,30 @@ export default function LeadSourceInbox() {
         priority:         "Warm",
         sourceMetadata:   defaults.sourceMetadata,
       });
-      await linkLead(s.event.id, lead.id, "converted_to_lead");
-      toast.success(`Lead created from ${s.event.sourceLabel}`, {
-        description: lead.childName,
-      });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not create lead");
+      // eslint-disable-next-line no-console
+      console.error("[LeadSourceInbox] createLead failed", e);
+      toast.error("Could not create lead", {
+        description: "Please check the source event and try again.",
+      });
+      return;
+    }
+
+    // Lead is created — success is committed regardless of what happens next.
+    toast.success(`Lead created from ${s.event.sourceLabel}`, {
+      description: lead.childName,
+    });
+
+    // Best-effort: link the source event to the new lead. A link failure
+    // must never undo or hide the created lead.
+    try {
+      await linkLead(s.event.id, lead.id, "converted_to_lead");
+    } catch (linkErr) {
+      // eslint-disable-next-line no-console
+      console.warn("[LeadSourceInbox] linkLead failed", linkErr);
+      toast.warning(
+        "Lead created. Source event could not be linked and can be reviewed later.",
+      );
     }
   };
 
