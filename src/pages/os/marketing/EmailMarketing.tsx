@@ -48,12 +48,16 @@ export default function EmailMarketing() {
         supabase
           .from("marketing_campaigns")
           .select("id, name, status, channel")
-          .ilike("channel", "%email%")
-          .limit(50),
+          .limit(200),
       ]);
       if (cancelled) return;
       setEvents((eRes.data ?? []) as EmailEvent[]);
-      setCampaigns((cRes.data ?? []) as Campaign[]);
+      const allCampaigns = (cRes.data ?? []) as Campaign[];
+      const emailish = allCampaigns.filter((c) => {
+        const ch = (c.channel ?? "").toLowerCase();
+        return ch.includes("email") || ch.includes("mailchimp");
+      });
+      setCampaigns(emailish);
     })();
     return () => { cancelled = true; };
   }, [reloadTick]);
