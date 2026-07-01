@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
@@ -44,7 +45,8 @@ import { supabase } from "@/integrations/supabase/client";
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
   | "workflows" | "reports" | "imports" | "exports" | "duplicates"
-  | "settings" | "users" | "deleted" | "files" | "audit" | "activities" | "search";
+  | "settings" | "users" | "deleted" | "files" | "audit" | "activities" | "search"
+  | "patient-pipeline";
 
 const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -52,6 +54,7 @@ const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] =
   { id: "contacts", label: "Contacts", icon: Users },
   { id: "companies", label: "Companies", icon: Building2 },
   { id: "referrals", label: "Referrals", icon: HeartHandshake },
+  { id: "patient-pipeline", label: "Patient Pipeline", icon: Activity },
   { id: "tasks", label: "Tasks", icon: ListChecks },
   { id: "activities", label: "Activities", icon: Activity },
   { id: "lists", label: "Lists", icon: ListFilter },
