@@ -428,6 +428,7 @@ export interface ActivityFilters {
   eventType?: ActivityEventType | "all";
   severity?: ActivitySeverity | "all";
   sourceSystem?: string | "all";
+  campaign?: string | "all";
   relatedLeadId?: string;
   relatedUserId?: string;
 }
@@ -448,6 +449,12 @@ export function filterActivityEvents(
       filters.sourceSystem &&
       filters.sourceSystem !== "all" &&
       (e.sourceSystem ?? "") !== filters.sourceSystem
+    )
+      return false;
+    if (
+      filters.campaign &&
+      filters.campaign !== "all" &&
+      (e.campaign ?? "") !== filters.campaign
     )
       return false;
     if (filters.relatedLeadId && e.relatedLeadId !== filters.relatedLeadId) return false;
