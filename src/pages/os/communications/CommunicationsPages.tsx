@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   Phone, PhoneCall, Users as UsersIcon, ClipboardList, Activity, HeartHandshake,
@@ -12,8 +12,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
 import {
-  buildActivityFeed,
-  subscribeActivityFeed,
+  useActivityFeed,
   type ActivityEvent,
 } from "@/lib/activity/activityTimeline";
 
@@ -214,8 +213,7 @@ const USER_EVENT_TYPES = new Set([
 ]);
 
 export function UserActivityLogPage() {
-  const [events, setEvents] = useState<ActivityEvent[]>(() => buildActivityFeed());
-  useEffect(() => subscribeActivityFeed(setEvents), []);
+  const { events } = useActivityFeed({ limit: 500 });
   const userEvents = useMemo(
     () =>
       events.filter(
@@ -251,8 +249,7 @@ export function UserActivityLogPage() {
 const PATIENT_OBJECT_TYPES = new Set(["lead", "patient", "source_event", "call", "email", "task"]);
 
 export function PatientActivityLogPage() {
-  const [events, setEvents] = useState<ActivityEvent[]>(() => buildActivityFeed());
-  useEffect(() => subscribeActivityFeed(setEvents), []);
+  const { events } = useActivityFeed({ limit: 500 });
   const patientEvents = useMemo(
     () => events.filter((e) => PATIENT_OBJECT_TYPES.has(e.objectType) || Boolean(e.relatedLeadId)),
     [events],

@@ -67,6 +67,43 @@ export function sourceSystemToSourceValue(slug: string | null | undefined): stri
   return SLUG_TO_SOURCE_VALUE[k] ?? slug;
 }
 
+/**
+ * Legacy + current source-system slug aliases. Every entry maps a canonical
+ * slug to the full set of variants that historically or currently appear in
+ * `marketing_source_events.source_system`. Used by hooks/components that
+ * filter by source so both `google_ads`/`google-ads`, `meta_ads`/`meta-ads`,
+ * `retell`/`retellai`, etc. always match.
+ */
+const SLUG_ALIAS_GROUPS: string[][] = [
+  ["google_ads", "google-ads", "google"],
+  ["facebook_ads", "facebook", "meta_ads", "meta-ads", "facebook-ads"],
+  ["retell", "retellai", "retell_ai", "retell-ai"],
+  ["ctm", "calltrackingmetrics"],
+  ["jivetel", "jive", "jivetel_ai"],
+  ["mailchimp", "mailchimp_email"],
+  ["leadtrap"],
+  ["manual", "manual_import"],
+];
+
+const ALIAS_INDEX: Record<string, string[]> = (() => {
+  const idx: Record<string, string[]> = {};
+  for (const group of SLUG_ALIAS_GROUPS) {
+    for (const s of group) idx[s.toLowerCase()] = group;
+  }
+  return idx;
+})();
+
+export function expandSourceSlugAliases(slugs: string[]): string[] {
+  const out = new Set<string>();
+  for (const raw of slugs) {
+    const s = (raw ?? "").toLowerCase();
+    if (!s) continue;
+    const group = ALIAS_INDEX[s] ?? [s];
+    for (const v of group) out.add(v);
+  }
+  return Array.from(out);
+}
+
 /** Canonical LEAD_SOURCE_OPTIONS value → slug we write into `source_system`. */
 export function sourceValueToSourceSystem(value: string | null | undefined): string {
   if (!value) return "manual";

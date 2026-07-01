@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { expandSourceSlugAliases } from "@/lib/marketing/sourceEventMapper";
 
 export interface SourceStats {
   last7: number;
@@ -26,10 +27,11 @@ export function useSourceStats(sourceSystems: string[]): SourceStats {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const expanded = expandSourceSlugAliases(sourceSystems);
       const { data } = await supabase
         .from("marketing_source_events")
         .select("id, occurred_at, status, lead_id")
-        .in("source_system", sourceSystems)
+        .in("source_system", expanded)
         .limit(5000);
       if (cancelled) return;
       const rows = (data ?? []) as Array<{ occurred_at: string; status: string; lead_id: string | null }>;

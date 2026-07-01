@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Inbox } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { expandSourceSlugAliases } from "@/lib/marketing/sourceEventMapper";
 
 interface SourceEventInboxProps {
   /** Source system slugs to include (e.g. ["leadtrap"], ["facebook_ads","meta_ads"]). */
@@ -36,10 +37,11 @@ export function SourceEventInbox({ sourceSystems, limit = 25 }: SourceEventInbox
     let cancelled = false;
     (async () => {
       setLoading(true);
+      const expanded = expandSourceSlugAliases(sourceSystems);
       const { data } = await supabase
         .from("marketing_source_events")
         .select("id, occurred_at, event_type, source_system, status, state, caller_name, caller_email, caller_phone, payload_summary, lead_id")
-        .in("source_system", sourceSystems)
+        .in("source_system", expanded)
         .order("occurred_at", { ascending: false })
         .limit(limit);
       if (!cancelled) {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Activity, AlertTriangle, CheckCircle2, ClipboardList, Inbox,
   PhoneCall, ShieldCheck, Sparkles, X,
@@ -13,10 +13,9 @@ import {
 } from "@/components/ui/select";
 import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
 import {
-  buildActivityFeed,
+  useActivityFeed,
   filterActivityEvents,
   listKnownSourceSystems,
-  subscribeActivityFeed,
   type ActivityEvent,
   type ActivityEventType,
   type ActivityObjectType,
@@ -91,18 +90,13 @@ function KpiCard({ icon: Icon, label, value, tone }: {
 }
 
 export default function ActivityCenterPage() {
-  const [events, setEvents] = useState<ActivityEvent[]>(() => buildActivityFeed());
+  const { events } = useActivityFeed({ limit: 500 });
   const [selected, setSelected] = useState<ActivityEvent | null>(null);
 
   const [objectType, setObjectType] = useState<ActivityObjectType | "all">("all");
   const [eventType, setEventType] = useState<ActivityEventType | "all">("all");
   const [severity, setSeverity] = useState<ActivitySeverity | "all">("all");
   const [sourceSystem, setSourceSystem] = useState<string | "all">("all");
-
-  useEffect(() => {
-    const unsub = subscribeActivityFeed(setEvents);
-    return unsub;
-  }, []);
 
   const knownSources = useMemo(() => listKnownSourceSystems(events), [events]);
   const filtered = useMemo(
