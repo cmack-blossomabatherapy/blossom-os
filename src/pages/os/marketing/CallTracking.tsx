@@ -22,6 +22,7 @@ import { LeadSourceActions } from "@/components/marketing/LeadSourceActions";
 import { CallQueueSection } from "@/components/marketing/CallQueueSection";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 import { useMarketingData } from "@/hooks/useMarketingData";
+import { isAfterHoursEastern } from "@/lib/marketing/callTimezone";
 // Detailed call/lead metrics read directly from marketing_call_events +
 // intake_leads via useMarketingData. Aggregate KPIs continue to flow through
 // useMarketingIntelligence. No shim arrays — empty tables render empty states.
@@ -186,8 +187,7 @@ export default function CallTracking() {
     const map = new Map<string, number>();
     marketingCalls.forEach((c) => {
       if (!c.state) return;
-      const h = hourOf(c.createdAt);
-      if (h >= 18 || h < 8) map.set(c.state, (map.get(c.state) ?? 0) + 1);
+      if (isAfterHoursEastern(c.createdAt)) map.set(c.state, (map.get(c.state) ?? 0) + 1);
     });
     return Array.from(map.entries())
       .map(([state, count]) => ({ state, count }))
