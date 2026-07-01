@@ -370,9 +370,12 @@ const CONTACT_VIEWS = [
 
 function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
   const s = useCrm();
-  const [view, setView] = useState<(typeof CONTACT_VIEWS)[number]["id"]>("all");
-  const [q, setQ] = useState("");
-  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [viewRaw, setView] = useUrlState("cv", "all");
+  const view = (CONTACT_VIEWS.some((v) => v.id === viewRaw)
+    ? viewRaw
+    : "all") as (typeof CONTACT_VIEWS)[number]["id"];
+  const [q, setQ] = useUrlState("cq", "");
+  const [stateFilter, setStateFilter] = useUrlState("cs", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
