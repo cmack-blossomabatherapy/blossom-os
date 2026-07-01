@@ -124,6 +124,22 @@ interface LeadsContextValue {
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
 
+/**
+ * Best-effort helper for optional post-create side effects. Never throws — a
+ * failure here must never block the primary lead insert or bubble up as a
+ * user-facing "Could not save lead" error. Failures are logged to console
+ * only, so ops can spot broken side effects without leaking Edge Function /
+ * database internals into the toast.
+ */
+async function safeOptionalWrite(label: string, fn: () => Promise<unknown> | unknown): Promise<void> {
+  try {
+    await fn();
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(`[leads] optional step failed: ${label}`, e);
+  }
+}
+
 const makeTimelineEvent = (description: string): TimelineEvent => ({
   id: `tl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   type: "system",
@@ -495,7 +511,11 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       .select(INTAKE_LEADS_SELECT)
       .single();
     if (insErr || !data) {
-      throw insErr ?? new Error("Failed to create lead");
+      // Log internal error for ops, but surface a clean user-safe message.
+      // Never leak raw Supabase / Edge Function / RLS messages here.
+      // eslint-disable-next-line no-console
+      console.error("[leads] intake_leads insert failed", insErr);
+      throw new Error("Could not save lead. Please check required fields and try again.");
     }
     const row = data as unknown as IntakeLeadRow;
     const baseLead = intakeLeadRowToLead(row);
@@ -528,30 +548,42 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
         }
       : baseLead;
 
-    // Best-effort first task + communication. These are optional — RLS errors
-    // shouldn't block the new lead from showing up.
-    void supabase.from("intake_tasks").insert({
-      lead_id: row.id,
-      title: "Contact Lead",
-      owner: input.assignedIntakeCoordinator ?? null,
-      due_date: input.nextTaskDue ?? today,
-      workflow_step: "New Lead",
-    } as never).then(() => undefined, () => undefined);
+    // Best-effort first task + communication + activity event. Every step
+    // below is optional — RLS / network / Edge Function errors must never
+    // block the lead itself and must never bubble up as a user-facing error.
+    void safeOptionalWrite("intake_tasks insert", () =>
+      supabase.from("intake_tasks").insert({
+        lead_id: row.id,
+        title: "Contact Lead",
+        owner: input.assignedIntakeCoordinator ?? null,
+        due_date: input.nextTaskDue ?? today,
+        workflow_step: "New Lead",
+      } as never),
+    );
 
     const commPreview =
       input.regularCallLog || input.etCallLog || input.messageComments;
     if (commPreview) {
-      void supabase.from("intake_communications").insert({
-        lead_id: row.id,
-        communication_type: input.regularCallLog || input.etCallLog ? "call" : "note",
-        direction: "outbound",
-        preview: commPreview,
-        logged_by_name: input.assignedIntakeCoordinator ?? "Intake",
-      } as never).then(() => undefined, () => undefined);
+      void safeOptionalWrite("intake_communications insert", () =>
+        supabase.from("intake_communications").insert({
+          lead_id: row.id,
+          communication_type: input.regularCallLog || input.etCallLog ? "call" : "note",
+          direction: "outbound",
+          preview: commPreview,
+          logged_by_name: input.assignedIntakeCoordinator ?? "Intake",
+        } as never),
+      );
     }
 
-    // Lead created — activity event for the lifetime journey.
-    logLeadActivity(row.id, "note", `Lead created via Blossom OS (${input.leadSource})`, input.assignedIntakeCoordinator ?? "Intake");
+    // Lead created — activity event for the lifetime journey (already safe).
+    void safeOptionalWrite("logLeadActivity", () =>
+      logLeadActivity(
+        row.id,
+        "note",
+        `Lead created via Blossom OS (${input.leadSource})`,
+        input.assignedIntakeCoordinator ?? "Intake",
+      ),
+    );
 
     setLeads((prev) => [lead, ...prev]);
     return lead;
