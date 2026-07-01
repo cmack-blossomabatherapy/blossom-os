@@ -746,3 +746,13 @@ export function activityFromWorkItem(item: WorkItem): ActivityEvent {
 export function listKnownSourceSystems(events: ActivityEvent[]): string[] {
   return Array.from(new Set(events.map((e) => e.sourceSystem).filter(Boolean) as string[])).sort();
 }
+
+/** Distinct campaign labels currently in the feed (for filter UIs). */
+export function listKnownCampaigns(events: ActivityEvent[]): string[] {
+  return Array.from(new Set(events.map((e) => e.campaign).filter(Boolean) as string[])).sort();
+}
+
+/** Distinct event types currently in the feed (for filter UIs). */
+export function listKnownEventTypes(events: ActivityEvent[]): ActivityEventType[] {
+  return Array.from(new Set(events.map((e) => e.type))).sort() as ActivityEventType[];
+}
