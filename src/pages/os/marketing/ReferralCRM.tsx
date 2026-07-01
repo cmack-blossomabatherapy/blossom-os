@@ -40,6 +40,9 @@ import { hydrateFromSupabase, installSupabaseSync } from "@/lib/os/referralCrm/b
 import { parseReferralsCsv, type ParsedCsv } from "@/lib/os/referrals/csv";
 import { importReferralRows, failedRowsToCsv } from "@/lib/os/referrals/importer";
 import { REFERRAL_PARTNER_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
+import { FAMILY_LEAD_PIPELINE_STAGES, canonicalFamilyLeadStage, type FamilyLeadPipelineStage } from "@/lib/intake/intakeWorkflow";
+import { useLeads } from "@/contexts/LeadsContext";
+import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -1044,14 +1047,67 @@ function ReferralStatusPill({ status }: { status?: string | null }) {
   );
 }
 
+const PIPELINE_STAGE_STYLES: Record<FamilyLeadPipelineStage, string> = {
+  "Lead Captured": "bg-slate-50 text-slate-700 ring-slate-200",
+  "First Contact Attempt": "bg-blue-50 text-blue-700 ring-blue-200",
+  "Engagement Track": "bg-sky-50 text-sky-700 ring-sky-200",
+  "Qualification": "bg-cyan-50 text-cyan-700 ring-cyan-200",
+  "Intake Packet Sent": "bg-indigo-50 text-indigo-700 ring-indigo-200",
+  "Intake Packet Follow Up": "bg-violet-50 text-violet-700 ring-violet-200",
+  "Intake Complete": "bg-purple-50 text-purple-700 ring-purple-200",
+  "Benefits Verification": "bg-amber-50 text-amber-700 ring-amber-200",
+  "Assessment Scheduling": "bg-orange-50 text-orange-700 ring-orange-200",
+  "QA / Treatment Plan Authorization": "bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200",
+  "Authorization Pending": "bg-yellow-50 text-yellow-700 ring-yellow-200",
+  "Staffing Match": "bg-teal-50 text-teal-700 ring-teal-200",
+  "Ready to Start Services": "bg-emerald-50 text-emerald-700 ring-emerald-200",
+};
+
+function PipelineStagePill({ stage, onClick }: { stage: FamilyLeadPipelineStage | null; onClick?: () => void }) {
+  if (!stage) {
+    return <span className="text-[11px] text-muted-foreground">Not linked</span>;
+  }
+  const cls = PIPELINE_STAGE_STYLES[stage] || "bg-muted text-muted-foreground ring-border";
+  const base = cn("inline-flex items-center h-6 px-2 rounded-full text-[11px] font-medium ring-1 ring-inset whitespace-nowrap max-w-full", cls);
+  if (onClick) {
+    return <button type="button" onClick={onClick} className={cn(base, "hover:brightness-95 transition")} title="Open patient pipeline">{stage}</button>;
+  }
+  return <span className={base}>{stage}</span>;
+}
+
 function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
+  const { leads } = useLeads();
+  const leadById = useMemo(() => {
+    const m = new Map<string, (typeof leads)[number]>();
+    leads.forEach((l) => m.set(l.id, l));
+    return m;
+  }, [leads]);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
   const [logId, setLogId] = useState<ID | null>(null);
+  const [drawerLeadId, setDrawerLeadId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [stageFilter, setStageFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
-  const rows = scopedReferrals(s);
+  const allRows = scopedReferrals(s);
+  const rows = useMemo(() => {
+    return allRows.filter((r) => {
+      if (statusFilter !== "all" && (r.referralStatus || "") !== statusFilter) return false;
+      if (stageFilter !== "all") {
+        const lead = r.leadId ? leadById.get(r.leadId) : undefined;
+        const stage = lead ? canonicalFamilyLeadStage(lead.status) : null;
+        if (stageFilter === "__none__") {
+          if (stage) return false;
+        } else if (stage !== stageFilter) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [allRows, statusFilter, stageFilter, leadById]);
+  const filtersActive = statusFilter !== "all" || stageFilter !== "all";
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
@@ -1100,7 +1156,34 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 w-[180px] text-xs"><SelectValue placeholder="Referral status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"].map((v) => (
+                <SelectItem key={v} value={v}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={stageFilter} onValueChange={setStageFilter}>
+            <SelectTrigger className="h-9 w-[220px] text-xs"><SelectValue placeholder="Patient pipeline stage" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All pipeline stages</SelectItem>
+              <SelectItem value="__none__">Not linked</SelectItem>
+              {FAMILY_LEAD_PIPELINE_STAGES.map((v) => (
+                <SelectItem key={v} value={v}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {filtersActive && (
+            <Button variant="ghost" size="sm" className="h-9 text-xs" onClick={() => { setStatusFilter("all"); setStageFilter("all"); }}>
+              Clear filters
+            </Button>
+          )}
+          <span className="text-xs text-muted-foreground">{rows.length} of {allRows.length}</span>
+        </div>
         <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
           <Plus className="size-3.5" /> New Referral
         </Button>
@@ -1146,6 +1229,7 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
                 <th className="w-[70px] px-3 text-left font-medium align-middle">State</th>
                 <th className="w-[140px] px-3 text-left font-medium align-middle">Service</th>
                 <th className="w-[140px] px-3 text-left font-medium align-middle">Status</th>
+                <th className="w-[180px] px-3 text-left font-medium align-middle">Patient Pipeline</th>
                 <th className="w-[140px] px-3 text-left font-medium align-middle">Insurance</th>
                 <th className="w-[140px] px-3 text-left font-medium align-middle">Intake Owner</th>
                 <th className="w-[110px] px-3 text-left font-medium align-middle">Date</th>
@@ -1153,12 +1237,17 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {rows.map((r) => {
+                const lead = r.leadId ? leadById.get(r.leadId) : undefined;
+                const stage = lead ? canonicalFamilyLeadStage(lead.status) : null;
+                return (
                 <tr key={r.id} className="border-t hover:bg-muted/30 h-12">
                   <td className="px-3 align-middle"><Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleOne(r.id)} /></td>
                   <td className="px-3 align-middle font-medium">
                     <div className="flex items-center gap-2 min-w-0">
-                      {r.isLegacyLeadLink ? (
+                      {lead ? (
+                        <button className="truncate text-left hover:text-primary" onClick={() => setDrawerLeadId(lead.id)}>{r.name}</button>
+                      ) : r.isLegacyLeadLink ? (
                         <span className="truncate text-foreground">{r.name}</span>
                       ) : (
                         <button className="truncate text-left hover:text-primary" onClick={() => setEditingId(r.id)}>{r.name}</button>
@@ -1179,6 +1268,9 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
                   <td className="px-3 align-middle">{r.state || <span className="text-muted-foreground">—</span>}</td>
                   <td className="px-3 align-middle truncate">{r.serviceType || <span className="text-muted-foreground">—</span>}</td>
                   <td className="px-3 align-middle"><ReferralStatusPill status={r.referralStatus} /></td>
+                  <td className="px-3 align-middle">
+                    <PipelineStagePill stage={stage} onClick={lead ? () => setDrawerLeadId(lead.id) : undefined} />
+                  </td>
                   <td className="px-3 align-middle text-muted-foreground truncate">{r.insuranceType || "—"}</td>
                   <td className="px-3 align-middle text-muted-foreground truncate">{userName(s, r.assignedIntakeOwnerId) || "—"}</td>
                   <td className="px-3 align-middle text-muted-foreground whitespace-nowrap">{fmtDate(r.referralDate)}</td>
@@ -1195,8 +1287,9 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
                     </div>
                   </td>
                 </tr>
-              ))}
-              {rows.length === 0 && <tr><td colSpan={11} className="text-center text-muted-foreground py-10">No referrals yet.</td></tr>}
+                );
+              })}
+              {rows.length === 0 && <tr><td colSpan={12} className="text-center text-muted-foreground py-10">{filtersActive ? "No referrals match the current filters." : "No referrals yet."}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -1205,6 +1298,7 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
       <NewReferralDialog open={creating} onOpenChange={setCreating} />
       <EditReferralDialog id={editingId} open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)} />
       <LogActivityDialog open={!!logId} onOpenChange={(o) => !o && setLogId(null)} referralId={logId ?? undefined} />
+      <LeadDetailDrawer leadId={drawerLeadId} onClose={() => setDrawerLeadId(null)} />
       <BulkCreateTaskDialog
         open={bulkTaskOpen}
         onOpenChange={setBulkTaskOpen}
