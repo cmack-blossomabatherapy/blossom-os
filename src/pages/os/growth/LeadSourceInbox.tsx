@@ -266,9 +266,24 @@ export default function LeadSourceInbox() {
     updateStatus,
     linkLead,
     updateFields,
+    assignOwner,
   } = useMarketingSourceEvents();
   const [searchParams] = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { members } = useEmployeeDirectory();
+  const marketingOwners = useMemo(
+    () =>
+      members.filter((m) => {
+        const dept = (m.departmentName || "").toLowerCase();
+        return dept.includes("marketing") || dept.includes("growth");
+      }),
+    [members],
+  );
+  const ownerLabelFor = (userId?: string) => {
+    if (!userId) return null;
+    const m = members.find((x) => x.authUserId === userId || x.uuid === userId);
+    return m?.name ?? userId.slice(0, 8);
+  };
   const [search, setSearch] = useState("");
   const initialSourceFromQuery =
     searchParams.get("source") ?? searchParams.get("source_system") ?? null;
@@ -288,6 +303,12 @@ export default function LeadSourceInbox() {
   useEffect(() => {
     const q = searchParams.get("source") ?? searchParams.get("source_system");
     if (q) setSourceFilter(sourceSystemToSourceValue(q));
+  }, [searchParams]);
+
+  // Support deep-linking a specific event via `?eventId=...`.
+  useEffect(() => {
+    const eid = searchParams.get("eventId");
+    if (eid) setSelectedId(eid);
   }, [searchParams]);
 
   // Recompute duplicate scores live as leads change.
