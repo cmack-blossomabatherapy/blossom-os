@@ -494,134 +494,197 @@ export function groupActivityByDate(events: ActivityEvent[]): { label: string; e
 
 /* ---------------------------- Aggregated feed ---------------------------- */
 
-/** Realistic mock events that demonstrate the full activity model surface
- *  area until live persistence is added. Keeps sensitive values absent. */
-function seededMockEvents(): ActivityEvent[] {
-  const now = Date.now();
-  const at = (mins: number) => new Date(now - mins * 60_000).toISOString();
-  return [
-    normalizeActivityEvent({
-      type: "call_received",
-      objectType: "call",
-      title: "Inbound call — Mia Carter (mother)",
-      summary: "After-hours voicemail. Asking about GA intake.",
-      actorName: "Sasha Long",
-      actorRole: "Intake",
-      occurredAt: at(18),
-      sourceSystem: "Phone System",
-      severity: "warning",
-    }),
-    normalizeActivityEvent({
-      type: "stage_changed",
-      objectType: "lead",
-      objectLabel: "Lead L-2018 — Jaden Howard",
-      relatedLeadId: "L-2018",
-      title: "Lead moved to VOB Requested",
-      summary: "New Referral → VOB Requested",
-      actorName: "Maria Lopez",
-      actorRole: "Intake",
-      occurredAt: at(42),
-      sourceSystem: "Blossom OS",
-    }),
-    normalizeActivityEvent({
-      type: "task_completed",
-      objectType: "task",
-      title: "Follow-up call completed",
-      summary: "Confirmed insurance details with parent.",
-      actorName: "Maria Lopez",
-      relatedLeadId: "L-2018",
-      occurredAt: at(55),
-      severity: "success",
-      status: "complete",
-    }),
-    normalizeActivityEvent({
-      type: "escalation_created",
-      objectType: "lead",
-      title: "Escalation — hard to staff",
-      summary: "Sophia Reyes (NC) flagged after 14 days unstaffed.",
-      actorName: "Devon Ross",
-      actorRole: "Scheduling",
-      relatedLeadId: "L-1990",
-      occurredAt: at(120),
-      severity: "critical",
-      status: "open",
-    }),
-    normalizeActivityEvent({
-      type: "file_uploaded",
-      objectType: "system",
-      title: "BCBA Productivity data uploaded",
-      summary: "Daily CentralReach export · 2,418 rows · 14 new BCBAs covered.",
-      actorName: "Lauren Brewer",
-      actorRole: "Super Admin",
-      occurredAt: at(180),
-      sourceSystem: "BCBA Productivity Uploads",
-    }),
-    normalizeActivityEvent({
-      type: "login_viewed",
-      objectType: "system",
-      title: "Login vault entry viewed",
-      summary: "CentralReach credential opened (audit only — secret not logged).",
-      actorName: "Lauren Brewer",
-      actorRole: "Super Admin",
-      occurredAt: at(210),
-      sourceSystem: "User Logins Vault",
-      severity: "info",
-    }),
-    normalizeActivityEvent({
-      type: "nfc_badge_updated",
-      objectType: "system",
-      title: "NFC badge re-issued",
-      summary: "Devon Ross — replacement badge activated.",
-      actorName: "HR Team",
-      occurredAt: at(360),
-      sourceSystem: "NFC Badge Management",
-    }),
-    normalizeActivityEvent({
-      type: "report_viewed",
-      objectType: "system",
-      title: "BCBA Productivity Report V3 opened",
-      actorName: "Briana Diaz",
-      actorRole: "Operations Leadership",
-      occurredAt: at(420),
-      sourceSystem: "Reports",
-    }),
-    normalizeActivityEvent({
-      type: "email_sent",
-      objectType: "email",
-      title: "Welcome email sent",
-      summary: "Intake packet emailed to parent (Jaden Howard).",
-      actorName: "Maria Lopez",
-      relatedLeadId: "L-2018",
-      occurredAt: at(480),
-      sourceSystem: "Communications",
-    }),
-    normalizeActivityEvent({
-      type: "integration_event",
-      objectType: "system",
-      title: "CTM webhook received",
-      summary: "Call routed to after-hours queue. Logged to inbox.",
-      occurredAt: at(540),
-      sourceSystem: "CTM / CallTrackingMetrics",
-    }),
-  ];
-}
-
-/** Build the current full activity feed (mock + derived from live stores). */
+/**
+ * Synchronous fallback feed. Contains only Work Queue activity that already
+ * lives in a local subscription store. Production surfaces should prefer
+ * `useActivityFeed()` / `fetchActivityFeed()`, which merge in database-backed
+ * Marketing activity. No seeded mock events, no in-memory source-event store.
+ */
 export function buildActivityFeed(): ActivityEvent[] {
-  const sourceEvents = listLeadSourceEvents().map(activityFromSourceEvent);
   const workEvents = listWorkItems().map(activityFromWorkItem);
-  return sortActivityNewestFirst([...seededMockEvents(), ...sourceEvents, ...workEvents]);
+  return sortActivityNewestFirst(workEvents);
 }
 
-/** Subscribe to changes in any underlying store and re-emit the merged feed. */
+/**
+ * Subscribe to changes in local subscription stores (work queue only) and
+ * re-emit the sync feed. Kept for legacy callers.
+ */
 export function subscribeActivityFeed(listener: (events: ActivityEvent[]) => void): () => void {
   const push = () => listener(buildActivityFeed());
-  const unsubSrc = subscribeLeadSourceEvents(() => push());
   const unsubWi = subscribeWorkItems(() => push());
   return () => {
-    unsubSrc();
     unsubWi();
   };
+}
+
+/* ---------------------------- Database-backed feed ---------------------------- */
+
+interface MarketingCallRow {
+  id: string;
+  occurred_at: string;
+  source_system: string | null;
+  caller_name: string | null;
+  caller_phone: string | null;
+  transcript_summary: string | null;
+  status: string | null;
+  lead_id: string | null;
+  recording_url: string | null;
+  direction?: string | null;
+  duration_seconds?: number | null;
+}
+
+interface MarketingEmailRow {
+  id: string;
+  occurred_at: string;
+  event_type: string | null;
+  subject: string | null;
+  recipient_email: string | null;
+  list_name: string | null;
+  campaign_id: string | null;
+  lead_id: string | null;
+}
+
+function activityFromMarketingCall(row: MarketingCallRow): ActivityEvent {
+  const outbound = (row.direction ?? "").toLowerCase() === "outbound";
+  return normalizeActivityEvent({
+    id: `mcall_${row.id}`,
+    type: outbound ? "call_made" : "call_received",
+    objectType: "call",
+    objectId: row.id,
+    objectLabel: row.caller_name ?? row.caller_phone ?? "Unknown caller",
+    relatedLeadId: row.lead_id ?? undefined,
+    title: outbound
+      ? `Outbound call — ${row.caller_name ?? row.caller_phone ?? "unknown"}`
+      : `Inbound call — ${row.caller_name ?? row.caller_phone ?? "unknown"}`,
+    summary: row.transcript_summary ?? undefined,
+    sourceSystem: row.source_system ?? "Phone System",
+    sourceUrl: row.recording_url ?? undefined,
+    occurredAt: row.occurred_at,
+    severity: row.status === "missed" ? "warning" : "info",
+  });
+}
+
+function activityFromMarketingEmail(row: MarketingEmailRow): ActivityEvent {
+  const type: ActivityEventType =
+    (row.event_type ?? "").toLowerCase().includes("open") ||
+    (row.event_type ?? "").toLowerCase().includes("receiv")
+      ? "email_received"
+      : "email_sent";
+  return normalizeActivityEvent({
+    id: `memail_${row.id}`,
+    type,
+    objectType: "email",
+    objectId: row.id,
+    objectLabel: row.subject ?? row.recipient_email ?? "Email",
+    relatedLeadId: row.lead_id ?? undefined,
+    title: row.subject ?? (type === "email_received" ? "Email received" : "Email sent"),
+    summary: row.list_name ? `List: ${row.list_name}` : undefined,
+    sourceSystem: "Mailchimp",
+    occurredAt: row.occurred_at,
+  });
+}
+
+/**
+ * Fetch the merged, database-backed activity feed. Combines Marketing source
+ * events, call events, email events, and local Work Queue items into a single
+ * chronologically-sorted list.
+ */
+export async function fetchActivityFeed(
+  { limit = 300 }: { limit?: number } = {},
+): Promise<ActivityEvent[]> {
+  const [srcRes, callRes, emailRes] = await Promise.all([
+    supabase
+      .from("marketing_source_events")
+      .select("*")
+      .order("occurred_at", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("marketing_call_events")
+      .select(
+        "id, occurred_at, source_system, caller_name, caller_phone, transcript_summary, status, lead_id, recording_url, direction, duration_seconds",
+      )
+      .order("occurred_at", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("marketing_email_events")
+      .select("id, occurred_at, event_type, subject, recipient_email, list_name, campaign_id, lead_id")
+      .order("occurred_at", { ascending: false })
+      .limit(limit),
+  ]);
+
+  const sourceEvents = ((srcRes.data ?? []) as MarketingSourceEventRow[])
+    .map(mapRowToEvent)
+    .map(activityFromSourceEvent);
+  const callEvents = ((callRes.data ?? []) as unknown as MarketingCallRow[]).map(
+    activityFromMarketingCall,
+  );
+  const emailEvents = ((emailRes.data ?? []) as unknown as MarketingEmailRow[]).map(
+    activityFromMarketingEmail,
+  );
+  const workEvents = listWorkItems().map(activityFromWorkItem);
+
+  return sortActivityNewestFirst([
+    ...sourceEvents,
+    ...callEvents,
+    ...emailEvents,
+    ...workEvents,
+  ]);
+}
+
+/**
+ * React hook that loads the database-backed activity feed, live-updates on
+ * Marketing table changes and Work Queue changes, and exposes a `refresh()`.
+ */
+export function useActivityFeed({ limit = 300 }: { limit?: number } = {}) {
+  const [events, setEvents] = useState<ActivityEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const feed = await fetchActivityFeed({ limit });
+        if (!cancelled) {
+          setEvents(feed);
+          setError(null);
+        }
+      } catch (e) {
+        if (!cancelled) setError((e as Error)?.message ?? "Failed to load activity");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+
+    const channel = supabase
+      .channel("activity-feed-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "marketing_source_events" },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "marketing_call_events" },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "marketing_email_events" },
+        () => void load(),
+      )
+      .subscribe();
+    const unsubWi = subscribeWorkItems(() => void load());
+
+    return () => {
+      cancelled = true;
+      unsubWi();
+      void supabase.removeChannel(channel);
+    };
+  }, [limit]);
+
+  return { events, loading, error, refresh: () => fetchActivityFeed({ limit }).then(setEvents) };
 }
 
 /** Normalize a WorkItem into the most representative activity event. */
