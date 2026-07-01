@@ -27,6 +27,11 @@ import {
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
+import { useMarketingReputationEvents } from "@/hooks/useMarketingReputationEvents";
+import { ReputationEventLogDialog } from "@/components/marketing/ReputationEventLogDialog";
+import { BulkReputationEventImportDialog } from "@/components/marketing/BulkReputationEventImportDialog";
+import { Button } from "@/components/ui/button";
+import { Upload, Plus } from "lucide-react";
 import { fmtMktgShortDate, fmtMktgRelative } from "@/lib/os/referrals/utils";
 
 /* Reputation - operational trust intelligence.
