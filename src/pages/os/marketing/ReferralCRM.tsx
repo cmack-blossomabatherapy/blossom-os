@@ -40,6 +40,9 @@ import { hydrateFromSupabase, installSupabaseSync } from "@/lib/os/referralCrm/b
 import { parseReferralsCsv, type ParsedCsv } from "@/lib/os/referrals/csv";
 import { importReferralRows, failedRowsToCsv } from "@/lib/os/referrals/importer";
 import { REFERRAL_PARTNER_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
+import { FAMILY_LEAD_PIPELINE_STAGES, canonicalFamilyLeadStage, type FamilyLeadPipelineStage } from "@/lib/intake/intakeWorkflow";
+import { useLeads } from "@/contexts/LeadsContext";
+import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
