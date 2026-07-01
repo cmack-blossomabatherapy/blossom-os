@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Inbox, Plus, Phone, Mail, MessageSquare, Search, Filter, AlertTriangle,
   CheckCircle2, ExternalLink, Link2, FileText, Copy, ShieldCheck, Radio,
@@ -28,11 +28,8 @@ import {
   getEventSourceBadge,
   shouldRequireReview,
 } from "@/lib/leads/leadSourceEvents";
-import {
-  addLeadSourceEvent,
-  subscribeLeadSourceEvents,
-  updateLeadSourceEventStatus,
-} from "@/lib/leads/leadSourceEventsStore";
+import { useMarketingSourceEvents } from "@/hooks/useMarketingSourceEvents";
+import { sourceSystemToSourceValue } from "@/lib/marketing/sourceEventMapper";
 import { BLOSSOM_INTEGRATIONS } from "@/lib/os/integrations/integrationRegistry";
 
 const STATUS_LABEL: Record<LeadSourceEventStatus, string> = {
@@ -85,7 +82,28 @@ const READINESS_SOURCE_IDS = [
 
 /* ----------------------------- Add-event dialog ---------------------------- */
 
-function AddEventDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+function AddEventDialog({
+  open,
+  onOpenChange,
+  onAdd,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onAdd: (input: {
+    source: string;
+    eventType: LeadSourceEventType;
+    parentFirstName: string;
+    parentLastName: string;
+    childFirstName: string;
+    childLastName: string;
+    phone: string;
+    email: string;
+    state: string;
+    campaign: string;
+    referralPartner?: string;
+    summary: string;
+  }) => Promise<void> | void;
+}) {
   const [source, setSource] = useState("CTM");
   const [eventType, setEventType] = useState<LeadSourceEventType>("phone_call");
   const [parentFirstName, setPF] = useState("");
@@ -146,17 +164,28 @@ function AddEventDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => {
-            addLeadSourceEvent({
-              source, sourceEventType: eventType,
-              parentFirstName, parentLastName, childFirstName, childLastName,
-              phone, email, state, campaign,
-              referralPartner: referralPartner || undefined,
-              summary,
-            });
-            toast.success("Source event added");
-            reset();
-            onOpenChange(false);
+          <Button onClick={async () => {
+            try {
+              await onAdd({
+                source,
+                eventType,
+                parentFirstName,
+                parentLastName,
+                childFirstName,
+                childLastName,
+                phone,
+                email,
+                state,
+                campaign,
+                referralPartner: referralPartner || undefined,
+                summary,
+              });
+              toast.success("Source event added");
+              reset();
+              onOpenChange(false);
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "Could not save event");
+            }
           }}>Add event</Button>
         </DialogFooter>
       </DialogContent>
@@ -228,17 +257,32 @@ function AttachLeadDialog({
 
 export default function LeadSourceInbox() {
   const { leads, createLead } = useLeads();
-  const [events, setEvents] = useState<LeadSourceEvent[]>([]);
+  const {
+    events,
+    insertEvent,
+    updateStatus,
+    linkLead,
+  } = useMarketingSourceEvents();
+  const [searchParams] = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const initialSourceFromQuery =
+    searchParams.get("source") ?? searchParams.get("source_system") ?? null;
+  const [sourceFilter, setSourceFilter] = useState<string>(
+    initialSourceFromQuery ? sourceSystemToSourceValue(initialSourceFromQuery) : "all",
+  );
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
   const [attachOpen, setAttachOpen] = useState(false);
 
-  useEffect(() => subscribeLeadSourceEvents(setEvents), []);
+  // Keep the source filter in sync with query-param navigation from
+  // source-specific pages (LeadTrap / Facebook Ads / Google Ads / etc.).
+  useEffect(() => {
+    const q = searchParams.get("source") ?? searchParams.get("source_system");
+    if (q) setSourceFilter(sourceSystemToSourceValue(q));
+  }, [searchParams]);
 
   // Recompute duplicate scores live as leads change.
   const scored = useMemo(() => events.map((e) => {
@@ -330,10 +374,7 @@ export default function LeadSourceInbox() {
         priority:         "Warm",
         sourceMetadata:   defaults.sourceMetadata,
       });
-      updateLeadSourceEventStatus(s.event.id, "converted_to_lead", {
-        resolvedLeadId: lead.id,
-        matchedLeadId: lead.id,
-      });
+      await linkLead(s.event.id, lead.id, "converted_to_lead");
       toast.success(`Lead created from ${s.event.sourceLabel}`, {
         description: lead.childName,
       });
@@ -342,22 +383,31 @@ export default function LeadSourceInbox() {
     }
   };
 
-  const onAttach = (leadId: string) => {
+  const onAttach = async (leadId: string) => {
     if (!selected) return;
-    updateLeadSourceEventStatus(selected.event.id, "attached_to_existing_lead", {
-      resolvedLeadId: leadId,
-      matchedLeadId: leadId,
-    });
-    toast.success("Event attached to lead");
+    try {
+      await linkLead(selected.event.id, leadId, "attached_to_existing_lead");
+      toast.success("Event attached to lead");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not attach event");
+    }
   };
 
-  const onMarkReview = (id: string) => {
-    updateLeadSourceEventStatus(id, "needs_review");
-    toast.message("Marked for review");
+  const onMarkReview = async (id: string) => {
+    try {
+      await updateStatus(id, "needs_review");
+      toast.message("Marked for review");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update event");
+    }
   };
-  const onIgnore = (id: string) => {
-    updateLeadSourceEventStatus(id, "ignored");
-    toast.message("Event ignored");
+  const onIgnore = async (id: string) => {
+    try {
+      await updateStatus(id, "ignored");
+      toast.message("Event ignored");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update event");
+    }
   };
   const onCopy = (s: typeof scored[number]) => {
     const text = JSON.stringify(s.event, null, 2);
@@ -467,7 +517,11 @@ export default function LeadSourceInbox() {
         </aside>
       </div>
 
-      <AddEventDialog open={addOpen} onOpenChange={setAddOpen} />
+      <AddEventDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onAdd={(input) => insertEvent(input)}
+      />
       <AttachLeadDialog open={attachOpen} onOpenChange={setAttachOpen}
         event={selected?.event ?? null} onAttach={onAttach} />
     </GrowthPageShell>

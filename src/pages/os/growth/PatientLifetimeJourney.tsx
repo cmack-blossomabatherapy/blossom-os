@@ -24,8 +24,8 @@ import {
   leadSourceLabel,
   type PatientJourneyEventOrigin,
 } from "@/lib/leads/leadSourceConfig";
-import { getEventsForLead, listLeadSourceEvents, subscribeLeadSourceEvents } from "@/lib/leads/leadSourceEventsStore";
-import type { LeadSourceEvent } from "@/lib/leads/leadSourceEvents";
+import { useLeadMarketingActivity } from "@/hooks/useLeadMarketingActivity";
+import { supabase } from "@/integrations/supabase/client";
 
 // Sprint 04 Phase C — interactions and follow-ups persist to Lovable Cloud
 // (intake_communications + intake_tasks). No localStorage fallback.
@@ -220,23 +220,27 @@ export default function PatientLifetimeJourney() {
     if (q && q !== selectedId) setSelectedId(q);
     const evtId = searchParams.get("sourceEventId");
     if (evtId) {
-      const matched = listLeadSourceEvents().find((e) => e.id === evtId);
-      if (matched?.resolvedLeadId && matched.resolvedLeadId !== selectedId) {
-        setSelectedId(matched.resolvedLeadId);
-      }
+      let cancelled = false;
+      (async () => {
+        const { data } = await supabase
+          .from("marketing_source_events")
+          .select("lead_id")
+          .eq("id", evtId)
+          .maybeSingle();
+        const linked = (data as { lead_id: string | null } | null)?.lead_id ?? null;
+        if (!cancelled && linked && linked !== selectedId) setSelectedId(linked);
+      })();
+      return () => {
+        cancelled = true;
+      };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Subscribe to source events so the journey reflects new attachments live.
-  const [sourceEvents, setSourceEvents] = useState<LeadSourceEvent[]>([]);
-  useEffect(() => subscribeLeadSourceEvents(setSourceEvents), []);
-  const selectedSourceEvents = useMemo(
-    () => (selectedId ? getEventsForLead(selectedId) : []),
-    // include sourceEvents so this recomputes on updates
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedId, sourceEvents],
-  );
+  // Persisted marketing activity for the selected lead (source, call, email
+  // events) — sourced entirely from Supabase, no in-memory store.
+  const marketing = useLeadMarketingActivity(selectedId);
+  const selectedSourceEvents = marketing.sourceEvents;
 
   const states = useMemo(() => Array.from(new Set(leads.map((l) => l.state).filter(Boolean))).sort(), [leads]);
   const sources = useMemo(() => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))).sort(), [leads]);
@@ -262,12 +266,42 @@ export default function PatientLifetimeJourney() {
     [leads, selectedId],
   );
   const live = useLeadJourneyLive(selected?.id ?? null);
-  const events = useMemo(
-    () => (selected
-      ? mergeLiveJourney(buildEvents(selected), live.communications, live.tasks, leadSourceJourneyOrigin(selected.source))
-      : []),
-    [selected, live.communications, live.tasks],
-  );
+  const events = useMemo(() => {
+    if (!selected) return [];
+    const origin = leadSourceJourneyOrigin(selected.source);
+    const merged = mergeLiveJourney(buildEvents(selected), live.communications, live.tasks, origin);
+    // Fold in persisted Marketing source, call, and email events.
+    const safeTs = (s: string) => { const t = new Date(s).getTime(); return Number.isFinite(t) ? t : Date.now(); };
+    const fmt = (s: string) => { try { return format(new Date(safeTs(s)), "MMM d"); } catch { return ""; } };
+    const marketingSource: JourneyEvent[] = marketing.sourceEvents.map((ev) => ({
+      type: ev.sourceEventType === "phone_call" || ev.sourceEventType === "ai_call" ? "call_received"
+        : ev.sourceEventType === "email_campaign" ? "email_received"
+        : ev.sourceEventType === "referral" ? "referral_received"
+        : "form_submitted",
+      when: fmt(ev.receivedAt),
+      rawTs: safeTs(ev.receivedAt),
+      detail: `${ev.sourceLabel}${ev.summary ? ` — ${ev.summary}` : ""}`,
+      origin,
+    }));
+    const marketingCalls: JourneyEvent[] = marketing.callEvents.map((c) => ({
+      type: "call_received",
+      when: fmt(c.occurred_at),
+      rawTs: safeTs(c.occurred_at),
+      detail: `${c.caller_name ?? "Call"}${c.caller_phone ? ` · ${c.caller_phone}` : ""}${
+        c.duration_seconds ? ` · ${Math.round(c.duration_seconds / 60)} min` : ""
+      }${c.transcript_summary ? ` — ${c.transcript_summary}` : ""}`,
+      origin,
+    }));
+    const marketingEmails: JourneyEvent[] = marketing.emailEvents.map((e) => ({
+      type: e.event_type === "received" ? "email_received" : "email_sent",
+      when: fmt(e.occurred_at),
+      rawTs: safeTs(e.occurred_at),
+      detail: `${e.subject ?? "Email"}${e.recipient_email ? ` · ${e.recipient_email}` : ""}`,
+      origin,
+    }));
+    return [...merged, ...marketingSource, ...marketingCalls, ...marketingEmails]
+      .sort((a, b) => a.rawTs - b.rawTs);
+  }, [selected, live.communications, live.tasks, marketing.sourceEvents, marketing.callEvents, marketing.emailEvents]);
 
   return (
     <GrowthPageShell

@@ -912,7 +912,7 @@ const App = () => (
                   <Route path="/marketing/training" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingTraining /></PermissionRoute>} />
                   <Route path="/marketing/campaigns" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingCampaigns /></PermissionRoute>} />
                   <Route path="/marketing/lead-sources" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingLeadSources /></PermissionRoute>} />
-                  <Route path="/marketing/lead-source-inbox" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES_WITH_BD]}><LeadSourceInbox /></PermissionRoute>} />
+                  <Route path="/marketing/lead-source-inbox" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><LeadSourceInbox /></PermissionRoute>} />
                   <Route path="/marketing/email-marketing" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><EmailMarketing /></PermissionRoute>} />
                   <Route path="/marketing/seo" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingSEO /></PermissionRoute>} />
                   <Route path="/marketing/web-analytics" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingWebAnalytics /></PermissionRoute>} />
