@@ -23,6 +23,8 @@ import { ContactDetailDrawer } from "@/components/marketing/referrals/ContactDet
 import { CompanyDetailDrawer } from "@/components/marketing/referrals/CompanyDetailDrawer";
 import { OwnerCombobox, ownersToList, ownersToText } from "@/components/marketing/referrals/OwnerCombobox";
 import { toast } from "@/hooks/use-toast";
+import { TableFilterBar, type FilterDef } from "@/components/marketing/TableFilterBar";
+import { useUrlState } from "@/hooks/useUrlState";
 
 function StatTile({ label, value, icon: Icon, hint }: { label: string; value: React.ReactNode; icon: React.ElementType; hint?: string }) {
   return (
@@ -84,7 +86,9 @@ function ReferralsInner() {
   const [importOpen, setImportOpen] = useState(false);
   const [contactDrawer, setContactDrawer] = useState<ReferralContact | null>(null);
   const [companyDrawer, setCompanyDrawer] = useState<ReferralCompany | null>(null);
-  const [activeTab, setActiveTab] = useState<ExportDataset>("contacts");
+  const [activeTabRaw, setActiveTabRaw] = useUrlState("tab", "contacts");
+  const activeTab = (["contacts","companies","followups","history"].includes(activeTabRaw) ? activeTabRaw : "contacts") as ExportDataset;
+  const setActiveTab = (v: ExportDataset) => setActiveTabRaw(v);
   const [exportOpen, setExportOpen] = useState(false);
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
@@ -92,9 +96,10 @@ function ReferralsInner() {
   const [bulkCompaniesOpen, setBulkCompaniesOpen] = useState(false);
 
   // Filters
-  const [search, setSearch] = useState("");
-  const [stateFilter, setStateFilter] = useState<string>("all");
-  const [stageFilter, setStageFilter] = useState<string>("all");
+  const [search, setSearch] = useUrlState("q", "");
+  const [stateFilter, setStateFilter] = useUrlState("state", "all");
+  const [stageFilter, setStageFilter] = useUrlState("stage", "all");
+  const [ownerFilter, setOwnerFilter] = useUrlState("owner", "all");
 
   const states = useMemo(() => {
     const s = new Set<string>();
@@ -111,21 +116,31 @@ function ReferralsInner() {
       if (c.status === "Archived") return false;
       if (stateFilter !== "all" && c.state !== stateFilter) return false;
       if (stageFilter !== "all" && c.relationship_stage !== stageFilter) return false;
+      if (ownerFilter !== "all") {
+        const owners = ownersToList(c.contact_owner);
+        if (ownerFilter === "__unassigned__") { if (owners.length) return false; }
+        else if (!owners.includes(ownerFilter)) return false;
+      }
       if (!q) return true;
       return [c.full_name, c.email, c.phone, c.title, c.role_type, ownersToList(c.contact_owner).join(" ")]
         .some((v) => v?.toLowerCase().includes(q));
     });
-  }, [contacts, search, stateFilter, stageFilter]);
+  }, [contacts, search, stateFilter, stageFilter, ownerFilter]);
 
   const visibleCompanies = useMemo(() => {
     const q = search.toLowerCase().trim();
     return companies.filter((c) => {
       if (c.status === "Archived") return false;
       if (stateFilter !== "all" && c.state !== stateFilter) return false;
+      if (ownerFilter !== "all") {
+        const owners = ownersToList(c.relationship_owner);
+        if (ownerFilter === "__unassigned__") { if (owners.length) return false; }
+        else if (!owners.includes(ownerFilter)) return false;
+      }
       if (!q) return true;
       return [c.company_name, c.domain, c.website_url, ownersToList(c.relationship_owner).join(" ")].some((v) => v?.toLowerCase().includes(q));
     });
-  }, [companies, search, stateFilter]);
+  }, [companies, search, stateFilter, ownerFilter]);
 
   // Stats
   const activeContacts = useMemo(() => contacts.filter((c) => c.status !== "Archived"), [contacts]);
@@ -290,31 +305,22 @@ function ReferralsInner() {
       )}
 
       <MktgCard>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[220px]">
-            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search contacts, companies, emails..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-          <Select value={stateFilter} onValueChange={setStateFilter}>
-            <SelectTrigger className="w-[140px]"><SelectValue placeholder="State" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All states</SelectItem>
-              {states.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={stageFilter} onValueChange={setStageFilter}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Stage" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All stages</SelectItem>
-              {["New Contact", "First Outreach", "Connected", "Active Referral Source", "Strong Partner", "Needs Follow-Up", "Dormant"].map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button size="sm" variant="outline" onClick={() => setExportOpen(true)}>
-            <Settings2 className="size-4 mr-1.5" />Export Builder
-          </Button>
-        </div>
+        <TableFilterBar
+          search={{ value: search, onChange: setSearch, placeholder: "Search contacts, companies, emails..." }}
+          filters={[
+            { key: "state", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All states" }, ...states.map((s) => ({ value: s, label: s }))] },
+            { key: "stage", label: "Stage", value: stageFilter, onChange: setStageFilter, options: [{ value: "all", label: "All stages" }, ...["New Contact", "First Outreach", "Connected", "Active Referral Source", "Strong Partner", "Needs Follow-Up", "Dormant"].map((v) => ({ value: v, label: v }))], width: 180 },
+            { key: "owner", label: "Owner", value: ownerFilter, onChange: setOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...Array.from(new Set([...contactOwners, ...companyOwners])).map((o) => ({ value: o, label: o }))], width: 170 },
+          ]}
+          resultCount={activeTab === "companies" ? visibleCompanies.length : visibleContacts.length}
+          totalCount={activeTab === "companies" ? activeCompanies.length : activeContacts.length}
+          onClear={() => { setSearch(""); setStateFilter("all"); setStageFilter("all"); setOwnerFilter("all"); }}
+          extra={
+            <Button size="sm" variant="outline" onClick={() => setExportOpen(true)}>
+              <Settings2 className="size-4 mr-1.5" />Export Builder
+            </Button>
+          }
+        />
       </MktgCard>
 
       {/* Tabs */}

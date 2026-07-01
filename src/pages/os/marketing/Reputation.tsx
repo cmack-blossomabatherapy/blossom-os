@@ -33,6 +33,8 @@ import { BulkReputationEventImportDialog } from "@/components/marketing/BulkRepu
 import { Button } from "@/components/ui/button";
 import { Upload, Plus } from "lucide-react";
 import { fmtMktgShortDate, fmtMktgRelative } from "@/lib/os/referrals/utils";
+import { TableFilterBar } from "@/components/marketing/TableFilterBar";
+import { useUrlState } from "@/hooks/useUrlState";
 
 /* Reputation - operational trust intelligence.
  * Derives community perception from real operational signal: intake
@@ -932,29 +934,72 @@ function ReputationEventsPanel() {
   const { rows, loading, refetch } = useMarketingReputationEvents({ limit: 100 });
   const [logOpen, setLogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [q, setQ] = useUrlState("elq", "");
+  const [srcFilter, setSrcFilter] = useUrlState("elsrc", "all");
+  const [stateFilter, setStateFilter] = useUrlState("elst", "all");
+  const [ratingFilter, setRatingFilter] = useUrlState("elr", "all");
+  const [sentFilter, setSentFilter] = useUrlState("elsent", "all");
+  const sources = useMemo(() => Array.from(new Set(rows.map((r) => r.source_system).filter(Boolean) as string[])).sort(), [rows]);
+  const statesList = useMemo(() => Array.from(new Set(rows.map((r) => r.state).filter(Boolean) as string[])).sort(), [rows]);
+  const filtered = useMemo(() => rows.filter((r) => {
+    if (srcFilter !== "all" && r.source_system !== srcFilter) return false;
+    if (stateFilter !== "all" && r.state !== stateFilter) return false;
+    if (sentFilter !== "all" && (r.sentiment ?? "") !== sentFilter) return false;
+    if (ratingFilter !== "all") {
+      const rt = r.rating ?? 0;
+      if (ratingFilter === "5" && rt !== 5) return false;
+      if (ratingFilter === "4" && rt !== 4) return false;
+      if (ratingFilter === "low" && !(rt > 0 && rt <= 3)) return false;
+      if (ratingFilter === "none" && r.rating != null) return false;
+    }
+    if (q) {
+      const ql = q.toLowerCase();
+      if (!(r.review_text ?? "").toLowerCase().includes(ql) && !(r.source_system ?? "").toLowerCase().includes(ql)) return false;
+    }
+    return true;
+  }), [rows, q, srcFilter, stateFilter, sentFilter, ratingFilter]);
   const avgRating = useMemo(() => {
-    const rated = rows.filter((r) => r.rating != null);
+    const rated = filtered.filter((r) => r.rating != null);
     if (!rated.length) return null;
     return (rated.reduce((s, r) => s + (r.rating ?? 0), 0) / rated.length).toFixed(2);
-  }, [rows]);
-  const negOpen = rows.filter((r) => (r.sentiment === "negative") && r.response_status !== "closed").length;
+  }, [filtered]);
+  const negOpen = filtered.filter((r) => (r.sentiment === "negative") && r.response_status !== "closed").length;
   return (
-    <MktgCard title="Reputation event log" hint={loading ? "Loading..." : `${rows.length} events`}>
+    <MktgCard title="Reputation event log" hint={loading ? "Loading..." : `${filtered.length} of ${rows.length} events`}>
+      <TableFilterBar
+        className="mb-3"
+        search={{ value: q, onChange: setQ, placeholder: "Search text or source..." }}
+        filters={[
+          { key: "elsrc", label: "Source", value: srcFilter, onChange: setSrcFilter, options: [{ value: "all", label: "All" }, ...sources.map((s) => ({ value: s, label: s }))] },
+          { key: "elst", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All" }, ...statesList.map((s) => ({ value: s, label: s }))] },
+          { key: "elr", label: "Rating", value: ratingFilter, onChange: setRatingFilter, options: [
+            { value: "all", label: "Any" }, { value: "5", label: "5 stars" }, { value: "4", label: "4 stars" }, { value: "low", label: "1-3 stars" }, { value: "none", label: "No rating" },
+          ] },
+          { key: "elsent", label: "Sentiment", value: sentFilter, onChange: setSentFilter, options: [
+            { value: "all", label: "Any" }, { value: "positive", label: "Positive" }, { value: "neutral", label: "Neutral" }, { value: "negative", label: "Negative" },
+          ] },
+        ]}
+        resultCount={filtered.length}
+        totalCount={rows.length}
+        onClear={() => { setQ(""); setSrcFilter("all"); setStateFilter("all"); setRatingFilter("all"); setSentFilter("all"); }}
+        extra={
+          <>
+            <Button size="sm" variant="outline" onClick={() => setLogOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" /> Log event
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload className="mr-1.5 h-4 w-4" /> Bulk import
+            </Button>
+          </>
+        }
+      />
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="text-xs text-muted-foreground">
           Avg rating: <span className="font-medium text-foreground">{avgRating ?? "-"}</span> - Open negatives:{" "}
           <span className="font-medium text-foreground">{negOpen}</span>
         </div>
-        <div className="ml-auto flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => setLogOpen(true)}>
-            <Plus className="mr-1.5 h-4 w-4" /> Log event
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-            <Upload className="mr-1.5 h-4 w-4" /> Bulk import
-          </Button>
-        </div>
       </div>
-      {rows.length === 0 ? (
+      {filtered.length === 0 ? (
         <EmptyRow>No reputation events yet. Log a review or bulk import.</EmptyRow>
       ) : (
         <div className="overflow-hidden rounded-md border border-border">
@@ -971,7 +1016,7 @@ function ReputationEventsPanel() {
               </tr>
             </thead>
             <tbody>
-              {rows.slice(0, 25).map((r) => (
+              {filtered.slice(0, 25).map((r) => (
                 <tr key={r.id} className="border-t border-border/40">
                   <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{new Date(r.occurred_at).toLocaleDateString("en-US")}</td>
                   <td className="px-3 py-2">{r.source_system}</td>

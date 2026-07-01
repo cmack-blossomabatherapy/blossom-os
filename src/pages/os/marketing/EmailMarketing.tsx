@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { EmailEventLogDialog } from "@/components/marketing/EmailEventLogDialog";
 import { BulkEmailEventImportDialog } from "@/components/marketing/BulkEmailEventImportDialog";
 import { CampaignManagerCard } from "@/components/marketing/CampaignManagerCard";
+import { TableFilterBar } from "@/components/marketing/TableFilterBar";
+import { useUrlState } from "@/hooks/useUrlState";
 
 type EmailEvent = {
   id: string;
@@ -35,6 +37,30 @@ export default function EmailMarketing() {
   const [manualOpen, setManualOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
+  const [q, setQ] = useUrlState("q", "");
+  const [evtFilter, setEvtFilter] = useUrlState("evt", "all");
+  const [campFilter, setCampFilter] = useUrlState("cmp", "all");
+
+  const eventTypes = useMemo(
+    () => Array.from(new Set(events.map((e) => (e.event_type ?? "").toLowerCase()).filter(Boolean))).sort(),
+    [events],
+  );
+
+  const filteredEvents = useMemo(() => events.filter((e) => {
+    const t = (e.event_type ?? "").toLowerCase();
+    if (evtFilter !== "all" && t !== evtFilter) return false;
+    if (campFilter !== "all") {
+      if (campFilter === "__none__" ? !!e.campaign_id : e.campaign_id !== campFilter) return false;
+    }
+    if (q) {
+      const ql = q.toLowerCase();
+      const camp = campaigns.find((c) => c.id === e.campaign_id);
+      if (!(e.recipient_email ?? "").toLowerCase().includes(ql) &&
+          !(camp?.name ?? "").toLowerCase().includes(ql) &&
+          !t.includes(ql)) return false;
+    }
+    return true;
+  }), [events, campaigns, q, evtFilter, campFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -148,6 +174,17 @@ export default function EmailMarketing() {
       <CampaignManagerCard />
 
       <MktgCard title="Recent Email Events">
+        <TableFilterBar
+          className="mb-3"
+          search={{ value: q, onChange: setQ, placeholder: "Search recipient, campaign, event..." }}
+          filters={[
+            { key: "evt", label: "Event", value: evtFilter, onChange: setEvtFilter, options: [{ value: "all", label: "All" }, ...eventTypes.map((t) => ({ value: t, label: t }))] },
+            { key: "cmp", label: "Campaign", value: campFilter, onChange: setCampFilter, options: [{ value: "all", label: "All" }, { value: "__none__", label: "No campaign" }, ...campaigns.map((c) => ({ value: c.id, label: c.name }))], width: 180 },
+          ]}
+          resultCount={filteredEvents.length}
+          totalCount={events.length}
+          onClear={() => { setQ(""); setEvtFilter("all"); setCampFilter("all"); }}
+        />
         <div className="overflow-hidden rounded-md border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -160,16 +197,16 @@ export default function EmailMarketing() {
               </tr>
             </thead>
             <tbody>
-              {events.length === 0 ? (
+              {filteredEvents.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-3 py-6">
                     <EmptyRow>
-                      No email events yet. Connect Mailchimp or use Log Email Event above.
+                      {events.length === 0 ? "No email events yet. Connect Mailchimp or use Log Email Event above." : "No events match these filters."}
                     </EmptyRow>
                   </td>
                 </tr>
               ) : (
-                events.map((e) => {
+                filteredEvents.map((e) => {
                   const camp = campaigns.find((c) => c.id === e.campaign_id);
                   return (
                     <tr key={e.id} className="border-t border-border/40">

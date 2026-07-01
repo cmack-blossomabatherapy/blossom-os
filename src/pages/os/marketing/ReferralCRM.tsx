@@ -46,6 +46,7 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { TableFilterBar, type FilterDef } from "@/components/marketing/TableFilterBar";
 
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
@@ -376,6 +377,8 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     : "all") as (typeof CONTACT_VIEWS)[number]["id"];
   const [q, setQ] = useUrlState("cq", "");
   const [stateFilter, setStateFilter] = useUrlState("cs", "all");
+  const [ownerFilter, setOwnerFilter] = useUrlState("co", "all");
+  const [partnerFilter, setPartnerFilter] = useUrlState("cp", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
@@ -389,6 +392,11 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     if (view === "ll-needed") r = r.filter((c) =>
       c.lunchLearnStatus === "Not Scheduled" && (c.relationshipStrength === "Warm" || c.relationshipStrength === "Strong"));
     if (stateFilter !== "all") r = r.filter((c) => c.state === stateFilter);
+    if (ownerFilter !== "all") {
+      if (ownerFilter === "__unassigned__") r = r.filter((c) => !c.ownerId);
+      else r = r.filter((c) => c.ownerId === ownerFilter);
+    }
+    if (partnerFilter !== "all") r = r.filter((c) => (c.referralPartnerStatus || "") === partnerFilter);
     if (q) {
       const ql = q.toLowerCase();
       r = r.filter((c) => contactDisplayName(c).toLowerCase().includes(ql) || c.email?.toLowerCase().includes(ql) || c.jobTitle?.toLowerCase().includes(ql));
@@ -413,7 +421,14 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
       return 0;
     });
     return sorted;
-  }, [s, view, q, stateFilter, sort]);
+  }, [s, view, q, stateFilter, ownerFilter, partnerFilter, sort]);
+
+  const totalContacts = scopedContacts(s).length;
+  const contactFilters: FilterDef[] = [
+    { key: "cs", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
+    { key: "co", label: "Owner", value: ownerFilter, onChange: setOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
+    { key: "cp", label: "Partner", value: partnerFilter, onChange: setPartnerFilter, options: [{ value: "all", label: "All statuses" }, ...["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => ({ value: v, label: v }))], width: 170 },
+  ];
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => {
@@ -454,23 +469,18 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts..." className="pl-8 h-9 text-sm" />
-        </div>
-        <Select value={stateFilter} onValueChange={setStateFilter}>
-          <SelectTrigger className="w-[110px] h-9 text-sm"><SelectValue placeholder="State" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All states</SelectItem>
-            {STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
-          <Plus className="size-3.5" /> New Contact
-        </Button>
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search contacts..." }}
+        filters={contactFilters}
+        resultCount={rows.length}
+        totalCount={totalContacts}
+        onClear={() => { setQ(""); setStateFilter("all"); setOwnerFilter("all"); setPartnerFilter("all"); }}
+        extra={
+          <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
+            <Plus className="size-3.5" /> New Contact
+          </Button>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-1.5">
         {CONTACT_VIEWS.map((v) => (
@@ -713,6 +723,10 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     ? viewRaw
     : "all") as (typeof COMPANY_VIEWS)[number]["id"];
   const [q, setQ] = useUrlState("oq", "");
+  const [stateFilter, setStateFilter] = useUrlState("os", "all");
+  const [tierFilter, setTierFilter] = useUrlState("ot", "all");
+  const [ownerFilter, setOwnerFilter] = useUrlState("oo", "all");
+  const [partnerFilter, setPartnerFilter] = useUrlState("op", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
@@ -724,6 +738,13 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     if (view === "active") r = r.filter((c) => c.activeReferralPartner);
     if (view === "tier-a") r = r.filter((c) => c.relationshipTier === "Tier A");
     if (view === "targets") r = r.filter((c) => c.referralPartnerStatus === "New Target");
+    if (stateFilter !== "all") r = r.filter((c) => c.state === stateFilter);
+    if (tierFilter !== "all") r = r.filter((c) => (c.relationshipTier || "") === tierFilter);
+    if (ownerFilter !== "all") {
+      if (ownerFilter === "__unassigned__") r = r.filter((c) => !c.ownerId);
+      else r = r.filter((c) => c.ownerId === ownerFilter);
+    }
+    if (partnerFilter !== "all") r = r.filter((c) => (c.referralPartnerStatus || "") === partnerFilter);
     if (q) { const ql = q.toLowerCase(); r = r.filter((c) => c.name.toLowerCase().includes(ql) || c.city?.toLowerCase().includes(ql)); }
     const getKey = (c: typeof r[number]): string | number => {
       switch (sort.key) {
@@ -745,7 +766,15 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
       return 0;
     });
     return sorted;
-  }, [s, view, q, sort]);
+  }, [s, view, q, stateFilter, tierFilter, ownerFilter, partnerFilter, sort]);
+
+  const totalCompanies = scopedCompanies(s).length;
+  const companyFilters: FilterDef[] = [
+    { key: "os", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
+    { key: "ot", label: "Tier", value: tierFilter, onChange: setTierFilter, options: [{ value: "all", label: "All tiers" }, ...["Tier A", "Tier B", "Tier C"].map((v) => ({ value: v, label: v }))] },
+    { key: "oo", label: "Owner", value: ownerFilter, onChange: setOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
+    { key: "op", label: "Partner", value: partnerFilter, onChange: setPartnerFilter, options: [{ value: "all", label: "All statuses" }, ...["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => ({ value: v, label: v }))], width: 170 },
+  ];
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
@@ -806,14 +835,18 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies..." className="pl-8 h-9 text-sm" />
-        </div>
-        <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Company</Button>
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search companies..." }}
+        filters={companyFilters}
+        resultCount={rows.length}
+        totalCount={totalCompanies}
+        onClear={() => { setQ(""); setStateFilter("all"); setTierFilter("all"); setOwnerFilter("all"); setPartnerFilter("all"); }}
+        extra={
+          <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
+            <Plus className="size-3.5" /> New Company
+          </Button>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-1.5">
         {COMPANY_VIEWS.map((v) => (
@@ -1119,6 +1152,10 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
   const [drawerFocusStage, setDrawerFocusStage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useUrlState("rs", "all");
   const [stageFilter, setStageFilter] = useUrlState("rp", "all");
+  const [rQuery, setRQuery] = useUrlState("rq", "");
+  const [rStateFilter, setRStateFilter] = useUrlState("rst", "all");
+  const [rServiceFilter, setRServiceFilter] = useUrlState("rsv", "all");
+  const [rIntakeOwnerFilter, setRIntakeOwnerFilter] = useUrlState("rio", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
   const allRows = scopedReferrals(s);
@@ -1134,10 +1171,34 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
           return false;
         }
       }
+      if (rStateFilter !== "all" && r.state !== rStateFilter) return false;
+      if (rServiceFilter !== "all" && (r.serviceType || "") !== rServiceFilter) return false;
+      if (rIntakeOwnerFilter !== "all") {
+        if (rIntakeOwnerFilter === "__unassigned__") {
+          if (r.assignedIntakeOwnerId) return false;
+        } else if (r.assignedIntakeOwnerId !== rIntakeOwnerFilter) return false;
+      }
+      if (rQuery) {
+        const ql = rQuery.toLowerCase();
+        const co = companyName(s, r.companyId).toLowerCase();
+        const con = r.contactId ? contactDisplayName(s.contacts.find((c) => c.id === r.contactId)).toLowerCase() : "";
+        if (!r.name.toLowerCase().includes(ql) && !co.includes(ql) && !con.includes(ql)) return false;
+      }
       return true;
     });
-  }, [allRows, statusFilter, stageFilter, leadById]);
-  const filtersActive = statusFilter !== "all" || stageFilter !== "all";
+  }, [allRows, statusFilter, stageFilter, leadById, rStateFilter, rServiceFilter, rIntakeOwnerFilter, rQuery, s]);
+  const filtersActive =
+    statusFilter !== "all" || stageFilter !== "all" ||
+    rStateFilter !== "all" || rServiceFilter !== "all" ||
+    rIntakeOwnerFilter !== "all" || !!rQuery;
+  const referralServices = useMemo(() => Array.from(new Set(s.referrals.map((r) => r.serviceType).filter((x): x is string => !!x))).sort(), [s.referrals]);
+  const referralFilters: FilterDef[] = [
+    { key: "rs", label: "Status", value: statusFilter, onChange: setStatusFilter, options: [{ value: "all", label: "All statuses" }, ...["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"].map((v) => ({ value: v, label: v }))], width: 160 },
+    { key: "rp", label: "Pipeline", value: stageFilter, onChange: setStageFilter, options: [{ value: "all", label: "All stages" }, { value: "__none__", label: "Not linked" }, ...FAMILY_LEAD_PIPELINE_STAGES.map((v) => ({ value: v, label: v }))], width: 200 },
+    { key: "rst", label: "State", value: rStateFilter, onChange: setRStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
+    { key: "rsv", label: "Service", value: rServiceFilter, onChange: setRServiceFilter, options: [{ value: "all", label: "All services" }, ...referralServices.map((v) => ({ value: v, label: v }))], width: 160 },
+    { key: "rio", label: "Intake owner", value: rIntakeOwnerFilter, onChange: setRIntakeOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 180 },
+  ];
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
@@ -1186,38 +1247,22 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 w-[180px] text-xs"><SelectValue placeholder="Referral status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              {["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"].map((v) => (
-                <SelectItem key={v} value={v}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={stageFilter} onValueChange={setStageFilter}>
-            <SelectTrigger className="h-9 w-[220px] text-xs"><SelectValue placeholder="Patient pipeline stage" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All pipeline stages</SelectItem>
-              <SelectItem value="__none__">Not linked</SelectItem>
-              {FAMILY_LEAD_PIPELINE_STAGES.map((v) => (
-                <SelectItem key={v} value={v}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {filtersActive && (
-            <Button variant="ghost" size="sm" className="h-9 text-xs" onClick={() => { setStatusFilter("all"); setStageFilter("all"); }}>
-              Clear filters
-            </Button>
-          )}
-          <span className="text-xs text-muted-foreground">{rows.length} of {allRows.length}</span>
-        </div>
-        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
-          <Plus className="size-3.5" /> New Referral
-        </Button>
-      </div>
+      <TableFilterBar
+        search={{ value: rQuery, onChange: setRQuery, placeholder: "Search patient, company, contact..." }}
+        filters={referralFilters}
+        resultCount={rows.length}
+        totalCount={allRows.length}
+        onClear={() => {
+          setStatusFilter("all"); setStageFilter("all");
+          setRStateFilter("all"); setRServiceFilter("all");
+          setRIntakeOwnerFilter("all"); setRQuery("");
+        }}
+        extra={
+          <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
+            <Plus className="size-3.5" /> New Referral
+          </Button>
+        }
+      />
 
       {selected.size > 0 && (
         <div className="rounded-xl bg-foreground text-background px-3 py-2 flex flex-wrap items-center gap-2 text-sm">
@@ -1415,10 +1460,42 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const [groupBy, setGroupBy] = useState<"owner" | "state" | "status">("owner");
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<Set<ID>>(new Set());
+  const [tQuery, setTQuery] = useUrlState("tq", "");
+  const [tStatusFilter, setTStatusFilter] = useUrlState("ts", "all");
+  const [tPriorityFilter, setTPriorityFilter] = useUrlState("tpr", "all");
+  const [tOwnerFilter, setTOwnerFilter] = useUrlState("to", "all");
+  const [tTypeFilter, setTTypeFilter] = useUrlState("tt", "all");
+  const [tDueFilter, setTDueFilter] = useUrlState("td", "all");
+
+  const filteredTasks = useMemo(() => {
+    const now = Date.now();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return scopedTasks(s).filter((t) => {
+      if (tStatusFilter !== "all" && t.status !== tStatusFilter) return false;
+      if (tPriorityFilter !== "all" && t.priority !== tPriorityFilter) return false;
+      if (tOwnerFilter !== "all") {
+        if (tOwnerFilter === "__unassigned__") { if (t.assignedUserId) return false; }
+        else if (t.assignedUserId !== tOwnerFilter) return false;
+      }
+      if (tTypeFilter !== "all" && t.type !== tTypeFilter) return false;
+      if (tDueFilter !== "all") {
+        const due = t.dueDate ? new Date(t.dueDate).getTime() : null;
+        if (tDueFilter === "overdue") { if (!due || due >= today.getTime() || t.status === "Completed") return false; }
+        else if (tDueFilter === "today") { if (!due || due < today.getTime() || due >= today.getTime() + 86_400_000) return false; }
+        else if (tDueFilter === "week") { if (!due || due < now || due > now + 7 * 86_400_000) return false; }
+        else if (tDueFilter === "none") { if (due) return false; }
+      }
+      if (tQuery) {
+        const ql = tQuery.toLowerCase();
+        if (!t.title.toLowerCase().includes(ql) && !(t.notes || "").toLowerCase().includes(ql)) return false;
+      }
+      return true;
+    });
+  }, [s, tQuery, tStatusFilter, tPriorityFilter, tOwnerFilter, tTypeFilter, tDueFilter]);
 
   const groups = useMemo(() => {
     const map = new Map<string, Task[]>();
-    for (const t of scopedTasks(s)) {
+    for (const t of filteredTasks) {
       let key = "Unassigned";
       if (groupBy === "owner") key = userName(s, t.assignedUserId);
       else if (groupBy === "state") {
@@ -1429,9 +1506,9 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
       map.get(key)!.push(t);
     }
     return [...map.entries()];
-  }, [s, groupBy]);
+  }, [s, groupBy, filteredTasks]);
 
-  const visibleIds = scopedTasks(s).map((t) => t.id);
+  const visibleIds = filteredTasks.map((t) => t.id);
   const allChecked = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(visibleIds));
   const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
@@ -1471,8 +1548,29 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
     toast({ title: `Exported ${data.length} task(s)` });
   };
 
+  const totalTasks = scopedTasks(s).length;
+  const taskFilters: FilterDef[] = [
+    { key: "ts", label: "Status", value: tStatusFilter, onChange: setTStatusFilter, options: [{ value: "all", label: "All" }, ...["Open", "In Progress", "Completed"].map((v) => ({ value: v, label: v }))] },
+    { key: "tpr", label: "Priority", value: tPriorityFilter, onChange: setTPriorityFilter, options: [{ value: "all", label: "All" }, ...["Low", "Medium", "High"].map((v) => ({ value: v, label: v }))] },
+    { key: "tt", label: "Type", value: tTypeFilter, onChange: setTTypeFilter, options: [{ value: "all", label: "All" }, ...["Call", "Email", "Meeting", "Lunch & Learn", "Follow-Up", "Other"].map((v) => ({ value: v, label: v }))], width: 150 },
+    { key: "to", label: "Owner", value: tOwnerFilter, onChange: setTOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
+    { key: "td", label: "Due", value: tDueFilter, onChange: setTDueFilter, options: [{ value: "all", label: "Any" }, { value: "overdue", label: "Overdue" }, { value: "today", label: "Today" }, { value: "week", label: "Next 7d" }, { value: "none", label: "No date" }] },
+  ];
+
   return (
     <div className="space-y-4">
+      <TableFilterBar
+        search={{ value: tQuery, onChange: setTQuery, placeholder: "Search tasks..." }}
+        filters={taskFilters}
+        resultCount={filteredTasks.length}
+        totalCount={totalTasks}
+        onClear={() => { setTQuery(""); setTStatusFilter("all"); setTPriorityFilter("all"); setTOwnerFilter("all"); setTTypeFilter("all"); setTDueFilter("all"); }}
+        extra={
+          <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
+            <Plus className="size-3.5" /> New Task
+          </Button>
+        }
+      />
       <div className="flex items-center gap-2">
         <Label className="text-xs">Group by</Label>
         <Select value={groupBy} onValueChange={(v) => setGroupBy(v as "owner" | "state" | "status")}>
@@ -1486,8 +1584,6 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
         <label className="ml-2 flex items-center gap-2 text-xs text-muted-foreground">
           <Checkbox checked={allChecked} onCheckedChange={toggleAll} /> Select all
         </label>
-        <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Task</Button>
       </div>
 
       {selected.size > 0 && (
@@ -3074,8 +3170,9 @@ function SettingsModule() {
 // ===========================================================
 function FilesModule() {
   const s = useCrm();
-  const [q, setQ] = useState("");
-  const [type, setType] = useState<string>("all");
+  const [q, setQ] = useUrlState("fq", "");
+  const [type, setType] = useUrlState("ft", "all");
+  const [category, setCategory] = useUrlState("fc", "all");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const objectLabel = (a: Attachment): string => {
@@ -3089,6 +3186,7 @@ function FilesModule() {
   const rows = s.attachments.filter((a) => {
     if (a.archivedAt) return false;
     if (type !== "all" && a.objectType !== type) return false;
+    if (category !== "all" && (a.category || "") !== category) return false;
     if (q && !a.fileName.toLowerCase().includes(q.toLowerCase()) && !objectLabel(a).toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
@@ -3110,25 +3208,30 @@ function FilesModule() {
   }
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search files..." className="pl-8 h-9 text-sm" />
-        </div>
-        <Select value={type} onValueChange={setType}>
-          <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All objects</SelectItem>
-            <SelectItem value="contact">Contacts</SelectItem>
-            <SelectItem value="company">Companies</SelectItem>
-            <SelectItem value="referral">Referrals</SelectItem>
-            <SelectItem value="general">General</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button size="sm" className="h-9 ml-auto" onClick={() => setUploadOpen(true)}>
-          <Upload className="size-3.5 mr-1.5" /> Upload file
-        </Button>
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search files..." }}
+        filters={[
+          { key: "ft", label: "Object", value: type, onChange: setType, options: [
+            { value: "all", label: "All objects" },
+            { value: "contact", label: "Contacts" },
+            { value: "company", label: "Companies" },
+            { value: "referral", label: "Referrals" },
+            { value: "general", label: "General" },
+          ] },
+          { key: "fc", label: "Category", value: category, onChange: setCategory, options: [
+            { value: "all", label: "All" },
+            ...["Lunch & Learn", "Insurance", "Outreach", "Welcome Packet", "Other"].map((c) => ({ value: c, label: c })),
+          ], width: 160 },
+        ]}
+        resultCount={rows.length}
+        totalCount={s.attachments.filter((a) => !a.archivedAt).length}
+        onClear={() => { setQ(""); setType("all"); setCategory("all"); }}
+        extra={
+          <Button size="sm" className="h-9" onClick={() => setUploadOpen(true)}>
+            <Upload className="size-3.5 mr-1.5" /> Upload file
+          </Button>
+        }
+      />
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -3301,10 +3404,12 @@ const AUDIT_ICON: Record<string, typeof Activity> = {
 
 function AuditModule() {
   const s = useCrm();
-  const [q, setQ] = useState("");
-  const [action, setAction] = useState<string>("all");
+  const [q, setQ] = useUrlState("aq", "");
+  const [action, setAction] = useUrlState("aa", "all");
+  const [objectType, setObjectType] = useUrlState("ao", "all");
   const rows = s.auditLog.filter((r) => {
     if (action !== "all" && r.action !== action) return false;
+    if (objectType !== "all" && (r.objectType || "") !== objectType) return false;
     if (q) {
       const ql = q.toLowerCase();
       if (!r.summary.toLowerCase().includes(ql) && !(r.objectLabel ?? "").toLowerCase().includes(ql) && !r.actor.toLowerCase().includes(ql)) return false;
@@ -3312,21 +3417,19 @@ function AuditModule() {
     return true;
   });
   const actions = Array.from(new Set(s.auditLog.map((r) => r.action)));
+  const objectTypes = Array.from(new Set(s.auditLog.map((r) => r.objectType as string).filter((x) => !!x)));
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search audit log..." className="pl-8 h-9 text-sm" />
-        </div>
-        <Select value={action} onValueChange={setAction}>
-          <SelectTrigger className="w-[160px] h-9 text-sm"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All actions</SelectItem>
-            {actions.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search audit log..." }}
+        filters={[
+          { key: "aa", label: "Action", value: action, onChange: setAction, options: [{ value: "all", label: "All actions" }, ...actions.map((a) => ({ value: a, label: a }))], width: 170 },
+          { key: "ao", label: "Object", value: objectType, onChange: setObjectType, options: [{ value: "all", label: "All" }, ...objectTypes.map((o) => ({ value: o, label: o }))] },
+        ]}
+        resultCount={rows.length}
+        totalCount={s.auditLog.length}
+        onClear={() => { setQ(""); setAction("all"); setObjectType("all"); }}
+      />
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -3377,19 +3480,27 @@ const ACTIVITY_FILTERS: { id: "all" | ActivityEvent["type"]; label: string }[] =
 
 function ActivitiesModule() {
   const s = useCrm();
-  const [f, setF] = useState<"all" | ActivityEvent["type"]>("all");
-  const rows = s.activity.filter((a) => f === "all" || a.type === f);
+  const [f, setF] = useUrlState("af", "all");
+  const [q, setQ] = useUrlState("aq2", "");
+  const rows = s.activity.filter((a) => {
+    if (f !== "all" && a.type !== f) return false;
+    if (q) {
+      const ql = q.toLowerCase();
+      if (!a.message.toLowerCase().includes(ql)) return false;
+    }
+    return true;
+  });
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-1.5">
-        {ACTIVITY_FILTERS.map((x) => (
-          <button key={x.id} onClick={() => setF(x.id)}
-            className={cn("px-3 py-1 rounded-lg text-xs font-medium border transition-colors",
-              f === x.id ? "bg-primary/10 text-primary border-primary/20" : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted")}>
-            {x.label}
-          </button>
-        ))}
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search activity messages..." }}
+        filters={[
+          { key: "af", label: "Type", value: f, onChange: setF, options: ACTIVITY_FILTERS.map((x) => ({ value: x.id, label: x.label })), width: 150 },
+        ]}
+        resultCount={rows.length}
+        totalCount={s.activity.length}
+        onClear={() => { setQ(""); setF("all"); }}
+      />
       <div className="rounded-2xl border bg-card divide-y">
         {rows.length === 0 && <p className="text-sm text-muted-foreground text-center py-10">No activity in this view.</p>}
         {rows.map((a) => {
@@ -4604,14 +4715,18 @@ function PatientPipelineModule({
   onOpenContact, onOpenCompany,
 }: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
   const s = useCrm();
-  const [q, setQ] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [q, setQ] = useUrlState("ppq", "");
+  const [statusFilter, setStatusFilter] = useUrlState("pps", "all");
+  const [stateFilter, setStateFilter] = useUrlState("ppst", "all");
+  const [intakeFilter, setIntakeFilter] = useUrlState("ppi", "all");
+  const [insFilter, setInsFilter] = useUrlState("ppins", "all");
 
   const rows = useMemo(() => {
     let r = scopedReferrals(s);
     if (statusFilter !== "all") r = r.filter((x) => x.referralStatus === statusFilter);
     if (stateFilter !== "all") r = r.filter((x) => x.state === stateFilter);
+    if (intakeFilter !== "all") r = r.filter((x) => (x.intakeStatus || "") === intakeFilter);
+    if (insFilter !== "all") r = r.filter((x) => (x.insuranceType || "") === insFilter);
     if (q) {
       const ql = q.toLowerCase();
       r = r.filter((x) =>
@@ -4621,7 +4736,7 @@ function PatientPipelineModule({
       );
     }
     return [...r].sort((a, b) => (b.referralDate || "").localeCompare(a.referralDate || ""));
-  }, [s, q, statusFilter, stateFilter]);
+  }, [s, q, statusFilter, stateFilter, intakeFilter, insFilter]);
 
   const byStatus = useMemo(() => {
     const map: Record<string, number> = {};
@@ -4630,6 +4745,8 @@ function PatientPipelineModule({
   }, [s]);
 
   const STATUSES: Referral["referralStatus"][] = ["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"];
+  const intakeStatuses = useMemo(() => Array.from(new Set(scopedReferrals(s).map((r) => r.intakeStatus as string).filter((x) => !!x))).sort(), [s]);
+  const insTypes = useMemo(() => Array.from(new Set(scopedReferrals(s).map((r) => r.insuranceType as string).filter((x) => !!x))).sort(), [s]);
 
   return (
     <div className="space-y-4">
@@ -4642,7 +4759,7 @@ function PatientPipelineModule({
         {STATUSES.map((st) => (
           <button
             key={st}
-            onClick={() => setStatusFilter((cur) => (cur === st ? "all" : st))}
+            onClick={() => setStatusFilter(statusFilter === st ? "all" : st)}
             className={cn(
               "rounded-xl border bg-card p-3 text-left transition-colors hover:bg-muted/40",
               statusFilter === st && "border-primary/40 bg-primary/5",
@@ -4654,26 +4771,18 @@ function PatientPipelineModule({
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search patient, company..." className="pl-8 h-9 text-sm" />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[170px] h-9 text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {STATUSES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={stateFilter} onValueChange={setStateFilter}>
-          <SelectTrigger className="w-[110px] h-9 text-sm"><SelectValue placeholder="State" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All states</SelectItem>
-            {STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search patient, company..." }}
+        filters={[
+          { key: "pps", label: "Status", value: statusFilter, onChange: setStatusFilter, options: [{ value: "all", label: "All statuses" }, ...STATUSES.map((v) => ({ value: v, label: v }))], width: 170 },
+          { key: "ppst", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((v) => ({ value: v, label: v }))] },
+          { key: "ppi", label: "Intake", value: intakeFilter, onChange: setIntakeFilter, options: [{ value: "all", label: "All" }, ...intakeStatuses.map((v) => ({ value: v, label: v }))], width: 160 },
+          { key: "ppins", label: "Insurance", value: insFilter, onChange: setInsFilter, options: [{ value: "all", label: "All" }, ...insTypes.map((v) => ({ value: v, label: v }))], width: 160 },
+        ]}
+        resultCount={rows.length}
+        totalCount={scopedReferrals(s).length}
+        onClear={() => { setQ(""); setStatusFilter("all"); setStateFilter("all"); setIntakeFilter("all"); setInsFilter("all"); }}
+      />
 
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">

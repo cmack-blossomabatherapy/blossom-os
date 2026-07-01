@@ -1,58 +1,59 @@
 ## Goal
-Audit every clickable control (buttons, icon buttons, row actions, quick-action tiles) across the 15 Marketing team pages and make sure each one either performs a real, wired-up action or is removed. No dead buttons, no silent no-ops, no "coming soon" toasts left standing.
+Give every table across the Marketing surfaces a consistent, powerful **top-of-table filter bar** — search + full chip row of common facets — with all filter state persisted in the URL so views are shareable and reload-safe.
 
-## Scope — pages covered
-`src/pages/os/marketing/`:
-1. MarketingDashboard
-2. Campaigns
-3. LeadSources
-4. CallTracking
-5. AttributionROI
-6. WebAnalytics
-7. SEOContent
-8. EmailMarketing
-9. Reputation
-10. CommunityOutreach
-11. StateGrowth
-12. RecruitingMarketing
-13. Referrals
-14. ReferralCRM (all sub-modules — Dashboard, Contacts, Companies, Referrals, Tasks, Lists, Workflows, Reports, Imports, Exports, Duplicates, Settings, Users, Deleted, Files, Audit, Activities, Search, Patient Pipeline)
-15. MarketingTraining
+## Scope (tables to touch)
 
-## Audit method (per page)
-For each page:
-1. Grep every `<Button`, `<button`, `onClick=`, and row-level clickable tile.
-2. Classify each control as:
-   - **OK** — already opens dialog / navigates / mutates / exports correctly.
-   - **No-op** — handler missing, empty arrow, or only fires a placeholder toast.
-   - **Broken** — handler exists but throws, targets wrong ID/route, or dialog never opens.
-   - **Vestigial** — leftover from an earlier design with no purpose.
-3. Fix path per class:
-   - **No-op / Broken** → wire to the existing hook/store action (`crm.*`, `useMarketing*`, `supabase` insert/update, or navigate) using the same patterns already in the codebase.
-   - **Vestigial** → remove the control (and its unused imports).
-   - **Real work missing a backend** → replace with a working local action (e.g. filter, CSV export, mark-as-done) rather than a stub — no new tables added in this pass.
+**Referral CRM** (`src/pages/os/marketing/ReferralCRM.tsx`)
+- Contacts — already has view + search + state; add: **owner**, **partner status**, **source type**, **has patients Y/N**, Clear
+- Companies — add: **state**, **company type**, **owner**, **partner status**, **active partner Y/N**, search, Clear
+- Referrals — already has status + pipeline; add: **state**, **owner**, **source type**, **date range**, search, Clear
+- Tasks — currently only groupBy; add: search, **status**, **priority**, **owner**, **state**, **due window** (overdue / today / this week / no date), Clear
+- Activities — currently only type chips; add: search, **user**, **date range**, Clear
+- Users — no filters today; add: search, **role**, **state**, **status (active/inactive)**, Clear
+- Files — has search + type; add: **owner/uploader**, **date range**, Clear
+- Audit — has search + action; add: **actor**, **object type**, **date range**, Clear
+- Deleted — add: search + **object type** filter, Clear
+- Patient Pipeline — has search + status + state; add: **source type**, **owner**, **date range**, Clear
 
-## Deliverable per page
-- A short in-code comment block at the top of each touched file listing the audited actions (so the fix is traceable) is NOT added — keep files clean.
-- Every previously dead control now: opens the right dialog, updates the right record, navigates the right route, exports the right CSV, or is removed.
-- No toast that says "coming soon", "not implemented", "TODO", or an empty `() => {}` handler remains in `src/pages/os/marketing/`.
+**Other Marketing pages with real tables**
+- `Referrals.tsx` — 3 tables (funnel / activity / partners); add search + relevant chip row per table
+- `EmailMarketing.tsx` — sequences table; add search + **status**, **owner**, **date range**
+- `Reputation.tsx` — 2 tables (reviews / responses); add search + **platform**, **rating**, **status**, **date range**
 
-## Reusable patterns
-- CRUD actions on referral/contact/company data → `crm.*` in `src/lib/os/referralCrm/store.ts`.
-- Live marketing tables (sources, calls, web metrics, work items, reputation) → the existing `useMarketing*` hooks under `src/hooks/`.
-- Bulk / CSV export → existing `downloadCsv` + `rowsToCsv` helpers.
-- Navigation → `react-router-dom` `useNavigate` with routes already registered.
-- Dialogs → mount using the same `Dialog` / `Sheet` pattern already in each page; do not invent new modal frameworks.
+Pages without tables (Campaigns, LeadSources, CallTracking, WebAnalytics, SEO, AttributionROI, CommunityOutreach, StateGrowth, RecruitingMarketing, MarketingTraining, MarketingDashboard) are out of scope.
+
+## Design (Blossom OS calm/premium)
+
+One shared `<TableFilterBar>` presentation component used everywhere so every table looks and behaves identically.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ [🔍 Search…]  [Status ▾] [Owner ▾] [State ▾] [Type ▾] [Date ▾]   n · Clear  │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+- Rounded 2xl card, subtle border, soft muted background — matches existing CRM filter rows.
+- Left: search input (flex-1, max-w-md, icon inside).
+- Middle: chip-style `Select` dropdowns, `h-9`, small text. Each dropdown shows its label + selected value; unset = muted.
+- Right: result count + a `Clear` link (only shown when any filter is active).
+- Wraps cleanly on narrow widths, sticky-top optional per table.
+- Active filters render as small removable pills below the bar when 2+ are set.
+
+## URL persistence
+
+- Each module already scoped by a top-level `m=` param. Each table adds its own short-prefixed params (e.g. Tasks: `ts_q`, `ts_status`, `ts_owner`, `ts_state`, `ts_due`, `ts_pri`).
+- Introduce a tiny `useUrlState(key, default)` helper (thin wrapper over `useSearchParams`) so every table filter round-trips through the URL identically.
+- Empty / default values are stripped from the URL to keep it clean.
+- Reload, deep-link, and share all restore the exact view.
+
+## Technical notes
+
+- Add `src/components/marketing/TableFilterBar.tsx` (presentational) + `src/hooks/useUrlState.ts` (state helper).
+- Refactor each table's filter row to use `TableFilterBar`; keep the existing filtering logic but source values from `useUrlState`.
+- Reuse existing option sources (`s.users`, `STATES`, canonical status enums, referral source types) — no new data layer.
+- No DB migrations, no backend changes, no changes outside `src/pages/os/marketing/**`, `src/components/marketing/**`, and the new hook.
+- Preserve current sorting, bulk-select, and drawer click-through behavior on every table.
 
 ## Out of scope
-- No new pages, no new database tables, no schema migrations.
-- No visual redesign — only wiring existing controls or removing dead ones. Minor label tweaks allowed when a button label lied about its behavior.
-- Non-marketing role pages are not touched.
-
-## Verification
-- After each page's fixes: click every button in preview (via a Playwright pass on `/marketing/*` routes) and confirm each one either opens the intended UI, mutates state, navigates, exports, or is gone.
-- Final grep confirms zero occurrences of `TODO`, `Coming soon`, `Not implemented`, or empty `onClick={() => {}}` in `src/pages/os/marketing/`.
-- Typecheck (`tsgo`) passes.
-
-## Estimated size
-~15 files touched, primarily small handler additions and a handful of removals. ReferralCRM (94 buttons) is the largest surface and gets the most attention.
+- Column show/hide, saved views, per-user default filters, server-side pagination — not requested.
+- Non-marketing pages (Intake, HR, etc.) — separate pass.
