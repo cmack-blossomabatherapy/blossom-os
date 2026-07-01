@@ -1043,7 +1043,7 @@ function ReferralStatusPill({ status }: { status?: string | null }) {
   );
 }
 
-function ReferralsModule() {
+function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
@@ -1080,7 +1080,7 @@ function ReferralsModule() {
     const data = s.referrals.filter((r) => selected.has(r.id)).map((r) => ({
       id: r.id, name: r.name, referralDate: r.referralDate,
       companyName: companyName(s, r.companyId),
-      contactName: r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "",
+      contactName: r.contactId ? contactDisplayName(s.contacts.find((c) => c.id === r.contactId)) : "",
       state: r.state, serviceType: r.serviceType, referralStatus: r.referralStatus,
       intakeStatus: r.intakeStatus, insuranceType: r.insuranceType,
       intakeOwner: userName(s, r.assignedIntakeOwnerId),
@@ -1168,7 +1168,13 @@ function ReferralsModule() {
                     </div>
                   </td>
                   <td className="px-3 align-middle truncate">{companyName(s, r.companyId) || <span className="text-muted-foreground">—</span>}</td>
-                  <td className="px-3 align-middle truncate">{r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : <span className="text-muted-foreground">—</span>}</td>
+                  <td className="px-3 align-middle truncate">
+                    {r.contactId ? (
+                      <button className="max-w-full truncate text-left font-medium hover:text-primary" onClick={() => onOpenContact(r.contactId!)}>
+                        {contactDisplayName(s.contacts.find((c) => c.id === r.contactId))}
+                      </button>
+                    ) : <span className="text-muted-foreground">—</span>}
+                  </td>
                   <td className="px-3 align-middle">{r.state || <span className="text-muted-foreground">—</span>}</td>
                   <td className="px-3 align-middle truncate">{r.serviceType || <span className="text-muted-foreground">—</span>}</td>
                   <td className="px-3 align-middle"><ReferralStatusPill status={r.referralStatus} /></td>
