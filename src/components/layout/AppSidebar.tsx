@@ -480,6 +480,22 @@ export function AppSidebar({
   const sections = useMemo(() => filterSectionsByQuery(navQuery), [baseSections, navQuery]);
   const mobileSections = useMemo(() => filterSectionsByQuery(mobileNavQuery), [baseSections, mobileNavQuery]);
 
+  // Bare (query-stripped) paths for every registered menu item across all sections
+  // and their children. Used so a prefix-based active match on a "hub" item (e.g.
+  // `/marketing`) yields to a more-specific sibling (e.g. `/marketing/referral-crm`).
+  const allItemPaths = useMemo(() => {
+    const paths: string[] = [];
+    for (const section of baseSections) {
+      for (const item of section.items) {
+        paths.push(item.path.split("?")[0]);
+        if (item.children) {
+          for (const child of item.children) paths.push(child.path.split("?")[0]);
+        }
+      }
+    }
+    return paths;
+  }, [baseSections]);
+
   const submitNavSearch = (q: string, isMobile: boolean) => (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter" || !q.trim()) return;
     const pool = isMobile ? mobileSections : sections;
@@ -502,7 +518,19 @@ export function AppSidebar({
       return true;
     }
     if (bare === "/") return location.pathname === "/";
-    return location.pathname === bare || location.pathname.startsWith(`${bare}/`);
+    if (location.pathname === bare) return true;
+    if (!location.pathname.startsWith(`${bare}/`)) return false;
+    // Prefix match: only active if no other registered item is a longer prefix
+    // of the current pathname. This prevents "hub" entries (e.g. /marketing)
+    // from staying highlighted on their child routes (e.g. /marketing/campaigns).
+    for (const other of allItemPaths) {
+      if (other === bare) continue;
+      if (other.length <= bare.length) continue;
+      if (other === location.pathname || location.pathname.startsWith(`${other}/`)) {
+        return false;
+      }
+    }
+    return true;
   };
 
   const toggleSection = (title: string) => {
