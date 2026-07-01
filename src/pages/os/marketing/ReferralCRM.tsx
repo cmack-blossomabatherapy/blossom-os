@@ -514,9 +514,9 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
                   <td className="px-3 py-2"><Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggleOne(c.id)} /></td>
                   <td className="px-3 py-2">
                     <button className="font-medium hover:text-primary text-left" onClick={() => onOpenContact(c.id)}>
-                      {fullName(c) || c.email || <span className="text-muted-foreground italic">(No name)</span>}
+                      {contactDisplayName(c)}
                     </button>
-                    {fullName(c) && <p className="text-xs text-muted-foreground">{c.email || "-"}</p>}
+                    {(fullName(c) || c.email) && <p className="text-xs text-muted-foreground">{fullName(c) ? (c.email || "-") : "Email-only contact"}</p>}
                   </td>
                   <td className="px-3 py-2">
                     {c.companyId ? (
@@ -1254,7 +1254,7 @@ function NewReferralDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           <div><Label className="text-xs">Source contact</Label>
             <Select value={f.contactId} onValueChange={(v) => setF({ ...f, contactId: v })}>
               <SelectTrigger><SelectValue placeholder="Pick contact" /></SelectTrigger>
-              <SelectContent>{eligibleContacts.map((c) => <SelectItem key={c.id} value={c.id}>{fullName(c)}</SelectItem>)}</SelectContent>
+              <SelectContent>{eligibleContacts.map((c) => <SelectItem key={c.id} value={c.id}>{contactDisplayName(c)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label className="text-xs">State</Label>
