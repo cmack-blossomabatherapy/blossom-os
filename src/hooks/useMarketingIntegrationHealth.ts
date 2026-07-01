@@ -7,9 +7,13 @@ import {
   listIntegrationCatalog,
   listIntegrationConnections,
   listIntegrationSyncRuns,
+  listIntegrationWebhookEvents,
+  listNormalizedRecords,
   type IntegrationConnectionRow,
   type IntegrationCatalogRow,
   type IntegrationSyncRunRow,
+  type IntegrationWebhookEventRow,
+  type IntegrationNormalizedRecordRow,
 } from "@/lib/os/integrations/backend";
 
 export type MarketingIntegrationStatus =
@@ -28,6 +32,8 @@ export interface MarketingIntegrationHealth {
   connectionStatus: string | null;
   lastSyncAt: string | null;
   lastEventAt: string | null;
+  lastWebhookAt: string | null;
+  lastNormalizedAt: string | null;
   events24h: number;
   events7d: number;
   openEvents: number;
@@ -72,6 +78,8 @@ export function useMarketingIntegrationHealth() {
   const [catalog, setCatalog] = useState<IntegrationCatalogRow[]>([]);
   const [connections, setConnections] = useState<IntegrationConnectionRow[]>([]);
   const [syncRuns, setSyncRuns] = useState<IntegrationSyncRunRow[]>([]);
+  const [webhookEvents, setWebhookEvents] = useState<IntegrationWebhookEventRow[]>([]);
+  const [normalizedRecords, setNormalizedRecords] = useState<IntegrationNormalizedRecordRow[]>([]);
   const [callEvents, setCallEvents] = useState<Array<{ source_system: string | null; occurred_at: string }>>([]);
   const [emailEvents, setEmailEvents] = useState<Array<{ source_system: string | null; occurred_at: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -80,10 +88,12 @@ export function useMarketingIntegrationHealth() {
     let alive = true;
     (async () => {
       setLoading(true);
-      const [cat, conns, runs, calls, mails] = await Promise.all([
+      const [cat, conns, runs, hooks, norms, calls, mails] = await Promise.all([
         listIntegrationCatalog().catch(() => []),
         listIntegrationConnections().catch(() => []),
         listIntegrationSyncRuns(undefined, 100).catch(() => []),
+        listIntegrationWebhookEvents(undefined, 200).catch(() => [] as IntegrationWebhookEventRow[]),
+        listNormalizedRecords(undefined, 200).catch(() => [] as IntegrationNormalizedRecordRow[]),
         (supabase as unknown as { from: (t: string) => { select: (c: string) => { order: (k: string, o: object) => { limit: (n: number) => Promise<{ data: unknown }> } } } })
           .from("marketing_call_events").select("source_system, occurred_at").order("occurred_at", { ascending: false }).limit(500).then((r) => (r.data as Array<{ source_system: string | null; occurred_at: string }>) ?? []).catch(() => []),
         (supabase as unknown as { from: (t: string) => { select: (c: string) => { order: (k: string, o: object) => { limit: (n: number) => Promise<{ data: unknown }> } } } })
@@ -93,6 +103,8 @@ export function useMarketingIntegrationHealth() {
       setCatalog(cat);
       setConnections(conns);
       setSyncRuns(runs);
+      setWebhookEvents(hooks);
+      setNormalizedRecords(norms);
       setCallEvents(calls);
       setEmailEvents(mails);
       setLoading(false);
@@ -153,13 +165,18 @@ export function useMarketingIntegrationHealth() {
       const lastRun = runsFor[0];
       const lastSyncAt = lastRun?.completed_at ?? lastRun?.started_at ?? activeConn?.last_success_at ?? null;
       const runError = runsFor.find((r) => r.status === "error" || r.status === "failed");
+      const hooksFor = cat ? webhookEvents.filter((h) => h.integration_id === cat.id) : [];
+      const lastWebhookAt = hooksFor[0]?.received_at ?? null;
+      const hookError = hooksFor.find((h) => h.processing_status === "error" || Boolean(h.error_message));
+      const normsFor = cat ? normalizedRecords.filter((n) => n.integration_id === cat.id) : [];
+      const lastNormalizedAt = normsFor[0]?.created_at ?? null;
 
       const marketingActive = def.aliases.some((a) => activeMarketingSources.has(a));
       const configured = Boolean(activeConn?.enabled) || marketingActive;
       const lastEventAt = last ? new Date(last).toISOString() : null;
 
       let status: MarketingIntegrationStatus;
-      if (errorConn || runError) status = "error";
+      if (errorConn || runError || hookError) status = "error";
       else if (c7 > 0) status = "receiving";
       else if (configured) status = "configured_no_events";
       else status = "needs_setup";
@@ -174,14 +191,20 @@ export function useMarketingIntegrationHealth() {
         connectionStatus: activeConn?.status ?? null,
         lastSyncAt,
         lastEventAt,
+        lastWebhookAt,
+        lastNormalizedAt,
         events24h: c24,
         events7d: c7,
         openEvents: open,
         nextAction: def.nextAction,
-        lastError: errorConn?.last_error ?? runError?.error_message ?? null,
+        lastError:
+          errorConn?.last_error ??
+          runError?.error_message ??
+          hookError?.error_message ??
+          null,
       };
     });
-  }, [events, callEvents, emailEvents, catalog, connections, syncRuns, activeMarketingSources]);
+  }, [events, callEvents, emailEvents, catalog, connections, syncRuns, webhookEvents, normalizedRecords, activeMarketingSources]);
 
   return { rows, loading };
 }
