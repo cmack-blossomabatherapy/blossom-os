@@ -17,6 +17,8 @@ import {
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { LeadSourceActions } from "@/components/marketing/LeadSourceActions";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
+import { SourceManagerCard } from "@/components/marketing/SourceManagerCard";
+import { IntegrationReadinessPanel } from "@/components/marketing/IntegrationReadinessPanel";
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * Lead Sources — operational intelligence on how families and staff find
@@ -115,6 +117,8 @@ export default function LeadSources() {
       actions={<AIPrompt label="What's our highest-quality source?" variant="card" />}
     >
       <LeadSourceActions sourceLabel="All Sources" sourceValue="Website" sourcePage="lead-sources" />
+      <SourceManagerCard />
+      <IntegrationReadinessPanel />
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
         <div className="absolute -top-24 -right-24 size-72 rounded-full bg-primary/10 blur-3xl" aria-hidden />

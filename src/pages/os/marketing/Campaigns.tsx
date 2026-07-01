@@ -16,6 +16,7 @@ import {
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 import { useMarketingData } from "@/hooks/useMarketingData";
+import { CampaignManagerCard } from "@/components/marketing/CampaignManagerCard";
 // Campaign KPIs blend useMarketingIntelligence (marketing_campaigns +
 // marketing_campaign_metrics + marketing_source_events) with the live
 // intake_leads / marketing_call_events / recruiting_candidates rows exposed
@@ -244,6 +245,9 @@ export default function Campaigns() {
       </section>
 
       {/* ── STATE FILTER ─────────────────────────────────────────────── */}
+      {/* ── PERSISTED CAMPAIGN MANAGER ───────────────────────────────── */}
+      <CampaignManagerCard />
+
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => setActiveState(null)}

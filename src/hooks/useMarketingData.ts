@@ -85,7 +85,16 @@ type RecruitingCandidateRow = Pick<
 type MarketingCallEventRow = Pick<
   Database["public"]["Tables"]["marketing_call_events"]["Row"],
   "id" | "occurred_at" | "source_system" | "state" | "status" | "lead_id" | "duration_seconds"
->;
+> & {
+  // Optional structured columns added by the Pass 101 migration; types may
+  // lag until Supabase types regenerate, so treat as optional strings.
+  direction?: string | null;
+  call_category?: string | null;
+  disposition?: string | null;
+  assigned_owner_id?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+};
 
 /**
  * Real-data hook for Marketing surfaces. Replaces the previous reliance on
@@ -129,6 +138,9 @@ export type MktCall = {
   leadId: string | null;
   /** call length in seconds; null when unknown. */
   durationSeconds: number | null;
+  callCategory: string | null;
+  disposition: string | null;
+  reviewedAt: string | null;
 };
 
 export interface UseMarketingDataResult {
@@ -162,7 +174,7 @@ export function useMarketingData(): UseMarketingDataResult {
           .limit(2000),
         supabase
           .from("marketing_call_events")
-          .select("id, occurred_at, source_system, state, status, lead_id, duration_seconds")
+          .select("id, occurred_at, source_system, state, status, lead_id, duration_seconds, direction, call_category, disposition, assigned_owner_id, reviewed_by, reviewed_at")
           .limit(2000),
       ]);
 
@@ -201,9 +213,12 @@ export function useMarketingData(): UseMarketingDataResult {
           source: normalizeLeadSource(c.source_system),
           state: c.state ?? null,
           status: c.status ?? "Unknown",
-          direction: inferDirection(c.status),
+          direction: c.direction ?? inferDirection(c.status),
           leadId: c.lead_id ?? null,
           durationSeconds: c.duration_seconds ?? null,
+          callCategory: c.call_category ?? null,
+          disposition: c.disposition ?? null,
+          reviewedAt: c.reviewed_at ?? null,
         })),
       );
     } catch (e: any) {
