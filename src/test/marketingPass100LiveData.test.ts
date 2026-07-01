@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { ROLE_MENUS } from "@/lib/os/roleMenus";
 
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
 
@@ -59,9 +60,8 @@ describe("Marketing Pass 100 — Patient Lifetime Journey is Marketing-only", ()
     expect(m![0]).not.toMatch(/MARKETING_ROLES_WITH_BD/);
   });
   it("Business Development menu does not include /patient-journey", () => {
-    const { ROLE_MENUS } = require("@/lib/os/roleMenus");
     const paths = ROLE_MENUS.business_development.sections.flatMap(
-      (s: { items: { path: string }[] }) => s.items.map((i) => i.path),
+      (s) => s.items.map((i) => i.path),
     );
     expect(paths).not.toContain("/patient-journey");
   });
@@ -73,7 +73,8 @@ describe("Marketing Pass 100 — single Reports page", () => {
   });
   it("/marketing/reports route is a Navigate redirect to /reports", () => {
     const app = read("src/App.tsx");
-    const m = app.match(/<Route\s+path="\/marketing\/reports"[^>]*element=\{<Navigate[^>]*to="\/reports"/);
-    expect(m).toBeTruthy();
+    expect(app).toMatch(
+      /<Route\s+path="\/marketing\/reports"\s+element=\{<Navigate\s+to="\/reports/,
+    );
   });
 });
