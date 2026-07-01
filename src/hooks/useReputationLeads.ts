@@ -102,7 +102,9 @@ export function useReputationLeads({
     async (id: string) => {
       setMarking(id);
       const nowIso = new Date().toISOString();
-      const prev = rows;
+      const prevRow = rows.find((r) => r.id === id);
+      const prevLastContacted = prevRow?.lastContacted ?? null;
+      const prevRows = rows;
       // Optimistic update
       setRows((rs) =>
         rs.map((r) => (r.id === id ? { ...r, lastContacted: nowIso } : r)),
@@ -116,11 +118,42 @@ export function useReputationLeads({
           })
           .eq("id", id);
         if (err) throw err;
-        toast.success("Marked as contacted");
+        toast.success("Marked as contacted", {
+          action: {
+            label: "Undo",
+            onClick: () => {
+              void (async () => {
+                // Optimistically restore the row's previous value.
+                setRows((rs) =>
+                  rs.map((r) =>
+                    r.id === id ? { ...r, lastContacted: prevLastContacted } : r,
+                  ),
+                );
+                const { error: undoErr } = await supabase
+                  .from("intake_leads")
+                  .update({
+                    last_contacted_at: prevLastContacted,
+                    last_contact_date: prevLastContacted
+                      ? prevLastContacted.slice(0, 10)
+                      : null,
+                  })
+                  .eq("id", id);
+                if (undoErr) {
+                  toast.error(undoErr.message ?? "Could not undo");
+                  // Reload to reconcile with server state.
+                  void load();
+                  return;
+                }
+                toast.success("Reverted last contacted");
+                void load();
+              })();
+            },
+          },
+        });
         // Re-sort/refilter to reflect server truth
         void load();
       } catch (e: any) {
-        setRows(prev);
+        setRows(prevRows);
         toast.error(e?.message ?? "Could not mark contacted");
       } finally {
         setMarking(null);
