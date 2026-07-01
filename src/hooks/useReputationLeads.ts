@@ -52,6 +52,66 @@ export function useReputationLeads({
   const [error, setError] = useState<string | null>(null);
   const [marking, setMarking] = useState<string | null>(null);
 
+  /**
+   * Write an audit/activity log entry into intake_communications and emit an
+   * automation event into journey_events so downstream automations (and the
+   * lead timeline UI) see every last_contacted_at mutation from the
+   * Reputation table.
+   */
+  const logContactAudit = useCallback(
+    async (
+      leadId: string,
+      action: "marked_contacted" | "undo_marked_contacted",
+      previous: string | null,
+      next: string | null,
+    ) => {
+      try {
+        const { data: userRes } = await supabase.auth.getUser();
+        const user = userRes?.user ?? null;
+        const actorName =
+          (user?.user_metadata?.full_name as string | undefined) ??
+          user?.email ??
+          "System";
+        const preview =
+          action === "marked_contacted"
+            ? `Marked as contacted from Reputation table (${new Date(next ?? Date.now()).toLocaleString("en-US", { timeZone: "America/New_York" })})`
+            : `Reverted last contacted from Reputation table`;
+
+        await Promise.all([
+          supabase.from("intake_communications").insert({
+            lead_id: leadId,
+            communication_type: "note",
+            direction: "outbound",
+            subject:
+              action === "marked_contacted"
+                ? "Contact logged (Reputation)"
+                : "Contact log reverted (Reputation)",
+            preview,
+            logged_by: user?.id ?? null,
+            logged_by_name: actorName,
+          }),
+          user?.id
+            ? supabase.from("journey_events").insert({
+                user_id: user.id,
+                event_type: `reputation.${action}`,
+                path: "/os/marketing/reputation",
+                metadata: {
+                  lead_id: leadId,
+                  previous_last_contacted_at: previous,
+                  next_last_contacted_at: next,
+                  source: "reputation_table",
+                },
+              })
+            : Promise.resolve({ error: null } as const),
+        ]);
+      } catch (e) {
+        // Non-blocking: never fail the user action because audit logging failed.
+        console.warn("[reputation] audit log failed", e);
+      }
+    },
+    [],
+  );
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -118,6 +178,7 @@ export function useReputationLeads({
           })
           .eq("id", id);
         if (err) throw err;
+        void logContactAudit(id, "marked_contacted", prevLastContacted, nowIso);
         toast.success("Marked as contacted", {
           action: {
             label: "Undo",
@@ -144,6 +205,12 @@ export function useReputationLeads({
                   void load();
                   return;
                 }
+                void logContactAudit(
+                  id,
+                  "undo_marked_contacted",
+                  nowIso,
+                  prevLastContacted,
+                );
                 toast.success("Reverted last contacted");
                 void load();
               })();
@@ -159,7 +226,7 @@ export function useReputationLeads({
         setMarking(null);
       }
     },
-    [rows, load],
+    [rows, load, logContactAudit],
   );
 
   return { rows, loading, error, marking, refetch: load, markContacted };
