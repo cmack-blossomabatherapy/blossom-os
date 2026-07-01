@@ -128,7 +128,7 @@ export default function StateGrowth() {
         pressure,
       };
     }).sort((a, b) => b.expansion - a.expansion);
-  }, []);
+  }, [marketingLeads, marketingCandidates]);
 
   const activeRow = stateRows.find((s) => s.state === activeState);
   const topState = stateRows[0];
@@ -148,7 +148,7 @@ export default function StateGrowth() {
     const cands = marketingCandidates.length;
     const hired = marketingCandidates.filter((c) => c.status === "Hired").length;
     return { leads, refs, cands, hired };
-  }, []);
+  }, [marketingLeads, marketingCandidates]);
 
   /* Visibility & outreach tracks per active state (or footprint-wide). */
   const visTracks = useMemo(() => {

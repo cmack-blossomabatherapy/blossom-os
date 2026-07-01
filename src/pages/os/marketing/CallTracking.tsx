@@ -20,13 +20,10 @@ import {
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { LeadSourceActions } from "@/components/marketing/LeadSourceActions";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
-import type { PhoneCall } from "@/data/calls";
-import type { Lead } from "@/data/leads";
-// Real call/lead metrics flow through useMarketingIntelligence (marketing_call_events + intake_leads).
-// The legacy per-call detail arrays below are intentionally empty on production — the
-// page renders honest empty states until CTM/Jivetel/RetellAI/manual events are captured.
-const shimCalls: PhoneCall[] = [];
-const shimLeads: Lead[] = [];
+import { useMarketingData } from "@/hooks/useMarketingData";
+// Detailed call/lead metrics read directly from marketing_call_events +
+// intake_leads via useMarketingData. Aggregate KPIs continue to flow through
+// useMarketingIntelligence. No shim arrays — empty tables render empty states.
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * Call Tracking — operational communication intelligence. Derived entirely
@@ -52,27 +49,41 @@ function TrendIcon({ delta }: { delta: number }) {
 
 export default function CallTracking() {
   const mi = useMarketingIntelligence();
+  const { calls: marketingCalls, leads: marketingLeads } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
 
   const now = Date.now();
   const ageDays = (iso: string) => (now - new Date(iso).getTime()) / 86_400_000;
   const hourOf = (iso: string) => new Date(iso).getHours();
 
+  const isMissedStatus = (s: string | null) => {
+    if (!s) return false;
+    const v = s.toLowerCase();
+    return (
+      v.includes("missed") ||
+      v.includes("no_answer") ||
+      v.includes("no answer") ||
+      v.includes("voicemail") ||
+      v === "new"
+    );
+  };
+  const isConnectedStatus = (s: string | null) => {
+    if (!s) return false;
+    const v = s.toLowerCase();
+    return v.includes("connected") || v.includes("answered") || v.includes("contacted") || v.includes("completed");
+  };
+
   /* ── momentum across all calls (7d vs prior 7d) ────────────────────── */
   const momentum = useMemo(() => {
-    const recent = shimCalls.filter((c) => ageDays(c.callTime) <= 7);
-    const prior = shimCalls.filter((c) => {
-      const a = ageDays(c.callTime);
+    const recent = marketingCalls.filter((c) => ageDays(c.createdAt) <= 7);
+    const prior = marketingCalls.filter((c) => {
+      const a = ageDays(c.createdAt);
       return a > 7 && a <= 14;
     });
-    const inboundRecent = recent.filter((c) => c.direction === "Inbound").length;
-    const inboundPrior = prior.filter((c) => c.direction === "Inbound").length;
-    const missedRecent = recent.filter(
-      (c) => c.direction === "Inbound" && (c.status === "New" || c.outcome === "No Answer"),
-    ).length;
-    const missedPrior = prior.filter(
-      (c) => c.direction === "Inbound" && (c.status === "New" || c.outcome === "No Answer"),
-    ).length;
+    const inboundRecent = recent.filter((c) => c.direction === "inbound").length;
+    const inboundPrior = prior.filter((c) => c.direction === "inbound").length;
+    const missedRecent = recent.filter((c) => c.direction === "inbound" && isMissedStatus(c.status)).length;
+    const missedPrior = prior.filter((c) => c.direction === "inbound" && isMissedStatus(c.status)).length;
     return {
       recent: recent.length,
       prior: prior.length,
@@ -82,28 +93,29 @@ export default function CallTracking() {
       missedRecent,
       missedDelta: missedRecent - missedPrior,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [marketingCalls]);
 
   /* ── intake vs recruiting vs referral splits ───────────────────────── */
   const splits = useMemo(() => {
-    const intake = shimCalls.filter((c) => c.type === "Lead");
-    const recruiting = shimCalls.filter((c) => c.type === "Staff");
-    const client = shimCalls.filter((c) => c.type === "Client");
-    const connected = shimCalls.filter((c) => c.status === "Connected" || c.status === "Contacted").length;
-    const missed = shimCalls.filter(
-      (c) => c.direction === "Inbound" && (c.status === "New" || c.outcome === "No Answer"),
-    ).length;
-    const afterHours = shimCalls.filter((c) => {
-      const h = hourOf(c.callTime);
+    // Calls linked to an intake lead are treated as intake calls. Recruiting/
+    // client splits require dedicated channel metadata that marketing_call_events
+    // does not yet carry, so they render as 0 until those webhooks land.
+    const leadIds = new Set(marketingLeads.map((l) => l.id));
+    const intake = marketingCalls.filter((c) => c.leadId && leadIds.has(c.leadId));
+    const recruiting: typeof marketingCalls = [];
+    const client: typeof marketingCalls = [];
+    const connected = marketingCalls.filter((c) => isConnectedStatus(c.status)).length;
+    const missed = marketingCalls.filter((c) => c.direction === "inbound" && isMissedStatus(c.status)).length;
+    const afterHours = marketingCalls.filter((c) => {
+      const h = hourOf(c.createdAt);
       return h >= 18 || h < 8;
     }).length;
     const intakeConverted = intake.filter((c) => {
-      if (!c.linkedLeadId) return false;
-      const lead = shimLeads.find((l) => l.id === c.linkedLeadId);
+      if (!c.leadId) return false;
+      const lead = marketingLeads.find((l) => l.id === c.leadId);
       return lead && QUALIFIED_STATUSES.has(lead.status);
     }).length;
-    const intakeWithLead = intake.filter((c) => c.linkedLeadId).length;
+    const intakeWithLead = intake.filter((c) => c.leadId).length;
     return {
       intake,
       recruiting,
@@ -116,27 +128,25 @@ export default function CallTracking() {
       callToLead: intake.length ? Math.round((intakeWithLead / intake.length) * 100) : 0,
       callToQualified: intakeWithLead ? Math.round((intakeConverted / intakeWithLead) * 100) : 0,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [marketingCalls, marketingLeads]);
 
   /* ── state call rollup ─────────────────────────────────────────────── */
   const stateRows = useMemo(() => {
     const map = new Map<string, { state: string; total: number; intake: number; recruiting: number; missed: number; recent: number; prior: number }>();
-    shimCalls.forEach((c) => {
+    const leadIds = new Set(marketingLeads.map((l) => l.id));
+    marketingCalls.forEach((c) => {
       if (!c.state) return;
       const e = map.get(c.state) ?? { state: c.state, total: 0, intake: 0, recruiting: 0, missed: 0, recent: 0, prior: 0 };
       e.total += 1;
-      if (c.type === "Lead") e.intake += 1;
-      if (c.type === "Staff") e.recruiting += 1;
-      if (c.direction === "Inbound" && (c.status === "New" || c.outcome === "No Answer")) e.missed += 1;
-      const a = ageDays(c.callTime);
+      if (c.leadId && leadIds.has(c.leadId)) e.intake += 1;
+      if (c.direction === "inbound" && isMissedStatus(c.status)) e.missed += 1;
+      const a = ageDays(c.createdAt);
       if (a <= 7) e.recent += 1;
       else if (a <= 14) e.prior += 1;
       map.set(c.state, e);
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [marketingCalls, marketingLeads]);
 
   const topState = stateRows[0];
   const activeRow = stateRows.find((s) => s.state === activeState);
@@ -145,8 +155,8 @@ export default function CallTracking() {
   const intakeStages = useMemo(() => {
     const stageCount = new Map<string, number>();
     splits.intake.forEach((c) => {
-      if (!c.linkedLeadId) return;
-      const lead = shimLeads.find((l) => l.id === c.linkedLeadId);
+      if (!c.leadId) return;
+      const lead = marketingLeads.find((l) => l.id === c.leadId);
       if (!lead) return;
       stageCount.set(lead.status, (stageCount.get(lead.status) ?? 0) + 1);
     });
@@ -154,14 +164,14 @@ export default function CallTracking() {
     return order
       .map((stage) => ({ stage, count: stageCount.get(stage) ?? 0 }))
       .filter((s) => s.count > 0 || ["New Lead", "Form Received", "VOB Completed"].includes(s.stage));
-  }, [splits.intake]);
+  }, [splits.intake, marketingLeads]);
 
   /* ── attribution surfaces (from lead source of linked leads) ───────── */
   const attribution = useMemo(() => {
     const map = new Map<string, { source: string; calls: number; qualified: number }>();
     splits.intake.forEach((c) => {
-      if (!c.linkedLeadId) return;
-      const lead = shimLeads.find((l) => l.id === c.linkedLeadId);
+      if (!c.leadId) return;
+      const lead = marketingLeads.find((l) => l.id === c.leadId);
       if (!lead) return;
       const e = map.get(lead.source) ?? { source: lead.source, calls: 0, qualified: 0 };
       e.calls += 1;
@@ -171,21 +181,20 @@ export default function CallTracking() {
     return Array.from(map.values())
       .map((r) => ({ ...r, rate: r.calls ? Math.round((r.qualified / r.calls) * 100) : 0 }))
       .sort((a, b) => b.calls - a.calls);
-  }, [splits.intake]);
+  }, [splits.intake, marketingLeads]);
 
   /* ── after-hours by state ──────────────────────────────────────────── */
   const afterHoursByState = useMemo(() => {
     const map = new Map<string, number>();
-    shimCalls.forEach((c) => {
+    marketingCalls.forEach((c) => {
       if (!c.state) return;
-      const h = hourOf(c.callTime);
+      const h = hourOf(c.createdAt);
       if (h >= 18 || h < 8) map.set(c.state, (map.get(c.state) ?? 0) + 1);
     });
     return Array.from(map.entries())
       .map(([state, count]) => ({ state, count }))
       .sort((a, b) => b.count - a.count);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [marketingCalls]);
 
   /* ── AI insights ───────────────────────────────────────────────────── */
   const insights = useMemo(() => {
@@ -261,7 +270,7 @@ export default function CallTracking() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Inbound calls", value: mi.calls.inbound, sub: `${mi.calls.last24h} in last 24h`, icon: PhoneIncoming, delta: momentum.inboundDelta },
-            { label: "Connected", value: splits.connected, sub: `${shimCalls.length ? Math.round((splits.connected / shimCalls.length) * 100) : 0}% answer rate`, icon: PhoneIcon, delta: 0 },
+            { label: "Connected", value: splits.connected, sub: `${marketingCalls.length ? Math.round((splits.connected / marketingCalls.length) * 100) : 0}% answer rate`, icon: PhoneIcon, delta: 0 },
             { label: "Missed / new", value: splits.missed, sub: "Inbound awaiting callback", icon: PhoneMissed, delta: momentum.missedDelta },
             { label: "Intake calls", value: splits.intake.length, sub: `${splits.callToLead}% linked to lead`, icon: Users, delta: 0 },
             { label: "Recruiting calls", value: splits.recruiting.length, sub: "Staff inquiries", icon: Briefcase, delta: 0 },
@@ -446,7 +455,7 @@ export default function CallTracking() {
               <div className="text-[12.5px] text-muted-foreground">
                 Demand share:{" "}
                 <span className="text-foreground font-medium">
-                  {Math.round((activeRow.total / Math.max(1, shimCalls.length)) * 100)}%
+                  {Math.round((activeRow.total / Math.max(1, marketingCalls.length)) * 100)}%
                 </span>{" "}
                 of company call volume
               </div>

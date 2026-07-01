@@ -117,7 +117,7 @@ export default function AttributionROI() {
       recruitingFill,
       growthIndex,
     };
-  }, []);
+  }, [marketingLeads, marketingCandidates]);
 
   /* Growth channel attribution — derived from real source distribution + outcomes. */
   const channels = useMemo(() => {
@@ -135,7 +135,7 @@ export default function AttributionROI() {
       return { src, count, qual, qualRate, fric, fricRate, value, meta };
     });
     return rows.sort((a, b) => b.value - a.value);
-  }, []);
+  }, [marketingLeads]);
 
   const topChannel = channels[0];
   const fastestChannel = useMemo(
@@ -184,7 +184,7 @@ export default function AttributionROI() {
         pressure,
       };
     }).sort((a, b) => b.roi - a.roi);
-  }, []);
+  }, [marketingLeads, marketingCandidates]);
 
   const activeRow = stateRows.find((s) => s.state === activeState);
   const topState = stateRows[0];
@@ -245,7 +245,7 @@ export default function AttributionROI() {
         return { src, count: cands.length, ready, hired, withdrew, fill };
       })
       .sort((a, b) => b.fill - a.fill);
-  }, []);
+  }, [marketingCandidates]);
 
   /* Operational growth correlation — demand vs capacity per state. */
   const correlations = useMemo(() => {

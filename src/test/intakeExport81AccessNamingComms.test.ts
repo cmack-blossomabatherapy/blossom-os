@@ -14,7 +14,7 @@ describe("Export 81 — Access, Naming, Communication Actions", () => {
     expect(m![0]).not.toMatch(/BlockIntakeRoute/);
   });
 
-  it("/patient-journey allow-list includes marketing + admin + business_development roles", () => {
+  it("/patient-journey allow-list is Marketing-only (Pass 100: BD removed)", () => {
     const app = read("src/App.tsx");
     const m = app.match(/path="\/patient-journey"[^]*?<\/PermissionRoute>/);
     expect(m).toBeTruthy();
@@ -23,10 +23,10 @@ describe("Export 81 — Access, Naming, Communication Actions", () => {
       "marketing",
       "marketing_team",
       "marketing_growth_lead",
-      "business_development",
     ]) {
       expect(m![0]).toContain(`"${role}"`);
     }
+    expect(m![0]).not.toContain(`"business_development"`);
   });
 
   /* ---------------- role menu cleanup ---------------- */
@@ -36,7 +36,6 @@ describe("Export 81 — Access, Naming, Communication Actions", () => {
     const allowed = new Set([
       "marketing_team",
       "marketing_growth_lead",
-      "business_development",
     ]);
     // Slice the file at each top-level role key declaration (e.g. `intake_coordinator: {`).
     const headerRe = /^\s{2}([a-z_]+):\s*\{$/gm;

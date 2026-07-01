@@ -80,7 +80,7 @@ export default function WebAnalytics() {
       qualified,
       qualifiedRate: all.length ? Math.round((qualified / all.length) * 100) : 0,
     };
-  }, []);
+  }, [marketingLeads]);
 
   /* ── traffic channel cards ──────────────────────────────────────────── */
   const channels = useMemo(() => {
@@ -150,7 +150,7 @@ export default function WebAnalytics() {
       map.set(c.state, e);
     });
     return Array.from(map.values()).sort((a, b) => b.sessions - a.sessions);
-  }, []);
+  }, [marketingLeads, marketingCalls, marketingCandidates]);
 
   const topState = stateRows[0];
   const activeRow = stateRows.find((s) => s.state === activeState);

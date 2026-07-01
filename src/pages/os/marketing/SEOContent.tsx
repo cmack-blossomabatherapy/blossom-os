@@ -70,7 +70,7 @@ export default function SEOContent() {
       qualifiedRate: leads.length ? Math.round((qualified / leads.length) * 100) : 0,
       leads,
     };
-  }, []);
+  }, [marketingLeads]);
 
   /* ── visibility by state (organic share + total + momentum) ─────────── */
   const stateVisibility = useMemo(() => {
@@ -93,7 +93,7 @@ export default function SEOContent() {
       map.set(c.state, e);
     });
     return Array.from(map.values()).sort((a, b) => b.organic - a.organic);
-  }, []);
+  }, [marketingLeads, marketingCalls]);
 
   const topState = stateVisibility[0];
 

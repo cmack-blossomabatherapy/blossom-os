@@ -82,7 +82,7 @@ export default function LeadSources() {
       stage: s.name,
       count: stageCount.get(s.name) ?? 0,
     }));
-  }, []);
+  }, [marketingLeads]);
   const funnelMax = Math.max(1, ...funnel.map((f) => f.count));
 
   /* ── recruiting sources (real candidate.source) ─────────────────────── */
@@ -97,7 +97,7 @@ export default function LeadSources() {
       map.set(c.source, r);
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, []);
+  }, [marketingCandidates]);
   const recruitingMax = Math.max(1, ...recruiting.map((r) => r.total));
 
   /* ── filter for source-state cross-section ─────────────────────────── */
