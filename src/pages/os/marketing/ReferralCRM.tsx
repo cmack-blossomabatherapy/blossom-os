@@ -360,7 +360,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     }
     const getKey = (c: typeof r[number]): string | number => {
       switch (sort.key) {
-        case "name": return fullName(c).toLowerCase();
+        case "name": return (fullName(c) || c.email || "").toLowerCase();
         case "company": return (companyName(s, c.companyId) || "").toLowerCase();
         case "title": return (c.jobTitle || "").toLowerCase();
         case "state": return (c.state || "").toLowerCase();
@@ -508,8 +508,10 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
                 <tr key={c.id} className="border-t hover:bg-muted/30">
                   <td className="px-3 py-2"><Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggleOne(c.id)} /></td>
                   <td className="px-3 py-2">
-                    <button className="font-medium hover:text-primary" onClick={() => onOpenContact(c.id)}>{fullName(c)}</button>
-                    <p className="text-xs text-muted-foreground">{c.email || "-"}</p>
+                    <button className="font-medium hover:text-primary text-left" onClick={() => onOpenContact(c.id)}>
+                      {fullName(c) || c.email || <span className="text-muted-foreground italic">(No name)</span>}
+                    </button>
+                    {fullName(c) && <p className="text-xs text-muted-foreground">{c.email || "-"}</p>}
                   </td>
                   <td className="px-3 py-2">
                     {c.companyId ? (
