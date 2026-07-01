@@ -90,6 +90,12 @@ export interface PendingLeadDocument {
   storagePath?: string;
   signedUrl?: string;
   errorMessage?: string;
+  /**
+   * Raw File kept in memory only until the lead is created. Uploaded
+   * post-create against the real lead id so a storage failure can never
+   * block lead creation.
+   */
+  file?: File;
 }
 
 const schema = z
@@ -251,6 +257,9 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
     try {
       const v = parsed.data;
       const tags = (v.tags || "").split(",").map((t) => t.trim()).filter(Boolean);
+      // Strip the raw File before serializing into source_metadata. The lead
+      // is saved first; documents are uploaded post-create (best-effort).
+      const stagedDocsMeta = documents.map(({ file: _f, ...rest }) => rest);
       const lead = await createLead({
         patientFirstName: v.patientFirstName || undefined,
         patientLastName:  v.patientLastName  || undefined,
@@ -300,7 +309,7 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
         notes: v.notes || undefined,
         tags:  tags.length ? tags : undefined,
 
-        documents: documents.length ? documents : undefined,
+        documents: stagedDocsMeta.length ? stagedDocsMeta : undefined,
 
         sourceMetadata: {
           ...(defaults?.sourceMetadata as Record<string, unknown> | undefined),
@@ -314,12 +323,45 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
       toast.success(`Lead created: ${lead.childName}`, {
         description: `${lead.id.slice(0, 8)} · ${lead.state} · ${lead.source}`,
       });
+
+      // Best-effort: upload any staged files against the real lead id.
+      // Failures never invalidate the lead — surface a non-blocking warning
+      // toast and leave the failed document metadata in source_metadata so
+      // Intake can retry manually.
+      const stagedFiles = documents.filter((d) => d.file);
+      if (stagedFiles.length) {
+        let failures = 0;
+        await Promise.all(
+          stagedFiles.map(async (d) => {
+            try {
+              await uploadLeadDocument(d.file as File, { leadId: lead.id, type: d.type });
+            } catch (err) {
+              failures += 1;
+              // eslint-disable-next-line no-console
+              console.warn("[leads] post-create document upload failed", d.name, err);
+            }
+          }),
+        );
+        if (failures > 0) {
+          toast.warning(
+            "Lead created. Some documents could not upload and can be added later.",
+            { description: `${failures} of ${stagedFiles.length} file(s) failed to upload.` },
+          );
+        }
+      }
+
       onCreated?.(lead);
       onOpenChange(false);
       setForm(EMPTY);
       setDocuments([]);
     } catch (e: any) {
-      toast.error("Could not save lead", { description: e?.message ?? "Unknown error" });
+      // Never leak raw Edge Function / RLS messages here. createLead already
+      // throws a user-safe error string; anything else falls back to a
+      // generic message.
+      const msg = typeof e?.message === "string" && e.message.length < 200
+        ? e.message
+        : "Please check required fields and try again.";
+      toast.error("Could not save lead", { description: msg });
     } finally {
       setSubmitting(false);
     }
