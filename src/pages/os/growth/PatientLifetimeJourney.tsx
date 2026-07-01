@@ -266,12 +266,42 @@ export default function PatientLifetimeJourney() {
     [leads, selectedId],
   );
   const live = useLeadJourneyLive(selected?.id ?? null);
-  const events = useMemo(
-    () => (selected
-      ? mergeLiveJourney(buildEvents(selected), live.communications, live.tasks, leadSourceJourneyOrigin(selected.source))
-      : []),
-    [selected, live.communications, live.tasks],
-  );
+  const events = useMemo(() => {
+    if (!selected) return [];
+    const origin = leadSourceJourneyOrigin(selected.source);
+    const merged = mergeLiveJourney(buildEvents(selected), live.communications, live.tasks, origin);
+    // Fold in persisted Marketing source, call, and email events.
+    const safeTs = (s: string) => { const t = new Date(s).getTime(); return Number.isFinite(t) ? t : Date.now(); };
+    const fmt = (s: string) => { try { return format(new Date(safeTs(s)), "MMM d"); } catch { return ""; } };
+    const marketingSource: JourneyEvent[] = marketing.sourceEvents.map((ev) => ({
+      type: ev.sourceEventType === "phone_call" || ev.sourceEventType === "ai_call" ? "call_received"
+        : ev.sourceEventType === "email_campaign" ? "email_received"
+        : ev.sourceEventType === "referral" ? "referral_received"
+        : "form_submitted",
+      when: fmt(ev.receivedAt),
+      rawTs: safeTs(ev.receivedAt),
+      detail: `${ev.sourceLabel}${ev.summary ? ` — ${ev.summary}` : ""}`,
+      origin,
+    }));
+    const marketingCalls: JourneyEvent[] = marketing.callEvents.map((c) => ({
+      type: "call_received",
+      when: fmt(c.occurred_at),
+      rawTs: safeTs(c.occurred_at),
+      detail: `${c.caller_name ?? "Call"}${c.caller_phone ? ` · ${c.caller_phone}` : ""}${
+        c.duration_seconds ? ` · ${Math.round(c.duration_seconds / 60)} min` : ""
+      }${c.transcript_summary ? ` — ${c.transcript_summary}` : ""}`,
+      origin,
+    }));
+    const marketingEmails: JourneyEvent[] = marketing.emailEvents.map((e) => ({
+      type: e.event_type === "received" ? "email_received" : "email_sent",
+      when: fmt(e.occurred_at),
+      rawTs: safeTs(e.occurred_at),
+      detail: `${e.subject ?? "Email"}${e.recipient_email ? ` · ${e.recipient_email}` : ""}`,
+      origin,
+    }));
+    return [...merged, ...marketingSource, ...marketingCalls, ...marketingEmails]
+      .sort((a, b) => a.rawTs - b.rawTs);
+  }, [selected, live.communications, live.tasks, marketing.sourceEvents, marketing.callEvents, marketing.emailEvents]);
 
   return (
     <GrowthPageShell
