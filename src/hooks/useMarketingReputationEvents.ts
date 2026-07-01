@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface MarketingReputationEvent {
@@ -44,6 +44,13 @@ export function useMarketingReputationEvents(opts: UseMarketingReputationEventsO
   const [rows, setRows] = useState<MarketingReputationEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelId = useMemo(
+    () =>
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2),
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,7 +77,7 @@ export function useMarketingReputationEvents(opts: UseMarketingReputationEventsO
     void load();
     if (!realtime) return;
     const ch = supabase
-      .channel(`mre-${sourceSystem ?? "all"}`)
+      .channel(`mre-${sourceSystem ?? "all"}-${channelId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "marketing_reputation_events" }, () => {
         void load();
       })
@@ -78,7 +85,7 @@ export function useMarketingReputationEvents(opts: UseMarketingReputationEventsO
     return () => {
       void supabase.removeChannel(ch);
     };
-  }, [load, realtime, sourceSystem]);
+  }, [load, realtime, sourceSystem, channelId]);
 
   return { rows, loading, error, refetch: load, refresh: load };
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -73,6 +73,13 @@ export function useMarketingWorkItems(opts: UseMarketingWorkItemsOptions = {}) {
   const [items, setItems] = useState<MarketingWorkItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelId = useMemo(
+    () =>
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2),
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,7 +111,7 @@ export function useMarketingWorkItems(opts: UseMarketingWorkItemsOptions = {}) {
   useEffect(() => {
     void load();
     const ch = supabase
-      .channel(`mwi-${workType ?? "all"}-${state ?? "all"}`)
+      .channel(`mwi-${workType ?? "all"}-${state ?? "all"}-${channelId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "marketing_work_items" },
@@ -116,7 +123,7 @@ export function useMarketingWorkItems(opts: UseMarketingWorkItemsOptions = {}) {
     return () => {
       void supabase.removeChannel(ch);
     };
-  }, [load, workType, state]);
+  }, [load, workType, state, channelId]);
 
   const createItem = useCallback(
     async (row: Partial<MarketingWorkItem> & Pick<MarketingWorkItem, "work_type" | "title">) => {

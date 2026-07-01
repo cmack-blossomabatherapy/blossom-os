@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type {
   LeadSourceEvent,
@@ -53,6 +53,13 @@ export function useMarketingSourceEvents(
   const [events, setEvents] = useState<LeadSourceEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelId = useMemo(
+    () =>
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2),
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,7 +77,7 @@ export function useMarketingSourceEvents(
   useEffect(() => {
     void load();
     const channel = supabase
-      .channel("marketing-source-events-live")
+      .channel(`marketing-source-events-live-${channelId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "marketing_source_events" },
@@ -82,7 +89,7 @@ export function useMarketingSourceEvents(
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [load]);
+  }, [load, channelId]);
 
   const updateStatus = useCallback<UseMarketingSourceEventsResult["updateStatus"]>(
     async (id, status, patch = {}) => {
