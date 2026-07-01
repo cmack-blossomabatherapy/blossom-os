@@ -1278,7 +1278,7 @@ function NewReferralDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 // ===========================================================
 // Tasks
 // ===========================================================
-function TasksModule() {
+function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
   const [groupBy, setGroupBy] = useState<"owner" | "state" | "status">("owner");
   const [creating, setCreating] = useState(false);
@@ -1331,7 +1331,7 @@ function TasksModule() {
       id: t.id, title: t.title, type: t.type, priority: t.priority, status: t.status,
       dueDate: t.dueDate, assignedUser: userName(s, t.assignedUserId),
       company: companyName(s, t.companyId),
-      contact: t.contactId ? fullName(s.contacts.find((c) => c.id === t.contactId)!) : "",
+      contact: t.contactId ? contactDisplayName(s.contacts.find((c) => c.id === t.contactId)) : "",
       referralId: t.referralId, notes: t.notes, createdAt: t.createdAt,
     }));
     downloadCsv(`tasks-selected-${Date.now()}.csv`, rowsToCsv(data));
@@ -1396,6 +1396,7 @@ function TasksModule() {
             <div className="divide-y">
               {items.map((t) => {
                 const overdue = t.dueDate && new Date(t.dueDate).getTime() < Date.now() && t.status !== "Completed";
+                const contact = t.contactId ? s.contacts.find((c) => c.id === t.contactId) : undefined;
                 return (
                   <div key={t.id} className="px-4 py-2.5 flex items-center gap-3 text-sm">
                     <Checkbox checked={selected.has(t.id)} onCheckedChange={() => toggleOne(t.id)} />
@@ -1410,6 +1411,14 @@ function TasksModule() {
                       <p className={cn("font-medium", t.status === "Completed" && "line-through text-muted-foreground")}>{t.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {t.type} - {companyName(s, t.companyId)} - {userName(s, t.assignedUserId)}
+                        {contact && (
+                          <>
+                            {" - "}
+                            <button className="font-medium hover:text-primary" onClick={() => onOpenContact(contact.id)}>
+                              {contactDisplayName(contact)}
+                            </button>
+                          </>
+                        )}
                       </p>
                     </div>
                     <Badge variant="secondary" className={cn(t.priority === "High" && "bg-destructive/10 text-destructive")}>{t.priority}</Badge>
