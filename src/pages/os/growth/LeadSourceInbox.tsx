@@ -562,7 +562,7 @@ export default function LeadSourceInbox() {
         open={editOpen}
         onOpenChange={setEditOpen}
         event={selected?.event ?? null}
-        onSave={async (id, patch) => { await updateFields(id, patch); }}
+        updateFields={updateFields}
       />
     </GrowthPageShell>
   );
