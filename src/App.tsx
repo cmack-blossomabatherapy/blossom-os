@@ -1083,9 +1083,9 @@ const App = () => (
                   <Route path="/admin/ai-audit" element={<PermissionRoute allowedRoles={["admin"]}><AiAuditLog /></PermissionRoute>} />
                   <Route path="/admin/integrations" element={<PermissionRoute allowedRoles={["admin"]}><Integrations /></PermissionRoute>} />
                   <Route path="/admin/mapsly" element={<PermissionRoute allowedRoles={["admin"]}><MapslyHub /></PermissionRoute>} />
-                  <Route path="/mileage" element={<ProtectedRoute><MileageCenter /></ProtectedRoute>} />
-                  <Route path="/bd/territories" element={<ProtectedRoute><BDTerritories /></ProtectedRoute>} />
-                  <Route path="/recruiting/map" element={<ProtectedRoute><RecruitingMap /></ProtectedRoute>} />
+                  <Route path="/mileage" element={<MileageCenter />} />
+                  <Route path="/bd/territories" element={<BDTerritories />} />
+                  <Route path="/recruiting/map" element={<RecruitingMap />} />
                   <Route path="/admin/ai" element={<PermissionRoute allowedRoles={["admin"]}><AiAdminShell /></PermissionRoute>}>
                     <Route index element={<AiDashboard />} />
                     <Route path="knowledge" element={<AiKnowledgeHub />} />
