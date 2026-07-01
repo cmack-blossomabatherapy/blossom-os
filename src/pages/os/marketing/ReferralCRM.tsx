@@ -3170,8 +3170,9 @@ function SettingsModule() {
 // ===========================================================
 function FilesModule() {
   const s = useCrm();
-  const [q, setQ] = useState("");
-  const [type, setType] = useState<string>("all");
+  const [q, setQ] = useUrlState("fq", "");
+  const [type, setType] = useUrlState("ft", "all");
+  const [category, setCategory] = useUrlState("fc", "all");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const objectLabel = (a: Attachment): string => {
@@ -3185,6 +3186,7 @@ function FilesModule() {
   const rows = s.attachments.filter((a) => {
     if (a.archivedAt) return false;
     if (type !== "all" && a.objectType !== type) return false;
+    if (category !== "all" && (a.category || "") !== category) return false;
     if (q && !a.fileName.toLowerCase().includes(q.toLowerCase()) && !objectLabel(a).toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
@@ -3206,25 +3208,30 @@ function FilesModule() {
   }
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search files..." className="pl-8 h-9 text-sm" />
-        </div>
-        <Select value={type} onValueChange={setType}>
-          <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All objects</SelectItem>
-            <SelectItem value="contact">Contacts</SelectItem>
-            <SelectItem value="company">Companies</SelectItem>
-            <SelectItem value="referral">Referrals</SelectItem>
-            <SelectItem value="general">General</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button size="sm" className="h-9 ml-auto" onClick={() => setUploadOpen(true)}>
-          <Upload className="size-3.5 mr-1.5" /> Upload file
-        </Button>
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search files..." }}
+        filters={[
+          { key: "ft", label: "Object", value: type, onChange: setType, options: [
+            { value: "all", label: "All objects" },
+            { value: "contact", label: "Contacts" },
+            { value: "company", label: "Companies" },
+            { value: "referral", label: "Referrals" },
+            { value: "general", label: "General" },
+          ] },
+          { key: "fc", label: "Category", value: category, onChange: setCategory, options: [
+            { value: "all", label: "All" },
+            ...["Lunch & Learn", "Insurance", "Outreach", "Welcome Packet", "Other"].map((c) => ({ value: c, label: c })),
+          ], width: 160 },
+        ]}
+        resultCount={rows.length}
+        totalCount={s.attachments.filter((a) => !a.archivedAt).length}
+        onClear={() => { setQ(""); setType("all"); setCategory("all"); }}
+        extra={
+          <Button size="sm" className="h-9" onClick={() => setUploadOpen(true)}>
+            <Upload className="size-3.5 mr-1.5" /> Upload file
+          </Button>
+        }
+      />
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
