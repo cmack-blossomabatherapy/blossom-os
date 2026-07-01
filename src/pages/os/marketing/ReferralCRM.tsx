@@ -4759,7 +4759,7 @@ function PatientPipelineModule({
         {STATUSES.map((st) => (
           <button
             key={st}
-            onClick={() => setStatusFilter((cur) => (cur === st ? "all" : st))}
+            onClick={() => setStatusFilter(statusFilter === st ? "all" : st)}
             className={cn(
               "rounded-xl border bg-card p-3 text-left transition-colors hover:bg-muted/40",
               statusFilter === st && "border-primary/40 bg-primary/5",
