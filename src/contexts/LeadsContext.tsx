@@ -124,6 +124,22 @@ interface LeadsContextValue {
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
 
+/**
+ * Best-effort helper for optional post-create side effects. Never throws — a
+ * failure here must never block the primary lead insert or bubble up as a
+ * user-facing "Could not save lead" error. Failures are logged to console
+ * only, so ops can spot broken side effects without leaking Edge Function /
+ * database internals into the toast.
+ */
+async function safeOptionalWrite(label: string, fn: () => Promise<unknown> | unknown): Promise<void> {
+  try {
+    await fn();
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(`[leads] optional step failed: ${label}`, e);
+  }
+}
+
 const makeTimelineEvent = (description: string): TimelineEvent => ({
   id: `tl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   type: "system",
