@@ -55,7 +55,7 @@ export default function CallTracking() {
 
   const now = Date.now();
   const ageDays = (iso: string) => (now - new Date(iso).getTime()) / 86_400_000;
-  const hourOf = (iso: string) => new Date(iso).getHours();
+  // After-hours uses America/New_York, not the browser tz.
 
   const isMissedStatus = (s: string | null) => {
     if (!s) return false;
@@ -107,10 +107,7 @@ export default function CallTracking() {
     const client: typeof marketingCalls = [];
     const connected = marketingCalls.filter((c) => isConnectedStatus(c.status)).length;
     const missed = marketingCalls.filter((c) => c.direction === "inbound" && isMissedStatus(c.status)).length;
-    const afterHours = marketingCalls.filter((c) => {
-      const h = hourOf(c.createdAt);
-      return h >= 18 || h < 8;
-    }).length;
+    const afterHours = marketingCalls.filter((c) => isAfterHoursEastern(c.createdAt)).length;
     const intakeConverted = intake.filter((c) => {
       if (!c.leadId) return false;
       const lead = marketingLeads.find((l) => l.id === c.leadId);
