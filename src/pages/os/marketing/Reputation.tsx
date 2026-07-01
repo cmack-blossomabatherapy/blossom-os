@@ -33,6 +33,8 @@ import { BulkReputationEventImportDialog } from "@/components/marketing/BulkRepu
 import { Button } from "@/components/ui/button";
 import { Upload, Plus } from "lucide-react";
 import { fmtMktgShortDate, fmtMktgRelative } from "@/lib/os/referrals/utils";
+import { TableFilterBar } from "@/components/marketing/TableFilterBar";
+import { useUrlState } from "@/hooks/useUrlState";
 
 /* Reputation - operational trust intelligence.
  * Derives community perception from real operational signal: intake
