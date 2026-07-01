@@ -15,7 +15,7 @@ describe("Export 82 — /patient-journey access", () => {
     expect(match![0]).not.toMatch(/BlockIntakeRoute/);
   });
 
-  it("allow-list contains exactly the Marketing/Growth/BD/Admin roles", () => {
+  it("allow-list is Marketing-only (Pass 100: BD removed)", () => {
     const block = match![0];
     for (const role of [
       "admin",
@@ -23,7 +23,6 @@ describe("Export 82 — /patient-journey access", () => {
       "marketing",
       "marketing_team",
       "marketing_growth_lead",
-      "business_development",
     ]) {
       expect(block).toMatch(new RegExp(`"${role}"`));
     }
@@ -40,6 +39,7 @@ describe("Export 82 — /patient-journey access", () => {
       "bcba",
       "case_manager",
       "billing_team",
+      "business_development",
     ]) {
       expect(block).not.toMatch(new RegExp(`"${role}"`));
     }
@@ -51,7 +51,6 @@ describe("Export 82 — role menus only expose Patient Lifetime Journey to allow
     "marketing",
     "marketing_team",
     "marketing_growth_lead",
-    "business_development",
     "admin",
     "super_admin",
   ]);
@@ -71,11 +70,13 @@ describe("Export 82 — role menus only expose Patient Lifetime Journey to allow
     expect(paths).not.toContain("/patient-journey");
   });
 
-  it("marketing/BD menus do contain /patient-journey", () => {
-    for (const r of ["marketing_team", "marketing_growth_lead", "business_development"] as const) {
+  it("marketing menus contain /patient-journey (Pass 100: BD menu no longer lists it)", () => {
+    for (const r of ["marketing_team", "marketing_growth_lead"] as const) {
       const paths = ROLE_MENUS[r]!.sections.flatMap((s) => s.items.map((i) => i.path));
       expect(paths).toContain("/patient-journey");
     }
+    const bdPaths = ROLE_MENUS.business_development!.sections.flatMap((s) => s.items.map((i) => i.path));
+    expect(bdPaths).not.toContain("/patient-journey");
   });
 });
 
