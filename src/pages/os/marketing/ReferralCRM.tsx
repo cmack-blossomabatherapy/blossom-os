@@ -360,7 +360,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     }
     const getKey = (c: typeof r[number]): string | number => {
       switch (sort.key) {
-        case "name": return fullName(c).toLowerCase();
+        case "name": return (fullName(c) || c.email || "").toLowerCase();
         case "company": return (companyName(s, c.companyId) || "").toLowerCase();
         case "title": return (c.jobTitle || "").toLowerCase();
         case "state": return (c.state || "").toLowerCase();
@@ -508,8 +508,10 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
                 <tr key={c.id} className="border-t hover:bg-muted/30">
                   <td className="px-3 py-2"><Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggleOne(c.id)} /></td>
                   <td className="px-3 py-2">
-                    <button className="font-medium hover:text-primary" onClick={() => onOpenContact(c.id)}>{fullName(c)}</button>
-                    <p className="text-xs text-muted-foreground">{c.email || "-"}</p>
+                    <button className="font-medium hover:text-primary text-left" onClick={() => onOpenContact(c.id)}>
+                      {fullName(c) || c.email || <span className="text-muted-foreground italic">(No name)</span>}
+                    </button>
+                    {fullName(c) && <p className="text-xs text-muted-foreground">{c.email || "-"}</p>}
                   </td>
                   <td className="px-3 py-2">
                     {c.companyId ? (
@@ -1016,6 +1018,26 @@ function partitionLegacy(rows: Referral[], selectedIds: ID[]): { nativeIds: ID[]
   return { nativeIds, skipped: selectedIds.length - nativeIds.length };
 }
 
+const REFERRAL_STATUS_STYLES: Record<string, string> = {
+  New: "bg-blue-50 text-blue-700 ring-blue-200",
+  "In Review": "bg-amber-50 text-amber-700 ring-amber-200",
+  "Intake Form Sent": "bg-indigo-50 text-indigo-700 ring-indigo-200",
+  Scheduled: "bg-violet-50 text-violet-700 ring-violet-200",
+  Active: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  Closed: "bg-slate-100 text-slate-700 ring-slate-200",
+  Lost: "bg-rose-50 text-rose-700 ring-rose-200",
+};
+
+function ReferralStatusPill({ status }: { status?: string | null }) {
+  const label = status || "—";
+  const cls = (status && REFERRAL_STATUS_STYLES[status]) || "bg-muted text-muted-foreground ring-border";
+  return (
+    <span className={cn("inline-flex items-center h-6 px-2 rounded-full text-[11px] font-medium ring-1 ring-inset whitespace-nowrap", cls)}>
+      {label}
+    </span>
+  );
+}
+
 function ReferralsModule() {
   const s = useCrm();
   const [creating, setCreating] = useState(false);
@@ -1108,62 +1130,61 @@ function ReferralsModule() {
 
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
             <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="w-10 px-3 py-2"><Checkbox checked={allChecked} onCheckedChange={toggleAll} /></th>
-                <th className="text-left px-3 py-2 font-medium">Patient</th>
-                <th className="text-left px-3 py-2 font-medium">Source Company</th>
-                <th className="text-left px-3 py-2 font-medium">Source Contact</th>
-                <th className="text-left px-3 py-2 font-medium">State</th>
-                <th className="text-left px-3 py-2 font-medium">Service</th>
-                <th className="text-left px-3 py-2 font-medium">Status</th>
-                <th className="text-left px-3 py-2 font-medium">Insurance</th>
-                <th className="text-left px-3 py-2 font-medium">Intake Owner</th>
-                <th className="text-left px-3 py-2 font-medium">Date</th>
+              <tr className="h-10">
+                <th className="w-10 px-3 text-left align-middle"><Checkbox checked={allChecked} onCheckedChange={toggleAll} /></th>
+                <th className="w-[180px] px-3 text-left font-medium align-middle">Patient</th>
+                <th className="w-[180px] px-3 text-left font-medium align-middle">Source Company</th>
+                <th className="w-[160px] px-3 text-left font-medium align-middle">Source Contact</th>
+                <th className="w-[70px] px-3 text-left font-medium align-middle">State</th>
+                <th className="w-[140px] px-3 text-left font-medium align-middle">Service</th>
+                <th className="w-[140px] px-3 text-left font-medium align-middle">Status</th>
+                <th className="w-[140px] px-3 text-left font-medium align-middle">Insurance</th>
+                <th className="w-[140px] px-3 text-left font-medium align-middle">Intake Owner</th>
+                <th className="w-[110px] px-3 text-left font-medium align-middle">Date</th>
+                <th className="w-[70px] px-3 text-right font-medium align-middle">Actions</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-t hover:bg-muted/30">
-                  <td className="px-3 py-2"><Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleOne(r.id)} /></td>
-                  <td className="px-3 py-2 font-medium">
-                    <div className="flex items-center gap-2">
+                <tr key={r.id} className="border-t hover:bg-muted/30 h-12">
+                  <td className="px-3 align-middle"><Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleOne(r.id)} /></td>
+                  <td className="px-3 align-middle font-medium">
+                    <div className="flex items-center gap-2 min-w-0">
                       {r.isLegacyLeadLink ? (
-                        <span className="text-foreground">{r.name}</span>
+                        <span className="truncate text-foreground">{r.name}</span>
                       ) : (
-                        <button className="hover:text-primary" onClick={() => setEditingId(r.id)}>{r.name}</button>
+                        <button className="truncate text-left hover:text-primary" onClick={() => setEditingId(r.id)}>{r.name}</button>
                       )}
                       {r.isLegacyLeadLink && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">Read-only</Badge>
+                        <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">Read-only</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2">{companyName(s, r.companyId)}</td>
-                  <td className="px-3 py-2">{r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "-"}</td>
-                  <td className="px-3 py-2">{r.state || "-"}</td>
-                  <td className="px-3 py-2">{r.serviceType || "-"}</td>
-                  <td className="px-3 py-2"><Badge variant="secondary">{r.referralStatus}</Badge></td>
-                  <td className="px-3 py-2 text-muted-foreground">{r.insuranceType || "-"}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{userName(s, r.assignedIntakeOwnerId)}</td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    <div className="flex items-center justify-between gap-2">
-                      <span>{fmtDate(r.referralDate)}</span>
-                      <div className="flex items-center gap-1">
-                        <button className="text-muted-foreground hover:text-primary" title="Log activity" onClick={() => setLogId(r.id)}>
-                          <Activity className="size-3" />
+                  <td className="px-3 align-middle truncate">{companyName(s, r.companyId) || <span className="text-muted-foreground">—</span>}</td>
+                  <td className="px-3 align-middle truncate">{r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : <span className="text-muted-foreground">—</span>}</td>
+                  <td className="px-3 align-middle">{r.state || <span className="text-muted-foreground">—</span>}</td>
+                  <td className="px-3 align-middle truncate">{r.serviceType || <span className="text-muted-foreground">—</span>}</td>
+                  <td className="px-3 align-middle"><ReferralStatusPill status={r.referralStatus} /></td>
+                  <td className="px-3 align-middle text-muted-foreground truncate">{r.insuranceType || "—"}</td>
+                  <td className="px-3 align-middle text-muted-foreground truncate">{userName(s, r.assignedIntakeOwnerId) || "—"}</td>
+                  <td className="px-3 align-middle text-muted-foreground whitespace-nowrap">{fmtDate(r.referralDate)}</td>
+                  <td className="px-3 align-middle">
+                    <div className="flex items-center justify-end gap-1">
+                      <button className="size-7 grid place-items-center rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors" title="Log activity" onClick={() => setLogId(r.id)}>
+                        <Activity className="size-3.5" />
+                      </button>
+                      {!r.isLegacyLeadLink && (
+                        <button className="size-7 grid place-items-center rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors" title="Edit" onClick={() => setEditingId(r.id)}>
+                          <Pencil className="size-3.5" />
                         </button>
-                        {!r.isLegacyLeadLink && (
-                          <button className="text-muted-foreground hover:text-primary" title="Edit" onClick={() => setEditingId(r.id)}>
-                            <Pencil className="size-3" />
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={10} className="text-center text-muted-foreground py-10">No referrals yet.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={11} className="text-center text-muted-foreground py-10">No referrals yet.</td></tr>}
             </tbody>
           </table>
         </div>
