@@ -1016,6 +1016,26 @@ function partitionLegacy(rows: Referral[], selectedIds: ID[]): { nativeIds: ID[]
   return { nativeIds, skipped: selectedIds.length - nativeIds.length };
 }
 
+const REFERRAL_STATUS_STYLES: Record<string, string> = {
+  New: "bg-blue-50 text-blue-700 ring-blue-200",
+  "In Review": "bg-amber-50 text-amber-700 ring-amber-200",
+  "Intake Form Sent": "bg-indigo-50 text-indigo-700 ring-indigo-200",
+  Scheduled: "bg-violet-50 text-violet-700 ring-violet-200",
+  Active: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  Closed: "bg-slate-100 text-slate-700 ring-slate-200",
+  Lost: "bg-rose-50 text-rose-700 ring-rose-200",
+};
+
+function ReferralStatusPill({ status }: { status?: string | null }) {
+  const label = status || "—";
+  const cls = (status && REFERRAL_STATUS_STYLES[status]) || "bg-muted text-muted-foreground ring-border";
+  return (
+    <span className={cn("inline-flex items-center h-6 px-2 rounded-full text-[11px] font-medium ring-1 ring-inset whitespace-nowrap", cls)}>
+      {label}
+    </span>
+  );
+}
+
 function ReferralsModule() {
   const s = useCrm();
   const [creating, setCreating] = useState(false);
