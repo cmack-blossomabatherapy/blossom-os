@@ -20,8 +20,13 @@ import {
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { LeadSourceActions } from "@/components/marketing/LeadSourceActions";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
-import { mockPhoneCalls } from "@/data/calls";
-import { mockLeads } from "@/data/leads";
+import type { PhoneCall } from "@/data/calls";
+import type { Lead } from "@/data/leads";
+// Real call/lead metrics flow through useMarketingIntelligence (marketing_call_events + intake_leads).
+// The legacy per-call detail arrays below are intentionally empty on production — the
+// page renders honest empty states until CTM/Jivetel/RetellAI/manual events are captured.
+const mockPhoneCalls: PhoneCall[] = [];
+const mockLeads: Lead[] = [];
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * Call Tracking — operational communication intelligence. Derived entirely
