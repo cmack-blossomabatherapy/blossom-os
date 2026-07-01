@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Play, Pause, CheckCircle2, Archive, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MktgCard, EmptyRow } from "@/pages/os/marketing/_shared";
+import { EmptyRow } from "@/pages/os/marketing/_shared";
 import {
   type CampaignStatus,
   type MarketingCampaignRow,
@@ -45,15 +45,18 @@ export function CampaignManagerCard() {
 
   return (
     <>
-      <MktgCard
-        title="Campaigns"
-        hint={loading ? "Loading…" : `${campaigns.length} total · from marketing_campaigns`}
-        actions={
+      <section className="rounded-2xl border border-border/60 bg-card p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold">Campaigns</div>
+            <div className="text-[11.5px] text-muted-foreground">
+              {loading ? "Loading…" : `${campaigns.length} total · from marketing_campaigns`}
+            </div>
+          </div>
           <Button size="sm" onClick={openCreate}>
             <Plus className="mr-1.5 h-4 w-4" /> Create Campaign
           </Button>
-        }
-      >
+        </div>
         {!loading && campaigns.length === 0 ? (
           <EmptyRow>
             No campaigns yet.{" "}
@@ -134,7 +137,7 @@ export function CampaignManagerCard() {
             </table>
           </div>
         )}
-      </MktgCard>
+      </section>
       <CampaignFormDialog open={formOpen} onOpenChange={setFormOpen} editing={editing} />
     </>
   );
