@@ -1,9 +1,24 @@
 import { Badge } from "@/components/ui/badge";
 import { useMarketingIntegrationHealth, type MarketingIntegrationStatus } from "@/hooks/useMarketingIntegrationHealth";
 
-// Tracked integrations include CallTrackingMetrics, Jive/Jivetel, RetellAI,
-// LeadTrap, Google Ads, Meta / Facebook Ads, Mailchimp, Outlook / Microsoft 365,
-// CentralReach, Website, and Go Integrate Nava. See MARKETING_INTEGRATION_DEFS.
+/**
+ * Canonical short labels for the Marketing integrations surfaced by this
+ * panel. Kept as a real exported constant so downstream tests / other UI can
+ * reference the exact label set without introspecting the dynamic health
+ * hook.
+ */
+export const MARKETING_INTEGRATION_LABELS = [
+  "CTM",
+  "Jivetel",
+  "RetellAI",
+  "LeadTrap",
+  "Google Ads",
+  "Meta",
+  "Mailchimp",
+  "CentralReach",
+  "Outlook",
+  "MS365",
+] as const;
 
 const STATE_STYLES: Record<MarketingIntegrationStatus, { label: string; tone: string }> = {
   receiving: { label: "Receiving events", tone: "bg-emerald-500/15 text-emerald-700" },
