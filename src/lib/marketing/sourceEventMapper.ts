@@ -38,6 +38,8 @@ export interface MarketingSourceEventRow {
   central_reach_patient_id?: string | null;
   reviewed_by?: string | null;
   reviewed_at?: string | null;
+  assigned_to?: string | null;
+  assigned_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
