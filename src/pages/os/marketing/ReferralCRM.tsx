@@ -723,6 +723,10 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     ? viewRaw
     : "all") as (typeof COMPANY_VIEWS)[number]["id"];
   const [q, setQ] = useUrlState("oq", "");
+  const [stateFilter, setStateFilter] = useUrlState("os", "all");
+  const [tierFilter, setTierFilter] = useUrlState("ot", "all");
+  const [ownerFilter, setOwnerFilter] = useUrlState("oo", "all");
+  const [partnerFilter, setPartnerFilter] = useUrlState("op", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
@@ -734,6 +738,13 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     if (view === "active") r = r.filter((c) => c.activeReferralPartner);
     if (view === "tier-a") r = r.filter((c) => c.relationshipTier === "Tier A");
     if (view === "targets") r = r.filter((c) => c.referralPartnerStatus === "New Target");
+    if (stateFilter !== "all") r = r.filter((c) => c.state === stateFilter);
+    if (tierFilter !== "all") r = r.filter((c) => (c.relationshipTier || "") === tierFilter);
+    if (ownerFilter !== "all") {
+      if (ownerFilter === "__unassigned__") r = r.filter((c) => !c.ownerId);
+      else r = r.filter((c) => c.ownerId === ownerFilter);
+    }
+    if (partnerFilter !== "all") r = r.filter((c) => (c.referralPartnerStatus || "") === partnerFilter);
     if (q) { const ql = q.toLowerCase(); r = r.filter((c) => c.name.toLowerCase().includes(ql) || c.city?.toLowerCase().includes(ql)); }
     const getKey = (c: typeof r[number]): string | number => {
       switch (sort.key) {
@@ -755,7 +766,15 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
       return 0;
     });
     return sorted;
-  }, [s, view, q, sort]);
+  }, [s, view, q, stateFilter, tierFilter, ownerFilter, partnerFilter, sort]);
+
+  const totalCompanies = scopedCompanies(s).length;
+  const companyFilters: FilterDef[] = [
+    { key: "os", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
+    { key: "ot", label: "Tier", value: tierFilter, onChange: setTierFilter, options: [{ value: "all", label: "All tiers" }, ...["Tier A", "Tier B", "Tier C"].map((v) => ({ value: v, label: v }))] },
+    { key: "oo", label: "Owner", value: ownerFilter, onChange: setOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
+    { key: "op", label: "Partner", value: partnerFilter, onChange: setPartnerFilter, options: [{ value: "all", label: "All statuses" }, ...["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => ({ value: v, label: v }))], width: 170 },
+  ];
 
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
@@ -816,14 +835,18 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies..." className="pl-8 h-9 text-sm" />
-        </div>
-        <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Company</Button>
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search companies..." }}
+        filters={companyFilters}
+        resultCount={rows.length}
+        totalCount={totalCompanies}
+        onClear={() => { setQ(""); setStateFilter("all"); setTierFilter("all"); setOwnerFilter("all"); setPartnerFilter("all"); }}
+        extra={
+          <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
+            <Plus className="size-3.5" /> New Company
+          </Button>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-1.5">
         {COMPANY_VIEWS.map((v) => (
