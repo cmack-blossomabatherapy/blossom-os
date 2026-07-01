@@ -374,10 +374,7 @@ export default function LeadSourceInbox() {
         priority:         "Warm",
         sourceMetadata:   defaults.sourceMetadata,
       });
-      updateLeadSourceEventStatus(s.event.id, "converted_to_lead", {
-        resolvedLeadId: lead.id,
-        matchedLeadId: lead.id,
-      });
+      await linkLead(s.event.id, lead.id, "converted_to_lead");
       toast.success(`Lead created from ${s.event.sourceLabel}`, {
         description: lead.childName,
       });
@@ -386,22 +383,31 @@ export default function LeadSourceInbox() {
     }
   };
 
-  const onAttach = (leadId: string) => {
+  const onAttach = async (leadId: string) => {
     if (!selected) return;
-    updateLeadSourceEventStatus(selected.event.id, "attached_to_existing_lead", {
-      resolvedLeadId: leadId,
-      matchedLeadId: leadId,
-    });
-    toast.success("Event attached to lead");
+    try {
+      await linkLead(selected.event.id, leadId, "attached_to_existing_lead");
+      toast.success("Event attached to lead");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not attach event");
+    }
   };
 
-  const onMarkReview = (id: string) => {
-    updateLeadSourceEventStatus(id, "needs_review");
-    toast.message("Marked for review");
+  const onMarkReview = async (id: string) => {
+    try {
+      await updateStatus(id, "needs_review");
+      toast.message("Marked for review");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update event");
+    }
   };
-  const onIgnore = (id: string) => {
-    updateLeadSourceEventStatus(id, "ignored");
-    toast.message("Event ignored");
+  const onIgnore = async (id: string) => {
+    try {
+      await updateStatus(id, "ignored");
+      toast.message("Event ignored");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update event");
+    }
   };
   const onCopy = (s: typeof scored[number]) => {
     const text = JSON.stringify(s.event, null, 2);
