@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Filter, Link2, PhoneCall, RefreshCw, UserCheck, X } from "lucide-react";
+import { Check, Filter, Link2, PhoneCall, RefreshCw, Upload, UserCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,8 @@ import { eventToLeadDefaults } from "@/lib/leads/leadSourceEvents";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { CallEventLogDialog } from "@/components/marketing/CallEventLogDialog";
+import { BulkCallEventImportDialog } from "@/components/marketing/BulkCallEventImportDialog";
 
 function fmtDate(iso: string | null) {
   if (!iso) return "-";
@@ -62,13 +64,14 @@ export function CallQueueSection() {
     setDirection,
     markReviewed,
     linkLead,
-    createManualCallEvent,
   } = useMarketingCallEvents({ limit: 500 });
   const { leads, createLead } = useLeads();
 
   const [queueFilter, setQueueFilter] = useState<"all" | "missed" | "after_hours" | "needs_review" | "callback_needed">("all");
   const [search, setSearch] = useState("");
   const [linkOpen, setLinkOpen] = useState<MarketingCallEventRow | null>(null);
+  const [logCallOpen, setLogCallOpen] = useState(false);
+  const [bulkCallOpen, setBulkCallOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -149,23 +152,11 @@ export function CallQueueSection() {
           <Button size="sm" variant="ghost" onClick={() => void refetch()} disabled={loading}>
             <RefreshCw className={`mr-1 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={async () => {
-              try {
-                await createManualCallEvent({
-                  source_system: "manual",
-                  occurred_at: new Date().toISOString(),
-                  direction: "inbound",
-                  status: "new",
-                  call_category: "unknown",
-                });
-                toast.success("Manual call logged");
-              } catch { /* toast already fired */ }
-            }}
-          >
+          <Button size="sm" variant="outline" onClick={() => setLogCallOpen(true)}>
             <PhoneCall className="mr-1 h-3.5 w-3.5" /> Log call
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setBulkCallOpen(true)}>
+            <Upload className="mr-1 h-3.5 w-3.5" /> Bulk Import Calls
           </Button>
         </div>
       </div>
@@ -235,7 +226,7 @@ export function CallQueueSection() {
                   </Select>
                 </td>
                 <td className="px-2 py-2">
-                  <Select value={(c.disposition as CallDisposition) ?? ""} onValueChange={(v) => void setDisposition(c.id, v as CallDisposition)}>
+                  <Select value={(c.disposition as CallDisposition) ?? undefined} onValueChange={(v) => void setDisposition(c.id, v as CallDisposition)}>
                     <SelectTrigger className="h-7 w-36"><SelectValue placeholder="-" /></SelectTrigger>
                     <SelectContent>
                       {CALL_DISPOSITIONS.map((d) => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
@@ -303,6 +294,16 @@ export function CallQueueSection() {
           } catch { /* toast already fired */ }
           setLinkOpen(null);
         }}
+      />
+      <CallEventLogDialog
+        open={logCallOpen}
+        onOpenChange={setLogCallOpen}
+        onLogged={() => void refetch()}
+      />
+      <BulkCallEventImportDialog
+        open={bulkCallOpen}
+        onOpenChange={setBulkCallOpen}
+        onImported={() => void refetch()}
       />
     </section>
   );
