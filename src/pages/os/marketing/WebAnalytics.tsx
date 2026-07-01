@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
+import { WebMetricsPanel } from "@/components/marketing/WebMetricsPanel";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 
 /* -------------------------------------------------------------------------- *
@@ -529,6 +530,10 @@ export default function WebAnalytics() {
         </div>
       </section>
           <MarketingWorkPanel workType="web_analytics" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
+          <WebMetricsPanel
+            title="Live web metrics"
+            defaultSourceSystem="google_analytics"
+          />
     </MktgPage>
   );
 }
