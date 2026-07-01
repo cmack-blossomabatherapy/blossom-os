@@ -12,6 +12,11 @@ import {
   useMarketingCallEvents,
   type MarketingCallEventInsert,
 } from "@/hooks/useMarketingCallEvents";
+import {
+  validateDisposition,
+  validateDirection,
+  validateCategory,
+} from "@/lib/marketing/callDispositions";
 
 const IMPORT_FIELDS = [
   "source_system",
@@ -141,6 +146,22 @@ export function BulkCallEventImportDialog({ open, onOpenChange, onImported }: Pr
           rec.state = val.toUpperCase().slice(0, 2);
         } else if (field === "notes") {
           notes = val;
+        } else if (field === "direction") {
+          const v = validateDirection(val);
+          if (!v.ok) errors.push(`Row ${r + 2}: ${v.error}`);
+          rec.direction = v.value;
+        } else if (field === "call_category") {
+          const v = validateCategory(val);
+          if (!v.ok) errors.push(`Row ${r + 2}: ${v.error}`);
+          rec.call_category = v.value;
+        } else if (field === "disposition") {
+          const v = validateDisposition(val);
+          if (!v.ok) {
+            errors.push(`Row ${r + 2}: ${v.error}`);
+            raw[`_invalid_disposition`] = val;
+          } else if (v.value) {
+            rec.disposition = v.value;
+          }
         } else {
           rec[field] = val;
         }

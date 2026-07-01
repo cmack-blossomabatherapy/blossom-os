@@ -22,6 +22,7 @@ import { LeadSourceActions } from "@/components/marketing/LeadSourceActions";
 import { CallQueueSection } from "@/components/marketing/CallQueueSection";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 import { useMarketingData } from "@/hooks/useMarketingData";
+import { isAfterHoursEastern } from "@/lib/marketing/callTimezone";
 // Detailed call/lead metrics read directly from marketing_call_events +
 // intake_leads via useMarketingData. Aggregate KPIs continue to flow through
 // useMarketingIntelligence. No shim arrays — empty tables render empty states.
@@ -55,7 +56,7 @@ export default function CallTracking() {
 
   const now = Date.now();
   const ageDays = (iso: string) => (now - new Date(iso).getTime()) / 86_400_000;
-  const hourOf = (iso: string) => new Date(iso).getHours();
+  // After-hours uses America/New_York, not the browser tz.
 
   const isMissedStatus = (s: string | null) => {
     if (!s) return false;
@@ -107,10 +108,7 @@ export default function CallTracking() {
     const client: typeof marketingCalls = [];
     const connected = marketingCalls.filter((c) => isConnectedStatus(c.status)).length;
     const missed = marketingCalls.filter((c) => c.direction === "inbound" && isMissedStatus(c.status)).length;
-    const afterHours = marketingCalls.filter((c) => {
-      const h = hourOf(c.createdAt);
-      return h >= 18 || h < 8;
-    }).length;
+    const afterHours = marketingCalls.filter((c) => isAfterHoursEastern(c.createdAt)).length;
     const intakeConverted = intake.filter((c) => {
       if (!c.leadId) return false;
       const lead = marketingLeads.find((l) => l.id === c.leadId);
@@ -189,8 +187,7 @@ export default function CallTracking() {
     const map = new Map<string, number>();
     marketingCalls.forEach((c) => {
       if (!c.state) return;
-      const h = hourOf(c.createdAt);
-      if (h >= 18 || h < 8) map.set(c.state, (map.get(c.state) ?? 0) + 1);
+      if (isAfterHoursEastern(c.createdAt)) map.set(c.state, (map.get(c.state) ?? 0) + 1);
     });
     return Array.from(map.entries())
       .map(([state, count]) => ({ state, count }))

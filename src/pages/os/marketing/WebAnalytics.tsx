@@ -21,6 +21,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
+import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 
 /* ────────────────────────────────────────────────────────────────────────── *
@@ -527,6 +528,7 @@ export default function WebAnalytics() {
           </div>
         </div>
       </section>
+          <MarketingWorkPanel workType="web_analytics" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
     </MktgPage>
   );
 }

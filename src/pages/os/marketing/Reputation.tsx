@@ -26,6 +26,7 @@ import {
   CheckCheck,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
+import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 import { fmtMktgShortDate, fmtMktgRelative } from "@/lib/os/referrals/utils";
 
 /* Reputation — operational trust intelligence.
@@ -906,6 +907,7 @@ export default function Reputation() {
           <AIPrompt label="Summarize recruiting reputation movement" />
         </div>
       </section>
+          <MarketingWorkPanel workType="reputation" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
     </MktgPage>
   );
 }
