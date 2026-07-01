@@ -572,7 +572,12 @@ export default function CommunityOutreach() {
           </div>
         </div>
       </section>
-          <MarketingWorkPanel workType="community_outreach" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
+          <MarketingWorkPanel
+            workType="community_outreach"
+            title="Open work"
+            description="Track follow-ups, opportunities, and fixes for this area."
+            seedFactory={() => ({ title: "Community outreach follow-up", priority: "medium" })}
+          />
     </MktgPage>
   );
 }
