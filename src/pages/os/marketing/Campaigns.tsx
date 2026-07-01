@@ -14,6 +14,9 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
+import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
+import { BulkCampaignMetricsImportDialog } from "@/components/marketing/BulkCampaignMetricsImportDialog";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 import { useMarketingData } from "@/hooks/useMarketingData";
 import { CampaignManagerCard } from "@/components/marketing/CampaignManagerCard";
@@ -91,6 +94,7 @@ export default function Campaigns() {
   const mi = useMarketingIntelligence();
   const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const [activeState, setActiveState] = useState<string | null>(null);
+  const [metricsOpen, setMetricsOpen] = useState(false);
 
   /* ── derive campaigns from real source × state activity ─────────────── */
   const campaigns = useMemo<DerivedCampaign[]>(() => {
@@ -215,8 +219,18 @@ export default function Campaigns() {
     <MktgPage
       title="Campaigns"
       subtitle="Operational growth coordination across lead generation, recruiting, outreach, and referrals — all derived from real Blossom activity."
-      actions={<AIPrompt label="What's driving growth this week?" variant="card" />}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setMetricsOpen(true)}>
+            <Upload className="mr-1.5 h-4 w-4" /> Import Campaign Metrics
+          </Button>
+          <AIPrompt label="What's driving growth this week?" variant="card" />
+        </div>
+      }
     >
+      {/* ── PERSISTED CAMPAIGN MANAGER — primary workflow ─────────────── */}
+      <CampaignManagerCard />
+
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
         <div className="absolute -top-20 -right-20 size-64 rounded-full bg-primary/10 blur-3xl" aria-hidden />
@@ -245,9 +259,6 @@ export default function Campaigns() {
       </section>
 
       {/* ── STATE FILTER ─────────────────────────────────────────────── */}
-      {/* ── PERSISTED CAMPAIGN MANAGER ───────────────────────────────── */}
-      <CampaignManagerCard />
-
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => setActiveState(null)}
@@ -519,6 +530,8 @@ export default function Campaigns() {
           </div>
         </div>
       </MktgCard>
+
+      <BulkCampaignMetricsImportDialog open={metricsOpen} onOpenChange={setMetricsOpen} />
     </MktgPage>
   );
 }

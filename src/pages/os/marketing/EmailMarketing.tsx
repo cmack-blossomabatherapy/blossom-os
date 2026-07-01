@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plug } from "lucide-react";
+import { Plug, Upload } from "lucide-react";
 import { MktgPage, MktgCard, EmptyRow } from "./_shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ManualSourceEventDialog } from "@/components/marketing/ManualSourceEventDialog";
+import { EmailEventLogDialog } from "@/components/marketing/EmailEventLogDialog";
+import { BulkEmailEventImportDialog } from "@/components/marketing/BulkEmailEventImportDialog";
+import { CampaignManagerCard } from "@/components/marketing/CampaignManagerCard";
 
 type EmailEvent = {
   id: string;
@@ -31,6 +33,8 @@ export default function EmailMarketing() {
   const [events, setEvents] = useState<EmailEvent[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [manualOpen, setManualOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +56,7 @@ export default function EmailMarketing() {
       setCampaigns((cRes.data ?? []) as Campaign[]);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [reloadTick]);
 
   const buckets = useMemo(() => {
     const b = { sent: 0, open: 0, click: 0, bounce: 0, unsubscribe: 0 };
@@ -67,6 +71,8 @@ export default function EmailMarketing() {
     return b;
   }, [events]);
 
+  const rate = (n: number) => (buckets.sent > 0 ? Math.round((n / buckets.sent) * 100) : 0);
+
   const influencedLeads = useMemo(
     () => new Set(events.map((e) => e.lead_id).filter(Boolean)).size,
     [events],
@@ -80,6 +86,9 @@ export default function EmailMarketing() {
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={() => setManualOpen(true)}>
             <Plug className="mr-1.5 h-4 w-4" /> Log Email Event
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}>
+            <Upload className="mr-1.5 h-4 w-4" /> Bulk Import Events
           </Button>
         </div>
       }
@@ -115,19 +124,24 @@ export default function EmailMarketing() {
       <MktgCard title="Deliverability">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {([
-            ["Sent", buckets.sent],
-            ["Opens", buckets.open],
-            ["Clicks", buckets.click],
-            ["Bounces", buckets.bounce],
-            ["Unsubs", buckets.unsubscribe],
-          ] as const).map(([label, val]) => (
+            ["Sent", buckets.sent, null],
+            ["Opens", buckets.open, rate(buckets.open)],
+            ["Clicks", buckets.click, rate(buckets.click)],
+            ["Bounces", buckets.bounce, rate(buckets.bounce)],
+            ["Unsubs", buckets.unsubscribe, rate(buckets.unsubscribe)],
+          ] as const).map(([label, val, pct]) => (
             <div key={label} className="rounded-lg border border-border/60 bg-card/50 p-3">
               <div className="text-xs text-muted-foreground">{label}</div>
-              <div className="text-xl font-semibold">{val || "—"}</div>
+              <div className="text-xl font-semibold">{val || "-"}</div>
+              {pct !== null && val > 0 && (
+                <div className="text-[11px] text-muted-foreground">{pct}% of sent</div>
+              )}
             </div>
           ))}
         </div>
       </MktgCard>
+
+      <CampaignManagerCard />
 
       <MktgCard title="Recent Email Events">
         <div className="overflow-hidden rounded-md border border-border">
@@ -177,11 +191,16 @@ export default function EmailMarketing() {
         </div>
       </MktgCard>
 
-      <ManualSourceEventDialog
+      <EmailEventLogDialog
         open={manualOpen}
         onOpenChange={setManualOpen}
-        sourceSystem="mailchimp"
-        sourceLabel="Mailchimp"
+        onLogged={() => setReloadTick((n) => n + 1)}
+      />
+      <BulkEmailEventImportDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        defaultSourceSystem="mailchimp"
+        onImported={() => setReloadTick((n) => n + 1)}
       />
     </MktgPage>
   );
