@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -62,6 +62,13 @@ export function useMarketingCallEvents(
   const [calls, setCalls] = useState<MarketingCallEventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelId = useMemo(
+    () =>
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2),
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,7 +86,7 @@ export function useMarketingCallEvents(
   useEffect(() => {
     void load();
     const ch = supabase
-      .channel("marketing-call-events-live")
+      .channel(`marketing-call-events-live-${channelId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "marketing_call_events" },
@@ -91,7 +98,7 @@ export function useMarketingCallEvents(
     return () => {
       void supabase.removeChannel(ch);
     };
-  }, [load]);
+  }, [load, channelId]);
 
   const updateCallEvent = useCallback<UseMarketingCallEventsResult["updateCallEvent"]>(
     async (id, patch) => {
