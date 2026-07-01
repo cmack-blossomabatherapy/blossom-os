@@ -76,6 +76,28 @@ const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] =
 ];
 
 // ---------- shared atoms ----------
+/**
+ * Persist a piece of view state in the URL search params so views are
+ * shareable and survive reloads. `defaultValue` is stripped from the URL
+ * to keep it clean.
+ */
+function useUrlState(key: string, defaultValue: string): [string, (v: string) => void] {
+  const [params, setParams] = useSearchParams();
+  const value = params.get(key) ?? defaultValue;
+  const setValue = useCallback(
+    (v: string) => {
+      setParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (!v || v === defaultValue) next.delete(key);
+        else next.set(key, v);
+        return next;
+      }, { replace: true });
+    },
+    [key, defaultValue, setParams],
+  );
+  return [value, setValue];
+}
+
 function Kpi({ label, value, hint, icon: Icon }: { label: string; value: React.ReactNode; hint?: string; icon: typeof Users }) {
   return (
     <div className="rounded-2xl border bg-card p-4">
