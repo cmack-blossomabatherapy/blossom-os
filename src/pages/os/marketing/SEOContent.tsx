@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
+import { WebMetricsPanel } from "@/components/marketing/WebMetricsPanel";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 
 /* -------------------------------------------------------------------------- *
@@ -400,6 +401,11 @@ export default function SEOContent() {
         </div>
       </section>
           <MarketingWorkPanel workType="seo_content" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
+          <WebMetricsPanel
+            title="Search Console metrics"
+            defaultSourceSystem="search_console"
+            filterSourceSystem="search_console"
+          />
     </MktgPage>
   );
 }
