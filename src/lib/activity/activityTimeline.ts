@@ -1,15 +1,22 @@
 /**
- * Sprint 11 — Unified Activity Timeline model.
+ * Unified Activity Timeline model.
  *
  * Pure types + helpers that normalize lead actions, source events,
  * communications, tasks, escalations, and system/audit events into a
  * single ActivityEvent shape used by Activity Center, Patient Activity,
  * User Activity, Patient Lifetime Journey, and lead detail drawers.
  *
- * No persistence in this sprint — events come from existing in-memory
- * stores (leadSourceEventsStore) plus realistic mock entries that cover
- * the event types Blossom OS will write into once integrations are live.
+ * Production data path is database-backed:
+ *   - `marketing_source_events`
+ *   - `marketing_call_events`
+ *   - `marketing_email_events`
+ *   - Work Queue (live in-memory store, DB-backed pass pending)
+ *
+ * `activityFromSourceEvent` remains a pure type helper for callers that
+ * already have a normalized LeadSourceEvent shape. No production feed
+ * uses in-memory `leadSourceEventsStore` or seeded mock events.
  */
+import { useEffect, useState } from "react";
 import {
   Activity as ActivityIcon,
   AlertTriangle,
@@ -33,13 +40,14 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import {
-  listLeadSourceEvents,
-  subscribeLeadSourceEvents,
-} from "@/lib/leads/leadSourceEventsStore";
 import type { LeadSourceEvent } from "@/lib/leads/leadSourceEvents";
 import { listWorkItems, subscribeWorkItems } from "@/lib/workQueue/workQueueStore";
 import type { WorkItem } from "@/lib/workQueue/workQueueModel";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  mapRowToEvent,
+  type MarketingSourceEventRow,
+} from "@/lib/marketing/sourceEventMapper";
 
 export type ActivityObjectType =
   | "lead"
