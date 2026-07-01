@@ -35,25 +35,14 @@ export function safeInt(v: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
+// Marketing dates render in ET / en-US so every viewer sees the same
+// "last contacted" label regardless of browser locale or timezone.
 export function fmtRelative(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
-  const diff = Date.now() - d.getTime();
-  const days = Math.floor(diff / 86_400_000);
-  if (days < 0) return d.toLocaleDateString();
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-  return d.toLocaleDateString();
+  return fmtMktgRelative(iso);
 }
 
 export function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return isNaN(d.getTime()) ? "—" : d.toLocaleDateString();
+  return fmtMktgDate(iso);
 }
 
 /**
