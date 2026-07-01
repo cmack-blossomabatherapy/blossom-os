@@ -56,12 +56,12 @@ export function WebMetricsPanel({
           ? `${rows.length} row${rows.length === 1 ? "" : "s"} from ${bySource.map(([s]) => s).join(", ")}`
           : "No live web metrics yet"
       }
-      right={
+    >
+      <div className="mb-3 flex justify-end">
         <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
           <Upload className="mr-1.5 h-4 w-4" /> Bulk Import
         </Button>
-      }
-    >
+      </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {([
           ["Sessions", totals.sessions],
