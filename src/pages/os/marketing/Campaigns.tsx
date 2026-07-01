@@ -15,9 +15,15 @@ import {
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
-import { mockLeads } from "@/data/leads";
-import { mockPhoneCalls } from "@/data/calls";
-import { mockCandidates } from "@/data/recruiting";
+import type { Lead } from "@/data/leads";
+import type { PhoneCall } from "@/data/calls";
+import type { Candidate } from "@/data/recruiting";
+// Campaign KPIs are sourced from useMarketingIntelligence + marketing_campaigns / marketing_campaign_metrics.
+// The narrative arrays below are intentionally empty on production — the page renders honest empty
+// states until source events, call events, and candidates are linked to campaigns.
+const mockLeads: Lead[] = [];
+const mockPhoneCalls: PhoneCall[] = [];
+const mockCandidates: Candidate[] = [];
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * Campaigns — operational growth intelligence.
