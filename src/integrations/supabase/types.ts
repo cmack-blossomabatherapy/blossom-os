@@ -9174,6 +9174,54 @@ export type Database = {
           },
         ]
       }
+      marketing_reputation_events: {
+        Row: {
+          created_at: string
+          id: string
+          linked_lead_id: string | null
+          occurred_at: string
+          rating: number | null
+          raw_payload: Json
+          response_status: string | null
+          review_text: string | null
+          reviewer_name: string | null
+          sentiment: string | null
+          source_system: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          linked_lead_id?: string | null
+          occurred_at: string
+          rating?: number | null
+          raw_payload?: Json
+          response_status?: string | null
+          review_text?: string | null
+          reviewer_name?: string | null
+          sentiment?: string | null
+          source_system: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          linked_lead_id?: string | null
+          occurred_at?: string
+          rating?: number | null
+          raw_payload?: Json
+          response_status?: string | null
+          review_text?: string | null
+          reviewer_name?: string | null
+          sentiment?: string | null
+          source_system?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       marketing_source_events: {
         Row: {
           assigned_at: string | null
@@ -9325,6 +9373,126 @@ export type Database = {
           source_system?: string | null
           state?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      marketing_web_metrics: {
+        Row: {
+          campaign_id: string | null
+          clicks: number | null
+          conversions: number | null
+          created_at: string
+          id: string
+          impressions: number | null
+          metric_date: string
+          page_path: string | null
+          query: string | null
+          raw_payload: Json
+          sessions: number | null
+          source_system: string
+          spend: number | null
+          state: string | null
+          updated_at: string
+          users: number | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          id?: string
+          impressions?: number | null
+          metric_date: string
+          page_path?: string | null
+          query?: string | null
+          raw_payload?: Json
+          sessions?: number | null
+          source_system: string
+          spend?: number | null
+          state?: string | null
+          updated_at?: string
+          users?: number | null
+        }
+        Update: {
+          campaign_id?: string | null
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          id?: string
+          impressions?: number | null
+          metric_date?: string
+          page_path?: string | null
+          query?: string | null
+          raw_payload?: Json
+          sessions?: number | null
+          source_system?: string
+          spend?: number | null
+          state?: string | null
+          updated_at?: string
+          users?: number | null
+        }
+        Relationships: []
+      }
+      marketing_work_items: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          evidence: Json
+          id: string
+          lead_id: string | null
+          owner_id: string | null
+          priority: string
+          referral_company_id: string | null
+          referral_contact_id: string | null
+          source_system: string | null
+          state: string | null
+          status: string
+          title: string
+          updated_at: string
+          work_type: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          evidence?: Json
+          id?: string
+          lead_id?: string | null
+          owner_id?: string | null
+          priority?: string
+          referral_company_id?: string | null
+          referral_contact_id?: string | null
+          source_system?: string | null
+          state?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          work_type: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          evidence?: Json
+          id?: string
+          lead_id?: string | null
+          owner_id?: string | null
+          priority?: string
+          referral_company_id?: string | null
+          referral_contact_id?: string | null
+          source_system?: string | null
+          state?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          work_type?: string
         }
         Relationships: []
       }
