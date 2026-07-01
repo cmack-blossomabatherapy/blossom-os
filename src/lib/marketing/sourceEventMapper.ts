@@ -84,6 +84,8 @@ const SLUG_ALIAS_GROUPS: string[][] = [
   ["jivetel", "jive", "jivetel_ai"],
   ["mailchimp", "mailchimp_email"],
   ["leadtrap"],
+  ["nava", "go_integrate_nava", "go-integrate-nava", "gointegrate_nava", "gointegratenava"],
+  ["ms365", "microsoft_365", "microsoft365", "outlook", "office365", "office_365"],
   ["manual", "manual_import"],
 ];
 
