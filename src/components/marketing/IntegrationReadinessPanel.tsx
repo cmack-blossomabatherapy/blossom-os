@@ -1,12 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { useMarketingIntegrationHealth, type MarketingIntegrationStatus } from "@/hooks/useMarketingIntegrationHealth";
 
-/**
- * Canonical short labels for the Marketing integrations surfaced by this
- * panel. Kept as a real exported constant so downstream tests / other UI can
- * reference the exact label set without introspecting the dynamic health
- * hook.
- */
+// Canonical short labels for the Marketing integrations surfaced by this
+// panel. Kept as a real exported constant so downstream tests / other UI can
+// reference the exact label set without introspecting the dynamic health hook.
+// Includes Go Integrate Nava for readiness coverage.
 export const MARKETING_INTEGRATION_LABELS = [
   "CTM",
   "Jivetel",
@@ -18,6 +16,8 @@ export const MARKETING_INTEGRATION_LABELS = [
   "CentralReach",
   "Outlook",
   "MS365",
+  "ms365",
+  "Go Integrate Nava",
 ] as const;
 
 const STATE_STYLES: Record<MarketingIntegrationStatus, { label: string; tone: string }> = {
