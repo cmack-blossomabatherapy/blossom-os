@@ -693,7 +693,12 @@ function DocumentsTab({
   const inputRef = useRef<HTMLInputElement>(null);
   const [stagedType, setStagedType] = useState<LeadDocumentType>("Insurance Card");
 
-  const handleFiles = async (files: FileList | null) => {
+  /**
+   * Stage files locally only. The lead does not exist yet, so we never call
+   * storage here — that removes the "pending" leadId upload path entirely.
+   * Files are uploaded post-create in `submit()` against the real lead id.
+   */
+  const handleFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const now = new Date().toISOString();
     const queued: PendingLeadDocument[] = Array.from(files).map((f) => ({
@@ -701,48 +706,11 @@ function DocumentsTab({
       type: stagedType,
       size: f.size,
       uploadedAt: now,
-      storageStatus: "uploading",
+      storageStatus: "pending_storage_connection",
+      file: f,
     }));
-    let baseIndex = 0;
-    setDocuments((prev) => {
-      baseIndex = prev.length;
-      return [...prev, ...queued];
-    });
+    setDocuments((prev) => [...prev, ...queued]);
     if (inputRef.current) inputRef.current.value = "";
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const idx = baseIndex + i;
-      try {
-        const result = await uploadLeadDocument(file, {
-          leadId: "pending",
-          type: stagedType,
-        });
-        setDocuments((prev) =>
-          prev.map((d, k) =>
-            k === idx
-              ? {
-                  ...d,
-                  storageStatus: "uploaded",
-                  storagePath: result.storagePath,
-                  signedUrl: result.signedUrl,
-                }
-              : d,
-          ),
-        );
-      } catch (e: any) {
-        setDocuments((prev) =>
-          prev.map((d, k) =>
-            k === idx
-              ? { ...d, storageStatus: "failed", errorMessage: e?.message ?? "Upload failed" }
-              : d,
-          ),
-        );
-        toast.error(`Could not upload ${file.name}`, {
-          description: e?.message ?? "Try again.",
-        });
-      }
-    }
   };
 
   return (
