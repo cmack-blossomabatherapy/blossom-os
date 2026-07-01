@@ -48,10 +48,28 @@ export interface UseMarketingWorkItemsOptions {
   state?: string;
   includeArchived?: boolean;
   limit?: number;
+  ownerId?: string;
+  status?: MarketingWorkStatus | string;
+  priority?: MarketingWorkPriority | string;
+  dueBefore?: string;
+  dueAfter?: string;
+  search?: string;
 }
 
 export function useMarketingWorkItems(opts: UseMarketingWorkItemsOptions = {}) {
-  const { workType, sourceSystem, state, includeArchived = false, limit = 200 } = opts;
+  const {
+    workType,
+    sourceSystem,
+    state,
+    includeArchived = false,
+    limit = 200,
+    ownerId,
+    status,
+    priority,
+    dueBefore,
+    dueAfter,
+    search,
+  } = opts;
   const [items, setItems] = useState<MarketingWorkItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,12 +85,21 @@ export function useMarketingWorkItems(opts: UseMarketingWorkItemsOptions = {}) {
     if (workType) q = q.eq("work_type", workType);
     if (sourceSystem) q = q.eq("source_system", sourceSystem);
     if (state) q = q.eq("state", state);
+    if (ownerId) q = q.eq("owner_id", ownerId);
+    if (status) q = q.eq("status", status);
+    if (priority) q = q.eq("priority", priority);
+    if (dueBefore) q = q.lte("due_date", dueBefore);
+    if (dueAfter) q = q.gte("due_date", dueAfter);
+    if (search && search.trim()) {
+      const s = search.trim().replace(/[%,]/g, " ");
+      q = q.or(`title.ilike.%${s}%,description.ilike.%${s}%`);
+    }
     if (!includeArchived) q = q.neq("status", "archived");
     const { data, error: err } = await q;
     if (err) setError(err.message);
     setItems(((data as unknown) as MarketingWorkItem[]) ?? []);
     setLoading(false);
-  }, [workType, sourceSystem, state, includeArchived, limit]);
+  }, [workType, sourceSystem, state, includeArchived, limit, ownerId, status, priority, dueBefore, dueAfter, search]);
 
   useEffect(() => {
     void load();
