@@ -15684,6 +15684,7 @@ export type Database = {
         Args: { _dept_name: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      can_access_marketing: { Args: { _uid: string }; Returns: boolean }
       can_access_referral_crm: { Args: { _uid: string }; Returns: boolean }
       can_access_state_department: {
         Args: { _department_key: string; _state_code: string; _user_id: string }
@@ -15694,6 +15695,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      can_manage_marketing: { Args: { _uid: string }; Returns: boolean }
       can_manage_role_assignments: {
         Args: { _user_id: string }
         Returns: boolean
