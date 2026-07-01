@@ -540,6 +540,57 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
 }
 
 function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (b: boolean) => void }) {
+  return <NewContactDialogInner open={open} onOpenChange={onOpenChange} />;
+}
+
+// Popover cell for a contact showing their referred patients + status.
+function ContactReferralsCell({ contactId, count }: { contactId: ID; count: number }) {
+  const s = useCrm();
+  const patients = useMemo(
+    () => activeReferrals(s).filter((r) => r.contactId === contactId)
+      .sort((a, b) => (b.referralDate || "").localeCompare(a.referralDate || "")),
+    [s, contactId],
+  );
+  if (patients.length === 0) {
+    return <span className="tabular-nums text-muted-foreground">{count}</span>;
+  }
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 text-xs font-medium tabular-nums hover:bg-muted"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {patients.length}
+          <ChevronRight className="size-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="end">
+        <div className="border-b px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Referred patients ({patients.length})
+        </div>
+        <div className="max-h-72 overflow-y-auto divide-y">
+          {patients.map((r) => (
+            <div key={r.id} className="flex items-center justify-between gap-2 px-3 py-2 text-xs">
+              <div className="min-w-0">
+                <p className="font-medium truncate">{patientDisplayName(r)}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {r.state || "-"} - {fmtDate(r.referralDate)}
+                </p>
+              </div>
+              <span className={cn("text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full border shrink-0", referralStatusTone(r.referralStatus))}>
+                {r.referralStatus}
+              </span>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function NewContactDialogInner({ open, onOpenChange }: { open: boolean; onOpenChange: (b: boolean) => void }) {
   const s = useCrm();
   const [f, setF] = useState({ firstName: "", lastName: "", jobTitle: "", email: "", phone: "", state: "", companyId: "" });
   const [newCo, setNewCo] = useState({ name: "", companyType: "", state: "" });
