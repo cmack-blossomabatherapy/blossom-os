@@ -25,11 +25,23 @@ export interface UseMarketingSourceEventsResult {
   updateStatus: (
     id: string,
     status: LeadSourceEventStatus,
-    patch?: { lead_id?: string | null },
+    patch?: { lead_id?: string | null; campaign_id?: string | null; source_id?: string | null },
   ) => Promise<void>;
   linkLead: (id: string, leadId: string, status: LeadSourceEventStatus) => Promise<void>;
   ignoreEvent: (id: string) => Promise<void>;
   markReview: (id: string) => Promise<void>;
+  updateFields: (
+    id: string,
+    patch: {
+      campaign_id?: string | null;
+      source_id?: string | null;
+      caller_name?: string | null;
+      caller_phone?: string | null;
+      caller_email?: string | null;
+      state?: string | null;
+      payload_summary?: string | null;
+    },
+  ) => Promise<void>;
 }
 
 export function useMarketingSourceEvents(
@@ -79,6 +91,8 @@ export function useMarketingSourceEvents(
         reviewed_at: nowIso,
       };
       if ("lead_id" in patch) update.lead_id = patch.lead_id ?? null;
+      if ("campaign_id" in patch) update.campaign_id = patch.campaign_id ?? null;
+      if ("source_id" in patch) update.source_id = patch.source_id ?? null;
       const { error: err } = await supabase
         .from("marketing_source_events")
         .update(update as never)
@@ -100,6 +114,18 @@ export function useMarketingSourceEvents(
   const markReview = useCallback<UseMarketingSourceEventsResult["markReview"]>(
     (id) => updateStatus(id, "needs_review"),
     [updateStatus],
+  );
+
+  const updateFields = useCallback<UseMarketingSourceEventsResult["updateFields"]>(
+    async (id, patch) => {
+      const { error: err } = await supabase
+        .from("marketing_source_events")
+        .update(patch as never)
+        .eq("id", id);
+      if (err) throw err;
+      await load();
+    },
+    [load],
   );
 
   const insertEvent = useCallback<UseMarketingSourceEventsResult["insertEvent"]>(
@@ -125,5 +151,6 @@ export function useMarketingSourceEvents(
     linkLead,
     ignoreEvent,
     markReview,
+    updateFields,
   };
 }
