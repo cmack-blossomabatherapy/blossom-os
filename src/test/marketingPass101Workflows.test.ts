@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { ROLE_MENUS, MARKETING_ROLES } from "@/lib/os/roleMenus";
+import { ROLE_MENUS } from "@/lib/os/roleMenus";
+
+const MARKETING_ROLES = ["marketing", "state_director", "super_admin", "admin"];
 
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
 const exists = (p: string) => fs.existsSync(path.join(process.cwd(), p));
@@ -84,17 +86,19 @@ describe("Marketing Pass 101 — reports rule preserved", () => {
 describe("Marketing Pass 101 — role menu invariants", () => {
   it("Patient Lifetime Journey stays Marketing-only", () => {
     for (const role of Object.keys(ROLE_MENUS) as Array<keyof typeof ROLE_MENUS>) {
-      const items = ROLE_MENUS[role] ?? [];
+      const menu = (ROLE_MENUS as any)[role];
+      const items: any[] = Array.isArray(menu) ? menu : (menu?.groups ?? []).flatMap((g: any) => g.items ?? []);
       const hasPLJ = items.some((i: any) =>
         (typeof i?.to === "string" && i.to.includes("/patient-journey")) ||
         (i?.children ?? []).some((c: any) => typeof c?.to === "string" && c.to.includes("/patient-journey")),
       );
-      if (hasPLJ) expect(MARKETING_ROLES).toContain(role as any);
+      if (hasPLJ) expect(MARKETING_ROLES).toContain(String(role));
     }
   });
   it("Business Development role has no Patient Lifetime Journey menu link", () => {
-    const bd = (ROLE_MENUS as any).business_development ?? [];
-    const flat: any[] = bd.flatMap((i: any) => [i, ...(i.children ?? [])]);
+    const bd = (ROLE_MENUS as any).business_development;
+    const items: any[] = Array.isArray(bd) ? bd : (bd?.groups ?? []).flatMap((g: any) => g.items ?? []);
+    const flat: any[] = items.flatMap((i: any) => [i, ...(i.children ?? [])]);
     expect(flat.some((i: any) => typeof i?.to === "string" && i.to.includes("/patient-journey"))).toBe(false);
   });
 });
