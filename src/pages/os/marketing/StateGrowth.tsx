@@ -629,7 +629,12 @@ export default function StateGrowth() {
           <AIPrompt label="Where is referral trust strongest?" />
         </div>
       </section>
-          <MarketingWorkPanel workType="state_growth" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
+          <MarketingWorkPanel
+            workType="state_growth"
+            title="Open work"
+            description="Track follow-ups, opportunities, and fixes for this area."
+            seedFactory={() => ({ title: "State growth follow-up", priority: "medium" })}
+          />
     </MktgPage>
   );
 }

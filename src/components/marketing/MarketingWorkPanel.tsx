@@ -30,6 +30,7 @@ import {
   type MarketingWorkPriority,
   type MarketingWorkItem,
 } from "@/hooks/useMarketingWorkItems";
+import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
 
 interface MarketingWorkPanelProps {
   workType: MarketingWorkType;
@@ -77,6 +78,7 @@ export function MarketingWorkPanel({
     setStatus,
     setPriority,
     setDueDate,
+    setOwner,
     archive,
   } = useMarketingWorkItems({ workType, state: defaultState });
 
@@ -125,6 +127,7 @@ export function MarketingWorkPanel({
               onStatus={(s) => setStatus(it.id, s)}
               onPriority={(p) => setPriority(it.id, p)}
               onDue={(d) => setDueDate(it.id, d)}
+              onOwner={(o) => setOwner(it.id, o)}
               onArchive={() => archive(it.id)}
             />
           ))}
@@ -153,15 +156,18 @@ function WorkRow({
   onStatus,
   onPriority,
   onDue,
+  onOwner,
   onArchive,
 }: {
   item: MarketingWorkItem;
   onStatus: (s: MarketingWorkStatus) => Promise<void> | void;
   onPriority: (p: MarketingWorkPriority) => Promise<void> | void;
   onDue: (d: string | null) => Promise<void> | void;
+  onOwner: (o: string | null) => Promise<void> | void;
   onArchive: () => Promise<void> | void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const { members } = useEmployeeDirectory();
   return (
     <li className="py-2.5">
       <div className="flex items-center gap-2 flex-wrap">
@@ -192,7 +198,7 @@ function WorkRow({
         </Badge>
       </div>
       {expanded && (
-        <div className="mt-2 grid grid-cols-1 md:grid-cols-4 gap-2 pl-6">
+        <div className="mt-2 grid grid-cols-1 md:grid-cols-5 gap-2 pl-6">
           {item.description && (
             <div className="col-span-full text-xs text-muted-foreground whitespace-pre-wrap">
               {item.description}
@@ -232,6 +238,21 @@ function WorkRow({
               onChange={(e) => onDue(e.target.value || null)}
             />
           </div>
+          <div>
+            <Label className="text-[10px]">Owner</Label>
+            <Select
+              value={item.owner_id ?? "__unassigned__"}
+              onValueChange={(v) => onOwner(v === "__unassigned__" ? null : v)}
+            >
+              <SelectTrigger className="h-8"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__unassigned__">Unassigned</SelectItem>
+                {members.slice(0, 200).map((e) => (
+                  <SelectItem key={e.uuid ?? e.id} value={e.uuid ?? e.id}>{e.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex items-end">
             <Button size="sm" variant="ghost" onClick={onArchive}>
               <Archive className="mr-1.5 h-3.5 w-3.5" /> Archive
@@ -240,6 +261,47 @@ function WorkRow({
         </div>
       )}
     </li>
+  );
+}
+
+/**
+ * Reusable seeded-create button. Any marketing page can drop this in to
+ * queue a work item with prefilled context (state, source, campaign, etc.).
+ */
+export function CreateMarketingWorkButton({
+  workType,
+  label = "New work item",
+  seedFactory,
+  defaultState,
+  defaultSourceSystem,
+}: {
+  workType: MarketingWorkType;
+  label?: string;
+  seedFactory?: () => Partial<MarketingWorkItem> & { title?: string; description?: string };
+  defaultState?: string;
+  defaultSourceSystem?: string;
+}) {
+  const { createItem } = useMarketingWorkItems({ workType });
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+        <Plus className="mr-1.5 h-4 w-4" /> {label}
+      </Button>
+      <CreateWorkItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        workType={workType}
+        defaultState={defaultState}
+        defaultSourceSystem={defaultSourceSystem}
+        seedFactory={seedFactory}
+        onCreate={async (row) => {
+          await createItem(row);
+          toast.success("Work item created");
+          setOpen(false);
+        }}
+      />
+    </>
   );
 }
 

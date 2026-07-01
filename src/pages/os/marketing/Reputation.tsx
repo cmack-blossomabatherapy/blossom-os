@@ -27,6 +27,11 @@ import {
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
+import { useMarketingReputationEvents } from "@/hooks/useMarketingReputationEvents";
+import { ReputationEventLogDialog } from "@/components/marketing/ReputationEventLogDialog";
+import { BulkReputationEventImportDialog } from "@/components/marketing/BulkReputationEventImportDialog";
+import { Button } from "@/components/ui/button";
+import { Upload, Plus } from "lucide-react";
 import { fmtMktgShortDate, fmtMktgRelative } from "@/lib/os/referrals/utils";
 
 /* Reputation - operational trust intelligence.
@@ -907,7 +912,82 @@ export default function Reputation() {
           <AIPrompt label="Summarize recruiting reputation movement" />
         </div>
       </section>
-          <MarketingWorkPanel workType="reputation" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
+          <MarketingWorkPanel
+            workType="reputation"
+            title="Open work"
+            description="Track follow-ups, opportunities, and fixes for this area."
+            seedFactory={() => ({
+              title: "Reputation follow-up",
+              description: "Prefilled from Reputation ops signal.",
+              priority: "medium",
+              source_system: "google_reviews",
+            })}
+          />
+          <ReputationEventsPanel />
     </MktgPage>
+  );
+}
+
+function ReputationEventsPanel() {
+  const { rows, loading, refetch } = useMarketingReputationEvents({ limit: 100 });
+  const [logOpen, setLogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const avgRating = useMemo(() => {
+    const rated = rows.filter((r) => r.rating != null);
+    if (!rated.length) return null;
+    return (rated.reduce((s, r) => s + (r.rating ?? 0), 0) / rated.length).toFixed(2);
+  }, [rows]);
+  const negOpen = rows.filter((r) => (r.sentiment === "negative") && r.response_status !== "closed").length;
+  return (
+    <MktgCard title="Reputation event log" hint={loading ? "Loading..." : `${rows.length} events`}>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="text-xs text-muted-foreground">
+          Avg rating: <span className="font-medium text-foreground">{avgRating ?? "-"}</span> - Open negatives:{" "}
+          <span className="font-medium text-foreground">{negOpen}</span>
+        </div>
+        <div className="ml-auto flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setLogOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" /> Log event
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="mr-1.5 h-4 w-4" /> Bulk import
+          </Button>
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <EmptyRow>No reputation events yet. Log a review or bulk import.</EmptyRow>
+      ) : (
+        <div className="overflow-hidden rounded-md border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2">When</th>
+                <th className="px-3 py-2">Source</th>
+                <th className="px-3 py-2">State</th>
+                <th className="px-3 py-2">Rating</th>
+                <th className="px-3 py-2">Sentiment</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Text</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.slice(0, 25).map((r) => (
+                <tr key={r.id} className="border-t border-border/40">
+                  <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{new Date(r.occurred_at).toLocaleDateString("en-US")}</td>
+                  <td className="px-3 py-2">{r.source_system}</td>
+                  <td className="px-3 py-2">{r.state ?? "-"}</td>
+                  <td className="px-3 py-2 tabular-nums">{r.rating ?? "-"}</td>
+                  <td className="px-3 py-2">{r.sentiment ?? "-"}</td>
+                  <td className="px-3 py-2">{r.response_status ?? "-"}</td>
+                  <td className="px-3 py-2 truncate max-w-[280px]">{r.review_text ?? "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <ReputationEventLogDialog open={logOpen} onOpenChange={setLogOpen} onLogged={refetch} />
+      <BulkReputationEventImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={refetch} />
+    </MktgCard>
   );
 }

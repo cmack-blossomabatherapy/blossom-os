@@ -18,6 +18,7 @@ import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 import { WebMetricsPanel } from "@/components/marketing/WebMetricsPanel";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
+import { useMarketingWebMetrics } from "@/hooks/useMarketingWebMetrics";
 
 /* -------------------------------------------------------------------------- *
  * SEO & Content - operational visibility intelligence derived from real
@@ -49,6 +50,7 @@ function HealthDot({ tone }: { tone: "good" | "watch" | "weak" }) {
 export default function SEOContent() {
   const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const mi = useMarketingIntelligence();
+  const { rows: searchConsoleRows } = useMarketingWebMetrics({ limit: 500, sourceSystem: "search_console" });
   const [activeState, setActiveState] = useState<string | null>(null);
 
   /* -- organic visibility (Website + Organic combined) ------------------ */
@@ -401,6 +403,20 @@ export default function SEOContent() {
         </div>
       </section>
           <MarketingWorkPanel workType="seo_content" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
+          <MarketingWorkPanel
+            workType="seo_content"
+            title="Seed an SEO task"
+            description="Create content, page-optimization, missing city/state page, or technical SEO follow-up."
+            seedFactory={() => ({
+              title: opportunities[0]?.title ?? "New SEO content task",
+              description:
+                opportunities[0]?.detail ??
+                `Search Console rows loaded: ${searchConsoleRows.length}. Add or refresh export as needed.`,
+              priority: "medium",
+              state: topState?.state ?? null,
+              source_system: "search_console",
+            })}
+          />
           <WebMetricsPanel
             title="Search Console metrics"
             defaultSourceSystem="search_console"

@@ -22,6 +22,7 @@ const INTEGRATIONS: Integration[] = [
   { slug: "ms365",        label: "Outlook / Microsoft 365", table: "marketing_email_events", nextStep: "Authorize Outlook mailbox for outbound email attribution." },
   { slug: "centralreach", label: "CentralReach",         table: "marketing_source_events", nextStep: "Reconcile CentralReach client identifiers." },
   { slug: "website",      label: "Website / manual",     table: "marketing_source_events", nextStep: "Log or bulk-import inbound web submissions." },
+  { slug: "nava",         label: "Go Integrate Nava",    table: "marketing_source_events / marketing_call_events", nextStep: "Enable Go Integrate Nava webhook or scheduled export." },
 ];
 
 /** Integration readiness / connector status panel, reusable across pages. */
