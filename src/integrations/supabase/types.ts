@@ -9176,6 +9176,8 @@ export type Database = {
       }
       marketing_source_events: {
         Row: {
+          assigned_at: string | null
+          assigned_to: string | null
           caller_email: string | null
           caller_name: string | null
           caller_phone: string | null
@@ -9203,6 +9205,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_at?: string | null
+          assigned_to?: string | null
           caller_email?: string | null
           caller_name?: string | null
           caller_phone?: string | null
@@ -9230,6 +9234,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_at?: string | null
+          assigned_to?: string | null
           caller_email?: string | null
           caller_name?: string | null
           caller_phone?: string | null
