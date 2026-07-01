@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   X, Phone, Mail, MapPin, Calendar, FileText, Activity, Sparkles,
   CheckCircle2, AlertCircle, ChevronRight, ExternalLink, StickyNote,
