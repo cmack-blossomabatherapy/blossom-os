@@ -3404,10 +3404,12 @@ const AUDIT_ICON: Record<string, typeof Activity> = {
 
 function AuditModule() {
   const s = useCrm();
-  const [q, setQ] = useState("");
-  const [action, setAction] = useState<string>("all");
+  const [q, setQ] = useUrlState("aq", "");
+  const [action, setAction] = useUrlState("aa", "all");
+  const [objectType, setObjectType] = useUrlState("ao", "all");
   const rows = s.auditLog.filter((r) => {
     if (action !== "all" && r.action !== action) return false;
+    if (objectType !== "all" && (r.objectType || "") !== objectType) return false;
     if (q) {
       const ql = q.toLowerCase();
       if (!r.summary.toLowerCase().includes(ql) && !(r.objectLabel ?? "").toLowerCase().includes(ql) && !r.actor.toLowerCase().includes(ql)) return false;
@@ -3415,21 +3417,19 @@ function AuditModule() {
     return true;
   });
   const actions = Array.from(new Set(s.auditLog.map((r) => r.action)));
+  const objectTypes = Array.from(new Set(s.auditLog.map((r) => r.objectType).filter((x): x is string => !!x)));
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search audit log..." className="pl-8 h-9 text-sm" />
-        </div>
-        <Select value={action} onValueChange={setAction}>
-          <SelectTrigger className="w-[160px] h-9 text-sm"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All actions</SelectItem>
-            {actions.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search audit log..." }}
+        filters={[
+          { key: "aa", label: "Action", value: action, onChange: setAction, options: [{ value: "all", label: "All actions" }, ...actions.map((a) => ({ value: a, label: a }))], width: 170 },
+          { key: "ao", label: "Object", value: objectType, onChange: setObjectType, options: [{ value: "all", label: "All" }, ...objectTypes.map((o) => ({ value: o, label: o }))] },
+        ]}
+        resultCount={rows.length}
+        totalCount={s.auditLog.length}
+        onClear={() => { setQ(""); setAction("all"); setObjectType("all"); }}
+      />
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
