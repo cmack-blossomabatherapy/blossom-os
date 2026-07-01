@@ -8850,12 +8850,16 @@ export type Database = {
       }
       marketing_call_events: {
         Row: {
+          assigned_owner_id: string | null
+          call_category: string | null
           caller_name: string | null
           caller_phone: string | null
           campaign_id: string | null
           central_reach_client_id: string | null
           central_reach_patient_id: string | null
           created_at: string
+          direction: string | null
+          disposition: string | null
           duration_seconds: number | null
           external_id: string | null
           follow_up_action: string | null
@@ -8867,6 +8871,8 @@ export type Database = {
           recording_url: string | null
           referral_company_id: string | null
           referral_contact_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           source_id: string | null
           source_system: string | null
           state: string | null
@@ -8876,12 +8882,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_owner_id?: string | null
+          call_category?: string | null
           caller_name?: string | null
           caller_phone?: string | null
           campaign_id?: string | null
           central_reach_client_id?: string | null
           central_reach_patient_id?: string | null
           created_at?: string
+          direction?: string | null
+          disposition?: string | null
           duration_seconds?: number | null
           external_id?: string | null
           follow_up_action?: string | null
@@ -8893,6 +8903,8 @@ export type Database = {
           recording_url?: string | null
           referral_company_id?: string | null
           referral_contact_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           source_id?: string | null
           source_system?: string | null
           state?: string | null
@@ -8902,12 +8914,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_owner_id?: string | null
+          call_category?: string | null
           caller_name?: string | null
           caller_phone?: string | null
           campaign_id?: string | null
           central_reach_client_id?: string | null
           central_reach_patient_id?: string | null
           created_at?: string
+          direction?: string | null
+          disposition?: string | null
           duration_seconds?: number | null
           external_id?: string | null
           follow_up_action?: string | null
@@ -8919,6 +8935,8 @@ export type Database = {
           recording_url?: string | null
           referral_company_id?: string | null
           referral_contact_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           source_id?: string | null
           source_system?: string | null
           state?: string | null
