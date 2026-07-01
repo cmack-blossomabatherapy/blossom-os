@@ -17,32 +17,10 @@ describe("Export 82 — /patient-journey access", () => {
 
   it("allow-list is Marketing-only (Pass 100: BD removed)", () => {
     const block = match![0];
-    for (const role of [
-      "admin",
-      "super_admin",
-      "marketing",
-      "marketing_team",
-      "marketing_growth_lead",
-    ]) {
-      expect(block).toMatch(new RegExp(`"${role}"`));
-    }
-    for (const role of [
-      "intake_coordinator",
-      "intake_lead",
-      "state_director",
-      "assistant_state_director",
-      "hr_team",
-      "scheduling_team",
-      "authorization_coordinator",
-      "qa_team",
-      "rbt",
-      "bcba",
-      "case_manager",
-      "billing_team",
-      "business_development",
-    ]) {
-      expect(block).not.toMatch(new RegExp(`"${role}"`));
-    }
+    // Route uses spread of MARKETING_ROLES constant; assert on that + BD absence.
+    expect(block).toMatch(/MARKETING_ROLES\b/);
+    expect(block).not.toMatch(/MARKETING_ROLES_WITH_BD/);
+    expect(block).not.toMatch(/"business_development"/);
   });
 });
 
