@@ -1087,6 +1087,7 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
   const [editingId, setEditingId] = useState<ID | null>(null);
   const [logId, setLogId] = useState<ID | null>(null);
   const [drawerLeadId, setDrawerLeadId] = useState<string | null>(null);
+  const [drawerFocusStage, setDrawerFocusStage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
@@ -1246,7 +1247,7 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
                   <td className="px-3 align-middle font-medium">
                     <div className="flex items-center gap-2 min-w-0">
                       {lead ? (
-                        <button className="truncate text-left hover:text-primary" onClick={() => setDrawerLeadId(lead.id)}>{r.name}</button>
+                        <button className="truncate text-left hover:text-primary" onClick={() => { setDrawerFocusStage(null); setDrawerLeadId(lead.id); }}>{r.name}</button>
                       ) : r.isLegacyLeadLink ? (
                         <span className="truncate text-foreground">{r.name}</span>
                       ) : (
@@ -1269,7 +1270,10 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
                   <td className="px-3 align-middle truncate">{r.serviceType || <span className="text-muted-foreground">—</span>}</td>
                   <td className="px-3 align-middle"><ReferralStatusPill status={r.referralStatus} /></td>
                   <td className="px-3 align-middle">
-                    <PipelineStagePill stage={stage} onClick={lead ? () => setDrawerLeadId(lead.id) : undefined} />
+                    <PipelineStagePill
+                      stage={stage}
+                      onClick={lead ? () => { setDrawerFocusStage(stage ?? null); setDrawerLeadId(lead.id); } : undefined}
+                    />
                   </td>
                   <td className="px-3 align-middle text-muted-foreground truncate">{r.insuranceType || "—"}</td>
                   <td className="px-3 align-middle text-muted-foreground truncate">{userName(s, r.assignedIntakeOwnerId) || "—"}</td>
@@ -1298,7 +1302,11 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
       <NewReferralDialog open={creating} onOpenChange={setCreating} />
       <EditReferralDialog id={editingId} open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)} />
       <LogActivityDialog open={!!logId} onOpenChange={(o) => !o && setLogId(null)} referralId={logId ?? undefined} />
-      <LeadDetailDrawer leadId={drawerLeadId} onClose={() => setDrawerLeadId(null)} />
+      <LeadDetailDrawer
+        leadId={drawerLeadId}
+        focusStage={drawerFocusStage}
+        onClose={() => { setDrawerLeadId(null); setDrawerFocusStage(null); }}
+      />
       <BulkCreateTaskDialog
         open={bulkTaskOpen}
         onOpenChange={setBulkTaskOpen}
