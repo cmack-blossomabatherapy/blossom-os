@@ -85,7 +85,7 @@ export default function EmailMarketing() {
   return (
     <MktgPage
       title="Email Marketing"
-      subtitle="Mailchimp-ready email pipeline. Live rows from marketing_email_events + marketing_campaigns."
+      subtitle="Mailchimp-ready email pipeline. Writes to marketing_email_events; campaigns from marketing_campaigns."
       actions={
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={() => setManualOpen(true)}>
