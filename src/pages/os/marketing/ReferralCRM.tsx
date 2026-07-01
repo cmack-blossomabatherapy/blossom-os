@@ -107,6 +107,11 @@ function daysSince(d?: string) {
   return Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000);
 }
 
+function contactDisplayName(c?: Contact): string {
+  if (!c) return "—";
+  return fullName(c) || c.email || c.phone || c.mobilePhone || "(No name)";
+}
+
 // Colored tone for a Referral.referralStatus badge.
 function referralStatusTone(status?: string): string {
   switch (status) {
@@ -598,7 +603,7 @@ function NewContactDialogInner({ open, onOpenChange }: { open: boolean; onOpenCh
   const [newCo, setNewCo] = useState({ name: "", companyType: "", state: "" });
   const creatingCo = f.companyId === "__create__";
   const submit = () => {
-    if (!f.firstName || !f.lastName) { toast({ title: "First + last name required", variant: "destructive" as never }); return; }
+    if (!f.firstName && !f.lastName && !f.email) { toast({ title: "Name or email required", variant: "destructive" as never }); return; }
     let companyId: string | undefined = f.companyId && f.companyId !== "__create__" ? f.companyId : undefined;
     if (creatingCo) {
       if (!newCo.name.trim()) { toast({ title: "New company name required", variant: "destructive" as never }); return; }
