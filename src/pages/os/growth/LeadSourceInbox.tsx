@@ -517,7 +517,11 @@ export default function LeadSourceInbox() {
         </aside>
       </div>
 
-      <AddEventDialog open={addOpen} onOpenChange={setAddOpen} />
+      <AddEventDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onAdd={(input) => insertEvent(input)}
+      />
       <AttachLeadDialog open={attachOpen} onOpenChange={setAttachOpen}
         event={selected?.event ?? null} onAttach={onAttach} />
     </GrowthPageShell>
