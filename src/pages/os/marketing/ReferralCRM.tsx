@@ -3480,19 +3480,27 @@ const ACTIVITY_FILTERS: { id: "all" | ActivityEvent["type"]; label: string }[] =
 
 function ActivitiesModule() {
   const s = useCrm();
-  const [f, setF] = useState<"all" | ActivityEvent["type"]>("all");
-  const rows = s.activity.filter((a) => f === "all" || a.type === f);
+  const [f, setF] = useUrlState("af", "all");
+  const [q, setQ] = useUrlState("aq2", "");
+  const rows = s.activity.filter((a) => {
+    if (f !== "all" && a.type !== f) return false;
+    if (q) {
+      const ql = q.toLowerCase();
+      if (!a.message.toLowerCase().includes(ql)) return false;
+    }
+    return true;
+  });
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-1.5">
-        {ACTIVITY_FILTERS.map((x) => (
-          <button key={x.id} onClick={() => setF(x.id)}
-            className={cn("px-3 py-1 rounded-lg text-xs font-medium border transition-colors",
-              f === x.id ? "bg-primary/10 text-primary border-primary/20" : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted")}>
-            {x.label}
-          </button>
-        ))}
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search activity messages..." }}
+        filters={[
+          { key: "af", label: "Type", value: f, onChange: setF, options: ACTIVITY_FILTERS.map((x) => ({ value: x.id, label: x.label })), width: 150 },
+        ]}
+        resultCount={rows.length}
+        totalCount={s.activity.length}
+        onClear={() => { setQ(""); setF("all"); }}
+      />
       <div className="rounded-2xl border bg-card divide-y">
         {rows.length === 0 && <p className="text-sm text-muted-foreground text-center py-10">No activity in this view.</p>}
         {rows.map((a) => {
