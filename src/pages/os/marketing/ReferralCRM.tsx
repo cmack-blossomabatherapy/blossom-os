@@ -4094,7 +4094,7 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
     <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{fullName(c)}</SheetTitle>
+          <SheetTitle>{contactDisplayName(c)}</SheetTitle>
         </SheetHeader>
         <div className="mt-2 space-y-4 text-sm">
           <div className="text-xs text-muted-foreground">{c.jobTitle || "-"}{c.companyId ? <> - <button className="hover:text-primary" onClick={() => onOpenCompany(c.companyId!)}>{companyName(s, c.companyId)}</button></> : null}</div>
@@ -4566,7 +4566,7 @@ function PatientPipelineModule({
                     <td className="px-3 py-2 font-medium">{patientDisplayName(r)}</td>
                     <td className="px-3 py-2">
                       {contact ? (
-                        <button className="hover:text-primary" onClick={() => onOpenContact(contact.id)}>{fullName(contact)}</button>
+                        <button className="hover:text-primary" onClick={() => onOpenContact(contact.id)}>{contactDisplayName(contact)}</button>
                       ) : <span className="text-muted-foreground">-</span>}
                     </td>
                     <td className="px-3 py-2">
