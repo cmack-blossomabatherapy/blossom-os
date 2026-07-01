@@ -657,9 +657,14 @@ export default function Reputation() {
                       <td className="px-3 py-2 text-muted-foreground">{l.stage ?? "—"}</td>
                       <td className="px-3 py-2 text-muted-foreground">{l.source ?? "—"}</td>
                       <td className="px-3 py-2 tabular-nums text-foreground">
-                        <span title={l.lastContacted ? fmtMktgShortDate(l.lastContacted) : "Never contacted"}>
-                          {fmtMktgRelative(l.lastContacted)}
-                        </span>
+                        <div className="flex flex-col gap-0.5 leading-tight">
+                          <span className="text-[12.5px] font-medium">
+                            {fmtMktgRelative(l.lastContacted)}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {l.lastContacted ? fmtMktgShortDate(l.lastContacted) : "Never contacted"}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-3 py-2 text-right">
                         <button
