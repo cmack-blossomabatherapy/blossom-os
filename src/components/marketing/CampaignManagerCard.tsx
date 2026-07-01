@@ -95,7 +95,7 @@ export function CampaignManagerCard() {
                       <td className="px-2 py-2 text-muted-foreground">{c.channel ?? "-"}</td>
                       <td className="px-2 py-2 text-muted-foreground">{sourceName(c.source_id)}</td>
                       <td className="px-2 py-2 text-muted-foreground whitespace-nowrap">
-                        {c.start_date ?? "-"} -> {c.end_date ?? "-"}
+                        {c.start_date ?? "-"} -&gt; {c.end_date ?? "-"}
                       </td>
                       <td className="px-2 py-2 text-right tabular-nums">{c.budget_cents ? fmt$(c.budget_cents) : "-"}</td>
                       <td className="px-2 py-2 text-right tabular-nums">{r ? fmt$(r.spend_cents) : "-"}</td>

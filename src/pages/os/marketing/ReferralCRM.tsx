@@ -1603,7 +1603,7 @@ function ListEditorDialog({ list, onClose }: { list?: ReturnType<typeof useCrm>[
                        onChange={(e) => upd("lastContactedOlderThanDays", e.target.value === "" ? undefined : Number(e.target.value))} />
               </div>
               <div>
-                <Label className="text-xs">Referral count >=</Label>
+                <Label className="text-xs">Referral count &gt;=</Label>
                 <Input type="number" value={criteria.referralCountGte ?? ""}
                        onChange={(e) => upd("referralCountGte", e.target.value === "" ? undefined : Number(e.target.value))} />
               </div>

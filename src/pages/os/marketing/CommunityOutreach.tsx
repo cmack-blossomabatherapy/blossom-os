@@ -509,7 +509,7 @@ export default function CommunityOutreach() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-border/60 bg-card p-4">
             <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-              Community -> Intake
+              Community -&gt; Intake
             </div>
             <div className="mt-2 text-[13.5px] leading-relaxed text-foreground">
               Community-sourced families qualify at <span className="font-semibold">{momentum.qualifiedRate}%</span> - the highest-trust intake channel Blossom operates.
@@ -520,7 +520,7 @@ export default function CommunityOutreach() {
           </div>
           <div className="rounded-xl border border-border/60 bg-card p-4">
             <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-              Community -> Staffing
+              Community -&gt; Staffing
             </div>
             <div className="mt-2 text-[13.5px] leading-relaxed text-foreground">
               {referralCands.length > 0

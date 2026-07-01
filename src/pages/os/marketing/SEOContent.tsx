@@ -389,7 +389,7 @@ export default function SEOContent() {
           <div className="rounded-xl border border-border/50 bg-card/60 p-3">
             <div className="text-[11.5px] uppercase tracking-wider text-muted-foreground">AI search</div>
             <div className="mt-1">
-              Connect Search Console in Admin -> Data Uploads to activate keyword, impression, and AEO monitoring.
+              Connect Search Console in Admin -&gt; Data Uploads to activate keyword, impression, and AEO monitoring.
             </div>
           </div>
         </div>

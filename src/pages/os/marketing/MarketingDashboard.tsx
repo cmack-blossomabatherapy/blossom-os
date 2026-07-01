@@ -192,7 +192,7 @@ export default function MarketingDashboard() {
                       <span className="text-muted-foreground tabular-nums">
                         {p.count}
                         {stuckHere > 0 && (
-                          <span className="ml-2 text-amber-600">{stuckHere} stuck >=7d</span>
+                          <span className="ml-2 text-amber-600">{stuckHere} stuck &gt;=7d</span>
                         )}
                       </span>
                     </div>
@@ -372,7 +372,7 @@ export default function MarketingDashboard() {
                 )}
                 {topBottleneck && (
                   <p>
-                    - {topBottleneck.count} leads are stuck in "{topBottleneck.stage}" >=7 days - clearing this stage will move conversion the most.
+                    - {topBottleneck.count} leads are stuck in "{topBottleneck.stage}" &gt;=7 days - clearing this stage will move conversion the most.
                   </p>
                 )}
                 {mi.calls.missed > 0 && (

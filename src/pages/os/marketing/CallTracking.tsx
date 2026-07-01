@@ -360,7 +360,7 @@ export default function CallTracking() {
                     );
                   })}
                 <div className="text-[11.5px] text-muted-foreground pt-1">
-                  Connect recruiting line attribution in Admin -> Data Uploads for source-level breakdown.
+                  Connect recruiting line attribution in Admin -&gt; Data Uploads for source-level breakdown.
                 </div>
               </div>
             )}
