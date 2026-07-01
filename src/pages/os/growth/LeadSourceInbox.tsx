@@ -32,7 +32,8 @@ import { useMarketingSourceEvents } from "@/hooks/useMarketingSourceEvents";
 import { sourceSystemToSourceValue } from "@/lib/marketing/sourceEventMapper";
 import { BLOSSOM_INTEGRATIONS } from "@/lib/os/integrations/integrationRegistry";
 import { EditSourceEventDialog } from "@/components/marketing/EditSourceEventDialog";
-import { Pencil } from "lucide-react";
+import { Pencil, UserPlus, Code2 } from "lucide-react";
+import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
 
 const STATUS_LABEL: Record<LeadSourceEventStatus, string> = {
   new: "New",
