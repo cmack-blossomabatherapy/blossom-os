@@ -15,6 +15,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
+import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 
 /* ────────────────────────────────────────────────────────────────────────── *
@@ -398,6 +399,7 @@ export default function SEOContent() {
           <AIPrompt label="Draft an AEO-ready insurance FAQ" />
         </div>
       </section>
+          <MarketingWorkPanel workType="seo_content" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
     </MktgPage>
   );
 }

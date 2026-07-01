@@ -21,6 +21,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
+import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 
 /* Recruiting Marketing — operational recruiting visibility intelligence.
  * Derived from real candidate pipeline, source attribution, and state-level
@@ -635,6 +636,7 @@ export default function RecruitingMarketing() {
           </div>
         </div>
       </section>
+          <MarketingWorkPanel workType="recruiting_marketing" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
     </MktgPage>
   );
 }

@@ -21,6 +21,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
+import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 
 /* Attribution & ROI — operational growth intelligence.
  * Derives growth value from real lead source quality, qualification rates,
@@ -672,6 +673,7 @@ export default function AttributionROI() {
           <AIPrompt label="Which state has the strongest growth ROI?" />
         </div>
       </section>
+          <MarketingWorkPanel workType="attribution" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
     </MktgPage>
   );
 }

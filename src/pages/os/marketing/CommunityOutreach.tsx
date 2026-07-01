@@ -18,6 +18,7 @@ import {
   Handshake,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
+import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 import { useMarketingData } from "@/hooks/useMarketingData";
 // Community/referral signal is DB-backed via intake_leads + recruiting_candidates
 // through useMarketingData. When those tables are empty the page renders an
@@ -571,6 +572,7 @@ export default function CommunityOutreach() {
           </div>
         </div>
       </section>
+          <MarketingWorkPanel workType="community_outreach" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
     </MktgPage>
   );
 }
