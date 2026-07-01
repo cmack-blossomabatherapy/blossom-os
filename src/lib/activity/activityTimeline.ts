@@ -543,6 +543,10 @@ interface MarketingCallRow {
   recording_url: string | null;
   direction?: string | null;
   duration_seconds?: number | null;
+  disposition?: string | null;
+  call_category?: string | null;
+  source_id?: string | null;
+  campaign_id?: string | null;
 }
 
 interface MarketingEmailRow {
@@ -558,6 +562,13 @@ interface MarketingEmailRow {
 
 function activityFromMarketingCall(row: MarketingCallRow): ActivityEvent {
   const outbound = (row.direction ?? "").toLowerCase() === "outbound";
+  const summaryBits = [
+    row.transcript_summary ?? undefined,
+    row.disposition ? `Disposition: ${row.disposition}` : undefined,
+    row.call_category && row.call_category !== "unknown"
+      ? `Category: ${row.call_category}`
+      : undefined,
+  ].filter(Boolean) as string[];
   return normalizeActivityEvent({
     id: `mcall_${row.id}`,
     type: outbound ? "call_made" : "call_received",
@@ -568,11 +579,20 @@ function activityFromMarketingCall(row: MarketingCallRow): ActivityEvent {
     title: outbound
       ? `Outbound call — ${row.caller_name ?? row.caller_phone ?? "unknown"}`
       : `Inbound call — ${row.caller_name ?? row.caller_phone ?? "unknown"}`,
-    summary: row.transcript_summary ?? undefined,
+    summary: summaryBits.join(" · ") || undefined,
     sourceSystem: row.source_system ?? "Phone System",
     sourceUrl: row.recording_url ?? undefined,
     occurredAt: row.occurred_at,
     severity: row.status === "missed" ? "warning" : "info",
+    metadata: {
+      occurredAt: row.occurred_at,
+      sourceId: row.source_id ?? undefined,
+      campaignId: row.campaign_id ?? undefined,
+      disposition: row.disposition ?? undefined,
+      callCategory: row.call_category ?? undefined,
+      direction: row.direction ?? undefined,
+      durationSeconds: row.duration_seconds ?? undefined,
+    },
   });
 }
 
@@ -613,7 +633,7 @@ export async function fetchActivityFeed(
     supabase
       .from("marketing_call_events")
       .select(
-        "id, occurred_at, source_system, caller_name, caller_phone, transcript_summary, status, lead_id, recording_url, direction, duration_seconds",
+        "id, occurred_at, source_system, caller_name, caller_phone, transcript_summary, status, lead_id, recording_url, direction, duration_seconds, disposition, call_category, source_id, campaign_id",
       )
       .order("occurred_at", { ascending: false })
       .limit(limit),
