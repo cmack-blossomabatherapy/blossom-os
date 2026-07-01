@@ -40,7 +40,10 @@ describe("Marketing Pass 102 — Patient Lifetime Journey scoping", () => {
   const hasPatientJourney = (role: string): boolean => {
     const menu = (ROLE_MENUS as any)[role];
     if (!menu) return false;
-    const items: any[] = Array.isArray(menu) ? menu : (menu?.groups ?? []).flatMap((g: any) => g.items ?? []);
+    const sections: any[] = menu.sections ?? menu.groups ?? [];
+    const items: any[] = Array.isArray(menu)
+      ? menu
+      : sections.flatMap((s: any) => s.items ?? []);
     const flat: any[] = items.flatMap((i: any) => [i, ...(i.children ?? [])]);
     return flat.some(
       (i: any) =>
