@@ -81,7 +81,7 @@ export function useMarketingSourceEvents(
       if ("lead_id" in patch) update.lead_id = patch.lead_id ?? null;
       const { error: err } = await supabase
         .from("marketing_source_events")
-        .update(update)
+        .update(update as never)
         .eq("id", id);
       if (err) throw err;
       await load();
@@ -106,7 +106,9 @@ export function useMarketingSourceEvents(
     async (input) => {
       const { data: userRes } = await supabase.auth.getUser();
       const row = buildInsertRow({ ...input, reviewedBy: userRes?.user?.id ?? null });
-      const { error: err } = await supabase.from("marketing_source_events").insert(row);
+      const { error: err } = await supabase
+        .from("marketing_source_events")
+        .insert([row] as never);
       if (err) throw err;
       await load();
     },
