@@ -4715,14 +4715,18 @@ function PatientPipelineModule({
   onOpenContact, onOpenCompany,
 }: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
   const s = useCrm();
-  const [q, setQ] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [q, setQ] = useUrlState("ppq", "");
+  const [statusFilter, setStatusFilter] = useUrlState("pps", "all");
+  const [stateFilter, setStateFilter] = useUrlState("ppst", "all");
+  const [intakeFilter, setIntakeFilter] = useUrlState("ppi", "all");
+  const [insFilter, setInsFilter] = useUrlState("ppins", "all");
 
   const rows = useMemo(() => {
     let r = scopedReferrals(s);
     if (statusFilter !== "all") r = r.filter((x) => x.referralStatus === statusFilter);
     if (stateFilter !== "all") r = r.filter((x) => x.state === stateFilter);
+    if (intakeFilter !== "all") r = r.filter((x) => (x.intakeStatus || "") === intakeFilter);
+    if (insFilter !== "all") r = r.filter((x) => (x.insuranceType || "") === insFilter);
     if (q) {
       const ql = q.toLowerCase();
       r = r.filter((x) =>
@@ -4732,7 +4736,7 @@ function PatientPipelineModule({
       );
     }
     return [...r].sort((a, b) => (b.referralDate || "").localeCompare(a.referralDate || ""));
-  }, [s, q, statusFilter, stateFilter]);
+  }, [s, q, statusFilter, stateFilter, intakeFilter, insFilter]);
 
   const byStatus = useMemo(() => {
     const map: Record<string, number> = {};
@@ -4741,6 +4745,8 @@ function PatientPipelineModule({
   }, [s]);
 
   const STATUSES: Referral["referralStatus"][] = ["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"];
+  const intakeStatuses = useMemo(() => Array.from(new Set(scopedReferrals(s).map((r) => r.intakeStatus as string).filter((x) => !!x))).sort(), [s]);
+  const insTypes = useMemo(() => Array.from(new Set(scopedReferrals(s).map((r) => r.insuranceType as string).filter((x) => !!x))).sort(), [s]);
 
   return (
     <div className="space-y-4">
@@ -4765,26 +4771,18 @@ function PatientPipelineModule({
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search patient, company..." className="pl-8 h-9 text-sm" />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[170px] h-9 text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {STATUSES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={stateFilter} onValueChange={setStateFilter}>
-          <SelectTrigger className="w-[110px] h-9 text-sm"><SelectValue placeholder="State" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All states</SelectItem>
-            {STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search patient, company..." }}
+        filters={[
+          { key: "pps", label: "Status", value: statusFilter, onChange: setStatusFilter, options: [{ value: "all", label: "All statuses" }, ...STATUSES.map((v) => ({ value: v, label: v }))], width: 170 },
+          { key: "ppst", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((v) => ({ value: v, label: v }))] },
+          { key: "ppi", label: "Intake", value: intakeFilter, onChange: setIntakeFilter, options: [{ value: "all", label: "All" }, ...intakeStatuses.map((v) => ({ value: v, label: v }))], width: 160 },
+          { key: "ppins", label: "Insurance", value: insFilter, onChange: setInsFilter, options: [{ value: "all", label: "All" }, ...insTypes.map((v) => ({ value: v, label: v }))], width: 160 },
+        ]}
+        resultCount={rows.length}
+        totalCount={scopedReferrals(s).length}
+        onClear={() => { setQ(""); setStatusFilter("all"); setStateFilter("all"); setIntakeFilter("all"); setInsFilter("all"); }}
+      />
 
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
