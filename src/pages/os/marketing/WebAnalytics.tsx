@@ -24,6 +24,7 @@ import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 import { WebMetricsPanel } from "@/components/marketing/WebMetricsPanel";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
+import { useMarketingWebMetrics } from "@/hooks/useMarketingWebMetrics";
 
 /* -------------------------------------------------------------------------- *
  * Web Analytics - operational web intelligence. Derived from real lead,
@@ -51,6 +52,7 @@ function TrendIcon({ delta }: { delta: number }) {
 export default function WebAnalytics() {
   const { leads: marketingLeads, calls: marketingCalls, candidates: marketingCandidates } = useMarketingData();
   const mi = useMarketingIntelligence();
+  const { rows: webMetricRows } = useMarketingWebMetrics({ limit: 500 });
   const [activeState, setActiveState] = useState<string | null>(null);
 
   /* -- digital + organic momentum --------------------------------------- */
@@ -92,6 +94,8 @@ export default function WebAnalytics() {
     const adsCount = mi.bySource.find((s) => s.source === "Ads")?.count ?? 0;
     const referralCount = mi.referrals.total;
     const phoneCount = mi.calls.inbound;
+    const liveSessions = webMetricRows.reduce((s, r) => s + (r.sessions ?? 0), 0);
+    const liveClicks = webMetricRows.reduce((s, r) => s + (r.clicks ?? 0), 0);
     return [
       { label: "Website sessions", value: websiteCount, sub: "Direct + branded entry", icon: Globe, delta: digital.delta },
       { label: "Organic discovery", value: organicCount, sub: "Search-driven leads", icon: Sparkles, delta: digital.orgDelta },
@@ -100,9 +104,9 @@ export default function WebAnalytics() {
       { label: "Intake conversions", value: digital.qualified, sub: `${digital.qualifiedRate}% qualified`, icon: Users, delta: 0 },
       { label: "Phone conversions", value: phoneCount, sub: `${mi.calls.last24h} in last 24h`, icon: PhoneCall, delta: 0 },
       { label: "Referral traffic", value: referralCount, sub: `${mi.referrals.byState.length} states`, icon: Link2, delta: 0 },
-      { label: "Mobile engagement", value: Math.round(digital.total * 0.62), sub: "Est. mobile share", icon: Smartphone, delta: 0 },
+      { label: "Live sessions", value: liveSessions, sub: liveSessions ? `${liveClicks} clicks tracked` : "Import GA/Search Console to populate", icon: Smartphone, delta: 0 },
     ];
-  }, [mi, digital]);
+  }, [mi, digital, webMetricRows]);
 
   /* -- family journey - surfaces x intake stages ------------------------ */
   const journey = useMemo(() => {
@@ -530,6 +534,22 @@ export default function WebAnalytics() {
         </div>
       </section>
           <MarketingWorkPanel workType="web_analytics" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
+          <MarketingWorkPanel
+            workType="web_analytics"
+            title="Seed a web analytics task"
+            description="Prefill using the current top state or organic momentum."
+            seedFactory={() => ({
+              title: topState
+                ? `Investigate ${STATE_NAMES[topState.state] ?? topState.state} web traffic`
+                : "Import web analytics data",
+              description: topState
+                ? `${topState.sessions} sessions, ${topState.qualified} qualified this window.`
+                : "Load GA/Search Console export via bulk import to unlock live metrics.",
+              priority: "medium",
+              state: topState?.state ?? null,
+              source_system: "google_analytics",
+            })}
+          />
           <WebMetricsPanel
             title="Live web metrics"
             defaultSourceSystem="google_analytics"
