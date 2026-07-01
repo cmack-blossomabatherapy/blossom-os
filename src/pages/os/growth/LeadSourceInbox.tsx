@@ -574,6 +574,9 @@ export default function LeadSourceInbox() {
                 onIgnore={() => onIgnore(selected.event.id)}
                 onCopy={() => onCopy(selected)}
                 onEdit={() => setEditOpen(true)}
+                owners={marketingOwners}
+                ownerLabel={ownerLabelFor(selected.event.assignedTo)}
+                onAssign={(uid) => onAssign(selected.event.id, uid)}
               />
             )}
           </Section>
