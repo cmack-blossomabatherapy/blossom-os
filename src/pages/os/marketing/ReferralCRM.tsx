@@ -520,7 +520,9 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
                   <td className="px-3 py-2">{c.state || "-"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{userName(s, c.ownerId)}</td>
                   <td className="px-3 py-2">{c.referralPartnerStatus ? <Badge variant="secondary">{c.referralPartnerStatus}</Badge> : "-"}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{c.referralCount}</td>
+                  <td className="px-3 py-2 text-right">
+                    <ContactReferralsCell contactId={c.id} count={c.referralCount} />
+                  </td>
                   <td className="px-3 py-2 text-muted-foreground">{fmtDate(c.lastContactedDate)}</td>
                 </tr>
               ))}
