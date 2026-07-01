@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
+import { fmtMktgShortDate } from "@/lib/os/referrals/utils";
 
 /* Reputation — operational trust intelligence.
  * Derives community perception from real operational signal: intake
@@ -500,10 +501,7 @@ export default function Reputation() {
                           {t.kind}
                         </div>
                         <div className="text-[11.5px] text-muted-foreground tabular-nums">
-                          {new Date(t.date).toLocaleDateString(undefined, {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          {fmtMktgShortDate(t.date)}
                         </div>
                       </div>
                     </div>

@@ -35,23 +35,62 @@ export function safeInt(v: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
+// Marketing dates render in ET / en-US so every viewer sees the same
+// "last contacted" label regardless of browser locale or timezone.
 export function fmtRelative(iso: string | null | undefined): string {
+  return fmtMktgRelative(iso);
+}
+
+export function fmtDate(iso: string | null | undefined): string {
+  return fmtMktgDate(iso);
+}
+
+/**
+ * Canonical timezone/locale for Marketing surfaces. Blossom operates across
+ * ET states (GA, NC, TN, VA, MD) — pin display to America/New_York so a
+ * "last contacted" timestamp reads the same for every user regardless of
+ * where their browser sits.
+ */
+export const MKTG_TIMEZONE = "America/New_York";
+export const MKTG_LOCALE = "en-US";
+
+/** Short marketing date, e.g. "Mar 4". Consistent across Reputation & Referrals. */
+export function fmtMktgShortDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(MKTG_LOCALE, {
+    month: "short",
+    day: "numeric",
+    timeZone: MKTG_TIMEZONE,
+  });
+}
+
+/** Full marketing date, e.g. "Mar 4, 2026". */
+export function fmtMktgDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(MKTG_LOCALE, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: MKTG_TIMEZONE,
+  });
+}
+
+/** Relative "last contacted" label (Today / 3d ago / Mar 4). ET-pinned fallback. */
+export function fmtMktgRelative(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
   const diff = Date.now() - d.getTime();
   const days = Math.floor(diff / 86_400_000);
-  if (days < 0) return d.toLocaleDateString();
+  if (days < 0) return fmtMktgShortDate(iso);
   if (days === 0) return "Today";
   if (days === 1) return "Yesterday";
   if (days < 7) return `${days}d ago`;
   if (days < 30) return `${Math.floor(days / 7)}w ago`;
   if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-  return d.toLocaleDateString();
-}
-
-export function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return isNaN(d.getTime()) ? "—" : d.toLocaleDateString();
+  return fmtMktgShortDate(iso);
 }
