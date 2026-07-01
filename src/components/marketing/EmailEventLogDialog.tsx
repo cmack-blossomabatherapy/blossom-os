@@ -42,7 +42,8 @@ export function EmailEventLogDialog({ open, onOpenChange, defaultCampaignId, onL
            (c.channel ?? "").toLowerCase().includes("mailchimp"),
   );
 
-  const [campaignId, setCampaignId] = useState<string>(defaultCampaignId ?? "");
+  const NONE = "__none__";
+  const [campaignId, setCampaignId] = useState<string>(defaultCampaignId ?? NONE);
   const [eventType, setEventType] = useState<EventType>("sent");
   const [occurredAt, setOccurredAt] = useState<string>(new Date().toISOString().slice(0, 16));
   const [recipient, setRecipient] = useState("");
@@ -52,7 +53,7 @@ export function EmailEventLogDialog({ open, onOpenChange, defaultCampaignId, onL
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
-    setCampaignId(defaultCampaignId ?? "");
+    setCampaignId(defaultCampaignId ?? NONE);
     setEventType("sent");
     setOccurredAt(new Date().toISOString().slice(0, 16));
     setRecipient("");
@@ -65,7 +66,7 @@ export function EmailEventLogDialog({ open, onOpenChange, defaultCampaignId, onL
     setSaving(true);
     try {
       const row = {
-        campaign_id: campaignId || null,
+        campaign_id: campaignId && campaignId !== NONE ? campaignId : null,
         event_type: eventType,
         occurred_at: new Date(occurredAt).toISOString(),
         recipient_email: recipient.trim() || null,
@@ -105,7 +106,7 @@ export function EmailEventLogDialog({ open, onOpenChange, defaultCampaignId, onL
             <Select value={campaignId} onValueChange={setCampaignId}>
               <SelectTrigger className="h-9"><SelectValue placeholder="No campaign" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">(no campaign)</SelectItem>
+                <SelectItem value={NONE}>(no campaign)</SelectItem>
                 {emailCampaigns.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}

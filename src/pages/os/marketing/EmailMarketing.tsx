@@ -48,12 +48,16 @@ export default function EmailMarketing() {
         supabase
           .from("marketing_campaigns")
           .select("id, name, status, channel")
-          .ilike("channel", "%email%")
-          .limit(50),
+          .limit(200),
       ]);
       if (cancelled) return;
       setEvents((eRes.data ?? []) as EmailEvent[]);
-      setCampaigns((cRes.data ?? []) as Campaign[]);
+      const allCampaigns = (cRes.data ?? []) as Campaign[];
+      const emailish = allCampaigns.filter((c) => {
+        const ch = (c.channel ?? "").toLowerCase();
+        return ch.includes("email") || ch.includes("mailchimp");
+      });
+      setCampaigns(emailish);
     })();
     return () => { cancelled = true; };
   }, [reloadTick]);
@@ -81,7 +85,7 @@ export default function EmailMarketing() {
   return (
     <MktgPage
       title="Email Marketing"
-      subtitle="Mailchimp-ready email pipeline. Live rows from marketing_email_events + marketing_campaigns."
+      subtitle="Mailchimp-ready email pipeline. Writes to marketing_email_events; campaigns from marketing_campaigns."
       actions={
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={() => setManualOpen(true)}>
