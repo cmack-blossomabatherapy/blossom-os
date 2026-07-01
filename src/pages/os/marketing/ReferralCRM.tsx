@@ -1047,6 +1047,34 @@ function ReferralStatusPill({ status }: { status?: string | null }) {
   );
 }
 
+const PIPELINE_STAGE_STYLES: Record<FamilyLeadPipelineStage, string> = {
+  "Lead Captured": "bg-slate-50 text-slate-700 ring-slate-200",
+  "First Contact Attempt": "bg-blue-50 text-blue-700 ring-blue-200",
+  "Engagement Track": "bg-sky-50 text-sky-700 ring-sky-200",
+  "Qualification": "bg-cyan-50 text-cyan-700 ring-cyan-200",
+  "Intake Packet Sent": "bg-indigo-50 text-indigo-700 ring-indigo-200",
+  "Intake Packet Follow Up": "bg-violet-50 text-violet-700 ring-violet-200",
+  "Intake Complete": "bg-purple-50 text-purple-700 ring-purple-200",
+  "Benefits Verification": "bg-amber-50 text-amber-700 ring-amber-200",
+  "Assessment Scheduling": "bg-orange-50 text-orange-700 ring-orange-200",
+  "QA / Treatment Plan Authorization": "bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200",
+  "Authorization Pending": "bg-yellow-50 text-yellow-700 ring-yellow-200",
+  "Staffing Match": "bg-teal-50 text-teal-700 ring-teal-200",
+  "Ready to Start Services": "bg-emerald-50 text-emerald-700 ring-emerald-200",
+};
+
+function PipelineStagePill({ stage, onClick }: { stage: FamilyLeadPipelineStage | null; onClick?: () => void }) {
+  if (!stage) {
+    return <span className="text-[11px] text-muted-foreground">Not linked</span>;
+  }
+  const cls = PIPELINE_STAGE_STYLES[stage] || "bg-muted text-muted-foreground ring-border";
+  const base = cn("inline-flex items-center h-6 px-2 rounded-full text-[11px] font-medium ring-1 ring-inset whitespace-nowrap max-w-full", cls);
+  if (onClick) {
+    return <button type="button" onClick={onClick} className={cn(base, "hover:brightness-95 transition")} title="Open patient pipeline">{stage}</button>;
+  }
+  return <span className={base}>{stage}</span>;
+}
+
 function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
   const [creating, setCreating] = useState(false);
