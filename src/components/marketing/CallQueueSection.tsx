@@ -48,9 +48,9 @@ function isMissed(row: MarketingCallEventRow) {
   const s = row.status?.toLowerCase() ?? "";
   return s.includes("missed") || s.includes("voicemail") || s.includes("no_answer") || s.includes("no answer");
 }
+import { isAfterHoursEastern } from "@/lib/marketing/callTimezone";
 function isAfterHours(iso: string) {
-  const h = new Date(iso).getHours();
-  return h >= 18 || h < 8;
+  return isAfterHoursEastern(iso);
 }
 
 /** Operating queue over marketing_call_events. */
