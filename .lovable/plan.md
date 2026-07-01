@@ -1,61 +1,34 @@
-## Root cause
+## Problem
 
-The four pages white-screen with:
+On any `/marketing/...` sub-route (Referral CRM, Lead Sources, Campaigns, Call Tracking, etc.), the "Marketing Dashboard" item in the sidebar stays highlighted alongside the actual sub-page.
 
-> Error: cannot add `postgres_changes` callbacks for realtime:marketing-source-events-live after `subscribe()`.
+Root cause in `src/components/layout/AppSidebar.tsx` (`isItemActive`, line 505):
 
-Several of our realtime hooks create a Supabase channel using a **fixed, hard-coded name**. When two components on the same page each mount the same hook (very common — a page-level hook plus a child panel that uses the same hook), Supabase returns the *same* channel instance for the second caller. That second caller then tries to attach a `.on("postgres_changes", …)` handler after the channel has already `.subscribe()`d — which Supabase now rejects by throwing. The throw during render kills the whole React tree → white screen.
+```ts
+return location.pathname === bare || location.pathname.startsWith(`${bare}/`);
+```
 
-Why exactly these four pages:
-
-- `/marketing/lead-sources` — `SourceManagerCard`, `SourceOpsPanel`, and `IntegrationReadinessPanel` (via `useMarketingIntegrationHealth → useMarketingSourceEvents`) all mount `useMarketingSourceEvents`, colliding on channel `marketing-source-events-live`.
-- `/marketing/call-tracking` — `CallQueueSection` plus other panels mount `useMarketingCallEvents` twice, colliding on `marketing-call-events-live`.
-- `/marketing/seo` and `/marketing/web-analytics` — the page and its embedded `WebMetricsPanel` both mount `useMarketingWebMetrics`, colliding on `mwm-${sourceSystem ?? "all"}`.
-
-Pages like Reputation and MarketingDashboard don't crash because their realtime channel names already vary per instance / per filter and only one caller mounts them.
+Because the Marketing Dashboard's path is `/marketing`, every `/marketing/<child>` route passes the `startsWith` check, so the dashboard row is marked active on every marketing sub-page. The same pattern also affects other "hub" entries whose path is a prefix of sibling items (e.g. `/intake`, `/os`, etc.).
 
 ## Fix
 
-Make every realtime channel name unique per hook instance so parallel callers each get their own channel.
+Update `isItemActive` so a prefix match only wins when no more-specific sibling item also matches. Concretely:
 
-Files to update (all in `src/hooks/`):
+1. Collect the full list of item paths from all sections (`sections` + `mobileSections`) once per render into a memoized `allItemPaths: string[]`.
+2. In `isItemActive(path)`:
+   - Keep the query-string branch unchanged.
+   - Exact match (`location.pathname === bare`) → active.
+   - Prefix match (`location.pathname.startsWith(bare + "/")`) → active **only if** no other registered item path is a longer prefix of `location.pathname`. This way `/marketing/referral-crm` deactivates `/marketing`, but `/marketing/campaigns/123` (a detail route with no dedicated menu item) still highlights `Campaigns`.
 
-1. `useMarketingSourceEvents.ts` — replace `.channel("marketing-source-events-live")` with a per-instance name.
-2. `useMarketingCallEvents.ts` — replace `.channel("marketing-call-events-live")` with a per-instance name.
-3. `useMarketingWebMetrics.ts` — replace `.channel(\`mwm-${sourceSystem ?? "all"}\`)` with a per-instance name.
-4. `useMarketingReputationEvents.ts` — apply the same fix defensively (already dynamic, but two callers with the same `sourceSystem` filter would collide).
-5. `useMarketingWorkItems.ts` — apply the same fix defensively.
+This is a localized change to one helper and its memoized inputs — no route, no menu-config, and no styling changes.
 
-Pattern (per hook):
+## Files touched
 
-```ts
-import { useEffect, useMemo, ... } from "react";
-
-// stable per-hook-instance suffix
-const channelId = useMemo(
-  () => (typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2)),
-  [],
-);
-
-useEffect(() => {
-  const channel = supabase
-    .channel(`marketing-source-events-live-${channelId}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "marketing_source_events" }, () => { void load(); })
-    .subscribe();
-  return () => { void supabase.removeChannel(channel); };
-}, [load, channelId]);
-```
-
-No component/page changes needed — the callers keep working exactly as they do today.
+- `src/components/layout/AppSidebar.tsx` — add `allItemPaths` memo, update `isItemActive` logic. No other files.
 
 ## Verification
 
-- Reload `/marketing/lead-sources`, `/marketing/call-tracking`, `/marketing/seo`, and `/marketing/web-analytics` — each should render instead of white-screening; the "cannot add postgres_changes callbacks … after subscribe()" console error should be gone.
-- Live updates still work: inserting a row into `marketing_source_events` should still trigger a refetch in `SourceManagerCard` / `IntegrationReadinessPanel`.
-- No regressions on Reputation / Marketing Dashboard / Campaigns.
-
-## Out of scope
-
-No schema/RLS changes, no UI redesign, no dependency changes. Purely a fix to five realtime hook definitions.
+- Navigate to `/marketing/referral-crm`, `/marketing/lead-sources`, `/marketing/campaigns`, `/marketing/call-tracking`: only that specific row is highlighted; "Marketing Dashboard" is not.
+- Navigate to `/marketing`: "Marketing Dashboard" is highlighted.
+- Spot-check the Intake section (which also has an `/intake` overview + `/intake/...` children) behaves the same way.
+- A deep detail route like `/marketing/campaigns/<id>` (no dedicated menu item) still highlights the closest parent (`Campaigns`).
