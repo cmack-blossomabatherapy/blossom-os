@@ -37,17 +37,22 @@ describe("Marketing Pass 102 — Patient Lifetime Journey scoping", () => {
     expect(block).toContain("MARKETING_ROLES");
     expect(block).not.toContain("MARKETING_ROLES_WITH_BD");
   });
-  it("Business Development role menu does not link /patient-journey", () => {
-    const bd = (ROLE_MENUS as any).business_development;
-    const items: any[] = Array.isArray(bd) ? bd : (bd?.groups ?? []).flatMap((g: any) => g.items ?? []);
+  const hasPatientJourney = (role: string): boolean => {
+    const menu = (ROLE_MENUS as any)[role];
+    if (!menu) return false;
+    const items: any[] = Array.isArray(menu) ? menu : (menu?.groups ?? []).flatMap((g: any) => g.items ?? []);
     const flat: any[] = items.flatMap((i: any) => [i, ...(i.children ?? [])]);
-    expect(flat.some((i: any) => typeof i?.to === "string" && i.to.includes("/patient-journey"))).toBe(false);
+    return flat.some(
+      (i: any) =>
+        (typeof i?.to === "string" && i.to.includes("/patient-journey")) ||
+        (typeof i?.path === "string" && i.path.includes("/patient-journey")),
+    );
+  };
+  it("Business Development role menu does not link /patient-journey", () => {
+    expect(hasPatientJourney("business_development")).toBe(false);
   });
   it("Marketing role menu does include /patient-journey", () => {
-    const mkt = (ROLE_MENUS as any).marketing_team ?? (ROLE_MENUS as any).marketing;
-    const items: any[] = Array.isArray(mkt) ? mkt : (mkt?.groups ?? []).flatMap((g: any) => g.items ?? []);
-    const flat: any[] = items.flatMap((i: any) => [i, ...(i.children ?? [])]);
-    expect(flat.some((i: any) => typeof i?.to === "string" && i.to.includes("/patient-journey"))).toBe(true);
+    expect(hasPatientJourney("marketing_team")).toBe(true);
   });
 });
 
