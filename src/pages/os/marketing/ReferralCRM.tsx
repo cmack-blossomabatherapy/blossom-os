@@ -708,8 +708,11 @@ const COMPANY_VIEWS = [
 
 function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const s = useCrm();
-  const [view, setView] = useState<(typeof COMPANY_VIEWS)[number]["id"]>("all");
-  const [q, setQ] = useState("");
+  const [viewRaw, setView] = useUrlState("ov", "all");
+  const view = (COMPANY_VIEWS.some((v) => v.id === viewRaw)
+    ? viewRaw
+    : "all") as (typeof COMPANY_VIEWS)[number]["id"];
+  const [q, setQ] = useUrlState("oq", "");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
