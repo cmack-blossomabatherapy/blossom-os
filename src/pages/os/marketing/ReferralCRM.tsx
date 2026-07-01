@@ -3417,7 +3417,7 @@ function AuditModule() {
     return true;
   });
   const actions = Array.from(new Set(s.auditLog.map((r) => r.action)));
-  const objectTypes = Array.from(new Set(s.auditLog.map((r) => r.objectType).filter((x): x is string => !!x)));
+  const objectTypes = Array.from(new Set(s.auditLog.map((r) => r.objectType as string).filter((x) => !!x)));
   return (
     <div className="space-y-4">
       <TableFilterBar
