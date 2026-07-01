@@ -24,8 +24,8 @@ import {
   leadSourceLabel,
   type PatientJourneyEventOrigin,
 } from "@/lib/leads/leadSourceConfig";
-import { getEventsForLead, listLeadSourceEvents, subscribeLeadSourceEvents } from "@/lib/leads/leadSourceEventsStore";
-import type { LeadSourceEvent } from "@/lib/leads/leadSourceEvents";
+import { useLeadMarketingActivity } from "@/hooks/useLeadMarketingActivity";
+import { supabase } from "@/integrations/supabase/client";
 
 // Sprint 04 Phase C — interactions and follow-ups persist to Lovable Cloud
 // (intake_communications + intake_tasks). No localStorage fallback.
@@ -220,23 +220,27 @@ export default function PatientLifetimeJourney() {
     if (q && q !== selectedId) setSelectedId(q);
     const evtId = searchParams.get("sourceEventId");
     if (evtId) {
-      const matched = listLeadSourceEvents().find((e) => e.id === evtId);
-      if (matched?.resolvedLeadId && matched.resolvedLeadId !== selectedId) {
-        setSelectedId(matched.resolvedLeadId);
-      }
+      let cancelled = false;
+      (async () => {
+        const { data } = await supabase
+          .from("marketing_source_events")
+          .select("lead_id")
+          .eq("id", evtId)
+          .maybeSingle();
+        const linked = (data as { lead_id: string | null } | null)?.lead_id ?? null;
+        if (!cancelled && linked && linked !== selectedId) setSelectedId(linked);
+      })();
+      return () => {
+        cancelled = true;
+      };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Subscribe to source events so the journey reflects new attachments live.
-  const [sourceEvents, setSourceEvents] = useState<LeadSourceEvent[]>([]);
-  useEffect(() => subscribeLeadSourceEvents(setSourceEvents), []);
-  const selectedSourceEvents = useMemo(
-    () => (selectedId ? getEventsForLead(selectedId) : []),
-    // include sourceEvents so this recomputes on updates
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedId, sourceEvents],
-  );
+  // Persisted marketing activity for the selected lead (source, call, email
+  // events) — sourced entirely from Supabase, no in-memory store.
+  const marketing = useLeadMarketingActivity(selectedId);
+  const selectedSourceEvents = marketing.sourceEvents;
 
   const states = useMemo(() => Array.from(new Set(leads.map((l) => l.state).filter(Boolean))).sort(), [leads]);
   const sources = useMemo(() => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))).sort(), [leads]);
