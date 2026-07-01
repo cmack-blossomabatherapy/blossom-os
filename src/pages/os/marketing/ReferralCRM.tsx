@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
@@ -44,7 +45,8 @@ import { supabase } from "@/integrations/supabase/client";
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
   | "workflows" | "reports" | "imports" | "exports" | "duplicates"
-  | "settings" | "users" | "deleted" | "files" | "audit" | "activities" | "search";
+  | "settings" | "users" | "deleted" | "files" | "audit" | "activities" | "search"
+  | "patient-pipeline";
 
 const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -52,6 +54,7 @@ const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] =
   { id: "contacts", label: "Contacts", icon: Users },
   { id: "companies", label: "Companies", icon: Building2 },
   { id: "referrals", label: "Referrals", icon: HeartHandshake },
+  { id: "patient-pipeline", label: "Patient Pipeline", icon: Activity },
   { id: "tasks", label: "Tasks", icon: ListChecks },
   { id: "activities", label: "Activities", icon: Activity },
   { id: "lists", label: "Lists", icon: ListFilter },
@@ -102,6 +105,27 @@ function fmtDate(d?: string) {
 function daysSince(d?: string) {
   if (!d) return Infinity;
   return Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000);
+}
+
+// Colored tone for a Referral.referralStatus badge.
+function referralStatusTone(status?: string): string {
+  switch (status) {
+    case "New": return "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300";
+    case "In Review": return "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-300";
+    case "Intake Form Sent": return "bg-violet-500/10 text-violet-700 border-violet-500/20 dark:text-violet-300";
+    case "Scheduled": return "bg-teal-500/10 text-teal-700 border-teal-500/20 dark:text-teal-300";
+    case "Active": return "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-300";
+    case "Closed": return "bg-muted text-muted-foreground border-border";
+    case "Lost": return "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:text-rose-300";
+    default: return "bg-muted text-muted-foreground border-border";
+  }
+}
+
+function patientDisplayName(r: { patientFirstName?: string; patientLastInitial?: string; name?: string }): string {
+  if (r.patientFirstName || r.patientLastInitial) {
+    return `${r.patientFirstName ?? ""} ${r.patientLastInitial ? r.patientLastInitial + "." : ""}`.trim();
+  }
+  return r.name ?? "Unnamed patient";
 }
 
 // ===========================================================
@@ -496,7 +520,9 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
                   <td className="px-3 py-2">{c.state || "-"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{userName(s, c.ownerId)}</td>
                   <td className="px-3 py-2">{c.referralPartnerStatus ? <Badge variant="secondary">{c.referralPartnerStatus}</Badge> : "-"}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{c.referralCount}</td>
+                  <td className="px-3 py-2 text-right">
+                    <ContactReferralsCell contactId={c.id} count={c.referralCount} />
+                  </td>
                   <td className="px-3 py-2 text-muted-foreground">{fmtDate(c.lastContactedDate)}</td>
                 </tr>
               ))}
@@ -514,6 +540,57 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
 }
 
 function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (b: boolean) => void }) {
+  return <NewContactDialogInner open={open} onOpenChange={onOpenChange} />;
+}
+
+// Popover cell for a contact showing their referred patients + status.
+function ContactReferralsCell({ contactId, count }: { contactId: ID; count: number }) {
+  const s = useCrm();
+  const patients = useMemo(
+    () => activeReferrals(s).filter((r) => r.contactId === contactId)
+      .sort((a, b) => (b.referralDate || "").localeCompare(a.referralDate || "")),
+    [s, contactId],
+  );
+  if (patients.length === 0) {
+    return <span className="tabular-nums text-muted-foreground">{count}</span>;
+  }
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 text-xs font-medium tabular-nums hover:bg-muted"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {patients.length}
+          <ChevronRight className="size-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="end">
+        <div className="border-b px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Referred patients ({patients.length})
+        </div>
+        <div className="max-h-72 overflow-y-auto divide-y">
+          {patients.map((r) => (
+            <div key={r.id} className="flex items-center justify-between gap-2 px-3 py-2 text-xs">
+              <div className="min-w-0">
+                <p className="font-medium truncate">{patientDisplayName(r)}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {r.state || "-"} - {fmtDate(r.referralDate)}
+                </p>
+              </div>
+              <span className={cn("text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full border shrink-0", referralStatusTone(r.referralStatus))}>
+                {r.referralStatus}
+              </span>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function NewContactDialogInner({ open, onOpenChange }: { open: boolean; onOpenChange: (b: boolean) => void }) {
   const s = useCrm();
   const [f, setF] = useState({ firstName: "", lastName: "", jobTitle: "", email: "", phone: "", state: "", companyId: "" });
   const [newCo, setNewCo] = useState({ name: "", companyType: "", state: "" });
@@ -4348,6 +4425,142 @@ function ResultRow({ title, meta, detail, onClick }: {
 }
 
 // ===========================================================
+// Patient Pipeline - dashboard of every referred patient
+// ===========================================================
+function PatientPipelineModule({
+  onOpenContact, onOpenCompany,
+}: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
+  const s = useCrm();
+  const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [stateFilter, setStateFilter] = useState<string>("all");
+
+  const rows = useMemo(() => {
+    let r = scopedReferrals(s);
+    if (statusFilter !== "all") r = r.filter((x) => x.referralStatus === statusFilter);
+    if (stateFilter !== "all") r = r.filter((x) => x.state === stateFilter);
+    if (q) {
+      const ql = q.toLowerCase();
+      r = r.filter((x) =>
+        patientDisplayName(x).toLowerCase().includes(ql) ||
+        (x.contactId ? (s.contacts.find((c) => c.id === x.contactId) ?? { firstName: "", lastName: "" }) : { firstName: "", lastName: "" }) &&
+        `${x.name} ${companyName(s, x.companyId)}`.toLowerCase().includes(ql)
+      );
+    }
+    return [...r].sort((a, b) => (b.referralDate || "").localeCompare(a.referralDate || ""));
+  }, [s, q, statusFilter, stateFilter]);
+
+  const byStatus = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const r of scopedReferrals(s)) map[r.referralStatus] = (map[r.referralStatus] ?? 0) + 1;
+    return map;
+  }, [s]);
+
+  const STATUSES: Referral["referralStatus"][] = ["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"];
+
+  return (
+    <div className="space-y-4">
+      <SectionHeader
+        title="Patient Pipeline"
+        subtitle="Every referred patient across the CRM - their pipeline status, source, and (soon) revenue."
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+        {STATUSES.map((st) => (
+          <button
+            key={st}
+            onClick={() => setStatusFilter((cur) => (cur === st ? "all" : st))}
+            className={cn(
+              "rounded-xl border bg-card p-3 text-left transition-colors hover:bg-muted/40",
+              statusFilter === st && "border-primary/40 bg-primary/5",
+            )}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{st}</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">{byStatus[st] ?? 0}</p>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search patient, company..." className="pl-8 h-9 text-sm" />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[170px] h-9 text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {STATUSES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="w-[110px] h-9 text-sm"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All states</SelectItem>
+            {STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium">Patient</th>
+                <th className="px-3 py-2 text-left font-medium">Referring Contact</th>
+                <th className="px-3 py-2 text-left font-medium">Company</th>
+                <th className="px-3 py-2 text-left font-medium">State</th>
+                <th className="px-3 py-2 text-left font-medium">Pipeline Status</th>
+                <th className="px-3 py-2 text-left font-medium">Intake Status</th>
+                <th className="px-3 py-2 text-left font-medium">Referred</th>
+                <th className="px-3 py-2 text-right font-medium">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const contact = r.contactId ? s.contacts.find((c) => c.id === r.contactId) : undefined;
+                return (
+                  <tr key={r.id} className="border-t hover:bg-muted/30">
+                    <td className="px-3 py-2 font-medium">{patientDisplayName(r)}</td>
+                    <td className="px-3 py-2">
+                      {contact ? (
+                        <button className="hover:text-primary" onClick={() => onOpenContact(contact.id)}>{fullName(contact)}</button>
+                      ) : <span className="text-muted-foreground">-</span>}
+                    </td>
+                    <td className="px-3 py-2">
+                      {r.companyId ? (
+                        <button className="hover:text-primary" onClick={() => onOpenCompany(r.companyId!)}>{companyName(s, r.companyId)}</button>
+                      ) : <span className="text-muted-foreground">-</span>}
+                    </td>
+                    <td className="px-3 py-2">{r.state || "-"}</td>
+                    <td className="px-3 py-2">
+                      <span className={cn("text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border", referralStatusTone(r.referralStatus))}>
+                        {r.referralStatus}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">{r.intakeStatus || "-"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.referralDate)}</td>
+                    <td className="px-3 py-2 text-right text-muted-foreground tabular-nums" title="Revenue reporting coming soon">-</td>
+                  </tr>
+                );
+              })}
+              {rows.length === 0 && (
+                <tr><td colSpan={8} className="text-center text-muted-foreground py-10">No referred patients match.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">
+        Revenue per patient will populate automatically once CentralReach billing sync is wired in.
+      </p>
+    </div>
+  );
+}
+
+// ===========================================================
 // Page shell with internal nav
 // ===========================================================
 export default function ReferralCRM() {
@@ -4393,6 +4606,7 @@ export default function ReferralCRM() {
       case "contacts": return <ContactsModule onOpenContact={setContactId} onOpenCompany={setCompanyId} />;
       case "companies": return <CompaniesModule onOpen={setCompanyId} />;
       case "referrals": return <ReferralsModule />;
+      case "patient-pipeline": return <PatientPipelineModule onOpenContact={setContactId} onOpenCompany={setCompanyId} />;
       case "tasks": return <TasksModule />;
       case "lists": return <ListsModule />;
       case "workflows": return <WorkflowsModule />;
