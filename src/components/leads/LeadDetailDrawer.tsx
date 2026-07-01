@@ -147,7 +147,7 @@ export function LeadDetailDrawer({
   const lead = leads.find((l) => l.id === leadId) ?? null;
   const [tab, setTab] = useState<Tab>("overview");
   const [raw, setRaw] = useState<Record<string, unknown> | null>(null);
-  const { updates, loading: updatesLoading } = useLeadUpdates(lead?.childName);
+  const { updates, loading: updatesLoading } = useLeadUpdates(lead?.childName, lead?.id ?? null);
 
   // Close on Escape
   useEffect(() => {
@@ -481,10 +481,38 @@ export function LeadDetailDrawer({
               {!updatesLoading && updates.map((u) => (
                 <div key={u.id} className="rounded-xl border border-border/60 bg-card p-3.5">
                   <div className="flex items-baseline justify-between gap-3 mb-1">
-                    <span className="text-sm font-medium">{u.author || "Unknown"}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-medium truncate">{u.author || "Unknown"}</span>
+                      {u.source && (
+                        <span
+                          className={
+                            "text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border " +
+                            (u.source === "journey_event"
+                              ? "border-primary/30 bg-primary/10 text-primary"
+                              : u.source === "intake_comm"
+                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                : "border-border/60 bg-muted text-muted-foreground")
+                          }
+                        >
+                          {u.source === "journey_event"
+                            ? "Automation"
+                            : u.source === "intake_comm"
+                              ? (u.kind || "note")
+                              : "Monday"}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[11px] text-muted-foreground">{relTime(u.posted_at)}</span>
                   </div>
+                  {u.subject && u.source === "intake_comm" && (
+                    <p className="text-[12px] font-medium text-foreground mb-0.5">{u.subject}</p>
+                  )}
                   <p className="text-sm text-foreground whitespace-pre-wrap break-words">{u.body || ""}</p>
+                  {u.source === "journey_event" && u.metadata && (
+                    <pre className="mt-2 text-[10.5px] leading-snug text-muted-foreground bg-muted/60 rounded-md p-2 overflow-x-auto">
+{JSON.stringify(u.metadata, null, 2)}
+                    </pre>
+                  )}
                 </div>
               ))}
             </section>
