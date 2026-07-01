@@ -23,7 +23,7 @@ import {
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 
-/* Recruiting Marketing — operational recruiting visibility intelligence.
+/* Recruiting Marketing - operational recruiting visibility intelligence.
  * Derived from real candidate pipeline, source attribution, and state-level
  * staffing demand (family leads). Not an ATS, not Apploi. */
 
@@ -231,36 +231,36 @@ export default function RecruitingMarketing() {
     const pressureState = stateRows[0];
     if (pressureState && pressureState.pressure > 0) {
       out.push(
-        `${STATE_NAMES[pressureState.state]} demand is outpacing recruiting visibility — ${pressureState.demand} family leads vs ${pressureState.ready} staff ready.`,
+        `${STATE_NAMES[pressureState.state]} demand is outpacing recruiting visibility - ${pressureState.demand} family leads vs ${pressureState.ready} staff ready.`,
       );
     }
     if (strongestState && strongestState.total > 0) {
       out.push(
-        `${STATE_NAMES[strongestState.state]} carries the strongest recruiting visibility — ${strongestState.total} active applicants across RBT and BCBA.`,
+        `${STATE_NAMES[strongestState.state]} carries the strongest recruiting visibility - ${strongestState.total} active applicants across RBT and BCBA.`,
       );
     }
     const referralSource = sourceRows.find((s) => s.source === "Referral");
     if (referralSource && referralSource.total > 0) {
       const rate = Math.round((referralSource.qualified / referralSource.total) * 100);
       out.push(
-        `Referral applicants qualify at ${rate}% — internal referrals continue producing the strongest retention signal.`,
+        `Referral applicants qualify at ${rate}% - internal referrals continue producing the strongest retention signal.`,
       );
     }
     const bcbaRow = roleRows.find((r) => r.role === "BCBA");
     if (bcbaRow && bcbaRow.total > 0 && bcbaRow.ready === 0) {
       out.push(
-        `BCBA visibility remains below operational demand — ${bcbaRow.total} in pipeline but none yet ready for assignment.`,
+        `BCBA visibility remains below operational demand - ${bcbaRow.total} in pipeline but none yet ready for assignment.`,
       );
     }
     const orientationStalled = funnel.find((f) => f.label === "Orientation")?.count ?? 0;
     if (orientationStalled > 0) {
       out.push(
-        `${orientationStalled} applicants currently in orientation — monitor completion velocity to protect staffing momentum.`,
+        `${orientationStalled} applicants currently in orientation - monitor completion velocity to protect staffing momentum.`,
       );
     }
     if (momentum.delta > 0) {
       out.push(
-        `Hiring momentum is accelerating — ${momentum.recent} new applicants this week vs ${momentum.recent - momentum.delta} prior.`,
+        `Hiring momentum is accelerating - ${momentum.recent} new applicants this week vs ${momentum.recent - momentum.delta} prior.`,
       );
     }
     return out.slice(0, 5);
@@ -269,7 +269,7 @@ export default function RecruitingMarketing() {
   return (
     <MktgPage
       title="Recruiting Marketing"
-      subtitle="Operational recruiting visibility — where hiring demand, campaigns, and onboarding momentum translate into staffing readiness."
+      subtitle="Operational recruiting visibility - where hiring demand, campaigns, and onboarding momentum translate into staffing readiness."
       actions={<AIPrompt label="Where is staffing demand outpacing recruiting?" variant="card" />}
     >
       {/* 1. RECRUITING VISIBILITY HERO */}
@@ -283,17 +283,17 @@ export default function RecruitingMarketing() {
           </div>
           <h2 className="mt-2 max-w-2xl text-xl md:text-2xl font-semibold tracking-tight text-foreground">
             {momentum.delta > 0
-              ? `Hiring momentum is accelerating — ${momentum.recent} new applicants this week.`
+              ? `Hiring momentum is accelerating - ${momentum.recent} new applicants this week.`
               : strongestState
               ? `${STATE_NAMES[strongestState.state]} carries Blossom's strongest recruiting visibility right now.`
-              : "Connect Apploi, Indeed, and recruiting calls in Admin → Data Uploads to activate recruiting intelligence."}
+              : "Connect Apploi, Indeed, and recruiting calls in Admin -> Data Uploads to activate recruiting intelligence."}
           </h2>
           <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
               { label: "Active applicants", value: marketingCandidates.length },
               { label: "Qualified rate", value: `${momentum.qualifiedRate}%` },
               { label: "Ready for staffing", value: momentum.ready },
-              { label: "Top market", value: strongestState ? STATE_NAMES[strongestState.state] : "—" },
+              { label: "Top market", value: strongestState ? STATE_NAMES[strongestState.state] : "-" },
             ].map((m) => (
               <div key={m.label} className="rounded-xl bg-card/60 backdrop-blur border border-border/50 p-3">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{m.label}</div>
@@ -350,7 +350,7 @@ export default function RecruitingMarketing() {
                       <div>
                         <div className="text-[13px] font-medium text-foreground">{s.source}</div>
                         <div className="text-[11.5px] text-muted-foreground">
-                          {s.rbt} RBT · {s.bcba} BCBA · {s.ready} ready
+                          {s.rbt} RBT - {s.bcba} BCBA - {s.ready} ready
                         </div>
                       </div>
                     </div>
@@ -434,7 +434,7 @@ export default function RecruitingMarketing() {
             </div>
             <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
               <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.total}</span> active applicants ·{" "}
+                <span className="text-foreground font-medium">{activeRow.total}</span> active applicants -{" "}
                 <span className="text-foreground font-medium">{activeRow.onboarding}</span> in onboarding
               </div>
               <div className="text-[12.5px] text-muted-foreground">
@@ -450,12 +450,12 @@ export default function RecruitingMarketing() {
             </div>
             {activeRow.pressure > 0 && (
               <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[12px] text-foreground">
-                Family demand is outpacing staffing readiness — invest in recruiting visibility for {STATE_NAMES[activeRow.state]}.
+                Family demand is outpacing staffing readiness - invest in recruiting visibility for {STATE_NAMES[activeRow.state]}.
               </div>
             )}
             {activeRow.bcba === 0 && (
               <div className="mt-2 rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] text-foreground">
-                No BCBA pipeline visibility in {STATE_NAMES[activeRow.state]} — clinical staffing gap to address.
+                No BCBA pipeline visibility in {STATE_NAMES[activeRow.state]} - clinical staffing gap to address.
               </div>
             )}
           </div>
@@ -478,7 +478,7 @@ export default function RecruitingMarketing() {
                       <span className="font-medium text-foreground">{f.label}</span>
                       <span className="text-muted-foreground tabular-nums">
                         {f.count}
-                        {i > 0 && drop > 0 && <span className="ml-1.5 text-amber-600">−{drop}%</span>}
+                        {i > 0 && drop > 0 && <span className="ml-1.5 text-amber-600">-{drop}%</span>}
                       </span>
                     </div>
                     <div className="mt-1.5">
@@ -497,12 +497,12 @@ export default function RecruitingMarketing() {
               </div>
               <div className="mt-2 text-[13.5px] leading-relaxed text-foreground">
                 {momentum.ready > 0
-                  ? `${momentum.ready} applicants are cleared and ready to be staffed — protect onboarding velocity to maintain pipeline.`
-                  : "No applicants are fully cleared yet — orientation and credentialing are the operational bottleneck to watch."}
+                  ? `${momentum.ready} applicants are cleared and ready to be staffed - protect onboarding velocity to maintain pipeline.`
+                  : "No applicants are fully cleared yet - orientation and credentialing are the operational bottleneck to watch."}
               </div>
               <div className="mt-3 text-[12px] text-muted-foreground">
-                {marketingCandidates.filter((c) => EARLY_STAGES.has(c.stage)).length} early-stage ·{" "}
-                {marketingCandidates.filter((c) => LATE_STAGES.has(c.stage)).length} late-stage ·{" "}
+                {marketingCandidates.filter((c) => EARLY_STAGES.has(c.stage)).length} early-stage -{" "}
+                {marketingCandidates.filter((c) => LATE_STAGES.has(c.stage)).length} late-stage -{" "}
                 {momentum.ready} ready
               </div>
             </div>
@@ -525,9 +525,9 @@ export default function RecruitingMarketing() {
                   <Icon className="mt-0.5 size-4 text-primary shrink-0" />
                   <div className="text-[12.5px] text-foreground">
                     {r.total === 0
-                      ? `No ${r.role} visibility yet — recruiting investment needed.`
+                      ? `No ${r.role} visibility yet - recruiting investment needed.`
                       : r.ready === 0
-                      ? `${r.total} ${r.role}s in pipeline but none yet ready — focus on onboarding velocity.`
+                      ? `${r.total} ${r.role}s in pipeline but none yet ready - focus on onboarding velocity.`
                       : `${r.ready} of ${r.total} ${r.role}s ready for staffing across active markets.`}
                   </div>
                 </div>

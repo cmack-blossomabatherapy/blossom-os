@@ -25,13 +25,13 @@ import { useMarketingData } from "@/hooks/useMarketingData";
 import { isAfterHoursEastern } from "@/lib/marketing/callTimezone";
 // Detailed call/lead metrics read directly from marketing_call_events +
 // intake_leads via useMarketingData. Aggregate KPIs continue to flow through
-// useMarketingIntelligence. No shim arrays — empty tables render empty states.
+// useMarketingIntelligence. No shim arrays - empty tables render empty states.
 
-/* ────────────────────────────────────────────────────────────────────────── *
- * Call Tracking — operational communication intelligence. Derived entirely
- * from real phone call + lead data. Connect telephony provider via Admin →
+/* -------------------------------------------------------------------------- *
+ * Call Tracking - operational communication intelligence. Derived entirely
+ * from real phone call + lead data. Connect telephony provider via Admin ->
  * Data Uploads to extend with campaign-level attribution.
- * ────────────────────────────────────────────────────────────────────────── */
+ * -------------------------------------------------------------------------- */
 
 const STATE_NAMES: Record<string, string> = {
   GA: "Georgia",
@@ -75,7 +75,7 @@ export default function CallTracking() {
     return v.includes("connected") || v.includes("answered") || v.includes("contacted") || v.includes("completed");
   };
 
-  /* ── momentum across all calls (7d vs prior 7d) ────────────────────── */
+  /* -- momentum across all calls (7d vs prior 7d) ---------------------- */
   const momentum = useMemo(() => {
     const recent = marketingCalls.filter((c) => ageDays(c.createdAt) <= 7);
     const prior = marketingCalls.filter((c) => {
@@ -97,7 +97,7 @@ export default function CallTracking() {
     };
   }, [marketingCalls]);
 
-  /* ── intake vs recruiting vs referral splits ───────────────────────── */
+  /* -- intake vs recruiting vs referral splits ------------------------- */
   const splits = useMemo(() => {
     // Calls linked to an intake lead are treated as intake calls. Recruiting/
     // client splits require dedicated channel metadata that marketing_call_events
@@ -129,7 +129,7 @@ export default function CallTracking() {
     };
   }, [marketingCalls, marketingLeads]);
 
-  /* ── state call rollup ─────────────────────────────────────────────── */
+  /* -- state call rollup ----------------------------------------------- */
   const stateRows = useMemo(() => {
     const map = new Map<string, { state: string; total: number; intake: number; recruiting: number; missed: number; recent: number; prior: number }>();
     const leadIds = new Set(marketingLeads.map((l) => l.id));
@@ -150,7 +150,7 @@ export default function CallTracking() {
   const topState = stateRows[0];
   const activeRow = stateRows.find((s) => s.state === activeState);
 
-  /* ── intake stage progression for calls with linked leads ──────────── */
+  /* -- intake stage progression for calls with linked leads ------------ */
   const intakeStages = useMemo(() => {
     const stageCount = new Map<string, number>();
     splits.intake.forEach((c) => {
@@ -165,7 +165,7 @@ export default function CallTracking() {
       .filter((s) => s.count > 0 || ["New Lead", "Form Received", "VOB Completed"].includes(s.stage));
   }, [splits.intake, marketingLeads]);
 
-  /* ── attribution surfaces (from lead source of linked leads) ───────── */
+  /* -- attribution surfaces (from lead source of linked leads) --------- */
   const attribution = useMemo(() => {
     const map = new Map<string, { source: string; calls: number; qualified: number }>();
     splits.intake.forEach((c) => {
@@ -182,7 +182,7 @@ export default function CallTracking() {
       .sort((a, b) => b.calls - a.calls);
   }, [splits.intake, marketingLeads]);
 
-  /* ── after-hours by state ──────────────────────────────────────────── */
+  /* -- after-hours by state -------------------------------------------- */
   const afterHoursByState = useMemo(() => {
     const map = new Map<string, number>();
     marketingCalls.forEach((c) => {
@@ -194,7 +194,7 @@ export default function CallTracking() {
       .sort((a, b) => b.count - a.count);
   }, [marketingCalls]);
 
-  /* ── AI insights ───────────────────────────────────────────────────── */
+  /* -- AI insights ----------------------------------------------------- */
   const insights = useMemo(() => {
     const out: string[] = [];
     if (topState) {
@@ -203,13 +203,13 @@ export default function CallTracking() {
       );
     }
     if (momentum.inboundDelta > 0) {
-      out.push(`Inbound calls are accelerating — ${momentum.inboundRecent} this week, up from ${momentum.inboundRecent - momentum.inboundDelta} prior.`);
+      out.push(`Inbound calls are accelerating - ${momentum.inboundRecent} this week, up from ${momentum.inboundRecent - momentum.inboundDelta} prior.`);
     }
     if (splits.missed > 0) {
-      out.push(`${splits.missed} inbound calls still need a callback — operational risk for intake conversion.`);
+      out.push(`${splits.missed} inbound calls still need a callback - operational risk for intake conversion.`);
     }
     if (splits.callToQualified >= 40) {
-      out.push(`Phone-linked leads qualify at ${splits.callToQualified}% — calls remain Blossom's highest-converting channel.`);
+      out.push(`Phone-linked leads qualify at ${splits.callToQualified}% - calls remain Blossom's highest-converting channel.`);
     }
     const topRecruit = stateRows.find((s) => s.recruiting > 0);
     if (topRecruit) {
@@ -218,7 +218,7 @@ export default function CallTracking() {
     if (splits.afterHours > 0) {
       const ahTop = afterHoursByState[0];
       out.push(
-        `${splits.afterHours} after-hours calls detected${ahTop ? ` — strongest in ${STATE_NAMES[ahTop.state] ?? ahTop.state}` : ""}.`,
+        `${splits.afterHours} after-hours calls detected${ahTop ? ` - strongest in ${STATE_NAMES[ahTop.state] ?? ahTop.state}` : ""}.`,
       );
     }
     return out.slice(0, 5);
@@ -227,13 +227,13 @@ export default function CallTracking() {
   return (
     <MktgPage
       title="Call Tracking"
-      subtitle="Operational communication intelligence — how inbound conversations translate into intake, recruiting, and operational growth."
+      subtitle="Operational communication intelligence - how inbound conversations translate into intake, recruiting, and operational growth."
       actions={<AIPrompt label="Where is call demand accelerating?" variant="card" />}
     >
       <LeadSourceActions sourceLabel="CTM / CallTrackingMetrics" sourceValue="CTM" integrationId="ctm" sourcePage="call-tracking" />
-      {/* ── OPERATING CALL QUEUE (Pass 102) ──────────────────────────── */}
+      {/* -- OPERATING CALL QUEUE (Pass 102) ---------------------------- */}
       <CallQueueSection />
-      {/* ── 1. COMMUNICATION INTELLIGENCE HERO ───────────────────────── */}
+      {/* -- 1. COMMUNICATION INTELLIGENCE HERO ------------------------- */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
         <div className="absolute -top-24 -right-24 size-72 rounded-full bg-primary/10 blur-3xl" aria-hidden />
         <div className="absolute -bottom-32 -left-20 size-80 rounded-full bg-emerald-500/5 blur-3xl" aria-hidden />
@@ -244,16 +244,16 @@ export default function CallTracking() {
           </div>
           <h2 className="mt-2 max-w-2xl text-xl md:text-2xl font-semibold tracking-tight text-foreground">
             {momentum.inboundDelta > 0
-              ? `Call demand is accelerating — ${momentum.inboundRecent} inbound calls this week.`
+              ? `Call demand is accelerating - ${momentum.inboundRecent} inbound calls this week.`
               : topState
               ? `${STATE_NAMES[topState.state] ?? topState.state} is driving Blossom's strongest call demand.`
-              : "Connect your telephony provider in Admin → Data Uploads to activate call intelligence."}
+              : "Connect your telephony provider in Admin -> Data Uploads to activate call intelligence."}
           </h2>
           <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
-              { label: "Inbound · 7d", value: momentum.inboundRecent },
-              { label: "Top state", value: topState ? STATE_NAMES[topState.state] ?? topState.state : "—" },
-              { label: "Call → qualified", value: `${splits.callToQualified}%` },
+              { label: "Inbound - 7d", value: momentum.inboundRecent },
+              { label: "Top state", value: topState ? STATE_NAMES[topState.state] ?? topState.state : "-" },
+              { label: "Call -> qualified", value: `${splits.callToQualified}%` },
               { label: "Need callback", value: splits.missed },
             ].map((m) => (
               <div key={m.label} className="rounded-xl bg-card/60 backdrop-blur border border-border/50 p-3">
@@ -265,7 +265,7 @@ export default function CallTracking() {
         </div>
       </section>
 
-      {/* ── 2. CALL ACTIVITY SNAPSHOT ────────────────────────────────── */}
+      {/* -- 2. CALL ACTIVITY SNAPSHOT ---------------------------------- */}
       <MktgCard title="Call activity" hint="Operational interpretation, not telecom telemetry">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
@@ -275,8 +275,8 @@ export default function CallTracking() {
             { label: "Intake calls", value: splits.intake.length, sub: `${splits.callToLead}% linked to lead`, icon: Users, delta: 0 },
             { label: "Recruiting calls", value: splits.recruiting.length, sub: "Staff inquiries", icon: Briefcase, delta: 0 },
             { label: "Referral calls", value: mi.referrals.total, sub: `${mi.referrals.byState.length} states`, icon: Link2, delta: 0 },
-            { label: "After-hours", value: splits.afterHours, sub: "Outside 8a–6p window", icon: Moon, delta: 0 },
-            { label: "Call → qualified", value: `${splits.callToQualified}%`, sub: `${splits.intakeConverted} of ${splits.intakeWithLead} linked`, icon: TrendingUp, delta: 0 },
+            { label: "After-hours", value: splits.afterHours, sub: "Outside 8a-6p window", icon: Moon, delta: 0 },
+            { label: "Call -> qualified", value: `${splits.callToQualified}%`, sub: `${splits.intakeConverted} of ${splits.intakeWithLead} linked`, icon: TrendingUp, delta: 0 },
           ].map((m) => {
             const Icon = m.icon;
             return (
@@ -296,7 +296,7 @@ export default function CallTracking() {
         </div>
       </MktgCard>
 
-      {/* ── 3 + 4. INTAKE + RECRUITING CALL INTELLIGENCE ─────────────── */}
+      {/* -- 3 + 4. INTAKE + RECRUITING CALL INTELLIGENCE --------------- */}
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <MktgCard title="Intake call intelligence" hint="Where phone-linked leads progress">
@@ -314,7 +314,7 @@ export default function CallTracking() {
                         <span className="font-medium text-foreground">{s.stage}</span>
                         <span className="text-muted-foreground tabular-nums">
                           {s.count}
-                          {i > 0 && drop > 0 && <span className="ml-1.5 text-amber-600">−{drop}%</span>}
+                          {i > 0 && drop > 0 && <span className="ml-1.5 text-amber-600">-{drop}%</span>}
                         </span>
                       </div>
                       <div className="mt-1.5">
@@ -325,7 +325,7 @@ export default function CallTracking() {
                 })}
                 <div className="pt-2 mt-2 border-t border-border/60 text-[12px] text-muted-foreground">
                   Phone-linked leads qualify at{" "}
-                  <span className="text-foreground font-medium">{splits.callToQualified}%</span> — strongest channel for intake progression.
+                  <span className="text-foreground font-medium">{splits.callToQualified}%</span> - strongest channel for intake progression.
                 </div>
               </div>
             )}
@@ -360,7 +360,7 @@ export default function CallTracking() {
                     );
                   })}
                 <div className="text-[11.5px] text-muted-foreground pt-1">
-                  Connect recruiting line attribution in Admin → Data Uploads for source-level breakdown.
+                  Connect recruiting line attribution in Admin -> Data Uploads for source-level breakdown.
                 </div>
               </div>
             )}
@@ -368,7 +368,7 @@ export default function CallTracking() {
         </div>
       </div>
 
-      {/* ── 5. STATE CALL VOLUME MAP ─────────────────────────────────── */}
+      {/* -- 5. STATE CALL VOLUME MAP ----------------------------------- */}
       <MktgCard title="State call demand" hint="Click a state to see operational detail">
         {stateRows.length === 0 ? (
           <EmptyRow>No state call data yet.</EmptyRow>
@@ -438,11 +438,11 @@ export default function CallTracking() {
             </div>
             <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
               <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.intake}</span> intake calls ·{" "}
+                <span className="text-foreground font-medium">{activeRow.intake}</span> intake calls -{" "}
                 <span className="text-foreground font-medium">{activeRow.recruiting}</span> recruiting
               </div>
               <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.recent}</span> last 7d ·{" "}
+                <span className="text-foreground font-medium">{activeRow.recent}</span> last 7d -{" "}
                 <span className="text-foreground font-medium">{activeRow.prior}</span> prior week
               </div>
               <div className="text-[12.5px] text-muted-foreground">
@@ -450,7 +450,7 @@ export default function CallTracking() {
                 <span className={`font-medium ${activeRow.missed > 0 ? "text-amber-600" : "text-foreground"}`}>
                   {activeRow.missed}
                 </span>{" "}
-                · operational follow-up signal
+                - operational follow-up signal
               </div>
               <div className="text-[12.5px] text-muted-foreground">
                 Demand share:{" "}
@@ -462,14 +462,14 @@ export default function CallTracking() {
             </div>
             {activeRow.intake > activeRow.recruiting * 3 && activeRow.recruiting > 0 && (
               <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[12px] text-foreground">
-                Family demand is outpacing recruiting visibility — staffing pressure to monitor.
+                Family demand is outpacing recruiting visibility - staffing pressure to monitor.
               </div>
             )}
           </div>
         )}
       </MktgCard>
 
-      {/* ── 6 + 7. MISSED CALLS / RISK + ATTRIBUTION ─────────────────── */}
+      {/* -- 6 + 7. MISSED CALLS / RISK + ATTRIBUTION ------------------- */}
       <div className="grid gap-4 lg:grid-cols-2">
         <MktgCard title="Missed calls & response risk" hint="Operational awareness, not ticketing">
           {splits.missed === 0 && splits.afterHours === 0 ? (
@@ -511,7 +511,7 @@ export default function CallTracking() {
                         key={s.state}
                         className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground"
                       >
-                        {STATE_NAMES[s.state] ?? s.state} · {s.count}
+                        {STATE_NAMES[s.state] ?? s.state} - {s.count}
                       </span>
                     ))}
                   </div>
@@ -551,7 +551,7 @@ export default function CallTracking() {
                       <div>
                         <div className="text-[13px] font-medium text-foreground">{a.source}</div>
                         <div className="text-[11.5px] text-muted-foreground">
-                          {a.calls} call{a.calls === 1 ? "" : "s"} · {a.qualified} qualified
+                          {a.calls} call{a.calls === 1 ? "" : "s"} - {a.qualified} qualified
                         </div>
                       </div>
                       <span className="text-[13px] font-semibold tabular-nums text-foreground">{a.rate}%</span>
@@ -567,7 +567,7 @@ export default function CallTracking() {
         </MktgCard>
       </div>
 
-      {/* ── 8. AI CALL INTELLIGENCE PANEL ────────────────────────────── */}
+      {/* -- 8. AI CALL INTELLIGENCE PANEL ------------------------------ */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/8 via-card to-card p-6 md:p-7">
         <div className="absolute -top-20 -right-16 size-64 rounded-full bg-primary/10 blur-3xl" aria-hidden />
         <div className="relative">

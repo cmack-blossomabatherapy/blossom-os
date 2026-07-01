@@ -155,8 +155,8 @@ function ReferralsInner() {
   }, [activeContacts]);
 
   function companyName(id: string | null | undefined) {
-    if (!id) return "—";
-    return companies.find((c) => c.id === id)?.company_name ?? "—";
+    if (!id) return "-";
+    return companies.find((c) => c.id === id)?.company_name ?? "-";
   }
 
   const dataError = contactsError ?? companiesError ?? batchesError;
@@ -293,7 +293,7 @@ function ReferralsInner() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search contacts, companies, emails…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input className="pl-9" placeholder="Search contacts, companies, emails..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <Select value={stateFilter} onValueChange={setStateFilter}>
             <SelectTrigger className="w-[140px]"><SelectValue placeholder="State" /></SelectTrigger>
@@ -330,7 +330,7 @@ function ReferralsInner() {
         <TabsContent value="contacts">
           <MktgCard>
             {lc ? (
-              <p className="text-sm text-muted-foreground italic p-4">Loading…</p>
+              <p className="text-sm text-muted-foreground italic p-4">Loading...</p>
             ) : !visibleContacts.length ? (
               <EmptyBox
                 title="Your referral CRM is ready."
@@ -373,11 +373,11 @@ function ReferralsInner() {
                             onCheckedChange={(checked) => setSelectedContactIds((ids) => checked === true ? [...ids, c.id] : ids.filter((i) => i !== c.id))}
                           />
                         </td>
-                        <td className="px-3 py-2 font-medium">{c.full_name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "—"}</td>
+                        <td className="px-3 py-2 font-medium">{c.full_name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "-"}</td>
                         <td className="px-3 py-2 text-muted-foreground">{companyName(c.company_id)}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{c.role_type ?? c.title ?? "—"}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{c.email ?? "—"}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{c.state ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.role_type ?? c.title ?? "-"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.email ?? "-"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.state ?? "-"}</td>
                         <td className="px-3 py-2"><Badge variant="outline">{c.relationship_stage}</Badge></td>
                         <td className="px-3 py-2 text-right tabular-nums">{c.number_of_referrals_sent ?? 0}</td>
                         <td className="px-3 py-2 text-muted-foreground">{fmtRelative(c.last_contacted_at)}</td>
@@ -395,7 +395,7 @@ function ReferralsInner() {
         <TabsContent value="companies">
           <MktgCard>
             {lo ? (
-              <p className="text-sm text-muted-foreground italic p-4">Loading…</p>
+              <p className="text-sm text-muted-foreground italic p-4">Loading...</p>
             ) : !visibleCompanies.length ? (
               <EmptyBox
                 title="No companies yet."
@@ -436,9 +436,9 @@ function ReferralsInner() {
                             />
                           </td>
                           <td className="px-3 py-2 font-medium">{c.company_name}</td>
-                          <td className="px-3 py-2 text-muted-foreground">{c.company_type ?? "—"}</td>
-                          <td className="px-3 py-2 text-muted-foreground">{c.domain ?? c.website_url ?? "—"}</td>
-                          <td className="px-3 py-2 text-muted-foreground">{c.state ?? "—"}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{c.company_type ?? "-"}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{c.domain ?? c.website_url ?? "-"}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{c.state ?? "-"}</td>
                           <td className="px-3 py-2 text-right tabular-nums">{contactCount}</td>
                           <td className="px-3 py-2 text-right tabular-nums">{c.referral_count ?? 0}</td>
                           <td className="px-3 py-2"><Badge variant="outline">{c.relationship_stage}</Badge></td>
@@ -514,7 +514,7 @@ function ReferralsInner() {
           <div>
             <p className="text-sm font-semibold">Lead attribution ready</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Once incoming lead data is connected, Blossom OS will show which referral relationships are driving growth — by company, contact, and state.
+              Once incoming lead data is connected, Blossom OS will show which referral relationships are driving growth - by company, contact, and state.
             </p>
           </div>
         </div>
@@ -668,7 +668,7 @@ function ReferralExportDialog({
             <div className="rounded-xl border bg-muted/30 p-3">
               <p className="text-sm font-medium">{source.label}</p>
               <p className="mt-1 text-xs text-muted-foreground">{source.description}</p>
-              <p className="mt-2 text-xs font-medium tabular-nums">{source.rows.length} rows · {selectedColumns.length} columns</p>
+              <p className="mt-2 text-xs font-medium tabular-nums">{source.rows.length} rows - {selectedColumns.length} columns</p>
             </div>
           </div>
 
@@ -801,7 +801,7 @@ function BulkEditDialog({
               <SelectContent>
                 <SelectItem value={KEEP}>Keep current</SelectItem>
                 <SelectItem value={CLEAR}>Clear</SelectItem>
-                <SelectItem value="__custom">Custom…</SelectItem>
+                <SelectItem value="__custom">Custom...</SelectItem>
                 {states.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -826,7 +826,7 @@ function BulkEditDialog({
               <SelectContent>
                 <SelectItem value={KEEP}>Keep current</SelectItem>
                 <SelectItem value={CLEAR}>Clear</SelectItem>
-                <SelectItem value={SET}>Set owners…</SelectItem>
+                <SelectItem value={SET}>Set owners...</SelectItem>
               </SelectContent>
             </Select>
             {ownerVal === SET && (
@@ -863,7 +863,7 @@ function FollowUpGroup({
             <li key={c.id} className="py-2.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-muted/30 -mx-2 px-2 rounded" onClick={() => onOpen(c)}>
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{c.full_name ?? `${c.first_name ?? ""} ${c.last_name ?? ""}`}</p>
-                <p className="text-xs text-muted-foreground truncate">{companyName(c.company_id)} · {c.role_type ?? "—"}</p>
+                <p className="text-xs text-muted-foreground truncate">{companyName(c.company_id)} - {c.role_type ?? "-"}</p>
               </div>
               <div className="text-right text-xs">
                 <p className="font-medium">{fmtDate(c.next_follow_up_at)}</p>

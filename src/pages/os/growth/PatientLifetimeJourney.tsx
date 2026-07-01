@@ -27,7 +27,7 @@ import {
 import { useLeadMarketingActivity } from "@/hooks/useLeadMarketingActivity";
 import { supabase } from "@/integrations/supabase/client";
 
-// Sprint 04 Phase C — interactions and follow-ups persist to Lovable Cloud
+// Sprint 04 Phase C - interactions and follow-ups persist to Lovable Cloud
 // (intake_communications + intake_tasks). No localStorage fallback.
 type InteractionKind = "call" | "sms" | "email" | "note";
 
@@ -159,12 +159,12 @@ function buildEvents(lead: Lead): JourneyEvent[] {
     });
   }
   for (const c of lead.communications ?? []) {
-    const dur = c.durationSec ? ` · ${Math.round(c.durationSec / 60)} min` : "";
+    const dur = c.durationSec ? ` - ${Math.round(c.durationSec / 60)} min` : "";
     events.push({
       type: communicationToEventType(c.type),
       when: fmt(c.timestamp),
       rawTs: safeTs(c.timestamp),
-      detail: `${c.subject ? c.subject + " — " : ""}${c.preview}${dur}`,
+      detail: `${c.subject ? c.subject + " - " : ""}${c.preview}${dur}`,
       owner: c.user,
       origin: baseOrigin,
     });
@@ -185,7 +185,7 @@ function mergeLiveJourney(
     type: communicationToEventType(c.communication_type),
     when: fmt(c.created_at),
     rawTs: safeTs(c.created_at),
-    detail: c.subject ? `${c.subject} — ${c.preview}` : c.preview,
+    detail: c.subject ? `${c.subject} - ${c.preview}` : c.preview,
     owner: c.logged_by_name ?? undefined,
     origin: baseOrigin,
   }));
@@ -238,7 +238,7 @@ export default function PatientLifetimeJourney() {
   }, [searchParams]);
 
   // Persisted marketing activity for the selected lead (source, call, email
-  // events) — sourced entirely from Supabase, no in-memory store.
+  // events) - sourced entirely from Supabase, no in-memory store.
   const marketing = useLeadMarketingActivity(selectedId);
   const selectedSourceEvents = marketing.sourceEvents;
 
@@ -280,23 +280,23 @@ export default function PatientLifetimeJourney() {
         : "form_submitted",
       when: fmt(ev.receivedAt),
       rawTs: safeTs(ev.receivedAt),
-      detail: `${ev.sourceLabel}${ev.summary ? ` — ${ev.summary}` : ""}`,
+      detail: `${ev.sourceLabel}${ev.summary ? ` - ${ev.summary}` : ""}`,
       origin,
     }));
     const marketingCalls: JourneyEvent[] = marketing.callEvents.map((c) => ({
       type: "call_received",
       when: fmt(c.occurred_at),
       rawTs: safeTs(c.occurred_at),
-      detail: `${c.caller_name ?? "Call"}${c.caller_phone ? ` · ${c.caller_phone}` : ""}${
-        c.duration_seconds ? ` · ${Math.round(c.duration_seconds / 60)} min` : ""
-      }${c.transcript_summary ? ` — ${c.transcript_summary}` : ""}`,
+      detail: `${c.caller_name ?? "Call"}${c.caller_phone ? ` - ${c.caller_phone}` : ""}${
+        c.duration_seconds ? ` - ${Math.round(c.duration_seconds / 60)} min` : ""
+      }${c.transcript_summary ? ` - ${c.transcript_summary}` : ""}`,
       origin,
     }));
     const marketingEmails: JourneyEvent[] = marketing.emailEvents.map((e) => ({
       type: e.event_type === "received" ? "email_received" : "email_sent",
       when: fmt(e.occurred_at),
       rawTs: safeTs(e.occurred_at),
-      detail: `${e.subject ?? "Email"}${e.recipient_email ? ` · ${e.recipient_email}` : ""}`,
+      detail: `${e.subject ?? "Email"}${e.recipient_email ? ` - ${e.recipient_email}` : ""}`,
       origin,
     }));
     return [...merged, ...marketingSource, ...marketingCalls, ...marketingEmails]
@@ -331,7 +331,7 @@ export default function PatientLifetimeJourney() {
               <div key={ev.id} className="text-xs rounded-lg border border-border/60 bg-background/60 p-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-medium truncate">
-                    {ev.sourceLabel} · {ev.sourceEventType.replace("_", " ")}
+                    {ev.sourceLabel} - {ev.sourceEventType.replace("_", " ")}
                   </div>
                   <span className="text-[10px] text-muted-foreground">
                     {new Date(ev.receivedAt).toLocaleString()}
@@ -339,7 +339,7 @@ export default function PatientLifetimeJourney() {
                 </div>
                 <div className="text-[11px] text-muted-foreground truncate mt-0.5">
                   {[ev.campaign, ev.utmCampaign, ev.referralPartner, ev.referringProvider]
-                    .filter(Boolean).join(" · ") || ev.summary || "—"}
+                    .filter(Boolean).join(" - ") || ev.summary || "-"}
                 </div>
                 {ev.callRecordingUrl && (
                   <a href={ev.callRecordingUrl} target="_blank" rel="noreferrer"
@@ -365,13 +365,13 @@ export default function PatientLifetimeJourney() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search lead or patient…"
+              placeholder="Search lead or patient..."
               className="pl-9 h-9 bg-muted/40 border-0"
             />
           </div>
           <div className="mt-3 space-y-1 max-h-[60vh] overflow-auto">
             {loading && leads.length === 0 && (
-              <div className="text-xs text-muted-foreground p-3">Loading leads…</div>
+              <div className="text-xs text-muted-foreground p-3">Loading leads...</div>
             )}
             {filteredLeads.map((p) => (
               <button
@@ -383,7 +383,7 @@ export default function PatientLifetimeJourney() {
                 )}
               >
                 <div className="text-sm font-medium text-foreground">{p.childName || p.parentName || "Unnamed lead"}</div>
-                <div className="text-[11px] text-muted-foreground">{p.status} · {p.state || "—"}</div>
+                <div className="text-[11px] text-muted-foreground">{p.status} - {p.state || "-"}</div>
               </button>
             ))}
             {!loading && filteredLeads.length === 0 && (
@@ -643,7 +643,7 @@ function PatientSummary({ patient }: { patient: Lead }) {
           <div className="text-xs text-muted-foreground">{patient.status}</div>
           <h2 className="text-xl font-semibold tracking-tight text-foreground">{displayName}</h2>
           <div className="text-xs text-muted-foreground mt-1">
-            {patient.state || "—"} · Source: {leadSourceLabel(patient.source)} · Owner: {patient.owner || "Unassigned"}
+            {patient.state || "-"} - Source: {leadSourceLabel(patient.source)} - Owner: {patient.owner || "Unassigned"}
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <Badge variant="secondary" className="text-[10px] py-0">Origin: {origin}</Badge>
@@ -651,7 +651,7 @@ function PatientSummary({ patient }: { patient: Lead }) {
           </div>
           {patient.parentName && patient.childName && (
             <div className="text-[11px] text-muted-foreground mt-1">
-              Parent: {patient.parentName}{patient.phone ? ` · ${patient.phone}` : ""}
+              Parent: {patient.parentName}{patient.phone ? ` - ${patient.phone}` : ""}
             </div>
           )}
         </div>
@@ -683,14 +683,14 @@ function JourneySummary({
     <div className="rounded-2xl border border-border/70 bg-card p-4">
       <div className="text-xs font-semibold text-foreground mb-2">Journey summary</div>
       <dl className="grid grid-cols-2 md:grid-cols-3 gap-3 text-[11px]">
-        <SummaryItem label="Current stage" value={patient.status || "—"} />
+        <SummaryItem label="Current stage" value={patient.status || "-"} />
         <SummaryItem label="Lead source" value={leadSourceLabel(patient.source)} />
         <SummaryItem label="Owner" value={patient.owner || "Unassigned"} />
         <SummaryItem
           label="Last contact"
-          value={lastComm ? formatDistanceToNow(new Date(lastComm), { addSuffix: true }) : "—"}
+          value={lastComm ? formatDistanceToNow(new Date(lastComm), { addSuffix: true }) : "-"}
         />
-        <SummaryItem label="Next action" value={patient.nextAction || "—"} />
+        <SummaryItem label="Next action" value={patient.nextAction || "-"} />
         <SummaryItem label="Open tasks" value={openTaskCount ? String(openTaskCount) : "0"} />
       </dl>
       {missingFlags.length > 0 && (

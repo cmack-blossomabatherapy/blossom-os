@@ -29,10 +29,10 @@ import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 import { fmtMktgShortDate, fmtMktgRelative } from "@/lib/os/referrals/utils";
 
-/* Reputation — operational trust intelligence.
+/* Reputation - operational trust intelligence.
  * Derives community perception from real operational signal: intake
  * qualification, referral momentum, recruiting reputation, and friction.
- * Google/Yelp/survey feeds enrich through Admin → Data Uploads. */
+ * Google/Yelp/survey feeds enrich through Admin -> Data Uploads. */
 
 const FOOTPRINT = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const STATE_NAMES: Record<string, string> = {
@@ -129,13 +129,13 @@ export default function Reputation() {
 
     const qualifiedRate = total ? Math.round((qualified / total) * 100) : 0;
     const frictionRate = total ? Math.round((friction / total) * 100) : 0;
-    // Composite trust score (0-100): qualified outcomes + referral share − friction.
+    // Composite trust score (0-100): qualified outcomes + referral share - friction.
     const referralShare = total ? Math.round((referralLeads.length / total) * 100) : 0;
     const trustScore = Math.max(
       0,
       Math.min(100, Math.round(qualifiedRate * 0.5 + referralShare * 0.6 - frictionRate * 0.4 + 30)),
     );
-    // Pseudo "star average" from trust composition, bounded 3.6 – 4.9.
+    // Pseudo "star average" from trust composition, bounded 3.6 - 4.9.
     const starAverage = Math.min(4.9, Math.max(3.6, 3.6 + (trustScore / 100) * 1.3));
 
     return {
@@ -198,7 +198,7 @@ export default function Reputation() {
   const topState = stateRows[0];
   const weakState = [...stateRows].reverse().find((s) => s.leads > 0);
 
-  /* Sentiment timeline — derived from real positive + concerning operational events. */
+  /* Sentiment timeline - derived from real positive + concerning operational events. */
   const timeline = useMemo(() => {
     type Item = {
       id: string;
@@ -219,7 +219,7 @@ export default function Reputation() {
           state: l.state,
           title: `Family completed intake in ${STATE_NAMES[l.state] ?? l.state}`,
           kind: "Trust",
-          detail: `Smooth path through ${l.status.toLowerCase()} — trust signal`,
+          detail: `Smooth path through ${l.status.toLowerCase()} - trust signal`,
         });
       });
     marketingLeads
@@ -232,7 +232,7 @@ export default function Reputation() {
           state: l.state,
           title: `Word-of-mouth referral in ${STATE_NAMES[l.state] ?? l.state}`,
           kind: "Praise",
-          detail: `Community trust — family referred by existing relationship`,
+          detail: `Community trust - family referred by existing relationship`,
         });
       });
     marketingLeads
@@ -245,7 +245,7 @@ export default function Reputation() {
           state: l.state,
           title: `Communication friction in ${STATE_NAMES[l.state] ?? l.state}`,
           kind: "Concern",
-          detail: `${l.status} — perception risk if unresolved`,
+          detail: `${l.status} - perception risk if unresolved`,
         });
       });
     marketingCandidates
@@ -258,7 +258,7 @@ export default function Reputation() {
           state: c.state,
           title: `${c.role} joined Blossom in ${STATE_NAMES[c.state] ?? c.state}`,
           kind: "Recognition",
-          detail: `Recruiting reputation signal — ${c.source} channel`,
+          detail: `Recruiting reputation signal - ${c.source} channel`,
         });
       });
     return items
@@ -284,7 +284,7 @@ export default function Reputation() {
       });
   }, [timeline, contactSort, contactWindow]);
 
-  /* Family experience themes — derived from real status distribution. */
+  /* Family experience themes - derived from real status distribution. */
   const themes = useMemo(() => {
     const fastIntake = marketingLeads.filter((l) => l.status === "VOB Completed").length;
     const formResponsive = marketingLeads.filter((l) => l.status === "Form Received").length;
@@ -297,7 +297,7 @@ export default function Reputation() {
         label: "Communication responsiveness",
         signal: contactWarmth + formResponsive,
         tone: "positive" as const,
-        note: `${contactWarmth} active conversations · ${formResponsive} forms returned`,
+        note: `${contactWarmth} active conversations - ${formResponsive} forms returned`,
       },
       {
         id: "completion",
@@ -318,12 +318,12 @@ export default function Reputation() {
         label: "Outreach + reachability",
         signal: cantReach,
         tone: cantReach > 3 ? ("concern" as const) : ("neutral" as const),
-        note: `${cantReach} families unreachable — friction risk`,
+        note: `${cantReach} families unreachable - friction risk`,
       },
     ];
   }, [marketingLeads]);
 
-  /* Outreach → trust correlation — partnership tracks. */
+  /* Outreach -> trust correlation - partnership tracks. */
   const outreach = useMemo(() => {
     const refs = signals.referralLeads.length;
     return [
@@ -332,7 +332,7 @@ export default function Reputation() {
         title: "Parent workshops & support",
         icon: Heart,
         signal: Math.round(refs * 0.35),
-        note: "Highest-trust channel — direct family-to-family",
+        note: "Highest-trust channel - direct family-to-family",
       },
       {
         id: "physician",
@@ -372,7 +372,7 @@ export default function Reputation() {
     ].sort((a, b) => b.signal - a.signal);
   }, [signals]);
 
-  /* Risk intelligence — operational concerns that erode perception. */
+  /* Risk intelligence - operational concerns that erode perception. */
   const risks = useMemo(() => {
     const out: { id: string; state: string; title: string; detail: string }[] = [];
     stateRows.forEach((s) => {
@@ -397,7 +397,7 @@ export default function Reputation() {
           id: `rec-${s.state}`,
           state: STATE_NAMES[s.state],
           title: "Recruiting reputation softening",
-          detail: `${s.recWithdrawn} of ${s.cands} ${STATE_NAMES[s.state]} candidates withdrew — onboarding perception risk.`,
+          detail: `${s.recWithdrawn} of ${s.cands} ${STATE_NAMES[s.state]} candidates withdrew - onboarding perception risk.`,
         });
       }
     });
@@ -414,23 +414,23 @@ export default function Reputation() {
     }
     if (signals.delta > 0) {
       out.push(
-        `Referral momentum is building — ${signals.recent} new community-sourced families this week vs ${signals.recent - signals.delta} prior.`,
+        `Referral momentum is building - ${signals.recent} new community-sourced families this week vs ${signals.recent - signals.delta} prior.`,
       );
     }
     if (signals.qualifiedRate >= 35) {
       out.push(
-        `Family experience is healthy — ${signals.qualifiedRate}% of intakes reach full qualification, signaling strong communication quality.`,
+        `Family experience is healthy - ${signals.qualifiedRate}% of intakes reach full qualification, signaling strong communication quality.`,
       );
     }
     if (weakState && weakState.fricRate >= 25) {
       out.push(
-        `${STATE_NAMES[weakState.state]} operational delays are beginning to affect perception — ${weakState.fricRate}% friction rate.`,
+        `${STATE_NAMES[weakState.state]} operational delays are beginning to affect perception - ${weakState.fricRate}% friction rate.`,
       );
     }
     const quiet = stateRows.find((s) => s.refs === 0 && s.leads > 0);
     if (quiet) {
       out.push(
-        `${STATE_NAMES[quiet.state]} community engagement remains underdeveloped — invest in parent + school visibility to build review activity.`,
+        `${STATE_NAMES[quiet.state]} community engagement remains underdeveloped - invest in parent + school visibility to build review activity.`,
       );
     }
     return out.slice(0, 5);
@@ -439,7 +439,7 @@ export default function Reputation() {
   return (
     <MktgPage
       title="Reputation"
-      subtitle="Operational trust intelligence — how community perception, family experience, and recruiting reputation translate into growth."
+      subtitle="Operational trust intelligence - how community perception, family experience, and recruiting reputation translate into growth."
       actions={<AIPrompt label="Where is trust strongest right now?" variant="card" />}
     >
       {/* 1. TRUST INTELLIGENCE HERO */}
@@ -453,19 +453,19 @@ export default function Reputation() {
           </div>
           <h2 className="mt-2 max-w-2xl text-xl md:text-2xl font-semibold tracking-tight text-foreground">
             {signals.delta > 0
-              ? `Community trust is strengthening — ${signals.recent} new word-of-mouth families this week.`
+              ? `Community trust is strengthening - ${signals.recent} new word-of-mouth families this week.`
               : topState && topState.trust > 0
               ? `${STATE_NAMES[topState.state]} clinic reputation continues strengthening across the community.`
-              : "Connect Google, surveys, and review feeds in Admin → Data Uploads to activate reputation intelligence."}
+              : "Connect Google, surveys, and review feeds in Admin -> Data Uploads to activate reputation intelligence."}
           </h2>
           <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
               { label: "Trust score", value: `${signals.trustScore}/100` },
               {
                 label: "Avg sentiment",
-                value: `${signals.starAverage.toFixed(1)}★`,
+                value: `${signals.starAverage.toFixed(1)}*`,
               },
-              { label: "Strongest region", value: topState ? STATE_NAMES[topState.state] : "—" },
+              { label: "Strongest region", value: topState ? STATE_NAMES[topState.state] : "-" },
               { label: "Word-of-mouth rate", value: `${signals.referralShare}%` },
             ].map((m) => (
               <div key={m.label} className="rounded-xl bg-card/60 backdrop-blur border border-border/50 p-3">
@@ -498,7 +498,7 @@ export default function Reputation() {
             {
               label: "Recruiting reputation",
               value: signals.hired,
-              sub: `${signals.referralCands.length} staff referrals · ${signals.withdrawn} withdrew`,
+              sub: `${signals.referralCands.length} staff referrals - ${signals.withdrawn} withdrew`,
               icon: ShieldCheck,
               delta: signals.hired - signals.withdrawn,
             },
@@ -529,7 +529,7 @@ export default function Reputation() {
       </MktgCard>
 
       {/* 3. COMMUNITY SENTIMENT TIMELINE */}
-      <MktgCard title="Community sentiment" hint="Real trust signals — most recent first">
+      <MktgCard title="Community sentiment" hint="Real trust signals - most recent first">
         <div className="mb-3 flex flex-wrap items-center gap-2 text-[11.5px]">
           <span className="uppercase tracking-wider text-muted-foreground">Last contacted</span>
           {(["all", "7", "30", "90"] as const).map((w) => (
@@ -563,7 +563,7 @@ export default function Reputation() {
           ))}
         </div>
         {visibleTimeline.length === 0 ? (
-          <EmptyRow>No sentiment signal yet — connect review feeds in Admin.</EmptyRow>
+          <EmptyRow>No sentiment signal yet - connect review feeds in Admin.</EmptyRow>
         ) : (
           <ol className="relative space-y-3 border-l border-border/60 pl-5">
             {visibleTimeline.map((t) => {
@@ -617,19 +617,19 @@ export default function Reputation() {
         )}
       </MktgCard>
 
-      {/* 3b. REPUTATION LEADS TABLE — server-side filtered + sorted by last contacted */}
+      {/* 3b. REPUTATION LEADS TABLE - server-side filtered + sorted by last contacted */}
       <MktgCard
         title="Reputation leads"
-        hint={`Filtered server-side · ${contactWindow === "all" ? "any time" : `last ${contactWindow}d`} · ${
+        hint={`Filtered server-side - ${contactWindow === "all" ? "any time" : `last ${contactWindow}d`} - ${
           contactSort === "recent" ? "newest first" : "oldest first"
         }`}
       >
         {reputationError ? (
-          <EmptyRow>Could not load leads — {reputationError}</EmptyRow>
+          <EmptyRow>Could not load leads - {reputationError}</EmptyRow>
         ) : reputationLoading ? (
           <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card p-4 text-[12.5px] text-muted-foreground">
             <Loader2 className="size-3.5 animate-spin" />
-            Loading leads…
+            Loading leads...
           </div>
         ) : reputationLeads.length === 0 ? (
           <EmptyRow>
@@ -654,9 +654,9 @@ export default function Reputation() {
                   return (
                     <tr key={l.id} className="hover:bg-muted/30">
                       <td className="px-3 py-2 font-medium text-foreground">{l.name}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{l.state ?? "—"}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{l.stage ?? "—"}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{l.source ?? "—"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.state ?? "-"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.stage ?? "-"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.source ?? "-"}</td>
                       <td className="px-3 py-2 tabular-nums text-foreground">
                         <div className="flex flex-col gap-0.5 leading-tight">
                           <span className="text-[12.5px] font-medium">
@@ -712,7 +712,7 @@ export default function Reputation() {
                     </span>
                   </div>
                   <span className="text-[12px] tabular-nums text-muted-foreground">
-                    {s.stars.toFixed(1)}★
+                    {s.stars.toFixed(1)}*
                   </span>
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-2 text-[11.5px]">
@@ -752,35 +752,35 @@ export default function Reputation() {
             </div>
             <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
               <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.stars.toFixed(1)}★</span>{" "}
-                composite sentiment ·{" "}
+                <span className="text-foreground font-medium">{activeRow.stars.toFixed(1)}*</span>{" "}
+                composite sentiment -{" "}
                 <span className="text-foreground font-medium">{activeRow.trust}/100</span> trust
               </div>
               <div className="text-[12.5px] text-muted-foreground">
                 <span className="text-foreground font-medium">{activeRow.qualRate}%</span> family
-                satisfaction · <span className="text-foreground font-medium">{activeRow.qual}</span>{" "}
+                satisfaction - <span className="text-foreground font-medium">{activeRow.qual}</span>{" "}
                 completed intakes
               </div>
               <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.refs}</span> word-of-mouth ·{" "}
+                <span className="text-foreground font-medium">{activeRow.refs}</span> word-of-mouth -{" "}
                 <span className="text-foreground font-medium">{activeRow.referralShare}%</span> of
                 pipeline
               </div>
               <div className="text-[12.5px] text-muted-foreground">
                 Recruiting reputation:{" "}
-                <span className="text-foreground font-medium">{activeRow.recHired}</span> hired ·{" "}
+                <span className="text-foreground font-medium">{activeRow.recHired}</span> hired -{" "}
                 <span className="text-foreground font-medium">{activeRow.recWithdrawn}</span> withdrew
               </div>
             </div>
             {activeRow.fricRate >= 25 && (
               <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[12px] text-foreground">
                 {activeRow.fricRate}% of {STATE_NAMES[activeRow.state]} families are in friction states
-                — perception risk if unresolved.
+                - perception risk if unresolved.
               </div>
             )}
             {activeRow.refs === 0 && activeRow.leads > 0 && (
               <div className="mt-2 rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] text-muted-foreground">
-                No community word-of-mouth yet — invest in parent + school + autism advocacy
+                No community word-of-mouth yet - invest in parent + school + autism advocacy
                 visibility.
               </div>
             )}
@@ -820,7 +820,7 @@ export default function Reputation() {
       </MktgCard>
 
       {/* 6. OUTREACH & TRUST CORRELATION */}
-      <MktgCard title="Outreach → trust correlation" hint="How community visibility translates into reputation">
+      <MktgCard title="Outreach -> trust correlation" hint="How community visibility translates into reputation">
         <div className="space-y-2">
           {outreach.map((o) => {
             const Icon = o.icon;
@@ -853,7 +853,7 @@ export default function Reputation() {
       {/* 7. REPUTATION RISK INTELLIGENCE */}
       <MktgCard title="Reputation risk intelligence" hint="Operational concerns that could erode perception">
         {risks.length === 0 ? (
-          <EmptyRow>No reputation risks detected — community trust is healthy across the footprint.</EmptyRow>
+          <EmptyRow>No reputation risks detected - community trust is healthy across the footprint.</EmptyRow>
         ) : (
           <div className="space-y-2">
             {risks.map((r) => (
@@ -878,7 +878,7 @@ export default function Reputation() {
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-5 md:p-6">
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           <Brain className="size-3.5" />
-          Operational Insights · Reputation
+          Operational Insights - Reputation
         </div>
         <h3 className="mt-2 text-[17px] font-semibold tracking-tight text-foreground">
           Trust intelligence summary

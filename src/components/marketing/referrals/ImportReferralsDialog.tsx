@@ -98,13 +98,13 @@ export function ImportReferralsDialog({ open, onOpenChange, onComplete }: { open
                 <tbody>
                   {previewRows.map((r) => (
                     <tr key={r.rowIndex} className="border-t">
-                      <td className="px-3 py-2">{r.full_name ?? "—"}</td>
-                      <td className="px-3 py-2">{r.company_name ?? "—"}</td>
-                      <td className="px-3 py-2">{r.email ?? "—"}</td>
-                      <td className="px-3 py-2">{r.phone ?? "—"}</td>
-                      <td className="px-3 py-2">{r.state ?? "—"}</td>
+                      <td className="px-3 py-2">{r.full_name ?? "-"}</td>
+                      <td className="px-3 py-2">{r.company_name ?? "-"}</td>
+                      <td className="px-3 py-2">{r.email ?? "-"}</td>
+                      <td className="px-3 py-2">{r.phone ?? "-"}</td>
+                      <td className="px-3 py-2">{r.state ?? "-"}</td>
                       <td className="px-3 py-2">{r.number_of_referrals_sent}</td>
-                      <td className="px-3 py-2">{r.contact_owner ?? "—"}</td>
+                      <td className="px-3 py-2">{r.contact_owner ?? "-"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -119,7 +119,7 @@ export function ImportReferralsDialog({ open, onOpenChange, onComplete }: { open
 
         {step === "importing" && (
           <div className="py-10 space-y-4 text-center">
-            <p className="text-sm">Importing {progress.current} of {progress.total}…</p>
+            <p className="text-sm">Importing {progress.current} of {progress.total}...</p>
             <Progress value={progress.total ? (progress.current / progress.total) * 100 : 0} />
           </div>
         )}

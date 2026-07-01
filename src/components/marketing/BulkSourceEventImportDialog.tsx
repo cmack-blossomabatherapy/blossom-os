@@ -218,7 +218,7 @@ export function BulkSourceEventImportDialog({
                     >
                       <SelectTrigger className="h-8 flex-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__ignore__">— ignore —</SelectItem>
+                        <SelectItem value="__ignore__">- ignore -</SelectItem>
                         {IMPORT_FIELDS.map((f) => (
                           <SelectItem key={f} value={f}>{f}</SelectItem>
                         ))}
@@ -255,7 +255,7 @@ export function BulkSourceEventImportDialog({
                 <details className="mt-1">
                   <summary className="cursor-pointer text-destructive">{result.errors.length} error{result.errors.length === 1 ? "" : "s"}</summary>
                   <ul className="mt-1 space-y-0.5 max-h-32 overflow-auto">
-                    {result.errors.slice(0, 50).map((e, i) => (<li key={i}>• {e}</li>))}
+                    {result.errors.slice(0, 50).map((e, i) => (<li key={i}>- {e}</li>))}
                   </ul>
                 </details>
               )}
@@ -265,7 +265,7 @@ export function BulkSourceEventImportDialog({
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={importing}>Close</Button>
           <Button onClick={handleImport} disabled={importing || dataRows.length === 0}>
-            {importing ? "Importing…" : `Import ${dataRows.length} row${dataRows.length === 1 ? "" : "s"}`}
+            {importing ? "Importing..." : `Import ${dataRows.length} row${dataRows.length === 1 ? "" : "s"}`}
           </Button>
         </DialogFooter>
       </DialogContent>

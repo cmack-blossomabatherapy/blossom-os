@@ -138,7 +138,7 @@ export function CompanyDetailDrawer({
             <Mini label="Last contacted" value={fmtRelative(company.last_contacted_at)} />
             <Mini label="Next follow-up" value={fmtDate(company.next_follow_up_at)} />
             <Mini label="Owner" value={ownersToText(company.relationship_owner as never)} />
-            <Mini label="State" value={company.state ?? "—"} />
+            <Mini label="State" value={company.state ?? "-"} />
           </section>
 
           <div className="flex flex-wrap gap-2">
@@ -150,7 +150,7 @@ export function CompanyDetailDrawer({
               </>
             ) : (
               <>
-                <Button size="sm" onClick={handleSave} disabled={saving}><Save className="size-4 mr-1.5" />{saving ? "Saving…" : "Save changes"}</Button>
+                <Button size="sm" onClick={handleSave} disabled={saving}><Save className="size-4 mr-1.5" />{saving ? "Saving..." : "Save changes"}</Button>
                 <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={saving}><X className="size-4 mr-1.5" />Cancel</Button>
               </>
             )}
@@ -166,7 +166,7 @@ export function CompanyDetailDrawer({
                   <li key={c.id} className="rounded-lg border p-3 text-sm flex items-center justify-between cursor-pointer hover:bg-muted/30" onClick={() => setSelectedContactId(c.id)}>
                     <div>
                       <p className="font-medium">{c.full_name ?? `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim()}</p>
-                      <p className="text-xs text-muted-foreground">{c.role_type ?? c.title ?? "—"}{c.email ? ` · ${c.email}` : ""}</p>
+                      <p className="text-xs text-muted-foreground">{c.role_type ?? c.title ?? "-"}{c.email ? ` - ${c.email}` : ""}</p>
                     </div>
                     <Badge variant="outline">{c.number_of_referrals_sent ?? 0} refs</Badge>
                   </li>
@@ -184,7 +184,7 @@ export function CompanyDetailDrawer({
                 {activities.map((a) => (
                   <li key={a.id} className="rounded-lg border p-3 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">{a.activity_type}{a.subject ? ` · ${a.subject}` : ""}</span>
+                      <span className="font-medium">{a.activity_type}{a.subject ? ` - ${a.subject}` : ""}</span>
                       <span className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="size-3" />{fmtRelative(a.activity_date)}</span>
                     </div>
                     {a.notes && <p className="text-sm mt-1 whitespace-pre-wrap">{a.notes}</p>}

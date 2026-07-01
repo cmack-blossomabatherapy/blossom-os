@@ -8,11 +8,11 @@ import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
 import { cn } from "@/lib/utils";
 
 /** Multi-select Owner picker. Sources from the live employee directory.
- *  Free-text custom owners are NOT allowed — only existing employees. */
+ *  Free-text custom owners are NOT allowed - only existing employees. */
 export function OwnerCombobox({
   value,
   onChange,
-  placeholder = "Search employees…",
+  placeholder = "Search employees...",
   className,
 }: {
   value: string[] | null | undefined;
@@ -46,7 +46,7 @@ export function OwnerCombobox({
         >
           <div className="flex flex-wrap gap-1 text-left">
             {selected.length === 0 ? (
-              <span className="text-muted-foreground text-sm">Select owners…</span>
+              <span className="text-muted-foreground text-sm">Select owners...</span>
             ) : (
               selected.map((n) => (
                 <Badge key={n} variant="secondary" className="gap-1">
@@ -98,5 +98,5 @@ export function ownersToList(v: string[] | string | null | undefined): string[] 
 
 export function ownersToText(v: string[] | string | null | undefined): string {
   const list = ownersToList(v);
-  return list.length ? list.join(", ") : "—";
+  return list.length ? list.join(", ") : "-";
 }

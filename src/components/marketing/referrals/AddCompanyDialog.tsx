@@ -133,7 +133,7 @@ export function AddCompanyDialog({ open, onOpenChange, onCreated }: { open: bool
         <div className="mt-4 border-t pt-4 space-y-3">
           <button type="button" onClick={() => setAddContact((v) => !v)}
             className="text-sm font-medium text-primary hover:underline">
-            {addContact ? "− Remove initial contact" : "+ Add an initial contact for this company"}
+            {addContact ? "- Remove initial contact" : "+ Add an initial contact for this company"}
           </button>
           {addContact && (
             <div className="grid grid-cols-2 gap-3">
@@ -161,7 +161,7 @@ export function AddCompanyDialog({ open, onOpenChange, onCreated }: { open: bool
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Add Company"}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Add Company"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

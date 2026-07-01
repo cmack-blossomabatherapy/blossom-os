@@ -223,7 +223,7 @@ function AttachLeadDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader><DialogTitle>Attach to existing lead</DialogTitle></DialogHeader>
-        <Input className="h-9" placeholder="Search leads by name, phone, email…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <Input className="h-9" placeholder="Search leads by name, phone, email..." value={query} onChange={(e) => setQuery(e.target.value)} />
         <div className="mt-2 max-h-72 overflow-auto space-y-1.5">
           {matches.length === 0 && (
             <div className="text-xs text-muted-foreground py-6 text-center">No matching leads.</div>
@@ -241,7 +241,7 @@ function AttachLeadDialog({
                 )}
               </div>
               <div className="text-[11px] text-muted-foreground truncate">
-                {m.lead.parentName} · {m.lead.state} · {m.lead.status} · {m.lead.phone || m.lead.email}
+                {m.lead.parentName} - {m.lead.state} - {m.lead.status} - {m.lead.phone || m.lead.email}
               </div>
               {m.reasons.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -368,7 +368,7 @@ export default function LeadSourceInbox() {
         bySource.set(s.event.source, (bySource.get(s.event.source) ?? 0) + 1);
       }
     });
-    const topSource = Array.from(bySource.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
+    const topSource = Array.from(bySource.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "-";
     return { newCount, needsReview, dupes, convertedToday, topSource };
   }, [scored]);
 
@@ -500,7 +500,7 @@ export default function LeadSourceInbox() {
         <div className="flex flex-wrap items-end gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9 h-9 bg-muted/40 border-0" placeholder="Search by name, phone, email, campaign…"
+            <Input className="pl-9 h-9 bg-muted/40 border-0" placeholder="Search by name, phone, email, campaign..."
               value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <FilterPill value={sourceFilter} onChange={setSourceFilter} label="Source" options={sourceOptions} />
@@ -542,9 +542,9 @@ export default function LeadSourceInbox() {
                       )}
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                      {s.event.state ?? "—"} · {s.event.phone ?? s.event.email ?? "no contact"} ·{" "}
+                      {s.event.state ?? "-"} - {s.event.phone ?? s.event.email ?? "no contact"} -{" "}
                       {new Date(s.event.receivedAt).toLocaleString()}
-                      {s.event.campaign && ` · ${s.event.campaign}`}
+                      {s.event.campaign && ` - ${s.event.campaign}`}
                     </div>
                     {s.event.summary && (
                       <div className="text-xs text-muted-foreground mt-1 truncate">{s.event.summary}</div>
@@ -680,7 +680,7 @@ function EventDetail({
           <Badge variant={STATUS_VARIANT[s.status]} className="text-[10px]">{STATUS_LABEL[s.status]}</Badge>
         </div>
         <div className="text-[11px] text-muted-foreground mt-1">
-          Received {new Date(s.event.receivedAt).toLocaleString()} · {EVENT_TYPE_LABEL[s.event.sourceEventType]}
+          Received {new Date(s.event.receivedAt).toLocaleString()} - {EVENT_TYPE_LABEL[s.event.sourceEventType]}
         </div>
       </div>
 
@@ -751,7 +751,7 @@ function EventDetail({
                   <Link to={`/leads/${m.leadId}`} className="font-medium hover:underline">{m.lead.childName}</Link>
                   <Badge variant="secondary" className="text-[10px]">{(m.score * 100).toFixed(0)}%</Badge>
                 </div>
-                <div className="text-[11px] text-muted-foreground">{m.reasons.join(" · ")}</div>
+                <div className="text-[11px] text-muted-foreground">{m.reasons.join(" - ")}</div>
               </div>
             ))}
           </div>
@@ -809,7 +809,7 @@ function Field({ label, value }: { label: string; value?: string }) {
   return (
     <div>
       <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
-      <div className="truncate">{value || <span className="text-muted-foreground">—</span>}</div>
+      <div className="truncate">{value || <span className="text-muted-foreground">-</span>}</div>
     </div>
   );
 }
@@ -870,7 +870,7 @@ function IntegrationReadinessPanel() {
                 </Badge>
               </div>
               <div className="text-[11px] text-muted-foreground truncate mt-0.5">
-                Inbound: {(reg.inboundData ?? []).slice(0, 3).join(", ") || "—"}
+                Inbound: {(reg.inboundData ?? []).slice(0, 3).join(", ") || "-"}
               </div>
               <div className="text-[11px] text-muted-foreground mt-1 flex items-start gap-1">
                 <ShieldCheck className="h-3 w-3 mt-0.5" /> {nextStepFor(id)}

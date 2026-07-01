@@ -77,7 +77,7 @@ export function LogActivityDialog({ open, onOpenChange, contactId, companyId, on
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Log Activity"}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Log Activity"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -18,11 +18,11 @@ import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 
-/* ────────────────────────────────────────────────────────────────────────── *
- * SEO & Content — operational visibility intelligence derived from real
- * lead source and state data. Connect Search Console / GA in Admin →
+/* -------------------------------------------------------------------------- *
+ * SEO & Content - operational visibility intelligence derived from real
+ * lead source and state data. Connect Search Console / GA in Admin ->
  * Data Uploads to populate keyword + impression layers.
- * ────────────────────────────────────────────────────────────────────────── */
+ * -------------------------------------------------------------------------- */
 
 const STATE_NAMES: Record<string, string> = {
   GA: "Georgia",
@@ -50,7 +50,7 @@ export default function SEOContent() {
   const mi = useMarketingIntelligence();
   const [activeState, setActiveState] = useState<string | null>(null);
 
-  /* ── organic visibility (Website + Organic combined) ────────────────── */
+  /* -- organic visibility (Website + Organic combined) ------------------ */
   const organic = useMemo(() => {
     const leads = marketingLeads.filter((l) => ORGANIC_SOURCES.includes(l.source as typeof ORGANIC_SOURCES[number]));
     const now = Date.now();
@@ -73,7 +73,7 @@ export default function SEOContent() {
     };
   }, [marketingLeads]);
 
-  /* ── visibility by state (organic share + total + momentum) ─────────── */
+  /* -- visibility by state (organic share + total + momentum) ----------- */
   const stateVisibility = useMemo(() => {
     const map = new Map<string, { state: string; organic: number; total: number; recent: number; prior: number; calls: number }>();
     marketingLeads.forEach((l) => {
@@ -98,7 +98,7 @@ export default function SEOContent() {
 
   const topState = stateVisibility[0];
 
-  /* ── derived content surfaces (operational pages, not mocked posts) ─ */
+  /* -- derived content surfaces (operational pages, not mocked posts) - */
   const contentSurfaces = useMemo(() => {
     const surfaces = [
       { id: "state", title: "State location pages", icon: MapPin, signal: organic.total, hint: `${organic.qualifiedRate}% qualified` },
@@ -111,7 +111,7 @@ export default function SEOContent() {
     return surfaces.sort((a, b) => b.signal - a.signal);
   }, [organic, mi]);
 
-  /* ── visibility health (trust signal awareness) ─────────────────────── */
+  /* -- visibility health (trust signal awareness) ----------------------- */
   const healthChecks = [
     { label: "Consistent NAP across state pages", tone: "good" as const, detail: "Auto-derived from clinic registry" },
     { label: "Insurance FAQ coverage", tone: organic.qualifiedRate >= 40 ? "good" as const : "watch" as const, detail: "Connect Search Console for keyword view" },
@@ -119,44 +119,44 @@ export default function SEOContent() {
     { label: "Local citation freshness", tone: "good" as const, detail: "Google Business profile present" },
   ];
 
-  /* ── content opportunities (derived from weakest signals) ───────────── */
+  /* -- content opportunities (derived from weakest signals) ------------- */
   const opportunities = useMemo(() => {
     const weakStates = stateVisibility.filter((s) => s.total > 0 && s.organic === 0).slice(0, 3);
     const list: { title: string; detail: string }[] = weakStates.map((s) => ({
       title: `${STATE_NAMES[s.state] ?? s.state} organic content gap`,
-      detail: `${s.total} total leads but ${s.organic} from organic — opportunity for state-specific content.`,
+      detail: `${s.total} total leads but ${s.organic} from organic - opportunity for state-specific content.`,
     }));
     if (mi.bottlenecks[0]) {
       list.push({
         title: `FAQ content for "${mi.bottlenecks[0].stage}" stage`,
-        detail: `${mi.bottlenecks[0].count} leads stalled — clarifying content could improve self-service progression.`,
+        detail: `${mi.bottlenecks[0].count} leads stalled - clarifying content could improve self-service progression.`,
       });
     }
     if (mi.referrals.total > 0) {
       list.push({
         title: "Referral landing pages",
-        detail: `${mi.referrals.total} referral leads active — dedicated provider landing pages can strengthen conversion.`,
+        detail: `${mi.referrals.total} referral leads active - dedicated provider landing pages can strengthen conversion.`,
       });
     }
     return list.slice(0, 5);
   }, [stateVisibility, mi]);
 
-  /* ── AEO question themes (derived from real lead intent signals) ────── */
+  /* -- AEO question themes (derived from real lead intent signals) ------ */
   const aeoQuestions = [
     organic.total > 0 && `What is ABA therapy in ${STATE_NAMES[topState?.state ?? "GA"] ?? "your state"}?`,
     "Does insurance cover ABA therapy?",
     "How do I get started with ABA?",
     mi.referrals.total > 0 && "How do I refer a family to Blossom?",
-    "In-home vs clinic-based ABA — which is right?",
+    "In-home vs clinic-based ABA - which is right?",
   ].filter(Boolean) as string[];
 
   return (
     <MktgPage
       title="SEO & Content"
-      subtitle="Operational visibility intelligence — how families and providers discover Blossom, and which content drives growth."
+      subtitle="Operational visibility intelligence - how families and providers discover Blossom, and which content drives growth."
       actions={<AIPrompt label="Where should we focus content next?" variant="card" />}
     >
-      {/* ── HERO ─────────────────────────────────────────────────────── */}
+      {/* -- HERO ------------------------------------------------------- */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
         <div className="absolute -top-24 -right-24 size-72 rounded-full bg-primary/10 blur-3xl" aria-hidden />
         <div className="relative">
@@ -166,15 +166,15 @@ export default function SEOContent() {
           </div>
           <h2 className="mt-2 max-w-2xl text-xl md:text-2xl font-semibold tracking-tight text-foreground">
             {organic.delta > 0
-              ? `Organic visibility is accelerating — ${organic.recent} new organic leads this week.`
+              ? `Organic visibility is accelerating - ${organic.recent} new organic leads this week.`
               : organic.total > 0
               ? `${STATE_NAMES[topState?.state ?? ""] ?? "Your strongest state"} continues driving the most organic discovery.`
-              : "Connect Search Console in Admin → Data Uploads to activate visibility intelligence."}
+              : "Connect Search Console in Admin -> Data Uploads to activate visibility intelligence."}
           </h2>
           <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
               { label: "Organic leads", value: organic.total },
-              { label: "Organic · 7d", value: organic.recent },
+              { label: "Organic - 7d", value: organic.recent },
               { label: "Organic qualified", value: `${organic.qualifiedRate}%` },
               { label: "States visible", value: stateVisibility.filter((s) => s.organic > 0).length },
             ].map((m) => (
@@ -187,14 +187,14 @@ export default function SEOContent() {
         </div>
       </section>
 
-      {/* ── SEO PERFORMANCE SNAPSHOT ─────────────────────────────────── */}
+      {/* -- SEO PERFORMANCE SNAPSHOT ----------------------------------- */}
       <MktgCard title="SEO performance snapshot" hint="Real lead-source attribution">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Organic share", value: `${Math.round((organic.total / Math.max(1, mi.totals.leads)) * 100)}%`, sub: "of all leads", delta: organic.delta, icon: Globe },
             { label: "Inbound calls", value: mi.calls.inbound, sub: `${mi.calls.last24h} in last 24h`, delta: 0, icon: Building2 },
             { label: "Referral discovery", value: mi.referrals.total, sub: `${mi.referrals.byState.length} states`, delta: 0, icon: Link2 },
-            { label: "Recruiting visibility", value: mi.recruitingBySource[0]?.count ?? 0, sub: mi.recruitingBySource[0]?.source ?? "—", delta: 0, icon: Brain },
+            { label: "Recruiting visibility", value: mi.recruitingBySource[0]?.count ?? 0, sub: mi.recruitingBySource[0]?.source ?? "-", delta: 0, icon: Brain },
           ].map((m) => {
             const Icon = m.icon;
             return (
@@ -214,7 +214,7 @@ export default function SEOContent() {
         </div>
       </MktgCard>
 
-      {/* ── STATE VISIBILITY MAP ─────────────────────────────────────── */}
+      {/* -- STATE VISIBILITY MAP --------------------------------------- */}
       <MktgCard title="State visibility" hint="Organic discovery + call activity by state">
         {stateVisibility.length === 0 ? (
           <EmptyRow>No state visibility signal yet.</EmptyRow>
@@ -264,7 +264,7 @@ export default function SEOContent() {
         )}
       </MktgCard>
 
-      {/* ── CONTENT PERFORMANCE + AEO ────────────────────────────────── */}
+      {/* -- CONTENT PERFORMANCE + AEO ---------------------------------- */}
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <MktgCard title="Content performance" hint="Operational surfaces ranked by signal">
@@ -316,7 +316,7 @@ export default function SEOContent() {
         </div>
       </div>
 
-      {/* ── LOCAL VISIBILITY HEALTH + OPPORTUNITIES ──────────────────── */}
+      {/* -- LOCAL VISIBILITY HEALTH + OPPORTUNITIES -------------------- */}
       <div className="grid gap-4 lg:grid-cols-2">
         <MktgCard title="Visibility health" hint="Trust signal awareness">
           <div className="divide-y divide-border/60">
@@ -356,7 +356,7 @@ export default function SEOContent() {
         </MktgCard>
       </div>
 
-      {/* ── AI INSIGHTS PANEL ────────────────────────────────────────── */}
+      {/* -- AI INSIGHTS PANEL ------------------------------------------ */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card to-primary/[0.04] p-5 md:p-6">
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           <Sparkles className="size-3.5 text-primary" />
@@ -370,14 +370,14 @@ export default function SEOContent() {
             <div className="rounded-xl border border-border/50 bg-card/60 p-3">
               <div className="text-[11.5px] uppercase tracking-wider text-muted-foreground">Top state visibility</div>
               <div className="mt-1">
-                {STATE_NAMES[topState.state] ?? topState.state} drives {topState.organic} organic lead{topState.organic === 1 ? "" : "s"} — Blossom's strongest organic footprint.
+                {STATE_NAMES[topState.state] ?? topState.state} drives {topState.organic} organic lead{topState.organic === 1 ? "" : "s"} - Blossom's strongest organic footprint.
               </div>
             </div>
           )}
           <div className="rounded-xl border border-border/50 bg-card/60 p-3">
             <div className="text-[11.5px] uppercase tracking-wider text-muted-foreground">Organic quality</div>
             <div className="mt-1">
-              Organic leads convert at {organic.qualifiedRate}% — {organic.qualifiedRate >= 40 ? "competitive with referrals" : "below referral conversion"}.
+              Organic leads convert at {organic.qualifiedRate}% - {organic.qualifiedRate >= 40 ? "competitive with referrals" : "below referral conversion"}.
             </div>
           </div>
           {opportunities[0] && (
@@ -389,7 +389,7 @@ export default function SEOContent() {
           <div className="rounded-xl border border-border/50 bg-card/60 p-3">
             <div className="text-[11.5px] uppercase tracking-wider text-muted-foreground">AI search</div>
             <div className="mt-1">
-              Connect Search Console in Admin → Data Uploads to activate keyword, impression, and AEO monitoring.
+              Connect Search Console in Admin -> Data Uploads to activate keyword, impression, and AEO monitoring.
             </div>
           </div>
         </div>

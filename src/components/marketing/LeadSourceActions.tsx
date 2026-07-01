@@ -14,7 +14,7 @@ interface LeadSourceActionsProps {
   /** Display label for the source (e.g. "LeadTrap", "Facebook Ads"). */
   sourceLabel: string;
   /**
-   * Value that ends up in `intake_leads.lead_source` and on `?source=…`
+   * Value that ends up in `intake_leads.lead_source` and on `?source=...`
    * when filtering /leads. Should match what the importer will emit.
    */
   sourceValue: string;

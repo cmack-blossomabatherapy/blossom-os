@@ -24,7 +24,7 @@ type Campaign = {
 };
 
 /**
- * Email Marketing — reads live rows from marketing_email_events +
+ * Email Marketing - reads live rows from marketing_email_events +
  * marketing_campaigns. When Mailchimp is not yet connected the tables are
  * simply empty; the page renders an honest empty state and lets marketing
  * hand-log an event via the shared source-event dialog.
@@ -108,17 +108,17 @@ export default function EmailMarketing() {
           <p className="mt-3 text-xs text-muted-foreground">
             {events.length
               ? `${events.length} live email events captured across ${campaigns.length} email campaigns.`
-              : "Connect Mailchimp — or use Log Email Event to hand-record activity while the connector is set up."}
+              : "Connect Mailchimp - or use Log Email Event to hand-record activity while the connector is set up."}
           </p>
         </MktgCard>
         <MktgCard title="Email Campaigns">
-          <div className="text-2xl font-semibold tracking-tight">{campaigns.length || "—"}</div>
+          <div className="text-2xl font-semibold tracking-tight">{campaigns.length || "-"}</div>
           <p className="mt-1 text-xs text-muted-foreground">
             {campaigns.length ? "Live campaigns in marketing_campaigns" : "No email campaigns yet."}
           </p>
         </MktgCard>
         <MktgCard title="Influenced Leads">
-          <div className="text-2xl font-semibold tracking-tight">{influencedLeads || "—"}</div>
+          <div className="text-2xl font-semibold tracking-tight">{influencedLeads || "-"}</div>
           <p className="mt-1 text-xs text-muted-foreground">
             Unique leads touched by any email event.
           </p>
@@ -176,14 +176,14 @@ export default function EmailMarketing() {
                       <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
                         {new Date(e.occurred_at).toLocaleString("en-US", { timeZone: "America/New_York" })}
                       </td>
-                      <td className="px-3 py-2">{e.event_type ?? "—"}</td>
-                      <td className="px-3 py-2">{e.recipient_email ?? "—"}</td>
-                      <td className="px-3 py-2">{camp?.name ?? "—"}</td>
+                      <td className="px-3 py-2">{e.event_type ?? "-"}</td>
+                      <td className="px-3 py-2">{e.recipient_email ?? "-"}</td>
+                      <td className="px-3 py-2">{camp?.name ?? "-"}</td>
                       <td className="px-3 py-2">
                         {e.lead_id ? (
                           <a className="text-primary hover:underline" href={`/leads/${e.lead_id}`}>Open</a>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-muted-foreground">-</span>
                         )}
                       </td>
                     </tr>

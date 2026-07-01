@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
-// Marketing Team — Role-based learning journeys
+// Marketing Team - Role-based learning journeys
 // The Academy engine itself lives at /training. This page only defines the
 // marketing role's journeys, modules, and certifications.
 // ---------------------------------------------------------------------------
@@ -40,7 +40,7 @@ const JOURNEYS: Journey[] = [
     id: "start-here",
     number: "01",
     title: "Start Here",
-    purpose: "Welcome to Blossom — mission, model, and the marketing team's role in operational growth.",
+    purpose: "Welcome to Blossom - mission, model, and the marketing team's role in operational growth.",
     icon: Compass,
     required: true,
     minutes: 35,
@@ -61,13 +61,13 @@ const JOURNEYS: Journey[] = [
     id: "growth",
     number: "02",
     title: "Understanding Blossom Growth",
-    purpose: "How growth actually happens operationally — the full ABA client journey from lead to active care.",
+    purpose: "How growth actually happens operationally - the full ABA client journey from lead to active care.",
     icon: Workflow,
     required: true,
     minutes: 45,
     modules: [
       "The ABA client journey",
-      "Lead → Intake → VOB → Assessment → Staffing → Active",
+      "Lead -> Intake -> VOB -> Assessment -> Staffing -> Active",
       "Understanding intake operations",
       "Understanding authorizations",
       "Understanding staffing bottlenecks",
@@ -104,7 +104,7 @@ const JOURNEYS: Journey[] = [
     id: "seo",
     number: "04",
     title: "SEO & Visibility",
-    purpose: "How Blossom builds visibility across states — search, content, and AI answer engines.",
+    purpose: "How Blossom builds visibility across states - search, content, and AI answer engines.",
     icon: Search,
     minutes: 40,
     modules: [
@@ -127,7 +127,7 @@ const JOURNEYS: Journey[] = [
     id: "reputation",
     number: "05",
     title: "Reputation & Community Outreach",
-    purpose: "How trust is built locally — reviews, partnerships, and community presence.",
+    purpose: "How trust is built locally - reviews, partnerships, and community presence.",
     icon: HeartHandshake,
     minutes: 30,
     modules: [
@@ -149,7 +149,7 @@ const JOURNEYS: Journey[] = [
     id: "recruiting",
     number: "06",
     title: "Recruiting Marketing",
-    purpose: "How recruiting and marketing connect — supporting staffing growth alongside client growth.",
+    purpose: "How recruiting and marketing connect - supporting staffing growth alongside client growth.",
     icon: Users2,
     minutes: 30,
     modules: [
@@ -170,7 +170,7 @@ const JOURNEYS: Journey[] = [
     id: "campaigns",
     number: "07",
     title: "Campaigns & Growth Coordination",
-    purpose: "How campaigns connect to operations — coordinated growth across states and teams.",
+    purpose: "How campaigns connect to operations - coordinated growth across states and teams.",
     icon: Megaphone,
     minutes: 30,
     modules: [
@@ -190,7 +190,7 @@ const JOURNEYS: Journey[] = [
     id: "ai",
     number: "08",
     title: "AI & Operational Marketing Intelligence",
-    purpose: "How Operational Insights supports growth intelligence — practical, modern, AI-native marketing.",
+    purpose: "How Operational Insights supports growth intelligence - practical, modern, AI-native marketing.",
     icon: Bot,
     minutes: 25,
     modules: [
@@ -236,7 +236,7 @@ function JourneyCard({ journey }: { journey: Journey }) {
           <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">{journey.purpose}</p>
           <div className="mt-3 flex items-center justify-between text-[11.5px] text-muted-foreground">
             <span>
-              {journey.modules.length} modules · ~{journey.minutes} min
+              {journey.modules.length} modules - ~{journey.minutes} min
             </span>
             <button
               type="button"
@@ -276,7 +276,7 @@ export default function MarketingTraining() {
   return (
     <MktgPage
       title="Training Academy"
-      subtitle="Operational growth training for the Marketing Team — practical, role-scoped, AI-native."
+      subtitle="Operational growth training for the Marketing Team - practical, role-scoped, AI-native."
       actions={
         <AIPrompt
           label="What should I learn first?"
@@ -294,11 +294,11 @@ export default function MarketingTraining() {
               <Sparkles className="h-3 w-3" /> Marketing Team Academy
             </div>
             <h2 className="text-2xl md:text-[28px] font-semibold tracking-tight text-foreground leading-tight">
-              Learn how Blossom grows — not how marketing usually works.
+              Learn how Blossom grows - not how marketing usually works.
             </h2>
             <p className="text-[13.5px] text-muted-foreground">
               Eight role-based journeys covering operational growth, lead sources, SEO, reputation,
-              recruiting marketing, campaigns, and AI intelligence. Built for ABA healthcare — not generic marketing.
+              recruiting marketing, campaigns, and AI intelligence. Built for ABA healthcare - not generic marketing.
             </p>
             <div className="flex flex-wrap gap-3 pt-1 text-[12px] text-muted-foreground">
               <span><span className="font-semibold text-foreground tabular-nums">{JOURNEYS.length}</span> journeys</span>
@@ -320,7 +320,7 @@ export default function MarketingTraining() {
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">
           <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Learning journeys</h2>
-          <span className="text-[11.5px] text-muted-foreground">Role-based · ordered for new marketing hires</span>
+          <span className="text-[11.5px] text-muted-foreground">Role-based - ordered for new marketing hires</span>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {JOURNEYS.map((j) => (
@@ -333,7 +333,7 @@ export default function MarketingTraining() {
       <section>
         <MktgCard
           title="Certifications"
-          hint="Lightweight completion-focused — earned by finishing the linked journeys"
+          hint="Lightweight completion-focused - earned by finishing the linked journeys"
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {CERTIFICATIONS.map((c) => (
@@ -348,7 +348,7 @@ export default function MarketingTraining() {
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] font-medium text-foreground">{c.title}</div>
                   <div className="mt-0.5 text-[11.5px] text-muted-foreground">
-                    {c.journeys.map((id) => JOURNEYS.find((j) => j.id === id)?.title).filter(Boolean).join(" · ")}
+                    {c.journeys.map((id) => JOURNEYS.find((j) => j.id === id)?.title).filter(Boolean).join(" - ")}
                   </div>
                 </div>
                 <CheckCircle2 className="mt-1 h-3.5 w-3.5 text-muted-foreground/50 transition group-hover:text-primary/70" />

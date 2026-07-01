@@ -44,7 +44,7 @@ export interface MarketingSourceEventRow {
   updated_at?: string;
 }
 
-/** Slug (`marketing_source_events.source_system`) → canonical LEAD_SOURCE_OPTIONS value. */
+/** Slug (`marketing_source_events.source_system`) -> canonical LEAD_SOURCE_OPTIONS value. */
 const SLUG_TO_SOURCE_VALUE: Record<string, string> = {
   ctm: "CTM",
   retell: "Retell AI",
@@ -106,7 +106,7 @@ export function expandSourceSlugAliases(slugs: string[]): string[] {
   return Array.from(out);
 }
 
-/** Canonical LEAD_SOURCE_OPTIONS value → slug we write into `source_system`. */
+/** Canonical LEAD_SOURCE_OPTIONS value -> slug we write into `source_system`. */
 export function sourceValueToSourceSystem(value: string | null | undefined): string {
   if (!value) return "manual";
   const opt = getLeadSourceOption(value);
@@ -137,7 +137,7 @@ export function normalizeEventType(t: string | null | undefined): LeadSourceEven
   return EVENT_TYPE_MAP[t.toLowerCase()] ?? "manual_import";
 }
 
-/** UI LeadSourceEventType → DB `event_type` string. */
+/** UI LeadSourceEventType -> DB `event_type` string. */
 export function eventTypeToDb(t: LeadSourceEventType): string {
   switch (t) {
     case "web_form": return "form_submission";

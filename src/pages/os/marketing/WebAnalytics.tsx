@@ -24,11 +24,11 @@ import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 
-/* ────────────────────────────────────────────────────────────────────────── *
- * Web Analytics — operational web intelligence. Derived from real lead,
+/* -------------------------------------------------------------------------- *
+ * Web Analytics - operational web intelligence. Derived from real lead,
  * call, and candidate data. Connect Google Analytics / Search Console via
- * Admin → Data Uploads to extend with session and impression layers.
- * ────────────────────────────────────────────────────────────────────────── */
+ * Admin -> Data Uploads to extend with session and impression layers.
+ * -------------------------------------------------------------------------- */
 
 const STATE_NAMES: Record<string, string> = {
   GA: "Georgia",
@@ -52,7 +52,7 @@ export default function WebAnalytics() {
   const mi = useMarketingIntelligence();
   const [activeState, setActiveState] = useState<string | null>(null);
 
-  /* ── digital + organic momentum ─────────────────────────────────────── */
+  /* -- digital + organic momentum --------------------------------------- */
   const digital = useMemo(() => {
     const all = marketingLeads.filter((l) => (DIGITAL_SOURCES as string[]).includes(l.source));
     const organic = marketingLeads.filter((l) => (ORGANIC_SOURCES as string[]).includes(l.source));
@@ -83,7 +83,7 @@ export default function WebAnalytics() {
     };
   }, [marketingLeads]);
 
-  /* ── traffic channel cards ──────────────────────────────────────────── */
+  /* -- traffic channel cards -------------------------------------------- */
   const channels = useMemo(() => {
     const websiteCount = mi.bySource.find((s) => s.source === "Website")?.count ?? 0;
     const organicCount = mi.bySource.find((s) => s.source === "Organic")?.count ?? 0;
@@ -103,7 +103,7 @@ export default function WebAnalytics() {
     ];
   }, [mi, digital]);
 
-  /* ── family journey — surfaces × intake stages ──────────────────────── */
+  /* -- family journey - surfaces x intake stages ------------------------ */
   const journey = useMemo(() => {
     const stageOf = (names: string[]) =>
       mi.pipeline.filter((p) => names.includes(p.stage)).reduce((s, p) => s + p.count, 0);
@@ -125,7 +125,7 @@ export default function WebAnalytics() {
     return { surfaces, funnel };
   }, [mi, digital]);
 
-  /* ── state traffic map ──────────────────────────────────────────────── */
+  /* -- state traffic map ------------------------------------------------ */
   const stateRows = useMemo(() => {
     const map = new Map<string, { state: string; sessions: number; organic: number; recruiting: number; calls: number; qualified: number; recent: number; prior: number }>();
     marketingLeads.forEach((l) => {
@@ -156,7 +156,7 @@ export default function WebAnalytics() {
   const topState = stateRows[0];
   const activeRow = stateRows.find((s) => s.state === activeState);
 
-  /* ── recruiting traffic ─────────────────────────────────────────────── */
+  /* -- recruiting traffic ----------------------------------------------- */
   const recruitingTraffic = useMemo(() => {
     const total = mi.recruitingBySource.reduce((s, r) => s + r.count, 0);
     const byState = new Map<string, number>();
@@ -170,25 +170,25 @@ export default function WebAnalytics() {
     return { total, byState: states };
   }, [mi]);
 
-  /* ── AI insights ────────────────────────────────────────────────────── */
+  /* -- AI insights ------------------------------------------------------ */
   const insights = useMemo(() => {
     const out: string[] = [];
     if (topState) {
       out.push(`${STATE_NAMES[topState.state] ?? topState.state} is generating Blossom's strongest digital activity (${topState.sessions} sessions, ${topState.qualified} qualified).`);
     }
     if (digital.orgDelta > 0) {
-      out.push(`Organic visibility is accelerating — ${digital.orgRecent} organic leads this week, up from ${digital.orgRecent - digital.orgDelta} prior week.`);
+      out.push(`Organic visibility is accelerating - ${digital.orgRecent} organic leads this week, up from ${digital.orgRecent - digital.orgDelta} prior week.`);
     }
     if (mi.bottlenecks[0]) {
-      out.push(`Web traffic is stalling at "${mi.bottlenecks[0].stage}" — ${mi.bottlenecks[0].count} leads stuck. Clarifying content could improve self-service progression.`);
+      out.push(`Web traffic is stalling at "${mi.bottlenecks[0].stage}" - ${mi.bottlenecks[0].count} leads stuck. Clarifying content could improve self-service progression.`);
     }
     const recruitingTopState = recruitingTraffic.byState[0];
     const websiteTopState = stateRows[0];
     if (recruitingTopState && websiteTopState && recruitingTopState.state !== websiteTopState.state) {
-      out.push(`${STATE_NAMES[websiteTopState.state] ?? websiteTopState.state} family traffic is outpacing recruiting visibility — staffing risk if demand keeps climbing.`);
+      out.push(`${STATE_NAMES[websiteTopState.state] ?? websiteTopState.state} family traffic is outpacing recruiting visibility - staffing risk if demand keeps climbing.`);
     }
     if (mi.referrals.total > 0) {
-      out.push(`Referral landing surfaces drove ${mi.referrals.total} leads across ${mi.referrals.byState.length} states — content here punches above its volume.`);
+      out.push(`Referral landing surfaces drove ${mi.referrals.total} leads across ${mi.referrals.byState.length} states - content here punches above its volume.`);
     }
     return out.slice(0, 5);
   }, [topState, digital, mi, recruitingTraffic, stateRows]);
@@ -196,10 +196,10 @@ export default function WebAnalytics() {
   return (
     <MktgPage
       title="Web Analytics"
-      subtitle="Operational web intelligence — how families and candidates interact with Blossom online, and the operational impact it creates."
+      subtitle="Operational web intelligence - how families and candidates interact with Blossom online, and the operational impact it creates."
       actions={<AIPrompt label="What changed in web behavior this week?" variant="card" />}
     >
-      {/* ── 1. DIGITAL GROWTH HERO ───────────────────────────────────── */}
+      {/* -- 1. DIGITAL GROWTH HERO ------------------------------------- */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
         <div className="absolute -top-24 -right-24 size-72 rounded-full bg-primary/10 blur-3xl" aria-hidden />
         <div className="absolute -bottom-32 -left-20 size-80 rounded-full bg-emerald-500/5 blur-3xl" aria-hidden />
@@ -210,15 +210,15 @@ export default function WebAnalytics() {
           </div>
           <h2 className="mt-2 max-w-2xl text-xl md:text-2xl font-semibold tracking-tight text-foreground">
             {digital.delta > 0
-              ? `Digital momentum is building — ${digital.recent} leads this week, up from ${digital.recent - digital.delta} prior.`
+              ? `Digital momentum is building - ${digital.recent} leads this week, up from ${digital.recent - digital.delta} prior.`
               : topState
               ? `${STATE_NAMES[topState.state] ?? topState.state} continues driving Blossom's strongest digital activity.`
-              : "Connect Google Analytics in Admin → Data Uploads to activate digital intelligence."}
+              : "Connect Google Analytics in Admin -> Data Uploads to activate digital intelligence."}
           </h2>
           <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
               { label: "Digital leads", value: digital.total },
-              { label: "Top state", value: topState ? STATE_NAMES[topState.state] ?? topState.state : "—" },
+              { label: "Top state", value: topState ? STATE_NAMES[topState.state] ?? topState.state : "-" },
               { label: "Intake qualified", value: `${digital.qualifiedRate}%` },
               { label: "Recruiting reach", value: recruitingTraffic.total },
             ].map((m) => (
@@ -231,7 +231,7 @@ export default function WebAnalytics() {
         </div>
       </section>
 
-      {/* ── 2. TRAFFIC INTELLIGENCE SNAPSHOT ─────────────────────────── */}
+      {/* -- 2. TRAFFIC INTELLIGENCE SNAPSHOT --------------------------- */}
       <MktgCard title="Traffic intelligence" hint="Operational interpretation, not raw page views">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {channels.map((c) => {
@@ -253,10 +253,10 @@ export default function WebAnalytics() {
         </div>
       </MktgCard>
 
-      {/* ── 3. FAMILY JOURNEY INTELLIGENCE ───────────────────────────── */}
+      {/* -- 3. FAMILY JOURNEY INTELLIGENCE ----------------------------- */}
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <MktgCard title="Family journey" hint="Website surfaces → intake stage progression">
+          <MktgCard title="Family journey" hint="Website surfaces -> intake stage progression">
             <div className="space-y-2.5">
               {journey.surfaces.map((s) => {
                 const Icon = s.icon;
@@ -301,7 +301,7 @@ export default function WebAnalytics() {
                         <span className="font-medium text-foreground">{f.stage}</span>
                         <span className="text-muted-foreground tabular-nums">
                           {f.count}
-                          {i > 0 && drop > 0 && <span className="ml-1.5 text-amber-600">−{drop}%</span>}
+                          {i > 0 && drop > 0 && <span className="ml-1.5 text-amber-600">-{drop}%</span>}
                         </span>
                       </div>
                       <div className="mt-1.5">
@@ -316,7 +316,7 @@ export default function WebAnalytics() {
         </div>
       </div>
 
-      {/* ── 4. STATE TRAFFIC & VISIBILITY MAP ────────────────────────── */}
+      {/* -- 4. STATE TRAFFIC & VISIBILITY MAP -------------------------- */}
       <MktgCard title="State traffic & visibility" hint="Click a state to see operational detail">
         {stateRows.length === 0 ? (
           <EmptyRow>No state traffic yet.</EmptyRow>
@@ -388,7 +388,7 @@ export default function WebAnalytics() {
                 <span className="text-foreground font-medium">{activeRow.sessions}</span> digital sessions
               </div>
               <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.recent}</span> leads in last 7d ·{" "}
+                <span className="text-foreground font-medium">{activeRow.recent}</span> leads in last 7d -{" "}
                 <span className="text-foreground font-medium">{activeRow.prior}</span> prior week
               </div>
               <div className="text-[12.5px] text-muted-foreground">
@@ -397,20 +397,20 @@ export default function WebAnalytics() {
               </div>
               <div className="text-[12.5px] text-muted-foreground">
                 Inbound calls:{" "}
-                <span className="text-foreground font-medium">{activeRow.calls}</span> · phone-to-web ratio{" "}
+                <span className="text-foreground font-medium">{activeRow.calls}</span> - phone-to-web ratio{" "}
                 {activeRow.sessions ? Math.round((activeRow.calls / activeRow.sessions) * 100) : 0}%
               </div>
             </div>
             {activeRow.sessions > activeRow.recruiting * 2 && activeRow.recruiting > 0 && (
               <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[12px] text-foreground">
-                Family demand is outpacing recruiting visibility — staffing risk to monitor.
+                Family demand is outpacing recruiting visibility - staffing risk to monitor.
               </div>
             )}
           </div>
         )}
       </MktgCard>
 
-      {/* ── 5 + 6. RECRUITING + CONTENT ENGAGEMENT ───────────────────── */}
+      {/* -- 5 + 6. RECRUITING + CONTENT ENGAGEMENT --------------------- */}
       <div className="grid gap-4 lg:grid-cols-2">
         <MktgCard title="Recruiting traffic" hint="Career visibility + applicant flow">
           {mi.recruitingBySource.length === 0 ? (
@@ -434,7 +434,7 @@ export default function WebAnalytics() {
               <div className="pt-2 mt-2 border-t border-border/60 text-[12px] text-muted-foreground">
                 Strongest recruiting state:{" "}
                 <span className="text-foreground font-medium">
-                  {recruitingTraffic.byState[0] ? STATE_NAMES[recruitingTraffic.byState[0].state] ?? recruitingTraffic.byState[0].state : "—"}
+                  {recruitingTraffic.byState[0] ? STATE_NAMES[recruitingTraffic.byState[0].state] ?? recruitingTraffic.byState[0].state : "-"}
                 </span>
               </div>
             </div>
@@ -472,14 +472,14 @@ export default function WebAnalytics() {
         </MktgCard>
       </div>
 
-      {/* ── 7. CONVERSION & INTAKE INTELLIGENCE ──────────────────────── */}
-      <MktgCard title="Conversion intelligence" hint="Website behavior → operational outcomes">
+      {/* -- 7. CONVERSION & INTAKE INTELLIGENCE ------------------------ */}
+      <MktgCard title="Conversion intelligence" hint="Website behavior -> operational outcomes">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Intake form completions", value: digital.qualified, sub: "Through to VOB stages" },
             { label: "Phone-call conversions", value: mi.calls.inbound - mi.calls.missed, sub: `${mi.calls.missed} missed` },
             { label: "Referral conversions", value: mi.referrals.total, sub: `${mi.referrals.byState.length} states` },
-            { label: "Stalled at form stage", value: mi.bottlenecks.find((b) => b.stage === "Form Received")?.count ?? 0, sub: "≥ 7 days in stage" },
+            { label: "Stalled at form stage", value: mi.bottlenecks.find((b) => b.stage === "Form Received")?.count ?? 0, sub: ">= 7 days in stage" },
           ].map((m) => (
             <div key={m.label} className="rounded-xl border border-border/60 bg-card p-4">
               <div className="text-[11.5px] uppercase tracking-wider text-muted-foreground">{m.label}</div>
@@ -490,7 +490,7 @@ export default function WebAnalytics() {
         </div>
       </MktgCard>
 
-      {/* ── 8. AI WEB INTELLIGENCE PANEL ─────────────────────────────── */}
+      {/* -- 8. AI WEB INTELLIGENCE PANEL ------------------------------- */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/8 via-card to-card p-6 md:p-7">
         <div className="absolute -top-20 -right-16 size-64 rounded-full bg-primary/10 blur-3xl" aria-hidden />
         <div className="relative">
