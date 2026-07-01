@@ -31,6 +31,8 @@ import {
 import { useMarketingSourceEvents } from "@/hooks/useMarketingSourceEvents";
 import { sourceSystemToSourceValue } from "@/lib/marketing/sourceEventMapper";
 import { BLOSSOM_INTEGRATIONS } from "@/lib/os/integrations/integrationRegistry";
+import { EditSourceEventDialog } from "@/components/marketing/EditSourceEventDialog";
+import { Pencil } from "lucide-react";
 
 const STATUS_LABEL: Record<LeadSourceEventStatus, string> = {
   new: "New",
@@ -262,6 +264,7 @@ export default function LeadSourceInbox() {
     insertEvent,
     updateStatus,
     linkLead,
+    updateFields,
   } = useMarketingSourceEvents();
   const [searchParams] = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -276,6 +279,8 @@ export default function LeadSourceInbox() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
   const [attachOpen, setAttachOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [tab, setTab] = useState<"all" | "new" | "needs_review" | "possible_duplicate" | "resolved" | "ignored">("all");
 
   // Keep the source filter in sync with query-param navigation from
   // source-specific pages (LeadTrap / Facebook Ads / Google Ads / etc.).
@@ -302,6 +307,11 @@ export default function LeadSourceInbox() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return scored.filter(({ event, status }) => {
+      if (tab === "new" && status !== "new") return false;
+      if (tab === "needs_review" && status !== "needs_review") return false;
+      if (tab === "possible_duplicate" && status !== "possible_duplicate") return false;
+      if (tab === "resolved" && status !== "converted_to_lead" && status !== "attached_to_existing_lead") return false;
+      if (tab === "ignored" && status !== "ignored") return false;
       if (sourceFilter !== "all" && event.source !== sourceFilter) return false;
       if (statusFilter !== "all" && status !== statusFilter) return false;
       if (stateFilter !== "all" && event.state !== stateFilter) return false;
@@ -313,7 +323,7 @@ export default function LeadSourceInbox() {
       ].filter(Boolean).join(" ").toLowerCase();
       return hay.includes(q);
     });
-  }, [scored, search, sourceFilter, statusFilter, stateFilter, typeFilter]);
+  }, [scored, search, sourceFilter, statusFilter, stateFilter, typeFilter, tab]);
 
   const selected = useMemo(
     () => scored.find((s) => s.event.id === selectedId) ?? filtered[0] ?? null,
@@ -434,6 +444,29 @@ export default function LeadSourceInbox() {
       </div>
 
       <Section title="Filters">
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {([
+            ["all", `All (${scored.length})`],
+            ["new", `New (${counts.newCount})`],
+            ["needs_review", "Needs review"],
+            ["possible_duplicate", `Possible duplicates (${counts.dupes})`],
+            ["resolved", "Converted / Attached"],
+            ["ignored", "Ignored"],
+          ] as const).map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-[11px]",
+                tab === id
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border/60 bg-card hover:bg-muted/60",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="flex flex-wrap items-end gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -510,6 +543,7 @@ export default function LeadSourceInbox() {
                 onReview={() => onMarkReview(selected.event.id)}
                 onIgnore={() => onIgnore(selected.event.id)}
                 onCopy={() => onCopy(selected)}
+                onEdit={() => setEditOpen(true)}
               />
             )}
           </Section>
@@ -524,6 +558,12 @@ export default function LeadSourceInbox() {
       />
       <AttachLeadDialog open={attachOpen} onOpenChange={setAttachOpen}
         event={selected?.event ?? null} onAttach={onAttach} />
+      <EditSourceEventDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        event={selected?.event ?? null}
+        onSave={async (id, patch) => { await updateFields(id, patch); }}
+      />
     </GrowthPageShell>
   );
 }
@@ -558,7 +598,7 @@ function FilterPill({
 }
 
 function EventDetail({
-  s, onConvert, onAttach, onReview, onIgnore, onCopy,
+  s, onConvert, onAttach, onReview, onIgnore, onCopy, onEdit,
 }: {
   s: { event: LeadSourceEvent; matches: ReturnType<typeof findPossibleLeadMatches>; score: number; status: LeadSourceEventStatus };
   onConvert: () => void;
@@ -566,8 +606,13 @@ function EventDetail({
   onReview: () => void;
   onIgnore: () => void;
   onCopy: () => void;
+  onEdit: () => void;
 }) {
   const badge = getEventSourceBadge(s.event);
+  const isResolved =
+    s.status === "converted_to_lead" ||
+    s.status === "attached_to_existing_lead" ||
+    s.status === "ignored";
   return (
     <div className="rounded-2xl border border-border/70 bg-card p-3 space-y-3">
       <div>
@@ -631,11 +676,22 @@ function EventDetail({
       )}
 
       <div className="flex flex-wrap gap-1.5 pt-1">
-        <Button size="sm" onClick={onConvert}>
-          <Plus className="h-3.5 w-3.5 mr-1" /> Convert to lead
-        </Button>
-        <Button size="sm" variant="outline" onClick={onAttach}>
-          <Link2 className="h-3.5 w-3.5 mr-1" /> Attach to existing
+        {!isResolved && (
+          <>
+            <Button size="sm" onClick={onConvert}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Convert to lead
+            </Button>
+            <Button size="sm" variant="outline" onClick={onAttach}>
+              <Link2 className="h-3.5 w-3.5 mr-1" /> Attach to existing
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onReview}>
+              <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Mark review
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onIgnore}>Ignore</Button>
+          </>
+        )}
+        <Button size="sm" variant="outline" onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5 mr-1" /> Edit source details
         </Button>
         {s.event.resolvedLeadId && (
           <Button asChild size="sm" variant="ghost">
@@ -644,10 +700,6 @@ function EventDetail({
             </Link>
           </Button>
         )}
-        <Button size="sm" variant="ghost" onClick={onReview}>
-          <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Mark review
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onIgnore}>Ignore</Button>
         <Button size="sm" variant="ghost" onClick={onCopy}>
           <Copy className="h-3.5 w-3.5 mr-1" /> Copy
         </Button>
