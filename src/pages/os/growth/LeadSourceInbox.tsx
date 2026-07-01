@@ -32,7 +32,8 @@ import { useMarketingSourceEvents } from "@/hooks/useMarketingSourceEvents";
 import { sourceSystemToSourceValue } from "@/lib/marketing/sourceEventMapper";
 import { BLOSSOM_INTEGRATIONS } from "@/lib/os/integrations/integrationRegistry";
 import { EditSourceEventDialog } from "@/components/marketing/EditSourceEventDialog";
-import { Pencil } from "lucide-react";
+import { Pencil, UserPlus, Code2 } from "lucide-react";
+import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
 
 const STATUS_LABEL: Record<LeadSourceEventStatus, string> = {
   new: "New",
@@ -265,9 +266,24 @@ export default function LeadSourceInbox() {
     updateStatus,
     linkLead,
     updateFields,
+    assignOwner,
   } = useMarketingSourceEvents();
   const [searchParams] = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { members } = useEmployeeDirectory();
+  const marketingOwners = useMemo(
+    () =>
+      members.filter((m) => {
+        const dept = (m.departmentName || "").toLowerCase();
+        return dept.includes("marketing") || dept.includes("growth");
+      }),
+    [members],
+  );
+  const ownerLabelFor = (userId?: string) => {
+    if (!userId) return null;
+    const m = members.find((x) => x.authUserId === userId || x.uuid === userId);
+    return m?.name ?? userId.slice(0, 8);
+  };
   const [search, setSearch] = useState("");
   const initialSourceFromQuery =
     searchParams.get("source") ?? searchParams.get("source_system") ?? null;
@@ -287,6 +303,12 @@ export default function LeadSourceInbox() {
   useEffect(() => {
     const q = searchParams.get("source") ?? searchParams.get("source_system");
     if (q) setSourceFilter(sourceSystemToSourceValue(q));
+  }, [searchParams]);
+
+  // Support deep-linking a specific event via `?eventId=...`.
+  useEffect(() => {
+    const eid = searchParams.get("eventId");
+    if (eid) setSelectedId(eid);
   }, [searchParams]);
 
   // Recompute duplicate scores live as leads change.
@@ -419,6 +441,14 @@ export default function LeadSourceInbox() {
       toast.error(e instanceof Error ? e.message : "Could not update event");
     }
   };
+  const onAssign = async (id: string, userId: string | null) => {
+    try {
+      await assignOwner(id, userId);
+      toast.success(userId ? "Owner assigned" : "Owner cleared");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not assign owner");
+    }
+  };
   const onCopy = (s: typeof scored[number]) => {
     const text = JSON.stringify(s.event, null, 2);
     navigator.clipboard.writeText(text).then(() => toast.success("Source details copied"));
@@ -544,6 +574,9 @@ export default function LeadSourceInbox() {
                 onIgnore={() => onIgnore(selected.event.id)}
                 onCopy={() => onCopy(selected)}
                 onEdit={() => setEditOpen(true)}
+                owners={marketingOwners}
+                ownerLabel={ownerLabelFor(selected.event.assignedTo)}
+                onAssign={(uid) => onAssign(selected.event.id, uid)}
               />
             )}
           </Section>
@@ -599,6 +632,7 @@ function FilterPill({
 
 function EventDetail({
   s, onConvert, onAttach, onReview, onIgnore, onCopy, onEdit,
+  owners, ownerLabel, onAssign,
 }: {
   s: { event: LeadSourceEvent; matches: ReturnType<typeof findPossibleLeadMatches>; score: number; status: LeadSourceEventStatus };
   onConvert: () => void;
@@ -607,14 +641,38 @@ function EventDetail({
   onIgnore: () => void;
   onCopy: () => void;
   onEdit: () => void;
+  owners: { name: string; uuid?: string; authUserId?: string | null }[];
+  ownerLabel: string | null;
+  onAssign: (userId: string | null) => void;
 }) {
   const badge = getEventSourceBadge(s.event);
   const isResolved =
     s.status === "converted_to_lead" ||
     s.status === "attached_to_existing_lead" ||
     s.status === "ignored";
+  const [showRaw, setShowRaw] = useState(false);
+  const rawJson = useMemo(
+    () =>
+      s.event.rawPayload
+        ? JSON.stringify(s.event.rawPayload, null, 2)
+        : JSON.stringify(s.event, null, 2),
+    [s.event],
+  );
+  const hasStrongDuplicate = s.score >= 0.6 || s.matches.some((m) => m.score >= 0.6);
+  const currentOwnerId = s.event.assignedTo ?? "";
   return (
     <div className="rounded-2xl border border-border/70 bg-card p-3 space-y-3">
+      {hasStrongDuplicate && (
+        <div className="rounded-lg border border-amber-300/70 bg-amber-50 text-amber-900 px-2.5 py-2 text-xs flex items-start gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <div>
+            <div className="font-medium">Likely duplicate of an existing lead</div>
+            <div className="text-[11px]">
+              Top match confidence {Math.round((s.matches[0]?.score ?? s.score) * 100)}%. Review before converting.
+            </div>
+          </div>
+        </div>
+      )}
       <div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="font-semibold text-sm">{getEventDisplayName(s.event)}</div>
@@ -624,6 +682,31 @@ function EventDetail({
         <div className="text-[11px] text-muted-foreground mt-1">
           Received {new Date(s.event.receivedAt).toLocaleString()} · {EVENT_TYPE_LABEL[s.event.sourceEventType]}
         </div>
+      </div>
+
+      <div className="rounded-lg bg-muted/30 border border-border/60 p-2 flex items-center gap-2 text-xs">
+        <UserPlus className="h-3.5 w-3.5 text-muted-foreground" />
+        <div className="text-muted-foreground">Owner</div>
+        <Select
+          value={currentOwnerId || "unassigned"}
+          onValueChange={(v) => onAssign(v === "unassigned" ? null : v)}
+        >
+          <SelectTrigger className="h-7 text-xs bg-background flex-1">
+            <SelectValue placeholder="Unassigned">
+              {ownerLabel ?? "Unassigned"}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            <SelectItem value="unassigned">Unassigned</SelectItem>
+            {owners.map((o) => {
+              const id = o.authUserId || o.uuid || "";
+              if (!id) return null;
+              return (
+                <SelectItem key={id} value={id}>{o.name}</SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-xs">
@@ -703,12 +786,21 @@ function EventDetail({
         <Button size="sm" variant="ghost" onClick={onCopy}>
           <Copy className="h-3.5 w-3.5 mr-1" /> Copy
         </Button>
+        <Button size="sm" variant="ghost" onClick={() => setShowRaw((v) => !v)}>
+          <Code2 className="h-3.5 w-3.5 mr-1" /> {showRaw ? "Hide payload" : "Raw payload"}
+        </Button>
         <Button asChild size="sm" variant="ghost">
           <Link to={s.event.resolvedLeadId ? `/patient-journey?leadId=${s.event.resolvedLeadId}` : `/patient-journey?sourceEventId=${s.event.id}`}>
             <MessageSquare className="h-3.5 w-3.5 mr-1" /> Journey
           </Link>
         </Button>
       </div>
+
+      {showRaw && (
+        <pre className="rounded-lg bg-muted/40 p-2 text-[11px] max-h-64 overflow-auto whitespace-pre-wrap break-all">
+{rawJson}
+        </pre>
+      )}
     </div>
   );
 }

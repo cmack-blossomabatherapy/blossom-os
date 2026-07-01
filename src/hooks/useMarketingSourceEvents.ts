@@ -40,8 +40,11 @@ export interface UseMarketingSourceEventsResult {
       caller_email?: string | null;
       state?: string | null;
       payload_summary?: string | null;
+      assigned_to?: string | null;
+      assigned_at?: string | null;
     },
   ) => Promise<void>;
+  assignOwner: (id: string, userId: string | null) => Promise<void>;
 }
 
 export function useMarketingSourceEvents(
@@ -128,6 +131,21 @@ export function useMarketingSourceEvents(
     [load],
   );
 
+  const assignOwner = useCallback<UseMarketingSourceEventsResult["assignOwner"]>(
+    async (id, userId) => {
+      const { error: err } = await supabase
+        .from("marketing_source_events")
+        .update({
+          assigned_to: userId,
+          assigned_at: userId ? new Date().toISOString() : null,
+        } as never)
+        .eq("id", id);
+      if (err) throw err;
+      await load();
+    },
+    [load],
+  );
+
   const insertEvent = useCallback<UseMarketingSourceEventsResult["insertEvent"]>(
     async (input) => {
       const { data: userRes } = await supabase.auth.getUser();
@@ -152,5 +170,6 @@ export function useMarketingSourceEvents(
     ignoreEvent,
     markReview,
     updateFields,
+    assignOwner,
   };
 }

@@ -116,6 +116,7 @@ export interface ActivityEvent {
   summary?: string;
   sourceSystem?: string;
   sourceUrl?: string;
+  campaign?: string;
   severity?: ActivitySeverity;
   status?: ActivityStatus;
   metadata?: Record<string, unknown>;
@@ -143,6 +144,7 @@ export function normalizeActivityEvent(input: Partial<ActivityEvent>): ActivityE
     summary: input.summary,
     sourceSystem: input.sourceSystem,
     sourceUrl: input.sourceUrl,
+    campaign: input.campaign,
     severity: input.severity ?? "info",
     status: input.status,
     metadata: input.metadata,
@@ -225,11 +227,14 @@ export function activityFromSourceEvent(event: LeadSourceEvent): ActivityEvent {
     occurredAt: event.resolvedAt ?? event.receivedAt,
     sourceSystem: event.sourceLabel,
     sourceUrl: event.externalUrl,
+    campaign: event.campaign ?? event.utmCampaign,
     status: event.status === "ignored" ? "ignored" : undefined,
     metadata: {
       sourceEventType: event.sourceEventType,
       externalId: event.externalId,
       callRecordingUrl: event.callRecordingUrl,
+      campaignId: event.campaignId,
+      sourceRowId: event.sourceRowId,
     },
   });
 }
@@ -423,6 +428,7 @@ export interface ActivityFilters {
   eventType?: ActivityEventType | "all";
   severity?: ActivitySeverity | "all";
   sourceSystem?: string | "all";
+  campaign?: string | "all";
   relatedLeadId?: string;
   relatedUserId?: string;
 }
@@ -443,6 +449,12 @@ export function filterActivityEvents(
       filters.sourceSystem &&
       filters.sourceSystem !== "all" &&
       (e.sourceSystem ?? "") !== filters.sourceSystem
+    )
+      return false;
+    if (
+      filters.campaign &&
+      filters.campaign !== "all" &&
+      (e.campaign ?? "") !== filters.campaign
     )
       return false;
     if (filters.relatedLeadId && e.relatedLeadId !== filters.relatedLeadId) return false;
@@ -733,4 +745,14 @@ export function activityFromWorkItem(item: WorkItem): ActivityEvent {
 /** Distinct source-system labels currently in the feed (for filter UIs). */
 export function listKnownSourceSystems(events: ActivityEvent[]): string[] {
   return Array.from(new Set(events.map((e) => e.sourceSystem).filter(Boolean) as string[])).sort();
+}
+
+/** Distinct campaign labels currently in the feed (for filter UIs). */
+export function listKnownCampaigns(events: ActivityEvent[]): string[] {
+  return Array.from(new Set(events.map((e) => e.campaign).filter(Boolean) as string[])).sort();
+}
+
+/** Distinct event types currently in the feed (for filter UIs). */
+export function listKnownEventTypes(events: ActivityEvent[]): ActivityEventType[] {
+  return Array.from(new Set(events.map((e) => e.type))).sort() as ActivityEventType[];
 }

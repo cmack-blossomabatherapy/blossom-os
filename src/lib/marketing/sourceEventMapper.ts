@@ -38,6 +38,8 @@ export interface MarketingSourceEventRow {
   central_reach_patient_id?: string | null;
   reviewed_by?: string | null;
   reviewed_at?: string | null;
+  assigned_to?: string | null;
+  assigned_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -211,6 +213,10 @@ export function mapRowToEvent(row: MarketingSourceEventRow): LeadSourceEvent {
     resolvedLeadId: row.lead_id ?? undefined,
     matchedLeadId: row.lead_id ?? undefined,
     resolvedAt: row.reviewed_at ?? undefined,
+    sourceRowId: row.source_id ?? undefined,
+    campaignId: row.campaign_id ?? undefined,
+    assignedTo: row.assigned_to ?? undefined,
+    assignedAt: row.assigned_at ?? undefined,
   };
 }
 

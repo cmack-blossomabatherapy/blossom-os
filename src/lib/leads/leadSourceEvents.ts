@@ -66,6 +66,12 @@ export interface LeadSourceEvent {
   /** Set after Convert / Attach actions. */
   resolvedLeadId?: string;
   resolvedAt?: string;
+  /** DB attribution row ids (from marketing_source_events). */
+  sourceRowId?: string;
+  campaignId?: string;
+  /** Marketing owner assignment. */
+  assignedTo?: string;
+  assignedAt?: string;
 }
 
 /* --------------------------------- Helpers -------------------------------- */
@@ -110,6 +116,10 @@ export function normalizeLeadSourceEvent(input: Partial<LeadSourceEvent>): LeadS
     duplicateReasons: input.duplicateReasons,
     resolvedLeadId: input.resolvedLeadId,
     resolvedAt: input.resolvedAt,
+    sourceRowId: input.sourceRowId,
+    campaignId: input.campaignId,
+    assignedTo: input.assignedTo,
+    assignedAt: input.assignedAt,
   };
 }
 
