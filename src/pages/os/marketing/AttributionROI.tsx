@@ -673,7 +673,12 @@ export default function AttributionROI() {
           <AIPrompt label="Which state has the strongest growth ROI?" />
         </div>
       </section>
-          <MarketingWorkPanel workType="attribution" title="Open work" description="Track follow-ups, opportunities, and fixes for this area." />
+          <MarketingWorkPanel
+            workType="attribution"
+            title="Open work"
+            description="Track follow-ups, opportunities, and fixes for this area."
+            seedFactory={() => ({ title: "Attribution follow-up", priority: "medium" })}
+          />
     </MktgPage>
   );
 }
