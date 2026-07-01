@@ -24,7 +24,7 @@ import { toast } from "sonner";
 interface ManualSourceEventDialogProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  /** Source system slug ("leadtrap", "facebook_ads", ...) — required. */
+  /** Source system slug ("leadtrap", "facebook_ads", ...) - required. */
   sourceSystem: string;
   /** Human label for toasts + defaults. */
   sourceLabel: string;
@@ -202,7 +202,7 @@ export function ManualSourceEventDialog({
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={!canSave}>
-            {saving ? "Saving…" : "Save event"}
+            {saving ? "Saving..." : "Save event"}
           </Button>
         </DialogFooter>
       </DialogContent>

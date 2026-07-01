@@ -123,7 +123,7 @@ export default function BusinessDevelopmentDashboard() {
   const [outreachOpen, setOutreachOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
 
-  const partnerName = (id?: string | null) => partners.find((p) => p.id === id)?.company_name ?? "—";
+  const partnerName = (id?: string | null) => partners.find((p) => p.id === id)?.company_name ?? "-";
 
   const handleAddPartner = async (input: Partial<ReferralCompany> & { company_name: string }) => {
     try {
@@ -199,7 +199,7 @@ export default function BusinessDevelopmentDashboard() {
 
       {partnersError && (
         <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
-          Couldn't load referral CRM data: {partnersError.message}. You may not have CRM access — this workspace is limited to Admin, Marketing, Executive, and Operations Manager roles.
+          Couldn't load referral CRM data: {partnersError.message}. You may not have CRM access - this workspace is limited to Admin, Marketing, Executive, and Operations Manager roles.
         </div>
       )}
 
@@ -231,7 +231,7 @@ export default function BusinessDevelopmentDashboard() {
           <div className="flex flex-wrap gap-2 items-center">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search partners…" className="pl-9 h-9" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search partners..." className="pl-9 h-9" />
             </div>
             <FilterSelect value={typeFilter} onChange={setTypeFilter} label="Type" options={[...COMPANY_TYPES]} />
             <FilterSelect value={stageFilter} onChange={setStageFilter} label="Stage" options={[...COMPANY_STAGES]} />
@@ -246,7 +246,7 @@ export default function BusinessDevelopmentDashboard() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="font-semibold truncate">{p.company_name}</div>
-                      <div className="text-xs text-muted-foreground">{p.company_type ?? "—"} · {p.city ?? "—"}{p.state ? `, ${p.state}` : ""}</div>
+                      <div className="text-xs text-muted-foreground">{p.company_type ?? "-"} - {p.city ?? "-"}{p.state ? `, ${p.state}` : ""}</div>
                     </div>
                     <Badge variant="outline">{p.relationship_stage}</Badge>
                   </div>
@@ -271,7 +271,7 @@ export default function BusinessDevelopmentDashboard() {
                 <div key={o.id} className="p-3 flex justify-between gap-3">
                   <div>
                     <div className="text-sm font-medium">{o.subject || o.activity_type}</div>
-                    <div className="text-xs text-muted-foreground">{partnerName(o.company_id)} · {o.activity_type} · {o.activity_date.slice(0, 10)}</div>
+                    <div className="text-xs text-muted-foreground">{partnerName(o.company_id)} - {o.activity_type} - {o.activity_date.slice(0, 10)}</div>
                     {o.notes && <div className="text-xs text-muted-foreground mt-1">{o.notes}</div>}
                   </div>
                   {o.outcome && <Badge variant="outline" className="shrink-0">{o.outcome}</Badge>}
@@ -290,7 +290,7 @@ export default function BusinessDevelopmentDashboard() {
                 <div key={t.id} className="rounded-xl border border-border/60 bg-card p-3 flex items-center justify-between gap-3">
                   <div>
                     <div className={`text-sm font-medium ${t.status === "Done" ? "line-through text-muted-foreground" : ""}`}>{t.title}</div>
-                    <div className="text-xs text-muted-foreground">{partnerName(t.company_id)} · {t.due_date ?? "no due"} · {t.priority ?? "Medium"}</div>
+                    <div className="text-xs text-muted-foreground">{partnerName(t.company_id)} - {t.due_date ?? "no due"} - {t.priority ?? "Medium"}</div>
                   </div>
                   <Button size="sm" variant={t.status === "Done" ? "ghost" : "outline"} onClick={() => handleToggleTask(t)}>
                     <CheckCircle2 className="h-4 w-4 mr-1.5" /> {t.status === "Done" ? "Reopen" : "Mark complete"}
@@ -348,7 +348,7 @@ function RelationshipList({ partners, onAdd }: { partners: ReferralCompany[]; on
       {partners.map((p) => (
         <div key={p.id} className="rounded-2xl border border-border/70 bg-card p-4">
           <div className="font-semibold">{p.company_name}</div>
-          <div className="text-xs text-muted-foreground">{p.company_type ?? "—"} · {p.relationship_stage}</div>
+          <div className="text-xs text-muted-foreground">{p.company_type ?? "-"} - {p.relationship_stage}</div>
           {p.main_email && <div className="text-xs text-muted-foreground mt-1 truncate">{p.main_email}</div>}
         </div>
       ))}
@@ -414,7 +414,7 @@ function PartnerDialog({ open, onOpenChange, onSave }: { open: boolean; onOpenCh
             });
             setSaving(false);
             onOpenChange(false); reset();
-          }}>{saving ? "Saving…" : "Save Partner"}</Button>
+          }}>{saving ? "Saving..." : "Save Partner"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -467,7 +467,7 @@ function OutreachDialog({ open, onOpenChange, partners, onSave }: { open: boolea
             setSaving(false);
             onOpenChange(false);
             setForm(initial);
-          }}>{saving ? "Saving…" : "Save"}</Button>
+          }}>{saving ? "Saving..." : "Save"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -512,7 +512,7 @@ function TaskDialog({ open, onOpenChange, partners, onSave }: { open: boolean; o
             setSaving(false);
             onOpenChange(false);
             setForm({ priority: "Medium" });
-          }}>{saving ? "Saving…" : "Save"}</Button>
+          }}>{saving ? "Saving..." : "Save"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

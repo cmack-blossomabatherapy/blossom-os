@@ -22,11 +22,11 @@ import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 import { useMarketingData } from "@/hooks/useMarketingData";
 // Community/referral signal is DB-backed via intake_leads + recruiting_candidates
 // through useMarketingData. When those tables are empty the page renders an
-// honest empty state — no shim arrays.
+// honest empty state - no shim arrays.
 
-/* Community Outreach — operational community relationship intelligence.
+/* Community Outreach - operational community relationship intelligence.
  * Derived from real referral and recruiting-outreach signal. Event and
- * partnership directories enrich through Admin → Data Uploads. */
+ * partnership directories enrich through Admin -> Data Uploads. */
 
 const FOOTPRINT = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const STATE_NAMES: Record<string, string> = {
@@ -93,7 +93,7 @@ export default function CommunityOutreach() {
   const activeRow = stateRows.find((s) => s.state === activeState);
   const topState = stateRows[0];
 
-  /* Engagement timeline — derived from real referral & recruiting events. */
+  /* Engagement timeline - derived from real referral & recruiting events. */
   const timeline = useMemo(() => {
     type Item = {
       id: string;
@@ -111,7 +111,7 @@ export default function CommunityOutreach() {
         state: l.state,
         title: `Community referral received in ${STATE_NAMES[l.state] ?? l.state}`,
         kind: "Referral",
-        detail: `Trust-based referral · ${l.status}`,
+        detail: `Trust-based referral - ${l.status}`,
       });
     });
     referralCands.slice(0, 6).forEach((c) => {
@@ -121,7 +121,7 @@ export default function CommunityOutreach() {
         state: c.state ?? "",
         title: `Staff-referred applicant in ${STATE_NAMES[c.state ?? ""] ?? c.state ?? "Unknown"}`,
         kind: "Recruiting",
-        detail: `${c.role ?? "Applicant"} · referred by community network`,
+        detail: `${c.role ?? "Applicant"} - referred by community network`,
       });
     });
     return items
@@ -130,7 +130,7 @@ export default function CommunityOutreach() {
       .slice(0, 10);
   }, [referralLeads, referralCands]);
 
-  /* Partnership tracks — signal-weighted from real activity. */
+  /* Partnership tracks - signal-weighted from real activity. */
   const partnerships = useMemo(() => {
     const tracks = [
       {
@@ -185,7 +185,7 @@ export default function CommunityOutreach() {
     return tracks.sort((a, b) => b.signal - a.signal);
   }, [referralLeads, referralCands, momentum]);
 
-  /* Outreach initiatives — connect-to-enrich tracks. */
+  /* Outreach initiatives - connect-to-enrich tracks. */
   const initiatives = [
     {
       id: "awareness",
@@ -221,29 +221,29 @@ export default function CommunityOutreach() {
     const out: string[] = [];
     if (topState && topState.visibility > 0) {
       out.push(
-        `${STATE_NAMES[topState.state]} carries Blossom's strongest community visibility — ${topState.fam} family referrals + ${topState.recCands} staff referrals.`,
+        `${STATE_NAMES[topState.state]} carries Blossom's strongest community visibility - ${topState.fam} family referrals + ${topState.recCands} staff referrals.`,
       );
     }
     if (momentum.delta > 0) {
       out.push(
-        `Outreach trust is building — ${momentum.recent} new community-sourced referrals this week vs ${momentum.recent - momentum.delta} prior.`,
+        `Outreach trust is building - ${momentum.recent} new community-sourced referrals this week vs ${momentum.recent - momentum.delta} prior.`,
       );
     }
     if (momentum.qualifiedRate >= 35) {
       out.push(
-        `Community referrals qualify at ${momentum.qualifiedRate}% — local trust remains Blossom's highest-converting growth signal.`,
+        `Community referrals qualify at ${momentum.qualifiedRate}% - local trust remains Blossom's highest-converting growth signal.`,
       );
     }
     const quiet = stateRows.find((s) => s.visibility === 0);
     if (quiet) {
       out.push(
-        `${STATE_NAMES[quiet.state]} has no community referral signal yet — outreach investment opportunity.`,
+        `${STATE_NAMES[quiet.state]} has no community referral signal yet - outreach investment opportunity.`,
       );
     }
     const recHeavy = stateRows.find((s) => s.recCands > 0 && s.fam === 0);
     if (recHeavy) {
       out.push(
-        `${STATE_NAMES[recHeavy.state]} has recruiting community activity but no family referrals yet — broaden outreach into parent + school networks.`,
+        `${STATE_NAMES[recHeavy.state]} has recruiting community activity but no family referrals yet - broaden outreach into parent + school networks.`,
       );
     }
     return out.slice(0, 5);
@@ -252,7 +252,7 @@ export default function CommunityOutreach() {
   return (
     <MktgPage
       title="Community Outreach"
-      subtitle="Operational community intelligence — where local trust, autism-community engagement, and outreach translate into real growth."
+      subtitle="Operational community intelligence - where local trust, autism-community engagement, and outreach translate into real growth."
       actions={<AIPrompt label="Where should we invest in community outreach?" variant="card" />}
     >
       {/* 1. COMMUNITY MOMENTUM HERO */}
@@ -266,15 +266,15 @@ export default function CommunityOutreach() {
           </div>
           <h2 className="mt-2 max-w-2xl text-xl md:text-2xl font-semibold tracking-tight text-foreground">
             {momentum.delta > 0
-              ? `Community trust is building — ${momentum.recent} new community-sourced referrals this week.`
+              ? `Community trust is building - ${momentum.recent} new community-sourced referrals this week.`
               : topState && topState.visibility > 0
               ? `${STATE_NAMES[topState.state]} is driving Blossom's strongest community visibility.`
-              : "Connect autism advocacy, school, and parent partnerships in Admin → Data Uploads to activate community intelligence."}
+              : "Connect autism advocacy, school, and parent partnerships in Admin -> Data Uploads to activate community intelligence."}
           </h2>
           <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
               { label: "Community referrals", value: referralLeads.length },
-              { label: "Top region", value: topState ? STATE_NAMES[topState.state] : "—" },
+              { label: "Top region", value: topState ? STATE_NAMES[topState.state] : "-" },
               { label: "Qualified rate", value: `${momentum.qualifiedRate}%` },
               { label: "Recruiting outreach", value: referralCands.length },
             ].map((m) => (
@@ -315,9 +315,9 @@ export default function CommunityOutreach() {
       </MktgCard>
 
       {/* 3. COMMUNITY ENGAGEMENT TIMELINE */}
-      <MktgCard title="Community engagement" hint="Real referral & outreach signal — most recent first">
+      <MktgCard title="Community engagement" hint="Real referral & outreach signal - most recent first">
         {timeline.length === 0 ? (
-          <EmptyRow>No community engagement signal yet — connect events + partnerships in Admin.</EmptyRow>
+          <EmptyRow>No community engagement signal yet - connect events + partnerships in Admin.</EmptyRow>
         ) : (
           <ol className="relative space-y-3 border-l border-border/60 pl-5">
             {timeline.map((t) => {
@@ -422,11 +422,11 @@ export default function CommunityOutreach() {
             </div>
             <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
               <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.fam}</span> family referrals ·{" "}
+                <span className="text-foreground font-medium">{activeRow.fam}</span> family referrals -{" "}
                 <span className="text-foreground font-medium">{activeRow.qual}</span> qualified
               </div>
               <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.recCands}</span> staff referrals ·{" "}
+                <span className="text-foreground font-medium">{activeRow.recCands}</span> staff referrals -{" "}
                 <span className="text-foreground font-medium">{activeRow.allCands}</span> total applicants
               </div>
               <div className="text-[12.5px] text-muted-foreground">
@@ -440,7 +440,7 @@ export default function CommunityOutreach() {
             </div>
             {activeRow.fam === 0 && activeRow.allLeads > 0 && (
               <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[12px] text-foreground">
-                Local pipeline exists but no community referrals — invest in school + parent + autism advocacy outreach.
+                Local pipeline exists but no community referrals - invest in school + parent + autism advocacy outreach.
               </div>
             )}
           </div>
@@ -448,7 +448,7 @@ export default function CommunityOutreach() {
       </MktgCard>
 
       {/* 5. EVENTS & AWARENESS INITIATIVES */}
-      <MktgCard title="Events & awareness initiatives" hint="Strategic outreach tracks — connect to enrich">
+      <MktgCard title="Events & awareness initiatives" hint="Strategic outreach tracks - connect to enrich">
         <div className="grid gap-2.5 md:grid-cols-2">
           {initiatives.map((i) => {
             const Icon = i.icon;
@@ -509,26 +509,26 @@ export default function CommunityOutreach() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-border/60 bg-card p-4">
             <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-              Community → Intake
+              Community -&gt; Intake
             </div>
             <div className="mt-2 text-[13.5px] leading-relaxed text-foreground">
-              Community-sourced families qualify at <span className="font-semibold">{momentum.qualifiedRate}%</span> — the highest-trust intake channel Blossom operates.
+              Community-sourced families qualify at <span className="font-semibold">{momentum.qualifiedRate}%</span> - the highest-trust intake channel Blossom operates.
             </div>
             <div className="mt-3 text-[12px] text-muted-foreground">
-              {momentum.qualified} qualified · {referralLeads.length - momentum.qualified} earlier-stage · {stateRows.filter((s) => s.fam > 0).length} states
+              {momentum.qualified} qualified - {referralLeads.length - momentum.qualified} earlier-stage - {stateRows.filter((s) => s.fam > 0).length} states
             </div>
           </div>
           <div className="rounded-xl border border-border/60 bg-card p-4">
             <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-              Community → Staffing
+              Community -&gt; Staffing
             </div>
             <div className="mt-2 text-[13.5px] leading-relaxed text-foreground">
               {referralCands.length > 0
-                ? `${referralCands.length} community-sourced applicants in motion — outreach is strengthening Blossom's hiring pipeline.`
-                : "No community-sourced applicants yet — expand recruiting outreach into local universities and BCBA programs."}
+                ? `${referralCands.length} community-sourced applicants in motion - outreach is strengthening Blossom's hiring pipeline.`
+                : "No community-sourced applicants yet - expand recruiting outreach into local universities and BCBA programs."}
             </div>
             <div className="mt-3 text-[12px] text-muted-foreground">
-              {referralCands.length} staff referrals · {Math.round((referralCands.length / Math.max(1, marketingCandidates.length)) * 100)}% of total pipeline
+              {referralCands.length} staff referrals - {Math.round((referralCands.length / Math.max(1, marketingCandidates.length)) * 100)}% of total pipeline
             </div>
           </div>
         </div>

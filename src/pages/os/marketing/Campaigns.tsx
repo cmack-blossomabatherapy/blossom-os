@@ -23,14 +23,14 @@ import { CampaignManagerCard } from "@/components/marketing/CampaignManagerCard"
 // Campaign KPIs blend useMarketingIntelligence (marketing_campaigns +
 // marketing_campaign_metrics + marketing_source_events) with the live
 // intake_leads / marketing_call_events / recruiting_candidates rows exposed
-// by useMarketingData. No shim arrays, no fabricated metrics — empty tables
+// by useMarketingData. No shim arrays, no fabricated metrics - empty tables
 // simply render empty states.
 
-/* ────────────────────────────────────────────────────────────────────────── *
- * Campaigns — operational growth intelligence.
+/* -------------------------------------------------------------------------- *
+ * Campaigns - operational growth intelligence.
  * Every "campaign" is derived from real Blossom operational data (leads,
  * calls, candidates). No mock campaigns, no fake analytics.
- * ────────────────────────────────────────────────────────────────────────── */
+ * -------------------------------------------------------------------------- */
 
 const STATE_NAMES: Record<string, string> = {
   GA: "Georgia",
@@ -96,7 +96,7 @@ export default function Campaigns() {
   const [activeState, setActiveState] = useState<string | null>(null);
   const [metricsOpen, setMetricsOpen] = useState(false);
 
-  /* ── derive campaigns from real source × state activity ─────────────── */
+  /* -- derive campaigns from real source x state activity --------------- */
   const campaigns = useMemo<DerivedCampaign[]>(() => {
     const now = Date.now();
     const buckets = new Map<string, { leads: number; qualified: number; recent: number; prior: number; source: string; state: string }>();
@@ -126,7 +126,7 @@ export default function Campaigns() {
       const type = typeMap[b.source] ?? b.source;
       return {
         id: key,
-        name: `${b.source} · ${STATE_NAMES[b.state] ?? b.state}`,
+        name: `${b.source} - ${STATE_NAMES[b.state] ?? b.state}`,
         type,
         state: b.state,
         objective: `Drive ${type.toLowerCase()} in ${STATE_NAMES[b.state] ?? b.state}`,
@@ -147,7 +147,7 @@ export default function Campaigns() {
     ? campaigns.filter((c) => c.state === activeState)
     : campaigns;
 
-  /* ── intelligence timeline (real recent activity) ───────────────────── */
+  /* -- intelligence timeline (real recent activity) --------------------- */
   const timeline = useMemo(() => {
     type Event = { ts: number; label: string; meta: string; icon: typeof Megaphone };
     const events: Event[] = [];
@@ -170,7 +170,7 @@ export default function Campaigns() {
       if (!c.state) return;
       events.push({
         ts: new Date(c.createdAt).getTime(),
-        label: `${c.direction ?? "Call"} · ${STATE_NAMES[c.state] ?? c.state}`,
+        label: `${c.direction ?? "Call"} - ${STATE_NAMES[c.state] ?? c.state}`,
         meta: c.status,
         icon: Phone,
       });
@@ -182,7 +182,7 @@ export default function Campaigns() {
       if (!c.state) return;
       events.push({
         ts: new Date(c.appliedDate).getTime(),
-        label: `${c.source} applicant · ${STATE_NAMES[c.state] ?? c.state}`,
+        label: `${c.source} applicant - ${STATE_NAMES[c.state] ?? c.state}`,
         meta: c.stage,
         icon: Users,
       });
@@ -191,15 +191,15 @@ export default function Campaigns() {
     return events.sort((a, b) => b.ts - a.ts).slice(0, 8);
   }, [marketingLeads, marketingCalls, marketingCandidates]);
 
-  /* ── strongest state for hero summary ───────────────────────────────── */
+  /* -- strongest state for hero summary --------------------------------- */
   const topState = mi.stateTrend[0];
   const heroLine = topState
     ? topState.delta > 0
-      ? `${STATE_NAMES[topState.state] ?? topState.state} lead momentum is accelerating — ${topState.recent} new this week.`
+      ? `${STATE_NAMES[topState.state] ?? topState.state} lead momentum is accelerating - ${topState.recent} new this week.`
       : `${STATE_NAMES[topState.state] ?? topState.state} remains the strongest operational footprint.`
     : "Awaiting operational growth signals.";
 
-  /* ── recruiting campaigns (real candidate source × state) ───────────── */
+  /* -- recruiting campaigns (real candidate source x state) ------------- */
   const recruitingCampaigns = useMemo(() => {
     const buckets = new Map<string, { source: string; state: string; count: number; staged: number }>();
     marketingCandidates.forEach((c) => {
@@ -218,7 +218,7 @@ export default function Campaigns() {
   return (
     <MktgPage
       title="Campaigns"
-      subtitle="Operational growth coordination across lead generation, recruiting, outreach, and referrals — all derived from real Blossom activity."
+      subtitle="Operational growth coordination across lead generation, recruiting, outreach, and referrals - all derived from real Blossom activity."
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => setMetricsOpen(true)}>
@@ -228,10 +228,10 @@ export default function Campaigns() {
         </div>
       }
     >
-      {/* ── PERSISTED CAMPAIGN MANAGER — primary workflow ─────────────── */}
+      {/* -- PERSISTED CAMPAIGN MANAGER - primary workflow --------------- */}
       <CampaignManagerCard />
 
-      {/* ── HERO ─────────────────────────────────────────────────────── */}
+      {/* -- HERO ------------------------------------------------------- */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
         <div className="absolute -top-20 -right-20 size-64 rounded-full bg-primary/10 blur-3xl" aria-hidden />
         <div className="relative">
@@ -245,7 +245,7 @@ export default function Campaigns() {
           <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
               { label: "Active campaigns", value: campaigns.length },
-              { label: "Leads · 7d", value: mi.velocity.leadsLast7 },
+              { label: "Leads - 7d", value: mi.velocity.leadsLast7 },
               { label: "Qualified rate", value: `${mi.velocity.qualifiedRate}%` },
               { label: "Recruiting reach", value: marketingCandidates.length },
             ].map((m) => (
@@ -258,7 +258,7 @@ export default function Campaigns() {
         </div>
       </section>
 
-      {/* ── STATE FILTER ─────────────────────────────────────────────── */}
+      {/* -- STATE FILTER ----------------------------------------------- */}
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => setActiveState(null)}
@@ -285,8 +285,8 @@ export default function Campaigns() {
         ))}
       </div>
 
-      {/* ── ACTIVE CAMPAIGNS GRID ────────────────────────────────────── */}
-      <MktgCard title="Active campaigns" hint="Derived from real source × state lead activity">
+      {/* -- ACTIVE CAMPAIGNS GRID -------------------------------------- */}
+      <MktgCard title="Active campaigns" hint="Derived from real source x state lead activity">
         {filteredCampaigns.length === 0 ? (
           <EmptyRow>No active campaigns for this filter.</EmptyRow>
         ) : (
@@ -344,7 +344,7 @@ export default function Campaigns() {
         )}
       </MktgCard>
 
-      {/* ── INTELLIGENCE TIMELINE + STATE PERFORMANCE ─────────────────── */}
+      {/* -- INTELLIGENCE TIMELINE + STATE PERFORMANCE ------------------- */}
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <MktgCard title="Campaign intelligence" hint="Live operational signals">
@@ -364,7 +364,7 @@ export default function Campaigns() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-[13px] text-foreground">{e.label}</div>
-                        <div className="text-[11.5px] text-muted-foreground">{e.meta} · {rel}</div>
+                        <div className="text-[11.5px] text-muted-foreground">{e.meta} - {rel}</div>
                       </div>
                     </li>
                   );
@@ -395,7 +395,7 @@ export default function Campaigns() {
                         <ShareBar value={(s.leads / maxLeads) * 100} tone={s.delta > 0 ? "accent" : "primary"} />
                       </div>
                       <div className="mt-1 text-[11px] text-muted-foreground">
-                        {s.candidates} applicants · {s.calls} calls
+                        {s.candidates} applicants - {s.calls} calls
                       </div>
                     </div>
                   );
@@ -406,7 +406,7 @@ export default function Campaigns() {
         </div>
       </div>
 
-      {/* ── RECRUITING + REFERRALS ───────────────────────────────────── */}
+      {/* -- RECRUITING + REFERRALS ------------------------------------- */}
       <div className="grid gap-4 lg:grid-cols-2">
         <MktgCard title="Recruiting campaigns" hint="Where hiring visibility is producing applicants">
           <div className="-mt-2 mb-2 flex justify-end">
@@ -424,10 +424,10 @@ export default function Campaigns() {
                     <Users className="size-4 text-muted-foreground" />
                     <div>
                       <div className="text-[13px] font-medium text-foreground">
-                        {r.source} · {STATE_NAMES[r.state] ?? r.state}
+                        {r.source} - {STATE_NAMES[r.state] ?? r.state}
                       </div>
                       <div className="text-[11.5px] text-muted-foreground">
-                        {r.count} applicants · {r.staged} progressing
+                        {r.count} applicants - {r.staged} progressing
                       </div>
                     </div>
                   </div>
@@ -473,7 +473,7 @@ export default function Campaigns() {
         </MktgCard>
       </div>
 
-      {/* ── AI INSIGHTS ──────────────────────────────────────────────── */}
+      {/* -- AI INSIGHTS ------------------------------------------------ */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card to-primary/[0.04] p-5 md:p-6">
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           <Sparkles className="size-3.5 text-primary" />
@@ -509,7 +509,7 @@ export default function Campaigns() {
             <div className="rounded-xl border border-border/50 bg-card/60 p-3">
               <div className="text-[11.5px] uppercase tracking-wider text-muted-foreground">Referrals</div>
               <div className="mt-1">
-                {mi.referrals.total} referral leads active — relationship growth is contributing to intake.
+                {mi.referrals.total} referral leads active - relationship growth is contributing to intake.
               </div>
             </div>
           )}
@@ -521,8 +521,8 @@ export default function Campaigns() {
         </div>
       </section>
 
-      {/* ── UPCOMING INITIATIVES ─────────────────────────────────────── */}
-      <MktgCard title="Upcoming growth initiatives" hint="Add planned campaigns from Admin → Data Uploads">
+      {/* -- UPCOMING INITIATIVES --------------------------------------- */}
+      <MktgCard title="Upcoming growth initiatives" hint="Add planned campaigns from Admin -> Data Uploads">
         <div className="flex items-center gap-3 rounded-xl border border-dashed border-border/60 bg-muted/30 p-4">
           <Calendar className="size-4 text-muted-foreground" />
           <div className="flex-1 text-[12.5px] text-muted-foreground">

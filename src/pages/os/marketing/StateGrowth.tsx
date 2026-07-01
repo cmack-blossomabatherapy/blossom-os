@@ -22,7 +22,7 @@ import {
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 
-/* State Growth — operational expansion intelligence.
+/* State Growth - operational expansion intelligence.
  * Derives state-by-state expansion momentum from real lead, referral,
  * recruiting and onboarding signals across the Blossom footprint. */
 
@@ -160,14 +160,14 @@ export default function StateGrowth() {
         title: "Physician & pediatric networks",
         icon: Stethoscope,
         signal: Math.round(refsForView * 0.4),
-        note: "Clinical trust → highest-quality intake",
+        note: "Clinical trust -> highest-quality intake",
       },
       {
         id: "school",
         title: "School & district partnerships",
         icon: GraduationCap,
         signal: Math.round(refsForView * 0.25),
-        note: "IEP teams · special education awareness",
+        note: "IEP teams - special education awareness",
       },
       {
         id: "parent",
@@ -181,7 +181,7 @@ export default function StateGrowth() {
         title: "Autism awareness events",
         icon: Megaphone,
         signal: Math.round(refsForView * 0.3),
-        note: "Local visibility → community engagement",
+        note: "Local visibility -> community engagement",
       },
       {
         id: "clinic",
@@ -202,7 +202,7 @@ export default function StateGrowth() {
           id: `pres-${s.state}`,
           tone: "risk",
           title: `${STATE_NAMES[s.state]} demand outpacing staffing readiness`,
-          detail: `${s.qualRate}% intake qualification vs ${s.fill}% staffing fill — operational strain rising.`,
+          detail: `${s.qualRate}% intake qualification vs ${s.fill}% staffing fill - operational strain rising.`,
         });
       }
       if (s.leads >= 3 && s.refs === 0) {
@@ -210,7 +210,7 @@ export default function StateGrowth() {
           id: `vis-${s.state}`,
           tone: "opportunity",
           title: `${STATE_NAMES[s.state]} community trust underdeveloped`,
-          detail: `Active pipeline but no word-of-mouth signal — outreach investment opportunity.`,
+          detail: `Active pipeline but no word-of-mouth signal - outreach investment opportunity.`,
         });
       }
       if (s.leads === 0 && s.cands > 0) {
@@ -218,7 +218,7 @@ export default function StateGrowth() {
           id: `cap-${s.state}`,
           tone: "opportunity",
           title: `${STATE_NAMES[s.state]} capacity underutilized`,
-          detail: `${s.cands} candidates in pipeline but no family demand signal yet — visibility investment opportunity.`,
+          detail: `${s.cands} candidates in pipeline but no family demand signal yet - visibility investment opportunity.`,
         });
       }
       if (s.fricRate >= 30 && s.leads >= 3) {
@@ -226,7 +226,7 @@ export default function StateGrowth() {
           id: `fric-${s.state}`,
           tone: "risk",
           title: `${STATE_NAMES[s.state]} intake friction reducing conversion`,
-          detail: `${s.fricRate}% of families stuck in friction states — operational bottleneck.`,
+          detail: `${s.fricRate}% of families stuck in friction states - operational bottleneck.`,
         });
       }
     });
@@ -238,28 +238,28 @@ export default function StateGrowth() {
     const out: string[] = [];
     if (topState && topState.expansion > 0) {
       out.push(
-        `${STATE_NAMES[topState.state]} remains Blossom's strongest operational growth market — ${topState.expansion}/100 expansion score across visibility, referrals, and staffing readiness.`,
+        `${STATE_NAMES[topState.state]} remains Blossom's strongest operational growth market - ${topState.expansion}/100 expansion score across visibility, referrals, and staffing readiness.`,
       );
     }
     if (fastest && fastest.delta > 0) {
       out.push(
-        `${STATE_NAMES[fastest.state]} is accelerating fastest — ${fastest.recent} new families this week vs ${fastest.prior} prior.`,
+        `${STATE_NAMES[fastest.state]} is accelerating fastest - ${fastest.recent} new families this week vs ${fastest.prior} prior.`,
       );
     }
     if (pressureState && pressureState.pressure >= 25) {
       out.push(
-        `${STATE_NAMES[pressureState.state]} staffing demand is increasing faster than recruiting visibility — invest in RBT + BCBA visibility.`,
+        `${STATE_NAMES[pressureState.state]} staffing demand is increasing faster than recruiting visibility - invest in RBT + BCBA visibility.`,
       );
     }
     if (opportunityState && opportunityState.leads < 5) {
       out.push(
-        `${STATE_NAMES[opportunityState.state]} remains underdeveloped — strong opportunity for outreach + visibility investment.`,
+        `${STATE_NAMES[opportunityState.state]} remains underdeveloped - strong opportunity for outreach + visibility investment.`,
       );
     }
     const strongRef = stateRows.find((s) => s.refShare >= 25);
     if (strongRef) {
       out.push(
-        `${STATE_NAMES[strongRef.state]} referral trust remains strongest (${strongRef.refShare}% of pipeline) — community engagement is paying off.`,
+        `${STATE_NAMES[strongRef.state]} referral trust remains strongest (${strongRef.refShare}% of pipeline) - community engagement is paying off.`,
       );
     }
     return out.slice(0, 5);
@@ -268,7 +268,7 @@ export default function StateGrowth() {
   return (
     <MktgPage
       title="State Growth"
-      subtitle="Operational expansion intelligence — how visibility, staffing, outreach, and trust scale across every Blossom market."
+      subtitle="Operational expansion intelligence - how visibility, staffing, outreach, and trust scale across every Blossom market."
       actions={<AIPrompt label="Which state needs attention next?" variant="card" />}
     >
       {/* 1. EXPANSION INTELLIGENCE HERO */}
@@ -283,13 +283,13 @@ export default function StateGrowth() {
           <h2 className="mt-2 max-w-2xl text-xl md:text-2xl font-semibold tracking-tight text-foreground">
             {topState
               ? `${STATE_NAMES[topState.state]} remains Blossom's strongest operational growth market.`
-              : "Connect operational feeds in Admin → Data Uploads to activate expansion intelligence."}
+              : "Connect operational feeds in Admin -> Data Uploads to activate expansion intelligence."}
           </h2>
           <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
               { label: "Active markets", value: stateRows.filter((s) => s.leads + s.cands > 0).length },
-              { label: "Fastest growing", value: fastest && fastest.delta > 0 ? STATE_NAMES[fastest.state] : "—" },
-              { label: "Strongest referrals", value: stateRows.sort((a, b) => b.refs - a.refs)[0] ? STATE_NAMES[stateRows.sort((a, b) => b.refs - a.refs)[0].state] : "—" },
+              { label: "Fastest growing", value: fastest && fastest.delta > 0 ? STATE_NAMES[fastest.state] : "-" },
+              { label: "Strongest referrals", value: stateRows.sort((a, b) => b.refs - a.refs)[0] ? STATE_NAMES[stateRows.sort((a, b) => b.refs - a.refs)[0].state] : "-" },
               { label: "Pressure point", value: pressureState && pressureState.pressure >= 25 ? STATE_NAMES[pressureState.state] : "Balanced" },
             ].map((m) => (
               <div key={m.label} className="rounded-xl bg-card/60 backdrop-blur border border-border/50 p-3">
@@ -306,7 +306,7 @@ export default function StateGrowth() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
-              label: "Lead growth · 7d",
+              label: "Lead growth - 7d",
               value: stateRows.reduce((a, s) => a + s.recent, 0),
               sub: `vs ${stateRows.reduce((a, s) => a + s.prior, 0)} prior week`,
               icon: TrendingUp,
@@ -427,35 +427,35 @@ export default function StateGrowth() {
             </div>
             <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
               <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.leads}</span> leads ·{" "}
-                <span className="text-foreground font-medium">{activeRow.qualRate}%</span> qualified ·{" "}
+                <span className="text-foreground font-medium">{activeRow.leads}</span> leads -{" "}
+                <span className="text-foreground font-medium">{activeRow.qualRate}%</span> qualified -{" "}
                 <span className="text-foreground font-medium">{activeRow.fricRate}%</span> friction
               </div>
               <div className="text-[12.5px] text-muted-foreground">
                 Sources: organic{" "}
-                <span className="text-foreground font-medium">{activeRow.organic}</span> · paid{" "}
-                <span className="text-foreground font-medium">{activeRow.paid}</span> · referral{" "}
+                <span className="text-foreground font-medium">{activeRow.organic}</span> - paid{" "}
+                <span className="text-foreground font-medium">{activeRow.paid}</span> - referral{" "}
                 <span className="text-foreground font-medium">{activeRow.refs}</span>
               </div>
               <div className="text-[12.5px] text-muted-foreground">
-                Recruiting: <span className="text-foreground font-medium">{activeRow.rbts}</span> RBT ·{" "}
-                <span className="text-foreground font-medium">{activeRow.bcbas}</span> BCBA ·{" "}
+                Recruiting: <span className="text-foreground font-medium">{activeRow.rbts}</span> RBT -{" "}
+                <span className="text-foreground font-medium">{activeRow.bcbas}</span> BCBA -{" "}
                 <span className="text-foreground font-medium">{activeRow.fill}%</span> fill rate
               </div>
               <div className="text-[12.5px] text-muted-foreground">
-                Outcomes: <span className="text-foreground font-medium">{activeRow.hired}</span> hired ·{" "}
-                <span className="text-foreground font-medium">{activeRow.withdrew}</span> withdrew ·{" "}
+                Outcomes: <span className="text-foreground font-medium">{activeRow.hired}</span> hired -{" "}
+                <span className="text-foreground font-medium">{activeRow.withdrew}</span> withdrew -{" "}
                 <span className="text-foreground font-medium">{activeRow.recCands}</span> staff-referred
               </div>
             </div>
             {activeRow.pressure >= 25 && (
               <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[12px] text-foreground">
-                Demand is increasing faster than staffing readiness — recruiting visibility investment recommended.
+                Demand is increasing faster than staffing readiness - recruiting visibility investment recommended.
               </div>
             )}
             {activeRow.refs === 0 && activeRow.leads > 0 && (
               <div className="mt-2 rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] text-muted-foreground">
-                No word-of-mouth signal yet — community outreach opportunity.
+                No word-of-mouth signal yet - community outreach opportunity.
               </div>
             )}
           </div>
@@ -474,7 +474,7 @@ export default function StateGrowth() {
                 </span>
               </div>
               <div className="mt-1 text-[11.5px] text-muted-foreground">
-                {s.cands} applicants · {s.ready} ready · {s.hired} hired
+                {s.cands} applicants - {s.ready} ready - {s.hired} hired
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 text-[11.5px]">
                 <div className="rounded-lg bg-muted/50 p-2">
@@ -546,11 +546,11 @@ export default function StateGrowth() {
                 <div className="flex items-center justify-between">
                   <div className="text-[13px] font-medium text-foreground">{STATE_NAMES[s.state]}</div>
                   <span className="text-[11.5px] tabular-nums text-muted-foreground">
-                    {s.refs} refs · {s.refShare}%
+                    {s.refs} refs - {s.refShare}%
                   </span>
                 </div>
                 <div className="mt-1 text-[11.5px] text-muted-foreground">
-                  {s.recCands} staff-referred applicants · word-of-mouth pipeline share
+                  {s.recCands} staff-referred applicants - word-of-mouth pipeline share
                 </div>
                 <div className="mt-3">
                   <ShareBar
@@ -567,7 +567,7 @@ export default function StateGrowth() {
       {/* 7. GROWTH RISKS & EXPANSION OPPORTUNITIES */}
       <MktgCard title="Growth risks & expansion opportunities" hint="Where to act next">
         {opportunities.length === 0 ? (
-          <EmptyRow>No flagged risks or opportunities — markets are balanced.</EmptyRow>
+          <EmptyRow>No flagged risks or opportunities - markets are balanced.</EmptyRow>
         ) : (
           <div className="space-y-2">
             {opportunities.map((o) => (
@@ -600,7 +600,7 @@ export default function StateGrowth() {
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-5 md:p-6">
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           <Brain className="size-3.5" />
-          Operational Insights · State Growth
+          Operational Insights - State Growth
         </div>
         <h3 className="mt-2 text-[17px] font-semibold tracking-tight text-foreground">
           Expansion intelligence summary

@@ -31,7 +31,7 @@ interface Props {
 
 /**
  * Manual "log an email event" dialog. Writes directly into
- * `marketing_email_events` — NOT `marketing_source_events`. Used by the
+ * `marketing_email_events` - NOT `marketing_source_events`. Used by the
  * Email Marketing surface so users can hand-record activity while the
  * Mailchimp connector is still being provisioned.
  */

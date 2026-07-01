@@ -94,7 +94,7 @@ function SectionHeader({ title, subtitle, right }: { title: string; subtitle?: s
 }
 
 function fmtDate(d?: string) {
-  if (!d) return "—";
+  if (!d) return "-";
   const dt = new Date(d);
   if (Number.isNaN(dt.getTime())) return d;
   return dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
@@ -198,7 +198,7 @@ function DashboardModule() {
               <div key={c.id} className="flex items-center justify-between py-2.5 text-sm">
                 <div>
                   <p className="font-medium">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">{c.companyType} · {c.state}</p>
+                  <p className="text-xs text-muted-foreground">{c.companyType} - {c.state}</p>
                 </div>
                 <Badge variant="secondary" className="tabular-nums">{c.referralCount} referrals</Badge>
               </div>
@@ -216,7 +216,7 @@ function DashboardModule() {
                 <div key={c.id} className="flex items-center justify-between py-2 text-sm">
                   <div>
                     <p className="font-medium">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">{c.state} · last contact {fmtDate(c.lastContactedDate)}</p>
+                    <p className="text-xs text-muted-foreground">{c.state} - last contact {fmtDate(c.lastContactedDate)}</p>
                   </div>
                   <Badge variant={daysSince(c.lastContactedDate) > 90 ? "destructive" : "secondary"}>
                     {daysSince(c.lastContactedDate) > 90 ? "90d+" : "60d+"}
@@ -237,7 +237,7 @@ function DashboardModule() {
                 <div key={t.id} className="flex items-center justify-between py-2.5 text-sm">
                   <div>
                     <p className="font-medium">{t.title}</p>
-                    <p className="text-xs text-muted-foreground">{userName(s, t.assignedUserId)} · due {fmtDate(t.dueDate)}</p>
+                    <p className="text-xs text-muted-foreground">{userName(s, t.assignedUserId)} - due {fmtDate(t.dueDate)}</p>
                   </div>
                   <Badge className="bg-destructive/10 text-destructive">Overdue</Badge>
                 </div>
@@ -398,7 +398,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts…" className="pl-8 h-9 text-sm" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts..." className="pl-8 h-9 text-sm" />
         </div>
         <Select value={stateFilter} onValueChange={setStateFilter}>
           <SelectTrigger className="w-[110px] h-9 text-sm"><SelectValue placeholder="State" /></SelectTrigger>
@@ -485,17 +485,17 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
                   <td className="px-3 py-2"><Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggleOne(c.id)} /></td>
                   <td className="px-3 py-2">
                     <button className="font-medium hover:text-primary" onClick={() => onOpenContact(c.id)}>{fullName(c)}</button>
-                    <p className="text-xs text-muted-foreground">{c.email || "—"}</p>
+                    <p className="text-xs text-muted-foreground">{c.email || "-"}</p>
                   </td>
                   <td className="px-3 py-2">
                     {c.companyId ? (
                       <button className="hover:text-primary" onClick={() => onOpenCompany(c.companyId!)}>{companyName(s, c.companyId)}</button>
-                    ) : "—"}
+                    ) : "-"}
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{c.jobTitle || "—"}</td>
-                  <td className="px-3 py-2">{c.state || "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{c.jobTitle || "-"}</td>
+                  <td className="px-3 py-2">{c.state || "-"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{userName(s, c.ownerId)}</td>
-                  <td className="px-3 py-2">{c.referralPartnerStatus ? <Badge variant="secondary">{c.referralPartnerStatus}</Badge> : "—"}</td>
+                  <td className="px-3 py-2">{c.referralPartnerStatus ? <Badge variant="secondary">{c.referralPartnerStatus}</Badge> : "-"}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{c.referralCount}</td>
                   <td className="px-3 py-2 text-muted-foreground">{fmtDate(c.lastContactedDate)}</td>
                 </tr>
@@ -552,7 +552,7 @@ function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
             <Select value={f.companyId} onValueChange={(v) => setF({ ...f, companyId: v })}>
               <SelectTrigger><SelectValue placeholder="Pick company" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="__create__">+ Create new company…</SelectItem>
+                <SelectItem value="__create__">+ Create new company...</SelectItem>
                 {s.companies.filter((c) => !c.deletedAt).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -562,7 +562,7 @@ function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
               <div className="text-xs font-medium text-muted-foreground">New company</div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2"><Label className="text-xs">Company name</Label><Input value={newCo.name} onChange={(e) => setNewCo({ ...newCo, name: e.target.value })} /></div>
-                <div><Label className="text-xs">Type</Label><Input value={newCo.companyType} onChange={(e) => setNewCo({ ...newCo, companyType: e.target.value })} placeholder="Pediatrician Office…" /></div>
+                <div><Label className="text-xs">Type</Label><Input value={newCo.companyType} onChange={(e) => setNewCo({ ...newCo, companyType: e.target.value })} placeholder="Pediatrician Office..." /></div>
                 <div><Label className="text-xs">State</Label>
                   <Select value={newCo.state} onValueChange={(v) => setNewCo({ ...newCo, state: v })}>
                     <SelectTrigger><SelectValue placeholder="Pick state" /></SelectTrigger>
@@ -692,7 +692,7 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies…" className="pl-8 h-9 text-sm" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies..." className="pl-8 h-9 text-sm" />
         </div>
         <div className="flex-1" />
         <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Company</Button>
@@ -771,9 +771,9 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
                     <button className="font-medium hover:text-primary" onClick={() => onOpen(c.id)}>{c.name}</button>
                     <p className="text-xs text-muted-foreground">{c.city || ""}{c.city && c.state ? ", " : ""}{c.state || ""}</p>
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{c.companyType || "—"}</td>
-                  <td className="px-3 py-2">{c.state || "—"}</td>
-                  <td className="px-3 py-2">{c.relationshipTier ? <Badge variant="secondary">{c.relationshipTier}</Badge> : "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{c.companyType || "-"}</td>
+                  <td className="px-3 py-2">{c.state || "-"}</td>
+                  <td className="px-3 py-2">{c.relationshipTier ? <Badge variant="secondary">{c.relationshipTier}</Badge> : "-"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{userName(s, c.ownerId)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{c.referralsYTD}</td>
                   <td className="px-3 py-2 text-muted-foreground">{fmtDate(c.lastReferralDate)}</td>
@@ -831,7 +831,7 @@ function NewCompanyDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
         <DialogHeader><DialogTitle>New Company</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2"><Label className="text-xs">Name</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
-          <div><Label className="text-xs">Type</Label><Input value={f.companyType} onChange={(e) => setF({ ...f, companyType: e.target.value })} placeholder="Pediatrician Office, Diagnostic Center…" /></div>
+          <div><Label className="text-xs">Type</Label><Input value={f.companyType} onChange={(e) => setF({ ...f, companyType: e.target.value })} placeholder="Pediatrician Office, Diagnostic Center..." /></div>
           <div><Label className="text-xs">State</Label>
             <Select value={f.state} onValueChange={(v) => setF({ ...f, state: v })}>
               <SelectTrigger><SelectValue placeholder="Pick state" /></SelectTrigger>
@@ -1063,11 +1063,11 @@ function ReferralsModule() {
                     </div>
                   </td>
                   <td className="px-3 py-2">{companyName(s, r.companyId)}</td>
-                  <td className="px-3 py-2">{r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "—"}</td>
-                  <td className="px-3 py-2">{r.state || "—"}</td>
-                  <td className="px-3 py-2">{r.serviceType || "—"}</td>
+                  <td className="px-3 py-2">{r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "-"}</td>
+                  <td className="px-3 py-2">{r.state || "-"}</td>
+                  <td className="px-3 py-2">{r.serviceType || "-"}</td>
                   <td className="px-3 py-2"><Badge variant="secondary">{r.referralStatus}</Badge></td>
-                  <td className="px-3 py-2 text-muted-foreground">{r.insuranceType || "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{r.insuranceType || "-"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{userName(s, r.assignedIntakeOwnerId)}</td>
                   <td className="px-3 py-2 text-muted-foreground">
                     <div className="flex items-center justify-between gap-2">
@@ -1124,7 +1124,7 @@ function NewReferralDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       insuranceType: f.insuranceType || undefined, referralStatus: "New",
       assignedIntakeOwnerId: "u-intake",
     });
-    toast({ title: "Referral created — partner stats updated" });
+    toast({ title: "Referral created - partner stats updated" });
     onOpenChange(false);
     setF({ patientFirstName: "", patientLastInitial: "", companyId: "", contactId: "", state: "", serviceType: "", insuranceType: "" });
   };
@@ -1154,7 +1154,7 @@ function NewReferralDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label className="text-xs">Service type</Label><Input value={f.serviceType} onChange={(e) => setF({ ...f, serviceType: e.target.value })} placeholder="In-Home ABA, Center-Based…" /></div>
+          <div><Label className="text-xs">Service type</Label><Input value={f.serviceType} onChange={(e) => setF({ ...f, serviceType: e.target.value })} placeholder="In-Home ABA, Center-Based..." /></div>
           <div className="col-span-2"><Label className="text-xs">Insurance</Label><Input value={f.insuranceType} onChange={(e) => setF({ ...f, insuranceType: e.target.value })} /></div>
         </div>
         <DialogFooter>
@@ -1182,7 +1182,7 @@ function TasksModule() {
       if (groupBy === "owner") key = userName(s, t.assignedUserId);
       else if (groupBy === "state") {
         const co = s.companies.find((c) => c.id === t.companyId);
-        key = co?.state ?? "—";
+        key = co?.state ?? "-";
       } else key = t.status;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(t);
@@ -1300,7 +1300,7 @@ function TasksModule() {
                     <div className="flex-1">
                       <p className={cn("font-medium", t.status === "Completed" && "line-through text-muted-foreground")}>{t.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t.type} · {companyName(s, t.companyId)} · {userName(s, t.assignedUserId)}
+                        {t.type} - {companyName(s, t.companyId)} - {userName(s, t.assignedUserId)}
                       </p>
                     </div>
                     <Badge variant="secondary" className={cn(t.priority === "High" && "bg-destructive/10 text-destructive")}>{t.priority}</Badge>
@@ -1413,7 +1413,7 @@ function ListsModule() {
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                     {l.kind === "active"
-                      ? (l.criteriaRules ? describeCriteria(l.criteriaRules) : (l.criteria ?? "—"))
+                      ? (l.criteriaRules ? describeCriteria(l.criteriaRules) : (l.criteria ?? "-"))
                       : `Static list of ${l.staticIds?.length ?? 0} ${l.object}`}
                   </p>
                 </div>
@@ -1489,7 +1489,7 @@ function describeCriteria(c: ListCriteria): string {
   if (c.referralPartnerStatus) parts.push(`partner status = ${c.referralPartnerStatus}`);
   if (c.relationshipTier) parts.push(`tier = ${c.relationshipTier}`);
   if (typeof c.lastContactedOlderThanDays === "number") parts.push(`last contacted > ${c.lastContactedOlderThanDays}d ago`);
-  if (typeof c.referralCountGte === "number") parts.push(`referrals ≥ ${c.referralCountGte}`);
+  if (typeof c.referralCountGte === "number") parts.push(`referrals >= ${c.referralCountGte}`);
   if (c.missingEmail) parts.push("missing email");
   if (c.missingPhone) parts.push("missing phone");
   if (c.nextFollowUpEmpty) parts.push("no next follow-up");
@@ -1572,17 +1572,17 @@ function ListEditorDialog({ list, onClose }: { list?: ReturnType<typeof useCrm>[
               </div>
               <div>
                 <Label className="text-xs">Company type</Label>
-                <Input value={criteria.companyType ?? ""} placeholder="Pediatrician Office…"
+                <Input value={criteria.companyType ?? ""} placeholder="Pediatrician Office..."
                        onChange={(e) => upd("companyType", e.target.value)} />
               </div>
               <div>
                 <Label className="text-xs">Referral source type</Label>
-                <Input value={criteria.referralSourceType ?? ""} placeholder="Pediatrician, School…"
+                <Input value={criteria.referralSourceType ?? ""} placeholder="Pediatrician, School..."
                        onChange={(e) => upd("referralSourceType", e.target.value)} />
               </div>
               <div>
                 <Label className="text-xs">Referral partner status</Label>
-                <Input value={criteria.referralPartnerStatus ?? ""} placeholder="Active Referral Partner…"
+                <Input value={criteria.referralPartnerStatus ?? ""} placeholder="Active Referral Partner..."
                        onChange={(e) => upd("referralPartnerStatus", e.target.value)} />
               </div>
               <div>
@@ -1603,7 +1603,7 @@ function ListEditorDialog({ list, onClose }: { list?: ReturnType<typeof useCrm>[
                        onChange={(e) => upd("lastContactedOlderThanDays", e.target.value === "" ? undefined : Number(e.target.value))} />
               </div>
               <div>
-                <Label className="text-xs">Referral count ≥</Label>
+                <Label className="text-xs">Referral count &gt;=</Label>
                 <Input type="number" value={criteria.referralCountGte ?? ""}
                        onChange={(e) => upd("referralCountGte", e.target.value === "" ? undefined : Number(e.target.value))} />
               </div>
@@ -1626,7 +1626,7 @@ function ListEditorDialog({ list, onClose }: { list?: ReturnType<typeof useCrm>[
 
           {kind === "static" && (
             <p className="text-xs text-muted-foreground rounded-lg border p-3 bg-muted/30">
-              Static lists hold a manual set of records. After creating, use “Add records” on the list card to add or remove contacts/companies.
+              Static lists hold a manual set of records. After creating, use "Add records" on the list card to add or remove contacts/companies.
             </p>
           )}
         </div>
@@ -1655,9 +1655,9 @@ function StaticListAddDialog({ list, onClose }: { list: ReturnType<typeof useCrm
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-xl">
-        <DialogHeader><DialogTitle>Manage records — {list.name}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Manage records - {list.name}</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${list.object}…`} />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${list.object}...`} />
           <div className="max-h-80 overflow-y-auto divide-y border rounded-lg">
             {filtered.map((r) => {
               const isMember = member.has(r.id);
@@ -1731,8 +1731,8 @@ function WorkflowsModule() {
                 {w.actions.length === 0 && <li className="text-xs text-muted-foreground italic">No actions configured.</li>}
               </ul>
               <p className="text-[11px] text-muted-foreground mt-3">
-                {w.runs} runs · last {fmtDate(w.lastRun)}
-                {w.lastRunResult ? <> · <span className="text-foreground">{w.lastRunResult}</span></> : null}
+                {w.runs} runs - last {fmtDate(w.lastRun)}
+                {w.lastRunResult ? <> - <span className="text-foreground">{w.lastRunResult}</span></> : null}
               </p>
             </div>
             <div className="flex flex-col items-end gap-2 shrink-0">
@@ -1863,7 +1863,7 @@ function WorkflowEditorDialog({
               <Input className="flex-1" placeholder="Optional detail (e.g. tag name, owner, list)"
                      value={newActionDetail} onChange={(e) => setNewActionDetail(e.target.value)} />
               <Button size="sm" onClick={() => {
-                const label = newActionDetail ? `${newAction} — ${newActionDetail}` : newAction;
+                const label = newActionDetail ? `${newAction} - ${newActionDetail}` : newAction;
                 setActions((arr) => [...arr, label]);
                 setNewActionDetail("");
               }}>
@@ -2048,7 +2048,7 @@ function ReportsModule() {
       {/* Top Referral Partners */}
       <ReportTable title="Top Referral Partners"
         headers={["Company", "Type", "State", "Referrals"]}
-        rows={topPartners.map((c) => [c.name, c.companyType ?? "—", c.state ?? "—",
+        rows={topPartners.map((c) => [c.name, c.companyType ?? "-", c.state ?? "-",
           <span className="tabular-nums font-medium">{c.referralCount}</span>])} />
 
       {/* No Activity */}
@@ -2066,11 +2066,11 @@ function ReportsModule() {
               {noActivity.slice(0, 20).map(({ c, days }) => (
                 <tr key={c.id} className="border-t">
                   <td className="py-2">{c.name}</td>
-                  <td>{c.state ?? "—"}</td>
+                  <td>{c.state ?? "-"}</td>
                   <td>{userName(s, c.ownerId)}</td>
                   <td>{fmtDate(c.lastContactedDate)}</td>
                   <td className="text-right">
-                    <Badge variant={days > 90 ? "destructive" : "secondary"} className="tabular-nums">{Number.isFinite(days) ? `${days}d` : "—"}</Badge>
+                    <Badge variant={days > 90 ? "destructive" : "secondary"} className="tabular-nums">{Number.isFinite(days) ? `${days}d` : "-"}</Badge>
                   </td>
                 </tr>
               ))}
@@ -2097,12 +2097,12 @@ function ReportsModule() {
       {/* Referrals by Company */}
       <ReportTable title="Referrals by Company"
         headers={["Company", "Type", "State", "Referrals"]}
-        rows={byCompany.map((r) => [r.name, r.type ?? "—", r.state ?? "—", r.referrals])} />
+        rows={byCompany.map((r) => [r.name, r.type ?? "-", r.state ?? "-", r.referrals])} />
 
       {/* Referrals by Contact */}
       <ReportTable title="Referrals by Contact"
         headers={["Contact", "Company", "State", "Referrals"]}
-        rows={byContact.map((r) => [r.name, r.company, r.state ?? "—", r.referrals])} />
+        rows={byContact.map((r) => [r.name, r.company, r.state ?? "-", r.referrals])} />
 
       {/* Lunch & Learn */}
       <div className="rounded-2xl border bg-card p-5">
@@ -2199,7 +2199,7 @@ function parseCsv(text: string): { headers: string[]; rows: Record<string, strin
 }
 
 // ===========================================================
-// Exports — real CSV downloads
+// Exports - real CSV downloads
 // ===========================================================
 function ExportsModule() {
   const s = useCrm();
@@ -2275,7 +2275,7 @@ function ExportsModule() {
 }
 
 // ===========================================================
-// Imports — paste/upload CSV → preview → commit
+// Imports - paste/upload CSV -> preview -> commit
 // ===========================================================
 type ImportObject = "contacts" | "companies" | "referrals";
 const IMPORT_FIELDS: Record<ImportObject, { key: string; label: string; required?: boolean }[]> = {
@@ -2399,7 +2399,7 @@ type PlanItem =
   | { kind: "error"; row: Record<string, string>; reason: string };
 
 /**
- * SupabaseQuickImport — wraps the existing HubSpot importer pipeline
+ * SupabaseQuickImport - wraps the existing HubSpot importer pipeline
  * (parseReferralsCsv + importReferralRows) so CSV/XLSX uploads land
  * directly in referral_contacts / referral_companies / referral_import_batches,
  * then re-hydrates the CRM store so the new rows appear immediately.
@@ -2437,11 +2437,11 @@ function SupabaseQuickImport() {
         errors: res.errors,
       });
       crm.recordImport(
-        `HubSpot import: ${res.createdContacts} created · ${res.updatedContacts} updated · ${res.failedRows} failed · companies +${res.createdCompanies}`,
+        `HubSpot import: ${res.createdContacts} created - ${res.updatedContacts} updated - ${res.failedRows} failed - companies +${res.createdCompanies}`,
       );
       toast({
         title: "Import complete",
-        description: `${res.createdContacts} created · ${res.updatedContacts} updated · ${res.failedRows} failed`,
+        description: `${res.createdContacts} created - ${res.updatedContacts} updated - ${res.failedRows} failed`,
       });
       await hydrateFromSupabase().catch((e) => console.warn("[ImportsModule] rehydrate failed", e));
     } catch (e) {
@@ -2479,10 +2479,10 @@ function SupabaseQuickImport() {
         <div className="rounded-xl border bg-background p-3 text-xs space-y-2">
           <div className="flex items-center justify-between">
             <span>
-              <strong>{fileName}</strong> · {parsed.rows.length.toLocaleString()} rows ready
+              <strong>{fileName}</strong> - {parsed.rows.length.toLocaleString()} rows ready
             </span>
             <Button size="sm" disabled={busy} onClick={runImport}>
-              {busy ? `Importing… ${progress?.current ?? 0}/${progress?.total ?? parsed.rows.length}` : "Import to backend"}
+              {busy ? `Importing... ${progress?.current ?? 0}/${progress?.total ?? parsed.rows.length}` : "Import to backend"}
             </Button>
           </div>
           {progress && (
@@ -2587,7 +2587,7 @@ function ImportsModule() {
 }
 
 // ===========================================================
-// Duplicate management — real merge
+// Duplicate management - real merge
 // ===========================================================
 function DuplicatesModule() {
   const s = useCrm();
@@ -2687,10 +2687,10 @@ function DuplicatesModule() {
                         <p className="font-medium">{fullName(c)}</p>
                         <p className="text-xs text-muted-foreground">{c.email || "no email"}</p>
                         <p className="text-xs text-muted-foreground">{c.phone || "no phone"}</p>
-                        <p className="text-xs text-muted-foreground">{c.jobTitle || "—"} · {c.referralCount} referrals</p>
+                        <p className="text-xs text-muted-foreground">{c.jobTitle || "-"} - {c.referralCount} referrals</p>
                         <p className="text-xs text-muted-foreground">{companyName(s, c.companyId)}</p>
                         <Button size="sm" className="h-7 mt-2 w-full" onClick={() => mergeContact(c, other)}>
-                          Keep this · merge other in
+                          Keep this - merge other in
                         </Button>
                       </div>
                     );
@@ -2729,10 +2729,10 @@ function DuplicatesModule() {
                         <p className="font-medium">{c.name}</p>
                         <p className="text-xs text-muted-foreground">{c.website || "no website"}</p>
                         <p className="text-xs text-muted-foreground">{c.mainPhone || "no phone"}</p>
-                        <p className="text-xs text-muted-foreground">{[c.city, c.state].filter(Boolean).join(", ") || "—"}</p>
-                        <p className="text-xs text-muted-foreground">{contactCount} contacts · {c.referralCount} referrals</p>
+                        <p className="text-xs text-muted-foreground">{[c.city, c.state].filter(Boolean).join(", ") || "-"}</p>
+                        <p className="text-xs text-muted-foreground">{contactCount} contacts - {c.referralCount} referrals</p>
                         <Button size="sm" className="h-7 mt-2 w-full" onClick={() => mergeCompany(c, other)}>
-                          Keep this · merge other in
+                          Keep this - merge other in
                         </Button>
                       </div>
                     );
@@ -2806,7 +2806,7 @@ function SettingsModule() {
             <div key={f.id} className="py-2 flex items-center justify-between gap-3">
               <div>
                 <p className="font-medium">{f.label}</p>
-                <p className="text-xs text-muted-foreground">{f.object} · {f.type}</p>
+                <p className="text-xs text-muted-foreground">{f.object} - {f.type}</p>
               </div>
               <button onClick={() => { crm.removeCustomField(f.id); toast({ title: "Field removed" }); }} className="text-muted-foreground hover:text-destructive">
                 <Trash2 className="size-3.5" />
@@ -2863,7 +2863,7 @@ function FilesModule() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search files…" className="pl-8 h-9 text-sm" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search files..." className="pl-8 h-9 text-sm" />
         </div>
         <Select value={type} onValueChange={setType}>
           <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue /></SelectTrigger>
@@ -2907,7 +2907,7 @@ function FilesModule() {
                     </button>
                   </td>
                   <td className="px-3 py-2"><span className="text-muted-foreground capitalize">{a.objectType}: </span>{objectLabel(a)}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{a.category || "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{a.category || "-"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{a.uploadedByName || userName(s, a.uploadedByUserId)}</td>
                   <td className="px-3 py-2 text-muted-foreground">{fmtDate(a.uploadedAt)}</td>
                   <td className="px-3 py-2 text-right">
@@ -3002,7 +3002,7 @@ function UploadFileDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
               <div>
                 <Label>Record</Label>
                 <Select value={objectId} onValueChange={setObjectId}>
-                  <SelectTrigger><SelectValue placeholder="Pick one…" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Pick one..." /></SelectTrigger>
                   <SelectContent className="max-h-[260px]">
                     {options.map((o) => <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>)}
                   </SelectContent>
@@ -3031,7 +3031,7 @@ function UploadFileDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
-          <Button onClick={handleUpload} disabled={busy || !file}>{busy ? "Uploading…" : "Upload"}</Button>
+          <Button onClick={handleUpload} disabled={busy || !file}>{busy ? "Uploading..." : "Upload"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -3067,7 +3067,7 @@ function AuditModule() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search audit log…" className="pl-8 h-9 text-sm" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search audit log..." className="pl-8 h-9 text-sm" />
         </div>
         <Select value={action} onValueChange={setAction}>
           <SelectTrigger className="w-[160px] h-9 text-sm"><SelectValue /></SelectTrigger>
@@ -3097,7 +3097,7 @@ function AuditModule() {
                     <td className="px-3 py-2 text-muted-foreground tabular-nums">{new Date(r.at).toLocaleString()}</td>
                     <td className="px-3 py-2">{r.actor}</td>
                     <td className="px-3 py-2"><span className="inline-flex items-center gap-1.5 text-xs"><Icon className="size-3" /> {r.action}</span></td>
-                    <td className="px-3 py-2"><span className="text-muted-foreground capitalize">{r.objectType}: </span>{r.objectLabel || r.objectId || "—"}</td>
+                    <td className="px-3 py-2"><span className="text-muted-foreground capitalize">{r.objectType}: </span>{r.objectLabel || r.objectId || "-"}</td>
                     <td className="px-3 py-2">{r.summary}</td>
                   </tr>
                 );
@@ -3149,8 +3149,8 @@ function ActivitiesModule() {
             : a.companyId
               ? companyName(s, a.companyId)
               : a.referralId
-                ? (s.referrals.find((r) => r.id === a.referralId)?.name ?? "—")
-                : "—";
+                ? (s.referrals.find((r) => r.id === a.referralId)?.name ?? "-")
+                : "-";
           return (
             <div key={a.id} className="px-4 py-3 flex items-start gap-3 text-sm">
               <div className="size-7 rounded-lg bg-muted grid place-items-center shrink-0">
@@ -3159,7 +3159,7 @@ function ActivitiesModule() {
               <div className="flex-1 min-w-0">
                 <p className="font-medium">{a.message}</p>
                 <p className="text-xs text-muted-foreground">
-                  <span className="capitalize">{a.type.replace("_", " ")}</span> · {targetName} · {fmtDate(a.createdAt)}{a.userId ? ` · ${userName(s, a.userId)}` : ""}
+                  <span className="capitalize">{a.type.replace("_", " ")}</span> - {targetName} - {fmtDate(a.createdAt)}{a.userId ? ` - ${userName(s, a.userId)}` : ""}
                 </p>
               </div>
             </div>
@@ -3207,19 +3207,19 @@ function EditContactDialog({ id, open, onOpenChange }: { id: ID | null; open: bo
           <div><Label className="text-xs">Title</Label><Input value={f.jobTitle} onChange={(e) => setF({ ...f, jobTitle: e.target.value })} /></div>
           <div><Label className="text-xs">State</Label>
             <Select value={f.state} onValueChange={(v) => setF({ ...f, state: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
               <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label className="text-xs">Company</Label>
             <Select value={f.companyId} onValueChange={(v) => setF({ ...f, companyId: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
               <SelectContent>{s.companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label className="text-xs">Owner</Label>
             <Select value={f.ownerId} onValueChange={(v) => setF({ ...f, ownerId: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
               <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
@@ -3276,20 +3276,20 @@ function EditCompanyDialog({ id, open, onOpenChange }: { id: ID | null; open: bo
           <div><Label className="text-xs">City</Label><Input value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} /></div>
           <div><Label className="text-xs">State</Label>
             <Select value={f.state} onValueChange={(v) => setF({ ...f, state: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
               <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label className="text-xs">Phone</Label><Input value={f.mainPhone} onChange={(e) => setF({ ...f, mainPhone: e.target.value })} /></div>
           <div><Label className="text-xs">Owner</Label>
             <Select value={f.ownerId} onValueChange={(v) => setF({ ...f, ownerId: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
               <SelectContent>{s.users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label className="text-xs">Tier</Label>
             <Select value={f.relationshipTier} onValueChange={(v) => setF({ ...f, relationshipTier: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
               <SelectContent>{["Tier A", "Tier B", "Tier C"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
           </div>
@@ -3361,13 +3361,13 @@ function EditReferralDialog({ id, open, onOpenChange }: { id: ID | null; open: b
           <div><Label className="text-xs">Insurance</Label><Input value={f.insuranceType} onChange={(e) => setF({ ...f, insuranceType: e.target.value })} /></div>
           <div><Label className="text-xs">State</Label>
             <Select value={f.state} onValueChange={(v) => setF({ ...f, state: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
               <SelectContent>{STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div><Label className="text-xs">Source company</Label>
             <Select value={f.companyId} onValueChange={(v) => setF({ ...f, companyId: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
               <SelectContent>{s.companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
@@ -3501,11 +3501,11 @@ function LogActivityDialog({ open, onOpenChange, contactId, companyId, referralI
             </div>
           </div>
         ) : (
-          <Textarea placeholder={`Log a ${type}…`} rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
+          <Textarea placeholder={`Log a ${type}...`} rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
         )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading}>Cancel</Button>
-          <Button onClick={submit} disabled={uploading}>{uploading ? "Uploading…" : "Log"}</Button>
+          <Button onClick={submit} disabled={uploading}>{uploading ? "Uploading..." : "Log"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -3561,8 +3561,8 @@ function UsersModule() {
                       {u.mobilePhone && <p className="text-xs">{u.mobilePhone}</p>}
                     </td>
                     <td className="py-2"><Badge variant="secondary">{u.role.replace(/_/g, " ")}</Badge></td>
-                    <td className="py-2 text-xs">{(u.states ?? []).join(", ") || "—"}</td>
-                    <td className="py-2 text-xs">{userTeams.map((t) => t.name).join(", ") || "—"}</td>
+                    <td className="py-2 text-xs">{(u.states ?? []).join(", ") || "-"}</td>
+                    <td className="py-2 text-xs">{userTeams.map((t) => t.name).join(", ") || "-"}</td>
                     <td className="py-2">
                       <Badge variant={u.active === false ? "outline" : "secondary"}>{u.active === false ? "Inactive" : "Active"}</Badge>
                     </td>
@@ -3597,11 +3597,11 @@ function UsersModule() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.type}{t.states.length ? ` · ${t.states.join(", ")}` : ""}</p>
+                    <p className="text-xs text-muted-foreground">{t.type}{t.states.length ? ` - ${t.states.join(", ")}` : ""}</p>
                   </div>
                   <Badge variant={t.active ? "secondary" : "outline"}>{t.active ? "Active" : "Inactive"}</Badge>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">Lead: {lead?.name ?? "—"}</p>
+                <p className="mt-2 text-xs text-muted-foreground">Lead: {lead?.name ?? "-"}</p>
                 <p className="text-xs text-muted-foreground">Members: {t.memberIds.length}</p>
                 <div className="mt-2 flex gap-1">
                   <Button size="sm" variant="outline" className="h-7" onClick={() => setEditingTeam(t)}><Pencil className="size-3 mr-1" />Edit</Button>
@@ -3937,7 +3937,7 @@ function DeletedModule() {
               <div key={a.id} className="py-2 flex items-center justify-between">
                 <div>
                   <p className="font-medium">{a.fileName}</p>
-                  <p className="text-xs text-muted-foreground">{fileLabel(a)} · Archived {fmtDate(a.archivedAt)}</p>
+                  <p className="text-xs text-muted-foreground">{fileLabel(a)} - Archived {fmtDate(a.archivedAt)}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" className="h-7" onClick={() => { crm.restoreAttachment(a.id); toast({ title: "File restored" }); }}>
@@ -3979,15 +3979,15 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
           <SheetTitle>{fullName(c)}</SheetTitle>
         </SheetHeader>
         <div className="mt-2 space-y-4 text-sm">
-          <div className="text-xs text-muted-foreground">{c.jobTitle || "—"}{c.companyId ? <> · <button className="hover:text-primary" onClick={() => onOpenCompany(c.companyId!)}>{companyName(s, c.companyId)}</button></> : null}</div>
+          <div className="text-xs text-muted-foreground">{c.jobTitle || "-"}{c.companyId ? <> - <button className="hover:text-primary" onClick={() => onOpenCompany(c.companyId!)}>{companyName(s, c.companyId)}</button></> : null}</div>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" className="h-8" onClick={() => setEditing(true)}><Pencil className="size-3 mr-1.5" /> Edit</Button>
             <Button size="sm" className="h-8" onClick={() => setLogging(true)}><Plus className="size-3 mr-1.5" /> Log activity</Button>
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div><p className="text-muted-foreground">Email</p><p>{c.email || "—"}</p></div>
-            <div><p className="text-muted-foreground">Phone</p><p>{c.phone || "—"}</p></div>
-            <div><p className="text-muted-foreground">State</p><p>{c.state || "—"}</p></div>
+            <div><p className="text-muted-foreground">Email</p><p>{c.email || "-"}</p></div>
+            <div><p className="text-muted-foreground">Phone</p><p>{c.phone || "-"}</p></div>
+            <div><p className="text-muted-foreground">State</p><p>{c.state || "-"}</p></div>
             <div><p className="text-muted-foreground">Owner</p><p>{userName(s, c.ownerId)}</p></div>
             <div><p className="text-muted-foreground">Referrals</p><p>{c.referralCount}</p></div>
             <div><p className="text-muted-foreground">Last referral</p><p>{fmtDate(c.lastReferralDate)}</p></div>
@@ -3998,7 +3998,7 @@ function ContactDrawer({ id, onClose, onOpenCompany }: { id: ID | null; onClose:
 
           <div>
             <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Add Note</h4>
-            <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Log a quick note…" />
+            <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Log a quick note..." />
             <div className="flex justify-end mt-2">
               <Button size="sm" onClick={() => { if (!note.trim()) return; crm.addNote(note, { contactId: c.id, companyId: c.companyId }); setNote(""); toast({ title: "Note added" }); }}>Add</Button>
             </div>
@@ -4066,16 +4066,16 @@ function CompanyDrawer({ id, onClose, onOpenContact }: { id: ID | null; onClose:
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader><SheetTitle>{c.name}</SheetTitle></SheetHeader>
         <div className="mt-2 space-y-4 text-sm">
-          <div className="text-xs text-muted-foreground">{c.companyType || "—"} · {c.city || ""}{c.city && c.state ? ", " : ""}{c.state || ""}</div>
+          <div className="text-xs text-muted-foreground">{c.companyType || "-"} - {c.city || ""}{c.city && c.state ? ", " : ""}{c.state || ""}</div>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" className="h-8" onClick={() => setEditing(true)}><Pencil className="size-3 mr-1.5" /> Edit</Button>
             <Button size="sm" className="h-8" onClick={() => setLogging(true)}><Plus className="size-3 mr-1.5" /> Log activity</Button>
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div><p className="text-muted-foreground">Website</p><p>{c.website || "—"}</p></div>
-            <div><p className="text-muted-foreground">Phone</p><p>{c.mainPhone || "—"}</p></div>
+            <div><p className="text-muted-foreground">Website</p><p>{c.website || "-"}</p></div>
+            <div><p className="text-muted-foreground">Phone</p><p>{c.mainPhone || "-"}</p></div>
             <div><p className="text-muted-foreground">Owner</p><p>{userName(s, c.ownerId)}</p></div>
-            <div><p className="text-muted-foreground">Tier</p><p>{c.relationshipTier || "—"}</p></div>
+            <div><p className="text-muted-foreground">Tier</p><p>{c.relationshipTier || "-"}</p></div>
             <div><p className="text-muted-foreground">YTD Referrals</p><p>{c.referralsYTD}</p></div>
             <div><p className="text-muted-foreground">Last referral</p><p>{fmtDate(c.lastReferralDate)}</p></div>
           </div>
@@ -4147,7 +4147,7 @@ function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
             <div className="flex-1">
               <p>{a.message}</p>
               <p className="text-muted-foreground">
-                <span className="capitalize">{a.type.replace("_", " ")}</span> · {fmtDate(a.createdAt)}
+                <span className="capitalize">{a.type.replace("_", " ")}</span> - {fmtDate(a.createdAt)}
               </p>
             </div>
           </div>
@@ -4223,7 +4223,7 @@ function GlobalSearchModule({
         </div>
         {q && (
           <p className="mt-2 text-xs text-muted-foreground">
-            {total} result{total === 1 ? "" : "s"} for “{q}”
+            {total} result{total === 1 ? "" : "s"} for "{q}"
           </p>
         )}
       </div>
@@ -4245,8 +4245,8 @@ function GlobalSearchModule({
           {results.companies.slice(0, 25).map((c) => (
             <ResultRow key={c.id} onClick={() => onOpenCompany(c.id)}
               title={c.name}
-              meta={`${c.companyType ?? "—"} · ${c.state ?? "—"} · ${c.referralCount} referrals`}
-              detail={[c.mainPhone, c.generalEmail, c.website, c.tags.join(", ")].filter(Boolean).join(" · ")} />
+              meta={`${c.companyType ?? "-"} - ${c.state ?? "-"} - ${c.referralCount} referrals`}
+              detail={[c.mainPhone, c.generalEmail, c.website, c.tags.join(", ")].filter(Boolean).join(" - ")} />
           ))}
         </ResultGroup>
       )}
@@ -4256,8 +4256,8 @@ function GlobalSearchModule({
           {results.contacts.slice(0, 25).map((c) => (
             <ResultRow key={c.id} onClick={() => onOpenContact(c.id)}
               title={fullName(c)}
-              meta={`${c.jobTitle ?? "—"} · ${companyName(s, c.companyId)} · ${c.state ?? "—"}`}
-              detail={[c.email, c.phone, c.referralSourceType, c.tags.join(", ")].filter(Boolean).join(" · ")} />
+              meta={`${c.jobTitle ?? "-"} - ${companyName(s, c.companyId)} - ${c.state ?? "-"}`}
+              detail={[c.email, c.phone, c.referralSourceType, c.tags.join(", ")].filter(Boolean).join(" - ")} />
           ))}
         </ResultGroup>
       )}
@@ -4269,8 +4269,8 @@ function GlobalSearchModule({
             <ResultRow key={r.id}
               onClick={() => r.companyId && onOpenCompany(r.companyId)}
               title={r.name}
-              meta={`${companyName(s, r.companyId)} · ${r.state ?? "—"} · ${r.referralStatus}`}
-              detail={`${fmtDate(r.referralDate)}${r.serviceType ? ` · ${r.serviceType}` : ""}${r.insuranceType ? ` · ${r.insuranceType}` : ""}`} />
+              meta={`${companyName(s, r.companyId)} - ${r.state ?? "-"} - ${r.referralStatus}`}
+              detail={`${fmtDate(r.referralDate)}${r.serviceType ? ` - ${r.serviceType}` : ""}${r.insuranceType ? ` - ${r.insuranceType}` : ""}`} />
           ))}
         </ResultGroup>
       )}
@@ -4282,8 +4282,8 @@ function GlobalSearchModule({
             <ResultRow key={t.id}
               onClick={() => t.companyId ? onOpenCompany(t.companyId) : t.contactId && onOpenContact(t.contactId)}
               title={t.title}
-              meta={`${t.type} · ${t.status} · ${userName(s, t.assignedUserId)}`}
-              detail={`${t.dueDate ? `due ${fmtDate(t.dueDate)}` : "no due date"}${t.companyId ? ` · ${companyName(s, t.companyId)}` : ""}`} />
+              meta={`${t.type} - ${t.status} - ${userName(s, t.assignedUserId)}`}
+              detail={`${t.dueDate ? `due ${fmtDate(t.dueDate)}` : "no due date"}${t.companyId ? ` - ${companyName(s, t.companyId)}` : ""}`} />
           ))}
         </ResultGroup>
       )}
@@ -4297,8 +4297,8 @@ function GlobalSearchModule({
               <ResultRow key={a.id}
                 onClick={() => a.companyId ? onOpenCompany(a.companyId) : a.contactId && onOpenContact(a.contactId)}
                 title={a.message}
-                meta={`${a.type.replace("_", " ")} · ${fmtDate(a.createdAt)}`}
-                detail={[ct ? fullName(ct) : "", companyName(s, a.companyId)].filter((x) => x && x !== "—").join(" · ")} />
+                meta={`${a.type.replace("_", " ")} - ${fmtDate(a.createdAt)}`}
+                detail={[ct ? fullName(ct) : "", companyName(s, a.companyId)].filter((x) => x && x !== "-").join(" - ")} />
             );
           })}
         </ResultGroup>
@@ -4417,10 +4417,10 @@ export default function ReferralCRM() {
     >
       {backendMissing.length > 0 && (
         <div className="mb-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
-          <span className="font-medium">Heads up:</span> the following backend tables are unavailable or blocked by access rules — {backendMissing.join(", ")}. Contacts, companies, and imports loaded normally, but those modules will show empty until access is restored.
+          <span className="font-medium">Heads up:</span> the following backend tables are unavailable or blocked by access rules - {backendMissing.join(", ")}. Contacts, companies, and imports loaded normally, but those modules will show empty until access is restored.
         </div>
       )}
-      {/* Impersonation switcher — lets admins preview the CRM as any role */}
+      {/* Impersonation switcher - lets admins preview the CRM as any role */}
       <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs">
         <span className="text-muted-foreground">Acting as:</span>
         <Select value={s.currentUserId} onValueChange={(v) => crm.setCurrentUser(v)}>
@@ -4428,14 +4428,14 @@ export default function ReferralCRM() {
           <SelectContent>
             {s.users.map((u) => (
               <SelectItem key={u.id} value={u.id}>
-                {u.name} · {u.role.replace(/_/g, " ")}{u.states?.length ? ` · ${u.states.join(",")}` : ""}
+                {u.name} - {u.role.replace(/_/g, " ")}{u.states?.length ? ` - ${u.states.join(",")}` : ""}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         {me && (
           <Badge variant="outline" className="ml-auto">
-            {me.role.replace(/_/g, " ")}{me.states?.length ? ` · ${me.states.join(", ")}` : " · all states"}
+            {me.role.replace(/_/g, " ")}{me.states?.length ? ` - ${me.states.join(", ")}` : " - all states"}
           </Badge>
         )}
       </div>

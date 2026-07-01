@@ -23,10 +23,10 @@ import {
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
 
-/* Attribution & ROI — operational growth intelligence.
+/* Attribution & ROI - operational growth intelligence.
  * Derives growth value from real lead source quality, qualification rates,
  * referral momentum, and recruiting pipeline. Ad spend + cost data enrich
- * through Admin → Data Uploads. */
+ * through Admin -> Data Uploads. */
 
 const FOOTPRINT = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const STATE_NAMES: Record<string, string> = {
@@ -120,7 +120,7 @@ export default function AttributionROI() {
     };
   }, [marketingLeads, marketingCandidates]);
 
-  /* Growth channel attribution — derived from real source distribution + outcomes. */
+  /* Growth channel attribution - derived from real source distribution + outcomes. */
   const channels = useMemo(() => {
     const sources = Array.from(new Set(marketingLeads.map((l) => l.source)));
     const rows = sources.map((src) => {
@@ -130,7 +130,7 @@ export default function AttributionROI() {
       const count = leads.length;
       const qualRate = count ? Math.round((qual / count) * 100) : 0;
       const fricRate = count ? Math.round((fric / count) * 100) : 0;
-      // Operational value index = quality × volume − friction.
+      // Operational value index = quality x volume - friction.
       const value = Math.max(0, Math.round(qualRate * 0.6 + count * 4 - fricRate * 0.4));
       const meta = SOURCE_META[src] ?? { icon: Target, label: src, family: "Other" };
       return { src, count, qual, qualRate, fric, fricRate, value, meta };
@@ -200,7 +200,7 @@ export default function AttributionROI() {
         title: "Physician & pediatric networks",
         icon: Stethoscope,
         signal: signals.qualified,
-        note: `${signals.qualified} clinically-qualified leads · highest conversion quality`,
+        note: `${signals.qualified} clinically-qualified leads - highest conversion quality`,
       },
       {
         id: "parent",
@@ -214,14 +214,14 @@ export default function AttributionROI() {
         title: "School & district partnerships",
         icon: GraduationCap,
         signal: Math.round(refs * 0.25),
-        note: "IEP teams · supports intake conversion",
+        note: "IEP teams - supports intake conversion",
       },
       {
         id: "awareness",
         title: "Autism awareness events",
         icon: Megaphone,
         signal: Math.round(refs * 0.3),
-        note: "Local visibility → referral activity",
+        note: "Local visibility -> referral activity",
       },
       {
         id: "community",
@@ -248,7 +248,7 @@ export default function AttributionROI() {
       .sort((a, b) => b.fill - a.fill);
   }, [marketingCandidates]);
 
-  /* Operational growth correlation — demand vs capacity per state. */
+  /* Operational growth correlation - demand vs capacity per state. */
   const correlations = useMemo(() => {
     const out: { id: string; title: string; detail: string; tone: "balanced" | "imbalance" }[] = [];
     stateRows.forEach((s) => {
@@ -256,7 +256,7 @@ export default function AttributionROI() {
         out.push({
           id: `imb-${s.state}`,
           title: `${STATE_NAMES[s.state]} demand outpacing staffing capacity`,
-          detail: `${s.qualRate}% intake qualification vs ${s.fill}% recruiting fill — operational pressure building.`,
+          detail: `${s.qualRate}% intake qualification vs ${s.fill}% recruiting fill - operational pressure building.`,
           tone: "imbalance",
         });
       } else if (s.leads >= 3 && s.cands >= 3 && Math.abs(s.qualRate - s.fill) < 15) {
@@ -271,7 +271,7 @@ export default function AttributionROI() {
         out.push({
           id: `ref-${s.state}`,
           title: `${STATE_NAMES[s.state]} referrals correlate with qualification strength`,
-          detail: `${s.refs} word-of-mouth families · ${s.qualRate}% reach full intake.`,
+          detail: `${s.refs} word-of-mouth families - ${s.qualRate}% reach full intake.`,
           tone: "balanced",
         });
       }
@@ -284,12 +284,12 @@ export default function AttributionROI() {
     const out: string[] = [];
     if (topChannel) {
       out.push(
-        `${topChannel.meta.label} remain Blossom's highest-value growth channel — ${topChannel.qual} qualified outcomes at ${topChannel.qualRate}% qualification.`,
+        `${topChannel.meta.label} remain Blossom's highest-value growth channel - ${topChannel.qual} qualified outcomes at ${topChannel.qualRate}% qualification.`,
       );
     }
     if (fastestChannel && fastestChannel.src !== topChannel?.src && fastestChannel.qualRate > 0) {
       out.push(
-        `${fastestChannel.meta.label} convert at the fastest rate (${fastestChannel.qualRate}%) — efficiency leader.`,
+        `${fastestChannel.meta.label} convert at the fastest rate (${fastestChannel.qualRate}%) - efficiency leader.`,
       );
     }
     if (topState && topState.roi > 0) {
@@ -299,12 +299,12 @@ export default function AttributionROI() {
     }
     if (pressureState && pressureState.pressure >= 25) {
       out.push(
-        `${STATE_NAMES[pressureState.state]} lead growth is accelerating faster than staffing capacity — recruiting visibility investment needed.`,
+        `${STATE_NAMES[pressureState.state]} lead growth is accelerating faster than staffing capacity - recruiting visibility investment needed.`,
       );
     }
     if (signals.refShare >= 20) {
       out.push(
-        `Referrals drive ${signals.refShare}% of pipeline — community trust remains Blossom's highest-conversion growth engine.`,
+        `Referrals drive ${signals.refShare}% of pipeline - community trust remains Blossom's highest-conversion growth engine.`,
       );
     }
     return out.slice(0, 5);
@@ -313,7 +313,7 @@ export default function AttributionROI() {
   return (
     <MktgPage
       title="Attribution & ROI"
-      subtitle="Operational growth intelligence — what marketing, referrals, recruiting, and outreach actually move Blossom forward."
+      subtitle="Operational growth intelligence - what marketing, referrals, recruiting, and outreach actually move Blossom forward."
       actions={<AIPrompt label="What growth efforts are working?" variant="card" />}
     >
       {/* 1. GROWTH INTELLIGENCE HERO */}
@@ -328,13 +328,13 @@ export default function AttributionROI() {
           <h2 className="mt-2 max-w-2xl text-xl md:text-2xl font-semibold tracking-tight text-foreground">
             {topChannel && topState
               ? `${topChannel.meta.label} and ${STATE_NAMES[topState.state]} are driving Blossom's strongest operational ROI.`
-              : "Connect ad spend, call tracking, and SEO feeds in Admin → Data Uploads to activate full attribution intelligence."}
+              : "Connect ad spend, call tracking, and SEO feeds in Admin -> Data Uploads to activate full attribution intelligence."}
           </h2>
           <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
               { label: "Growth index", value: `${signals.growthIndex}/100` },
-              { label: "Top channel", value: topChannel ? topChannel.meta.label : "—" },
-              { label: "Highest ROI state", value: topState ? STATE_NAMES[topState.state] : "—" },
+              { label: "Top channel", value: topChannel ? topChannel.meta.label : "-" },
+              { label: "Highest ROI state", value: topState ? STATE_NAMES[topState.state] : "-" },
               { label: "Referral share", value: `${signals.refShare}%` },
             ].map((m) => (
               <div key={m.label} className="rounded-xl bg-card/60 backdrop-blur border border-border/50 p-3">
@@ -360,14 +360,14 @@ export default function AttributionROI() {
             {
               label: "Referral ROI",
               value: signals.referrals.length,
-              sub: `${signals.refShare}% of pipeline · highest conversion`,
+              sub: `${signals.refShare}% of pipeline - highest conversion`,
               icon: Heart,
               delta: signals.delta,
             },
             {
               label: "Recruiting visibility ROI",
               value: `${signals.recruitingFill}%`,
-              sub: `${signals.candReady} ready · ${signals.candHired} hired`,
+              sub: `${signals.candReady} ready - ${signals.candHired} hired`,
               icon: Users,
               delta: signals.candHired,
             },
@@ -398,7 +398,7 @@ export default function AttributionROI() {
       </MktgCard>
 
       {/* 3. GROWTH CHANNEL ATTRIBUTION */}
-      <MktgCard title="Growth channel attribution" hint="Ranked by operational value — quality × volume − friction">
+      <MktgCard title="Growth channel attribution" hint="Ranked by operational value - quality x volume - friction">
         {channels.length === 0 ? (
           <EmptyRow>No channel signal yet.</EmptyRow>
         ) : (
@@ -419,8 +419,8 @@ export default function AttributionROI() {
                             {c.meta.label}
                           </div>
                           <div className="text-[11.5px] text-muted-foreground">
-                            {c.meta.family} · {c.count} leads · {c.qualRate}% qualified
-                            {c.fricRate > 0 && ` · ${c.fricRate}% friction`}
+                            {c.meta.family} - {c.count} leads - {c.qualRate}% qualified
+                            {c.fricRate > 0 && ` - ${c.fricRate}% friction`}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
@@ -514,7 +514,7 @@ export default function AttributionROI() {
             </div>
             <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
               <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.leads}</span> total leads ·{" "}
+                <span className="text-foreground font-medium">{activeRow.leads}</span> total leads -{" "}
                 <span className="text-foreground font-medium">{activeRow.qual}</span> qualified
               </div>
               <div className="text-[12.5px] text-muted-foreground">
@@ -523,24 +523,24 @@ export default function AttributionROI() {
               </div>
               <div className="text-[12.5px] text-muted-foreground">
                 Recruiting:{" "}
-                <span className="text-foreground font-medium">{activeRow.cands}</span> candidates ·{" "}
+                <span className="text-foreground font-medium">{activeRow.cands}</span> candidates -{" "}
                 <span className="text-foreground font-medium">{activeRow.ready}</span> staffing-ready
               </div>
               <div className="text-[12.5px] text-muted-foreground">
                 Hires:{" "}
-                <span className="text-foreground font-medium">{activeRow.hired}</span> · Friction:{" "}
+                <span className="text-foreground font-medium">{activeRow.hired}</span> - Friction:{" "}
                 <span className="text-foreground font-medium">{activeRow.fricRate}%</span>
               </div>
             </div>
             {activeRow.pressure >= 25 && (
               <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[12px] text-foreground">
-                Growth ROI strong but staffing pressure rising — invest in recruiting visibility for{" "}
+                Growth ROI strong but staffing pressure rising - invest in recruiting visibility for{" "}
                 {STATE_NAMES[activeRow.state]}.
               </div>
             )}
             {activeRow.refs === 0 && activeRow.leads > 0 && (
               <div className="mt-2 rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] text-muted-foreground">
-                No word-of-mouth signal yet — community outreach opportunity.
+                No word-of-mouth signal yet - community outreach opportunity.
               </div>
             )}
           </div>
@@ -548,7 +548,7 @@ export default function AttributionROI() {
       </MktgCard>
 
       {/* 5. REFERRAL & OUTREACH ROI */}
-      <MktgCard title="Referral & outreach ROI" hint="Trust-driven growth — operational value of each relationship track">
+      <MktgCard title="Referral & outreach ROI" hint="Trust-driven growth - operational value of each relationship track">
         <div className="space-y-2">
           {outreach.map((o) => {
             const Icon = o.icon;
@@ -593,8 +593,8 @@ export default function AttributionROI() {
                   </span>
                 </div>
                 <div className="mt-1 text-[11.5px] text-muted-foreground">
-                  {c.count} applicants · {c.ready} ready · {c.hired} hired
-                  {c.withdrew > 0 && ` · ${c.withdrew} withdrew`}
+                  {c.count} applicants - {c.ready} ready - {c.hired} hired
+                  {c.withdrew > 0 && ` - ${c.withdrew} withdrew`}
                 </div>
                 <div className="mt-3">
                   <ShareBar
@@ -611,7 +611,7 @@ export default function AttributionROI() {
       {/* 7. OPERATIONAL GROWTH CORRELATION */}
       <MktgCard title="Operational growth correlation" hint="Where marketing growth meets staffing capacity">
         {correlations.length === 0 ? (
-          <EmptyRow>No correlation signal yet — connect more pipeline data to activate.</EmptyRow>
+          <EmptyRow>No correlation signal yet - connect more pipeline data to activate.</EmptyRow>
         ) : (
           <div className="space-y-2">
             {correlations.map((c) => (
@@ -644,7 +644,7 @@ export default function AttributionROI() {
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-5 md:p-6">
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           <Brain className="size-3.5" />
-          Operational Insights · Attribution & ROI
+          Operational Insights - Attribution & ROI
         </div>
         <h3 className="mt-2 text-[17px] font-semibold tracking-tight text-foreground">
           Growth intelligence summary

@@ -90,7 +90,7 @@ export function CampaignFormDialog({ open, onOpenChange, editing }: Props) {
             <Select value={form.source_id ?? "none"} onValueChange={(v) => set("source_id", v === "none" ? null : v)}>
               <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">— none —</SelectItem>
+                <SelectItem value="none">- none -</SelectItem>
                 {sources.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}
               </SelectContent>
             </Select>
@@ -132,7 +132,7 @@ export function CampaignFormDialog({ open, onOpenChange, editing }: Props) {
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !form.name?.trim()}>
-            {saving ? "Saving…" : editing ? "Save changes" : "Create campaign"}
+            {saving ? "Saving..." : editing ? "Save changes" : "Create campaign"}
           </Button>
         </DialogFooter>
       </DialogContent>

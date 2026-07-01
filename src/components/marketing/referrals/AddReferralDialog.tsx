@@ -245,7 +245,7 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Add Referral"}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Add Referral"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

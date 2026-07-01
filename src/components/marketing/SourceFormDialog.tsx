@@ -97,7 +97,7 @@ export function SourceFormDialog({ open, onOpenChange, editing }: Props) {
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !form.name?.trim()}>
-            {saving ? "Saving…" : editing ? "Save changes" : "Add source"}
+            {saving ? "Saving..." : editing ? "Save changes" : "Add source"}
           </Button>
         </DialogFooter>
       </DialogContent>

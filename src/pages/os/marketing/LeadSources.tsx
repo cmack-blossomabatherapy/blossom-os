@@ -20,10 +20,10 @@ import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 import { SourceManagerCard } from "@/components/marketing/SourceManagerCard";
 import { IntegrationReadinessPanel } from "@/components/marketing/IntegrationReadinessPanel";
 
-/* ────────────────────────────────────────────────────────────────────────── *
- * Lead Sources — operational intelligence on how families and staff find
+/* -------------------------------------------------------------------------- *
+ * Lead Sources - operational intelligence on how families and staff find
  * Blossom. All derived from real lead, call, and recruiting data.
- * ────────────────────────────────────────────────────────────────────────── */
+ * -------------------------------------------------------------------------- */
 
 const STATE_NAMES: Record<string, string> = {
   GA: "Georgia",
@@ -55,7 +55,7 @@ export default function LeadSources() {
   const mi = useMarketingIntelligence();
   const [activeSource, setActiveSource] = useState<LeadSource | null>(null);
 
-  /* ── source momentum (7d vs prior 7d) ───────────────────────────────── */
+  /* -- source momentum (7d vs prior 7d) --------------------------------- */
   const sourceMomentum = useMemo(() => {
     const now = Date.now();
     const map = new Map<LeadSource, { recent: number; prior: number }>();
@@ -76,7 +76,7 @@ export default function LeadSources() {
   const topVolume = mi.bySource[0];
   const topState = mi.stateTrend[0];
 
-  /* ── intake funnel (real pipeline stages) ───────────────────────────── */
+  /* -- intake funnel (real pipeline stages) ----------------------------- */
   const funnel = useMemo(() => {
     const stageCount = new Map<string, number>();
     marketingLeads.forEach((l) => stageCount.set(l.status, (stageCount.get(l.status) ?? 0) + 1));
@@ -87,7 +87,7 @@ export default function LeadSources() {
   }, [marketingLeads]);
   const funnelMax = Math.max(1, ...funnel.map((f) => f.count));
 
-  /* ── recruiting sources (real candidate.source) ─────────────────────── */
+  /* -- recruiting sources (real candidate.source) ----------------------- */
   const recruiting = useMemo(() => {
     const map = new Map<string, { source: string; total: number; staged: number }>();
     marketingCandidates.forEach((c) => {
@@ -102,7 +102,7 @@ export default function LeadSources() {
   }, [marketingCandidates]);
   const recruitingMax = Math.max(1, ...recruiting.map((r) => r.total));
 
-  /* ── filter for source-state cross-section ─────────────────────────── */
+  /* -- filter for source-state cross-section --------------------------- */
   const filteredLeads = activeSource ? marketingLeads.filter((l) => l.source === activeSource) : marketingLeads;
   const filteredByState = useMemo(() => {
     const m = new Map<string, number>();
@@ -113,13 +113,13 @@ export default function LeadSources() {
   return (
     <MktgPage
       title="Lead Sources"
-      subtitle="How families and staff discover Blossom — and what happens after they do."
+      subtitle="How families and staff discover Blossom - and what happens after they do."
       actions={<AIPrompt label="What's our highest-quality source?" variant="card" />}
     >
       <LeadSourceActions sourceLabel="All Sources" sourceValue="Website" sourcePage="lead-sources" />
       <SourceManagerCard />
       <IntegrationReadinessPanel />
-      {/* ── HERO ─────────────────────────────────────────────────────── */}
+      {/* -- HERO ------------------------------------------------------- */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
         <div className="absolute -top-24 -right-24 size-72 rounded-full bg-primary/10 blur-3xl" aria-hidden />
         <div className="relative">
@@ -136,7 +136,7 @@ export default function LeadSources() {
             {[
               { label: "Total leads", value: mi.totals.leads },
               { label: "Sources active", value: mi.bySource.length },
-              { label: "Leads · 7d", value: mi.velocity.leadsLast7 },
+              { label: "Leads - 7d", value: mi.velocity.leadsLast7 },
               { label: "Qualified rate", value: `${mi.velocity.qualifiedRate}%` },
             ].map((m) => (
               <div key={m.label} className="rounded-xl bg-card/60 backdrop-blur border border-border/50 p-3">
@@ -147,14 +147,14 @@ export default function LeadSources() {
           </div>
           {topVolume && topState && (
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-[12.5px] text-muted-foreground">
-              <span>Strongest volume · <span className="text-foreground">{topVolume.source}</span></span>
-              <span>Fastest-growing state · <span className="text-foreground">{STATE_NAMES[topState.state] ?? topState.state}</span></span>
+              <span>Strongest volume - <span className="text-foreground">{topVolume.source}</span></span>
+              <span>Fastest-growing state - <span className="text-foreground">{STATE_NAMES[topState.state] ?? topState.state}</span></span>
             </div>
           )}
         </div>
       </section>
 
-      {/* ── SOURCE SNAPSHOT GRID ─────────────────────────────────────── */}
+      {/* -- SOURCE SNAPSHOT GRID --------------------------------------- */}
       <MktgCard title="Lead source snapshot" hint="Click a source to filter">
         {sourceMomentum.length === 0 ? (
           <EmptyRow>No source data yet.</EmptyRow>
@@ -185,7 +185,7 @@ export default function LeadSources() {
                     <span className="text-[11.5px] text-muted-foreground">leads</span>
                   </div>
                   <div className="mt-2 text-[11.5px] text-muted-foreground">
-                    {s.qualifiedRate}% qualified · {s.recent} this week
+                    {s.qualifiedRate}% qualified - {s.recent} this week
                   </div>
                   <div className="mt-2">
                     <ShareBar value={s.qualifiedRate} tone={s.qualifiedRate >= 50 ? "accent" : "primary"} />
@@ -197,12 +197,12 @@ export default function LeadSources() {
         )}
       </MktgCard>
 
-      {/* ── FAMILY FUNNEL + STATE BREAKDOWN ──────────────────────────── */}
+      {/* -- FAMILY FUNNEL + STATE BREAKDOWN ---------------------------- */}
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <MktgCard
             title="Intake funnel"
-            hint={activeSource ? `${activeSource} leads only` : "All sources · real pipeline stages"}
+            hint={activeSource ? `${activeSource} leads only` : "All sources - real pipeline stages"}
           >
             <div className="space-y-2.5">
               {funnel.map((f) => {
@@ -265,7 +265,7 @@ export default function LeadSources() {
         </div>
       </div>
 
-      {/* ── RECRUITING + REFERRAL ────────────────────────────────────── */}
+      {/* -- RECRUITING + REFERRAL -------------------------------------- */}
       <div className="grid gap-4 lg:grid-cols-2">
         <MktgCard title="Recruiting lead sources" hint="Applicant volume + progression">
           {recruiting.length === 0 ? (
@@ -279,7 +279,7 @@ export default function LeadSources() {
                     <div className="flex items-baseline justify-between text-[12.5px]">
                       <span className="font-medium text-foreground">{r.source}</span>
                       <span className="text-muted-foreground tabular-nums">
-                        {r.total} applicants · {conv}% progressing
+                        {r.total} applicants - {conv}% progressing
                       </span>
                     </div>
                     <div className="mt-1">
@@ -324,7 +324,7 @@ export default function LeadSources() {
         </MktgCard>
       </div>
 
-      {/* ── AI INTELLIGENCE PANEL ────────────────────────────────────── */}
+      {/* -- AI INTELLIGENCE PANEL -------------------------------------- */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card to-primary/[0.04] p-5 md:p-6">
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           <Sparkles className="size-3.5 text-primary" />
@@ -338,7 +338,7 @@ export default function LeadSources() {
             <div className="rounded-xl border border-border/50 bg-card/60 p-3">
               <div className="text-[11.5px] uppercase tracking-wider text-muted-foreground">Highest quality</div>
               <div className="mt-1">
-                <span className="font-medium">{best.source}</span> leads convert at {best.qualifiedRate}% — strongest qualification across all sources.
+                <span className="font-medium">{best.source}</span> leads convert at {best.qualifiedRate}% - strongest qualification across all sources.
               </div>
             </div>
           )}
@@ -364,7 +364,7 @@ export default function LeadSources() {
             <div className="rounded-xl border border-border/50 bg-card/60 p-3">
               <div className="text-[11.5px] uppercase tracking-wider text-muted-foreground">Operational risk</div>
               <div className="mt-1">
-                {mi.bottlenecks[0].count} lead{mi.bottlenecks[0].count === 1 ? "" : "s"} stalled at {mi.bottlenecks[0].stage} — intake follow-up needed.
+                {mi.bottlenecks[0].count} lead{mi.bottlenecks[0].count === 1 ? "" : "s"} stalled at {mi.bottlenecks[0].stage} - intake follow-up needed.
               </div>
             </div>
           )}

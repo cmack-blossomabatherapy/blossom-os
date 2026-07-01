@@ -27,7 +27,7 @@ type EventRow = {
 /**
  * Shared read-only inbox for a specific set of marketing source systems.
  * Backed 100% by marketing_source_events. Empty when the connector hasn't
- * captured anything yet — no fabricated rows.
+ * captured anything yet - no fabricated rows.
  */
 export function SourceEventInbox({ sourceSystems, limit = 25 }: SourceEventInboxProps) {
   const [rows, setRows] = useState<EventRow[]>([]);
@@ -56,7 +56,7 @@ export function SourceEventInbox({ sourceSystems, limit = 25 }: SourceEventInbox
   if (loading) {
     return (
       <div className="flex items-center justify-center rounded-2xl border border-dashed border-border/60 bg-card/40 p-8 text-sm text-muted-foreground">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading events…
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading events...
       </div>
     );
   }
@@ -96,12 +96,12 @@ export function SourceEventInbox({ sourceSystems, limit = 25 }: SourceEventInbox
                 )}
               </td>
               <td className="px-3 py-2">
-                <div>{r.caller_name ?? "—"}</div>
+                <div>{r.caller_name ?? "-"}</div>
                 <div className="text-xs text-muted-foreground">
                   {r.caller_phone ?? r.caller_email ?? ""}
                 </div>
               </td>
-              <td className="px-3 py-2">{r.state ?? "—"}</td>
+              <td className="px-3 py-2">{r.state ?? "-"}</td>
               <td className="px-3 py-2">
                 <Badge variant={r.status === "new" ? "default" : "outline"}>{r.status}</Badge>
               </td>

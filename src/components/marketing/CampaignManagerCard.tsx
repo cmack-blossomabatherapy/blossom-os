@@ -41,7 +41,7 @@ export function CampaignManagerCard() {
   const openEdit = (c: MarketingCampaignRow) => { setEditing(c); setFormOpen(true); };
 
   const sourceName = (id: string | null | undefined) =>
-    id ? sources.find((s) => s.id === id)?.name ?? "—" : "—";
+    id ? sources.find((s) => s.id === id)?.name ?? "-" : "-";
 
   return (
     <>
@@ -50,7 +50,7 @@ export function CampaignManagerCard() {
           <div>
             <div className="text-sm font-semibold">Campaigns</div>
             <div className="text-[11.5px] text-muted-foreground">
-              {loading ? "Loading…" : `${campaigns.length} total · from marketing_campaigns`}
+              {loading ? "Loading..." : `${campaigns.length} total - from marketing_campaigns`}
             </div>
           </div>
           <Button size="sm" onClick={openCreate}>
@@ -82,7 +82,7 @@ export function CampaignManagerCard() {
               <tbody>
                 {campaigns.map((c) => {
                   const r = rollups.get(c.id);
-                  const utm = [c.utm_source, c.utm_medium, c.utm_campaign].filter(Boolean).join(" · ");
+                  const utm = [c.utm_source, c.utm_medium, c.utm_campaign].filter(Boolean).join(" - ");
                   return (
                     <tr key={c.id} className="border-t border-border/40 align-top">
                       <td className="px-2 py-2">
@@ -92,16 +92,16 @@ export function CampaignManagerCard() {
                       <td className="px-2 py-2">
                         <Badge className={STATUS_TONE[c.status] ?? "bg-muted"}>{c.status}</Badge>
                       </td>
-                      <td className="px-2 py-2 text-muted-foreground">{c.channel ?? "—"}</td>
+                      <td className="px-2 py-2 text-muted-foreground">{c.channel ?? "-"}</td>
                       <td className="px-2 py-2 text-muted-foreground">{sourceName(c.source_id)}</td>
                       <td className="px-2 py-2 text-muted-foreground whitespace-nowrap">
-                        {c.start_date ?? "—"} → {c.end_date ?? "—"}
+                        {c.start_date ?? "-"} -&gt; {c.end_date ?? "-"}
                       </td>
-                      <td className="px-2 py-2 text-right tabular-nums">{c.budget_cents ? fmt$(c.budget_cents) : "—"}</td>
-                      <td className="px-2 py-2 text-right tabular-nums">{r ? fmt$(r.spend_cents) : "—"}</td>
+                      <td className="px-2 py-2 text-right tabular-nums">{c.budget_cents ? fmt$(c.budget_cents) : "-"}</td>
+                      <td className="px-2 py-2 text-right tabular-nums">{r ? fmt$(r.spend_cents) : "-"}</td>
                       <td className="px-2 py-2 text-right tabular-nums">{r?.leads ?? 0}</td>
                       <td className="px-2 py-2 text-right tabular-nums">
-                        {r?.costPerLeadCents != null ? fmt$(r.costPerLeadCents) : "—"}
+                        {r?.costPerLeadCents != null ? fmt$(r.costPerLeadCents) : "-"}
                       </td>
                       <td className="px-2 py-2 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1">

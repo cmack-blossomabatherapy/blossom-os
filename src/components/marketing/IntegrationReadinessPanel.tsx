@@ -90,8 +90,8 @@ export function IntegrationReadinessPanel() {
               <div className="mt-1 text-[11px] text-muted-foreground">
                 <div>Slug: <code>{i.slug}</code></div>
                 <div className="truncate">Tables: {i.table}</div>
-                <div>Events: {roll.total} · open {roll.open}</div>
-                <div>Last event: {roll.last ? new Date(roll.last).toLocaleDateString() : "—"}</div>
+                <div>Events: {roll.total} - open {roll.open}</div>
+                <div>Last event: {roll.last ? new Date(roll.last).toLocaleDateString() : "-"}</div>
               </div>
               <div className="mt-2 text-[11px]">
                 <span className="text-muted-foreground">Next step: </span>

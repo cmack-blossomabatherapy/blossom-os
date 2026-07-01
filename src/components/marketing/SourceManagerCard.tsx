@@ -51,7 +51,7 @@ export function SourceManagerCard() {
           <div>
             <div className="text-sm font-semibold">Marketing sources</div>
             <div className="text-[11.5px] text-muted-foreground">
-              {loading ? "Loading…" : `${sources.length} configured · from marketing_sources`}
+              {loading ? "Loading..." : `${sources.length} configured - from marketing_sources`}
             </div>
           </div>
           <Button size="sm" onClick={openCreate}>
@@ -86,11 +86,11 @@ export function SourceManagerCard() {
                         <div className="font-medium text-foreground">{s.name}</div>
                         {s.notes && <div className="text-[11px] text-muted-foreground truncate max-w-[240px]">{s.notes}</div>}
                       </td>
-                      <td className="px-2 py-2 text-muted-foreground">{s.source_system ?? "—"}</td>
-                      <td className="px-2 py-2 text-muted-foreground">{s.channel ?? "—"}</td>
-                      <td className="px-2 py-2 text-muted-foreground">{s.state ?? "—"}</td>
+                      <td className="px-2 py-2 text-muted-foreground">{s.source_system ?? "-"}</td>
+                      <td className="px-2 py-2 text-muted-foreground">{s.channel ?? "-"}</td>
+                      <td className="px-2 py-2 text-muted-foreground">{s.state ?? "-"}</td>
                       <td className="px-2 py-2 text-muted-foreground whitespace-nowrap">
-                        {last ? new Date(last).toLocaleDateString() : "—"}
+                        {last ? new Date(last).toLocaleDateString() : "-"}
                       </td>
                       <td className="px-2 py-2">
                         <Badge className={s.is_active ? "bg-emerald-500/15 text-emerald-700" : "bg-muted"}>
