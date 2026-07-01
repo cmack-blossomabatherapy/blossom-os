@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard, Users, Building2, HeartHandshake, ListChecks, ListFilter,
   Workflow, BarChart3, Upload, Download, Settings2, ShieldCheck, Trash2,
@@ -75,6 +76,28 @@ const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] =
 ];
 
 // ---------- shared atoms ----------
+/**
+ * Persist a piece of view state in the URL search params so views are
+ * shareable and survive reloads. `defaultValue` is stripped from the URL
+ * to keep it clean.
+ */
+function useUrlState(key: string, defaultValue: string): [string, (v: string) => void] {
+  const [params, setParams] = useSearchParams();
+  const value = params.get(key) ?? defaultValue;
+  const setValue = useCallback(
+    (v: string) => {
+      setParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (!v || v === defaultValue) next.delete(key);
+        else next.set(key, v);
+        return next;
+      }, { replace: true });
+    },
+    [key, defaultValue, setParams],
+  );
+  return [value, setValue];
+}
+
 function Kpi({ label, value, hint, icon: Icon }: { label: string; value: React.ReactNode; hint?: string; icon: typeof Users }) {
   return (
     <div className="rounded-2xl border bg-card p-4">
@@ -347,9 +370,12 @@ const CONTACT_VIEWS = [
 
 function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
   const s = useCrm();
-  const [view, setView] = useState<(typeof CONTACT_VIEWS)[number]["id"]>("all");
-  const [q, setQ] = useState("");
-  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [viewRaw, setView] = useUrlState("cv", "all");
+  const view = (CONTACT_VIEWS.some((v) => v.id === viewRaw)
+    ? viewRaw
+    : "all") as (typeof CONTACT_VIEWS)[number]["id"];
+  const [q, setQ] = useUrlState("cq", "");
+  const [stateFilter, setStateFilter] = useUrlState("cs", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
@@ -682,8 +708,11 @@ const COMPANY_VIEWS = [
 
 function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const s = useCrm();
-  const [view, setView] = useState<(typeof COMPANY_VIEWS)[number]["id"]>("all");
-  const [q, setQ] = useState("");
+  const [viewRaw, setView] = useUrlState("ov", "all");
+  const view = (COMPANY_VIEWS.some((v) => v.id === viewRaw)
+    ? viewRaw
+    : "all") as (typeof COMPANY_VIEWS)[number]["id"];
+  const [q, setQ] = useUrlState("oq", "");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
@@ -1088,8 +1117,8 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
   const [logId, setLogId] = useState<ID | null>(null);
   const [drawerLeadId, setDrawerLeadId] = useState<string | null>(null);
   const [drawerFocusStage, setDrawerFocusStage] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [stageFilter, setStageFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useUrlState("rs", "all");
+  const [stageFilter, setStageFilter] = useUrlState("rp", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
   const allRows = scopedReferrals(s);
@@ -4711,7 +4740,9 @@ export default function ReferralCRM() {
   const s = useCrm();
   const me = currentUser(s);
   const { isAdmin, loading: authLoading } = useAuth();
-  const [module, setModule] = useState<ModuleId>("dashboard");
+  const [moduleRaw, setModuleRaw] = useUrlState("m", "dashboard");
+  const module = moduleRaw as ModuleId;
+  const setModule = (id: ModuleId) => setModuleRaw(id);
   const [contactId, setContactId] = useState<ID | null>(null);
   const [companyId, setCompanyId] = useState<ID | null>(null);
   const [backendMissing, setBackendMissing] = useState<string[]>([]);
