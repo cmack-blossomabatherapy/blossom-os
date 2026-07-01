@@ -1247,7 +1247,7 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
                   <td className="px-3 align-middle font-medium">
                     <div className="flex items-center gap-2 min-w-0">
                       {lead ? (
-                        <button className="truncate text-left hover:text-primary" onClick={() => setDrawerLeadId(lead.id)}>{r.name}</button>
+                        <button className="truncate text-left hover:text-primary" onClick={() => { setDrawerFocusStage(null); setDrawerLeadId(lead.id); }}>{r.name}</button>
                       ) : r.isLegacyLeadLink ? (
                         <span className="truncate text-foreground">{r.name}</span>
                       ) : (
