@@ -9,7 +9,7 @@ const LEADTRAP_SOURCES = ["leadtrap"];
 export default function LeadTrap() {
   const s = useSourceStats(LEADTRAP_SOURCES);
   const fmt = (n: number) => (n ? n.toString() : "—");
-  const st = (n: number) => (n ? "ok" : "needs_data");
+  const st = (n: number): "live" | "needs_data" => (n ? "live" : "needs_data");
   return (
     <GrowthPageShell
       eyebrow="Growth & Admissions"
