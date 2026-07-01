@@ -98,8 +98,10 @@ describe("Marketing Pass 107 - integration readiness", () => {
   it("/patient-journey stays Marketing-only and BD does not link there", () => {
     const app = read("src/App.tsx");
     expect(app).toMatch(/path="\/patient-journey"[\s\S]{0,200}MARKETING_ROLES/);
-    const bd = read("src/pages/os/OSShell.tsx");
-    expect(bd).not.toContain("/patient-journey");
+    const menus = read("src/lib/os/roleMenus.ts");
+    const bdMatch = menus.match(/business_development:\s*\{[\s\S]*?\n\s{2}\},/);
+    expect(bdMatch, "business_development role menu block found").toBeTruthy();
+    expect(bdMatch![0]).not.toContain("/patient-journey");
   });
 
   it("WebAnalytics contains no fake mobile share", () => {
