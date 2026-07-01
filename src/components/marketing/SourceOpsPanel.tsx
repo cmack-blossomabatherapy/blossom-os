@@ -6,6 +6,7 @@ import { useMarketingSources } from "@/hooks/useMarketingSources";
 import { useMarketingCampaigns } from "@/hooks/useMarketingCampaigns";
 import { useMarketingCampaignMetrics } from "@/hooks/useMarketingCampaignMetrics";
 import { useMarketingSourceEvents } from "@/hooks/useMarketingSourceEvents";
+import { expandSourceSlugAliases, sourceSystemToSourceValue } from "@/lib/marketing/sourceEventMapper";
 
 function fmt$(cents: number) {
   if (!cents) return "$0";
@@ -32,27 +33,49 @@ export function SourceOpsPanel({
 }) {
   const { sources } = useMarketingSources();
   const { campaigns } = useMarketingCampaigns();
+  const aliasSet = useMemo(() => {
+    const expanded = expandSourceSlugAliases(sourceSlugs);
+    return new Set(expanded.map((s) => s.toLowerCase()));
+  }, [sourceSlugs]);
+  const canonicalSourceValues = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of sourceSlugs) {
+      const v = sourceSystemToSourceValue(s);
+      if (v) set.add(v.toLowerCase());
+    }
+    return set;
+  }, [sourceSlugs]);
+  const matchesAlias = (slug: string | null | undefined) => {
+    if (!slug) return false;
+    return aliasSet.has(slug.toLowerCase());
+  };
   const linkedSources = useMemo(
-    () =>
-      sources.filter((s) =>
-        s.source_system && sourceSlugs.map((x) => x.toLowerCase()).includes(s.source_system.toLowerCase()),
-      ),
-    [sources, sourceSlugs],
+    () => sources.filter((s) => matchesAlias(s.source_system)),
+    [sources, aliasSet],
   );
   const linkedCampaigns = useMemo(
     () =>
-      campaigns.filter((c) =>
-        (c.source_id && linkedSources.some((s) => s.id === c.source_id)) ||
-        (c.source_system && sourceSlugs.map((x) => x.toLowerCase()).includes(c.source_system.toLowerCase())),
+      campaigns.filter(
+        (c) =>
+          (c.source_id && linkedSources.some((s) => s.id === c.source_id)) ||
+          matchesAlias(c.source_system),
       ),
-    [campaigns, linkedSources, sourceSlugs],
+    [campaigns, linkedSources, aliasSet],
   );
   const { rollups } = useMarketingCampaignMetrics(linkedCampaigns.map((c) => c.id));
   const { events } = useMarketingSourceEvents({ limit: 500 });
 
-  const filteredEvents = events.filter((e) =>
-    sourceSlugs.some((s) => (e.source ?? "").toLowerCase().includes(s.toLowerCase())),
-  );
+  const filteredEvents = events.filter((e) => {
+    const src = (e.source ?? "").toLowerCase();
+    if (!src) return false;
+    if (aliasSet.has(src)) return true;
+    if (canonicalSourceValues.has(src)) return true;
+    // Fall back to alias substring only against normalized alias tokens.
+    for (const a of aliasSet) {
+      if (src === a) return true;
+    }
+    return false;
+  });
   const open = filteredEvents.filter((e) => e.status === "new" || e.status === "needs_review" || e.status === "possible_duplicate");
   const resolved = filteredEvents.filter((e) => e.status === "converted_to_lead" || e.status === "attached_to_existing_lead");
 
@@ -65,7 +88,7 @@ export function SourceOpsPanel({
           <div className="flex justify-between"><span className="text-muted-foreground">Converted / attached</span><span className="tabular-nums">{resolved.length}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Total (recent)</span><span className="tabular-nums">{filteredEvents.length}</span></div>
         </div>
-        <Link to="/marketing/inbox" className="mt-3 inline-flex items-center gap-1 text-[12px] text-primary hover:underline">
+        <Link to="/marketing/lead-source-inbox" className="mt-3 inline-flex items-center gap-1 text-[12px] text-primary hover:underline">
           Open Lead Source Inbox <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
