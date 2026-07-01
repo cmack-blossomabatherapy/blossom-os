@@ -361,11 +361,11 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     if (stateFilter !== "all") r = r.filter((c) => c.state === stateFilter);
     if (q) {
       const ql = q.toLowerCase();
-      r = r.filter((c) => fullName(c).toLowerCase().includes(ql) || c.email?.toLowerCase().includes(ql) || c.jobTitle?.toLowerCase().includes(ql));
+      r = r.filter((c) => contactDisplayName(c).toLowerCase().includes(ql) || c.email?.toLowerCase().includes(ql) || c.jobTitle?.toLowerCase().includes(ql));
     }
     const getKey = (c: typeof r[number]): string | number => {
       switch (sort.key) {
-        case "name": return (fullName(c) || c.email || "").toLowerCase();
+        case "name": return contactDisplayName(c).toLowerCase();
         case "company": return (companyName(s, c.companyId) || "").toLowerCase();
         case "title": return (c.jobTitle || "").toLowerCase();
         case "state": return (c.state || "").toLowerCase();
@@ -2102,7 +2102,7 @@ function ReportsModule() {
   })).filter((x) => x.referrals > 0).sort((a, b) => b.referrals - a.referrals).slice(0, 15);
 
   const byContact = cts.map((c) => ({
-    name: fullName(c), company: companyName(s, c.companyId), state: c.state,
+    name: contactDisplayName(c), company: companyName(s, c.companyId), state: c.state,
     referrals: refs.filter((r) => r.contactId === c.id).length,
   })).filter((x) => x.referrals > 0).sort((a, b) => b.referrals - a.referrals).slice(0, 15);
 
@@ -2348,7 +2348,7 @@ function ExportsModule() {
     const data = activeReferrals(s).map((r) => ({
       id: r.id, patient: r.name, referralDate: r.referralDate,
       sourceCompany: companyName(s, r.companyId),
-      sourceContact: r.contactId ? fullName(s.contacts.find((c) => c.id === r.contactId)!) : "",
+      sourceContact: r.contactId ? contactDisplayName(s.contacts.find((c) => c.id === r.contactId)) : "",
       state: r.state, serviceType: r.serviceType, status: r.referralStatus,
       intakeStatus: r.intakeStatus, insurance: r.insuranceType,
       intakeOwner: userName(s, r.assignedIntakeOwnerId),
@@ -2802,7 +2802,7 @@ function DuplicatesModule() {
                     const other = idx === 0 ? p.b : p.a;
                     return (
                       <div key={c.id} className="rounded-xl border p-3 text-sm space-y-1">
-                        <p className="font-medium">{fullName(c)}</p>
+                        <p className="font-medium">{contactDisplayName(c)}</p>
                         <p className="text-xs text-muted-foreground">{c.email || "no email"}</p>
                         <p className="text-xs text-muted-foreground">{c.phone || "no phone"}</p>
                         <p className="text-xs text-muted-foreground">{c.jobTitle || "-"} - {c.referralCount} referrals</p>
@@ -2948,7 +2948,7 @@ function FilesModule() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const objectLabel = (a: Attachment): string => {
     if (a.objectType === "contact") {
-      const c = s.contacts.find((x) => x.id === a.objectId); return c ? fullName(c) : a.objectId;
+      const c = s.contacts.find((x) => x.id === a.objectId); return c ? contactDisplayName(c) : a.objectId;
     }
     if (a.objectType === "company") return s.companies.find((x) => x.id === a.objectId)?.name ?? a.objectId;
     if (a.objectType === "referral") return s.referrals.find((x) => x.id === a.objectId)?.name ?? a.objectId;
@@ -3055,7 +3055,7 @@ function UploadFileDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
   const [busy, setBusy] = useState(false);
 
   const options = (() => {
-    if (objectType === "contact") return s.contacts.filter((c) => !c.deletedAt).map((c) => ({ id: c.id, label: fullName(c) }));
+    if (objectType === "contact") return s.contacts.filter((c) => !c.deletedAt).map((c) => ({ id: c.id, label: contactDisplayName(c) }));
     if (objectType === "company") return s.companies.filter((c) => !c.deletedAt).map((c) => ({ id: c.id, label: c.name }));
     if (objectType === "referral") return s.referrals.filter((r) => !r.deletedAt).map((r) => ({ id: r.id, label: r.name }));
     return [];
@@ -3263,7 +3263,7 @@ function ActivitiesModule() {
         {rows.map((a) => {
           const Icon = ACTIVITY_ICON[a.type] ?? Activity;
           const targetName = a.contactId
-            ? fullName(s.contacts.find((c) => c.id === a.contactId) ?? { firstName: "?", lastName: "" } as Contact)
+            ? contactDisplayName(s.contacts.find((c) => c.id === a.contactId))
             : a.companyId
               ? companyName(s, a.companyId)
               : a.referralId
