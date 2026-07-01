@@ -1460,10 +1460,42 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const [groupBy, setGroupBy] = useState<"owner" | "state" | "status">("owner");
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<Set<ID>>(new Set());
+  const [tQuery, setTQuery] = useUrlState("tq", "");
+  const [tStatusFilter, setTStatusFilter] = useUrlState("ts", "all");
+  const [tPriorityFilter, setTPriorityFilter] = useUrlState("tpr", "all");
+  const [tOwnerFilter, setTOwnerFilter] = useUrlState("to", "all");
+  const [tTypeFilter, setTTypeFilter] = useUrlState("tt", "all");
+  const [tDueFilter, setTDueFilter] = useUrlState("td", "all");
+
+  const filteredTasks = useMemo(() => {
+    const now = Date.now();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return scopedTasks(s).filter((t) => {
+      if (tStatusFilter !== "all" && t.status !== tStatusFilter) return false;
+      if (tPriorityFilter !== "all" && t.priority !== tPriorityFilter) return false;
+      if (tOwnerFilter !== "all") {
+        if (tOwnerFilter === "__unassigned__") { if (t.assignedUserId) return false; }
+        else if (t.assignedUserId !== tOwnerFilter) return false;
+      }
+      if (tTypeFilter !== "all" && t.type !== tTypeFilter) return false;
+      if (tDueFilter !== "all") {
+        const due = t.dueDate ? new Date(t.dueDate).getTime() : null;
+        if (tDueFilter === "overdue") { if (!due || due >= today.getTime() || t.status === "Completed") return false; }
+        else if (tDueFilter === "today") { if (!due || due < today.getTime() || due >= today.getTime() + 86_400_000) return false; }
+        else if (tDueFilter === "week") { if (!due || due < now || due > now + 7 * 86_400_000) return false; }
+        else if (tDueFilter === "none") { if (due) return false; }
+      }
+      if (tQuery) {
+        const ql = tQuery.toLowerCase();
+        if (!t.title.toLowerCase().includes(ql) && !(t.notes || "").toLowerCase().includes(ql)) return false;
+      }
+      return true;
+    });
+  }, [s, tQuery, tStatusFilter, tPriorityFilter, tOwnerFilter, tTypeFilter, tDueFilter]);
 
   const groups = useMemo(() => {
     const map = new Map<string, Task[]>();
-    for (const t of scopedTasks(s)) {
+    for (const t of filteredTasks) {
       let key = "Unassigned";
       if (groupBy === "owner") key = userName(s, t.assignedUserId);
       else if (groupBy === "state") {
@@ -1474,9 +1506,9 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
       map.get(key)!.push(t);
     }
     return [...map.entries()];
-  }, [s, groupBy]);
+  }, [s, groupBy, filteredTasks]);
 
-  const visibleIds = scopedTasks(s).map((t) => t.id);
+  const visibleIds = filteredTasks.map((t) => t.id);
   const allChecked = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(visibleIds));
   const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
@@ -1516,8 +1548,29 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
     toast({ title: `Exported ${data.length} task(s)` });
   };
 
+  const totalTasks = scopedTasks(s).length;
+  const taskFilters: FilterDef[] = [
+    { key: "ts", label: "Status", value: tStatusFilter, onChange: setTStatusFilter, options: [{ value: "all", label: "All" }, ...["Open", "In Progress", "Completed"].map((v) => ({ value: v, label: v }))] },
+    { key: "tpr", label: "Priority", value: tPriorityFilter, onChange: setTPriorityFilter, options: [{ value: "all", label: "All" }, ...["Low", "Medium", "High"].map((v) => ({ value: v, label: v }))] },
+    { key: "tt", label: "Type", value: tTypeFilter, onChange: setTTypeFilter, options: [{ value: "all", label: "All" }, ...["Call", "Email", "Meeting", "Lunch & Learn", "Follow-Up", "Other"].map((v) => ({ value: v, label: v }))], width: 150 },
+    { key: "to", label: "Owner", value: tOwnerFilter, onChange: setTOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
+    { key: "td", label: "Due", value: tDueFilter, onChange: setTDueFilter, options: [{ value: "all", label: "Any" }, { value: "overdue", label: "Overdue" }, { value: "today", label: "Today" }, { value: "week", label: "Next 7d" }, { value: "none", label: "No date" }] },
+  ];
+
   return (
     <div className="space-y-4">
+      <TableFilterBar
+        search={{ value: tQuery, onChange: setTQuery, placeholder: "Search tasks..." }}
+        filters={taskFilters}
+        resultCount={filteredTasks.length}
+        totalCount={totalTasks}
+        onClear={() => { setTQuery(""); setTStatusFilter("all"); setTPriorityFilter("all"); setTOwnerFilter("all"); setTTypeFilter("all"); setTDueFilter("all"); }}
+        extra={
+          <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}>
+            <Plus className="size-3.5" /> New Task
+          </Button>
+        }
+      />
       <div className="flex items-center gap-2">
         <Label className="text-xs">Group by</Label>
         <Select value={groupBy} onValueChange={(v) => setGroupBy(v as "owner" | "state" | "status")}>
@@ -1531,8 +1584,6 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
         <label className="ml-2 flex items-center gap-2 text-xs text-muted-foreground">
           <Checkbox checked={allChecked} onCheckedChange={toggleAll} /> Select all
         </label>
-        <div className="flex-1" />
-        <Button size="sm" className="h-9 gap-1.5" disabled={!canCrm(s, "create")} onClick={() => setCreating(true)}><Plus className="size-3.5" /> New Task</Button>
       </div>
 
       {selected.size > 0 && (
