@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { MapPin, ExternalLink, Search } from "lucide-react";
 
 interface Candidate { id: string; name: string; role: string | null; city: string | null; state: string | null; status: string | null; }
+interface Row { id: string; first_name: string; last_name: string; role: string | null; city: string | null; state: string | null; pipeline_stage: string | null; }
 
 export default function RecruitingMap() {
   const [q, setQ] = useState("");
@@ -17,9 +18,17 @@ export default function RecruitingMap() {
     (async () => {
       const { data } = await supabase
         .from("recruiting_candidates")
-        .select("id,name,role,city,state,status")
+        .select("id,first_name,last_name,role,city,state,pipeline_stage")
         .limit(200);
-      setRows((data ?? []) as Candidate[]);
+      const mapped: Candidate[] = ((data ?? []) as Row[]).map((r) => ({
+        id: r.id,
+        name: `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim(),
+        role: r.role,
+        city: r.city,
+        state: r.state,
+        status: r.pipeline_stage,
+      }));
+      setRows(mapped);
       setLoading(false);
     })();
   }, []);
