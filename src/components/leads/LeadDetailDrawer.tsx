@@ -885,13 +885,30 @@ function DocumentRequestsBlock({
   );
 }
 
-function PipelineProgress({ status }: { status: string }) {
+function PipelineProgress({
+  status,
+  focusStage,
+}: {
+  status: string;
+  focusStage?: string | null;
+}) {
   const canonical = canonicalFamilyLeadStage(status);
   const stages = FAMILY_LEAD_PIPELINE_STAGES;
   const currentIdx = stages.indexOf(canonical as typeof stages[number]);
   const total = stages.length;
+  const focusIdx = focusStage
+    ? stages.indexOf(canonicalFamilyLeadStage(focusStage) as typeof stages[number])
+    : -1;
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const barRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (focusIdx >= 0) {
+      setOpenIdx(focusIdx);
+      barRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [focusIdx]);
   return (
-    <div className="mt-4 rounded-xl border border-border/60 bg-muted/40 p-3">
+    <div ref={barRef} className="mt-4 rounded-xl border border-border/60 bg-muted/40 p-3">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
           Pipeline progress
@@ -911,8 +928,15 @@ function PipelineProgress({ status }: { status: string }) {
               ? "current"
               : "future";
           const details = STAGE_DETAILS[s];
+          const isFocused = i === focusIdx;
           return (
-            <Popover key={s}>
+            <Popover
+              key={s}
+              open={openIdx === i ? true : undefined}
+              onOpenChange={(v) => {
+                if (!v && openIdx === i) setOpenIdx(null);
+              }}
+            >
               <PopoverTrigger asChild>
                 <button
                   type="button"
@@ -922,6 +946,7 @@ function PipelineProgress({ status }: { status: string }) {
                     state === "done" && "bg-primary/70 hover:bg-primary",
                     state === "current" && "bg-primary ring-2 ring-primary/30",
                     state === "future" && "bg-muted-foreground/20 hover:bg-muted-foreground/40",
+                    isFocused && "h-3 ring-2 ring-primary ring-offset-1 ring-offset-background",
                   )}
                 />
               </PopoverTrigger>
