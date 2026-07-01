@@ -257,17 +257,32 @@ function AttachLeadDialog({
 
 export default function LeadSourceInbox() {
   const { leads, createLead } = useLeads();
-  const [events, setEvents] = useState<LeadSourceEvent[]>([]);
+  const {
+    events,
+    insertEvent,
+    updateStatus,
+    linkLead,
+  } = useMarketingSourceEvents();
+  const [searchParams] = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const initialSourceFromQuery =
+    searchParams.get("source") ?? searchParams.get("source_system") ?? null;
+  const [sourceFilter, setSourceFilter] = useState<string>(
+    initialSourceFromQuery ? sourceSystemToSourceValue(initialSourceFromQuery) : "all",
+  );
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
   const [attachOpen, setAttachOpen] = useState(false);
 
-  useEffect(() => subscribeLeadSourceEvents(setEvents), []);
+  // Keep the source filter in sync with query-param navigation from
+  // source-specific pages (LeadTrap / Facebook Ads / Google Ads / etc.).
+  useEffect(() => {
+    const q = searchParams.get("source") ?? searchParams.get("source_system");
+    if (q) setSourceFilter(sourceSystemToSourceValue(q));
+  }, [searchParams]);
 
   // Recompute duplicate scores live as leads change.
   const scored = useMemo(() => events.map((e) => {
