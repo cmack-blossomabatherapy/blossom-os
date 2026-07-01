@@ -18,8 +18,13 @@ import {
   Handshake,
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
-import { mockLeads } from "@/data/leads";
-import { mockCandidates } from "@/data/recruiting";
+import type { Lead } from "@/data/leads";
+import type { Candidate } from "@/data/recruiting";
+// Referral CRM and Recruiting marketing metrics flow through useMarketingIntelligence.
+// The narrative arrays below are intentionally empty on production — the page renders
+// honest empty states until referral/community events are captured.
+const mockLeads: Lead[] = [];
+const mockCandidates: Candidate[] = [];
 
 /* Community Outreach — operational community relationship intelligence.
  * Derived from real referral and recruiting-outreach signal. Event and
