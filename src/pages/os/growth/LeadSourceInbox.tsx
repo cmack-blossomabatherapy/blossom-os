@@ -82,7 +82,28 @@ const READINESS_SOURCE_IDS = [
 
 /* ----------------------------- Add-event dialog ---------------------------- */
 
-function AddEventDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+function AddEventDialog({
+  open,
+  onOpenChange,
+  onAdd,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onAdd: (input: {
+    source: string;
+    eventType: LeadSourceEventType;
+    parentFirstName: string;
+    parentLastName: string;
+    childFirstName: string;
+    childLastName: string;
+    phone: string;
+    email: string;
+    state: string;
+    campaign: string;
+    referralPartner?: string;
+    summary: string;
+  }) => Promise<void> | void;
+}) {
   const [source, setSource] = useState("CTM");
   const [eventType, setEventType] = useState<LeadSourceEventType>("phone_call");
   const [parentFirstName, setPF] = useState("");
@@ -143,17 +164,28 @@ function AddEventDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => {
-            addLeadSourceEvent({
-              source, sourceEventType: eventType,
-              parentFirstName, parentLastName, childFirstName, childLastName,
-              phone, email, state, campaign,
-              referralPartner: referralPartner || undefined,
-              summary,
-            });
-            toast.success("Source event added");
-            reset();
-            onOpenChange(false);
+          <Button onClick={async () => {
+            try {
+              await onAdd({
+                source,
+                eventType,
+                parentFirstName,
+                parentLastName,
+                childFirstName,
+                childLastName,
+                phone,
+                email,
+                state,
+                campaign,
+                referralPartner: referralPartner || undefined,
+                summary,
+              });
+              toast.success("Source event added");
+              reset();
+              onOpenChange(false);
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "Could not save event");
+            }
           }}>Add event</Button>
         </DialogFooter>
       </DialogContent>
