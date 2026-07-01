@@ -4303,7 +4303,7 @@ function GlobalSearchModule({
       c.referralPartnerStatus, c.tags.join(" "), c.notes,
     ].filter(Boolean).join(" ")));
     const contacts = activeContacts(s).filter((c) => match([
-      fullName(c), c.email, c.phone, c.mobilePhone, c.jobTitle, c.specialty,
+      contactDisplayName(c), c.email, c.phone, c.mobilePhone, c.jobTitle, c.specialty,
       c.state, c.referralSourceType, c.referralPartnerStatus,
       companyName(s, c.companyId), c.tags.join(" "), c.notes,
     ].filter(Boolean).join(" ")));
@@ -4318,7 +4318,7 @@ function GlobalSearchModule({
     ].filter(Boolean).join(" ")));
     const activities = s.activity.filter((a) => match([
       a.message, a.type,
-      a.contactId ? fullName(s.contacts.find((c) => c.id === a.contactId)!) : "",
+      a.contactId ? contactDisplayName(s.contacts.find((c) => c.id === a.contactId)) : "",
       companyName(s, a.companyId),
     ].filter(Boolean).join(" ")));
     return { companies, contacts, referrals, tasks, activities };
@@ -4373,7 +4373,7 @@ function GlobalSearchModule({
         <ResultGroup label="Contacts" count={results.contacts.length} icon={Users}>
           {results.contacts.slice(0, 25).map((c) => (
             <ResultRow key={c.id} onClick={() => onOpenContact(c.id)}
-              title={fullName(c)}
+              title={contactDisplayName(c)}
               meta={`${c.jobTitle ?? "-"} - ${companyName(s, c.companyId)} - ${c.state ?? "-"}`}
               detail={[c.email, c.phone, c.referralSourceType, c.tags.join(", ")].filter(Boolean).join(" - ")} />
           ))}
@@ -4385,9 +4385,9 @@ function GlobalSearchModule({
           onJump={() => onJumpModule("referrals")}>
           {results.referrals.slice(0, 25).map((r) => (
             <ResultRow key={r.id}
-              onClick={() => r.companyId && onOpenCompany(r.companyId)}
+              onClick={() => r.contactId ? onOpenContact(r.contactId) : r.companyId && onOpenCompany(r.companyId)}
               title={r.name}
-              meta={`${companyName(s, r.companyId)} - ${r.state ?? "-"} - ${r.referralStatus}`}
+              meta={`${r.contactId ? contactDisplayName(s.contacts.find((c) => c.id === r.contactId)) : companyName(s, r.companyId)} - ${r.state ?? "-"} - ${r.referralStatus}`}
               detail={`${fmtDate(r.referralDate)}${r.serviceType ? ` - ${r.serviceType}` : ""}${r.insuranceType ? ` - ${r.insuranceType}` : ""}`} />
           ))}
         </ResultGroup>
@@ -4398,7 +4398,7 @@ function GlobalSearchModule({
           onJump={() => onJumpModule("tasks")}>
           {results.tasks.slice(0, 25).map((t) => (
             <ResultRow key={t.id}
-              onClick={() => t.companyId ? onOpenCompany(t.companyId) : t.contactId && onOpenContact(t.contactId)}
+              onClick={() => t.contactId ? onOpenContact(t.contactId) : t.companyId && onOpenCompany(t.companyId)}
               title={t.title}
               meta={`${t.type} - ${t.status} - ${userName(s, t.assignedUserId)}`}
               detail={`${t.dueDate ? `due ${fmtDate(t.dueDate)}` : "no due date"}${t.companyId ? ` - ${companyName(s, t.companyId)}` : ""}`} />
@@ -4413,10 +4413,10 @@ function GlobalSearchModule({
             const ct = a.contactId ? s.contacts.find((c) => c.id === a.contactId) : undefined;
             return (
               <ResultRow key={a.id}
-                onClick={() => a.companyId ? onOpenCompany(a.companyId) : a.contactId && onOpenContact(a.contactId)}
+              onClick={() => a.contactId ? onOpenContact(a.contactId) : a.companyId && onOpenCompany(a.companyId)}
                 title={a.message}
                 meta={`${a.type.replace("_", " ")} - ${fmtDate(a.createdAt)}`}
-                detail={[ct ? fullName(ct) : "", companyName(s, a.companyId)].filter((x) => x && x !== "-").join(" - ")} />
+                detail={[ct ? contactDisplayName(ct) : "", companyName(s, a.companyId)].filter((x) => x && x !== "-").join(" - ")} />
             );
           })}
         </ResultGroup>
