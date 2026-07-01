@@ -107,7 +107,10 @@ describe("Marketing Pass 102 — Call Tracking queue", () => {
 describe("Marketing Pass 102 — Campaigns bulk metrics import", () => {
   it("BulkCampaignMetricsImportDialog inserts into marketing_campaign_metrics", () => {
     const src = read("src/components/marketing/BulkCampaignMetricsImportDialog.tsx");
-    expect(src).toMatch(/from\(["']marketing_campaign_metrics["']\)/);
+    expect(src).toContain("insertMetrics");
+    expect(src).toContain("marketing_campaign_metrics");
+    const hook = read("src/hooks/useMarketingCampaignMetrics.ts");
+    expect(hook).toMatch(/from\(["']marketing_campaign_metrics["']\)/);
   });
   it("Campaigns page mounts the metrics import dialog and persisted CampaignManagerCard", () => {
     const src = read("src/pages/os/marketing/Campaigns.tsx");
