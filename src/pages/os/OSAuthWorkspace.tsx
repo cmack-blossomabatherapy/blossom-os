@@ -466,9 +466,13 @@ export default function OSAuthWorkspace() {
     assignees: Array.from(new Set(AUTHS.map((a) => a.coordinator).filter((c) => c && c !== "Unassigned"))).sort(),
   }), [AUTHS]);
 
-  const openAuth = visible.find((a) => a.id === openId) ?? null;
-  // Get the underlying live Authorization (for real timeline / activity).
+  // Deep-link resolution: always look in the FULL source list, not the
+  // currently visible queue/filter subset. Otherwise `/auth-workspace?authId=...`
+  // silently fails whenever the record is outside the active queue/filters.
+  const openAuth = openId ? AUTHS.find((a) => a.id === openId) ?? null : null;
   const openLiveAuth = openAuth ? liveItems.find((x) => x.id === openAuth.id) ?? null : null;
+  const openIsOutsideView =
+    !!openAuth && !visible.some((a) => a.id === openAuth.id);
 
   const toggleSel = (id: string) =>
     setSelected((prev) => {
@@ -598,6 +602,28 @@ export default function OSAuthWorkspace() {
           <Link to="/authorizations" className="font-semibold hover:underline">
             Open Authorizations workspace →
           </Link>
+        </div>
+      )}
+
+      {openIsOutsideView && (
+        <div className="os-card flex flex-wrap items-center justify-between gap-2 border border-amber-200 bg-amber-50/80 p-3 text-[12px] text-amber-900">
+          <span>
+            Opened from link. This authorization is outside your current queue or filters.
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { clearAllFilters(); setActiveQueue("all"); }}
+              className="rounded-lg border border-amber-300 bg-white/80 px-2.5 py-1 font-semibold hover:bg-white"
+            >
+              Clear filters
+            </button>
+            <button
+              onClick={() => setActiveQueue("all")}
+              className="rounded-lg border border-amber-300 bg-white/80 px-2.5 py-1 font-semibold hover:bg-white"
+            >
+              Show in all authorizations
+            </button>
+          </div>
         </div>
       )}
 
@@ -1028,6 +1054,22 @@ function RightContextPanel({
   const overdue = auths.filter((a) => typeof a.expiresInDays === "number" && (a.expiresInDays as number) < 0).length;
   const readyToSubmit = auths.filter((a) => /ready to submit/i.test(a.status) || /submission ready/i.test(a.status)).length;
   const prEscalations = auths.filter((a) => a.prStatus?.tone === "crit" || /escalat/i.test(a.prStatus?.label ?? "")).length;
+
+  // Derived operational counts for the guidance panel — no fake statements.
+  const expiringSoon = auths.filter((a) => typeof a.expiresInDays === "number" && (a.expiresInDays as number) >= 0 && (a.expiresInDays as number) <= 30).length;
+  const missingDocsCount = auths.filter((a) => a.missingDocs.length > 0).length;
+  const prNeeds = auths.filter((a) => a.prStatus.tone === "warn" || a.prStatus.tone === "crit").length;
+  const qaWaiting = auths.filter((a) => /review|in qa/i.test(a.qaStatus.label)).length;
+  const denialsOpen = auths.filter((a) => a.stateTone === "denied").length;
+  const unassignedCount = auths.filter((a) => a.coordinator === "Unassigned").length;
+  const guidanceRows: { label: string; count: number; tone: Tone }[] = ([
+    { label: "Authorizations expiring in 30 days", count: expiringSoon, tone: "warn" },
+    { label: "Authorizations with missing documentation", count: missingDocsCount, tone: "warn" },
+    { label: "PR follow-up required", count: prNeeds, tone: "warn" },
+    { label: "Waiting on QA review", count: qaWaiting, tone: "info" },
+    { label: "Open denials", count: denialsOpen, tone: "crit" },
+    { label: "Unassigned authorizations", count: unassignedCount, tone: "warn" },
+  ] as { label: string; count: number; tone: Tone }[]).filter((r) => r.count > 0);
   return (
     <>
       {/* Operational Summary */}
@@ -1044,28 +1086,35 @@ function RightContextPanel({
         </dl>
       </section>
 
-      {/* Workflow Guidance */}
+      {/* Operational Signals — derived from the live authorization list */}
       <section className="os-card">
         <header className="mb-2 flex items-center gap-2">
           <Activity className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
-          <h3 className="text-[14px] font-semibold tracking-tight">Workflow Guidance</h3>
+          <h3 className="text-[14px] font-semibold tracking-tight">Operational Signals</h3>
         </header>
         <p className="text-[11px] text-muted-foreground">Context for <span className="text-foreground/80 font-medium">{queueLabel}</span></p>
-        <ul className="mt-2.5 space-y-1.5 text-[12px]">
-          {[
-            "3 auths need PR follow-up before expiration.",
-            "2 cases require State Director escalation (≤6 weeks).",
-            "1 reassessment is waiting on treatment plan from QA.",
-          ].map((g) => (
-            <li key={g} className="flex items-start gap-2 rounded-xl border border-white/60 bg-white/60 px-2.5 py-2">
-              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(35_85%_52%)]" />
-              <span className="text-foreground/85">{g}</span>
-            </li>
-          ))}
-        </ul>
+        {auths.length === 0 ? (
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            No matching authorizations in the current data set. Connect CentralReach or import authorization data to power this insight.
+          </p>
+        ) : guidanceRows.length === 0 ? (
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            No operational signals flagged right now — nothing expiring soon, missing docs, or blocked on PR/QA.
+          </p>
+        ) : (
+          <ul className="mt-2.5 space-y-1.5 text-[12px]">
+            {guidanceRows.map((g) => (
+              <li key={g.label} className="flex items-start gap-2 rounded-xl border border-white/60 bg-white/60 px-2.5 py-2">
+                <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full", toneDot[g.tone])} />
+                <span className="text-foreground/85 flex-1">{g.label}</span>
+                <span className="tabular-nums font-semibold text-foreground/85">{g.count}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
-      {/* Operational Insights */}
+      {/* Ask Blossom entrypoint — honest link, not an inert input */}
       <section className="os-card relative overflow-hidden">
         <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.22)] to-transparent blur-2xl" />
         <header className="mb-3 flex items-center gap-2">
@@ -1073,34 +1122,22 @@ function RightContextPanel({
             <Brain className="h-3.5 w-3.5" />
           </div>
           <div>
-            <h3 className="text-[14px] font-semibold tracking-tight">Operational Insights</h3>
+            <h3 className="text-[14px] font-semibold tracking-tight">Ask Blossom</h3>
             <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Auth operations</p>
           </div>
         </header>
-        <div className="rounded-xl border border-white/70 bg-white/70 p-2">
-          <input
-            placeholder="Ask about an auth, PR risk, or blocker…"
-            className="h-8 w-full rounded-lg bg-transparent px-2 text-[12px] placeholder:text-muted-foreground/70 focus:outline-none"
-          />
-        </div>
-        <ul className="mt-2 space-y-1">
-          {[
-            "Why is this auth at risk?",
-            "What's blocking submission?",
-            "Summarize today's PR escalations.",
-            "What should I work on first?",
-          ].map((p) => (
-            <li key={p}>
-              <button className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-[12px] text-foreground/75 transition hover:bg-foreground/[0.04] hover:text-foreground">
-                <span className="truncate">{p}</span>
-                <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-              </button>
-            </li>
-          ))}
-        </ul>
+        <p className="text-[12px] text-muted-foreground">
+          Ask Blossom AI can help summarize an authorization, explain a blocker, or draft a PR follow-up.
+        </p>
+        <Link
+          to="/ai-assistant?context=authorizations"
+          className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-lg bg-foreground/90 px-2.5 text-[12px] font-semibold text-background transition hover:bg-foreground"
+        >
+          Open Ask Blossom <ChevronRight className="h-3 w-3" />
+        </Link>
       </section>
 
-      {/* SOP / Workflow Reference */}
+      {/* SOP / Workflow Reference — routes to Resource Library */}
       <section className="os-card">
         <header className="mb-2 flex items-center gap-2">
           <BookOpen className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
@@ -1114,10 +1151,13 @@ function RightContextPanel({
             "Reassessment Timing Logic",
           ].map((s) => (
             <li key={s}>
-              <a className="flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/60 px-3 py-2 text-[12px] text-foreground/85 transition hover:bg-white/80" href="/training">
+              <Link
+                to={`/resource-library?department=Authorizations&topic=${encodeURIComponent(s)}`}
+                className="flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/60 px-3 py-2 text-[12px] text-foreground/85 transition hover:bg-white/80"
+              >
                 <span className="truncate">{s}</span>
                 <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -1278,7 +1318,7 @@ function AuthDetailDrawer({
             const tl = liveAuth?.timeline ?? [];
             const prRequested = tl.find((e) => /PR requested|Progress report requested/i.test(e.description));
             const escalated = tl.find((e) => /Escalat/i.test(e.description));
-            if (!prRequested && !escalated && !liveAuth) {
+            if (!prRequested && !escalated) {
               return <p className="text-[12.5px] text-muted-foreground">No PR tracking activity has been logged yet.</p>;
             }
             return (

@@ -250,7 +250,7 @@ export default function OSAuthorizations() {
 
   const [filters, setFilters] = useState<Filters>({
     state: searchParams.get("state"),
-    payor: searchParams.get("payor"),
+    payor: searchParams.get("payor") ?? searchParams.get("payer"),
     coordinator: searchParams.get("coordinator"),
   });
 
@@ -286,6 +286,16 @@ export default function OSAuthorizations() {
     if (rawId) setOpenId(resolveAuthId(rawId));
     const v = paramToView(searchParams);
     if (v) setView(v);
+    // React to filter params so cross-page deep-links from
+    // Payer Requirements / Reports apply their filters visibly.
+    const nextState = searchParams.get("state");
+    const nextPayor = searchParams.get("payor") ?? searchParams.get("payer");
+    const nextCoord = searchParams.get("coordinator");
+    setFilters((f) => ({
+      state: nextState ?? f.state,
+      payor: nextPayor ?? f.payor,
+      coordinator: nextCoord ?? f.coordinator,
+    }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, live.items.length, live.overlayIdByAuthId.size]);
 

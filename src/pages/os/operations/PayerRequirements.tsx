@@ -1,4 +1,6 @@
 import { ScrollText } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import OpsRecordsWorkspace from "./OpsRecordsWorkspace";
 import { OPS_STORE_KEYS } from "@/lib/os/operations/recordsStore";
 
@@ -44,6 +46,25 @@ export default function PayerRequirements() {
         { key: "payer_contact", label: "Contact" },
         { key: "phone", label: "Phone" },
       ]}
+      rowActions={(r, { remove }) => {
+        const payer = String(r.payer ?? "").trim();
+        const state = String(r.state ?? "").trim();
+        const qs = new URLSearchParams();
+        if (payer) qs.set("payor", payer);
+        if (state) qs.set("state", state);
+        return (
+          <>
+            <Link
+              to={`/authorizations?${qs.toString()}`}
+              className="inline-flex items-center gap-1 text-xs text-sky-600 hover:underline"
+              title="Open authorizations filtered to this payer/state"
+            >
+              <ExternalLink className="h-3 w-3" /> View Matching Auths
+            </Link>
+            <button onClick={() => remove(r.id)} className="text-xs text-muted-foreground hover:text-rose-600">Delete</button>
+          </>
+        );
+      }}
     />
   );
 }
