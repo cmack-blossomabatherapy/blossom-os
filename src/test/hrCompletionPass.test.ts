@@ -29,8 +29,8 @@ describe("HR Completion Pass — durable actions and data-driven resources", () 
   it("OSHRNewHires.tsx add-note and mark-ready use durable helpers", () => {
     const src = read("src/pages/os/OSHRNewHires.tsx");
     expect(src).toContain("logHrEvent");
-    // Mark ready considers blockers before activating.
-    expect(src).toContain("Cannot activate — blockers exist");
+    // Mark ready considers blockers before advancing onboarding.
+    expect(src).toMatch(/Cannot mark ready/);
   });
 
   it("OSHROrientationQueue.tsx uses durable reminders (no toast-only)", () => {
