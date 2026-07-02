@@ -5173,13 +5173,13 @@ function PatientPipelineModule({
       <TableFilterBar
         search={{ value: q, onChange: setQ, placeholder: "Search patient, company..." }}
         filters={[
-          { key: "pps", label: "Status", value: statusFilter, onChange: setStatusFilter, options: [{ value: "all", label: "All statuses" }, ...STATUSES.map((v) => ({ value: v, label: v }))], width: 170 },
-          { key: "ppst", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((v) => ({ value: v, label: v }))] },
-          { key: "ppi", label: "Intake", value: intakeFilter, onChange: setIntakeFilter, options: [{ value: "all", label: "All" }, ...intakeStatuses.map((v) => ({ value: v, label: v }))], width: 160 },
-          { key: "ppins", label: "Insurance", value: insFilter, onChange: setInsFilter, options: [{ value: "all", label: "All" }, ...insTypes.map((v) => ({ value: v, label: v }))], width: 160 },
+          { key: "pps", label: "Status", value: statusFilter, onChange: setStatusFilter, countSource: allReferrals, countValue: (r) => (r as Referral).referralStatus || "", options: [{ value: "all", label: "All statuses" }, ...STATUSES.map((v) => ({ value: v, label: v }))], width: 170 },
+          { key: "ppst", label: "State", value: stateFilter, onChange: setStateFilter, countSource: allReferrals, countValue: (r) => (r as Referral).state || "", options: [{ value: "all", label: "All states" }, ...STATES.map((v) => ({ value: v, label: v }))] },
+          { key: "ppi", label: "Intake", value: intakeFilter, onChange: setIntakeFilter, countSource: allReferrals, countValue: (r) => (r as Referral).intakeStatus || "", options: [{ value: "all", label: "All" }, ...intakeStatuses.map((v) => ({ value: v, label: v }))], width: 160 },
+          { key: "ppins", label: "Insurance", value: insFilter, onChange: setInsFilter, countSource: allReferrals, countValue: (r) => (r as Referral).insuranceType || "", options: [{ value: "all", label: "All" }, ...insTypes.map((v) => ({ value: v, label: v }))], width: 160 },
         ]}
         resultCount={rows.length}
-        totalCount={scopedReferrals(s).length}
+        totalCount={allReferrals.length}
         onClear={() => { setQ(""); setStatusFilter("all"); setStateFilter("all"); setIntakeFilter("all"); setInsFilter("all"); }}
       />
 
