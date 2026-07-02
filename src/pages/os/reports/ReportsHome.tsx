@@ -148,10 +148,21 @@ export default function ReportsHome() {
         <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[hsl(265_100%_90%)] opacity-50 blur-3xl" />
         <div className="absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-[hsl(215_100%_90%)] opacity-40 blur-3xl" />
         <div className="relative">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="rounded-full bg-white/70 text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(265_70%_55%)]">
               Reports OS · {roleLabel}
             </Badge>
+            {activeCategoryDef && (
+              <button
+                type="button"
+                onClick={clearCategoryFilter}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(265_70%_55%/0.35)] bg-white/80 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)] hover:bg-white"
+                aria-label={`Clear ${activeCategoryDef.name} filter`}
+              >
+                {activeCategoryDef.name} focus
+                <X className="h-3 w-3" />
+              </button>
+            )}
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -160,9 +171,25 @@ export default function ReportsHome() {
               Live
             </span>
           </div>
-          <h1 className="mt-3 text-[34px] font-semibold tracking-tight md:text-[40px]">Reports &amp; Analytics</h1>
+          <h1 className="mt-3 text-[34px] font-semibold tracking-tight md:text-[40px]">
+            {activeCategoryDef ? `${activeCategoryDef.name} Reports` : "Reports & Analytics"}
+          </h1>
           <p className="mt-1 max-w-2xl text-[14px] text-muted-foreground">
-            Operational intelligence for every department. Browse dashboards across your role.
+            {activeCategoryDef ? (
+              <>
+                Focused on {activeCategoryDef.name.toLowerCase()} reports.{" "}
+                <button
+                  type="button"
+                  onClick={clearCategoryFilter}
+                  className="font-medium text-[hsl(265_70%_55%)] underline-offset-2 hover:underline"
+                >
+                  Clear filter to view all reports
+                </button>
+                .
+              </>
+            ) : (
+              "Operational intelligence for every department. Browse dashboards across your role."
+            )}
           </p>
 
           {/* AI summary */}
