@@ -839,6 +839,13 @@ function RecordDetailSheet({
       toast.message(`CentralReach already ${status}`);
       return;
     }
+    if (status === "Ready To Sync") {
+      const missing = readinessMissingFields(record, provider);
+      if (missing.length) {
+        toast.error(`Can't mark Ready To Sync — missing: ${missing.join(", ")}`);
+        return;
+      }
+    }
     try {
       await updateCredRecord(
         record.id,
