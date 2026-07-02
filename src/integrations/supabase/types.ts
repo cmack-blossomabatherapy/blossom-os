@@ -1767,6 +1767,87 @@ export type Database = {
           },
         ]
       }
+      bcba_action_tasks: {
+        Row: {
+          assigned_bcba: string | null
+          assigned_to: string | null
+          centralreach_authorization_id: string | null
+          centralreach_client_id: string | null
+          centralreach_provider_id: string | null
+          centralreach_reference: Json | null
+          centralreach_session_id: string | null
+          client_id: string | null
+          client_name: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          related_authorization_id: string | null
+          related_report_id: string | null
+          related_schedule_id: string | null
+          source_area: string
+          source_system: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_bcba?: string | null
+          assigned_to?: string | null
+          centralreach_authorization_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_provider_id?: string | null
+          centralreach_reference?: Json | null
+          centralreach_session_id?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_authorization_id?: string | null
+          related_report_id?: string | null
+          related_schedule_id?: string | null
+          source_area?: string
+          source_system?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_bcba?: string | null
+          assigned_to?: string | null
+          centralreach_authorization_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_provider_id?: string | null
+          centralreach_reference?: Json | null
+          centralreach_session_id?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_authorization_id?: string | null
+          related_report_id?: string | null
+          related_schedule_id?: string | null
+          source_area?: string
+          source_system?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bcba_assignment_history: {
         Row: {
           bcba_name: string
@@ -1925,6 +2006,108 @@ export type Database = {
           },
         ]
       }
+      bcba_client_notes: {
+        Row: {
+          author_id: string | null
+          bcba_id: string | null
+          body: string
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          id: string
+          note_type: string
+          related_work_item_id: string | null
+          visibility: string
+        }
+        Insert: {
+          author_id?: string | null
+          bcba_id?: string | null
+          body: string
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          id?: string
+          note_type?: string
+          related_work_item_id?: string | null
+          visibility?: string
+        }
+        Update: {
+          author_id?: string | null
+          bcba_id?: string | null
+          body?: string
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          id?: string
+          note_type?: string
+          related_work_item_id?: string | null
+          visibility?: string
+        }
+        Relationships: []
+      }
+      bcba_parent_training_logs: {
+        Row: {
+          barriers: string | null
+          bcba_id: string | null
+          caregiver_name: string | null
+          centralreach_reference: Json | null
+          centralreach_session_id: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          goal: string | null
+          id: string
+          next_due_date: string | null
+          next_session_plan: string | null
+          notes: string | null
+          occurred_at: string
+          participation_level: string | null
+          service_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          barriers?: string | null
+          bcba_id?: string | null
+          caregiver_name?: string | null
+          centralreach_reference?: Json | null
+          centralreach_session_id?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          goal?: string | null
+          id?: string
+          next_due_date?: string | null
+          next_session_plan?: string | null
+          notes?: string | null
+          occurred_at?: string
+          participation_level?: string | null
+          service_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          barriers?: string | null
+          bcba_id?: string | null
+          caregiver_name?: string | null
+          centralreach_reference?: Json | null
+          centralreach_session_id?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          goal?: string | null
+          id?: string
+          next_due_date?: string | null
+          next_session_plan?: string | null
+          notes?: string | null
+          occurred_at?: string
+          participation_level?: string | null
+          service_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bcba_productivity_billing_rows: {
         Row: {
           active: boolean
@@ -2050,6 +2233,132 @@ export type Database = {
           upload_label?: string | null
           uploaded_by?: string | null
           uploaded_by_email?: string | null
+        }
+        Relationships: []
+      }
+      bcba_supervision_logs: {
+        Row: {
+          barriers: string | null
+          bcba_id: string | null
+          centralreach_reference: Json | null
+          centralreach_session_id: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          minutes: number | null
+          modality: string
+          next_action: string | null
+          notes: string | null
+          occurred_at: string
+          provider_id: string | null
+          provider_name: string | null
+          service_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          barriers?: string | null
+          bcba_id?: string | null
+          centralreach_reference?: Json | null
+          centralreach_session_id?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          minutes?: number | null
+          modality?: string
+          next_action?: string | null
+          notes?: string | null
+          occurred_at?: string
+          provider_id?: string | null
+          provider_name?: string | null
+          service_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          barriers?: string | null
+          bcba_id?: string | null
+          centralreach_reference?: Json | null
+          centralreach_session_id?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          minutes?: number | null
+          modality?: string
+          next_action?: string | null
+          notes?: string | null
+          occurred_at?: string
+          provider_id?: string | null
+          provider_name?: string | null
+          service_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bcba_treatment_plan_items: {
+        Row: {
+          authorization_id: string | null
+          bcba_id: string | null
+          centralreach_authorization_id: string | null
+          centralreach_client_id: string | null
+          centralreach_reference: Json | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          document_links: Json
+          due_date: string | null
+          id: string
+          last_touched_at: string | null
+          missing_items: Json
+          qa_notes: string | null
+          reauth_cycle_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          authorization_id?: string | null
+          bcba_id?: string | null
+          centralreach_authorization_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_reference?: Json | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_links?: Json
+          due_date?: string | null
+          id?: string
+          last_touched_at?: string | null
+          missing_items?: Json
+          qa_notes?: string | null
+          reauth_cycle_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          authorization_id?: string | null
+          bcba_id?: string | null
+          centralreach_authorization_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_reference?: Json | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_links?: Json
+          due_date?: string | null
+          id?: string
+          last_touched_at?: string | null
+          missing_items?: Json
+          qa_notes?: string | null
+          reauth_cycle_id?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }

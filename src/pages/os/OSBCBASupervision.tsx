@@ -568,8 +568,7 @@ export default function OSBCBASupervision() {
             <QuickAction to="/bcba/clients"        icon={UserCheck}       label="View clients" />
             <QuickAction to="/bcba/workspace"      icon={Activity}        label="Open workspace" />
             <QuickAction to="/bcba/parent-training" icon={HeartHandshake} label="Parent training" />
-            <QuickAction to="/scheduling"          icon={MessageSquare}   label="Contact scheduling" />
-            <QuickAction to="/ai"                  icon={Sparkles}        label="Operational Insights" />
+            <QuickAction to="/bcba/scheduling"          icon={MessageSquare}   label="Contact scheduling" />
           </div>
         </section>
       </div>
@@ -631,7 +630,7 @@ export default function OSBCBASupervision() {
                     <PanelLink to="/bcba/scheduling" icon={CalendarClock}>Schedule supervision</PanelLink>
                     <PanelLink to="/bcba/clients" icon={UserCheck}>Open client</PanelLink>
                     <PanelLink to="/bcba/authorizations" icon={FileSignature}>View PR</PanelLink>
-                    <PanelLink to="/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
+                    <PanelLink to="/bcba/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
                     <PanelLink to="/bcba/parent-training" icon={HeartHandshake}>Parent training</PanelLink>
                     <PanelLink to={`/ai?q=${encodeURIComponent(`Tell me about supervision for ${activeRow.client.clientName}`)}`} icon={Sparkles}>Operational Insights</PanelLink>
                   </div>

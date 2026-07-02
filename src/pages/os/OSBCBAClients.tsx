@@ -371,7 +371,6 @@ export default function OSBCBAClients() {
             <QuickAction to="/bcba/parent-training" icon={HeartHandshake} label="Parent training" />
             <QuickAction to="/bcba/scheduling" icon={CalendarClock}   label="Scheduling" />
             <QuickAction to="/bcba/workspace" icon={Activity}         label="Workspace" />
-            <QuickAction to="/ai" icon={Sparkles}                     label="Operational Insights" />
           </div>
         </section>
       </div>
@@ -446,8 +445,7 @@ export default function OSBCBAClients() {
                     <PanelLink to="/bcba/supervision" icon={Eye}>Open supervision</PanelLink>
                     <PanelLink to="/bcba/authorizations" icon={FileSignature}>Open PR</PanelLink>
                     <PanelLink to="/bcba/parent-training" icon={HeartHandshake}>Parent training</PanelLink>
-                    <PanelLink to="/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
-                    <PanelLink to="/ai" icon={Sparkles}>Operational Insights</PanelLink>
+                    <PanelLink to="/bcba/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
                   </div>
                 </Section>
               </div>

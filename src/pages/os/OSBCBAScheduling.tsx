@@ -255,7 +255,7 @@ export default function OSBCBAScheduling() {
 
         {/* Priority queue */}
         <Section title="Scheduling priority" action={
-          <Link to="/scheduling" className="text-xs font-medium text-primary hover:underline">Message scheduling →</Link>
+          <Link to="/bcba/scheduling" className="text-xs font-medium text-primary hover:underline">Message scheduling →</Link>
         }>
           {c.loading ? (
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -470,7 +470,7 @@ export default function OSBCBAScheduling() {
 
         {/* Upcoming coordination */}
         <Section title="Upcoming coordination" action={
-          <Link to="/scheduling" className="text-xs font-medium text-primary hover:underline">Open scheduling →</Link>
+          <Link to="/bcba/scheduling" className="text-xs font-medium text-primary hover:underline">Open scheduling →</Link>
         }>
           {upcomingWeek.length === 0 ? (
             <Card className="border-dashed bg-muted/30 text-center text-sm text-muted-foreground">Nothing to coordinate this week.</Card>
@@ -554,10 +554,9 @@ export default function OSBCBAScheduling() {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
             <QuickAction to="/bcba/clients"          icon={UserCheck}      label="Open clients" />
             <QuickAction to="/bcba/workspace"        icon={Activity}       label="Open workspace" />
-            <QuickAction to="/scheduling"            icon={MessageSquare}  label="Contact scheduling" />
+            <QuickAction to="/bcba/scheduling"            icon={MessageSquare}  label="Contact scheduling" />
             <QuickAction to="/bcba/parent-training"  icon={CalendarClock}  label="Parent training" />
             <QuickAction to="/bcba/supervision"      icon={Users}          label="Supervision" />
-            <QuickAction to="/ai"                    icon={Sparkles}       label="Operational Insights" />
           </div>
         </section>
       </div>
@@ -617,11 +616,11 @@ export default function OSBCBAScheduling() {
 
                 <PanelSection title="Quick actions">
                   <div className="grid grid-cols-2 gap-2">
-                    <PanelLink to="/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
+                    <PanelLink to="/bcba/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
                     <PanelLink to="/bcba/clients" icon={UserCheck}>Open client</PanelLink>
                     <PanelLink to="/bcba/parent-training" icon={CalendarClock}>Parent training</PanelLink>
                     <PanelLink to="/bcba/supervision" icon={Users}>Supervision</PanelLink>
-                    <PanelLink to="/scheduling" icon={Calendar}>View schedule</PanelLink>
+                    <PanelLink to="/bcba/scheduling" icon={Calendar}>View schedule</PanelLink>
                     <PanelLink to={`/ai?q=${encodeURIComponent(`Tell me about scheduling for ${activeRow.client.clientName}`)}`} icon={Sparkles}>Operational Insights</PanelLink>
                   </div>
                 </PanelSection>

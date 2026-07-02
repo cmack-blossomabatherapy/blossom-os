@@ -503,14 +503,13 @@ export default function OSBCBAWorkspace() {
           <Card className="lg:col-span-2">
             <SectionTitle title="Quick workflow actions" />
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              <Quick to="/clients" icon={Users} label="Open caseload" />
-              <Quick to="/authorizations" icon={FileSignature} label="View PRs" />
-              <Quick to="/supervision" icon={Stethoscope} label="Supervision" />
-              <Quick to="/parent-training" icon={Baby} label="Parent training" />
-              <Quick to="/scheduling" icon={CalendarDays} label="Scheduling" />
-              <Quick to="/clients" icon={ClipboardCheck} label="Clients" />
-              <Quick to="/authorizations" icon={NotebookPen} label="Authorizations" />
-              <Quick to="/ai/assistant" icon={Sparkles} label="Operational Insights" />
+              <Quick to="/bcba/clients" icon={Users} label="Open caseload" />
+              <Quick to="/bcba/authorizations" icon={FileSignature} label="View PRs" />
+              <Quick to="/bcba/supervision" icon={Stethoscope} label="Supervision" />
+              <Quick to="/bcba/parent-training" icon={Baby} label="Parent training" />
+              <Quick to="/bcba/scheduling" icon={CalendarDays} label="Scheduling" />
+              <Quick to="/bcba/clients" icon={ClipboardCheck} label="Clients" />
+              <Quick to="/bcba/authorizations" icon={NotebookPen} label="Authorizations" />
             </div>
           </Card>
 
@@ -677,13 +676,13 @@ function ClientPanel({
       ) : null}
 
       <div className="grid grid-cols-2 gap-2 pt-2">
-        <Link to="/clients" className="rounded-xl bg-primary px-3 py-2 text-center text-sm font-medium text-primary-foreground hover:opacity-90">
+        <Link to="/bcba/clients" className="rounded-xl bg-primary px-3 py-2 text-center text-sm font-medium text-primary-foreground hover:opacity-90">
           Open full client
         </Link>
-        <Link to="/scheduling" className="rounded-xl border border-border/70 bg-card px-3 py-2 text-center text-sm font-medium text-foreground hover:bg-muted">
+        <Link to="/bcba/scheduling" className="rounded-xl border border-border/70 bg-card px-3 py-2 text-center text-sm font-medium text-foreground hover:bg-muted">
           Message scheduling
         </Link>
-        <Link to="/authorizations" className="rounded-xl border border-border/70 bg-card px-3 py-2 text-center text-sm font-medium text-foreground hover:bg-muted">
+        <Link to="/bcba/authorizations" className="rounded-xl border border-border/70 bg-card px-3 py-2 text-center text-sm font-medium text-foreground hover:bg-muted">
           Open PR
         </Link>
         <button onClick={onClose} className="rounded-xl border border-border/70 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">
