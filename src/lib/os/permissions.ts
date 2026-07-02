@@ -505,13 +505,23 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },
   behavioral_support: {
-    modules: ["reports", "training"],
-    scope: "company",
+    modules: [
+      "dashboard", "clients", "scheduling", "authorizations", "reports",
+      "training", "evaluations", "phone_system", "sop", "ai_assistant",
+    ],
+    scope: "assigned",
     actions: {
+      dashboard: VIEW,
+      clients: VIEW,
+      scheduling: VIEW,
+      authorizations: VIEW,
       reports: ["view", "export"],
       training: VIEW,
+      evaluations: VIEW,
+      phone_system: VIEW,
+      sop: VIEW,
     },
-    leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
+    leadership: { kpis: false, operationalAnalytics: true, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },
 };
 

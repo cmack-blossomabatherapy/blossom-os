@@ -229,6 +229,12 @@ import OSPayrollTrainingAcademy from "./pages/os/OSPayrollTrainingAcademy";
 import OSCaseManager from "./pages/os/case-manager/OSCaseManager";
 import ClinicalDirectorDashboard from "./pages/os/clinical/ClinicalDirectorDashboard";
 import BehavioralSupportDashboard from "./pages/os/behavioral-support/BehavioralSupportDashboard";
+import BehavioralSupportCrisisSupport from "./pages/os/behavioral-support/BehavioralSupportCrisisSupport";
+import BehavioralSupportEscalations from "./pages/os/behavioral-support/BehavioralSupportEscalations";
+import BehavioralSupportPlans from "./pages/os/behavioral-support/BehavioralSupportPlans";
+import BehavioralSupportFollowUps from "./pages/os/behavioral-support/BehavioralSupportFollowUps";
+import BehavioralSupportSupervisionVisibility from "./pages/os/behavioral-support/BehavioralSupportSupervisionVisibility";
+import BehavioralSupportEvaluations from "./pages/os/behavioral-support/BehavioralSupportEvaluations";
 import {
   CMTrainingAcademy, CMAssignedFamilies, CMParentCommunication, CMFamilySupport,
   CMProgressFollowUps, CMSchedulingCoordination, CMAuthorizationsVisibility,
@@ -731,6 +737,12 @@ const App = () => (
                   <Route path="/case-manager" element={<OSCaseManager />} />
                   <Route path="/clinical-director" element={<ClinicalDirectorDashboard />} />
                   <Route path="/behavioral-support" element={<BehavioralSupportDashboard />} />
+                  <Route path="/behavioral-support/crisis-support" element={<BehavioralSupportCrisisSupport />} />
+                  <Route path="/behavioral-support/escalations" element={<BehavioralSupportEscalations />} />
+                  <Route path="/behavioral-support/support-plans" element={<BehavioralSupportPlans />} />
+                  <Route path="/behavioral-support/follow-ups" element={<BehavioralSupportFollowUps />} />
+                  <Route path="/behavioral-support/supervision-visibility" element={<BehavioralSupportSupervisionVisibility />} />
+                  <Route path="/behavioral-support/evaluations" element={<BehavioralSupportEvaluations />} />
                   <Route path="/case-manager/training" element={<CMTrainingAcademy />} />
                   <Route path="/case-manager/families" element={<CMAssignedFamilies />} />
                   <Route path="/case-manager/communication" element={<CMParentCommunication />} />

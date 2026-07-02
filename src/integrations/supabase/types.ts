@@ -2229,6 +2229,435 @@ export type Database = {
           },
         ]
       }
+      behavioral_support_activity_log: {
+        Row: {
+          activity_type: string
+          body: string | null
+          case_id: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          escalation_id: string | null
+          followup_id: string | null
+          id: string
+          metadata: Json
+          plan_id: string | null
+          title: string
+        }
+        Insert: {
+          activity_type: string
+          body?: string | null
+          case_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          escalation_id?: string | null
+          followup_id?: string | null
+          id?: string
+          metadata?: Json
+          plan_id?: string | null
+          title: string
+        }
+        Update: {
+          activity_type?: string
+          body?: string | null
+          case_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          escalation_id?: string | null
+          followup_id?: string | null
+          id?: string
+          metadata?: Json
+          plan_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavioral_support_activity_log_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "behavioral_support_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavioral_support_activity_log_escalation_id_fkey"
+            columns: ["escalation_id"]
+            isOneToOne: false
+            referencedRelation: "behavioral_support_escalations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavioral_support_activity_log_followup_id_fkey"
+            columns: ["followup_id"]
+            isOneToOne: false
+            referencedRelation: "behavioral_support_followups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavioral_support_activity_log_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "behavioral_support_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      behavioral_support_cases: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_name: string | null
+          bcba_name: string | null
+          centralreach_case_id: string | null
+          centralreach_client_id: string | null
+          client_id: string | null
+          client_name: string
+          created_at: string
+          created_by: string | null
+          family_name: string | null
+          id: string
+          last_contact_at: string | null
+          next_follow_up_at: string | null
+          primary_concern: string | null
+          rbt_name: string | null
+          resolved_at: string | null
+          risk_flags: string[]
+          severity: string
+          source_system: string
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          bcba_name?: string | null
+          centralreach_case_id?: string | null
+          centralreach_client_id?: string | null
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          created_by?: string | null
+          family_name?: string | null
+          id?: string
+          last_contact_at?: string | null
+          next_follow_up_at?: string | null
+          primary_concern?: string | null
+          rbt_name?: string | null
+          resolved_at?: string | null
+          risk_flags?: string[]
+          severity?: string
+          source_system?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          bcba_name?: string | null
+          centralreach_case_id?: string | null
+          centralreach_client_id?: string | null
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          created_by?: string | null
+          family_name?: string | null
+          id?: string
+          last_contact_at?: string | null
+          next_follow_up_at?: string | null
+          primary_concern?: string | null
+          rbt_name?: string | null
+          resolved_at?: string | null
+          risk_flags?: string[]
+          severity?: string
+          source_system?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      behavioral_support_escalations: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_name: string | null
+          bcba_name: string | null
+          case_id: string | null
+          centralreach_reference_id: string | null
+          client_id: string | null
+          client_name: string
+          created_at: string
+          created_by: string | null
+          description: string
+          due_at: string | null
+          escalation_type: string
+          id: string
+          immediate_action: string | null
+          resolved_at: string | null
+          severity: string
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          bcba_name?: string | null
+          case_id?: string | null
+          centralreach_reference_id?: string | null
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          due_at?: string | null
+          escalation_type: string
+          id?: string
+          immediate_action?: string | null
+          resolved_at?: string | null
+          severity?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          bcba_name?: string | null
+          case_id?: string | null
+          centralreach_reference_id?: string | null
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          due_at?: string | null
+          escalation_type?: string
+          id?: string
+          immediate_action?: string | null
+          resolved_at?: string | null
+          severity?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavioral_support_escalations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "behavioral_support_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      behavioral_support_followups: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_name: string | null
+          case_id: string | null
+          client_id: string | null
+          client_name: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string
+          escalation_id: string | null
+          followup_type: string
+          id: string
+          outcome: string | null
+          priority: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          case_id?: string | null
+          client_id?: string | null
+          client_name: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at: string
+          escalation_id?: string | null
+          followup_type: string
+          id?: string
+          outcome?: string | null
+          priority?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          case_id?: string | null
+          client_id?: string | null
+          client_name?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string
+          escalation_id?: string | null
+          followup_type?: string
+          id?: string
+          outcome?: string | null
+          priority?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavioral_support_followups_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "behavioral_support_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavioral_support_followups_escalation_id_fkey"
+            columns: ["escalation_id"]
+            isOneToOne: false
+            referencedRelation: "behavioral_support_escalations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      behavioral_support_plan_tasks: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_name: string | null
+          case_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          id: string
+          plan_id: string
+          status: string
+          task_description: string | null
+          task_title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          case_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          plan_id: string
+          status?: string
+          task_description?: string | null
+          task_title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          case_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          plan_id?: string
+          status?: string
+          task_description?: string | null
+          task_title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavioral_support_plan_tasks_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "behavioral_support_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavioral_support_plan_tasks_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "behavioral_support_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      behavioral_support_plans: {
+        Row: {
+          bcba_owner: string | null
+          case_id: string | null
+          centralreach_reference_id: string | null
+          client_id: string | null
+          client_name: string
+          created_at: string
+          created_by: string | null
+          family_guidance: string | null
+          goals: Json
+          id: string
+          plan_status: string
+          plan_title: string
+          rbt_guidance: string | null
+          reason_for_plan: string | null
+          replacement_behaviors: Json
+          review_due_at: string | null
+          strategies: Json
+          updated_at: string
+        }
+        Insert: {
+          bcba_owner?: string | null
+          case_id?: string | null
+          centralreach_reference_id?: string | null
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          created_by?: string | null
+          family_guidance?: string | null
+          goals?: Json
+          id?: string
+          plan_status?: string
+          plan_title: string
+          rbt_guidance?: string | null
+          reason_for_plan?: string | null
+          replacement_behaviors?: Json
+          review_due_at?: string | null
+          strategies?: Json
+          updated_at?: string
+        }
+        Update: {
+          bcba_owner?: string | null
+          case_id?: string | null
+          centralreach_reference_id?: string | null
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          created_by?: string | null
+          family_guidance?: string | null
+          goals?: Json
+          id?: string
+          plan_status?: string
+          plan_title?: string
+          rbt_guidance?: string | null
+          reason_for_plan?: string | null
+          replacement_behaviors?: Json
+          review_due_at?: string | null
+          strategies?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavioral_support_plans_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "behavioral_support_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           created_at: string
