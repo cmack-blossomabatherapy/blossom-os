@@ -381,8 +381,17 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
   const [partnerFilter, setPartnerFilter] = useUrlState("cp", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
-  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
-  const toggleSort = (key: string) => setSort((p) => p.key === key ? { key, dir: p.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+  const [sortKey, setSortKey] = useUrlState("csk", "name");
+  const [sortDir, setSortDir] = useUrlState("csd", "asc");
+  const sort: SortState = { key: sortKey, dir: sortDir === "desc" ? "desc" : "asc" };
+  const toggleSort = (key: string) => {
+    if (sort.key === key) setSortDir(sort.dir === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+  const [pageStr, setPageStr] = useUrlState("cpg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("cps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
 
   const rows = useMemo(() => {
     let r = scopedContacts(s);
@@ -421,7 +430,18 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
       return 0;
     });
     return sorted;
-  }, [s, view, q, stateFilter, ownerFilter, partnerFilter, sort]);
+  }, [s, view, q, stateFilter, ownerFilter, partnerFilter, sort.key, sort.dir]);
+
+  // Reset to page 1 whenever filters/search/view/pageSize change.
+  React.useEffect(() => {
+    if (page !== 1) setPageStr("1");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, q, stateFilter, ownerFilter, partnerFilter, pageSize]);
+
+  const pagedRows = useMemo(
+    () => rows.slice((page - 1) * pageSize, page * pageSize),
+    [rows, page, pageSize],
+  );
 
   const totalContacts = scopedContacts(s).length;
   const contactFilters: FilterDef[] = [
@@ -430,9 +450,12 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     { key: "cp", label: "Partner", value: partnerFilter, onChange: setPartnerFilter, options: [{ value: "all", label: "All statuses" }, ...["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => ({ value: v, label: v }))], width: 170 },
   ];
 
-  const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  const allChecked = pagedRows.length > 0 && pagedRows.every((r) => selected.has(r.id));
   const toggleAll = () => {
-    setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
+    const next = new Set(selected);
+    if (allChecked) pagedRows.forEach((r) => next.delete(r.id));
+    else pagedRows.forEach((r) => next.add(r.id));
+    setSelected(next);
   };
   const toggleOne = (id: ID) => {
     const n = new Set(selected);
