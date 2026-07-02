@@ -247,18 +247,7 @@ import { useSchedulingActions } from "@/hooks/useSchedulingActions";
            </div>
          </header>
 
-        {schedulingOverlayError ? (
-          <div
-            role="alert"
-            className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200"
-          >
-            <span className="font-semibold">Scheduling overlay unavailable —</span>
-            <span>
-              showing Monday-only data. Assignments, start dates, and schedule
-              overlays from Blossom OS could not be loaded. {schedulingOverlayError}
-            </span>
-          </div>
-        ) : null}
+        <SchedulingOverlayWarning />
 
          {/* TOP — schedule timeline + filters */}
          <section className="rounded-2xl bg-card border border-border/70 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
