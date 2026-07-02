@@ -463,16 +463,22 @@ export default function OSRecruitingStaffingNeeds() {
               <div className="text-xs font-semibold tracking-tight text-muted-foreground uppercase mb-3">Quick Actions</div>
               <div className="space-y-1.5">
                 {[
-                  { icon: Plus, label: "Add Staffing Need" },
+                  { icon: Plus, label: "Add Staffing Need", onClick: () => void mutations.createStaffingNeed({
+                      role: "RBT", role_needed: "RBT", state: "GA", priority: "Medium", status: "new",
+                    } as any) },
                   { icon: UserPlus, label: "Assign Recruiter" },
                   { icon: AlertTriangle, label: "Escalate Staffing Delay" },
-                  { icon: Link2, label: "Link Candidate" },
+                  { icon: Link2, label: "Link Candidate", onClick: () => {
+                      const need = liveStaffingNeeds[0];
+                      const cand = recruitingCandidates[0];
+                      if (need && cand) void mutations.linkCandidateToStaffingNeed(need.id, cand.id);
+                    } },
                   { icon: Bell, label: "Notify Staffing Coordinator" },
                   { icon: ArrowRight, label: "Move to Staffing Confirmed" },
                   { icon: Download, label: "Export Staffing Queue" },
                   { icon: Send, label: "Send Staffing Update" },
                 ].map((a) => (
-                  <button key={a.label} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
+                  <button key={a.label} onClick={(a as any).onClick} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
                     <a.icon className="size-4 text-muted-foreground" />
                     {a.label}
                   </button>
