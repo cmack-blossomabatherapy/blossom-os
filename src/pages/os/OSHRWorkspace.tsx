@@ -226,9 +226,6 @@ export default function OSHRWorkspace() {
             <Link to="/hr/requests" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
               <Inbox className="h-3.5 w-3.5" strokeWidth={1.75} /> Requests
             </Link>
-            <Link to="/ai/assistant" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
-              <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} /> Operational Insights
-            </Link>
           </div>
         </header>
 
@@ -317,19 +314,19 @@ export default function OSHRWorkspace() {
 
             <Card className="p-5 bg-muted/40">
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Operational Insights</h3>
+                <ClipboardList className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
+                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Priority Actions</h3>
               </div>
               <div className="space-y-1.5">
                 {[
-                  "Who is blocked from onboarding?",
-                  "Show employees missing certifications.",
-                  "Which RBTs missed orientation?",
-                  "Who is not staffing ready?",
-                  "Show overdue onboarding tasks.",
+                  { label: "Clear onboarding blockers",       to: "/hr/new-hires" },
+                  { label: "Verify missing certifications",   to: "/hr/compliance" },
+                  { label: "Reschedule missed orientation",   to: "/hr/orientation-queue" },
+                  { label: "Review readiness gaps",           to: "/hr/new-hires" },
+                  { label: "Complete overdue onboarding tasks", to: "/hr/new-hires" },
                 ].map((p) => (
-                  <Link key={p} to={`/ai/assistant?q=${encodeURIComponent(p)}`} className="block w-full text-left rounded-lg px-2 py-1.5 text-[12.5px] text-muted-foreground hover:bg-card hover:text-foreground transition-colors">
-                    {p}
+                  <Link key={p.label} to={p.to} className="block w-full text-left rounded-lg px-2 py-1.5 text-[12.5px] text-muted-foreground hover:bg-card hover:text-foreground transition-colors">
+                    {p.label}
                   </Link>
                 ))}
               </div>

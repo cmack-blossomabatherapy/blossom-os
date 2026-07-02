@@ -315,7 +315,6 @@ export default function OSHRTeam() {
           <Link to="/hr/orientation-queue"     className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><CalendarClock className="h-4 w-4" strokeWidth={1.75} /> Review orientation queue</Link>
           <Link to="/hr/training-certifications" className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><GraduationCap className="h-4 w-4" strokeWidth={1.75} /> Assign training</Link>
           <Link to="/hr/requests"              className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><Inbox className="h-4 w-4" strokeWidth={1.75} /> Open HR requests</Link>
-          <Link to="/ai/assistant"             className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><Sparkles className="h-4 w-4" strokeWidth={1.75} /> Operational Insights</Link>
         </div>
 
         {/* SNAPSHOT */}
@@ -478,21 +477,21 @@ export default function OSHRTeam() {
           </div>
 
           <div>
-            <SectionHeader icon={Sparkles} title="Operational Insights" subtitle="Operational copilot" />
+            <SectionHeader icon={ClipboardList} title="Next Best Actions" subtitle="Recommended HR follow-ups" />
             <Card className="p-5 space-y-3">
-              <p className="text-sm text-muted-foreground">Try one of these:</p>
+              <p className="text-sm text-muted-foreground">Where to focus today:</p>
               <ul className="space-y-2">
                 {[
-                  "Who is blocked from onboarding?",
-                  "Which certifications expire this month?",
-                  "Show overdue training for RBTs.",
-                  "Which employees missed orientation?",
-                  "Summarize open HR requests.",
+                  { label: "Clear onboarding blockers",         to: "/hr/new-hires" },
+                  { label: "Renew certifications expiring soon", to: "/hr/training-certifications" },
+                  { label: "Assign overdue RBT training",        to: "/hr/training-certifications" },
+                  { label: "Reschedule missed orientation",      to: "/hr/orientation-queue" },
+                  { label: "Triage open HR requests",            to: "/hr/requests" },
                 ].map((q) => (
-                  <li key={q}>
-                    <Link to={`/ai/assistant?q=${encodeURIComponent(q)}`}
+                  <li key={q.label}>
+                    <Link to={q.to}
                       className="block rounded-xl border border-border/60 bg-muted/40 hover:bg-muted hover:border-border transition px-3 py-2 text-sm">
-                      “{q}”
+                      {q.label}
                     </Link>
                   </li>
                 ))}
