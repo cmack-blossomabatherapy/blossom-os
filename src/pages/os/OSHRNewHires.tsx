@@ -9,6 +9,8 @@ import {
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
 import { IntegrationReadinessPanel } from "@/components/hr/IntegrationReadinessPanel";
+import { HRIntegrationReadinessEditor } from "@/components/hr/HRIntegrationReadinessEditor";
+import { HRRecentActivity } from "@/components/hr/HRRecentActivity";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { logHrEvent } from "@/lib/hr/activityEvents";
@@ -103,6 +105,7 @@ function useNewHiresData() {
   const [trainings, setTrainings] = useState<TrainingRow[]>([]);
   const [documents, setDocuments] = useState<DocRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,9 +132,9 @@ function useNewHiresData() {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [reloadKey]);
 
-  return { employees, onboarding, tasks, trainings, documents, loading };
+  return { employees, onboarding, tasks, trainings, documents, loading, reload: () => setReloadKey((k) => k + 1) };
 }
 
 /* ─── unified onboarding pipeline ─── */
