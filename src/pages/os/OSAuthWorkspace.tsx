@@ -1062,14 +1062,14 @@ function RightContextPanel({
   const qaWaiting = auths.filter((a) => /review|in qa/i.test(a.qaStatus.label)).length;
   const denialsOpen = auths.filter((a) => a.stateTone === "denied").length;
   const unassignedCount = auths.filter((a) => a.coordinator === "Unassigned").length;
-  const guidanceRows: { label: string; count: number; tone: Tone }[] = [
+  const guidanceRows: { label: string; count: number; tone: Tone }[] = ([
     { label: "Authorizations expiring in 30 days", count: expiringSoon, tone: "warn" },
     { label: "Authorizations with missing documentation", count: missingDocsCount, tone: "warn" },
     { label: "PR follow-up required", count: prNeeds, tone: "warn" },
     { label: "Waiting on QA review", count: qaWaiting, tone: "info" },
     { label: "Open denials", count: denialsOpen, tone: "crit" },
     { label: "Unassigned authorizations", count: unassignedCount, tone: "warn" },
-  ].filter((r) => r.count > 0);
+  ] as { label: string; count: number; tone: Tone }[]).filter((r) => r.count > 0);
   return (
     <>
       {/* Operational Summary */}
