@@ -418,6 +418,27 @@ export default function OSHRMessages() {
   const openOnb = openConv ? onbByEmp.get(openConv.empId) : undefined;
   const openTrn = openConv ? trnByEmp.get(openConv.empId) ?? [] : [];
 
+  /* honest routing: which providers can this reply actually route through */
+  const routeAvailability = useIntegrationRouteAvailability(openOnb ?? null);
+  const [replyBody, setReplyBody] = useState("");
+  const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set(["in_app"]));
+
+  // Reset channel selection when switching conversations, and drop any
+  // provider channels that are no longer routable for the new employee.
+  useEffect(() => {
+    setReplyBody("");
+    setSelectedChannels(new Set(["in_app"]));
+  }, [openId]);
+  useEffect(() => {
+    setSelectedChannels((prev) => {
+      const next = new Set(prev);
+      for (const p of routeAvailability.providers) {
+        if (!p.routable && next.has(p.key)) next.delete(p.key);
+      }
+      return next;
+    });
+  }, [routeAvailability.providers]);
+
   return (
     <OSShell>
       <div className="px-6 md:px-10 py-10 max-w-7xl mx-auto">
