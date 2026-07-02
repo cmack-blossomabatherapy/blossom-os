@@ -616,11 +616,21 @@ function buildSectionsForRole(role: string): NavSection[] {
     defaultCollapsed: s.defaultCollapsed,
     items: s.items.map((i) => {
       const basePath = i.path.split("?")[0];
+      // Determine if any other menu item is nested under this one. If so, we
+      // must NOT use `end` so the parent stays highlighted for its children.
+      // Otherwise, use `end: true` so hub items (e.g. "/marketing") don't
+      // stay highlighted on sibling routes (e.g. "/marketing/lead-sources").
+      const hasNestedSibling = menu.sections.some((sec) =>
+        sec.items.some((other) => {
+          const otherBase = other.path.split("?")[0];
+          return otherBase !== basePath && otherBase.startsWith(`${basePath}/`);
+        }),
+      );
       return {
         to: i.path,
         label: i.label,
         icon: i.icon,
-        end: i.path === "/dashboard" || i.path === "/",
+        end: !hasNestedSibling,
         disabled: !isPathLiveForRole(role, basePath),
       };
     }),
