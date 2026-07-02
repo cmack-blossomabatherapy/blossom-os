@@ -182,6 +182,7 @@ export function TableFilterBar({
               values={group.values}
               onClearGroup={group.onClearGroup}
               totalCount={group.totalCount}
+              totalOptions={group.totalOptions}
               collapsed={collapsedSet.has(group.label)}
               onToggle={() => toggleCollapsed(group.label)}
               isMulti={group.isMulti}
@@ -251,6 +252,7 @@ function groupActiveFilters(filters: FilterDef[]) {
     selectAllHandlers: Array<() => void>;
     multiFilterCount: number;
     allSelectedCount: number;
+    totalOptions: number;
   };
   const groups = new Map<string, Bucket>();
   for (const f of filters) {
@@ -273,6 +275,7 @@ function groupActiveFilters(filters: FilterDef[]) {
       selectAllHandlers: [],
       multiFilterCount: 0,
       allSelectedCount: 0,
+      totalOptions: 0,
     };
     bucket.clears.push(reset);
     bucket.totals.push(groupUnionCount(f, parts));
@@ -281,6 +284,7 @@ function groupActiveFilters(filters: FilterDef[]) {
     if (onSelectAll) bucket.selectAllHandlers.push(onSelectAll);
     bucket.multiFilterCount += isMulti ? 1 : 0;
     bucket.allSelectedCount += allSelected ? 1 : 0;
+    bucket.totalOptions += allSelectable.length;
     parts.forEach((part, idx) => {
       const opt = f.options.find((o) => o.value === part);
       bucket.values.push({
@@ -309,15 +313,18 @@ function groupActiveFilters(filters: FilterDef[]) {
       isMulti: g.isMulti,
       onSelectAll: g.selectAllHandlers.length > 0 ? () => g.selectAllHandlers.forEach((fn) => fn()) : undefined,
       allSelected: g.multiFilterCount > 0 && g.allSelectedCount === g.multiFilterCount,
+      totalOptions: g.totalOptions,
     };
   });
 }
+
 
 function FilterChipGroup({
   label,
   values,
   onClearGroup,
   totalCount,
+  totalOptions = 0,
   collapsed: controlledCollapsed,
   onToggle,
   isMulti,
@@ -328,6 +335,7 @@ function FilterChipGroup({
   values: ChipValue[];
   onClearGroup: () => void;
   totalCount?: number;
+  totalOptions?: number;
   collapsed?: boolean;
   onToggle?: () => void;
   isMulti?: boolean;
@@ -342,15 +350,39 @@ function FilterChipGroup({
     if (onToggle) onToggle();
     else setInternalCollapsed((c) => !c);
   };
+
+  const selectedCount = values.length;
+  const showPartialCount = totalOptions > 0 && !allSelected && selectedCount !== totalOptions;
+
   return (
-    <span className="inline-flex items-stretch overflow-hidden rounded-full border border-primary/20 bg-primary/5 text-[11px] text-primary">
+    <span
+      className={cn(
+        "inline-flex items-stretch overflow-hidden rounded-full border text-[11px]",
+        allSelected
+          ? "border-emerald-300/50 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/30 dark:text-emerald-400"
+          : "border-primary/20 bg-primary/5 text-primary",
+      )}
+    >
       <span className="inline-flex items-center gap-1 px-2 py-0.5 font-medium">
         {label}:
         {collapsed ? (
           <span className="inline-flex items-center gap-1 font-normal">
-            {values.length} selected
+            {allSelected ? (
+              <span>All selected</span>
+            ) : showPartialCount ? (
+              <span>{selectedCount} of {totalOptions} selected</span>
+            ) : (
+              <span>{selectedCount} selected</span>
+            )}
             {totalCount != null && (
-              <span className="ml-0.5 inline-flex h-3.5 min-w-[1.1rem] items-center justify-center rounded-full bg-primary/20 px-1 text-[9px] font-semibold tabular-nums text-primary/90">
+              <span
+                className={cn(
+                  "ml-0.5 inline-flex h-3.5 min-w-[1.1rem] items-center justify-center rounded-full px-1 text-[9px] font-semibold tabular-nums",
+                  allSelected
+                    ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
+                    : "bg-primary/20 text-primary/90",
+                )}
+              >
                 {totalCount}
               </span>
             )}
@@ -358,10 +390,17 @@ function FilterChipGroup({
         ) : (
           values.map((v, i) => (
             <span key={v.key} className="inline-flex items-center gap-0.5 font-normal">
-              {i > 0 && <span className="text-primary/40">,</span>}
+              {i > 0 && <span className={cn("", allSelected ? "text-emerald-400/60" : "text-primary/40")}>,</span>}
               <span>{v.label}</span>
               {v.count != null && (
-                <span className="ml-0.5 inline-flex h-3.5 min-w-[1.1rem] items-center justify-center rounded-full bg-primary/20 px-1 text-[9px] font-semibold tabular-nums text-primary/90">
+                <span
+                  className={cn(
+                    "ml-0.5 inline-flex h-3.5 min-w-[1.1rem] items-center justify-center rounded-full px-1 text-[9px] font-semibold tabular-nums",
+                    allSelected
+                      ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
+                      : "bg-primary/20 text-primary/90",
+                  )}
+                >
                   {v.count}
                 </span>
               )}
@@ -369,7 +408,10 @@ function FilterChipGroup({
                 <button
                   type="button"
                   onClick={v.onRemove}
-                  className="rounded-full p-0.5 hover:bg-primary/15"
+                  className={cn(
+                    "rounded-full p-0.5",
+                    allSelected ? "hover:bg-emerald-500/15" : "hover:bg-primary/15",
+                  )}
                   aria-label={`Remove ${label}: ${v.label}`}
                 >
                   <X className="size-2.5" />
@@ -383,7 +425,12 @@ function FilterChipGroup({
         <button
           type="button"
           onClick={onSelectAll}
-          className="inline-flex items-center border-l border-primary/20 px-2 text-[11px] font-medium hover:bg-primary/10"
+          className={cn(
+            "inline-flex items-center border-l px-2 text-[11px] font-medium",
+            allSelected
+              ? "border-emerald-300/40 hover:bg-emerald-500/15"
+              : "border-primary/20 hover:bg-primary/10",
+          )}
           aria-label={`Select all ${label}`}
         >
           Select all
@@ -393,7 +440,12 @@ function FilterChipGroup({
         <button
           type="button"
           onClick={handleToggle}
-          className="inline-flex items-center border-l border-primary/20 px-1.5 hover:bg-primary/10"
+          className={cn(
+            "inline-flex items-center border-l px-1.5",
+            allSelected
+              ? "border-emerald-300/40 hover:bg-emerald-500/15"
+              : "border-primary/20 hover:bg-primary/10",
+          )}
           aria-label={`${collapsed ? "Expand" : "Collapse"} ${label} filters`}
         >
           {collapsed ? <ChevronDown className="size-3" /> : <ChevronUp className="size-3" />}
@@ -402,7 +454,12 @@ function FilterChipGroup({
       <button
         type="button"
         onClick={onClearGroup}
-        className="inline-flex items-center border-l border-primary/20 px-2 hover:bg-primary/10"
+        className={cn(
+          "inline-flex items-center border-l px-2",
+          allSelected
+            ? "border-emerald-300/40 hover:bg-emerald-500/15"
+            : "border-primary/20 hover:bg-primary/10",
+        )}
         aria-label={`Clear ${label} filter`}
       >
         {isMulti ? (
