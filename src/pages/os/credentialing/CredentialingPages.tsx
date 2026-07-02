@@ -2517,8 +2517,43 @@ export function BCBACredentialsPage() {
   const [defaultProv, setDefaultProv] = useState<string | undefined>();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
   const [openProvider, setOpenProvider] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [expWindow, setExpWindow] = useState<"any" | "30" | "60" | "90">("any");
+  const [missingCr, setMissingCr] = useState(false);
+  const [missingDocs, setMissingDocs] = useState(false);
+  const [noCoverage, setNoCoverage] = useState(false);
+  const [openTasksOnly, setOpenTasksOnly] = useState(false);
 
-  const bcbaProviders = providers.filter((p) => p.provider_type === "BCBA");
+  const bcbaAll = useMemo(() => providers.filter((p) => p.provider_type === "BCBA"), [providers]);
+  const bcbaProviders = useMemo(() => bcbaAll.filter((p) => {
+    const query = q.trim().toLowerCase();
+    if (query) {
+      const match = p.provider_name.toLowerCase().includes(query)
+        || (p.npi ?? "").toLowerCase().includes(query)
+        || (p.caqh_id ?? "").toLowerCase().includes(query)
+        || (p.license_number ?? "").toLowerCase().includes(query);
+      if (!match) return false;
+    }
+    if (stateFilter !== "ALL" && p.license_state !== stateFilter) return false;
+    if (expWindow !== "any") {
+      const d = daysUntil(p.license_expiration_date);
+      const w = Number(expWindow);
+      if (d === null || d < 0 || d > w) return false;
+    }
+    if (missingCr && p.centralreach_provider_id) return false;
+    if (missingDocs && documents.some((d) => d.provider_id === p.id)) return false;
+    const provRecs = records.filter((r) => r.provider_id === p.id);
+    if (noCoverage && provRecs.some((r) => APPROVED_CRED_STATUSES.includes(r.status))) return false;
+    if (openTasksOnly && !tasks.some((t) => t.status !== "Done" && provRecs.some((r) => r.id === t.credentialing_record_id))) return false;
+    return true;
+  }), [bcbaAll, records, documents, tasks, q, stateFilter, expWindow, missingCr, missingDocs, noCoverage, openTasksOnly]);
+
+  const hasFilters = !!q || stateFilter !== "ALL" || expWindow !== "any" || missingCr || missingDocs || noCoverage || openTasksOnly;
+  const clearFilters = () => {
+    setQ(""); setStateFilter("ALL"); setExpWindow("any"); setMissingCr(false);
+    setMissingDocs(false); setNoCoverage(false); setOpenTasksOnly(false);
+  };
 
   return (
     <Shell>
@@ -2526,14 +2561,66 @@ export function BCBACredentialsPage() {
         eyebrow="Credentialing" title="BCBA Credentials"
         subtitle="Credentialing posture for every BCBA: licensing, CAQH, payer coverage, documents, CentralReach."
         icon={IdCard}
-        actions={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add BCBA</Button>}
+        actions={
+          <>
+            <Button size="sm" variant="outline" onClick={() => exportCsv("bcbas.csv", bcbaProviders as unknown as Record<string, unknown>[])}>
+              <Download className="h-4 w-4 mr-1.5" />Export CSV
+            </Button>
+            <Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add BCBA</Button>
+          </>
+        }
       />
       <LoadErr loading={loading} error={error} />
+      <FromReportsBanner />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative max-w-sm w-full">
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, NPI, CAQH, license…" className="pl-7 h-9" />
+        </div>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All states</SelectItem>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={expWindow} onValueChange={(v) => setExpWindow(v as "any" | "30" | "60" | "90")}>
+          <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="any">License: any</SelectItem>
+            <SelectItem value="30">Expiring &lt; 30 days</SelectItem>
+            <SelectItem value="60">Expiring &lt; 60 days</SelectItem>
+            <SelectItem value="90">Expiring &lt; 90 days</SelectItem>
+          </SelectContent>
+        </Select>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={missingCr} onCheckedChange={setMissingCr} /> Missing CR ID
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={missingDocs} onCheckedChange={setMissingDocs} /> Missing docs
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={noCoverage} onCheckedChange={setNoCoverage} /> No approved payer
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={openTasksOnly} onCheckedChange={setOpenTasksOnly} /> Open tasks
+        </label>
+        {hasFilters && (
+          <Button size="sm" variant="ghost" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Clear</Button>
+        )}
+      </div>
       <SectionCard title={`${bcbaProviders.length} BCBA${bcbaProviders.length === 1 ? "" : "s"}`}>
         {bcbaProviders.length === 0 ? (
-          <Empty title="No BCBAs in the credentialing directory yet" action={
-            <Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1" />Add BCBA</Button>
-          } />
+          hasFilters || bcbaAll.length > 0 ? (
+            <Empty
+              title="No BCBAs match these filters"
+              description="Try clearing filters or widening your search."
+              action={<Button size="sm" variant="outline" onClick={clearFilters}><X className="h-4 w-4 mr-1" />Clear filters</Button>}
+            />
+          ) : (
+            <Empty
+              title="No BCBAs in the credentialing directory yet"
+              description="Add BCBAs to start tracking payer coverage, license expirations, CAQH, and CentralReach readiness."
+              action={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1" />Add BCBA</Button>}
+            />
+          )
         ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
