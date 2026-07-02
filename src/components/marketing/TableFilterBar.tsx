@@ -261,7 +261,7 @@ function groupActiveFilters(filters: FilterDef[]) {
     const isMulti = f.multi === true;
     const allSelectable = f.options.filter((o) => o.value !== def).map((o) => o.value);
     const allSelected = isMulti && allSelectable.length > 0 && allSelectable.every((v) => parts.includes(v));
-    const onSelectAll = isMulti ? () => f.onChange(allSelectable.join(",")) : undefined;
+    const onSelectAll = isMulti && allSelectable.length > 0 ? () => f.onChange(allSelectable.join(",")) : undefined;
 
     const bucket = groups.get(f.label) ?? {
       label: f.label,
