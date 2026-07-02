@@ -714,11 +714,12 @@ export default function OSHROrientationQueue() {
 
 /* ---------------- detail panel ---------------- */
 function DetailPanel({
-  cand, slot, bg, onClose, onChanged, onMessage, toast,
+  cand, slot, bg, onClose, onChanged, onMessage, toast, onSchedule,
 }: {
   cand: Candidate; slot?: Slot; bg?: BgCheck; onClose: () => void;
   onChanged: () => void; onMessage: () => void;
   toast: ReturnType<typeof useToast>["toast"];
+  onSchedule?: () => void;
 }) {
   const days = daysFromToday(slot?.scheduled_date ?? null);
   const slotSt = slotStatusTone(slot?.status ?? (slot ? null : "not_scheduled"), days);
@@ -785,7 +786,11 @@ function DetailPanel({
           {/* Actions */}
           <div className="flex flex-wrap gap-2 pt-1">
             <ActionBtn icon={Calendar} onClick={async () => {
-              if (!slot) return toast({ title: "No orientation slot yet" });
+              if (!slot) {
+                if (onSchedule) onSchedule();
+                else toast({ title: "No orientation slot yet" });
+                return;
+              }
               const next = window.prompt("Reschedule to (YYYY-MM-DD):", slot.scheduled_date ?? "");
               if (!next) return;
               const { error } = await supabase.from("recruiting_orientation_slots")
