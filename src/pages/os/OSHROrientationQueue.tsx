@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { queueHrMessage, logHrEvent } from "@/lib/hr/activityEvents";
+import { HRMessageHistory } from "@/components/hr/HRMessageHistory";
 
 /* ---------------- types ---------------- */
 interface Slot {
