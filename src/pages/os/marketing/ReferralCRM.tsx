@@ -3670,6 +3670,10 @@ function ActivitiesModule() {
   const s = useCrm();
   const [f, setF] = useUrlState("af", "all");
   const [q, setQ] = useUrlState("aq2", "", { history: "replace" });
+  const [pageStr, setPageStr] = useUrlState("a2pg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("a2ps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
   const rows = s.activity.filter((a) => {
     if (f !== "all" && a.type !== f) return false;
     if (q) {
@@ -3678,6 +3682,8 @@ function ActivitiesModule() {
     }
     return true;
   });
+  useEffect(() => { setPageStr("1"); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [f, q]);
+  const pagedRows = rows.slice((page - 1) * pageSize, page * pageSize);
   return (
     <div className="space-y-4">
       <TableFilterBar
@@ -3689,9 +3695,10 @@ function ActivitiesModule() {
         totalCount={s.activity.length}
         onClear={() => { setQ(""); setF("all"); }}
       />
-      <div className="rounded-2xl border bg-card divide-y">
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="divide-y">
         {rows.length === 0 && <p className="text-sm text-muted-foreground text-center py-10">No activity in this view.</p>}
-        {rows.map((a) => {
+        {pagedRows.map((a) => {
           const Icon = ACTIVITY_ICON[a.type] ?? Activity;
           const targetName = a.contactId
             ? contactDisplayName(s.contacts.find((c) => c.id === a.contactId))
@@ -3714,6 +3721,14 @@ function ActivitiesModule() {
             </div>
           );
         })}
+        </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(sz) => { setPageSizeStr(String(sz)); setPageStr("1"); }}
+        />
       </div>
     </div>
   );
