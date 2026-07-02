@@ -1168,7 +1168,14 @@ function RecordDetailSheet({
                   </div>
                 ) : null}
                 <div className="flex flex-wrap gap-2 pt-2">
-                  <Button size="sm" variant="outline" onClick={() => setCrSync("Ready To Sync")}>Mark Ready To Sync</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={readinessMissingFields(record, provider).length > 0}
+                    onClick={() => setCrSync("Ready To Sync")}
+                  >
+                    Mark Ready To Sync
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => setCrSync("Synced")}>Mark Synced</Button>
                   <Button size="sm" variant="outline" onClick={() => { setSyncErrorNote(record.centralreach_sync_error ?? ""); setSyncErrorOpen(true); }}>Mark Sync Error…</Button>
                   <Button size="sm" variant="outline" onClick={() => setCrIdsOpen(true)}>Edit CentralReach IDs</Button>
