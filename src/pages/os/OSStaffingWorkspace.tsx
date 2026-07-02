@@ -540,14 +540,53 @@ function MatchQueueTab() {
 
 function CoverageNeedsTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
   const { clients } = useClients();
+  const { activity, saveActivity, preferences } = useStaffingWorkspace();
   const [selected, setSelected] = useState<Client | null>(null);
-  const atRisk = clients.filter(
-    (c) =>
-      (c.stage === "Active" && c.scheduledWeeklyHours !== undefined && c.approvedWeeklyHours !== undefined &&
-        c.scheduledWeeklyHours < c.approvedWeeklyHours * 0.8) ||
-      c.stage === "Restaffing Needed" ||
-      (c.authStatus === "Approved" && !c.rbt),
-  );
+  const [proposeFor, setProposeFor] = useState<Client | null>(null);
+
+  const enriched = useMemo(() => {
+    const rows = clients
+      .filter(
+        (c) =>
+          (c.stage === "Active" &&
+            c.scheduledWeeklyHours !== undefined &&
+            c.approvedWeeklyHours !== undefined &&
+            c.scheduledWeeklyHours < c.approvedWeeklyHours * 0.8) ||
+          c.stage === "Restaffing Needed" ||
+          (c.authStatus === "Approved" && !c.rbt),
+      )
+      .map((c) => {
+        const approved = c.approvedWeeklyHours ?? 0;
+        const scheduled = c.scheduledWeeklyHours ?? 0;
+        const gap = Math.max(0, approved - scheduled);
+        const gapPct = approved > 0 ? Math.round((gap / approved) * 100) : 0;
+        const reasons: string[] = [];
+        if (c.authStatus === "Approved" && !c.rbt) reasons.push("Approved w/o RBT");
+        if (c.stage === "Restaffing Needed") reasons.push("Restaffing needed");
+        if (approved > 0 && scheduled < approved * 0.8) reasons.push("Under 80% scheduled");
+        const latest =
+          activity
+            .filter((a) => a.client_id === c.id || a.client_name === c.childName)
+            .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0] ?? null;
+        return { client: c, approved, scheduled, gap, gapPct, reasons, latest };
+      });
+    return rows;
+  }, [clients, activity]);
+
+  const runQuick = async (
+    c: Client,
+    type: "note" | "escalation" | "blocked" | "status_change",
+    status: "open" | "watching" | "resolved" | "in_progress",
+    title: string,
+  ) => {
+    await saveActivity({
+      client_id: c.id,
+      client_name: c.childName,
+      activity_type: type,
+      title,
+      status,
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -558,30 +597,52 @@ function CoverageNeedsTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <Th>Client</Th><Th>State</Th><Th>Stage</Th><Th>Approved hrs</Th>
-                <Th>Scheduled hrs</Th><Th>RBT</Th><Th>Action</Th>
+                <Th>Client</Th><Th>State</Th><Th>Clinic</Th><Th>Stage</Th>
+                <Th>Current RBT</Th><Th>Approved</Th><Th>Scheduled</Th>
+                <Th>Gap</Th><Th>Risk</Th><Th>Latest workflow</Th><Th>Actions</Th>
               </tr>
             </thead>
             <tbody>
-              {atRisk.map((c) => (
+              {enriched.map(({ client: c, approved, scheduled, gap, gapPct, reasons, latest }) => (
                 <tr key={c.id} className="border-t border-border/40 hover:bg-muted/20 cursor-pointer" onClick={() => setSelected(c)}>
                   <Td className="font-medium text-primary hover:underline">{c.childName}</Td>
                   <Td>{c.state}</Td>
+                  <Td className="text-xs text-muted-foreground">{c.clinic ?? "-"}</Td>
                   <Td>{c.stage}</Td>
-                  <Td>{c.approvedWeeklyHours ?? "-"}</Td>
-                  <Td className={c.scheduledWeeklyHours !== undefined && c.approvedWeeklyHours !== undefined && c.scheduledWeeklyHours < c.approvedWeeklyHours * 0.8 ? "text-warning" : ""}>
-                    {c.scheduledWeeklyHours ?? "-"}
-                  </Td>
                   <Td className="text-muted-foreground">{c.rbt ?? "-"}</Td>
-                  <Td>
-                    <button onClick={(e) => { e.stopPropagation(); setSelected(c); }} className="text-xs text-primary hover:underline">
-                      Open case -&gt;
-                    </button>
+                  <Td>{approved}h</Td>
+                  <Td className={gap > 0 ? "text-warning" : ""}>{scheduled}h</Td>
+                  <Td className={gap > 0 ? "text-warning font-medium" : ""}>{gap}h / {gapPct}%</Td>
+                  <Td className="text-[11px]">
+                    {reasons.length === 0 ? "-" : reasons.map((r) => <div key={r}>- {r}</div>)}
+                  </Td>
+                  <Td className="text-[11px]">
+                    {latest ? (
+                      <div className="min-w-0">
+                        <div className="font-medium truncate max-w-[220px]" title={latest.title}>{latest.title}</div>
+                        <div className="text-muted-foreground">
+                          {latest.status.replace(/_/g, " ")} - {latest.owner ?? "unowned"}
+                          {latest.due_date ? ` - due ${new Date(latest.due_date).toLocaleDateString()}` : ""}
+                        </div>
+                        <div className="text-muted-foreground">{new Date(latest.created_at).toLocaleDateString()}</div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground italic">No activity</span>
+                    )}
+                  </Td>
+                  <Td onClick={(e) => e.stopPropagation()}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button onClick={() => runQuick(c, "status_change", "watching", "Coverage case set to watching")} className="text-[11px] text-muted-foreground hover:underline">Watch</button>
+                      <button onClick={() => runQuick(c, "blocked", "open", "Coverage case marked blocked")} className="text-[11px] text-rose-600 hover:underline">Blocked</button>
+                      <button onClick={() => runQuick(c, "escalation", "open", "Coverage case escalated")} className="text-[11px] text-amber-600 hover:underline">Escalate</button>
+                      <button onClick={() => runQuick(c, "status_change", "resolved", "Coverage case resolved")} className="text-[11px] text-emerald-600 hover:underline">Resolve</button>
+                      <button onClick={() => setProposeFor(c)} className="text-[11px] text-primary hover:underline">Propose match</button>
+                    </div>
                   </Td>
                 </tr>
               ))}
-              {atRisk.length === 0 && (
-                <tr><td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">No coverage gaps detected.</td></tr>
+              {enriched.length === 0 && (
+                <tr><td colSpan={11} className="p-6 text-center text-sm text-muted-foreground">No coverage gaps detected.</td></tr>
               )}
             </tbody>
           </table>
@@ -593,6 +654,18 @@ function CoverageNeedsTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
         client={selected}
         onJumpMap={() => { setTab("map"); setSelected(null); }}
         onJumpQueue={() => { setTab("match-queue"); setSelected(null); }}
+      />
+      <ProposeMatchDialog
+        open={!!proposeFor}
+        onOpenChange={(o) => !o && setProposeFor(null)}
+        caseInfo={proposeFor ? {
+          id: proposeFor.id,
+          childName: proposeFor.childName,
+          state: proposeFor.state,
+          clinic: proposeFor.clinic ?? null,
+          requiredHours: proposeFor.approvedWeeklyHours ?? 20,
+        } : null}
+        preferences={preferences}
       />
     </div>
   );
