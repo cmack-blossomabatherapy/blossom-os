@@ -136,7 +136,7 @@ export default function BusinessDevelopmentDashboard() {
 
   const { data: partners, loading: partnersLoading, error: partnersError, refresh: refreshPartners } = useReferralCompanies();
   const { data: outreach, refresh: refreshOutreach } = useReferralActivities();
-  const { data: tasks, refresh: refreshTasks } = useReferralTasks();
+  const { data: tasks, refresh: refreshTasks } = useReferralTasks({ includeArchived: true });
 
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState<string>("all");
@@ -152,9 +152,10 @@ export default function BusinessDevelopmentDashboard() {
   const [outTo, setOutTo] = useState<string>("");
 
   // task filters
-  const [taskStatusFilter, setTaskStatusFilter] = useState<"all" | "open" | "overdue" | "week" | "done">("open");
+  const [taskStatusFilter, setTaskStatusFilter] = useState<"all" | "open" | "overdue" | "week" | "done" | "archived">("open");
   const [taskPartner, setTaskPartner] = useState<string>("all");
   const [taskPriority, setTaskPriority] = useState<string>("all");
+  const [editTask, setEditTask] = useState<ReferralCrmTask | null>(null);
 
   // detail drawer / edit
   const [detailPartner, setDetailPartner] = useState<ReferralCompany | null>(null);
@@ -276,6 +277,27 @@ export default function BusinessDevelopmentDashboard() {
   const handleToggleTask = async (t: ReferralCrmTask) => {
     try {
       await setTaskStatus(t.id, t.status === "Done" ? "Open" : "Done");
+      refreshTasks();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update task");
+    }
+  };
+
+  const handleArchiveTask = async (t: ReferralCrmTask) => {
+    const archiving = !t.archived_at;
+    try {
+      await setTaskArchived(t.id, archiving);
+      toast.success(archiving ? "Task archived" : "Task restored");
+      refreshTasks();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to archive task");
+    }
+  };
+
+  const handleUpdateTask = async (id: string, patch: Partial<ReferralCrmTask>) => {
+    try {
+      await updateTask(id, patch);
+      toast.success("Follow-up updated");
       refreshTasks();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to update task");
