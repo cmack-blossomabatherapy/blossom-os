@@ -20,6 +20,8 @@ export type FilterDef = {
   countSource?: unknown[];
   /** Optional accessor to match a row against an active option value. */
   countValue?: (row: unknown) => string | string[] | null | undefined;
+  /** When true, the filter supports multiple comma-separated values and shows per-group "Select all" / "Clear" actions. */
+  multi?: boolean;
 };
 
 interface TableFilterBarProps {
