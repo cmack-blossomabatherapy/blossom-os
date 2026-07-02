@@ -154,6 +154,7 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
     const email = p.email ?? (r as any).person_email ?? null;
     const externalId = (r as any).provider_record_id ?? p.id ?? null;
     if (!p.first_name && !p.last_name && !email) { skipped++; continue; }
+    const profileUrl = p.profile_url ?? (r as any).external_url ?? null;
     const row: Record<string, unknown> = {
       first_name: p.first_name ?? "(unknown)",
       last_name: p.last_name ?? "(unknown)",
@@ -168,17 +169,53 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
       next_action: p.next_action ?? null,
       tags: externalId ? [`apploi:${externalId}`] : null,
       pipeline_stage: "New Applicant",
+      external_provider: "apploi",
+      external_candidate_id: externalId ? String(externalId) : null,
+      external_profile_url: profileUrl,
+      external_synced_at: new Date().toISOString(),
+      external_payload: p as any,
     };
-    const { error } = await supabase
-      .from("recruiting_candidates")
-      .upsert(row as any, { onConflict: email ? "email" : "id" });
-    if (error) { console.warn("apploi upsert failed", error); skipped++; }
+    // Safe lookup by durable Apploi identity, then update-or-insert.
+    // Never fall back to email/id-based upsert — email is not a durable
+    // external identity and two Apploi people may share/lack email.
+    let action: "insert" | "update" | "skip" = "insert";
+    let existingId: string | null = null;
+    if (externalId) {
+      const { data: existing } = await supabase
+        .from("recruiting_candidates")
+        .select("id")
+        .eq("external_provider" as any, "apploi")
+        .eq("external_candidate_id" as any, String(externalId))
+        .maybeSingle();
+      if ((existing as any)?.id) {
+        existingId = (existing as any).id as string;
+        action = "update";
+      }
+    } else {
+      // No durable Apploi id — do NOT blindly merge by email. Insert as a
+      // fresh candidate flagged for import review so ops can reconcile.
+      (row as any).next_action = (row as any).next_action ?? "Apploi import review — no external id";
+    }
+    let err: unknown = null;
+    if (action === "update" && existingId) {
+      const { error } = await supabase
+        .from("recruiting_candidates")
+        .update(row as any)
+        .eq("id", existingId);
+      err = error;
+    } else {
+      const { error } = await supabase
+        .from("recruiting_candidates")
+        .insert(row as any);
+      err = error;
+    }
+    if (err) { console.warn("apploi import failed", err); skipped++; }
     else {
       imported++;
       try {
         await supabase.from("recruiting_activity_events").insert({
           entity_table: "recruiting_candidates",
-          event_type: "apploi_imported",
+          event_type: action === "update" ? "apploi_updated" : "apploi_imported",
           to_value: String(externalId ?? email ?? ""),
         } as any);
       } catch { /* best effort */ }
