@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ROLE_MENUS } from "@/lib/os/roleMenus";
-import { ROLES } from "@/lib/roles";
+import { ROLE_META } from "@/lib/roles";
 import { visibleReportsForRole } from "@/lib/os/reportsCatalog";
 
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
@@ -102,7 +102,7 @@ describe("Behavioral Support completion pass", () => {
   });
 
   it("roles.ts no longer describes Behavioral Support as reports and training only", () => {
-    const bs = ROLES.find((r) => r.key === "behavioral_support");
+    const bs = ROLE_META.find((r) => r.key === "behavioral_support");
     expect(bs).toBeDefined();
     expect(bs!.description.toLowerCase()).not.toContain("reports and training only");
     expect(bs!.owns.length).toBeGreaterThan(1);
