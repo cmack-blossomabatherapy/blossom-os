@@ -4160,6 +4160,23 @@ function UsersModule() {
     );
   }
 
+  const [uq, setUq] = useState("");
+  const [roleF, setRoleF] = useState<string>("all");
+  const [statusF, setStatusF] = useState<string>("all");
+  const [stateF, setStateF] = useState<string>("all");
+  const filteredUsers = useMemo(() => {
+    const needle = uq.trim().toLowerCase();
+    return s.users.filter((u) => {
+      const active = u.active !== false;
+      if (statusF === "active" && !active) return false;
+      if (statusF === "inactive" && active) return false;
+      if (roleF !== "all" && u.role !== roleF) return false;
+      if (stateF !== "all" && !(u.states ?? []).includes(stateF)) return false;
+      if (needle && !`${u.name} ${u.email} ${u.mobilePhone ?? ""}`.toLowerCase().includes(needle)) return false;
+      return true;
+    });
+  }, [s.users, uq, roleF, statusF, stateF]);
+
   return (
     <div className="space-y-4">
       {/* USERS */}
@@ -4169,6 +4186,29 @@ function UsersModule() {
           subtitle="Create, edit, and deactivate Referral CRM users."
           right={<Button size="sm" className="h-8 gap-1.5" onClick={() => setEditingUser("new")}><Plus className="size-3.5" /> New User</Button>}
         />
+        <div className="mb-3">
+          <TableFilterBar
+            search={{ value: uq, onChange: setUq, placeholder: "Search users by name, email, phone..." }}
+            filters={[
+              { key: "role", label: "Role", value: roleF, onChange: setRoleF, options: [
+                { value: "all", label: "All roles" },
+                ...CRM_ROLES.map((r) => ({ value: r.id, label: r.label })),
+              ] },
+              { key: "status", label: "Status", value: statusF, onChange: setStatusF, options: [
+                { value: "all", label: "All statuses" },
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+              ] },
+              { key: "state", label: "State", value: stateF, onChange: setStateF, options: [
+                { value: "all", label: "All states" },
+                ...STATES.map((st) => ({ value: st, label: st })),
+              ] },
+            ]}
+            resultCount={filteredUsers.length}
+            totalCount={s.users.length}
+            onClear={() => { setUq(""); setRoleF("all"); setStatusF("all"); setStateF("all"); }}
+          />
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-[11px] uppercase text-muted-foreground">
@@ -4183,7 +4223,10 @@ function UsersModule() {
               </tr>
             </thead>
             <tbody>
-              {s.users.map((u) => {
+              {filteredUsers.length === 0 && (
+                <tr><td colSpan={7} className="py-6 text-center text-muted-foreground text-xs">No users match the current filters.</td></tr>
+              )}
+              {filteredUsers.map((u) => {
                 const userTeams = s.teams.filter((t) => t.memberIds.includes(u.id));
                 return (
                   <tr key={u.id} className="border-t">
