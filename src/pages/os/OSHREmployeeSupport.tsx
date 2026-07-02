@@ -258,6 +258,7 @@ export default function OSHREmployeeSupport() {
             </Link>
           </div>
         </header>
+        <HRIntegrationStatusStrip className="mb-6" />
 
         {/* KPIs */}
         <div className="grid gap-3 mb-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">

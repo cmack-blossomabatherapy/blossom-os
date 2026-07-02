@@ -430,6 +430,7 @@ export default function OSHRMessages() {
             <HeaderBtn icon={Pin}>Create update</HeaderBtn>
           </div>
         </header>
+        <HRIntegrationStatusStrip className="mb-6" />
 
         {/* KPI snapshot */}
         <div className="grid gap-3 mb-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
