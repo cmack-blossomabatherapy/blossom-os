@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
+import { IntegrationReadinessPanel } from "@/components/hr/IntegrationReadinessPanel";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { ONBOARDING_STAGES, type OnboardingStatus } from "@/lib/hr/types";
