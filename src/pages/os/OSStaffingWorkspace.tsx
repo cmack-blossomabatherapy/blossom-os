@@ -280,9 +280,8 @@ function OpenCasesTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
 /* ============================ Match Queue tab =========================== */
 
 function MatchQueueTab() {
-  const { matches, loading, error, setStatus } = useStaffingWorkspace();
+  const { matches, preferences, loading, error, setStatus } = useStaffingWorkspace();
   const { clients } = useClients();
-  const lookupClient = (id: string) => clients.find((c) => c.id === id);
   const [reject, setReject] = useState<{ id: string; reason: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [stateFilter, setStateFilter] = useState<string>("ALL");
@@ -290,28 +289,43 @@ function MatchQueueTab() {
   const [capacityFilter, setCapacityFilter] = useState<string>("ALL");
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [drawerClient, setDrawerClient] = useState<Client | null>(null);
 
   const states = Array.from(new Set(clients.map((c) => c.state))).sort();
-  const visible = matches.filter((m) => {
+  const enriched = useMemo(
+    () => matches.map((m) => ({ match: m, fit: evaluateMatchFit(m, clients, preferences) })),
+    [matches, clients, preferences],
+  );
+  const visible = enriched.filter(({ match: m, fit }) => {
     if (statusFilter !== "ALL" && m.status !== statusFilter) return false;
-    const c = lookupClient(m.client_id);
-    if (stateFilter !== "ALL" && c?.state !== stateFilter) return false;
+    if (stateFilter !== "ALL" && fit.client?.state !== stateFilter) return false;
     const cap = m.capacity_remaining ?? 0;
     if (capacityFilter === "has" && cap <= 0) return false;
     if (capacityFilter === "limited" && (cap <= 0 || cap >= 8)) return false;
     if (capacityFilter === "full" && cap > 0) return false;
-    const notesLow = (m.notes ?? "").toLowerCase();
-    const isBlocked = notesLow.includes("blocked") || notesLow.includes("avoid");
-    const isWarning = notesLow.includes("must") || notesLow.includes("conflict") || notesLow.includes("warning");
-    if (conflictFilter === "clean" && (isBlocked || isWarning)) return false;
-    if (conflictFilter === "warning" && !isWarning) return false;
-    if (conflictFilter === "blocked" && !isBlocked) return false;
+    if (conflictFilter === "clean" && fit.fitLabel !== "Clean") return false;
+    if (conflictFilter === "warning" && fit.fitLabel !== "Warning") return false;
+    if (conflictFilter === "blocked" && fit.fitLabel !== "Blocked") return false;
     if (query) {
       const q = query.toLowerCase();
-      if (!c?.childName.toLowerCase().includes(q) && !m.rbt_name.toLowerCase().includes(q)) return false;
+      if (!fit.client?.childName.toLowerCase().includes(q) && !m.rbt_name.toLowerCase().includes(q)) return false;
     }
     return true;
   });
+
+  const runStatus = async (
+    m: (typeof enriched)[number]["match"],
+    fit: (typeof enriched)[number]["fit"],
+    status: "Assigned" | "Pending",
+  ) => {
+    const clientLabel =
+      fit.client?.childName ?? `Unknown client (${m.client_id.slice(0, 8)})`;
+    await setStatus(m.id, status, {
+      client_id: m.client_id,
+      client_name: clientLabel,
+      detail: `RBT: ${m.rbt_name}`,
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -375,12 +389,9 @@ function MatchQueueTab() {
               {!loading && visible.length === 0 && (
                 <tr><td colSpan={10} className="p-6 text-center text-sm text-muted-foreground">No match proposals yet. Open a case to propose one.</td></tr>
               )}
-              {visible.map((m) => {
-                const c = lookupClient(m.client_id);
-                const notesLow = (m.notes ?? "").toLowerCase();
-                const blocked = notesLow.includes("blocked") || notesLow.includes("avoid");
-                const warning = !blocked && (notesLow.includes("must") || notesLow.includes("conflict") || notesLow.includes("warning"));
-                const fitLabel = blocked ? "Blocked" : warning ? "Warning" : "Clean";
+              {visible.map(({ match: m, fit }) => {
+                const c = fit.client;
+                const { blocked, warning, fitLabel, scored } = fit;
                 const isOpen = expanded === m.id;
                 return (
                   <>
@@ -388,7 +399,12 @@ function MatchQueueTab() {
                       <Td className="font-medium">{c?.childName ?? m.client_id.slice(0, 8)}</Td>
                       <Td>{c?.state ?? "-"}</Td>
                       <Td>{m.rbt_name}</Td>
-                      <Td>{m.match_score}%</Td>
+                      <Td>
+                        <span className="font-medium">{scored.score}%</span>
+                        {scored.score !== m.match_score && (
+                          <span className="ml-1 text-[10px] text-muted-foreground">(base {m.match_score}%)</span>
+                        )}
+                      </Td>
                       <Td className="text-xs">{m.distance_miles != null ? `${m.distance_miles} mi` : "-"}</Td>
                       <Td className="text-xs">{m.capacity_remaining != null ? `${m.capacity_remaining}h` : "-"}</Td>
                       <Td>
@@ -397,9 +413,15 @@ function MatchQueueTab() {
                       <Td><StatusPill status={m.status} /></Td>
                       <Td className="text-xs text-muted-foreground">{new Date(m.updated_at).toLocaleDateString()}</Td>
                       <Td onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {c && (
+                            <button onClick={() => setDrawerClient(c)} className="text-xs text-primary hover:underline">Open case</button>
+                          )}
+                          <button onClick={() => setExpanded(isOpen ? null : m.id)} className="text-xs text-muted-foreground hover:underline">
+                            {isOpen ? "Hide details" : "Details"}
+                          </button>
                           {m.status !== "Assigned" && (
-                            <button onClick={() => setStatus(m.id, "Assigned")} className="text-xs text-emerald-600 hover:underline">Assign</button>
+                            <button onClick={() => runStatus(m, fit, "Assigned")} className="text-xs text-emerald-600 hover:underline">Assign</button>
                           )}
                           {m.status !== "Rejected" && (
                             <button
@@ -408,7 +430,7 @@ function MatchQueueTab() {
                             >Reject</button>
                           )}
                           {m.status === "Rejected" && (
-                            <button onClick={() => setStatus(m.id, "Pending")} className="text-xs text-primary hover:underline">Re-open</button>
+                            <button onClick={() => runStatus(m, fit, "Pending")} className="text-xs text-primary hover:underline">Re-open</button>
                           )}
                         </div>
                       </Td>
@@ -421,9 +443,34 @@ function MatchQueueTab() {
                             <div><span className="text-muted-foreground">BCBA:</span> {c?.bcba ?? "-"}</div>
                             <div><span className="text-muted-foreground">Approved hrs:</span> {c?.approvedWeeklyHours ?? "-"}</div>
                             <div><span className="text-muted-foreground">Availability overlap:</span> {(m.availability_overlap ?? []).join(", ") || "-"}</div>
+                            <div><span className="text-muted-foreground">Capacity remaining:</span> {m.capacity_remaining ?? "-"}h</div>
+                            <div><span className="text-muted-foreground">Distance:</span> {m.distance_miles != null ? `${m.distance_miles} mi` : "-"}</div>
+                            <div><span className="text-muted-foreground">Base score:</span> {m.match_score}%</div>
+                            <div><span className="text-muted-foreground">Preference-adjusted:</span> {scored.score}%</div>
                             <div><span className="text-muted-foreground">Created:</span> {new Date(m.created_at).toLocaleDateString()}</div>
                             <div><span className="text-muted-foreground">Match id:</span> <code className="text-[10px]">{m.id.slice(0, 8)}</code></div>
                           </div>
+                          {scored.applied.length > 0 && (
+                            <div className="mt-2">
+                              <span className="text-muted-foreground">Preference impacts:</span>
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {scored.applied.map((a, i) => (
+                                  <Badge
+                                    key={i}
+                                    variant={a.impact < 0 ? "destructive" : a.matched ? "default" : "secondary"}
+                                    className="text-[10px]"
+                                  >
+                                    {a.preference.importance.replace("_", " ")}: {a.preference.preference_detail} ({a.impact > 0 ? `+${a.impact}` : a.impact})
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {blocked && (
+                            <div className="text-destructive mt-1 inline-flex items-center gap-1">
+                              <Ban className="h-3 w-3" /> Blocked by family preference — this match should not be assigned.
+                            </div>
+                          )}
                           {m.notes && <div><span className="text-muted-foreground">Notes:</span> {m.notes}</div>}
                           {m.rejection_reason && <div className="text-destructive"><span className="font-medium">Rejection reason:</span> {m.rejection_reason}</div>}
                         </td>
@@ -463,13 +510,28 @@ function MatchQueueTab() {
               disabled={!reject?.reason.trim()}
               onClick={async () => {
                 if (!reject) return;
-                await setStatus(reject.id, "Rejected", { rejection_reason: reject.reason.trim() });
+                const entry = enriched.find((e) => e.match.id === reject.id);
+                const clientLabel =
+                  entry?.fit.client?.childName ??
+                  `Unknown client (${(entry?.match.client_id ?? "").slice(0, 8)})`;
+                await setStatus(reject.id, "Rejected", {
+                  rejection_reason: reject.reason.trim(),
+                  client_id: entry?.match.client_id,
+                  client_name: clientLabel,
+                  detail: `RBT: ${entry?.match.rbt_name ?? "unknown"} — ${reject.reason.trim()}`,
+                });
                 setReject(null);
               }}
             >Reject match</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CaseDetailDrawer
+        open={!!drawerClient}
+        onOpenChange={(o) => !o && setDrawerClient(null)}
+        client={drawerClient}
+      />
     </div>
   );
 }
