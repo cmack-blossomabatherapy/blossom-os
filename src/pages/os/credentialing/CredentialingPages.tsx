@@ -2045,10 +2045,10 @@ export function CredentialingDashboardPage() {
         title="Credentialing records"
         description="All payer/state credentialing work, filterable."
         action={
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center justify-end">
             <div className="relative">
               <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
-              <Input placeholder="Payer…" className="h-9 pl-7 w-40" value={payerFilter} onChange={(e) => setPayerFilter(e.target.value)} />
+              <Input placeholder="Provider or payer…" className="h-9 pl-7 w-52" value={payerFilter} onChange={(e) => setPayerFilter(e.target.value)} />
             </div>
             <Select value={stateFilter} onValueChange={setStateFilter}>
               <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
@@ -2058,6 +2058,33 @@ export function CredentialingDashboardPage() {
               <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent><SelectItem value="ALL">All statuses</SelectItem>{CRED_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Type" /></SelectTrigger>
+              <SelectContent><SelectItem value="ALL">All types</SelectItem>{CRED_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={providerTypeFilter} onValueChange={setProviderTypeFilter}>
+              <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Provider type" /></SelectTrigger>
+              <SelectContent><SelectItem value="ALL">All providers</SelectItem>{CRED_PROVIDER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={crSyncFilter} onValueChange={setCrSyncFilter}>
+              <SelectTrigger className="h-9 w-40"><SelectValue placeholder="CentralReach" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">CR: any status</SelectItem>
+                {(["Not Connected","Ready To Sync","Synced","Sync Error"] as const).map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input placeholder="Owner…" className="h-9 w-32" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} />
+            <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+              <Switch checked={missingOnly} onCheckedChange={setMissingOnly} /> Missing items
+            </label>
+            <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+              <Switch checked={overdueOnly} onCheckedChange={setOverdueOnly} /> Overdue
+            </label>
+            <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+              <Switch checked={readyToSync} onCheckedChange={setReadyToSync} /> Ready to sync
+            </label>
           </div>
         }
       >
