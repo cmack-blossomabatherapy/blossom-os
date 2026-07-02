@@ -131,31 +131,20 @@ export function TableFilterBar({
             Active
           </span>
           {search?.value && (
-            <button
-              type="button"
-              onClick={() => search.onChange("")}
-              className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/10"
-              aria-label="Clear search"
-            >
-              <span className="font-medium">Search:</span> {search.value}
-              <X className="size-3" />
-            </button>
+            <FilterChipGroup
+              label="Search"
+              values={[{ key: "search", label: search.value, onRemove: () => search.onChange("") }]}
+              onClearGroup={() => search.onChange("")}
+            />
           )}
-          {activeFilters.map((f) => {
-            const opt = f.options.find((o) => o.value === f.value);
-            return (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => f.onChange(f.defaultValue ?? "all")}
-                className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/10"
-                aria-label={`Remove ${f.label} filter`}
-              >
-                <span className="font-medium">{f.label}:</span> {opt?.label ?? f.value}
-                <X className="size-3" />
-              </button>
-            );
-          })}
+          {groupActiveFilters(activeFilters).map((group) => (
+            <FilterChipGroup
+              key={group.label}
+              label={group.label}
+              values={group.values}
+              onClearGroup={group.onClearGroup}
+            />
+          ))}
           <button
             type="button"
             onClick={handleClearAll}
@@ -166,5 +155,85 @@ export function TableFilterBar({
         </div>
       )}
     </div>
+  );
+}
+
+type ChipValue = { key: string; label: string; onRemove: () => void };
+
+function groupActiveFilters(filters: FilterDef[]) {
+  // Group by human label so multiple FilterDefs targeting the same field
+  // (or a single multi-value filter using comma-separated values) collapse
+  // into one chip group that can be cleared in a single click.
+  const groups = new Map<string, { label: string; values: ChipValue[]; clears: Array<() => void> }>();
+  for (const f of filters) {
+    const def = f.defaultValue ?? "all";
+    const reset = () => f.onChange(def);
+    const raw = String(f.value ?? "");
+    const parts = raw.includes(",") ? raw.split(",").map((p) => p.trim()).filter(Boolean) : [raw];
+    const bucket = groups.get(f.label) ?? { label: f.label, values: [], clears: [] };
+    bucket.clears.push(reset);
+    parts.forEach((part, idx) => {
+      const opt = f.options.find((o) => o.value === part);
+      bucket.values.push({
+        key: `${f.key}:${part}:${idx}`,
+        label: opt?.label ?? part,
+        onRemove: () => {
+          if (parts.length <= 1) {
+            reset();
+          } else {
+            f.onChange(parts.filter((p) => p !== part).join(","));
+          }
+        },
+      });
+    });
+    groups.set(f.label, bucket);
+  }
+  return Array.from(groups.values()).map((g) => ({
+    label: g.label,
+    values: g.values,
+    onClearGroup: () => g.clears.forEach((fn) => fn()),
+  }));
+}
+
+function FilterChipGroup({
+  label,
+  values,
+  onClearGroup,
+}: {
+  label: string;
+  values: ChipValue[];
+  onClearGroup: () => void;
+}) {
+  const multi = values.length > 1;
+  return (
+    <span className="inline-flex items-stretch overflow-hidden rounded-full border border-primary/20 bg-primary/5 text-[11px] text-primary">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 font-medium">
+        {label}:
+        {values.map((v, i) => (
+          <span key={v.key} className="inline-flex items-center gap-0.5 font-normal">
+            {i > 0 && <span className="text-primary/40">,</span>}
+            <span>{v.label}</span>
+            {multi && (
+              <button
+                type="button"
+                onClick={v.onRemove}
+                className="rounded-full p-0.5 hover:bg-primary/15"
+                aria-label={`Remove ${label}: ${v.label}`}
+              >
+                <X className="size-2.5" />
+              </button>
+            )}
+          </span>
+        ))}
+      </span>
+      <button
+        type="button"
+        onClick={onClearGroup}
+        className="inline-flex items-center border-l border-primary/20 px-1.5 hover:bg-primary/10"
+        aria-label={`Clear ${label} filter`}
+      >
+        <X className="size-3" />
+      </button>
+    </span>
   );
 }
