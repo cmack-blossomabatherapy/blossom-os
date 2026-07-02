@@ -2037,14 +2037,25 @@ function HandoffQueue({
               ref={sentinelRef}
               className="rounded-2xl border border-dashed border-border/60 bg-card/30 p-3 text-center text-[11px] text-muted-foreground"
             >
-              Loading more… ({visibleRows.length} of {filtered.length})
+              {loadingMoreEvents
+                ? `Fetching older handoffs… (${visibleRows.length} loaded)`
+                : hasMoreLocal
+                ? `Loading more… (${visibleRows.length} of ${filtered.length})`
+                : `Older handoffs available (${visibleRows.length} loaded)`}
               <div className="mt-1">
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => setVisibleCount((c) => Math.min(c + PAGE_SIZE, filtered.length))}
+                  disabled={loadingMoreEvents}
+                  onClick={() => {
+                    if (hasMoreLocal) {
+                      setVisibleCount((c) => Math.min(c + PAGE_SIZE, filtered.length));
+                    } else if (hasMoreEvents) {
+                      void loadMoreEvents?.();
+                    }
+                  }}
                 >
-                  Load more
+                  {loadingMoreEvents ? "Loading…" : "Load more"}
                 </Button>
               </div>
             </div>
