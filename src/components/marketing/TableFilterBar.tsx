@@ -182,6 +182,7 @@ export function TableFilterBar({
               values={group.values}
               onClearGroup={group.onClearGroup}
               totalCount={group.totalCount}
+              totalOptions={group.totalOptions}
               collapsed={collapsedSet.has(group.label)}
               onToggle={() => toggleCollapsed(group.label)}
               isMulti={group.isMulti}
