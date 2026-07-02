@@ -27,7 +27,7 @@ import {
   useCrm, crm, fullName, activeContacts, activeCompanies, activeReferrals,
   userName, companyName, evalList, STATES,
   type Contact, type Company, type Referral, type Task, type ID,
-  type ActivityEvent, type Attachment,
+  type ActivityEvent, type Attachment, type ListDef,
 } from "@/lib/os/referralCrm/store";
 import {
   WORKFLOW_TRIGGERS, WORKFLOW_ACTIONS,
