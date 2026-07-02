@@ -808,6 +808,21 @@ export default function OSHRMessages() {
                 </div>
               </div>
 
+              {/* integration routing readiness */}
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Routing readiness</p>
+                {openOnb ? (
+                  <IntegrationReadinessPanel row={openOnb} />
+                ) : (
+                  <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-[12px] text-muted-foreground">
+                    No onboarding record — outbound reminders can't be routed through Viventium, Stellar, or CentralReach yet.
+                  </div>
+                )}
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Messages route to a provider only when it shows connected and synced. Otherwise, this reply is delivered in-app only.
+                </p>
+              </div>
+
               {/* conversation timeline */}
               <div>
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Conversation</p>
