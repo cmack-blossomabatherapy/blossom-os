@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useUrlState } from "@/hooks/useUrlState";
 
 export type FilterOption = { value: string; label: string; count?: number };
 
