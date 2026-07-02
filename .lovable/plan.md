@@ -1,17 +1,25 @@
-Add a "Copy share link" action to the Blossom Referral CRM page so users can share the current view with all active filters, search, sort, and pagination preserved.
+## Goal
+Persist the Patient Pipeline drawer's `focusStage` (and the open lead) in the URL so reloading `/marketing/referral-crm` restores the drawer with the same stage highlighted.
 
-Why this works: the Referral CRM already persists module selection, filters, search, sort, and pagination in the URL query string (e.g. `?m=referrals&rs=Active&rpg=2`). Copying the current URL is therefore enough to recreate the exact same view.
+## Changes (all in `src/pages/os/marketing/ReferralCRM.tsx`)
 
-Plan:
-1. **Page-level action** in `src/pages/os/marketing/ReferralCRM.tsx`.
-   - Add a small button in the `MktgPage` `actions` slot, next to the page title.
-   - Label: "Copy share link" with a link/clipboard icon.
-2. **Copy behavior**.
-   - Use `navigator.clipboard.writeText(window.location.href)`.
-   - Show a toast confirmation: "Share link copied to clipboard".
-   - If the write fails, show a toast error and fall back to a visible text affordance (select the URL) so the user can still copy it.
-3. **Scope**.
-   - Implement only on the Referral CRM page for now, since that is the surface with the most URL-persisted state and where collaboration is most needed.
-   - The same button can later be rolled out to other Marketing pages once they have full URL persistence.
+1. **Add two URL keys** via the existing `useUrlState` helper at the page-root level:
+   - `lead` — the currently opened lead id (string, default `""`)
+   - `stage` — the focused referral pipeline stage (string, default `""`)
 
-No backend or database changes are required.
+2. **Replace local drawer state** (`drawerLeadId`, `drawerFocusStage`) with the URL-backed values:
+   - Opening the drawer (from Referrals row, Patient Pipeline row, or Contacts click-through) writes `lead` and, when applicable, `stage` into the URL.
+   - Closing the drawer clears both keys.
+   - Clicking a patient name directly (no referral stage context) sets `lead` and clears `stage`.
+
+3. **Hydrate on mount**: because the drawer already reads `drawerLeadId` / `drawerFocusStage` to decide visibility, sourcing them from URL params means a reload with `?lead=...&stage=...` reopens the drawer automatically on the focused stage — no extra effect needed.
+
+4. **Share link compatibility**: the existing `CopyShareLinkButton` copies `window.location.href`, so the new params flow through unchanged. Verify by inspection.
+
+## Out of scope
+- No changes to `LeadDetailDrawer` internals; it already accepts `focusStage` and scrolls/opens the popover.
+- No changes to other pages or hooks.
+
+## Verification
+- Typecheck.
+- Manual: open a referral → drawer opens with stage highlighted → URL contains `lead` + `stage` → reload → drawer reopens on that stage → close → params removed.

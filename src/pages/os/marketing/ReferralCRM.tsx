@@ -1241,8 +1241,12 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
   const [logId, setLogId] = useState<ID | null>(null);
-  const [drawerLeadId, setDrawerLeadId] = useState<string | null>(null);
-  const [drawerFocusStage, setDrawerFocusStage] = useState<string | null>(null);
+  const [drawerLeadIdRaw, setDrawerLeadIdRaw] = useUrlState("lead", "");
+  const [drawerFocusStageRaw, setDrawerFocusStageRaw] = useUrlState("stage", "");
+  const drawerLeadId = drawerLeadIdRaw || null;
+  const drawerFocusStage = drawerFocusStageRaw || null;
+  const setDrawerLeadId = (v: string | null) => setDrawerLeadIdRaw(v ?? "");
+  const setDrawerFocusStage = (v: string | null) => setDrawerFocusStageRaw(v ?? "");
   const [statusFilter, setStatusFilter] = useUrlState("rs", "all");
   const [stageFilter, setStageFilter] = useUrlState("rp", "all");
   const [rQuery, setRQuery] = useUrlState("rq", "");
