@@ -408,6 +408,30 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
     actions: { dashboard: VIEW, clients: VIEW, scheduling: VIEW, training: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
   },
+  /**
+   * Business Development — growth/referral partner focus. NOT a marketing admin.
+   * Owns referral partner CRM, outreach, follow-up, provider/community relationships,
+   * and read-safe visibility into lead source handoffs.
+   */
+  business_development: {
+    modules: [
+      "dashboard",
+      "referrals",
+      "reports",
+      "training",
+      "sop",
+      "ai_assistant",
+    ],
+    scope: "company",
+    actions: {
+      dashboard: VIEW,
+      referrals: VIEW_EDIT,
+      reports: ["view", "export"],
+      training: VIEW,
+      sop: VIEW,
+    },
+    leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
+  },
   marketing_team: {
     modules: [
       "dashboard", "training",
@@ -502,7 +526,6 @@ const ROLE_ALIASES: Record<
   credentialing_lead: "credentialing_team",
   rcm_team: "billing_finance",
   assistant_state_director: "state_director",
-  business_development: "marketing_team",
   clinical_director: "operations_leadership",
   viewer: "behavioral_support",
 };

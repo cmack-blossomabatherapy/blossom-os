@@ -231,13 +231,13 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       {
         id: "biz_dev", label: "Business Development", items: [
           { label: "Business Development Dashboard", path: "/business-development",                    icon: HeartHandshake },
-          { label: "Referral Partner CRM",           path: "/business-development?tab=partners",       icon: HeartHandshake },
+          { label: "Partner Pipeline",               path: "/business-development?tab=partners",       icon: HeartHandshake },
           { label: "Outreach Pipeline",              path: "/business-development?tab=outreach",       icon: MessageSquare },
           { label: "Follow-Up Tasks",                path: "/business-development?tab=tasks",          icon: ClipboardList },
           { label: "Provider Relationships",         path: "/business-development?tab=providers",      icon: Briefcase },
           { label: "Community Relationships",        path: "/business-development?tab=community",      icon: Users },
+          { label: "Lead Source Handoffs",           path: "/business-development?tab=sources",        icon: Inbox },
           { label: "Referral CRM",                   path: "/marketing/referral-crm",                  icon: HeartHandshake },
-          { label: "Phone System",                   path: "/phone",                                   icon: Phone },
         ],
       },
       TRAINING_AND_RESOURCES,

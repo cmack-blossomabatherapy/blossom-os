@@ -15699,6 +15699,10 @@ export type Database = {
         Args: { _dept_name: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      can_access_growth_source_visibility: {
+        Args: { _uid: string }
+        Returns: boolean
+      }
       can_access_marketing: { Args: { _uid: string }; Returns: boolean }
       can_access_referral_crm: { Args: { _uid: string }; Returns: boolean }
       can_access_state_department: {
