@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSlideout } from "@/hooks/useSlideout";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Flame, Sparkles, CheckCircle2, Send, ExternalLink, StickyNote,
   Brain, AlertTriangle, ChevronRight, FileText, ShieldAlert, X, Clock,
@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
-import { useQADeepLink } from "@/hooks/useQADeepLink";
+import { useToast } from "@/hooks/use-toast";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
@@ -433,8 +433,96 @@ export default function OSQAEscalations() {
   const [urgency, setUrgency] = useState("");
   const [open, setOpen] = useState<Escalation | null>(null);
 
-  // QA Pass 5 deep links — supports ?bcba=, ?client=, ?id=/?focus= via search.
-  useQADeepLink({ items, setQuery });
+  // QA Pass 7 deep links — resolve ?id / ?focus / ?client / ?bcba against
+  // the derived escalation list and open the workflow slideout. We can't use
+  // useQADeepLink here because its openId contract is a string id; the
+  // Escalations page needs the full Escalation object to render the drawer.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
+  const consumedDeepLink = useRef(false);
+  useEffect(() => {
+    if (consumedDeepLink.current) return;
+    if (!items || items.length === 0) return;
+
+    const idParam = searchParams.get("id") ?? searchParams.get("focus");
+    const clientParam = searchParams.get("client");
+    const bcbaParam = searchParams.get("bcba");
+    if (!idParam && !clientParam && !bcbaParam) {
+      consumedDeepLink.current = true;
+      return;
+    }
+
+    const missed: string[] = [];
+    let opened: Escalation | null = null;
+
+    if (idParam) {
+      const match = all.find((e) => e.auth.id === idParam);
+      if (match) {
+        opened = match;
+      } else {
+        const authExists = items.some((i) => i.id === idParam);
+        if (authExists) {
+          toast({
+            title: "No active escalation",
+            description: `Authorization ${idParam} has no active escalation or follow-up right now.`,
+          });
+          setQuery(idParam);
+        } else {
+          missed.push(`record ${idParam}`);
+        }
+      }
+    }
+
+    if (clientParam) {
+      setQuery(clientParam);
+      if (!opened) {
+        const cLower = clientParam.toLowerCase();
+        opened = all.find(
+          (e) =>
+            e.auth.clientName.toLowerCase() === cLower ||
+            e.auth.clientName.toLowerCase().includes(cLower) ||
+            e.auth.id === clientParam,
+        ) ?? null;
+        const clientExists = items.some(
+          (i) =>
+            (i.clientName ?? "").toLowerCase() === cLower ||
+            i.id === clientParam,
+        );
+        if (!opened && !clientExists) missed.push(`client "${clientParam}"`);
+      }
+    }
+
+    if (bcbaParam) {
+      setQuery(bcbaParam);
+      if (!opened) {
+        const bLower = bcbaParam.toLowerCase();
+        opened = all.find((e) => (e.bcba ?? "").toLowerCase() === bLower) ?? null;
+        const bcbaExists = items.some(
+          (i) => (i.coordinator ?? "").toLowerCase() === bLower,
+        );
+        if (!opened && !bcbaExists) missed.push(`BCBA "${bcbaParam}"`);
+      }
+    }
+
+    if (opened) setOpen(opened);
+    if (missed.length) {
+      toast({
+        title: "Deep link partially resolved",
+        description: `Could not locate ${missed.join(", ")}.`,
+      });
+    }
+
+    const next = new URLSearchParams(searchParams);
+    let changed = false;
+    for (const key of ["id", "focus", "client", "bcba"]) {
+      if (next.has(key)) {
+        next.delete(key);
+        changed = true;
+      }
+    }
+    if (changed) setSearchParams(next, { replace: true });
+    consumedDeepLink.current = true;
+  }, [items, all, searchParams, setSearchParams, toast]);
 
   const filtered = useMemo(() => {
     return all.filter(e => {
