@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Sparkles, Plus, Bookmark, Star, History,
-  ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Trash2,
+  ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Trash2, X,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -27,9 +27,18 @@ import { useAuthorizationReportMetrics } from "@/hooks/useAuthorizationReportMet
 
 export default function ReportsHome() {
   const { role } = useOSRole();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get("category");
   const reports = useMemo(() => visibleReportsForRole(role), [role]);
+  const activeCategoryDef = useMemo(
+    () => (activeCategory ? REPORT_CATEGORIES.find(c => c.id === activeCategory) : null),
+    [activeCategory],
+  );
+  function clearCategoryFilter() {
+    const next = new URLSearchParams(searchParams);
+    next.delete("category");
+    setSearchParams(next, { replace: true });
+  }
   const authReportMetrics = useAuthorizationReportMetrics();
   // Overlay live Authorizations KPI previews so report cards never render
   // the catalog's bare "-" placeholders for those three reports.
@@ -72,9 +81,20 @@ export default function ReportsHome() {
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const filteredReports = search
-    ? reportsWithLive.filter(r => (r.title + r.description + (r.tags || []).join(" ")).toLowerCase().includes(search.toLowerCase()))
-    : reportsWithLive;
+  // When a category filter is active, search prioritizes matches inside the
+  // active category first, then the rest — but never hides other matches.
+  const filteredReports = useMemo(() => {
+    if (!search) return reportsWithLive;
+    const q = search.toLowerCase();
+    const matches = reportsWithLive.filter(r =>
+      (r.title + r.description + (r.tags || []).join(" ")).toLowerCase().includes(q),
+    );
+    if (!activeCategory) return matches;
+    return [
+      ...matches.filter(r => r.category === activeCategory),
+      ...matches.filter(r => r.category !== activeCategory),
+    ];
+  }, [reportsWithLive, search, activeCategory]);
 
   function onFav(id: string) { setFavs(toggleFavorite(id)); }
 
