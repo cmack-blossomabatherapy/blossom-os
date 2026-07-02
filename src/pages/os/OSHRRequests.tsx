@@ -9,6 +9,8 @@ import {
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
 import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
+import { HRIntegrationReadinessEditor } from "@/components/hr/HRIntegrationReadinessEditor";
+import { HRRecentActivity } from "@/components/hr/HRRecentActivity";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -687,12 +689,31 @@ export default function OSHRRequests() {
               <section>
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Integration readiness</p>
                 {openOnb ? (
-                  <IntegrationReadinessPanel row={openOnb} />
+                  <>
+                    <IntegrationReadinessPanel row={openOnb} />
+                    <div className="mt-3">
+                      <HRIntegrationReadinessEditor
+                        onboardingId={openOnb.id}
+                        employeeId={(openCase as any).employee_id ?? null}
+                        row={openOnb as any}
+                        onSaved={() => setReloadKey(k => k + 1)}
+                      />
+                    </div>
+                  </>
                 ) : (
                   <Card className="p-4 text-[12px] text-muted-foreground">
                     No onboarding record found for this employee — readiness will populate once onboarding is initialized.
                   </Card>
                 )}
+              </section>
+
+              {/* Recent HR activity */}
+              <section>
+                <HRRecentActivity
+                  employeeId={(openCase as any).employee_id ?? null}
+                  onboardingId={openOnb?.id ?? null}
+                  caseId={openCase.id}
+                />
               </section>
 
               {/* Resolution */}
