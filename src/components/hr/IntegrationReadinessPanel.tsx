@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 /**
  * Honest HR integration readiness panel.
@@ -229,6 +231,50 @@ function displayValue(catalogStatus: string, rowStatus: string, syncedAt: string
   return rowStatus.replace(/_/g, " ");
 }
 
+/** Human-readable "why blocked" explanation for a single provider. */
+function explainProvider(
+  label: string,
+  catalogStatus: string,
+  rowStatus: string,
+  syncedAt: string | null | undefined,
+  notes: string | null | undefined,
+): { blocked: boolean; reason: string } {
+  if (catalogStatus !== "connected") {
+    return {
+      blocked: true,
+      reason: `${label} is not connected in the integration catalog (status: ${catalogStatus.replace(/_/g, " ")}). No data can sync until an admin connects it.`,
+    };
+  }
+  if (rowStatus === "error") {
+    return {
+      blocked: true,
+      reason: `${label} reported an error on the last sync${notes ? `: "${notes}"` : "."} Retry or resolve before this employee is ready.`,
+    };
+  }
+  if (rowStatus === "synced" || rowStatus === "ready") {
+    if (!syncedAt) {
+      return {
+        blocked: true,
+        reason: `${label} row is marked "${rowStatus}" but has no sync timestamp — treated as not synced.`,
+      };
+    }
+    return {
+      blocked: false,
+      reason: `${label} synced ${new Date(syncedAt).toLocaleString()}${notes ? ` — ${notes}` : ""}.`,
+    };
+  }
+  if (rowStatus === "in_progress" || rowStatus === "pending") {
+    return {
+      blocked: true,
+      reason: `${label} is ${rowStatus.replace(/_/g, " ")}${notes ? ` — ${notes}` : ""}. Awaiting completion before this employee can be routed.`,
+    };
+  }
+  return {
+    blocked: true,
+    reason: `${label} has no sync recorded (status: ${rowStatus.replace(/_/g, " ")}${notes ? ` — ${notes}` : ""}).`,
+  };
+}
+
 export function IntegrationReadinessPanel({ row, className }: { row: OnboardingReadinessRow; className?: string }) {
   const [catalog, setCatalog] = useState<Record<ProviderKey, string>>({
     viventium: "not_configured",
@@ -254,32 +300,72 @@ export function IntegrationReadinessPanel({ row, className }: { row: OnboardingR
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const explanations = (Object.keys(PROVIDER_META) as ProviderKey[]).map((key) => {
+    const meta = PROVIDER_META[key];
+    const rowStatus = (row[`${meta.column}_status` as keyof OnboardingReadinessRow] as string) ?? "not_started";
+    const syncedAt = row[`${meta.column}_synced_at` as keyof OnboardingReadinessRow] as string | null | undefined;
+    const notes = row[`${meta.column}_notes` as keyof OnboardingReadinessRow] as string | null | undefined;
+    const catalogStatus = catalog[key];
+    return { key, meta, rowStatus, syncedAt, notes, catalogStatus, ...explainProvider(meta.label, catalogStatus, rowStatus, syncedAt, notes) };
+  });
+  const blockedItems = explanations.filter((e) => e.blocked);
+
   return (
-    <div className={cn("grid grid-cols-3 gap-2", className)}>
-      {(Object.keys(PROVIDER_META) as ProviderKey[]).map((key) => {
-        const meta = PROVIDER_META[key];
-        const rowStatus = (row[`${meta.column}_status` as keyof OnboardingReadinessRow] as string) ?? "not_started";
-        const syncedAt = row[`${meta.column}_synced_at` as keyof OnboardingReadinessRow] as string | null | undefined;
-        const catalogStatus = catalog[key];
-        const tone = toneFor(catalogStatus, rowStatus);
-        return (
-          <div key={key} className="rounded-lg border border-border/70 bg-background/50 p-2.5">
-            <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground">{meta.label}</p>
-            <p className={cn(
-              "mt-1 text-[12px] font-medium",
-              tone === "ok" && "text-emerald-600",
-              tone === "warn" && "text-amber-600",
-              tone === "crit" && "text-red-600",
-              tone === "muted" && "text-muted-foreground",
-            )}>
-              {displayValue(catalogStatus, rowStatus, syncedAt)}
+    <TooltipProvider delayDuration={150}>
+      <div className={cn("space-y-2", className)}>
+        <div className="grid grid-cols-3 gap-2">
+          {explanations.map(({ key, meta, rowStatus, syncedAt, notes, catalogStatus, reason }) => {
+            const tone = toneFor(catalogStatus, rowStatus);
+            return (
+              <Tooltip key={key}>
+                <TooltipTrigger asChild>
+                  <div className="rounded-lg border border-border/70 bg-background/50 p-2.5 cursor-help">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground">{meta.label}</p>
+                      <Info className="h-3 w-3 text-muted-foreground/60" strokeWidth={1.75} />
+                    </div>
+                    <p className={cn(
+                      "mt-1 text-[12px] font-medium",
+                      tone === "ok" && "text-emerald-600",
+                      tone === "warn" && "text-amber-600",
+                      tone === "crit" && "text-red-600",
+                      tone === "muted" && "text-muted-foreground",
+                    )}>
+                      {displayValue(catalogStatus, rowStatus, syncedAt)}
+                    </p>
+                    {catalogStatus !== "connected" && (
+                      <p className="mt-0.5 text-[10.5px] text-muted-foreground/80">Integration not connected yet</p>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-[11.5px] leading-snug">
+                  <p className="font-medium mb-1">{meta.label}</p>
+                  <p className="text-muted-foreground">Catalog: <span className="text-foreground">{catalogStatus.replace(/_/g, " ")}</span></p>
+                  <p className="text-muted-foreground">Row status: <span className="text-foreground">{rowStatus.replace(/_/g, " ")}</span></p>
+                  <p className="text-muted-foreground">Last sync: <span className="text-foreground">{syncedAt ? new Date(syncedAt).toLocaleString() : "never"}</span></p>
+                  {notes && <p className="text-muted-foreground mt-1">Notes: <span className="text-foreground">{notes}</span></p>}
+                  <p className="mt-1.5 border-t border-border/50 pt-1.5">{reason}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
+        {blockedItems.length > 0 && (
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
+            <p className="text-[10.5px] uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">
+              Why blocked · {blockedItems.length} of {explanations.length}
             </p>
-            {catalogStatus !== "connected" && (
-              <p className="mt-0.5 text-[10.5px] text-muted-foreground/80">Integration not connected yet</p>
-            )}
+            <ul className="space-y-1">
+              {blockedItems.map((e) => (
+                <li key={e.key} className="text-[11.5px] leading-snug text-foreground/90 flex gap-1.5">
+                  <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-amber-600" />
+                  <span>{e.reason}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-        );
-      })}
-    </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 }
