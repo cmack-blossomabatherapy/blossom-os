@@ -83,7 +83,7 @@ describe("Pass 5B: navigation configs use canonical routes", () => {
       ['/intake-dashboard', '/intake'],
       ['/authorizations-dashboard', '/authorizations'],
       ['/scheduling-dashboard', '/scheduling'],
-      ['/staffing-dashboard', '/staffing'],
+      ['/staffing-dashboard', '/ops/staffing?tab=open-cases'],
       ['/qa-dashboard', '/qa-workspace'],
       ['/finance-dashboard', '/billing-finance'],
       ['/recruiting-dashboard', '/recruiting/workspace'],
