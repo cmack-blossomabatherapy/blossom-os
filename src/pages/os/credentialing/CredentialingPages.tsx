@@ -123,14 +123,39 @@ function LoadErr({ loading, error }: { loading: boolean; error: string | null })
   return null;
 }
 
-function Empty({ icon: Icon = FileSignature, title, action }: { icon?: LucideIcon; title: string; action?: ReactNode }) {
+function Empty({
+  icon: Icon = FileSignature, title, description, action,
+}: {
+  icon?: LucideIcon;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
   return (
     <div className="text-center py-10">
       <div className="h-10 w-10 mx-auto rounded-full bg-muted grid place-items-center mb-3">
         <Icon className="h-5 w-5 text-muted-foreground" />
       </div>
       <div className="text-sm font-medium text-foreground">{title}</div>
+      {description ? (
+        <div className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">{description}</div>
+      ) : null}
       {action ? <div className="mt-3">{action}</div> : null}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* From-reports contextual banner                                             */
+/* -------------------------------------------------------------------------- */
+function FromReportsBanner() {
+  const params = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
+  if (params.get("from") !== "reports") return null;
+  const report = params.get("report");
+  const label = report ? `Opened from Reports · ${report}` : "Opened from Reports";
+  return (
+    <div className="rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-medium px-3 py-2 inline-flex items-center gap-2">
+      <BarChart3 className="h-3.5 w-3.5" /> {label}
     </div>
   );
 }
