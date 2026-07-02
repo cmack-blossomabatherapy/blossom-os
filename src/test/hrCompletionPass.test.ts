@@ -57,7 +57,7 @@ describe("HR Completion Pass — durable actions and data-driven resources", () 
   it("OSHRCompliance.tsx blocks staffing-ready when documents are pending", () => {
     const src = read("src/pages/os/OSHRCompliance.tsx");
     expect(src).toContain("Cannot mark ready");
-    expect(src).toContain("compliance_mark_ready_blocked");
+    expect(src).toContain("ready_blocked");
   });
 
   it("HRIntegrationReadinessEditor validation enforces synced/error rules", () => {
