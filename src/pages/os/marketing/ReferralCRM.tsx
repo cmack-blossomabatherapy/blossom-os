@@ -84,7 +84,12 @@ const MODULES: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] =
  * shareable and survive reloads. `defaultValue` is stripped from the URL
  * to keep it clean.
  */
-function useUrlState(key: string, defaultValue: string): [string, (v: string) => void] {
+function useUrlState(
+  key: string,
+  defaultValue: string,
+  options?: { history?: "push" | "replace" },
+): [string, (v: string) => void] {
+  const historyMode = options?.history ?? "push";
   const [params, setParams] = useSearchParams();
   const value = params.get(key) ?? defaultValue;
   const setValue = useCallback(
@@ -94,9 +99,9 @@ function useUrlState(key: string, defaultValue: string): [string, (v: string) =>
         if (!v || v === defaultValue) next.delete(key);
         else next.set(key, v);
         return next;
-      }, { replace: true });
+      }, { replace: historyMode === "replace" });
     },
-    [key, defaultValue, setParams],
+    [key, defaultValue, setParams, historyMode],
   );
   return [value, setValue];
 }
