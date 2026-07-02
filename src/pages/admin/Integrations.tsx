@@ -1255,6 +1255,12 @@ export default function Integrations() {
           <IntakeCommunicationSetupPanel />
         </div>
 
+        {/* Marketing integration readiness — moved here from the Marketing pages
+            so all integration configuration lives in one admin home. */}
+        <div className="mt-8">
+          <IntegrationReadinessPanel />
+        </div>
+
         {/* Search & filters */}
         <div className="mt-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full md:max-w-md">
