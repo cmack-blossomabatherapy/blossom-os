@@ -6,6 +6,7 @@ import {
   Workflow, Users, ChevronRight, FileText, ClipboardList,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
+import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
