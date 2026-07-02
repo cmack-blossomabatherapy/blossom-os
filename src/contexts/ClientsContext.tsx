@@ -336,9 +336,11 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [schedulingOverlayError, setSchedulingOverlayError] = useState<string | null>(null);
 
   const refetch = useCallback(async () => {
     setLoading(true);
+    setSchedulingOverlayError(null);
     try {
       // Page through monday_clients_raw and monday_authorizations_raw.
       const fetchAll = async <T,>(table: "monday_clients_raw" | "monday_authorizations_raw"): Promise<T[]> => {
@@ -422,6 +424,10 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
         setClients(merged);
       } catch (overlayErr) {
         console.warn("Scheduling overlay merge failed", overlayErr);
+        const message =
+          (overlayErr as { message?: string } | null)?.message ||
+          "Scheduling overlay could not be loaded. Showing Monday-only data.";
+        setSchedulingOverlayError(message);
         setClients(built);
       }
     } catch (e) {
