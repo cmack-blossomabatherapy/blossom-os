@@ -488,6 +488,15 @@ const MARKETING_ROLES_WITH_BD = [
   ...MARKETING_ROLES,
   "business_development",
 ] as const;
+// Canonical Business Development access model. `/business-development`
+// must be reachable by BD as well as marketing_growth_lead (which has
+// BD in its role menu and live-path set) and Admin / Super Admin.
+const BUSINESS_DEVELOPMENT_ROLES = [
+  "admin",
+  "super_admin",
+  "business_development",
+  "marketing_growth_lead",
+] as const;
 
 import { LeadsProvider } from "@/contexts/LeadsContext";
 import { LeadDrawerProvider } from "@/contexts/LeadDrawerContext";
@@ -934,7 +943,7 @@ const App = () => (
                   {/* /marketing/reports is a redirect-only alias. The Marketing menu never links here — Reports lives at /reports. */}
                   <Route path="/marketing/reports" element={<Navigate to="/reports?category=marketing" replace />} />
                   {/* Phase 4 — Growth & Admissions */}
-                  <Route path="/business-development" element={<PermissionRoute allowedRoles={["admin", "super_admin", "business_development"]}><BusinessDevelopmentDashboard /></PermissionRoute>} />
+                  <Route path="/business-development" element={<PermissionRoute allowedRoles={[...BUSINESS_DEVELOPMENT_ROLES]}><BusinessDevelopmentDashboard /></PermissionRoute>} />
                   <Route path="/marketing/leadtrap" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><LeadTrap /></PermissionRoute>} />
                   <Route path="/marketing/facebook-ads" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><FacebookAds /></PermissionRoute>} />
                   <Route path="/marketing/google-ads" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><GoogleAds /></PermissionRoute>} />

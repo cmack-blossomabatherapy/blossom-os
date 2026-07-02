@@ -15855,6 +15855,120 @@ export type Database = {
         Args: { _dept_name: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      bd_assign_source_event: {
+        Args: { _event_id: string }
+        Returns: {
+          assigned_at: string | null
+          assigned_to: string | null
+          caller_email: string | null
+          caller_name: string | null
+          caller_phone: string | null
+          campaign_id: string | null
+          central_reach_client_id: string | null
+          central_reach_patient_id: string | null
+          created_at: string
+          event_type: string | null
+          external_id: string | null
+          id: string
+          last_synced_at: string | null
+          lead_id: string | null
+          occurred_at: string
+          payload_summary: string | null
+          raw_payload: Json | null
+          referral_company_id: string | null
+          referral_contact_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_id: string | null
+          source_system: string
+          state: string | null
+          status: string
+          sync_status: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketing_source_events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      bd_link_source_event_to_referral: {
+        Args: { _company_id: string; _contact_id?: string; _event_id: string }
+        Returns: {
+          assigned_at: string | null
+          assigned_to: string | null
+          caller_email: string | null
+          caller_name: string | null
+          caller_phone: string | null
+          campaign_id: string | null
+          central_reach_client_id: string | null
+          central_reach_patient_id: string | null
+          created_at: string
+          event_type: string | null
+          external_id: string | null
+          id: string
+          last_synced_at: string | null
+          lead_id: string | null
+          occurred_at: string
+          payload_summary: string | null
+          raw_payload: Json | null
+          referral_company_id: string | null
+          referral_contact_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_id: string | null
+          source_system: string
+          state: string | null
+          status: string
+          sync_status: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketing_source_events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      bd_mark_source_event_reviewed: {
+        Args: { _event_id: string }
+        Returns: {
+          assigned_at: string | null
+          assigned_to: string | null
+          caller_email: string | null
+          caller_name: string | null
+          caller_phone: string | null
+          campaign_id: string | null
+          central_reach_client_id: string | null
+          central_reach_patient_id: string | null
+          created_at: string
+          event_type: string | null
+          external_id: string | null
+          id: string
+          last_synced_at: string | null
+          lead_id: string | null
+          occurred_at: string
+          payload_summary: string | null
+          raw_payload: Json | null
+          referral_company_id: string | null
+          referral_contact_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_id: string | null
+          source_system: string
+          state: string | null
+          status: string
+          sync_status: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "marketing_source_events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       can_access_growth_source_visibility: {
         Args: { _uid: string }
         Returns: boolean
@@ -15865,6 +15979,7 @@ export type Database = {
         Args: { _department_key: string; _state_code: string; _user_id: string }
         Returns: boolean
       }
+      can_act_on_bd_source_events: { Args: { _uid: string }; Returns: boolean }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
       can_manage_bcba_productivity_uploads: {
         Args: { _user_id: string }
