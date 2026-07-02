@@ -170,6 +170,7 @@ export function TableFilterBar({
               label="Search"
               values={[{ key: "search", label: search.value, onRemove: () => search.onChange("") }]}
               onClearGroup={() => search.onChange("")}
+              collapsed={false}
             />
           )}
           {groupActiveFilters(activeFilters).map((group) => (
@@ -179,6 +180,8 @@ export function TableFilterBar({
               values={group.values}
               onClearGroup={group.onClearGroup}
               totalCount={group.totalCount}
+              collapsed={collapsedSet.has(group.label)}
+              onToggle={() => toggleCollapsed(group.label)}
             />
           ))}
           {activeFilters.length > 0 && (
