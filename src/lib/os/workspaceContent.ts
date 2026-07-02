@@ -483,7 +483,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     related: [
       { label: "RBT Readiness Board", path: "/training/rbt-readiness" },
       { label: "RBT Academy Admin", path: "/training/rbt-admin" },
-      { label: "Recruiting", path: "/recruiting" },
+      { label: "Recruiting", path: "/recruiting/workspace" },
     ],
   },
 
@@ -586,7 +586,7 @@ export const WORKSPACE_CONFIGS: Record<string, WorkspaceConfig> = {
     ai: [{ id: "hai1", text: "Who has certifications expiring in 30 days?" }],
     reports: [{ label: "Payroll Variances", path: "/reports?view=payroll" }, { label: "Training Compliance", path: "/reports?view=training" }],
     resources: [{ label: "Employee Handbook", path: "/resources?cat=hr" }],
-    related: [{ label: "Recruiting", path: "/recruiting" }],
+    related: [{ label: "Recruiting", path: "/recruiting/workspace" }],
   },
 
   // ---------- BILLING / CREDENTIALING ----------
