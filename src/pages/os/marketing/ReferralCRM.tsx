@@ -3782,7 +3782,7 @@ function ActivitiesModule() {
       <TableFilterBar
         search={{ value: q, onChange: setQ, placeholder: "Search activity messages..." }}
         filters={[
-          { key: "af", label: "Type", value: f, onChange: setF, options: ACTIVITY_FILTERS.map((x) => ({ value: x.id, label: x.label })), width: 150 },
+          { key: "af", label: "Type", value: f, onChange: setF, countSource: s.activity, countValue: (a) => (a as ActivityEvent).type, options: ACTIVITY_FILTERS.map((x) => ({ value: x.id, label: x.label })), width: 150 },
         ]}
         resultCount={rows.length}
         totalCount={s.activity.length}
