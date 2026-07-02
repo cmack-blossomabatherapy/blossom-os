@@ -33,6 +33,31 @@ import { CaseDetailDrawer } from "@/components/staffing/CaseDetailDrawer";
 import { ProposeMatchDialog } from "@/components/staffing/ProposeMatchDialog";
 import type { Client } from "@/data/clients";
 
+/* --------------------- structured match fit helper --------------------- */
+
+function evaluateMatchFit(
+  match: { client_id: string; rbt_name: string; match_score: number },
+  clients: Client[],
+  preferences: FamilyStaffingPreferenceRow[],
+) {
+  const client = clients.find((c) => c.id === match.client_id) ?? null;
+  const relevant = preferences.filter(
+    (p) =>
+      p.status === "active" &&
+      (p.client_id === match.client_id ||
+        (client && p.client_name.toLowerCase() === client.childName.toLowerCase())),
+  );
+  const scored: PreferenceScoringResult = applyPreferenceScoring(match.match_score, relevant, {
+    rbtName: match.rbt_name,
+    rbtState: client?.state ?? null,
+  });
+  const anyImpact = scored.applied.some((a) => a.impact !== 0);
+  const blocked = scored.blocked;
+  const warning = !blocked && (anyImpact || scored.applied.length > 0);
+  const fitLabel: "Blocked" | "Warning" | "Clean" = blocked ? "Blocked" : warning ? "Warning" : "Clean";
+  return { client, relevant, scored, blocked, warning, fitLabel };
+}
+
 /* ---------------------------- tab definitions ---------------------------- */
 
 const TABS: { id: StaffingTab; label: string; icon: typeof Users }[] = [
@@ -255,9 +280,8 @@ function OpenCasesTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
 /* ============================ Match Queue tab =========================== */
 
 function MatchQueueTab() {
-  const { matches, loading, error, setStatus } = useStaffingWorkspace();
+  const { matches, preferences, loading, error, setStatus } = useStaffingWorkspace();
   const { clients } = useClients();
-  const lookupClient = (id: string) => clients.find((c) => c.id === id);
   const [reject, setReject] = useState<{ id: string; reason: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [stateFilter, setStateFilter] = useState<string>("ALL");
@@ -265,28 +289,43 @@ function MatchQueueTab() {
   const [capacityFilter, setCapacityFilter] = useState<string>("ALL");
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [drawerClient, setDrawerClient] = useState<Client | null>(null);
 
   const states = Array.from(new Set(clients.map((c) => c.state))).sort();
-  const visible = matches.filter((m) => {
+  const enriched = useMemo(
+    () => matches.map((m) => ({ match: m, fit: evaluateMatchFit(m, clients, preferences) })),
+    [matches, clients, preferences],
+  );
+  const visible = enriched.filter(({ match: m, fit }) => {
     if (statusFilter !== "ALL" && m.status !== statusFilter) return false;
-    const c = lookupClient(m.client_id);
-    if (stateFilter !== "ALL" && c?.state !== stateFilter) return false;
+    if (stateFilter !== "ALL" && fit.client?.state !== stateFilter) return false;
     const cap = m.capacity_remaining ?? 0;
     if (capacityFilter === "has" && cap <= 0) return false;
     if (capacityFilter === "limited" && (cap <= 0 || cap >= 8)) return false;
     if (capacityFilter === "full" && cap > 0) return false;
-    const notesLow = (m.notes ?? "").toLowerCase();
-    const isBlocked = notesLow.includes("blocked") || notesLow.includes("avoid");
-    const isWarning = notesLow.includes("must") || notesLow.includes("conflict") || notesLow.includes("warning");
-    if (conflictFilter === "clean" && (isBlocked || isWarning)) return false;
-    if (conflictFilter === "warning" && !isWarning) return false;
-    if (conflictFilter === "blocked" && !isBlocked) return false;
+    if (conflictFilter === "clean" && fit.fitLabel !== "Clean") return false;
+    if (conflictFilter === "warning" && fit.fitLabel !== "Warning") return false;
+    if (conflictFilter === "blocked" && fit.fitLabel !== "Blocked") return false;
     if (query) {
       const q = query.toLowerCase();
-      if (!c?.childName.toLowerCase().includes(q) && !m.rbt_name.toLowerCase().includes(q)) return false;
+      if (!fit.client?.childName.toLowerCase().includes(q) && !m.rbt_name.toLowerCase().includes(q)) return false;
     }
     return true;
   });
+
+  const runStatus = async (
+    m: (typeof enriched)[number]["match"],
+    fit: (typeof enriched)[number]["fit"],
+    status: "Assigned" | "Pending",
+  ) => {
+    const clientLabel =
+      fit.client?.childName ?? `Unknown client (${m.client_id.slice(0, 8)})`;
+    await setStatus(m.id, status, {
+      client_id: m.client_id,
+      client_name: clientLabel,
+      detail: `RBT: ${m.rbt_name}`,
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -350,12 +389,9 @@ function MatchQueueTab() {
               {!loading && visible.length === 0 && (
                 <tr><td colSpan={10} className="p-6 text-center text-sm text-muted-foreground">No match proposals yet. Open a case to propose one.</td></tr>
               )}
-              {visible.map((m) => {
-                const c = lookupClient(m.client_id);
-                const notesLow = (m.notes ?? "").toLowerCase();
-                const blocked = notesLow.includes("blocked") || notesLow.includes("avoid");
-                const warning = !blocked && (notesLow.includes("must") || notesLow.includes("conflict") || notesLow.includes("warning"));
-                const fitLabel = blocked ? "Blocked" : warning ? "Warning" : "Clean";
+              {visible.map(({ match: m, fit }) => {
+                const c = fit.client;
+                const { blocked, warning, fitLabel, scored } = fit;
                 const isOpen = expanded === m.id;
                 return (
                   <>
@@ -363,7 +399,12 @@ function MatchQueueTab() {
                       <Td className="font-medium">{c?.childName ?? m.client_id.slice(0, 8)}</Td>
                       <Td>{c?.state ?? "-"}</Td>
                       <Td>{m.rbt_name}</Td>
-                      <Td>{m.match_score}%</Td>
+                      <Td>
+                        <span className="font-medium">{scored.score}%</span>
+                        {scored.score !== m.match_score && (
+                          <span className="ml-1 text-[10px] text-muted-foreground">(base {m.match_score}%)</span>
+                        )}
+                      </Td>
                       <Td className="text-xs">{m.distance_miles != null ? `${m.distance_miles} mi` : "-"}</Td>
                       <Td className="text-xs">{m.capacity_remaining != null ? `${m.capacity_remaining}h` : "-"}</Td>
                       <Td>
@@ -372,9 +413,15 @@ function MatchQueueTab() {
                       <Td><StatusPill status={m.status} /></Td>
                       <Td className="text-xs text-muted-foreground">{new Date(m.updated_at).toLocaleDateString()}</Td>
                       <Td onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {c && (
+                            <button onClick={() => setDrawerClient(c)} className="text-xs text-primary hover:underline">Open case</button>
+                          )}
+                          <button onClick={() => setExpanded(isOpen ? null : m.id)} className="text-xs text-muted-foreground hover:underline">
+                            {isOpen ? "Hide details" : "Details"}
+                          </button>
                           {m.status !== "Assigned" && (
-                            <button onClick={() => setStatus(m.id, "Assigned")} className="text-xs text-emerald-600 hover:underline">Assign</button>
+                            <button onClick={() => runStatus(m, fit, "Assigned")} className="text-xs text-emerald-600 hover:underline">Assign</button>
                           )}
                           {m.status !== "Rejected" && (
                             <button
@@ -383,7 +430,7 @@ function MatchQueueTab() {
                             >Reject</button>
                           )}
                           {m.status === "Rejected" && (
-                            <button onClick={() => setStatus(m.id, "Pending")} className="text-xs text-primary hover:underline">Re-open</button>
+                            <button onClick={() => runStatus(m, fit, "Pending")} className="text-xs text-primary hover:underline">Re-open</button>
                           )}
                         </div>
                       </Td>
@@ -396,9 +443,34 @@ function MatchQueueTab() {
                             <div><span className="text-muted-foreground">BCBA:</span> {c?.bcba ?? "-"}</div>
                             <div><span className="text-muted-foreground">Approved hrs:</span> {c?.approvedWeeklyHours ?? "-"}</div>
                             <div><span className="text-muted-foreground">Availability overlap:</span> {(m.availability_overlap ?? []).join(", ") || "-"}</div>
+                            <div><span className="text-muted-foreground">Capacity remaining:</span> {m.capacity_remaining ?? "-"}h</div>
+                            <div><span className="text-muted-foreground">Distance:</span> {m.distance_miles != null ? `${m.distance_miles} mi` : "-"}</div>
+                            <div><span className="text-muted-foreground">Base score:</span> {m.match_score}%</div>
+                            <div><span className="text-muted-foreground">Preference-adjusted:</span> {scored.score}%</div>
                             <div><span className="text-muted-foreground">Created:</span> {new Date(m.created_at).toLocaleDateString()}</div>
                             <div><span className="text-muted-foreground">Match id:</span> <code className="text-[10px]">{m.id.slice(0, 8)}</code></div>
                           </div>
+                          {scored.applied.length > 0 && (
+                            <div className="mt-2">
+                              <span className="text-muted-foreground">Preference impacts:</span>
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {scored.applied.map((a, i) => (
+                                  <Badge
+                                    key={i}
+                                    variant={a.impact < 0 ? "destructive" : a.matched ? "default" : "secondary"}
+                                    className="text-[10px]"
+                                  >
+                                    {a.preference.importance.replace("_", " ")}: {a.preference.preference_detail} ({a.impact > 0 ? `+${a.impact}` : a.impact})
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {blocked && (
+                            <div className="text-destructive mt-1 inline-flex items-center gap-1">
+                              <Ban className="h-3 w-3" /> Blocked by family preference — this match should not be assigned.
+                            </div>
+                          )}
                           {m.notes && <div><span className="text-muted-foreground">Notes:</span> {m.notes}</div>}
                           {m.rejection_reason && <div className="text-destructive"><span className="font-medium">Rejection reason:</span> {m.rejection_reason}</div>}
                         </td>
@@ -438,13 +510,28 @@ function MatchQueueTab() {
               disabled={!reject?.reason.trim()}
               onClick={async () => {
                 if (!reject) return;
-                await setStatus(reject.id, "Rejected", { rejection_reason: reject.reason.trim() });
+                const entry = enriched.find((e) => e.match.id === reject.id);
+                const clientLabel =
+                  entry?.fit.client?.childName ??
+                  `Unknown client (${(entry?.match.client_id ?? "").slice(0, 8)})`;
+                await setStatus(reject.id, "Rejected", {
+                  rejection_reason: reject.reason.trim(),
+                  client_id: entry?.match.client_id,
+                  client_name: clientLabel,
+                  detail: `RBT: ${entry?.match.rbt_name ?? "unknown"} — ${reject.reason.trim()}`,
+                });
                 setReject(null);
               }}
             >Reject match</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CaseDetailDrawer
+        open={!!drawerClient}
+        onOpenChange={(o) => !o && setDrawerClient(null)}
+        client={drawerClient}
+      />
     </div>
   );
 }
@@ -453,14 +540,53 @@ function MatchQueueTab() {
 
 function CoverageNeedsTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
   const { clients } = useClients();
+  const { activity, saveActivity, preferences } = useStaffingWorkspace();
   const [selected, setSelected] = useState<Client | null>(null);
-  const atRisk = clients.filter(
-    (c) =>
-      (c.stage === "Active" && c.scheduledWeeklyHours !== undefined && c.approvedWeeklyHours !== undefined &&
-        c.scheduledWeeklyHours < c.approvedWeeklyHours * 0.8) ||
-      c.stage === "Restaffing Needed" ||
-      (c.authStatus === "Approved" && !c.rbt),
-  );
+  const [proposeFor, setProposeFor] = useState<Client | null>(null);
+
+  const enriched = useMemo(() => {
+    const rows = clients
+      .filter(
+        (c) =>
+          (c.stage === "Active" &&
+            c.scheduledWeeklyHours !== undefined &&
+            c.approvedWeeklyHours !== undefined &&
+            c.scheduledWeeklyHours < c.approvedWeeklyHours * 0.8) ||
+          c.stage === "Restaffing Needed" ||
+          (c.authStatus === "Approved" && !c.rbt),
+      )
+      .map((c) => {
+        const approved = c.approvedWeeklyHours ?? 0;
+        const scheduled = c.scheduledWeeklyHours ?? 0;
+        const gap = Math.max(0, approved - scheduled);
+        const gapPct = approved > 0 ? Math.round((gap / approved) * 100) : 0;
+        const reasons: string[] = [];
+        if (c.authStatus === "Approved" && !c.rbt) reasons.push("Approved w/o RBT");
+        if (c.stage === "Restaffing Needed") reasons.push("Restaffing needed");
+        if (approved > 0 && scheduled < approved * 0.8) reasons.push("Under 80% scheduled");
+        const latest =
+          activity
+            .filter((a) => a.client_id === c.id || a.client_name === c.childName)
+            .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0] ?? null;
+        return { client: c, approved, scheduled, gap, gapPct, reasons, latest };
+      });
+    return rows;
+  }, [clients, activity]);
+
+  const runQuick = async (
+    c: Client,
+    type: "note" | "escalation" | "blocked" | "status_change",
+    status: "open" | "watching" | "resolved" | "in_progress",
+    title: string,
+  ) => {
+    await saveActivity({
+      client_id: c.id,
+      client_name: c.childName,
+      activity_type: type,
+      title,
+      status,
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -471,30 +597,52 @@ function CoverageNeedsTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <Th>Client</Th><Th>State</Th><Th>Stage</Th><Th>Approved hrs</Th>
-                <Th>Scheduled hrs</Th><Th>RBT</Th><Th>Action</Th>
+                <Th>Client</Th><Th>State</Th><Th>Clinic</Th><Th>Stage</Th>
+                <Th>Current RBT</Th><Th>Approved</Th><Th>Scheduled</Th>
+                <Th>Gap</Th><Th>Risk</Th><Th>Latest workflow</Th><Th>Actions</Th>
               </tr>
             </thead>
             <tbody>
-              {atRisk.map((c) => (
+              {enriched.map(({ client: c, approved, scheduled, gap, gapPct, reasons, latest }) => (
                 <tr key={c.id} className="border-t border-border/40 hover:bg-muted/20 cursor-pointer" onClick={() => setSelected(c)}>
                   <Td className="font-medium text-primary hover:underline">{c.childName}</Td>
                   <Td>{c.state}</Td>
+                  <Td className="text-xs text-muted-foreground">{c.clinic ?? "-"}</Td>
                   <Td>{c.stage}</Td>
-                  <Td>{c.approvedWeeklyHours ?? "-"}</Td>
-                  <Td className={c.scheduledWeeklyHours !== undefined && c.approvedWeeklyHours !== undefined && c.scheduledWeeklyHours < c.approvedWeeklyHours * 0.8 ? "text-warning" : ""}>
-                    {c.scheduledWeeklyHours ?? "-"}
-                  </Td>
                   <Td className="text-muted-foreground">{c.rbt ?? "-"}</Td>
-                  <Td>
-                    <button onClick={(e) => { e.stopPropagation(); setSelected(c); }} className="text-xs text-primary hover:underline">
-                      Open case -&gt;
-                    </button>
+                  <Td>{approved}h</Td>
+                  <Td className={gap > 0 ? "text-warning" : ""}>{scheduled}h</Td>
+                  <Td className={gap > 0 ? "text-warning font-medium" : ""}>{gap}h / {gapPct}%</Td>
+                  <Td className="text-[11px]">
+                    {reasons.length === 0 ? "-" : reasons.map((r) => <div key={r}>- {r}</div>)}
+                  </Td>
+                  <Td className="text-[11px]">
+                    {latest ? (
+                      <div className="min-w-0">
+                        <div className="font-medium truncate max-w-[220px]" title={latest.title}>{latest.title}</div>
+                        <div className="text-muted-foreground">
+                          {latest.status.replace(/_/g, " ")} - {latest.owner ?? "unowned"}
+                          {latest.due_date ? ` - due ${new Date(latest.due_date).toLocaleDateString()}` : ""}
+                        </div>
+                        <div className="text-muted-foreground">{new Date(latest.created_at).toLocaleDateString()}</div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground italic">No activity</span>
+                    )}
+                  </Td>
+                  <Td onClick={(e) => e.stopPropagation()}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button onClick={() => runQuick(c, "status_change", "watching", "Coverage case set to watching")} className="text-[11px] text-muted-foreground hover:underline">Watch</button>
+                      <button onClick={() => runQuick(c, "blocked", "open", "Coverage case marked blocked")} className="text-[11px] text-rose-600 hover:underline">Blocked</button>
+                      <button onClick={() => runQuick(c, "escalation", "open", "Coverage case escalated")} className="text-[11px] text-amber-600 hover:underline">Escalate</button>
+                      <button onClick={() => runQuick(c, "status_change", "resolved", "Coverage case resolved")} className="text-[11px] text-emerald-600 hover:underline">Resolve</button>
+                      <button onClick={() => setProposeFor(c)} className="text-[11px] text-primary hover:underline">Propose match</button>
+                    </div>
                   </Td>
                 </tr>
               ))}
-              {atRisk.length === 0 && (
-                <tr><td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">No coverage gaps detected.</td></tr>
+              {enriched.length === 0 && (
+                <tr><td colSpan={11} className="p-6 text-center text-sm text-muted-foreground">No coverage gaps detected.</td></tr>
               )}
             </tbody>
           </table>
@@ -506,6 +654,18 @@ function CoverageNeedsTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
         client={selected}
         onJumpMap={() => { setTab("map"); setSelected(null); }}
         onJumpQueue={() => { setTab("match-queue"); setSelected(null); }}
+      />
+      <ProposeMatchDialog
+        open={!!proposeFor}
+        onOpenChange={(o) => !o && setProposeFor(null)}
+        caseInfo={proposeFor ? {
+          id: proposeFor.id,
+          childName: proposeFor.childName,
+          state: proposeFor.state,
+          clinic: proposeFor.clinic ?? null,
+          requiredHours: proposeFor.approvedWeeklyHours ?? 20,
+        } : null}
+        preferences={preferences}
       />
     </div>
   );
@@ -695,13 +855,15 @@ function PreferencesTab() {
 
 /* ============================== Live Map tab ============================ */
 
-function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
+function LiveMapTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
   const { clients } = useClients();
   const { preferences } = useStaffingWorkspace();
   const needs = useMemo(() => getClientStaffingNeeds(clients), [clients]);
   const [stateFilter, setStateFilter] = useState<string>("ALL");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [proposeOpen, setProposeOpen] = useState(false);
+  const [preselectRbtId, setPreselectRbtId] = useState<string | null>(null);
+  const [drawerClient, setDrawerClient] = useState<Client | null>(null);
 
   const states = Array.from(new Set([...needs.map((n) => n.client.state), ...mockRBTProfiles.map((r) => r.state)])).sort();
   const visibleNeeds = needs.filter((n) => stateFilter === "ALL" || n.client.state === stateFilter);
@@ -843,7 +1005,11 @@ function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
               {selectedNeed ? `RBTs near ${selectedNeed.client.childName}` : `Available RBTs (${visibleRBTs.length})`}
             </h3>
             {selectedNeed && (
-              <Button size="sm" onClick={() => setProposeOpen(true)}>Propose match</Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => setDrawerClient(selectedNeed.client)}>Open case</Button>
+                <Button size="sm" variant="outline" onClick={() => setTab("match-queue")}>Match Queue</Button>
+                <Button size="sm" onClick={() => { setPreselectRbtId(null); setProposeOpen(true); }}>Propose match</Button>
+              </div>
             )}
           </div>
           <div className="space-y-2 max-h-[520px] overflow-y-auto">
@@ -890,6 +1056,17 @@ function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
                     {scored && (
                       <span className="text-sm font-semibold">{scored.score}</span>
                     )}
+                    {selectedNeed && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        disabled={!!scored?.blocked}
+                        onClick={() => { setPreselectRbtId(r.id); setProposeOpen(true); }}
+                      >
+                        Propose
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
@@ -901,7 +1078,8 @@ function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
       {selectedNeed && (
         <ProposeMatchDialog
           open={proposeOpen}
-          onOpenChange={setProposeOpen}
+          onOpenChange={(o) => { setProposeOpen(o); if (!o) setPreselectRbtId(null); }}
+          initialRbtId={preselectRbtId}
           caseInfo={{
             id: selectedNeed.client.id,
             childName: selectedNeed.client.childName,
@@ -912,6 +1090,12 @@ function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
           preferences={preferences}
         />
       )}
+      <CaseDetailDrawer
+        open={!!drawerClient}
+        onOpenChange={(o) => !o && setDrawerClient(null)}
+        client={drawerClient}
+        onJumpQueue={() => { setTab("match-queue"); setDrawerClient(null); }}
+      />
     </div>
   );
 }
@@ -928,6 +1112,8 @@ function ApploiHandoffTab() {
   const [owner, setOwner] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
 
   const handoffByRecordId = useMemo(() => {
     const m = new Map<string, typeof handoffs[number]>();
@@ -989,6 +1175,16 @@ function ApploiHandoffTab() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input className="pl-8" placeholder="Search candidate, role, record id, owner..." value={query} onChange={(e) => setQuery(e.target.value)} />
+          </div>
+          <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={stateFilter} onChange={(e) => setStateFilter(e.target.value)}>
+            <option value="ALL">All states</option>
+            {Array.from(new Set(rows.map((r) => ((r.metadata ?? {}) as Record<string, unknown>).state as string | undefined).filter(Boolean))).sort().map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
           <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="ALL">All handoff statuses</option>
             <option value="none">No decision yet</option>
@@ -1028,6 +1224,17 @@ function ApploiHandoffTab() {
               {!loading && rows
                 .filter((r) => {
                   const ex = handoffByRecordId.get(r.id);
+                  const meta = (r.metadata ?? {}) as Record<string, unknown>;
+                  const rowState = (meta.state as string | undefined) ?? null;
+                  if (stateFilter !== "ALL" && rowState !== stateFilter) return false;
+                  if (query) {
+                    const q = query.toLowerCase();
+                    const hay = [
+                      r.person_name, r.display_title, r.record_kind, r.provider_record_id,
+                      ex?.assigned_owner, ex?.candidate_name, ex?.candidate_role,
+                    ].filter(Boolean).join(" ").toLowerCase();
+                    if (!hay.includes(q)) return false;
+                  }
                   if (statusFilter === "ALL") return true;
                   if (statusFilter === "none") return !ex;
                   return ex?.status === statusFilter;
