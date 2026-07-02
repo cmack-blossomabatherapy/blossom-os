@@ -14,6 +14,7 @@ import {
   AssignRbtDialog, ContactAttemptDialog, CoverageNoteDialog,
   StartDateDialog,
 } from "@/components/scheduling/SchedulingDialogs";
+import { SchedulingOverlayWarning } from "@/components/scheduling/SchedulingOverlayWarning";
 import { useSchedulingActions } from "@/hooks/useSchedulingActions";
 
 const RBT_TARGET_HOURS = 32;
@@ -145,6 +146,7 @@ export default function OSSchedulingWorkspace() {
   return (
     <OSShell>
       <div className="mx-auto max-w-[1400px] px-6 md:px-10 py-8 space-y-6">
+        <SchedulingOverlayWarning />
         {/* Header */}
         <header className="space-y-4">
           <div className="flex items-start justify-between gap-6 flex-wrap">
