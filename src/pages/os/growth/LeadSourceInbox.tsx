@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Inbox, Plus, Phone, Mail, MessageSquare, Search, Filter, AlertTriangle,
-  CheckCircle2, ExternalLink, Link2, FileText, Copy, ShieldCheck, Radio,
+  CheckCircle2, ExternalLink, Link2, FileText, Copy, Radio,
   Megaphone, HeartHandshake, Globe, type LucideIcon,
 } from "lucide-react";
 import { GrowthPageShell, Section, StatCard } from "@/components/os/growth/GrowthPageShell";
@@ -30,7 +30,6 @@ import {
 } from "@/lib/leads/leadSourceEvents";
 import { useMarketingSourceEvents } from "@/hooks/useMarketingSourceEvents";
 import { sourceSystemToSourceValue } from "@/lib/marketing/sourceEventMapper";
-import { BLOSSOM_INTEGRATIONS } from "@/lib/os/integrations/integrationRegistry";
 import { EditSourceEventDialog } from "@/components/marketing/EditSourceEventDialog";
 import { Pencil, UserPlus, Code2 } from "lucide-react";
 import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
@@ -76,12 +75,6 @@ const EVENT_TYPE_ICON: Record<LeadSourceEventType, LucideIcon> = {
   business_development: HeartHandshake,
   manual_import: FileText,
 };
-
-/** Sources we want featured in the integration readiness panel. */
-const READINESS_SOURCE_IDS = [
-  "ctm", "retell", "leadtrap", "google-ads", "meta-ads", "mailchimp",
-  "ms365", "jivetel", "calendly", "apploi", "centralreach",
-] as const;
 
 /* ----------------------------- Add-event dialog ---------------------------- */
 
