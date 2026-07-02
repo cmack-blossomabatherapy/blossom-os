@@ -3697,8 +3697,8 @@ function AuditModule() {
       <TableFilterBar
         search={{ value: q, onChange: setQ, placeholder: "Search audit log..." }}
         filters={[
-          { key: "aa", label: "Action", value: action, onChange: setAction, options: [{ value: "all", label: "All actions" }, ...actions.map((a) => ({ value: a, label: a }))], width: 170 },
-          { key: "ao", label: "Object", value: objectType, onChange: setObjectType, options: [{ value: "all", label: "All" }, ...objectTypes.map((o) => ({ value: o, label: o }))] },
+          { key: "aa", label: "Action", value: action, onChange: setAction, countSource: s.auditLog, countValue: (r) => (r as AuditLogEntry).action, options: [{ value: "all", label: "All actions" }, ...actions.map((a) => ({ value: a, label: a }))], width: 170 },
+          { key: "ao", label: "Object", value: objectType, onChange: setObjectType, countSource: s.auditLog, countValue: (r) => (r as AuditLogEntry).objectType as string | null, options: [{ value: "all", label: "All" }, ...objectTypes.map((o) => ({ value: o, label: o }))] },
         ]}
         resultCount={rows.length}
         totalCount={s.auditLog.length}
