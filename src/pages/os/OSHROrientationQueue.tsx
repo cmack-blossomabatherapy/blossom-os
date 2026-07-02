@@ -784,6 +784,26 @@ function DetailPanel({
               toast({ title: error ? "Could not update" : "Marked attended" });
               if (!error) onChanged();
             }}>Mark attended</ActionBtn>
+            <ActionBtn icon={AlertCircle} onClick={async () => {
+              if (!slot) return toast({ title: "No orientation slot to mark" });
+              const { error } = await supabase.from("recruiting_orientation_slots")
+                .update({ status: "no_show" }).eq("id", slot.id);
+              if (!error) {
+                await logHrEvent({
+                  eventType: "orientation_no_show",
+                  title: `${cand.first_name} ${cand.last_name} did not attend orientation`,
+                  metadata: { candidate_id: cand.id, slot_id: slot.id },
+                });
+                await queueHrMessage({
+                  subject: "Missed orientation — follow up",
+                  body: `${cand.first_name}, we missed you at orientation. Reply here to reschedule.`,
+                  channels: ["in_app"],
+                  metadata: { candidate_id: cand.id, slot_id: slot.id, source: "orientation_no_show_followup" },
+                });
+              }
+              toast({ title: error ? "Could not update" : "Marked no-show — follow-up queued" });
+              if (!error) onChanged();
+            }}>Mark no-show</ActionBtn>
             <ActionBtn icon={Send} onClick={async () => {
               const res = await queueHrMessage({
                 body: `Reminder for ${cand.first_name} ${cand.last_name}: your orientation is coming up.`,
@@ -792,6 +812,7 @@ function DetailPanel({
                 metadata: { candidate_id: cand.id, slot_id: slot?.id ?? null, source: "orientation_row_reminder" },
               });
               toast({ title: res.status === "queued" ? "Reminder queued in Blossom OS" : "Could not queue reminder" });
+              onChanged();
             }}>Send reminder</ActionBtn>
             <ActionBtn icon={MessageSquare} onClick={onMessage}>Message</ActionBtn>
             <ActionBtn icon={UserCheck} primary onClick={async () => {
@@ -801,6 +822,16 @@ function DetailPanel({
               toast({ title: error ? "Could not mark ready" : "Marked ready for staffing" });
               if (!error) { onChanged(); onClose(); }
             }}>Mark ready</ActionBtn>
+          </div>
+
+          {/* Reminder history from hr_messages */}
+          <div className="pt-2">
+            <HRMessageHistory
+              title="Recent reminders & messages"
+              // hr_messages does not carry a candidate id column — filter is best-effort.
+              // Show recent HR messages to keep operators aware; harmless if empty.
+              limit={5}
+            />
           </div>
         </div>
       </div>
