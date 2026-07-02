@@ -3337,6 +3337,10 @@ function FilesModule() {
   const [category, setCategory] = useUrlState("fc", "all");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pageStr, setPageStr] = useUrlState("fpg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("fps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
   const objectLabel = (a: Attachment): string => {
     if (a.objectType === "contact") {
       const c = s.contacts.find((x) => x.id === a.objectId); return c ? contactDisplayName(c) : a.objectId;
@@ -3352,6 +3356,8 @@ function FilesModule() {
     if (q && !a.fileName.toLowerCase().includes(q.toLowerCase()) && !objectLabel(a).toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
+  useEffect(() => { setPageStr("1"); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [q, type, category]);
+  const pagedRows = rows.slice((page - 1) * pageSize, page * pageSize);
   async function openFile(a: Attachment) {
     if (!a.storagePath) {
       toast({ title: "No file backing this attachment", variant: "destructive" });
