@@ -408,14 +408,14 @@ const CONTACT_VIEWS = [
 
 function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
   const s = useCrm();
-  const [viewRaw, setView] = useUrlState("cv", "all");
+  const [viewRaw, _setView] = useUrlState("cv", "all");
   const view = (CONTACT_VIEWS.some((v) => v.id === viewRaw)
     ? viewRaw
     : "all") as (typeof CONTACT_VIEWS)[number]["id"];
-  const [q, setQ] = useUrlState("cq", "", { history: "replace" });
-  const [stateFilter, setStateFilter] = useUrlState("cs", "all");
-  const [ownerFilter, setOwnerFilter] = useUrlState("co", "all");
-  const [partnerFilter, setPartnerFilter] = useUrlState("cp", "all");
+  const [q, _setQ] = useUrlState("cq", "", { history: "replace" });
+  const [stateFilter, _setStateFilter] = useUrlState("cs", "all");
+  const [ownerFilter, _setOwnerFilter] = useUrlState("co", "all");
+  const [partnerFilter, _setPartnerFilter] = useUrlState("cp", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [sortKey, setSortKey] = useUrlState("csk", "name");
@@ -426,9 +426,18 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     else { setSortKey(key); setSortDir("asc"); }
   };
   const [pageStr, setPageStr] = useUrlState("cpg", "1");
-  const [pageSizeStr, setPageSizeStr] = useUrlState("cps", "25");
+  const [pageSizeStr, _setPageSizeStr] = useUrlState("cps", "25");
   const page = Math.max(1, Number(pageStr) || 1);
   const pageSize = Math.max(1, Number(pageSizeStr) || 25);
+  // Reset paging when the user changes a filter (but not on browser back/forward,
+  // which restores the page number directly from the URL).
+  const resetPage = () => { if ((Number(pageStr) || 1) !== 1) setPageStr("1"); };
+  const setView = (v: string) => { _setView(v); resetPage(); };
+  const setQ = (v: string) => { _setQ(v); resetPage(); };
+  const setStateFilter = (v: string) => { _setStateFilter(v); resetPage(); };
+  const setOwnerFilter = (v: string) => { _setOwnerFilter(v); resetPage(); };
+  const setPartnerFilter = (v: string) => { _setPartnerFilter(v); resetPage(); };
+  const setPageSizeStr = (v: string) => { _setPageSizeStr(v); resetPage(); };
 
   const rows = useMemo(() => {
     let r = scopedContacts(s);
@@ -468,12 +477,6 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     });
     return sorted;
   }, [s, view, q, stateFilter, ownerFilter, partnerFilter, sort.key, sort.dir]);
-
-  // Reset to page 1 whenever filters/search/view/pageSize change.
-  useEffect(() => {
-    if (page !== 1) setPageStr("1");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, q, stateFilter, ownerFilter, partnerFilter, pageSize]);
 
   const pagedRows = useMemo(
     () => rows.slice((page - 1) * pageSize, page * pageSize),
