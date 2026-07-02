@@ -47,6 +47,7 @@ import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TableFilterBar, type FilterDef } from "@/components/marketing/TableFilterBar";
+import { TablePagination } from "@/components/marketing/TablePagination";
 
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
