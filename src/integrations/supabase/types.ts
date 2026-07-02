@@ -4748,36 +4748,72 @@ export type Database = {
       employee_onboarding: {
         Row: {
           blockers: string[]
+          centralreach_external_id: string | null
+          centralreach_notes: string | null
+          centralreach_status: string
+          centralreach_synced_at: string | null
           created_at: string
           employee_id: string
           id: string
           notes: string | null
           stage_entered_at: string
           status: Database["public"]["Enums"]["hr_onboarding_status"]
+          stellar_external_id: string | null
+          stellar_notes: string | null
+          stellar_status: string
+          stellar_synced_at: string | null
           template_id: string | null
           updated_at: string
+          viventium_external_id: string | null
+          viventium_notes: string | null
+          viventium_status: string
+          viventium_synced_at: string | null
         }
         Insert: {
           blockers?: string[]
+          centralreach_external_id?: string | null
+          centralreach_notes?: string | null
+          centralreach_status?: string
+          centralreach_synced_at?: string | null
           created_at?: string
           employee_id: string
           id?: string
           notes?: string | null
           stage_entered_at?: string
           status?: Database["public"]["Enums"]["hr_onboarding_status"]
+          stellar_external_id?: string | null
+          stellar_notes?: string | null
+          stellar_status?: string
+          stellar_synced_at?: string | null
           template_id?: string | null
           updated_at?: string
+          viventium_external_id?: string | null
+          viventium_notes?: string | null
+          viventium_status?: string
+          viventium_synced_at?: string | null
         }
         Update: {
           blockers?: string[]
+          centralreach_external_id?: string | null
+          centralreach_notes?: string | null
+          centralreach_status?: string
+          centralreach_synced_at?: string | null
           created_at?: string
           employee_id?: string
           id?: string
           notes?: string | null
           stage_entered_at?: string
           status?: Database["public"]["Enums"]["hr_onboarding_status"]
+          stellar_external_id?: string | null
+          stellar_notes?: string | null
+          stellar_status?: string
+          stellar_synced_at?: string | null
           template_id?: string | null
           updated_at?: string
+          viventium_external_id?: string | null
+          viventium_notes?: string | null
+          viventium_status?: string
+          viventium_synced_at?: string | null
         }
         Relationships: [
           {
