@@ -189,8 +189,8 @@ export default function BusinessDevelopmentDashboard() {
     const activeSet = visiblePartners;
     const activePartners = activeSet.filter((p) => p.relationship_stage === "Active" || p.relationship_stage === "Strong Partner").length;
     const outreachThisWeek = outreach.filter((o) => now - new Date(o.activity_date).getTime() <= week).length;
-    const followUpsDue = tasks.filter((t) => t.status === "Open" && t.due_date && new Date(t.due_date).getTime() <= now).length;
-    const overdueFollowUps = tasks.filter((t) => t.status === "Open" && t.due_date && new Date(t.due_date).getTime() < now - 86_400_000).length;
+    const followUpsDue = tasks.filter((t) => !t.archived_at && t.status === "Open" && t.due_date && new Date(t.due_date).getTime() <= now).length;
+    const overdueFollowUps = tasks.filter((t) => !t.archived_at && t.status === "Open" && t.due_date && new Date(t.due_date).getTime() < now - 86_400_000).length;
     const openOpportunities = activeSet.filter((p) => p.relationship_stage === "New" || p.relationship_stage === "Warm").length;
     const newPartners30 = activeSet.filter((p) => now - new Date(p.created_at).getTime() <= month).length;
     const conversion = activeSet.length ? Math.round((activePartners / activeSet.length) * 100) : 0;
@@ -207,7 +207,7 @@ export default function BusinessDevelopmentDashboard() {
       (p) => (p.relationship_stage === "Warm" || p.relationship_stage === "New") && !p.next_follow_up_at,
     );
     const overdueTasksList = tasks.filter(
-      (t) => t.status === "Open" && t.due_date && new Date(t.due_date).getTime() < now,
+      (t) => !t.archived_at && t.status === "Open" && t.due_date && new Date(t.due_date).getTime() < now,
     );
     const outreachByCompany = new Set(outreach.map((o) => o.company_id).filter(Boolean));
     const newPartnersNoOutreach = visiblePartners.filter((p) => !outreachByCompany.has(p.id));
