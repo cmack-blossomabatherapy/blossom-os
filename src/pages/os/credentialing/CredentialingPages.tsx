@@ -861,7 +861,9 @@ function RecordDetailSheet({
     if (status === "Ready To Sync") {
       const missing = readinessMissingFields(record, provider);
       if (missing.length) {
-        toast.error(`Can't mark Ready To Sync — missing: ${missing.join(", ")}`);
+        toast.error(
+          `Not ready yet — please fill in ${missing.length === 1 ? "this field" : "these fields"}: ${missing.join(", ")}`,
+        );
         return;
       }
     }
