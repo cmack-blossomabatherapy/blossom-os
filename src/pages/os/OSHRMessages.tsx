@@ -968,6 +968,7 @@ export default function OSHRMessages() {
                             : undefined,
                         });
                         setReplyBody("");
+                        setMessageHistoryKey(k => k + 1);
                       }}
                       className="inline-flex items-center gap-1.5 h-7 px-3 rounded-lg bg-primary text-primary-foreground text-[12px] hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
                     >
