@@ -1344,10 +1344,13 @@ function AskBlossomAuthRail({ auths, onOpen }: { auths: EnrichedAuth[]; onOpen: 
         <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Try asking</p>
         <div className="space-y-1.5">
           {prompts.map((p) => (
-            <button key={p} onClick={() => toast(`"${p}" — assistant coming soon`)}
-              className="w-full text-left text-[12px] px-3 py-2 rounded-xl bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition">
+            <Link
+              key={p}
+              to={`/ai/assistant?context=authorizations&q=${encodeURIComponent(p)}`}
+              className="block w-full text-left text-[12px] px-3 py-2 rounded-xl bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition"
+            >
               {p}
-            </button>
+            </Link>
           ))}
         </div>
       </div>
