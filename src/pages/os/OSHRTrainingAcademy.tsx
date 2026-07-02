@@ -196,6 +196,8 @@ export default function OSHRTrainingAcademy() {
           </div>
         </header>
 
+        <HRIntegrationStatusStrip className="mb-6" />
+
         {/* KPI strip — lightweight only */}
         <div className="grid gap-3 mb-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <Kpi label="Active journeys"    value={data.loading ? "—" : data.tracks.length} />
