@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   HeartHandshake, MessageSquare, Briefcase, Users, BarChart3,
   Plus, CalendarPlus, ClipboardList, Download, CheckCircle2, Search,
-  Inbox, Archive, Pencil, Eye, AlertTriangle,
+  Inbox, Archive, Pencil, Eye, AlertTriangle, Trash2, Radio,
   type LucideIcon,
 } from "lucide-react";
 import { GrowthPageShell, StatCard } from "@/components/os/growth/GrowthPageShell";
@@ -21,6 +21,7 @@ import { useReferralCompanies, useReferralActivities, useReferralTasks } from "@
 import { REFERRAL_PARTNER_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
 import {
   createCompany, createActivity, createTask, setTaskStatus, updateCompany,
+  updateTask, setTaskArchived,
   type ReferralCrmTask,
 } from "@/lib/os/referrals/api";
 import {
@@ -29,6 +30,54 @@ import {
 } from "@/lib/os/referrals/types";
 
 type TabKey = "overview" | "partners" | "outreach" | "tasks" | "providers" | "community" | "sources";
+
+type MarketingSourceRow = {
+  id: string;
+  name: string;
+  source_system: string | null;
+  channel: string | null;
+  state: string | null;
+  is_active: boolean;
+};
+type MarketingSourceEventRow = {
+  id: string;
+  source_id: string | null;
+  source_system: string;
+  state: string | null;
+  status: string;
+  event_type: string | null;
+  occurred_at: string;
+  referral_company_id: string | null;
+};
+
+function useMarketingSourceSignals() {
+  const [sources, setSources] = useState<MarketingSourceRow[]>([]);
+  const [events, setEvents] = useState<MarketingSourceEventRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [{ data: s, error: sErr }, { data: e, error: eErr }] = await Promise.all([
+          supabase.from("marketing_sources").select("id,name,source_system,channel,state,is_active").order("name"),
+          supabase.from("marketing_source_events").select("id,source_id,source_system,state,status,event_type,occurred_at,referral_company_id").order("occurred_at", { ascending: false }).limit(500),
+        ]);
+        if (cancelled) return;
+        if (sErr) throw sErr;
+        if (eErr) throw eErr;
+        setSources((s ?? []) as MarketingSourceRow[]);
+        setEvents((e ?? []) as MarketingSourceEventRow[]);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return { sources, events, loading, error };
+}
 
 const TABS: { key: TabKey; label: string; icon: LucideIcon }[] = [
   { key: "overview",   label: "Overview",   icon: BarChart3 },
