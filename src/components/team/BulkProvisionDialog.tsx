@@ -29,7 +29,7 @@ interface ProvisionResult {
 }
 
 /** Map a job title to one or more app roles. */
-function rolesForTitle(title: string): AppRole[] {
+export function rolesForTitle(title: string): AppRole[] {
   const t = title.toLowerCase();
   if (t.includes("ceo") || t.includes("director of operations")) return ["exec", "admin"];
   if (t.includes("operations manager")) return ["ops_manager", "admin"];
