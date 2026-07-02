@@ -368,11 +368,15 @@ export default function ReportsHome() {
       {/* ============== ALL REPORTS (grouped by category) ============== */}
       <section className="mt-10">
         <SectionHeader
-          title={`All reports · ${reports.length}`}
-          subtitle={`Every report available for ${roleLabel}, grouped by category.`}
+          title={activeCategoryDef
+            ? `${activeCategoryDef.name} reports · ${reports.filter(r => r.category === activeCategoryDef.id).length}`
+            : `All reports · ${reports.length}`}
+          subtitle={activeCategoryDef
+            ? `Showing ${activeCategoryDef.name.toLowerCase()} reports first. Other categories are listed below.`
+            : `Every report available for ${roleLabel}, grouped by category.`}
         />
-        <div className="mt-4 space-y-6">
-          {categoriesOrdered.map(cat => {
+        {(() => {
+          const renderCat = (cat: (typeof categoriesOrdered)[number]) => {
             const inCat = reports
               .filter(r => r.category === cat.id)
               .sort((a, b) => b.popularity - a.popularity);
@@ -399,8 +403,40 @@ export default function ReportsHome() {
                 </div>
               </div>
             );
-          })}
-        </div>
+          };
+          if (!activeCategoryDef) {
+            return <div className="mt-4 space-y-6">{categoriesOrdered.map(renderCat)}</div>;
+          }
+          const active = categoriesOrdered.find(c => c.id === activeCategoryDef.id);
+          const others = categoriesOrdered.filter(c => c.id !== activeCategoryDef.id);
+          return (
+            <div className="mt-4 space-y-8">
+              {active && renderCat(active)}
+              {others.length > 0 && (
+                <div className="pt-4 border-t border-border/60">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                      <h3 className="text-[13.5px] font-semibold tracking-tight text-muted-foreground">
+                        Other available reports
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        Not part of the current {activeCategoryDef.name.toLowerCase()} focus.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearCategoryFilter}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-[hsl(265_70%_55%)] hover:underline"
+                    >
+                      <X className="h-3 w-3" /> Clear filter
+                    </button>
+                  </div>
+                  <div className="space-y-6">{others.map(renderCat)}</div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </section>
 
       {/* ============== RECENT + FAVORITES ============== */}
