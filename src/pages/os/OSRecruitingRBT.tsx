@@ -132,13 +132,6 @@ export default function OSRecruitingRBT() {
     () => recruitingCandidates.filter((c) => c.role === "RBT"),
     []
   );
-
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() => {
-    const m: Record<string, StageKey> = {};
-    baseCandidates.forEach((c) => { m[c.id] = classify(c); });
-    return m;
-  });
-
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
@@ -147,7 +140,7 @@ export default function OSRecruitingRBT() {
   const [sourceF, setSourceF] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => classify(c);
 
   const staffingNeeds = useMemo(() => getClientStaffingNeeds().filter((n) => n.client.bcba), []);
 
@@ -177,7 +170,7 @@ export default function OSRecruitingRBT() {
         default:            return true;
       }
     });
-  }, [baseCandidates, stageMap, activeChip, search, stateF, recruiterF, urgencyF, sourceF]);
+  }, [baseCandidates, activeChip, search, stateF, recruiterF, urgencyF, sourceF]);
 
   const summary = useMemo(() => {
     const get = (pred: (c: RecruitingCandidate) => boolean) => baseCandidates.filter(pred).length;
@@ -192,7 +185,7 @@ export default function OSRecruitingRBT() {
       stalled:          get(isStalled),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseCandidates, stageMap, staffingNeeds]);
+  }, [baseCandidates, staffingNeeds]);
 
   const orientationReadyList = useMemo(
     () => baseCandidates.filter((c) => isOrientationReady(c) || isStaffingReady(c)),
@@ -219,7 +212,7 @@ export default function OSRecruitingRBT() {
 
   const selected = selectedId ? baseCandidates.find((c) => c.id === selectedId) ?? null : null;
 
-  function moveStage(id: string, to: StageKey) { setStageMap((m) => ({ ...m, [id]: to }));
+  function moveStage(id: string, to: StageKey) {
     void runPageStageMove(mutations, "rbt", id, to); }
   // expose canonical mapping for downstream UI badges
   const canonicalFor = (k: StageKey) => mapRbtStageToCanonical(k);

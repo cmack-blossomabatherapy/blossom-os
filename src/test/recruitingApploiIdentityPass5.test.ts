@@ -40,3 +40,17 @@ describe("Recruiting Pass 5a — candidate identity foundation", () => {
     expect(src).toMatch(/if \(!\/\^\[0-9a-f-\]\{36\}\$\/i\.test\(candidateId\)\) return;/);
   });
 });
+
+describe("Recruiting Pass 5/6 — Apploi importer identity safety", () => {
+  it("useApploiIntegration no longer uses onConflict email/id fallback", () => {
+    const src = require("node:fs").readFileSync(
+      require("node:path").join(process.cwd(), "src/hooks/useApploiIntegration.ts"),
+      "utf8",
+    );
+    expect(src).not.toMatch(/onConflict:\s*email\s*\?\s*"email"\s*:\s*"id"/);
+    // Must use durable external identity.
+    expect(src).toMatch(/external_provider/);
+    expect(src).toMatch(/external_candidate_id/);
+    expect(src).toMatch(/apploi_(imported|updated)/);
+  });
+});

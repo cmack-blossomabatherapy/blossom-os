@@ -12016,6 +12016,11 @@ export type Database = {
           city: string | null
           created_at: string
           email: string | null
+          external_candidate_id: string | null
+          external_payload: Json | null
+          external_profile_url: string | null
+          external_provider: string | null
+          external_synced_at: string | null
           first_name: string
           id: string
           is_archived: boolean
@@ -12041,6 +12046,11 @@ export type Database = {
           city?: string | null
           created_at?: string
           email?: string | null
+          external_candidate_id?: string | null
+          external_payload?: Json | null
+          external_profile_url?: string | null
+          external_provider?: string | null
+          external_synced_at?: string | null
           first_name: string
           id?: string
           is_archived?: boolean
@@ -12066,6 +12076,11 @@ export type Database = {
           city?: string | null
           created_at?: string
           email?: string | null
+          external_candidate_id?: string | null
+          external_payload?: Json | null
+          external_profile_url?: string | null
+          external_provider?: string | null
+          external_synced_at?: string | null
           first_name?: string
           id?: string
           is_archived?: boolean

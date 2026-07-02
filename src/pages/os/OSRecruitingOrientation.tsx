@@ -175,10 +175,6 @@ export default function OSRecruitingOrientation() {
     (c: RecruitingCandidate) => liveOrientByName.get(c.name.toLowerCase()) ?? null,
     [liveOrientByName],
   );
-
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
-    Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
-  );
   const [activeChip, setActiveChip] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [state, setState] = useState<string>("all");
@@ -187,8 +183,6 @@ export default function OSRecruitingOrientation() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const stageOf = (c: RecruitingCandidate) => {
-    const override = stageMap[c.id];
-    if (override) return override;
     const live = findLiveOrientFor(c);
     if (live) return orientStatusToStage(live.status, classify(c));
     return classify(c);
@@ -227,7 +221,7 @@ export default function OSRecruitingOrientation() {
         default: return true;
       }
     });
-  }, [pool, stageMap, activeChip, search, state, role, recruiter]);
+  }, [pool, activeChip, search, state, role, recruiter]);
 
   const summary = useMemo(() => {
     const get = (pred: (c: RecruitingCandidate) => boolean) => pool.filter(pred).length;
@@ -242,14 +236,14 @@ export default function OSRecruitingOrientation() {
       blocked:            get(isStaffingBlocked),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pool, stageMap]);
+  }, [pool]);
 
   const attendanceQueue = useMemo(
     () => pool.filter((c) => {
       const s = stageOf(c);
       return s === "today" || s === "attendancePending" || (c.orientation === "Complete" && c.readinessStatus !== "Ready for Staffing");
     }),
-    [pool, stageMap]
+    [pool]
   );
 
   const blockersQueue = useMemo(() => pool.filter(isStaffingBlocked), [pool]);
@@ -262,7 +256,6 @@ export default function OSRecruitingOrientation() {
   const selected = selectedId ? recruitingCandidates.find((c) => c.id === selectedId) ?? null : null;
 
   function moveStage(id: string, to: StageKey) {
-    setStageMap((m) => ({ ...m, [id]: to }));
     void runPageStageMove(mutations, "orientation", id, to);
     const candidate = recruitingCandidates.find((c) => c.id === id);
     if (!candidate) return;

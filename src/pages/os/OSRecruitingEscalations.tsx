@@ -353,8 +353,6 @@ export default function OSRecruitingEscalations() {
   }, [base]);
   // Optimistic UI map; real status persists via mutations.resolveEscalation /
   // mutations.updateEscalation for rows that originated in the live table.
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(defaults);
-  useEffect(() => { setStageMap(defaults); }, [defaults]);
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
@@ -365,7 +363,7 @@ export default function OSRecruitingEscalations() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiQ, setAiQ] = useState("");
 
-  const stageOf = (e: Esc): StageKey => stageMap[e.id] ?? e.stage;
+  const stageOf = (e: Esc): StageKey => e.stage;
 
   const filtered = useMemo(() => {
     return base.filter((e) => {
@@ -396,7 +394,7 @@ export default function OSRecruitingEscalations() {
         default:            return true;
       }
     });
-  }, [base, stageMap, activeChip, search, stateF, recruiterF, urgencyF, daysF]);
+  }, [base, activeChip, search, stateF, recruiterF, urgencyF, daysF]);
 
   const summary = useMemo(() => {
     const has = (pred: (e: Esc) => boolean) => base.filter(pred).length;
@@ -411,7 +409,7 @@ export default function OSRecruitingEscalations() {
       urgentNeeds:   has((e) => e.type === "Unstaffed urgent client"),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [base, stageMap]);
+  }, [base]);
 
   const grouped = useMemo(() => {
     const g: Record<StageKey, Esc[]> = {
@@ -420,12 +418,12 @@ export default function OSRecruitingEscalations() {
     filtered.forEach((e) => { g[stageOf(e)].push(e); });
     Object.values(g).forEach((arr) => arr.sort((a, b) => b.daysDelayed - a.daysDelayed));
     return g;
-  }, [filtered, stageMap]);
+  }, [filtered]);
 
   const staffingDelays = useMemo(
     () => filtered.filter((e) => e.staffingImpact || stageOf(e) === "staffing" || e.type === "Unstaffed urgent client")
       .sort((a, b) => b.daysDelayed - a.daysDelayed).slice(0, 8),
-    [filtered, stageMap]
+    [filtered]
   );
 
   const stallRisk = useMemo(
@@ -440,7 +438,7 @@ export default function OSRecruitingEscalations() {
   const leadershipQueue = useMemo(
     () => filtered.filter((e) => e.leadership || stageOf(e) === "leadership" || stageOf(e) === "highrisk")
       .sort((a, b) => b.daysDelayed - a.daysDelayed).slice(0, 8),
-    [filtered, stageMap]
+    [filtered]
   );
 
   const recruiterRows = useMemo(() => {
@@ -456,13 +454,12 @@ export default function OSRecruitingEscalations() {
       };
     }).filter((r) => r.active + r.resolved > 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [base, stageMap]);
+  }, [base]);
 
   const selected = selectedId ? base.find((e) => e.id === selectedId) ?? null : null;
 
   function moveStage(id: string, to: StageKey) {
     const item = base.find((e) => e.id === id);
-    setStageMap((m) => ({ ...m, [id]: to }));
     // Persist for rows that originated from the live table (uuid ids).
     if (item && /^[0-9a-f-]{36}$/i.test(id)) {
       if (to === "resolved") void mutations.resolveEscalation(id);

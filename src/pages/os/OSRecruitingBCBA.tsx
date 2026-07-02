@@ -125,13 +125,6 @@ export default function OSRecruitingBCBA() {
     () => recruitingCandidates.filter((c) => c.role === "BCBA"),
     []
   );
-
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() => {
-    const m: Record<string, StageKey> = {};
-    baseCandidates.forEach((c) => { m[c.id] = classify(c); });
-    return m;
-  });
-
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
@@ -141,7 +134,7 @@ export default function OSRecruitingBCBA() {
   const [locF, setLocF] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => classify(c);
 
   // BCBA-priority client staffing needs (no BCBA assigned to client)
   const clinicalNeeds = useMemo(
@@ -176,7 +169,7 @@ export default function OSRecruitingBCBA() {
         default:            return true;
       }
     });
-  }, [baseCandidates, stageMap, activeChip, search, stateF, recruiterF, urgencyF, sourceF, locF]);
+  }, [baseCandidates, activeChip, search, stateF, recruiterF, urgencyF, sourceF, locF]);
 
   const summary = useMemo(() => {
     const get = (pred: (c: RecruitingCandidate) => boolean) => baseCandidates.filter(pred).length;
@@ -196,7 +189,7 @@ export default function OSRecruitingBCBA() {
       stalled:          get(isStalled),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseCandidates, stageMap, clinicalNeeds]);
+  }, [baseCandidates, clinicalNeeds]);
 
   const orientationReadyList = useMemo(
     () => baseCandidates.filter((c) => isOrientationReady(c) || isStaffingReady(c)),
@@ -228,7 +221,7 @@ export default function OSRecruitingBCBA() {
 
   const selected = selectedId ? baseCandidates.find((c) => c.id === selectedId) ?? null : null;
 
-  function moveStage(id: string, to: StageKey) { setStageMap((m) => ({ ...m, [id]: to }));
+  function moveStage(id: string, to: StageKey) {
     void runPageStageMove(mutations, "bcba", id, to); }
   // expose canonical mapping for downstream UI badges
   const canonicalFor = (k: StageKey) => mapBcbaStageToCanonical(k);

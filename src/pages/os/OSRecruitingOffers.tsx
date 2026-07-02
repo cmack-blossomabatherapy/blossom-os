@@ -190,10 +190,6 @@ export default function OSRecruitingOffers() {
     (c: RecruitingCandidate) => liveOfferByName.get(c.name.toLowerCase()) ?? null,
     [liveOfferByName],
   );
-
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
-    Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
-  );
   const [activeChip, setActiveChip] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [state, setState] = useState<string>("all");
@@ -203,8 +199,6 @@ export default function OSRecruitingOffers() {
   const [checks, setChecks] = useState<Record<string, boolean[]>>({});
 
   const stageOf = (c: RecruitingCandidate) => {
-    const override = stageMap[c.id];
-    if (override) return override;
     const live = findLiveOfferFor(c);
     if (live) return offerStatusToStage(live.status, classify(c));
     return classify(c);
@@ -245,7 +239,7 @@ export default function OSRecruitingOffers() {
         default: return true;
       }
     });
-  }, [hiringPool, stageMap, activeChip, search, state, role, recruiter]);
+  }, [hiringPool, activeChip, search, state, role, recruiter]);
 
   const summary = useMemo(() => {
     const get = (pred: (c: RecruitingCandidate) => boolean) => hiringPool.filter(pred).length;
@@ -260,7 +254,7 @@ export default function OSRecruitingOffers() {
       followUp:      get((c) => c.blockers.length > 0 && c.daysInStage >= 3),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hiringPool, stageMap]);
+  }, [hiringPool]);
 
   const orientationQueue = useMemo(
     () => hiringPool.filter((c) => c.onboardingStatus === "Complete" || c.orientation === "Scheduled" || c.candidateStatus === "Orientation"),
@@ -281,7 +275,6 @@ export default function OSRecruitingOffers() {
   const selected = selectedId ? recruitingCandidates.find((c) => c.id === selectedId) ?? null : null;
 
   function moveStage(id: string, to: StageKey) {
-    setStageMap((m) => ({ ...m, [id]: to }));
     void runPageStageMove(mutations, "offers", id, to);
     // Persist the offer status directly when the candidate has a live
     // recruiting_offers row. Stage moves that don't map to an offer status

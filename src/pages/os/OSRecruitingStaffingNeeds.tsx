@@ -7,9 +7,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import {
-  getClientStaffingNeeds,
   getCapacityMap,
-  mockRBTProfiles,
   type StaffingClientNeed,
 } from "@/data/staffing";
 import {
@@ -169,27 +167,13 @@ export default function OSRecruitingStaffingNeeds() {
   const mutations = useRecruitingMutations();
   const { items: liveStaffingNeeds, loading: liveStaffingNeedsLoading } = useRecruitingStaffingNeeds();
   const { find: findCandidate } = useRecruitingCandidateLookup();
-  // Build needs list
-  const syntheticNeeds = useMemo(() => getClientStaffingNeeds(), []);
+  // Build needs list — the active board is ONLY live Supabase rows.
   const liveNeeds = useMemo(
     () => liveStaffingNeeds.map(mapLiveNeedToViewModel),
     [liveStaffingNeeds],
   );
-  // De-dupe synthetic needs against live rows by client label / childName.
-  const liveLabels = useMemo(
-    () => new Set(liveNeeds.map((n) => n.client.childName.toLowerCase())),
-    [liveNeeds],
-  );
-  const suggestedNeeds = useMemo(
-    () => syntheticNeeds.filter((n) => !liveLabels.has(n.client.childName.toLowerCase())),
-    [syntheticNeeds, liveLabels],
-  );
-  // Live rows are the operational source of truth; synthetic suggestions
-  // keep the board populated for empty tenants and surface unlogged demand.
-  const baseNeeds = useMemo(
-    () => [...liveNeeds, ...suggestedNeeds],
-    [liveNeeds, suggestedNeeds],
-  );
+  // Live rows are the sole operational source of truth for the active board.
+  const baseNeeds = liveNeeds;
   const readyCandidates = useMemo(
     () => recruitingCandidates.filter(orientationReady),
     []
@@ -366,13 +350,12 @@ export default function OSRecruitingStaffingNeeds() {
           <SummaryCard label="Escalations"          value={summary.escalations} icon={Bell}         tone="crit" onClick={() => setActiveChip("escalated")} />
         </div>
 
-        {/* Live vs Suggested pill summary */}
+        {/* Live pill summary */}
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
           <Pill tone="info">{liveNeeds.length} live</Pill>
-          <Pill tone="muted">{suggestedNeeds.length} suggested</Pill>
           {liveStaffingNeedsLoading && <span>Loading live needs…</span>}
           <span className="text-muted-foreground/70">
-            Live rows persist to <code className="text-foreground/80">recruiting_staffing_needs</code>; suggested rows are client-demand signals not yet logged.
+            Live rows persist to <code className="text-foreground/80">recruiting_staffing_needs</code>.
           </span>
         </div>
 
@@ -472,53 +455,6 @@ export default function OSRecruitingStaffingNeeds() {
                 </div>
               )}
             </section>
-
-            {/* Suggested staffing needs (synthetic demand not yet logged) */}
-            {suggestedNeeds.length > 0 && (
-              <section>
-                <SectionHeader
-                  title="Suggested staffing needs"
-                  caption={`${suggestedNeeds.length} client-demand signal${suggestedNeeds.length === 1 ? "" : "s"} not yet in recruiting_staffing_needs`}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {suggestedNeeds.slice(0, 8).map((n) => {
-                    const role = needRole(n);
-                    return (
-                      <div key={`sug-${n.client.id}`} className="rounded-2xl bg-card border border-border/70 p-4">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium truncate">Client {initials(n.client.childName)} · {n.client.state}</div>
-                            <div className="text-[11px] text-muted-foreground truncate">{n.reason} · {n.daysWaiting}d waiting</div>
-                          </div>
-                          <Pill tone="muted">Suggested</Pill>
-                        </div>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          <Pill tone="info">Needs {role}</Pill>
-                          {n.priority === "High" && <Pill tone="crit">Urgent</Pill>}
-                        </div>
-                        <div className="flex justify-end mt-3">
-                          <button
-                            onClick={() => void mutations.createStaffingNeed({
-                              role: role,
-                              role_needed: role,
-                              state: n.client.state,
-                              client_label: n.client.childName,
-                              priority: n.priority,
-                              hours_per_week: n.requiredHours || null,
-                              status: "new",
-                              notes: n.alert ?? n.reason,
-                            } as any)}
-                            className="h-8 px-3 rounded-lg text-xs bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center gap-1.5"
-                          >
-                            <Plus className="size-3.5" /> Create
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
           </div>
 
           {/* Right rail */}
@@ -527,16 +463,22 @@ export default function OSRecruitingStaffingNeeds() {
               <div className="text-xs font-semibold tracking-tight text-muted-foreground uppercase mb-3">Quick Actions</div>
               <div className="space-y-1.5">
                 {[
-                  { icon: Plus, label: "Add Staffing Need" },
+                  { icon: Plus, label: "Add Staffing Need", onClick: () => void mutations.createStaffingNeed({
+                      role: "RBT", role_needed: "RBT", state: "GA", priority: "Medium", status: "new",
+                    } as any) },
                   { icon: UserPlus, label: "Assign Recruiter" },
                   { icon: AlertTriangle, label: "Escalate Staffing Delay" },
-                  { icon: Link2, label: "Link Candidate" },
+                  { icon: Link2, label: "Link Candidate", onClick: () => {
+                      const need = liveStaffingNeeds[0];
+                      const cand = recruitingCandidates[0];
+                      if (need && cand) void mutations.linkCandidateToStaffingNeed(need.id, cand.id);
+                    } },
                   { icon: Bell, label: "Notify Staffing Coordinator" },
                   { icon: ArrowRight, label: "Move to Staffing Confirmed" },
                   { icon: Download, label: "Export Staffing Queue" },
                   { icon: Send, label: "Send Staffing Update" },
                 ].map((a) => (
-                  <button key={a.label} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
+                  <button key={a.label} onClick={(a as any).onClick} className="w-full h-9 px-3 rounded-xl text-left text-sm hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
                     <a.icon className="size-4 text-muted-foreground" />
                     {a.label}
                   </button>
@@ -913,4 +855,4 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 // Touch unused imports to keep tree-shaking honest
-void recruitingStates; void mockRBTProfiles;
+void recruitingStates;
