@@ -1220,9 +1220,20 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
   const [rIntakeOwnerFilter, setRIntakeOwnerFilter] = useUrlState("rio", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
+  const [sortKey, setSortKey] = useUrlState("rsk", "date");
+  const [sortDir, setSortDir] = useUrlState("rsd", "desc");
+  const sort: SortState = { key: sortKey, dir: sortDir === "asc" ? "asc" : "desc" };
+  const toggleSort = (key: string) => {
+    if (sort.key === key) setSortDir(sort.dir === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+  const [pageStr, setPageStr] = useUrlState("rpg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("rps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
   const allRows = scopedReferrals(s);
   const rows = useMemo(() => {
-    return allRows.filter((r) => {
+    const filtered = allRows.filter((r) => {
       if (statusFilter !== "all" && (r.referralStatus || "") !== statusFilter) return false;
       if (stageFilter !== "all") {
         const lead = r.leadId ? leadById.get(r.leadId) : undefined;
@@ -1248,7 +1259,41 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
       }
       return true;
     });
-  }, [allRows, statusFilter, stageFilter, leadById, rStateFilter, rServiceFilter, rIntakeOwnerFilter, rQuery, s]);
+    const getKey = (r: typeof filtered[number]): string | number => {
+      switch (sort.key) {
+        case "name": return (r.name || "").toLowerCase();
+        case "company": return companyName(s, r.companyId).toLowerCase();
+        case "contact": return r.contactId ? contactDisplayName(s.contacts.find((c) => c.id === r.contactId)).toLowerCase() : "";
+        case "state": return (r.state || "").toLowerCase();
+        case "service": return (r.serviceType || "").toLowerCase();
+        case "status": return (r.referralStatus || "").toLowerCase();
+        case "pipeline": {
+          const lead = r.leadId ? leadById.get(r.leadId) : undefined;
+          return lead ? (canonicalFamilyLeadStage(lead.status) || "").toLowerCase() : "";
+        }
+        case "insurance": return (r.insuranceType || "").toLowerCase();
+        case "owner": return (userName(s, r.assignedIntakeOwnerId) || "").toLowerCase();
+        case "date":
+        default: return r.referralDate || "";
+      }
+    };
+    return [...filtered].sort((a, b) => {
+      const av = getKey(a); const bv = getKey(b);
+      if (av < bv) return sort.dir === "asc" ? -1 : 1;
+      if (av > bv) return sort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [allRows, statusFilter, stageFilter, leadById, rStateFilter, rServiceFilter, rIntakeOwnerFilter, rQuery, s, sort.key, sort.dir]);
+
+  useEffect(() => {
+    if (page !== 1) setPageStr("1");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, stageFilter, rStateFilter, rServiceFilter, rIntakeOwnerFilter, rQuery, pageSize]);
+
+  const pagedRows = useMemo(
+    () => rows.slice((page - 1) * pageSize, page * pageSize),
+    [rows, page, pageSize],
+  );
   const filtersActive =
     statusFilter !== "all" || stageFilter !== "all" ||
     rStateFilter !== "all" || rServiceFilter !== "all" ||
@@ -1262,8 +1307,13 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
     { key: "rio", label: "Intake owner", value: rIntakeOwnerFilter, onChange: setRIntakeOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 180 },
   ];
 
-  const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
-  const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
+  const allChecked = pagedRows.length > 0 && pagedRows.every((r) => selected.has(r.id));
+  const toggleAll = () => {
+    const next = new Set(selected);
+    if (allChecked) pagedRows.forEach((r) => next.delete(r.id));
+    else pagedRows.forEach((r) => next.add(r.id));
+    setSelected(next);
+  };
   const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
   const ids = () => Array.from(selected);
   const clear = () => setSelected(new Set());
