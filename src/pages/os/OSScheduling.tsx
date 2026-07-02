@@ -141,7 +141,7 @@ import { useSchedulingActions } from "@/hooks/useSchedulingActions";
  /* ---------------- page ---------------- */
 
  export default function OSScheduling() {
-  const { clients, schedulingOverlayError } = useClients();
+  const { clients } = useClients();
    const cr = useCentralReachOps();
   const { activeState } = useOSRole();
    const [params, setParams] = useSearchParams();
