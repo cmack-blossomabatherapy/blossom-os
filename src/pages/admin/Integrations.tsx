@@ -49,6 +49,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { IntegrationReadinessPanel } from "@/components/marketing/IntegrationReadinessPanel";
+import { RecruitingIntegrationHealthPanel } from "@/components/recruiting/RecruitingIntegrationHealthPanel";
 import {
   Sheet,
   SheetContent,
@@ -1259,6 +1260,12 @@ export default function Integrations() {
             so all integration configuration lives in one admin home. */}
         <div className="mt-8">
           <IntegrationReadinessPanel />
+        </div>
+
+        {/* Recruiting integration health — Apploi connection readiness,
+            onboarding blockers, and recent import errors. */}
+        <div className="mt-8">
+          <RecruitingIntegrationHealthPanel />
         </div>
 
         {/* Search & filters */}
