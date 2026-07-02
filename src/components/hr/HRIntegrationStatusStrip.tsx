@@ -21,7 +21,7 @@ const PROVIDERS: { key: ProviderKey; label: string }[] = [
   { key: "centralreach", label: "CentralReach" },
 ];
 
-type CatalogRow = { id: string; status: string; last_synced_at: string | null };
+type CatalogRow = { id: string; status: string };
 
 function toneClass(status: string): string {
   if (status === "connected") return "text-emerald-600";
@@ -30,10 +30,8 @@ function toneClass(status: string): string {
   return "text-muted-foreground";
 }
 
-function label(status: string, syncedAt: string | null): string {
-  if (status === "connected") {
-    return syncedAt ? `connected · synced ${new Date(syncedAt).toLocaleDateString()}` : "connected";
-  }
+function label(status: string): string {
+  if (status === "connected") return "connected";
   if (status === "not_configured") return "not connected";
   return status.replace(/_/g, " ");
 }
@@ -50,7 +48,7 @@ export function HRIntegrationStatusStrip({ className }: { className?: string }) 
     (async () => {
       const { data } = await supabase
         .from("integration_catalog")
-        .select("id,status,last_synced_at")
+        .select("id,status")
         .in("id", ["viventium", "stellar_checks", "centralreach"]);
       if (cancelled || !data) return;
       const next: Record<ProviderKey, CatalogRow | null> = {
@@ -82,7 +80,7 @@ export function HRIntegrationStatusStrip({ className }: { className?: string }) 
           <span key={p.key} className="flex items-center gap-1.5">
             <span className="text-muted-foreground">{p.label}:</span>
             <span className={cn("font-medium", toneClass(status))}>
-              {label(status, row?.last_synced_at ?? null)}
+              {label(status)}
             </span>
           </span>
         );
