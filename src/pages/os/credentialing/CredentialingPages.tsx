@@ -2865,6 +2865,11 @@ export function ExpiringCredentialsPage() {
   const { records, providerById, loading, error, reload, tasks, documents } = useCredentialingData();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
   const [windowDays, setWindowDays] = useState<30 | 60 | 90>(90);
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [payerQ, setPayerQ] = useState("");
+  const [providerTypeFilter, setProviderTypeFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   async function startRenewal(r: CredentialingRecord) {
     try {
@@ -2907,9 +2912,27 @@ export function ExpiringCredentialsPage() {
 
   const visible = useMemo(() => {
     const all = [...grouped.d15, ...grouped.d30, ...grouped.d60, ...grouped.d90];
-    return all.filter((r) => { const d = daysUntil(r.expiration_date)!; return d <= windowDays; })
+    return all.filter((r) => {
+      const d = daysUntil(r.expiration_date)!;
+      if (d > windowDays) return false;
+      if (ownerFilter && !(r.owner_name ?? "").toLowerCase().includes(ownerFilter.toLowerCase())) return false;
+      if (stateFilter !== "ALL" && r.state !== stateFilter) return false;
+      if (payerQ && !r.payer_name.toLowerCase().includes(payerQ.toLowerCase())) return false;
+      if (statusFilter !== "ALL" && r.status !== statusFilter) return false;
+      if (providerTypeFilter !== "ALL") {
+        const prov = providerById.get(r.provider_id);
+        if (prov?.provider_type !== providerTypeFilter) return false;
+      }
+      return true;
+    })
       .sort((a, b) => (daysUntil(a.expiration_date)! - daysUntil(b.expiration_date)!));
-  }, [grouped, windowDays]);
+  }, [grouped, windowDays, ownerFilter, stateFilter, payerQ, statusFilter, providerTypeFilter, providerById]);
+
+  const hasExtraFilters = !!ownerFilter || stateFilter !== "ALL" || !!payerQ || statusFilter !== "ALL" || providerTypeFilter !== "ALL";
+  const clearFilters = () => {
+    setOwnerFilter(""); setStateFilter("ALL"); setPayerQ("");
+    setStatusFilter("ALL"); setProviderTypeFilter("ALL");
+  };
 
   return (
     <Shell>
@@ -2917,23 +2940,60 @@ export function ExpiringCredentialsPage() {
         eyebrow="Credentialing" title="Expiring Credentials"
         subtitle="30 / 60 / 90 day renewal command center. Anything under 15 days is critical."
         icon={Calendar}
+        actions={
+          <Button size="sm" variant="outline" onClick={() => exportCsv("expiring-credentials.csv", visible as unknown as Record<string, unknown>[])}>
+            <Download className="h-4 w-4 mr-1.5" />Export CSV
+          </Button>
+        }
       />
       <LoadErr loading={loading} error={error} />
+      <FromReportsBanner />
       <div className="grid gap-4 md:grid-cols-4">
         <KpiCard label="< 15 days" value={grouped.d15.length} tone="danger" />
         <KpiCard label="< 30 days" value={grouped.d15.length + grouped.d30.length} tone="warn" />
         <KpiCard label="< 60 days" value={grouped.d15.length + grouped.d30.length + grouped.d60.length} />
         <KpiCard label="< 90 days" value={grouped.d15.length + grouped.d30.length + grouped.d60.length + grouped.d90.length} />
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap items-center">
         {([30, 60, 90] as const).map((w) => (
           <Button key={w} size="sm" variant={windowDays === w ? "default" : "outline"} onClick={() => setWindowDays(w)}>
             {`< ${w} days`}
           </Button>
         ))}
+        <div className="w-px h-6 bg-border mx-1" />
+        <Input placeholder="Payer…" className="h-9 w-32" value={payerQ} onChange={(e) => setPayerQ(e.target.value)} />
+        <Input placeholder="Owner…" className="h-9 w-32" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} />
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All states</SelectItem>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={providerTypeFilter} onValueChange={setProviderTypeFilter}>
+          <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Provider type" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All providers</SelectItem>{CRED_PROVIDER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All statuses</SelectItem>{CRED_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        {hasExtraFilters && (
+          <Button size="sm" variant="ghost" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Clear</Button>
+        )}
       </div>
       <SectionCard title={`${visible.length} expiring credential${visible.length === 1 ? "" : "s"}`}>
-        {visible.length === 0 ? <Empty title="Nothing expiring in this window. " /> : (
+        {visible.length === 0 ? (
+          hasExtraFilters ? (
+            <Empty
+              title="No records match these filters"
+              description="Try clearing filters or widening the expiration window."
+              action={<Button size="sm" variant="outline" onClick={clearFilters}><X className="h-4 w-4 mr-1" />Clear filters</Button>}
+            />
+          ) : (
+            <Empty
+              title="Nothing expiring in this window"
+              description="Try a wider window (60 or 90 days) to check upcoming renewals."
+            />
+          )
+        ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
