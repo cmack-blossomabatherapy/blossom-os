@@ -311,10 +311,10 @@ export const ROLE_AI_SUMMARY: Partial<Record<OSRole, RoleAISummary>> = {
     { icon: ClipboardCheck, text: "3 follow-ups scheduled in the next 48 hours.", tone: "violet" },
     { icon: AlertTriangle, text: "1 service continuity risk worth a quick check-in.", tone: "amber" },
   ]},
-  behavioral_support:    { headline: "Clinical guidance dashboard - reports and training at a glance.", insights: [
-    { icon: ShieldCheck, text: "BCBA productivity & supervision reports available.", tone: "emerald" },
-    { icon: GraduationCap, text: "Training Academy ready when you need it.", tone: "violet" },
-    { icon: TrendingUp, text: "Use reports to coach BCBAs across the network.", tone: "sky" },
+  behavioral_support:    { headline: "Behavioral Support dashboard active - escalations, plans, and follow-ups are tracked here.", insights: [
+    { icon: ShieldCheck, text: "Crisis escalations and support plans flow into your queue.", tone: "emerald" },
+    { icon: TrendingUp, text: "Supervision visibility highlights clients that need clinical outreach.", tone: "sky" },
+    { icon: GraduationCap, text: "Reports remain shared through /reports.", tone: "violet" },
   ]},
   clinical_director:     { headline: "Clinical oversight across BCBAs, supervision, treatment plans, and escalations.", insights: [
     { icon: Stethoscope, text: "Watch BCBA caseload health and supervision ratios.", tone: "emerald" },
