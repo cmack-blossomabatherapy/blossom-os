@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { IntegrationReadinessPanel } from "@/components/hr/IntegrationReadinessPanel";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { logHrEvent } from "@/lib/hr/activityEvents";
 import { ONBOARDING_STAGES, type OnboardingStatus } from "@/lib/hr/types";
 import {
   useRecruitingCandidates, useRecruitingBackgroundChecks,
@@ -824,7 +825,18 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
             <ActionBtn icon={MessageSquare} label="Message" to="/hr/messages" />
             <ActionBtn icon={CalendarPlus} label="Orientation" to="/hr/orientation-queue" />
             <ActionBtn icon={BookOpen} label="Assign training" to="/hr/training-academy" />
-            <ActionBtn icon={FileText} label="Add note" onClick={() => toast({ title: "Note saved", description: `Note added to ${item.name}.` })} />
+            <ActionBtn icon={FileText} label="Add note" onClick={async () => {
+              const note = window.prompt(`Add HR note for ${item.name}:`, "");
+              if (!note) return;
+              const { error } = await logHrEvent({
+                eventType: "new_hire_note",
+                title: `Note added to ${item.name}`,
+                description: note,
+                employeeId: emp?.id ?? null,
+                onboardingId: onb?.id ?? null,
+              });
+              toast({ title: error ? "Could not save note" : "Note saved", description: error?.message });
+            }} />
             <ActionBtn icon={Heart} label="Open support" to="/hr/employee-support" />
             <ActionBtn
               icon={CheckCircle2}
@@ -832,8 +844,32 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
               primary
               onClick={async () => {
                 if (emp) {
-                  const { error } = await supabase.from("employees").update({ status: "active" }).eq("id", emp.id);
+                  const blockers: string[] = [];
+                  if (onb) {
+                    if ((onb as any).blockers && (onb as any).blockers.length) blockers.push(...(onb as any).blockers);
+                    const stellar = (onb as any).stellar_status;
+                    if (stellar && !["ready", "synced", "not_applicable"].includes(stellar)) blockers.push("Stellar (background check)");
+                    const viv = (onb as any).viventium_status;
+                    if (viv && !["ready", "synced", "not_applicable"].includes(viv)) blockers.push("Viventium");
+                  }
+                  if (blockers.length) {
+                    toast({ title: "Cannot activate — blockers exist", description: blockers.join(", ") });
+                    await logHrEvent({
+                      eventType: "new_hire_mark_ready_blocked",
+                      title: `${item.name} blocked from activation`,
+                      description: blockers.join(", "),
+                      employeeId: emp.id, onboardingId: onb?.id ?? null,
+                      metadata: { blockers },
+                    });
+                    return;
+                  }
                   if (onb) await supabase.from("employee_onboarding").update({ status: "ready_for_start" as never }).eq("id", onb.id);
+                  const { error } = await supabase.from("employees").update({ status: "active" }).eq("id", emp.id);
+                  if (!error) await logHrEvent({
+                    eventType: "new_hire_marked_ready",
+                    title: `${item.name} marked ready for staffing`,
+                    employeeId: emp.id, onboardingId: onb?.id ?? null,
+                  });
                   toast({ title: error ? "Could not update" : "Marked ready for staffing", description: error?.message ?? `${item.name} is ready to staff.` });
                 } else {
                   toast({ title: "Marked ready", description: `${item.name} flagged ready for staffing.` });

@@ -12,6 +12,7 @@ import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/compon
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { logHrEvent } from "@/lib/hr/activityEvents";
 
 /* ---------------- types ---------------- */
 interface Case {
@@ -712,6 +713,7 @@ export default function OSHRRequests() {
                     const role = window.prompt("Reassign to owner role (HR, Manager, Payroll, Recruiting):", openCase.owner_role ?? "HR");
                     if (!role) return;
                     const { error } = await supabase.from("employee_cases").update({ owner_role: role }).eq("id", openCase.id);
+                    if (!error) await logHrEvent({ eventType: "request_reassigned", title: `Request reassigned to ${role}`, caseId: openCase.id, employeeId: (openCase as any).employee_id ?? null, metadata: { role } });
                     toast({ title: error ? "Could not reassign" : `Reassigned to ${role}` });
                     if (!error) setReloadKey(k => k + 1);
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
@@ -719,6 +721,7 @@ export default function OSHRRequests() {
                   </button>
                   <button onClick={async () => {
                     const { error } = await supabase.from("employee_cases").update({ priority: "urgent" }).eq("id", openCase.id);
+                    if (!error) await logHrEvent({ eventType: "request_escalated", title: "Request escalated to urgent", caseId: openCase.id, employeeId: (openCase as any).employee_id ?? null });
                     toast({ title: error ? "Could not escalate" : "Escalated to urgent" });
                     if (!error) setReloadKey(k => k + 1);
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
@@ -727,9 +730,7 @@ export default function OSHRRequests() {
                   <button onClick={async () => {
                     const note = window.prompt("Add operational note:");
                     if (!note) return;
-                    const prefix = openCase.summary ? `${openCase.summary}\n\n` : "";
-                    const summary = `${prefix}[${new Date().toLocaleDateString()}] ${note}`;
-                    const { error } = await supabase.from("employee_cases").update({ summary }).eq("id", openCase.id);
+                    const { error } = await logHrEvent({ eventType: "request_note", title: "Operational note added", description: note, caseId: openCase.id, employeeId: (openCase as any).employee_id ?? null });
                     toast({ title: error ? "Could not add note" : "Note added" });
                     if (!error) setReloadKey(k => k + 1);
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
@@ -741,6 +742,7 @@ export default function OSHRRequests() {
                     const { error } = await supabase.from("employee_cases").update({
                       status: "resolved", resolution, closed_at: new Date().toISOString(),
                     }).eq("id", openCase.id);
+                    if (!error) await logHrEvent({ eventType: "request_resolved", title: "Request resolved", description: resolution, caseId: openCase.id, employeeId: (openCase as any).employee_id ?? null });
                     toast({ title: error ? "Could not resolve" : "Request resolved" });
                     if (!error) { setOpenId(null); setReloadKey(k => k + 1); }
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
@@ -752,6 +754,7 @@ export default function OSHRRequests() {
                     const { error } = await supabase.from("employee_cases").update({
                       due_date: date, status: "waiting_employee",
                     }).eq("id", openCase.id);
+                    if (!error) await logHrEvent({ eventType: "request_follow_up_created", title: `Follow-up scheduled for ${date}`, caseId: openCase.id, employeeId: (openCase as any).employee_id ?? null, metadata: { due_date: date } });
                     toast({ title: error ? "Could not schedule" : `Follow-up set for ${date}` });
                     if (!error) setReloadKey(k => k + 1);
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">

@@ -9,6 +9,7 @@ import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { queueHrMessage, logHrEvent } from "@/lib/hr/activityEvents";
 
 /* ---------------- types ---------------- */
 interface Slot {
@@ -327,7 +328,24 @@ export default function OSHROrientationQueue() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <HeaderBtn icon={Calendar} to="/hr/new-hires">Schedule orientation</HeaderBtn>
-            <HeaderBtn icon={Send} onClick={() => toast({ title: "Reminders sent", description: "Upcoming orientation invitees notified." })}>Send reminders</HeaderBtn>
+            <HeaderBtn icon={Send} onClick={async () => {
+              const scheduled = (d.candidates ?? []).filter((c: any) => {
+                const slot = (d.slots ?? []).find((s: any) => s.candidate_id === c.id);
+                return slot?.status === "Scheduled";
+              });
+              if (scheduled.length === 0) { toast({ title: "No scheduled orientations to remind" }); return; }
+              let queued = 0;
+              for (const c of scheduled as any[]) {
+                const res = await queueHrMessage({
+                  body: "Reminder: your orientation is upcoming.",
+                  subject: "Orientation reminder",
+                  channels: ["in_app"],
+                  metadata: { candidate_id: c.id, source: "orientation_bulk_reminder" },
+                });
+                if (res.status === "queued") queued++;
+              }
+              toast({ title: `Queued ${queued} orientation reminder${queued === 1 ? "" : "s"} in Blossom OS` });
+            }}>Send reminders</HeaderBtn>
             <HeaderBtn icon={MessageSquare} to="/hr/messages">Message hires</HeaderBtn>
           </div>
         </header>
@@ -753,6 +771,7 @@ function DetailPanel({
               if (!next) return;
               const { error } = await supabase.from("recruiting_orientation_slots")
                 .update({ scheduled_date: next, status: "Scheduled" }).eq("id", slot.id);
+              if (!error) await logHrEvent({ eventType: "orientation_rescheduled", title: `Orientation rescheduled to ${next}`, metadata: { candidate_id: cand.id, slot_id: slot.id, scheduled_date: next } });
               toast({ title: error ? "Could not reschedule" : "Orientation rescheduled" });
               if (!error) onChanged();
             }}>Reschedule</ActionBtn>
@@ -760,14 +779,24 @@ function DetailPanel({
               if (!slot) return toast({ title: "No orientation slot to mark" });
               const { error } = await supabase.from("recruiting_orientation_slots")
                 .update({ status: "Completed" }).eq("id", slot.id);
+              if (!error) await logHrEvent({ eventType: "orientation_attended", title: `${cand.first_name} ${cand.last_name} attended orientation`, metadata: { candidate_id: cand.id, slot_id: slot.id } });
               toast({ title: error ? "Could not update" : "Marked attended" });
               if (!error) onChanged();
             }}>Mark attended</ActionBtn>
-            <ActionBtn icon={Send} onClick={() => toast({ title: "Reminder sent", description: `${cand.first_name} ${cand.last_name} notified.` })}>Send reminder</ActionBtn>
+            <ActionBtn icon={Send} onClick={async () => {
+              const res = await queueHrMessage({
+                body: `Reminder for ${cand.first_name} ${cand.last_name}: your orientation is coming up.`,
+                subject: "Orientation reminder",
+                channels: ["in_app"],
+                metadata: { candidate_id: cand.id, slot_id: slot?.id ?? null, source: "orientation_row_reminder" },
+              });
+              toast({ title: res.status === "queued" ? "Reminder queued in Blossom OS" : "Could not queue reminder" });
+            }}>Send reminder</ActionBtn>
             <ActionBtn icon={MessageSquare} onClick={onMessage}>Message</ActionBtn>
             <ActionBtn icon={UserCheck} primary onClick={async () => {
               const { error } = await supabase.from("recruiting_candidates")
                 .update({ pipeline_stage: "Ready to Staff" }).eq("id", cand.id);
+              if (!error) await logHrEvent({ eventType: "candidate_ready_for_staffing", title: `${cand.first_name} ${cand.last_name} moved to Ready to Staff`, metadata: { candidate_id: cand.id } });
               toast({ title: error ? "Could not mark ready" : "Marked ready for staffing" });
               if (!error) { onChanged(); onClose(); }
             }}>Mark ready</ActionBtn>

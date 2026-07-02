@@ -13,6 +13,7 @@ import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/compon
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { logHrEvent } from "@/lib/hr/activityEvents";
 
 /* ─── atoms ─── */
 type Tone = "ok" | "warn" | "crit" | "muted" | "info";
@@ -800,18 +801,29 @@ function DetailPanel({ item, employee, onboarding, trainings, documents, related
               const owner = window.prompt("Reassign to (role or name):", item.owner_role ?? "");
               if (!owner) return;
               const { error } = await supabase.from("employee_cases").update({ owner_role: owner }).eq("id", item.id);
+              if (!error) await logHrEvent({ eventType: "case_reassigned", title: `Case reassigned to ${owner}`, caseId: item.id, employeeId: (item as any).employee_id ?? null, metadata: { owner } });
               toast({ title: error ? "Reassign failed" : "Reassigned", description: error?.message ?? `Owner set to ${owner}.` });
             }} />
             <ActionBtn icon={ArrowUpRight} label="Escalate" onClick={async () => {
               const { error } = await supabase.from("employee_cases").update({ priority: "urgent", status: "waiting_hr" }).eq("id", item.id);
+              if (!error) await logHrEvent({ eventType: "case_escalated", title: "Case escalated to urgent", caseId: item.id, employeeId: (item as any).employee_id ?? null });
               toast({ title: error ? "Could not escalate" : "Escalated", description: error?.message ?? "Marked urgent and routed to HR." });
             }} />
             <ActionBtn icon={FileText} label="Add note" onClick={() => {
               const note = window.prompt("Add a private HR note:", "");
               if (!note) return;
-              toast({ title: "Note saved", description: "Internal note recorded." });
+              void (async () => {
+                const { error } = await logHrEvent({ eventType: "case_note", title: "Internal HR note", description: note, caseId: item.id, employeeId: (item as any).employee_id ?? null });
+                toast({ title: error ? "Could not save note" : "Note saved", description: error?.message ?? "Internal note recorded." });
+              })();
             }} />
-            <ActionBtn icon={BookOpen} label="Create follow-up" onClick={() => toast({ title: "Follow-up created", description: "A follow-up task has been queued." })} />
+            <ActionBtn icon={BookOpen} label="Create follow-up" onClick={async () => {
+              const date = window.prompt("Follow-up due date (YYYY-MM-DD):", new Date(Date.now() + 86400000 * 3).toISOString().slice(0,10));
+              if (!date) return;
+              const { error } = await supabase.from("employee_cases").update({ due_date: date, status: "waiting_employee" }).eq("id", item.id);
+              if (!error) await logHrEvent({ eventType: "case_follow_up_created", title: `Follow-up scheduled for ${date}`, caseId: item.id, employeeId: (item as any).employee_id ?? null, metadata: { due_date: date } });
+              toast({ title: error ? "Could not schedule" : "Follow-up created", description: error?.message ?? `Due ${date}` });
+            }} />
             <ActionBtn icon={CheckCircle2} label="Resolve" primary onClick={async () => {
               const resolution = window.prompt("Resolution note:", item.resolution ?? "");
               const { error } = await supabase.from("employee_cases").update({
@@ -819,6 +831,7 @@ function DetailPanel({ item, employee, onboarding, trainings, documents, related
                 resolution: resolution ?? item.resolution,
                 closed_at: new Date().toISOString(),
               }).eq("id", item.id);
+              if (!error) await logHrEvent({ eventType: "case_resolved", title: "Case resolved", description: resolution ?? null, caseId: item.id, employeeId: (item as any).employee_id ?? null });
               toast({ title: error ? "Could not resolve" : "Request resolved", description: error?.message ?? "Marked as resolved." });
               if (!error) onClose();
             }} />

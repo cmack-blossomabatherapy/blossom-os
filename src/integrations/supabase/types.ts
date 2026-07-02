@@ -7057,6 +7057,45 @@ export type Database = {
           },
         ]
       }
+      hr_activity_events: {
+        Row: {
+          case_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          employee_id: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          onboarding_id: string | null
+          title: string
+        }
+        Insert: {
+          case_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          employee_id?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          onboarding_id?: string | null
+          title: string
+        }
+        Update: {
+          case_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          employee_id?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          onboarding_id?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       hr_announcement_reads: {
         Row: {
           announcement_id: string
@@ -7282,6 +7321,57 @@ export type Database = {
           last_updated_at?: string
           requires_acknowledgement?: boolean
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hr_messages: {
+        Row: {
+          body: string
+          case_id: string | null
+          channels: string[]
+          created_at: string
+          created_by: string | null
+          employee_id: string | null
+          id: string
+          metadata: Json
+          route_status: Json
+          scheduled_for: string | null
+          sent_at: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          case_id?: string | null
+          channels?: string[]
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string | null
+          id?: string
+          metadata?: Json
+          route_status?: Json
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          case_id?: string | null
+          channels?: string[]
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string | null
+          id?: string
+          metadata?: Json
+          route_status?: Json
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -15,6 +15,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { queueHrMessage, type HrMessageChannel } from "@/lib/hr/activityEvents";
 
 /* ---------------- types ---------------- */
 interface Employee {
@@ -928,22 +929,40 @@ export default function OSHRMessages() {
                     <button
                       type="button"
                       disabled={!replyBody.trim() || selectedChannels.size === 0}
-                      onClick={() => {
-                        // Honest guard: filter selection down to routes that are
-                        // actually available right now (catalog connected + row synced).
-                        const providerRoutes = routeAvailability.providers
-                          .filter((p) => p.routable && selectedChannels.has(p.key))
-                          .map((p) => p.label);
-                        const routes: string[] = [];
-                        if (selectedChannels.has("in_app")) routes.push("In-app");
-                        routes.push(...providerRoutes);
-                        const dropped = routeAvailability.providers
-                          .filter((p) => selectedChannels.has(p.key) && !p.routable)
-                          .map((p) => p.label);
+                      onClick={async () => {
+                        // Build durable message record.
+                        const channels: HrMessageChannel[] = [];
+                        if (selectedChannels.has("in_app")) channels.push("in_app");
+                        const routable: Partial<Record<HrMessageChannel, boolean>> = {};
+                        for (const p of routeAvailability.providers) {
+                          if (selectedChannels.has(p.key)) {
+                            const ch = p.key as HrMessageChannel;
+                            channels.push(ch);
+                            routable[ch] = !!p.routable;
+                          }
+                        }
+                        const res = await queueHrMessage({
+                          body: replyBody,
+                          employeeId: openEmp?.id ?? null,
+                          channels,
+                          routable,
+                          metadata: { source: "hr_messages_reply" },
+                        });
+                        const routedLabels = res.routed.map((c) =>
+                          c === "in_app" ? "In-app (Blossom OS)" :
+                          routeAvailability.providers.find((p) => p.key === c)?.label ?? c,
+                        );
+                        const blockedLabels = res.blocked.map((c) =>
+                          routeAvailability.providers.find((p) => p.key === c)?.label ?? c,
+                        );
                         toast({
-                          title: routes.length ? `Sent via ${routes.join(", ")}` : "Sent in-app",
-                          description: dropped.length
-                            ? `Skipped ${dropped.join(", ")} — provider not connected or employee not synced.`
+                          title: res.status === "queued"
+                            ? `Queued in Blossom OS${routedLabels.length > 1 ? ` (${routedLabels.join(", ")})` : ""}`
+                            : res.status === "blocked"
+                              ? "Blocked until integration is connected"
+                              : "Could not queue message",
+                          description: blockedLabels.length
+                            ? `Blocked: ${blockedLabels.join(", ")} — provider not configured or employee not synced.`
                             : undefined,
                         });
                         setReplyBody("");
