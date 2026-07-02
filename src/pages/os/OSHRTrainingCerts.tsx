@@ -606,21 +606,24 @@ export default function OSHRTrainingCerts() {
                 ) : (
                   <ul className="divide-y divide-border/70">
                     {blockerRows.map((b, i) => (
-                      <li key={i} className="px-4 py-3 flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-xl bg-destructive/10 text-destructive grid place-items-center shrink-0">
-                          <AlertCircle className="h-4 w-4" strokeWidth={1.75} />
+                      <li key={i} className="px-4 py-3 flex flex-col gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-xl bg-destructive/10 text-destructive grid place-items-center shrink-0">
+                            <AlertCircle className="h-4 w-4" strokeWidth={1.75} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] font-medium tracking-tight truncate">
+                              {b.emp ? `${b.emp.first_name} ${b.emp.last_name}` : "Unknown"}
+                              <span className="text-muted-foreground font-normal"> · {b.emp?.job_title}</span>
+                            </p>
+                            <p className="text-[11.5px] text-muted-foreground truncate">{b.kind}: {b.detail}</p>
+                          </div>
+                          {b.days != null && <Pill tone="crit">{b.days}d overdue</Pill>}
+                          <Link to="/hr/employee-support" className="h-7 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                            Resolve
+                          </Link>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-medium tracking-tight truncate">
-                            {b.emp ? `${b.emp.first_name} ${b.emp.last_name}` : "Unknown"}
-                            <span className="text-muted-foreground font-normal"> · {b.emp?.job_title}</span>
-                          </p>
-                          <p className="text-[11.5px] text-muted-foreground truncate">{b.kind}: {b.detail}</p>
-                        </div>
-                        {b.days != null && <Pill tone="crit">{b.days}d overdue</Pill>}
-                        <Link to="/hr/employee-support" className="h-7 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                          Resolve
-                        </Link>
+                        {b.onb && <IntegrationReadinessPanel row={b.onb} className="ml-11" />}
                       </li>
                     ))}
                   </ul>
