@@ -26,6 +26,10 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
+  listCredViews, saveCredView, deleteCredView,
+  type CredentialingSavedView,
+} from "@/lib/os/credentialingSavedViews";
+import {
   useCredentialingData, useCredentialingActivity,
   createCredProvider, updateCredProvider, createCredRecord, updateCredRecord,
   createCredTask, updateCredTask, addCredDocument, updateCredDocument,
