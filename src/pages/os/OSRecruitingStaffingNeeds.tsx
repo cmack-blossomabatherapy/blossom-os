@@ -7,9 +7,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import {
-  getClientStaffingNeeds,
   getCapacityMap,
-  mockRBTProfiles,
   type StaffingClientNeed,
 } from "@/data/staffing";
 import {
@@ -169,27 +167,13 @@ export default function OSRecruitingStaffingNeeds() {
   const mutations = useRecruitingMutations();
   const { items: liveStaffingNeeds, loading: liveStaffingNeedsLoading } = useRecruitingStaffingNeeds();
   const { find: findCandidate } = useRecruitingCandidateLookup();
-  // Build needs list
-  const syntheticNeeds = useMemo(() => getClientStaffingNeeds(), []);
+  // Build needs list — the active board is ONLY live Supabase rows.
   const liveNeeds = useMemo(
     () => liveStaffingNeeds.map(mapLiveNeedToViewModel),
     [liveStaffingNeeds],
   );
-  // De-dupe synthetic needs against live rows by client label / childName.
-  const liveLabels = useMemo(
-    () => new Set(liveNeeds.map((n) => n.client.childName.toLowerCase())),
-    [liveNeeds],
-  );
-  const suggestedNeeds = useMemo(
-    () => syntheticNeeds.filter((n) => !liveLabels.has(n.client.childName.toLowerCase())),
-    [syntheticNeeds, liveLabels],
-  );
-  // Live rows are the operational source of truth; synthetic suggestions
-  // keep the board populated for empty tenants and surface unlogged demand.
-  const baseNeeds = useMemo(
-    () => [...liveNeeds, ...suggestedNeeds],
-    [liveNeeds, suggestedNeeds],
-  );
+  // Live rows are the sole operational source of truth for the active board.
+  const baseNeeds = liveNeeds;
   const readyCandidates = useMemo(
     () => recruitingCandidates.filter(orientationReady),
     []
