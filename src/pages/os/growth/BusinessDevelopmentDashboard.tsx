@@ -1468,6 +1468,9 @@ function HandoffQueue({
   loading,
   error,
   refresh,
+  hasMoreEvents = false,
+  loadingMoreEvents = false,
+  loadMoreEvents,
   onCreatePartnerFromEvent,
   onLogOutreachForPartner,
   onCreateTaskForPartner,
@@ -1478,6 +1481,9 @@ function HandoffQueue({
   loading: boolean;
   error: Error | null;
   refresh: () => void;
+  hasMoreEvents?: boolean;
+  loadingMoreEvents?: boolean;
+  loadMoreEvents?: () => void | Promise<void>;
 } & HandoffActions) {
   // Persist filter/sort/search across tab switches and remounts.
   const PREFS_KEY = "bd.handoffQueue.prefs.v1";
