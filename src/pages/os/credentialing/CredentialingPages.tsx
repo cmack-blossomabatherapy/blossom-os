@@ -2329,13 +2329,42 @@ export function InsuranceCredentialingPage() {
   const [matrixSel, setMatrixSel] = useState<{ payer: string; state: string } | null>(null);
   const [defaultPayer, setDefaultPayer] = useState<string | undefined>();
   const [defaultState, setDefaultState] = useState<string | undefined>();
+  const [payerQ, setPayerQ] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [typeFilter, setTypeFilter] = useState<string>("ALL");
+  const [pendingOnly, setPendingOnly] = useState(false);
+  const [blockedOnly, setBlockedOnly] = useState(false);
+  const [expiringOnly, setExpiringOnly] = useState(false);
+  const [gapsOnly, setGapsOnly] = useState(false);
+
+  const filteredRecords = useMemo(() => records.filter((r) => {
+    const q = payerQ.trim().toLowerCase();
+    if (q && !r.payer_name.toLowerCase().includes(q)) return false;
+    if (stateFilter !== "ALL" && r.state !== stateFilter) return false;
+    if (statusFilter !== "ALL" && r.status !== statusFilter) return false;
+    if (typeFilter !== "ALL" && r.credentialing_type !== typeFilter) return false;
+    if (pendingOnly && !ACTIVE_CRED_STATUSES.includes(r.status)) return false;
+    if (blockedOnly && !(r.status === "Blocked" || r.status === "Denied")) return false;
+    if (expiringOnly) {
+      const d = daysUntil(r.expiration_date);
+      if (d === null || d < 0 || d > 90) return false;
+    }
+    return true;
+  }), [records, payerQ, stateFilter, statusFilter, typeFilter, pendingOnly, blockedOnly, expiringOnly]);
+
+  const hasFilters = !!payerQ || stateFilter !== "ALL" || statusFilter !== "ALL" || typeFilter !== "ALL" || pendingOnly || blockedOnly || expiringOnly || gapsOnly;
+  const clearFilters = () => {
+    setPayerQ(""); setStateFilter("ALL"); setStatusFilter("ALL"); setTypeFilter("ALL");
+    setPendingOnly(false); setBlockedOnly(false); setExpiringOnly(false); setGapsOnly(false);
+  };
 
   const matrix = useMemo(() => {
     const map = new Map<string, {
       payer: string; state: string; required: number; credentialed: number;
       pending: number; blocked: number; expiring: number; nextFollowUp: string | null;
     }>();
-    records.forEach((r) => {
+    filteredRecords.forEach((r) => {
       const key = `${r.payer_name}|${r.state ?? "—"}`;
       let row = map.get(key);
       if (!row) {
@@ -2352,8 +2381,10 @@ export function InsuranceCredentialingPage() {
         row.nextFollowUp = r.next_follow_up_date;
       }
     });
-    return Array.from(map.values()).sort((a, b) => (b.blocked - a.blocked) || (b.pending - a.pending));
-  }, [records]);
+    let rows = Array.from(map.values());
+    if (gapsOnly) rows = rows.filter((r) => r.credentialed < r.required);
+    return rows.sort((a, b) => (b.blocked - a.blocked) || (b.pending - a.pending));
+  }, [filteredRecords, gapsOnly]);
 
   return (
     <Shell>
@@ -2361,14 +2392,65 @@ export function InsuranceCredentialingPage() {
         eyebrow="Credentialing" title="Insurance Credentialing"
         subtitle="Payer + state credentialing matrix. See which payers are blocking growth or authorizations."
         icon={Building2}
-        actions={<Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1.5" />Add payer credentialing record</Button>}
+        actions={
+          <>
+            <Button size="sm" variant="outline" onClick={() => exportCsv("payer-matrix.csv", matrix as unknown as Record<string, unknown>[])}>
+              <Download className="h-4 w-4 mr-1.5" />Export CSV
+            </Button>
+            <Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1.5" />Add payer credentialing record</Button>
+          </>
+        }
       />
       <LoadErr loading={loading} error={error} />
+      <FromReportsBanner />
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative max-w-xs w-full">
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+          <Input value={payerQ} onChange={(e) => setPayerQ(e.target.value)} placeholder="Search payer…" className="pl-7 h-9" />
+        </div>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All states</SelectItem>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All statuses</SelectItem>{CRED_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Type" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All types</SelectItem>{CRED_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+        </Select>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={pendingOnly} onCheckedChange={setPendingOnly} /> Pending
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={blockedOnly} onCheckedChange={setBlockedOnly} /> Blocked/Denied
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={expiringOnly} onCheckedChange={setExpiringOnly} /> Expiring &lt; 90d
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={gapsOnly} onCheckedChange={setGapsOnly} /> Gaps only
+        </label>
+        {hasFilters && (
+          <Button size="sm" variant="ghost" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Clear</Button>
+        )}
+      </div>
       <SectionCard title="Payer / state posture" description={`${matrix.length} payer-state combinations.`}>
         {matrix.length === 0 ? (
-          <Empty title="No payer credentialing yet" action={
-            <Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1" />Add payer credentialing record</Button>
-          } />
+          hasFilters || records.length > 0 ? (
+            <Empty
+              title="No records match these filters"
+              description="Try clearing filters to see every payer / state combination."
+              action={<Button size="sm" variant="outline" onClick={clearFilters}><X className="h-4 w-4 mr-1" />Clear filters</Button>}
+            />
+          ) : (
+            <Empty
+              title="No payer credentialing yet"
+              description="Track which payers each provider is credentialed for so scheduling and billing know who can see which clients."
+              action={<Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1" />Add payer credentialing record</Button>}
+            />
+          )
         ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
