@@ -5106,6 +5106,8 @@ function PatientPipelineModule({
   onOpenContact, onOpenCompany,
 }: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
   const s = useCrm();
+  const allReferrals = scopedReferrals(s);
+
   const [q, setQ] = useUrlState("ppq", "", { history: "replace" });
   const [statusFilter, setStatusFilter] = useUrlState("pps", "all");
   const [stateFilter, setStateFilter] = useUrlState("ppst", "all");
