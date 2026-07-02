@@ -23,6 +23,14 @@ type Row<T> = T & Record<string, unknown>;
 interface ClientsContextValue {
   clients: Client[];
   loading: boolean;
+  /**
+   * Warnings surfaced from the Scheduling overlay merge path. When the
+   * durable Scheduling overlay tables cannot be read, refetch() populates
+   * this with a human-readable message so Scheduling surfaces can warn
+   * the user that they may be looking at stale Monday-only data.
+   */
+  dataWarnings: string[];
+  schedulingOverlayError: string | null;
   getClient: (id: string) => Client | undefined;
   addClient: (client: Omit<Client, "id"> & { id?: string }) => Promise<Client | null>;
   updateClient: (id: string, patch: Partial<Client>) => Promise<void>;
@@ -328,9 +336,11 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [schedulingOverlayError, setSchedulingOverlayError] = useState<string | null>(null);
 
   const refetch = useCallback(async () => {
     setLoading(true);
+    setSchedulingOverlayError(null);
     try {
       // Page through monday_clients_raw and monday_authorizations_raw.
       const fetchAll = async <T,>(table: "monday_clients_raw" | "monday_authorizations_raw"): Promise<T[]> => {
@@ -414,6 +424,10 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
         setClients(merged);
       } catch (overlayErr) {
         console.warn("Scheduling overlay merge failed", overlayErr);
+        const message =
+          (overlayErr as { message?: string } | null)?.message ||
+          "Scheduling overlay could not be loaded. Showing Monday-only data.";
+        setSchedulingOverlayError(message);
         setClients(built);
       }
     } catch (e) {
@@ -513,46 +527,43 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
 
   const assignRbt = useCallback(async (ids: string[], rbt: string) => {
     for (const id of ids) {
+      const c = clients.find((x) => x.id === id);
+      // Persist-first: the durable Scheduling overlay is the source of
+      // truth. If the durable write fails we throw so the caller (dialog)
+      // does NOT show success and does NOT leave local state falsely
+      // updated. See schedulingPass6Reliability.test.ts.
+      await upsertSchedulingClientOverride({
+        clientKey: id,
+        clientName: c?.childName ?? null,
+        state: c?.state ?? null,
+        sourceRecordId: id,
+        rbtName: rbt,
+        staffingStatus: "Assigned",
+        centralReachSyncStatus: "not_ready",
+        metadata: { source: "scheduling_assign_rbt" },
+      });
       applyPatch(id, { rbt, staffingStatus: "Assigned" });
       pushAutomation(id, `RBT assigned: ${rbt}`);
       pushTimeline(id, `${rbt} assigned as RBT`, "staffing");
-      const c = clients.find((x) => x.id === id);
-      try {
-        await upsertSchedulingClientOverride({
-          clientKey: id,
-          clientName: c?.childName ?? null,
-          state: c?.state ?? null,
-          sourceRecordId: id,
-          rbtName: rbt,
-          staffingStatus: "Assigned",
-          centralReachSyncStatus: "not_ready",
-          metadata: { source: "scheduling_assign_rbt" },
-        });
-      } catch (err) {
-        console.warn("assignRbt overlay persist failed", err);
-      }
     }
   }, [clients]);
 
   const setStartDate = useCallback(async (ids: string[], date: string) => {
     for (const id of ids) {
+      const c = clients.find((x) => x.id === id);
+      // Persist-first — see assignRbt comment.
+      await upsertSchedulingClientOverride({
+        clientKey: id,
+        clientName: c?.childName ?? null,
+        state: c?.state ?? null,
+        sourceRecordId: id,
+        startDate: date,
+        centralReachSyncStatus: "not_ready",
+        metadata: { source: "scheduling_start_date" },
+      });
       applyPatch(id, { startDate: date });
       pushAutomation(id, `Start date set to ${date}`);
       pushTimeline(id, `Start date set to ${date}`, "schedule");
-      const c = clients.find((x) => x.id === id);
-      try {
-        await upsertSchedulingClientOverride({
-          clientKey: id,
-          clientName: c?.childName ?? null,
-          state: c?.state ?? null,
-          sourceRecordId: id,
-          startDate: date,
-          centralReachSyncStatus: "not_ready",
-          metadata: { source: "scheduling_start_date" },
-        });
-      } catch (err) {
-        console.warn("setStartDate overlay persist failed", err);
-      }
     }
   }, [clients]);
 
@@ -587,56 +598,48 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addScheduleSlot = useCallback(async (clientId: string, slot: ScheduleSlot) => {
-    setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, schedule: [...c.schedule.filter((s) => s.day !== slot.day), slot] }));
     const c = clients.find((x) => x.id === clientId);
-    try {
-      // Replace any existing overlay slot(s) for this day before inserting
-      // the new one so the unique (client_key, day, start, end) constraint
-      // does not conflict and so the client only has one slot per day in
-      // the overlay table.
-      await removeSchedulingScheduleSlotsByClientDay(clientId, slot.day);
-      await upsertSchedulingScheduleSlot({
-        clientKey: clientId,
-        clientName: c?.childName ?? null,
-        state: c?.state ?? null,
-        sourceRecordId: clientId,
-        slot,
-      });
-    } catch (err) {
-      console.warn("addScheduleSlot overlay persist failed", err);
-    }
+    // Persist-first: replace any existing overlay slot for this day, then
+    // insert the new one. If either durable write fails we throw so the
+    // caller sees a real error and local state stays consistent with the DB.
+    await removeSchedulingScheduleSlotsByClientDay(clientId, slot.day);
+    await upsertSchedulingScheduleSlot({
+      clientKey: clientId,
+      clientName: c?.childName ?? null,
+      state: c?.state ?? null,
+      sourceRecordId: clientId,
+      slot,
+    });
+    setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, schedule: [...c.schedule.filter((s) => s.day !== slot.day), slot] }));
   }, [clients]);
 
   const removeScheduleSlot = useCallback(async (clientId: string, day: ScheduleSlot["day"]) => {
+    // Persist-first — see addScheduleSlot comment.
+    await removeSchedulingScheduleSlotsByClientDay(clientId, day);
     setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, schedule: c.schedule.filter((s) => s.day !== day) }));
-    try {
-      await removeSchedulingScheduleSlotsByClientDay(clientId, day);
-    } catch (err) {
-      console.warn("removeScheduleSlot overlay persist failed", err);
-    }
   }, []);
 
   const setSchedule = useCallback(async (clientId: string, slots: ScheduleSlot[]) => {
-    setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, schedule: slots }));
     const c = clients.find((x) => x.id === clientId);
-    try {
-      await setSchedulingSchedule(
-        { clientKey: clientId, clientName: c?.childName ?? null, state: c?.state ?? null, sourceRecordId: clientId },
-        slots,
-      );
-    } catch (err) {
-      console.warn("setSchedule overlay persist failed", err);
-    }
+    // Persist-first — see addScheduleSlot comment.
+    await setSchedulingSchedule(
+      { clientKey: clientId, clientName: c?.childName ?? null, state: c?.state ?? null, sourceRecordId: clientId },
+      slots,
+    );
+    setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, schedule: slots }));
   }, [clients]);
 
   const value = useMemo<ClientsContextValue>(() => ({
-    clients, loading, getClient,
+    clients, loading,
+    dataWarnings: schedulingOverlayError ? [schedulingOverlayError] : [],
+    schedulingOverlayError,
+    getClient,
     addClient, updateClient, bulkUpdate, moveStage, revertStage,
     assignBcba, assignRbt, setStartDate,
     toggleTask, addTask, appendTimeline, appendAutomation, deleteClients,
     addDocument, removeDocument, addScheduleSlot, removeScheduleSlot, setSchedule,
   }), [
-    clients, loading, getClient, addClient, updateClient, bulkUpdate, moveStage, revertStage,
+    clients, loading, schedulingOverlayError, getClient, addClient, updateClient, bulkUpdate, moveStage, revertStage,
     assignBcba, assignRbt, setStartDate, toggleTask, addTask, appendTimeline,
     appendAutomation, deleteClients, addDocument, removeDocument, addScheduleSlot,
     removeScheduleSlot, setSchedule,

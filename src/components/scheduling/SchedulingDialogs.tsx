@@ -307,8 +307,19 @@ export function AdjustmentDialog({
       if (applyLocal && canApplyLocal()) {
         const slot = tryBuildLocalSlot();
         if (slot) {
-          await addScheduleSlot(client.id, slot);
-          appliedLocal = true;
+          try {
+            // addScheduleSlot persists to the durable Scheduling overlay
+            // first — if that fails we surface a clear error and keep the
+            // dialog open so the user can retry, instead of falsely
+            // claiming "Saved and applied".
+            await addScheduleSlot(client.id, slot);
+            appliedLocal = true;
+          } catch (err) {
+            toast.error("Could not save schedule in Blossom OS. Please try again.", {
+              description: (err as Error)?.message,
+            });
+            return; // keep dialog open
+          }
         }
       }
       toast.success(
@@ -468,14 +479,20 @@ export function AssignRbtDialog({
         status: "completed",
         metadata: { rbt_name: trimmed, prior_rbt: client.rbt ?? null },
       });
-      // Update local client state so the workspace reflects the assignment
-      // immediately. assignRbt already appends timeline + automation entries,
-      // so we do not duplicate them here. CentralReach is intentionally NOT
-      // marked as synced — the worker is not connected yet.
-      await assignRbt([client.id], trimmed);
+      // assignRbt persists to the durable Scheduling overlay first and
+      // throws if that write fails — we must not toast success or close
+      // the dialog in that case.
+      try {
+        await assignRbt([client.id], trimmed);
+      } catch (err) {
+        toast.error("Could not save assignment in Blossom OS. Please try again.", {
+          description: (err as Error)?.message,
+        });
+        return; // keep dialog open
+      }
       toast.success(`Paired ${client.childName} with ${trimmed}. Staged in Blossom OS; CentralReach sync not connected yet.`);
       onOpenChange(false); onSaved?.(trimmed);
-    } catch { /* */ } finally { setBusy(false); }
+    } catch { /* logAction toast already handled */ } finally { setBusy(false); }
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -521,7 +538,16 @@ export function StartDateDialog({
     if (!date) { toast.error("Pick a start date."); return; }
     setBusy(true);
     try {
-      await setStartDate([client.id], date);
+      // Persist-first: if the durable overlay write fails we do not toast
+      // success and we keep the dialog open so the user can retry.
+      try {
+        await setStartDate([client.id], date);
+      } catch (err) {
+        toast.error("Could not save start date in Blossom OS. Please try again.", {
+          description: (err as Error)?.message,
+        });
+        return; // keep dialog open
+      }
       await logAction({
         clientId: client.id,
         clientName: client.childName,
