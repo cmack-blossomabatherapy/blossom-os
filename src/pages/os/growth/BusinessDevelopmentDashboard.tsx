@@ -884,8 +884,10 @@ function NeedsAttentionPanel({
 }
 
 function SourceHandoffsPanel({ partners, outreach }: { partners: ReferralCompany[]; outreach: ReferralActivity[] }) {
+  const { sources, events, loading, error } = useMarketingSourceSignals();
+
   // Aggregate BD-safe view of lead source signals from referral partner data.
-  const rows = useMemo(() => {
+  const partnerRows = useMemo(() => {
     const map = new Map<string, { source: string; type: string; states: Set<string>; count: number; last: string | null }>();
     for (const p of partners) {
       const src = (p.source && p.source.trim()) || "Direct / Manual";
@@ -915,16 +917,133 @@ function SourceHandoffsPanel({ partners, outreach }: { partners: ReferralCompany
     return Array.from(map.values()).sort((a, b) => b.count - a.count);
   }, [partners, outreach]);
 
+  // Real marketing source signals from marketing_sources + marketing_source_events
+  const sourceRows = useMemo(() => {
+    if (sources.length === 0 && events.length === 0) return [];
+    const partnerCountBySource = new Map<string, number>();
+    for (const p of partners) {
+      const key = (p.source && p.source.trim().toLowerCase()) || "";
+      if (!key) continue;
+      partnerCountBySource.set(key, (partnerCountBySource.get(key) ?? 0) + 1);
+    }
+    const eventsBySource = new Map<string, MarketingSourceEventRow[]>();
+    for (const ev of events) {
+      const key = ev.source_id ?? `sys:${ev.source_system}`;
+      const arr = eventsBySource.get(key) ?? [];
+      arr.push(ev);
+      eventsBySource.set(key, arr);
+    }
+    type Row = {
+      key: string; name: string; system: string; channel: string; state: string;
+      leadCount: number; partnerCount: number; last: string | null; status: string; suggestion: string;
+    };
+    const rows: Row[] = [];
+    const now = Date.now();
+    for (const s of sources) {
+      const evs = eventsBySource.get(s.id) ?? [];
+      const last = evs[0]?.occurred_at ?? null;
+      const daysOld = last ? Math.floor((now - new Date(last).getTime()) / 86_400_000) : null;
+      const pCount = partnerCountBySource.get(s.name.toLowerCase()) ?? 0;
+      let status = "No action needed";
+      let suggestion = "Review source";
+      if (evs.length > 0 && pCount === 0) { status = "Needs BD outreach"; suggestion = "Create referral partner"; }
+      else if (evs.length > 0 && pCount > 0 && daysOld !== null && daysOld <= 14) { status = "Active partner"; suggestion = "Log outreach"; }
+      else if (evs.length > 0 && daysOld !== null && daysOld > 30) { status = "Stale / no outreach"; suggestion = "Add follow-up"; }
+      else if (evs.length === 0 && s.is_active) { status = "New signal"; suggestion = "Review source"; }
+      rows.push({
+        key: `src:${s.id}`,
+        name: s.name,
+        system: s.source_system ?? "-",
+        channel: s.channel ?? "-",
+        state: s.state ?? "-",
+        leadCount: evs.length,
+        partnerCount: pCount,
+        last,
+        status,
+        suggestion,
+      });
+    }
+    // Orphaned events with no source row - group by system
+    for (const [key, evs] of eventsBySource) {
+      if (key.startsWith("sys:")) {
+        const system = key.slice(4);
+        rows.push({
+          key,
+          name: `(${system} events)`,
+          system,
+          channel: "-",
+          state: evs[0]?.state ?? "-",
+          leadCount: evs.length,
+          partnerCount: 0,
+          last: evs[0]?.occurred_at ?? null,
+          status: "New signal",
+          suggestion: "Review source",
+        });
+      }
+    }
+    return rows.sort((a, b) => b.leadCount - a.leadCount);
+  }, [sources, events, partners]);
+
   return (
     <div className="space-y-3">
       <div className="rounded-2xl border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
-        Business Development read-only view of lead source signals derived from referral partner activity. Full marketing source
-        analytics live in the Marketing workspace; deeper source integrations will surface here as they come online.
+        Business Development read-only view of live lead source signals from marketing_sources and marketing_source_events, plus
+        aggregate source tags on your referral partners. Full marketing analytics and campaign management remain in the Marketing workspace.
       </div>
-      {rows.length === 0 ? (
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+          <Radio className="h-3.5 w-3.5" /> Live marketing source signals
+        </div>
+        {error ? (
+          <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+            Couldn't load marketing source signals: {error.message}
+          </div>
+        ) : loading ? (
+          <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-6 text-center text-xs text-muted-foreground">Loading source signals...</div>
+        ) : sourceRows.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-8 text-center">
+            <Inbox className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+            <div className="text-sm font-semibold">Source integrations are ready</div>
+            <div className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+              Once CTM, LeadTrap, Google Ads, Meta/Facebook Ads, RetellAI, Go Integrate Nava, or manual imports create source events,
+              BD handoffs will appear here.
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-border/70 bg-card overflow-hidden">
+            <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground border-b border-border/60">
+              <div className="col-span-3">Source</div>
+              <div className="col-span-2">System</div>
+              <div className="col-span-1">State</div>
+              <div className="col-span-1 text-right">Leads</div>
+              <div className="col-span-1 text-right">Partners</div>
+              <div className="col-span-2">Last activity</div>
+              <div className="col-span-2">Status / next action</div>
+            </div>
+            {sourceRows.map((r) => (
+              <div key={r.key} className="grid grid-cols-12 gap-2 px-3 py-2 text-xs border-b border-border/40 last:border-0">
+                <div className="col-span-3 truncate font-medium">{r.name}</div>
+                <div className="col-span-2 text-muted-foreground truncate">{r.system} {r.channel !== "-" && `/ ${r.channel}`}</div>
+                <div className="col-span-1 text-muted-foreground truncate">{r.state}</div>
+                <div className="col-span-1 text-right">{r.leadCount}</div>
+                <div className="col-span-1 text-right">{r.partnerCount}</div>
+                <div className="col-span-2 text-muted-foreground">{r.last ? r.last.slice(0, 10) : "-"}</div>
+                <div className="col-span-2 text-muted-foreground truncate"><Badge variant="outline" className="mr-1">{r.status}</Badge>{r.suggestion}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground pt-2">
+          <HeartHandshake className="h-3.5 w-3.5" /> Referral partner source tags
+        </div>
+      {partnerRows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-10 text-center">
           <Inbox className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
-          <div className="text-sm font-semibold">No source signals yet</div>
+          <div className="text-sm font-semibold">No partner source tags yet</div>
           <div className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
             Once partners have a source tagged and outreach is logged, this view will show handoff readiness by source and channel.
           </div>
@@ -938,7 +1057,7 @@ function SourceHandoffsPanel({ partners, outreach }: { partners: ReferralCompany
             <div className="col-span-1 text-right">Partners</div>
             <div className="col-span-2">Last activity</div>
           </div>
-          {rows.map((r) => (
+          {partnerRows.map((r) => (
             <div key={`${r.source}-${r.type}`} className="grid grid-cols-12 gap-2 px-3 py-2 text-xs border-b border-border/40 last:border-0">
               <div className="col-span-4 truncate">{r.source}</div>
               <div className="col-span-3 text-muted-foreground truncate">{r.type}</div>
@@ -949,6 +1068,7 @@ function SourceHandoffsPanel({ partners, outreach }: { partners: ReferralCompany
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
