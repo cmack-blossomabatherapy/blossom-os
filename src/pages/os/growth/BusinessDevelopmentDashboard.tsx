@@ -1640,7 +1640,10 @@ function HandoffQueue({
   }, [statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search]);
 
   const visibleRows = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
-  const hasMore = visibleCount < filtered.length;
+  // Local "more to render" (already in memory) vs server "more to fetch" (older
+  // rows behind the cursor). We render local first, then trigger server fetch.
+  const hasMoreLocal = visibleCount < filtered.length;
+  const hasMore = hasMoreLocal || hasMoreEvents;
 
   // On mount, once data is available, restore the last-open event's scroll position.
   useEffect(() => {
@@ -1678,13 +1681,17 @@ function HandoffQueue({
     const io = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
-          setVisibleCount((c) => Math.min(c + PAGE_SIZE, filtered.length));
+          if (hasMoreLocal) {
+            setVisibleCount((c) => Math.min(c + PAGE_SIZE, filtered.length));
+          } else if (hasMoreEvents && !loadingMoreEvents) {
+            void loadMoreEvents?.();
+          }
         }
       }
     }, { rootMargin: "300px" });
     io.observe(node);
     return () => io.disconnect();
-  }, [hasMore, filtered.length]);
+  }, [hasMore, hasMoreLocal, hasMoreEvents, loadingMoreEvents, loadMoreEvents, filtered.length]);
 
   const partnerById = useMemo(() => {
     const m = new Map<string, ReferralCompany>();
