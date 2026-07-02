@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   HeartHandshake, MessageSquare, Briefcase, Users, BarChart3,
   Plus, CalendarPlus, ClipboardList, Download, CheckCircle2, Search,
   Inbox, Archive, Pencil, Eye, AlertTriangle, Trash2, Radio,
+  UserPlus, Link2, CheckSquare,
   type LucideIcon,
 } from "lucide-react";
 import { GrowthPageShell, StatCard } from "@/components/os/growth/GrowthPageShell";
@@ -39,7 +40,7 @@ type MarketingSourceRow = {
   state: string | null;
   is_active: boolean;
 };
-type MarketingSourceEventRow = {
+export type MarketingSourceEventRow = {
   id: string;
   source_id: string | null;
   source_system: string;
@@ -47,7 +48,18 @@ type MarketingSourceEventRow = {
   status: string;
   event_type: string | null;
   occurred_at: string;
+  assigned_to: string | null;
+  assigned_at: string | null;
+  caller_name: string | null;
+  caller_email: string | null;
+  caller_phone: string | null;
+  lead_id: string | null;
+  payload_summary: string | null;
   referral_company_id: string | null;
+  referral_contact_id: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  sync_status: string | null;
 };
 
 function useMarketingSourceSignals() {
@@ -55,13 +67,18 @@ function useMarketingSourceSignals() {
   const [events, setEvents] = useState<MarketingSourceEventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
+  const refresh = useCallback(() => setReloadTick((n) => n + 1), []);
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
+        setLoading(true);
         const [{ data: s, error: sErr }, { data: e, error: eErr }] = await Promise.all([
           supabase.from("marketing_sources").select("id,name,source_system,channel,state,is_active").order("name"),
-          supabase.from("marketing_source_events").select("id,source_id,source_system,state,status,event_type,occurred_at,referral_company_id").order("occurred_at", { ascending: false }).limit(500),
+          supabase.from("marketing_source_events").select(
+            "id,source_id,source_system,state,status,event_type,occurred_at,assigned_to,assigned_at,caller_name,caller_email,caller_phone,lead_id,payload_summary,referral_company_id,referral_contact_id,reviewed_at,reviewed_by,sync_status",
+          ).order("occurred_at", { ascending: false }).limit(500),
         ]);
         if (cancelled) return;
         if (sErr) throw sErr;
@@ -75,8 +92,8 @@ function useMarketingSourceSignals() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
-  return { sources, events, loading, error };
+  }, [reloadTick]);
+  return { sources, events, loading, error, refresh };
 }
 
 const TABS: { key: TabKey; label: string; icon: LucideIcon }[] = [
@@ -217,6 +234,9 @@ export default function BusinessDevelopmentDashboard() {
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [outreachOpen, setOutreachOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
+  const [partnerPrefill, setPartnerPrefill] = useState<PartnerForm | null>(null);
+  const [outreachPrefill, setOutreachPrefill] = useState<{ subject?: string; notes?: string } | null>(null);
+  const [taskPrefill, setTaskPrefill] = useState<{ title?: string; notes?: string } | null>(null);
 
   const partnerName = (id?: string | null) => partners.find((p) => p.id === id)?.company_name ?? "-";
 
@@ -552,11 +572,33 @@ export default function BusinessDevelopmentDashboard() {
         </TabsContent>
 
         <TabsContent value="sources" className="mt-0 space-y-3">
-          <SourceHandoffsPanel partners={visiblePartners} outreach={outreach} />
+          <SourceHandoffsPanel
+            partners={visiblePartners}
+            outreach={outreach}
+            onCreatePartnerFromEvent={(prefill) => {
+              setPartnerPrefill(prefill);
+              setPartnerOpen(true);
+            }}
+            onLogOutreachForPartner={(companyId, prefill) => {
+              setOutPartner(companyId);
+              setOutreachPrefill(prefill ?? null);
+              setOutreachOpen(true);
+            }}
+            onCreateTaskForPartner={(companyId, prefill) => {
+              setTaskPartner(companyId);
+              setTaskPrefill(prefill ?? null);
+              setTaskOpen(true);
+            }}
+          />
         </TabsContent>
       </Tabs>
 
-      <PartnerDialog open={partnerOpen} onOpenChange={setPartnerOpen} onSave={handleAddPartner} />
+      <PartnerDialog
+        open={partnerOpen}
+        onOpenChange={(v) => { setPartnerOpen(v); if (!v) setPartnerPrefill(null); }}
+        prefill={partnerPrefill ?? undefined}
+        onSave={handleAddPartner}
+      />
       <PartnerDialog
         open={!!editPartner}
         onOpenChange={(v) => { if (!v) setEditPartner(null); }}
@@ -566,8 +608,22 @@ export default function BusinessDevelopmentDashboard() {
           setEditPartner(null);
         }}
       />
-      <OutreachDialog open={outreachOpen} onOpenChange={setOutreachOpen} partners={visiblePartners} defaultCompanyId={outPartner !== "all" ? outPartner : undefined} onSave={handleLogOutreach} />
-      <TaskDialog open={taskOpen} onOpenChange={setTaskOpen} partners={visiblePartners} defaultCompanyId={taskPartner !== "all" ? taskPartner : undefined} onSave={handleAddTask} />
+      <OutreachDialog
+        open={outreachOpen}
+        onOpenChange={(v) => { setOutreachOpen(v); if (!v) setOutreachPrefill(null); }}
+        partners={visiblePartners}
+        defaultCompanyId={outPartner !== "all" ? outPartner : undefined}
+        prefill={outreachPrefill ?? undefined}
+        onSave={handleLogOutreach}
+      />
+      <TaskDialog
+        open={taskOpen}
+        onOpenChange={(v) => { setTaskOpen(v); if (!v) setTaskPrefill(null); }}
+        partners={visiblePartners}
+        defaultCompanyId={taskPartner !== "all" ? taskPartner : undefined}
+        prefill={taskPrefill ?? undefined}
+        onSave={handleAddTask}
+      />
       <TaskDialog
         open={!!editTask}
         onOpenChange={(v) => { if (!v) setEditTask(null); }}
@@ -668,7 +724,7 @@ type PartnerForm = {
   notes?: string;
 };
 
-function PartnerDialog({ open, onOpenChange, onSave, initial }: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (p: Partial<ReferralCompany> & { company_name: string }) => Promise<void>; initial?: ReferralCompany }) {
+function PartnerDialog({ open, onOpenChange, onSave, initial, prefill }: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (p: Partial<ReferralCompany> & { company_name: string }) => Promise<void>; initial?: ReferralCompany; prefill?: Partial<PartnerForm> | null }) {
   const [form, setForm] = useState<PartnerForm>({ company_type: "Therapy Practice", relationship_stage: "New" });
   // Sync with initial when dialog opens
   useMemo(() => {
@@ -686,9 +742,9 @@ function PartnerDialog({ open, onOpenChange, onSave, initial }: { open: boolean;
         notes: initial.notes ?? undefined,
       });
     } else if (open && !initial) {
-      setForm({ company_type: "Therapy Practice", relationship_stage: "New" });
+      setForm({ company_type: "Therapy Practice", relationship_stage: "New", ...(prefill ?? {}) });
     }
-  }, [open, initial]);
+  }, [open, initial, prefill]);
   const [saving, setSaving] = useState(false);
   const reset = () => setForm({ company_type: "Therapy Practice", relationship_stage: "New" });
   return (
@@ -739,12 +795,17 @@ function PartnerDialog({ open, onOpenChange, onSave, initial }: { open: boolean;
   );
 }
 
-function OutreachDialog({ open, onOpenChange, partners, onSave, defaultCompanyId }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (o: { company_id: string; activity_type: string; outcome?: string | null; subject?: string; notes?: string; activity_date: string }) => Promise<void>; defaultCompanyId?: string }) {
+function OutreachDialog({ open, onOpenChange, partners, onSave, defaultCompanyId, prefill }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (o: { company_id: string; activity_type: string; outcome?: string | null; subject?: string; notes?: string; activity_date: string }) => Promise<void>; defaultCompanyId?: string; prefill?: { subject?: string; notes?: string } | null }) {
   const initial = { activity_type: "Email", outcome: "Sent Email" as string | null, date: new Date().toISOString().slice(0, 10) };
   const [form, setForm] = useState<{ company_id?: string; activity_type: string; outcome: string | null; subject?: string; notes?: string; date: string }>({ ...initial, company_id: defaultCompanyId });
   useMemo(() => {
-    if (open) setForm((f) => ({ ...f, company_id: defaultCompanyId ?? f.company_id }));
-  }, [open, defaultCompanyId]);
+    if (open) setForm((f) => ({
+      ...f,
+      company_id: defaultCompanyId ?? f.company_id,
+      subject: prefill?.subject ?? f.subject,
+      notes: prefill?.notes ?? f.notes,
+    }));
+  }, [open, defaultCompanyId, prefill]);
   const [saving, setSaving] = useState(false);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -883,8 +944,20 @@ function NeedsAttentionPanel({
   );
 }
 
-function SourceHandoffsPanel({ partners, outreach }: { partners: ReferralCompany[]; outreach: ReferralActivity[] }) {
-  const { sources, events, loading, error } = useMarketingSourceSignals();
+type HandoffActions = {
+  onCreatePartnerFromEvent: (prefill: Partial<PartnerForm>) => void;
+  onLogOutreachForPartner: (companyId: string, prefill?: { subject?: string; notes?: string }) => void;
+  onCreateTaskForPartner: (companyId: string, prefill?: { title?: string; notes?: string }) => void;
+};
+
+function SourceHandoffsPanel({
+  partners,
+  outreach,
+  onCreatePartnerFromEvent,
+  onLogOutreachForPartner,
+  onCreateTaskForPartner,
+}: { partners: ReferralCompany[]; outreach: ReferralActivity[] } & HandoffActions) {
+  const { sources, events, loading, error, refresh } = useMarketingSourceSignals();
 
   // Aggregate BD-safe view of lead source signals from referral partner data.
   const partnerRows = useMemo(() => {
@@ -990,6 +1063,18 @@ function SourceHandoffsPanel({ partners, outreach }: { partners: ReferralCompany
         Business Development read-only view of live lead source signals from marketing_sources and marketing_source_events, plus
         aggregate source tags on your referral partners. Full marketing analytics and campaign management remain in the Marketing workspace.
       </div>
+
+      <HandoffQueue
+        events={events}
+        partners={partners}
+        outreach={outreach}
+        loading={loading}
+        error={error}
+        refresh={refresh}
+        onCreatePartnerFromEvent={onCreatePartnerFromEvent}
+        onLogOutreachForPartner={onLogOutreachForPartner}
+        onCreateTaskForPartner={onCreateTaskForPartner}
+      />
 
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -1168,7 +1253,7 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId, initial }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (t: Partial<ReferralCrmTask> & { title: string }) => Promise<void>; defaultCompanyId?: string; initial?: ReferralCrmTask }) {
+function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId, initial, prefill }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (t: Partial<ReferralCrmTask> & { title: string }) => Promise<void>; defaultCompanyId?: string; initial?: ReferralCrmTask; prefill?: { title?: string; notes?: string } | null }) {
   const [form, setForm] = useState<{ title?: string; company_id?: string; due_date?: string; priority: string; notes?: string }>({ priority: "Medium", company_id: defaultCompanyId });
   useEffect(() => {
     if (!open) return;
@@ -1181,9 +1266,14 @@ function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId, in
         notes: initial.notes ?? undefined,
       });
     } else {
-      setForm((f) => ({ ...f, company_id: defaultCompanyId ?? f.company_id }));
+      setForm((f) => ({
+        ...f,
+        company_id: defaultCompanyId ?? f.company_id,
+        title: prefill?.title ?? f.title,
+        notes: prefill?.notes ?? f.notes,
+      }));
     }
-  }, [open, defaultCompanyId, initial]);
+  }, [open, defaultCompanyId, initial, prefill]);
   const [saving, setSaving] = useState(false);
   const isEdit = !!initial;
   return (
@@ -1220,6 +1310,457 @@ function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId, in
             onOpenChange(false);
             setForm({ priority: "Medium" });
           }}>{saving ? "Saving..." : isEdit ? "Save changes" : "Save"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+// ---------------------------------------------------------------------------
+// HandoffQueue - actionable Business Development work queue driven by
+// marketing_source_events. Actions are performed through safe SECURITY
+// DEFINER RPCs (bd_assign_source_event, bd_mark_source_event_reviewed,
+// bd_link_source_event_to_referral) so BD does not need broad write access
+// to the marketing_source_events table.
+// ---------------------------------------------------------------------------
+
+const HANDOFF_SOURCE_SYSTEMS = [
+  "CTM",
+  "LeadTrap",
+  "Google Ads",
+  "Facebook Ads",
+  "Meta Ads",
+  "RetellAI",
+  "Go Integrate Nava",
+  "manual",
+  "other",
+];
+
+type HandoffDerivedStatus =
+  | "New / Needs BD review"
+  | "Assigned"
+  | "Linked / Outreach needed"
+  | "Needs follow-up plan"
+  | "Reviewed"
+  | "Stale handoff";
+
+function deriveHandoffStatus(
+  ev: MarketingSourceEventRow,
+  outreach: ReferralActivity[],
+): HandoffDerivedStatus {
+  const ageDays = Math.floor((Date.now() - new Date(ev.occurred_at).getTime()) / 86_400_000);
+  if (ev.reviewed_at) return "Reviewed";
+  if (!ev.referral_company_id && !ev.assigned_to) {
+    return ageDays > 14 ? "Stale handoff" : "New / Needs BD review";
+  }
+  if (!ev.referral_company_id && ev.assigned_to) return "Assigned";
+  const hasActivity = outreach.some((o) => o.company_id === ev.referral_company_id);
+  if (ev.referral_company_id && !hasActivity) return "Linked / Outreach needed";
+  return "Needs follow-up plan";
+}
+
+function HandoffQueue({
+  events,
+  partners,
+  outreach,
+  loading,
+  error,
+  refresh,
+  onCreatePartnerFromEvent,
+  onLogOutreachForPartner,
+  onCreateTaskForPartner,
+}: {
+  events: MarketingSourceEventRow[];
+  partners: ReferralCompany[];
+  outreach: ReferralActivity[];
+  loading: boolean;
+  error: Error | null;
+  refresh: () => void;
+} & HandoffActions) {
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [systemFilter, setSystemFilter] = useState<string>("all");
+  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [linkFilter, setLinkFilter] = useState<string>("all"); // all|linked|unlinked
+  const [assignFilter, setAssignFilter] = useState<string>("all"); // all|assigned|unassigned
+  const [sortMode, setSortMode] = useState<string>("newest");
+  const [search, setSearch] = useState("");
+  const [linkPickerFor, setLinkPickerFor] = useState<MarketingSourceEventRow | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!cancelled) setCurrentUserId(data.user?.id ?? null);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const availableStates = useMemo(() => {
+    const set = new Set<string>();
+    events.forEach((e) => { if (e.state) set.add(e.state); });
+    return Array.from(set).sort();
+  }, [events]);
+
+  const filtered = useMemo(() => {
+    let rows = events.map((e) => ({ ev: e, derived: deriveHandoffStatus(e, outreach) }));
+    if (statusFilter !== "all") {
+      rows = rows.filter((r) => {
+        if (statusFilter === "new") return r.derived === "New / Needs BD review" || r.derived === "Stale handoff";
+        if (statusFilter === "assigned") return r.derived === "Assigned";
+        if (statusFilter === "reviewed") return r.derived === "Reviewed";
+        return true;
+      });
+    }
+    if (systemFilter !== "all") {
+      rows = rows.filter((r) => (r.ev.source_system ?? "").toLowerCase() === systemFilter.toLowerCase());
+    }
+    if (stateFilter !== "all") rows = rows.filter((r) => r.ev.state === stateFilter);
+    if (linkFilter === "linked") rows = rows.filter((r) => !!r.ev.referral_company_id);
+    if (linkFilter === "unlinked") rows = rows.filter((r) => !r.ev.referral_company_id);
+    if (assignFilter === "assigned") rows = rows.filter((r) => !!r.ev.assigned_to);
+    if (assignFilter === "unassigned") rows = rows.filter((r) => !r.ev.assigned_to);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      rows = rows.filter((r) => {
+        const e = r.ev;
+        return [e.caller_name, e.caller_email, e.caller_phone, e.payload_summary, e.source_system, e.event_type]
+          .filter(Boolean)
+          .some((v) => (v as string).toLowerCase().includes(q));
+      });
+    }
+    switch (sortMode) {
+      case "oldest":
+        rows.sort((a, b) => new Date(a.ev.occurred_at).getTime() - new Date(b.ev.occurred_at).getTime());
+        break;
+      case "unreviewed":
+        rows.sort((a, b) => Number(!!a.ev.reviewed_at) - Number(!!b.ev.reviewed_at)
+          || new Date(b.ev.occurred_at).getTime() - new Date(a.ev.occurred_at).getTime());
+        break;
+      case "unlinked":
+        rows.sort((a, b) => Number(!!a.ev.referral_company_id) - Number(!!b.ev.referral_company_id)
+          || new Date(b.ev.occurred_at).getTime() - new Date(a.ev.occurred_at).getTime());
+        break;
+      default:
+        rows.sort((a, b) => new Date(b.ev.occurred_at).getTime() - new Date(a.ev.occurred_at).getTime());
+    }
+    return rows;
+  }, [events, outreach, statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search]);
+
+  const partnerById = useMemo(() => {
+    const m = new Map<string, ReferralCompany>();
+    partners.forEach((p) => m.set(p.id, p));
+    return m;
+  }, [partners]);
+
+  const runRpc = async (
+    id: string,
+    fn: "bd_assign_source_event" | "bd_mark_source_event_reviewed" | "bd_link_source_event_to_referral",
+    args: Record<string, unknown>,
+    successMsg: string,
+  ) => {
+    setBusyId(id);
+    try {
+      // Typed loosely because RPCs were just added and may not be in generated types yet.
+      const { error: rpcErr } = await (supabase as unknown as {
+        rpc: (name: string, params: Record<string, unknown>) => Promise<{ error: Error | null }>;
+      }).rpc(fn, args);
+      if (rpcErr) throw rpcErr;
+      toast.success(successMsg);
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Action failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const buildPartnerPrefill = (ev: MarketingSourceEventRow): Partial<PartnerForm> => {
+    const notes = [
+      ev.payload_summary && `Payload: ${ev.payload_summary}`,
+      ev.caller_name && `Caller: ${ev.caller_name}`,
+      ev.caller_phone && `Phone: ${ev.caller_phone}`,
+      ev.caller_email && `Email: ${ev.caller_email}`,
+      ev.event_type && `Event: ${ev.event_type}`,
+    ].filter(Boolean).join("\n");
+    return {
+      company_name: ev.caller_name ?? "",
+      source: ev.source_system,
+      state: ev.state ?? undefined,
+      main_phone: ev.caller_phone ?? undefined,
+      main_email: ev.caller_email ?? undefined,
+      notes: notes || undefined,
+      relationship_stage: "New",
+    };
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground pt-2">
+        <Inbox className="h-3.5 w-3.5" /> Handoff queue
+        <Badge variant="outline" className="ml-2">{filtered.length}</Badge>
+      </div>
+
+      <div className="rounded-2xl border border-border/70 bg-card p-3 flex flex-wrap gap-2 items-center">
+        <div className="relative">
+          <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="h-8 pl-7 w-56"
+            placeholder="Search name / phone / email / payload"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-8 w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="new">New / Unreviewed</SelectItem>
+            <SelectItem value="assigned">Assigned</SelectItem>
+            <SelectItem value="reviewed">Reviewed</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={systemFilter} onValueChange={setSystemFilter}>
+          <SelectTrigger className="h-8 w-44"><SelectValue placeholder="Source system" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All source systems</SelectItem>
+            {HANDOFF_SOURCE_SYSTEMS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="h-8 w-32"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All states</SelectItem>
+            {availableStates.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={linkFilter} onValueChange={setLinkFilter}>
+          <SelectTrigger className="h-8 w-36"><SelectValue placeholder="Linked?" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Linked & unlinked</SelectItem>
+            <SelectItem value="linked">Linked only</SelectItem>
+            <SelectItem value="unlinked">Unlinked only</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={assignFilter} onValueChange={setAssignFilter}>
+          <SelectTrigger className="h-8 w-36"><SelectValue placeholder="Assignment" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Any assignment</SelectItem>
+            <SelectItem value="assigned">Assigned</SelectItem>
+            <SelectItem value="unassigned">Unassigned</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortMode} onValueChange={setSortMode}>
+          <SelectTrigger className="h-8 w-40"><SelectValue placeholder="Sort" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Newest first</SelectItem>
+            <SelectItem value="oldest">Oldest first</SelectItem>
+            <SelectItem value="unreviewed">Unreviewed first</SelectItem>
+            <SelectItem value="unlinked">Unlinked first</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {error ? (
+        <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+          Couldn't load handoff queue: {error.message}
+        </div>
+      ) : loading ? (
+        <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-6 text-center text-xs text-muted-foreground">
+          Loading handoff queue...
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-8 text-center">
+          <Inbox className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+          <div className="text-sm font-semibold">No source handoffs match these filters</div>
+          <div className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+            Clear filters or wait for new CTM, LeadTrap, Google Ads, Meta Ads, RetellAI, Go Integrate Nava, or manual imports to arrive.
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map(({ ev, derived }) => {
+            const partner = ev.referral_company_id ? partnerById.get(ev.referral_company_id) : null;
+            const busy = busyId === ev.id;
+            const suggestion =
+              derived === "New / Needs BD review" || derived === "Stale handoff"
+                ? "Create or link a partner"
+                : derived === "Assigned"
+                ? "Link to a partner"
+                : derived === "Linked / Outreach needed"
+                ? "Log outreach with linked partner"
+                : derived === "Needs follow-up plan"
+                ? "Create a follow-up task"
+                : "No further action";
+            return (
+              <div key={ev.id} className="rounded-2xl border border-border/70 bg-card p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant="outline">{ev.source_system}</Badge>
+                      {ev.event_type && <Badge variant="secondary">{ev.event_type}</Badge>}
+                      {ev.state && <Badge variant="outline">{ev.state}</Badge>}
+                      <Badge variant="outline">{derived}</Badge>
+                      {ev.assigned_to && <Badge variant="secondary">Assigned</Badge>}
+                      {ev.reviewed_at && <Badge variant="secondary">Reviewed</Badge>}
+                      {partner && <Badge variant="outline">Partner: {partner.company_name}</Badge>}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {new Date(ev.occurred_at).toLocaleString()}
+                    </div>
+                    <div className="mt-1 text-xs space-y-0.5">
+                      {ev.caller_name && <div><span className="text-muted-foreground">Caller:</span> {ev.caller_name}</div>}
+                      {(ev.caller_phone || ev.caller_email) && (
+                        <div className="text-muted-foreground">
+                          {ev.caller_phone ?? ""}{ev.caller_phone && ev.caller_email ? " · " : ""}{ev.caller_email ?? ""}
+                        </div>
+                      )}
+                      {ev.payload_summary && (
+                        <div className="text-muted-foreground line-clamp-2">{ev.payload_summary}</div>
+                      )}
+                    </div>
+                    <div className="mt-1 text-[11px] text-muted-foreground italic">
+                      Suggested next action: {suggestion}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {!partner && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() => onCreatePartnerFromEvent(buildPartnerPrefill(ev))}
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1" /> Create Partner
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy || partners.length === 0}
+                        onClick={() => setLinkPickerFor(ev)}
+                      >
+                        <Link2 className="h-3.5 w-3.5 mr-1" /> Link to Existing Partner
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => {
+                      if (!partner) { toast.error("Create or link a partner first"); return; }
+                      onLogOutreachForPartner(partner.id, {
+                        subject: `${ev.source_system} handoff${ev.caller_name ? ` - ${ev.caller_name}` : ""}`,
+                        notes: ev.payload_summary ?? undefined,
+                      });
+                    }}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5 mr-1" /> Log Outreach
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => {
+                      if (!partner) { toast.error("Create or link a partner first"); return; }
+                      onCreateTaskForPartner(partner.id, {
+                        title: `Follow up on ${ev.source_system} handoff`,
+                        notes: [
+                          ev.caller_name && `Caller: ${ev.caller_name}`,
+                          ev.caller_phone && `Phone: ${ev.caller_phone}`,
+                          ev.caller_email && `Email: ${ev.caller_email}`,
+                          ev.payload_summary && `Payload: ${ev.payload_summary}`,
+                        ].filter(Boolean).join("\n") || undefined,
+                      });
+                    }}
+                  >
+                    <CalendarPlus className="h-3.5 w-3.5 mr-1" /> Create Follow-Up
+                  </Button>
+                  {!ev.assigned_to && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busy || !currentUserId}
+                      onClick={() => runRpc(ev.id, "bd_assign_source_event", { _event_id: ev.id }, "Assigned to you")}
+                    >
+                      <UserPlus className="h-3.5 w-3.5 mr-1" /> {busy ? "Saving..." : "Assign to Me"}
+                    </Button>
+                  )}
+                  {!ev.reviewed_at && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() => runRpc(ev.id, "bd_mark_source_event_reviewed", { _event_id: ev.id }, "Marked reviewed")}
+                    >
+                      <CheckSquare className="h-3.5 w-3.5 mr-1" /> {busy ? "Saving..." : "Mark Reviewed"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {linkPickerFor && (
+        <LinkPartnerDialog
+          event={linkPickerFor}
+          partners={partners}
+          onClose={() => setLinkPickerFor(null)}
+          onLink={async (companyId) => {
+            const evId = linkPickerFor.id;
+            setLinkPickerFor(null);
+            await runRpc(evId, "bd_link_source_event_to_referral", {
+              _event_id: evId,
+              _company_id: companyId,
+            }, "Linked to partner");
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function LinkPartnerDialog({
+  event, partners, onClose, onLink,
+}: {
+  event: MarketingSourceEventRow;
+  partners: ReferralCompany[];
+  onClose: () => void;
+  onLink: (companyId: string) => Promise<void> | void;
+}) {
+  const [companyId, setCompanyId] = useState<string | undefined>(undefined);
+  const [saving, setSaving] = useState(false);
+  return (
+    <Dialog open onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Link source handoff to existing partner</DialogTitle>
+        </DialogHeader>
+        <div className="text-xs text-muted-foreground mb-2">
+          {event.source_system} · {event.caller_name ?? "no caller name"} · {new Date(event.occurred_at).toLocaleString()}
+        </div>
+        <Select value={companyId} onValueChange={setCompanyId}>
+          <SelectTrigger><SelectValue placeholder="Select partner *" /></SelectTrigger>
+          <SelectContent>
+            {partners.map((p) => <SelectItem key={p.id} value={p.id}>{p.company_name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            disabled={!companyId || saving}
+            onClick={async () => {
+              if (!companyId) return;
+              setSaving(true);
+              await onLink(companyId);
+              setSaving(false);
+            }}
+          >
+            {saving ? "Linking..." : "Link"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
