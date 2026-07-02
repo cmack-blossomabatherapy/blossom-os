@@ -1410,21 +1410,21 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
             <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr className="h-10">
                 <th className="w-10 px-3 text-left align-middle"><Checkbox checked={allChecked} onCheckedChange={toggleAll} /></th>
-                <th className="w-[180px] px-3 text-left font-medium align-middle">Patient</th>
-                <th className="w-[180px] px-3 text-left font-medium align-middle">Source Company</th>
-                <th className="w-[160px] px-3 text-left font-medium align-middle">Source Contact</th>
-                <th className="w-[70px] px-3 text-left font-medium align-middle">State</th>
-                <th className="w-[140px] px-3 text-left font-medium align-middle">Service</th>
-                <th className="w-[140px] px-3 text-left font-medium align-middle">Status</th>
-                <th className="w-[180px] px-3 text-left font-medium align-middle">Patient Pipeline</th>
-                <th className="w-[140px] px-3 text-left font-medium align-middle">Insurance</th>
-                <th className="w-[140px] px-3 text-left font-medium align-middle">Intake Owner</th>
-                <th className="w-[110px] px-3 text-left font-medium align-middle">Date</th>
+                <th className="w-[180px] align-middle"><SortTh label="Patient" k="name" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[180px] align-middle"><SortTh label="Source Company" k="company" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[160px] align-middle"><SortTh label="Source Contact" k="contact" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[70px] align-middle"><SortTh label="State" k="state" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[140px] align-middle"><SortTh label="Service" k="service" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[140px] align-middle"><SortTh label="Status" k="status" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[180px] align-middle"><SortTh label="Patient Pipeline" k="pipeline" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[140px] align-middle"><SortTh label="Insurance" k="insurance" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[140px] align-middle"><SortTh label="Intake Owner" k="owner" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[110px] align-middle"><SortTh label="Date" k="date" sort={sort} onSort={toggleSort} /></th>
                 <th className="w-[70px] px-3 text-right font-medium align-middle">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => {
+              {pagedRows.map((r) => {
                 const lead = r.leadId ? leadById.get(r.leadId) : undefined;
                 const stage = lead ? canonicalFamilyLeadStage(lead.status) : null;
                 return (
@@ -1483,6 +1483,13 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(n) => { setPageSizeStr(String(n)); setPageStr("1"); }}
+        />
       </div>
 
       <NewReferralDialog open={creating} onOpenChange={setCreating} />
