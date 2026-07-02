@@ -152,10 +152,55 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
   for (const r of records) {
     const p = ((r as any).metadata ?? {}) as Record<string, any>;
     const email = p.email ?? (r as any).person_email ?? null;
-    const externalId = (r as any).provider_record_id ?? p.id ?? null;
+    // Prefer the provider's stable id; fall back to metadata.id; finally derive
+    // a durable fallback from the normalized record itself so we never insert a
+    // no-id candidate that duplicates on every import.
+    const rawExternalId = (r as any).provider_record_id ?? p.id ?? null;
+    const normalizedRecordId = (r as any).id ? String((r as any).id) : null;
+    const externalId = rawExternalId
+      ? String(rawExternalId)
+      : (normalizedRecordId ? `normalized_record:${normalizedRecordId}` : null);
+    const externalIdSource: "provider" | "normalized_record" | "none" = rawExternalId
+      ? "provider"
+      : (normalizedRecordId ? "normalized_record" : "none");
+    // No provider id AND no normalized-record id — nothing durable to key on.
+    // Skip and record a review event so ops can reconcile without duplicating.
+    if (!externalId) {
+      skipped++;
+      try {
+        await supabase.from("recruiting_activity_events").insert({
+          entity_table: "recruiting_candidates",
+          event_type: "apploi_import_skipped",
+          to_value: String(email ?? ""),
+          payload: { reason: "no_durable_external_id", email, profile_url: p.profile_url ?? null } as any,
+        } as any);
+      } catch { /* best effort */ }
+      continue;
+    }
     if (!p.first_name && !p.last_name && !email) { skipped++; continue; }
     const profileUrl = p.profile_url ?? (r as any).external_url ?? null;
-    const row: Record<string, unknown> = {
+    // Safe lookup by durable Apploi identity, then update-or-insert.
+    // Never fall back to email/id-based upsert — email is not a durable
+    // external identity and two Apploi people may share/lack email.
+    let action: "insert" | "update" | "skip" = "insert";
+    let existingId: string | null = null;
+    {
+      const q = supabase.from("recruiting_candidates").select("id,tags") as any;
+      const { data: existing } = await q
+        .eq("external_provider", "apploi")
+        .eq("external_candidate_id", externalId)
+        .maybeSingle();
+      if ((existing as any)?.id) {
+        existingId = (existing as any).id as string;
+        action = "update";
+      }
+    }
+
+    // Build safe profile-only update payload. For existing candidates we must
+    // NOT reset pipeline_stage, stage_entered_at, recruiter, next_action, or
+    // notes — otherwise a routine re-sync would clobber real recruiter work.
+    const nowIso = new Date().toISOString();
+    const safeProfilePatch: Record<string, unknown> = {
       first_name: p.first_name ?? "(unknown)",
       last_name: p.last_name ?? "(unknown)",
       email,
@@ -164,58 +209,88 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
       state: p.state ?? "Other",
       city: p.city ?? null,
       source: "Apploi",
-      applied_date: p.applied_date ?? new Date().toISOString(),
-      recruiter: p.recruiter ?? null,
-      next_action: p.next_action ?? null,
-      tags: externalId ? [`apploi:${externalId}`] : null,
-      pipeline_stage: "New Applicant",
       external_provider: "apploi",
-      external_candidate_id: externalId ? String(externalId) : null,
+      external_candidate_id: externalId,
       external_profile_url: profileUrl,
-      external_synced_at: new Date().toISOString(),
+      external_synced_at: nowIso,
       external_payload: p as any,
     };
-    // Safe lookup by durable Apploi identity, then update-or-insert.
-    // Never fall back to email/id-based upsert — email is not a durable
-    // external identity and two Apploi people may share/lack email.
-    let action: "insert" | "update" | "skip" = "insert";
-    let existingId: string | null = null;
-    if (externalId) {
-      const q = supabase.from("recruiting_candidates").select("id") as any;
-      const { data: existing } = await q
-        .eq("external_provider", "apploi")
-        .eq("external_candidate_id", String(externalId))
-        .maybeSingle();
-      if ((existing as any)?.id) {
-        existingId = (existing as any).id as string;
-        action = "update";
-      }
-    } else {
-      // No durable Apploi id — do NOT blindly merge by email. Insert as a
-      // fresh candidate flagged for import review so ops can reconcile.
-      (row as any).next_action = (row as any).next_action ?? "Apploi import review — no external id";
-    }
+
     let err: unknown = null;
+    let finalCandidateId: string | null = existingId;
     if (action === "update" && existingId) {
-      const { error } = await supabase
+      // Merge tags rather than overwrite so the apploi:<id> marker persists
+      // alongside any recruiter-added tags.
+      const priorTagsRaw = ((await supabase
         .from("recruiting_candidates")
-        .update(row as any)
-        .eq("id", existingId);
+        .select("tags")
+        .eq("id", existingId)
+        .maybeSingle()).data as any)?.tags;
+      const priorTags: string[] = Array.isArray(priorTagsRaw) ? priorTagsRaw : [];
+      const marker = `apploi:${externalId}`;
+      const mergedTags = priorTags.includes(marker) ? priorTags : [...priorTags, marker];
+      const { data: updated, error } = await supabase
+        .from("recruiting_candidates")
+        .update({ ...safeProfilePatch, tags: mergedTags } as any)
+        .eq("id", existingId)
+        .select("id")
+        .maybeSingle();
       err = error;
+      finalCandidateId = (updated as any)?.id ?? existingId;
     } else {
-      const { error } = await supabase
+      // New candidate: initial stage is allowed here (only on insert).
+      const insertRow = {
+        ...safeProfilePatch,
+        applied_date: p.applied_date ?? nowIso,
+        recruiter: p.recruiter ?? null,
+        next_action: p.next_action ?? (externalIdSource === "normalized_record"
+          ? "Apploi import review — no provider id"
+          : null),
+        tags: [`apploi:${externalId}`],
+        pipeline_stage: "New Applicant",
+      };
+      const { data: inserted, error } = await supabase
         .from("recruiting_candidates")
-        .insert(row as any);
+        .insert(insertRow as any)
+        .select("id")
+        .maybeSingle();
       err = error;
+      finalCandidateId = (inserted as any)?.id ?? null;
+      // Race-condition safety: if the unique index fires (concurrent import
+      // just created the same external identity), fall back to update.
+      if (err && !finalCandidateId) {
+        const { data: raced } = await supabase
+          .from("recruiting_candidates")
+          .select("id")
+          .eq("external_provider", "apploi")
+          .eq("external_candidate_id", externalId)
+          .maybeSingle();
+        if ((raced as any)?.id) {
+          const racedId = (raced as any).id as string;
+          const { error: upErr } = await supabase
+            .from("recruiting_candidates")
+            .update(safeProfilePatch as any)
+            .eq("id", racedId);
+          if (!upErr) { err = null; finalCandidateId = racedId; action = "update"; }
+        }
+      }
     }
     if (err) { console.warn("apploi import failed", err); skipped++; }
     else {
       imported++;
       try {
         await supabase.from("recruiting_activity_events").insert({
+          candidate_id: finalCandidateId,
           entity_table: "recruiting_candidates",
+          entity_id: finalCandidateId,
           event_type: action === "update" ? "apploi_updated" : "apploi_imported",
-          to_value: String(externalId ?? email ?? ""),
+          to_value: externalId,
+          payload: {
+            external_id: externalId,
+            external_id_source: externalIdSource,
+            profile_url: profileUrl,
+            action,
+          } as any,
         } as any);
       } catch { /* best effort */ }
     }
