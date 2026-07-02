@@ -47,6 +47,7 @@ import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TableFilterBar, type FilterDef } from "@/components/marketing/TableFilterBar";
+import { TablePagination } from "@/components/marketing/TablePagination";
 
 type ModuleId =
   | "dashboard" | "contacts" | "companies" | "referrals" | "tasks" | "lists"
@@ -381,8 +382,17 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
   const [partnerFilter, setPartnerFilter] = useUrlState("cp", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
-  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
-  const toggleSort = (key: string) => setSort((p) => p.key === key ? { key, dir: p.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+  const [sortKey, setSortKey] = useUrlState("csk", "name");
+  const [sortDir, setSortDir] = useUrlState("csd", "asc");
+  const sort: SortState = { key: sortKey, dir: sortDir === "desc" ? "desc" : "asc" };
+  const toggleSort = (key: string) => {
+    if (sort.key === key) setSortDir(sort.dir === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+  const [pageStr, setPageStr] = useUrlState("cpg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("cps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
 
   const rows = useMemo(() => {
     let r = scopedContacts(s);
@@ -421,7 +431,18 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
       return 0;
     });
     return sorted;
-  }, [s, view, q, stateFilter, ownerFilter, partnerFilter, sort]);
+  }, [s, view, q, stateFilter, ownerFilter, partnerFilter, sort.key, sort.dir]);
+
+  // Reset to page 1 whenever filters/search/view/pageSize change.
+  useEffect(() => {
+    if (page !== 1) setPageStr("1");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, q, stateFilter, ownerFilter, partnerFilter, pageSize]);
+
+  const pagedRows = useMemo(
+    () => rows.slice((page - 1) * pageSize, page * pageSize),
+    [rows, page, pageSize],
+  );
 
   const totalContacts = scopedContacts(s).length;
   const contactFilters: FilterDef[] = [
@@ -430,9 +451,12 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     { key: "cp", label: "Partner", value: partnerFilter, onChange: setPartnerFilter, options: [{ value: "all", label: "All statuses" }, ...["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => ({ value: v, label: v }))], width: 170 },
   ];
 
-  const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  const allChecked = pagedRows.length > 0 && pagedRows.every((r) => selected.has(r.id));
   const toggleAll = () => {
-    setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
+    const next = new Set(selected);
+    if (allChecked) pagedRows.forEach((r) => next.delete(r.id));
+    else pagedRows.forEach((r) => next.add(r.id));
+    setSelected(next);
   };
   const toggleOne = (id: ID) => {
     const n = new Set(selected);
@@ -549,7 +573,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
               </tr>
             </thead>
             <tbody>
-              {rows.map((c) => (
+              {pagedRows.map((c) => (
                 <tr key={c.id} className="border-t hover:bg-muted/30">
                   <td className="px-3 py-2"><Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggleOne(c.id)} /></td>
                   <td className="px-3 py-2">
@@ -579,6 +603,13 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(n) => { setPageSizeStr(String(n)); setPageStr("1"); }}
+        />
       </div>
 
       <NewContactDialog open={creating} onOpenChange={setCreating} />
@@ -730,8 +761,17 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
-  const [sort, setSort] = useState<SortState>({ key: "name", dir: "asc" });
-  const toggleSort = (key: string) => setSort((p) => p.key === key ? { key, dir: p.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+  const [sortKey, setSortKey] = useUrlState("osk", "name");
+  const [sortDir, setSortDir] = useUrlState("osd", "asc");
+  const sort: SortState = { key: sortKey, dir: sortDir === "desc" ? "desc" : "asc" };
+  const toggleSort = (key: string) => {
+    if (sort.key === key) setSortDir(sort.dir === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+  const [pageStr, setPageStr] = useUrlState("opg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("ops", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
 
   const rows = useMemo(() => {
     let r = scopedCompanies(s);
@@ -766,7 +806,17 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
       return 0;
     });
     return sorted;
-  }, [s, view, q, stateFilter, tierFilter, ownerFilter, partnerFilter, sort]);
+  }, [s, view, q, stateFilter, tierFilter, ownerFilter, partnerFilter, sort.key, sort.dir]);
+
+  useEffect(() => {
+    if (page !== 1) setPageStr("1");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, q, stateFilter, tierFilter, ownerFilter, partnerFilter, pageSize]);
+
+  const pagedRows = useMemo(
+    () => rows.slice((page - 1) * pageSize, page * pageSize),
+    [rows, page, pageSize],
+  );
 
   const totalCompanies = scopedCompanies(s).length;
   const companyFilters: FilterDef[] = [
@@ -776,8 +826,13 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     { key: "op", label: "Partner", value: partnerFilter, onChange: setPartnerFilter, options: [{ value: "all", label: "All statuses" }, ...["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => ({ value: v, label: v }))], width: 170 },
   ];
 
-  const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
-  const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
+  const allChecked = pagedRows.length > 0 && pagedRows.every((r) => selected.has(r.id));
+  const toggleAll = () => {
+    const next = new Set(selected);
+    if (allChecked) pagedRows.forEach((r) => next.delete(r.id));
+    else pagedRows.forEach((r) => next.add(r.id));
+    setSelected(next);
+  };
   const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
   const ids = () => Array.from(selected);
   const clear = () => setSelected(new Set());
@@ -914,7 +969,7 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((c) => (
+              {pagedRows.map((c) => (
                 <tr key={c.id} className="border-t hover:bg-muted/30">
                   <td className="px-3 py-2"><Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggleOne(c.id)} /></td>
                   <td className="px-3 py-2">
@@ -933,6 +988,13 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(n) => { setPageSizeStr(String(n)); setPageStr("1"); }}
+        />
       </div>
 
       <NewCompanyDialog open={creating} onOpenChange={setCreating} />
@@ -1158,9 +1220,20 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
   const [rIntakeOwnerFilter, setRIntakeOwnerFilter] = useUrlState("rio", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
+  const [sortKey, setSortKey] = useUrlState("rsk", "date");
+  const [sortDir, setSortDir] = useUrlState("rsd", "desc");
+  const sort: SortState = { key: sortKey, dir: sortDir === "asc" ? "asc" : "desc" };
+  const toggleSort = (key: string) => {
+    if (sort.key === key) setSortDir(sort.dir === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+  const [pageStr, setPageStr] = useUrlState("rpg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("rps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
   const allRows = scopedReferrals(s);
   const rows = useMemo(() => {
-    return allRows.filter((r) => {
+    const filtered = allRows.filter((r) => {
       if (statusFilter !== "all" && (r.referralStatus || "") !== statusFilter) return false;
       if (stageFilter !== "all") {
         const lead = r.leadId ? leadById.get(r.leadId) : undefined;
@@ -1186,7 +1259,41 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
       }
       return true;
     });
-  }, [allRows, statusFilter, stageFilter, leadById, rStateFilter, rServiceFilter, rIntakeOwnerFilter, rQuery, s]);
+    const getKey = (r: typeof filtered[number]): string | number => {
+      switch (sort.key) {
+        case "name": return (r.name || "").toLowerCase();
+        case "company": return companyName(s, r.companyId).toLowerCase();
+        case "contact": return r.contactId ? contactDisplayName(s.contacts.find((c) => c.id === r.contactId)).toLowerCase() : "";
+        case "state": return (r.state || "").toLowerCase();
+        case "service": return (r.serviceType || "").toLowerCase();
+        case "status": return (r.referralStatus || "").toLowerCase();
+        case "pipeline": {
+          const lead = r.leadId ? leadById.get(r.leadId) : undefined;
+          return lead ? (canonicalFamilyLeadStage(lead.status) || "").toLowerCase() : "";
+        }
+        case "insurance": return (r.insuranceType || "").toLowerCase();
+        case "owner": return (userName(s, r.assignedIntakeOwnerId) || "").toLowerCase();
+        case "date":
+        default: return r.referralDate || "";
+      }
+    };
+    return [...filtered].sort((a, b) => {
+      const av = getKey(a); const bv = getKey(b);
+      if (av < bv) return sort.dir === "asc" ? -1 : 1;
+      if (av > bv) return sort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [allRows, statusFilter, stageFilter, leadById, rStateFilter, rServiceFilter, rIntakeOwnerFilter, rQuery, s, sort.key, sort.dir]);
+
+  useEffect(() => {
+    if (page !== 1) setPageStr("1");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, stageFilter, rStateFilter, rServiceFilter, rIntakeOwnerFilter, rQuery, pageSize]);
+
+  const pagedRows = useMemo(
+    () => rows.slice((page - 1) * pageSize, page * pageSize),
+    [rows, page, pageSize],
+  );
   const filtersActive =
     statusFilter !== "all" || stageFilter !== "all" ||
     rStateFilter !== "all" || rServiceFilter !== "all" ||
@@ -1200,8 +1307,13 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
     { key: "rio", label: "Intake owner", value: rIntakeOwnerFilter, onChange: setRIntakeOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 180 },
   ];
 
-  const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
-  const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
+  const allChecked = pagedRows.length > 0 && pagedRows.every((r) => selected.has(r.id));
+  const toggleAll = () => {
+    const next = new Set(selected);
+    if (allChecked) pagedRows.forEach((r) => next.delete(r.id));
+    else pagedRows.forEach((r) => next.add(r.id));
+    setSelected(next);
+  };
   const toggleOne = (id: ID) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n); };
   const ids = () => Array.from(selected);
   const clear = () => setSelected(new Set());
@@ -1298,21 +1410,21 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
             <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr className="h-10">
                 <th className="w-10 px-3 text-left align-middle"><Checkbox checked={allChecked} onCheckedChange={toggleAll} /></th>
-                <th className="w-[180px] px-3 text-left font-medium align-middle">Patient</th>
-                <th className="w-[180px] px-3 text-left font-medium align-middle">Source Company</th>
-                <th className="w-[160px] px-3 text-left font-medium align-middle">Source Contact</th>
-                <th className="w-[70px] px-3 text-left font-medium align-middle">State</th>
-                <th className="w-[140px] px-3 text-left font-medium align-middle">Service</th>
-                <th className="w-[140px] px-3 text-left font-medium align-middle">Status</th>
-                <th className="w-[180px] px-3 text-left font-medium align-middle">Patient Pipeline</th>
-                <th className="w-[140px] px-3 text-left font-medium align-middle">Insurance</th>
-                <th className="w-[140px] px-3 text-left font-medium align-middle">Intake Owner</th>
-                <th className="w-[110px] px-3 text-left font-medium align-middle">Date</th>
+                <th className="w-[180px] align-middle"><SortTh label="Patient" k="name" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[180px] align-middle"><SortTh label="Source Company" k="company" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[160px] align-middle"><SortTh label="Source Contact" k="contact" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[70px] align-middle"><SortTh label="State" k="state" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[140px] align-middle"><SortTh label="Service" k="service" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[140px] align-middle"><SortTh label="Status" k="status" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[180px] align-middle"><SortTh label="Patient Pipeline" k="pipeline" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[140px] align-middle"><SortTh label="Insurance" k="insurance" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[140px] align-middle"><SortTh label="Intake Owner" k="owner" sort={sort} onSort={toggleSort} /></th>
+                <th className="w-[110px] align-middle"><SortTh label="Date" k="date" sort={sort} onSort={toggleSort} /></th>
                 <th className="w-[70px] px-3 text-right font-medium align-middle">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => {
+              {pagedRows.map((r) => {
                 const lead = r.leadId ? leadById.get(r.leadId) : undefined;
                 const stage = lead ? canonicalFamilyLeadStage(lead.status) : null;
                 return (
@@ -1371,6 +1483,13 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(n) => { setPageSizeStr(String(n)); setPageStr("1"); }}
+        />
       </div>
 
       <NewReferralDialog open={creating} onOpenChange={setCreating} />

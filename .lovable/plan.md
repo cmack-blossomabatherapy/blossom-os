@@ -1,59 +1,54 @@
 ## Goal
-Give every table across the Marketing surfaces a consistent, powerful **top-of-table filter bar** — search + full chip row of common facets — with all filter state persisted in the URL so views are shareable and reload-safe.
+Persist sort order and pagination (page number + page size) in URL query params for the Contacts, Companies, and Referrals views inside `src/pages/os/marketing/ReferralCRM.tsx`, so users can bookmark, share, and reload the exact same view they were looking at.
 
-## Scope (tables to touch)
+The three modules today already read/write their filters via `useUrlState`, so this plan extends that same pattern to sort and pagination.
 
-**Referral CRM** (`src/pages/os/marketing/ReferralCRM.tsx`)
-- Contacts — already has view + search + state; add: **owner**, **partner status**, **source type**, **has patients Y/N**, Clear
-- Companies — add: **state**, **company type**, **owner**, **partner status**, **active partner Y/N**, search, Clear
-- Referrals — already has status + pipeline; add: **state**, **owner**, **source type**, **date range**, search, Clear
-- Tasks — currently only groupBy; add: search, **status**, **priority**, **owner**, **state**, **due window** (overdue / today / this week / no date), Clear
-- Activities — currently only type chips; add: search, **user**, **date range**, Clear
-- Users — no filters today; add: search, **role**, **state**, **status (active/inactive)**, Clear
-- Files — has search + type; add: **owner/uploader**, **date range**, Clear
-- Audit — has search + action; add: **actor**, **object type**, **date range**, Clear
-- Deleted — add: search + **object type** filter, Clear
-- Patient Pipeline — has search + status + state; add: **source type**, **owner**, **date range**, Clear
+## What changes per module
 
-**Other Marketing pages with real tables**
-- `Referrals.tsx` — 3 tables (funnel / activity / partners); add search + relevant chip row per table
-- `EmailMarketing.tsx` — sequences table; add search + **status**, **owner**, **date range**
-- `Reputation.tsx` — 2 tables (reviews / responses); add search + **platform**, **rating**, **status**, **date range**
+### 1. Shared pagination footer
+Add a small `TablePagination` component at `src/components/marketing/TablePagination.tsx` used by all three modules:
+- Rows-per-size selector (10 / 25 / 50 / 100)
+- Prev / Next buttons and a page indicator like `Page 2 of 7 · 143 rows`
+- Auto-clamps the current page when the result set shrinks below the current page start (e.g., after a filter change) and syncs the clamped value back to the URL.
 
-Pages without tables (Campaigns, LeadSources, CallTracking, WebAnalytics, SEO, AttributionROI, CommunityOutreach, StateGrowth, RecruitingMarketing, MarketingTraining, MarketingDashboard) are out of scope.
+### 2. Contacts module (`ContactsModule`)
+- Replace local `useState` sort with URL-persisted state:
+  - `csk` → sort key (default `name`)
+  - `csd` → sort direction (default `asc`)
+- Add URL-persisted pagination:
+  - `cpg` → page (default `1`)
+  - `cps` → page size (default `25`)
+- Slice the sorted rows by `(page-1)*pageSize` for rendering. Reset to page `1` when filters/search change.
 
-## Design (Blossom OS calm/premium)
+### 3. Companies module (`CompaniesModule`)
+- Same treatment, with distinct keys to avoid clashes:
+  - `osk`, `osd`, `opg`, `ops` (default sort `name` asc, page 1, size 25)
 
-One shared `<TableFilterBar>` presentation component used everywhere so every table looks and behaves identically.
+### 4. Referrals module (`ReferralsModule`)
+- Currently uses a fixed `referralDate desc` sort. Add sortable table headers using the existing `SortTh` component with these keys: Patient (`name`), Company (`company`), State (`state`), Service (`service`), Status (`status`), Intake owner (`owner`), Referral date (`date`, default), Pipeline stage (`pipeline`).
+- URL-persisted sort: `rsk` (default `date`), `rsd` (default `desc`).
+- URL-persisted pagination: `rpg` (page, default `1`), `rps` (page size, default `25`).
 
-```text
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ [🔍 Search…]  [Status ▾] [Owner ▾] [State ▾] [Type ▾] [Date ▾]   n · Clear  │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
+## URL param key summary
+| Module    | Sort key | Sort dir | Page | Page size |
+|-----------|----------|----------|------|-----------|
+| Contacts  | `csk`    | `csd`    | `cpg` | `cps`    |
+| Companies | `osk`    | `osd`    | `opg` | `ops`    |
+| Referrals | `rsk`    | `rsd`    | `rpg` | `rps`    |
 
-- Rounded 2xl card, subtle border, soft muted background — matches existing CRM filter rows.
-- Left: search input (flex-1, max-w-md, icon inside).
-- Middle: chip-style `Select` dropdowns, `h-9`, small text. Each dropdown shows its label + selected value; unset = muted.
-- Right: result count + a `Clear` link (only shown when any filter is active).
-- Wraps cleanly on narrow widths, sticky-top optional per table.
-- Active filters render as small removable pills below the bar when 2+ are set.
+All keys are stripped from the URL when they equal their defaults (existing `useUrlState` behavior), so a clean view produces a clean URL.
 
-## URL persistence
+## Behavior details
+- Changing any filter, the search query, or the page size resets `page` back to `1`.
+- Changing sort does NOT reset the page (users often want to keep their position while re-sorting the whole set).
+- Page size selector persists across navigation to the same module because it lives in the URL.
+- Bulk-select checkboxes stay scoped to the currently visible page; a small helper text notes when there are additional matching rows on other pages.
 
-- Each module already scoped by a top-level `m=` param. Each table adds its own short-prefixed params (e.g. Tasks: `ts_q`, `ts_status`, `ts_owner`, `ts_state`, `ts_due`, `ts_pri`).
-- Introduce a tiny `useUrlState(key, default)` helper (thin wrapper over `useSearchParams`) so every table filter round-trips through the URL identically.
-- Empty / default values are stripped from the URL to keep it clean.
-- Reload, deep-link, and share all restore the exact view.
-
-## Technical notes
-
-- Add `src/components/marketing/TableFilterBar.tsx` (presentational) + `src/hooks/useUrlState.ts` (state helper).
-- Refactor each table's filter row to use `TableFilterBar`; keep the existing filtering logic but source values from `useUrlState`.
-- Reuse existing option sources (`s.users`, `STATES`, canonical status enums, referral source types) — no new data layer.
-- No DB migrations, no backend changes, no changes outside `src/pages/os/marketing/**`, `src/components/marketing/**`, and the new hook.
-- Preserve current sorting, bulk-select, and drawer click-through behavior on every table.
+## Files touched
+- `src/components/marketing/TablePagination.tsx` — new shared component.
+- `src/pages/os/marketing/ReferralCRM.tsx` — wire `useUrlState` sort + pagination into `ContactsModule`, `CompaniesModule`, and `ReferralsModule`; add sortable headers to the Referrals table; render `TablePagination` under each table.
 
 ## Out of scope
-- Column show/hide, saved views, per-user default filters, server-side pagination — not requested.
-- Non-marketing pages (Intake, HR, etc.) — separate pass.
+- No schema, hook, or backend changes.
+- Other tables (Tasks, Files, Audit, Activities, Patient Pipeline, Users, Deleted) are not part of this pass.
+- The standalone `src/pages/os/marketing/Referrals.tsx` page is a separate surface and not included unless you want it too.
