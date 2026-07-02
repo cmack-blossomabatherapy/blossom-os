@@ -316,6 +316,11 @@ export const ROLE_AI_SUMMARY: Partial<Record<OSRole, RoleAISummary>> = {
     { icon: GraduationCap, text: "Training Academy ready when you need it.", tone: "violet" },
     { icon: TrendingUp, text: "Use reports to coach BCBAs across the network.", tone: "sky" },
   ]},
+  clinical_director:     { headline: "Clinical oversight across BCBAs, supervision, treatment plans, and escalations.", insights: [
+    { icon: Stethoscope, text: "Watch BCBA caseload health and supervision ratios.", tone: "emerald" },
+    { icon: ClipboardCheck, text: "Treatment plan and progress report aging surface here.", tone: "violet" },
+    { icon: AlertTriangle, text: "Clinical escalations flow into your queue.", tone: "amber" },
+  ]},
   business_development:  { headline: "Referral partners active. A few source handoffs waiting on first outreach.", insights: [
     { icon: TrendingUp, text: "New source signals flow in from marketing_source_events.", tone: "emerald" },
     { icon: AlertTriangle, text: "Stale partners with no touch in 30+ days need follow-up.", tone: "amber" },
