@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { notifyApploiNotConnected } from "@/lib/recruiting/apploi";
+import {
+  resolveApploiIdentity,
+  describeIdentitySource,
+  type ApploiIdentitySource,
+} from "@/lib/recruiting/apploiNormalizedIdentity";
 
 /**
  * Honest Apploi integration readiness.
@@ -91,8 +96,11 @@ export function useApploiNormalizedCandidates() {
       const mapped = (data ?? []).map((r: any): ApploiNormalizedCandidate => {
         const p = (r.metadata ?? {}) as Record<string, unknown>;
         const s = (v: unknown) => (typeof v === "string" ? v : null);
+        // Preview uses the same resolver as the importer so what ops
+        // see is exactly what will be keyed on during ingestion.
+        const identity = resolveApploiIdentity(r);
         return {
-          external_id: String(r.provider_record_id ?? p.id ?? ""),
+          external_id: identity.externalId ?? "",
           first_name: s(p.first_name),
           last_name: s(p.last_name),
           email: s(p.email) ?? s(r.person_email),
@@ -152,17 +160,12 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
   for (const r of records) {
     const p = ((r as any).metadata ?? {}) as Record<string, any>;
     const email = p.email ?? (r as any).person_email ?? null;
-    // Prefer the provider's stable id; fall back to metadata.id; finally derive
-    // a durable fallback from the normalized record itself so we never insert a
-    // no-id candidate that duplicates on every import.
-    const rawExternalId = (r as any).provider_record_id ?? p.id ?? null;
+    // Centralized durable-identity resolver — see
+    // src/lib/recruiting/apploiNormalizedIdentity.ts for resolution order.
+    const identity = resolveApploiIdentity(r as any);
+    const externalId = identity.externalId;
+    const externalIdSource: ApploiIdentitySource = identity.source;
     const normalizedRecordId = (r as any).id ? String((r as any).id) : null;
-    const externalId = rawExternalId
-      ? String(rawExternalId)
-      : (normalizedRecordId ? `normalized_record:${normalizedRecordId}` : null);
-    const externalIdSource: "provider" | "normalized_record" | "none" = rawExternalId
-      ? "provider"
-      : (normalizedRecordId ? "normalized_record" : "none");
     // No provider id AND no normalized-record id — nothing durable to key on.
     // Skip and record a review event so ops can reconcile without duplicating.
     if (!externalId) {
@@ -172,7 +175,13 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
           entity_table: "recruiting_candidates",
           event_type: "apploi_import_skipped",
           to_value: String(email ?? ""),
-          payload: { reason: "no_durable_external_id", email, profile_url: p.profile_url ?? null } as any,
+          payload: {
+            reason: "no_durable_external_id",
+            reason_detail: describeIdentitySource(externalIdSource),
+            normalized_record_id: normalizedRecordId,
+            email,
+            profile_url: p.profile_url ?? null,
+          } as any,
         } as any);
       } catch { /* best effort */ }
       continue;
@@ -243,9 +252,13 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
         ...safeProfilePatch,
         applied_date: p.applied_date ?? nowIso,
         recruiter: p.recruiter ?? null,
-        next_action: p.next_action ?? (externalIdSource === "normalized_record"
-          ? "Apploi import review — no provider id"
-          : null),
+        next_action: p.next_action ?? (
+          externalIdSource === "normalized_record"
+            ? "Apploi import review — no provider id"
+            : externalIdSource === "metadata"
+              ? `Apploi import — id resolved from metadata (${identity.metadataKey})`
+              : null
+        ),
         tags: [`apploi:${externalId}`],
         pipeline_stage: "New Applicant",
       };
@@ -288,6 +301,9 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
           payload: {
             external_id: externalId,
             external_id_source: externalIdSource,
+            external_id_source_label: describeIdentitySource(externalIdSource),
+            metadata_key: identity.metadataKey ?? null,
+            normalized_record_id: normalizedRecordId,
             profile_url: profileUrl,
             action,
           } as any,
