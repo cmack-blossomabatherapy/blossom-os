@@ -4215,16 +4215,16 @@ function UsersModule() {
           <TableFilterBar
             search={{ value: uq, onChange: setUq, placeholder: "Search users by name, email, phone..." }}
             filters={[
-              { key: "role", label: "Role", value: roleF, onChange: setRoleF, options: [
+              { key: "role", label: "Role", value: roleF, onChange: setRoleF, countSource: s.users, countValue: (u) => (u as CrmUser).role, options: [
                 { value: "all", label: "All roles" },
                 ...CRM_ROLES.map((r) => ({ value: r.id, label: r.label })),
               ] },
-              { key: "status", label: "Status", value: statusF, onChange: setStatusF, options: [
+              { key: "status", label: "Status", value: statusF, onChange: setStatusF, countSource: s.users, countValue: (u) => ((u as CrmUser).active !== false ? "active" : "inactive"), options: [
                 { value: "all", label: "All statuses" },
                 { value: "active", label: "Active" },
                 { value: "inactive", label: "Inactive" },
               ] },
-              { key: "state", label: "State", value: stateF, onChange: setStateF, options: [
+              { key: "state", label: "State", value: stateF, onChange: setStateF, countSource: s.users, countValue: (u) => (u as CrmUser).states ?? [], options: [
                 { value: "all", label: "All states" },
                 ...STATES.map((st) => ({ value: st, label: st })),
               ] },
