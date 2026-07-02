@@ -15,10 +15,9 @@ import type { Resource, ResourceType } from "@/lib/resources/resourceData";
  * HR Team Resource Library — data-driven page.
  *
  * All content is pulled from the shared `hr_resources` table via
- * `useLibraryResources`. There is NO hardcoded `const resources` array,
- * no "Skeleton" badges, no `placeholder: true`. Monday.com is only shown
- * as a "Legacy reference" chip if a resource explicitly mentions it in
- * its tags/description.
+ * `useLibraryResources`. There is NO hardcoded resources array and no
+ * placeholder skeleton entries. Monday.com is only shown as a "Legacy
+ * reference" chip if a resource explicitly mentions it in its metadata.
  */
 
 type WorkflowKey =
