@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
+import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +22,12 @@ interface Employee {
   id: string; first_name: string; last_name: string; job_title: string;
   state: string; status: string; start_date: string | null;
 }
-interface Onboarding { id: string; employee_id: string; status: string; blockers: string[] | null; }
+interface Onboarding extends OnboardingReadinessRow {
+  id: string;
+  employee_id: string;
+  status: string;
+  blockers: string[] | null;
+}
 interface Training {
   id: string; employee_id: string; course_id: string; status: string;
   due_date: string | null; expires_on: string | null; completed_at: string | null;
@@ -162,7 +168,7 @@ function useData(reloadKey = 0) {
       const [dq, eq, oq, tq, cq] = await Promise.all([
         supabase.from("employee_documents_hr").select("*").order("expires_on", { nullsFirst: false }),
         supabase.from("employees").select("id,first_name,last_name,job_title,state,status,start_date").order("last_name"),
-        supabase.from("employee_onboarding").select("id,employee_id,status,blockers"),
+        supabase.from("employee_onboarding").select("id,employee_id,status,blockers,viventium_status,viventium_synced_at,viventium_notes,stellar_status,stellar_synced_at,stellar_notes,centralreach_status,centralreach_synced_at,centralreach_notes"),
         supabase.from("employee_trainings").select("id,employee_id,course_id,status,due_date,expires_on,completed_at"),
         supabase.from("training_courses").select("id,title"),
       ]);
@@ -653,6 +659,12 @@ export default function OSHRCompliance() {
                     {openEmp.start_date && ` · starts ${fmtDate(openEmp.start_date)}`}
                   </p>
                 </Card>
+              </section>
+
+              {/* Integration readiness (honest per-provider status) */}
+              <section>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Integration readiness</p>
+                <IntegrationReadinessPanel row={openOnb ?? {}} />
               </section>
 
               {/* Documents */}
