@@ -551,7 +551,7 @@ export default function OSHROrientationQueue() {
             <section>
               <div className="flex items-end justify-between mb-3">
                 <h2 className="text-base font-medium tracking-tight">Staffing readiness</h2>
-                <Link to="/staffing" className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+                <Link to="/ops/staffing?tab=apploi" className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
                   Open staffing <ArrowRight className="h-3 w-3" strokeWidth={1.75} />
                 </Link>
               </div>
