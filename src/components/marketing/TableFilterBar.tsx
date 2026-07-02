@@ -184,6 +184,9 @@ export function TableFilterBar({
               totalCount={group.totalCount}
               collapsed={collapsedSet.has(group.label)}
               onToggle={() => toggleCollapsed(group.label)}
+              isMulti={group.isMulti}
+              onSelectAll={group.onSelectAll}
+              allSelected={group.allSelected}
             />
           ))}
           {activeFilters.length > 0 && (
