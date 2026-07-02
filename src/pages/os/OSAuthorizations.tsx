@@ -228,6 +228,7 @@ type Filters = {
 const STAGE_TO_VIEW: Record<string, ViewId> = {
   awaiting: "awaiting", submitted: "submitted", approved: "approved",
   expiring: "expiring", qa: "qa", denied: "denied", missing: "missing",
+  missing_docs: "missing",
   pr: "needs_pr", high_risk: "high_risk", mine: "mine", recent: "recent",
 };
 function paramToView(params: URLSearchParams): ViewId | null {
