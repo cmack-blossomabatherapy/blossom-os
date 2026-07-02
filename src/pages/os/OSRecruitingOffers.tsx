@@ -191,9 +191,7 @@ export default function OSRecruitingOffers() {
     [liveOfferByName],
   );
 
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
-    Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
-  );
+  const stageMap = useMemo<Record<string, StageKey>>(() => ({}), []);
   const [activeChip, setActiveChip] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [state, setState] = useState<string>("all");
@@ -281,7 +279,6 @@ export default function OSRecruitingOffers() {
   const selected = selectedId ? recruitingCandidates.find((c) => c.id === selectedId) ?? null : null;
 
   function moveStage(id: string, to: StageKey) {
-    setStageMap((m) => ({ ...m, [id]: to }));
     void runPageStageMove(mutations, "offers", id, to);
     // Persist the offer status directly when the candidate has a live
     // recruiting_offers row. Stage moves that don't map to an offer status

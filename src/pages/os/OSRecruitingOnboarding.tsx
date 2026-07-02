@@ -203,9 +203,7 @@ export default function OSRecruitingOnboarding() {
     [liveOnboardingByName],
   );
 
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
-    Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
-  );
+  const stageMap = useMemo<Record<string, StageKey>>(() => ({}), []);
   const [activeChip, setActiveChip] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [state, setState] = useState<string>("all");
@@ -303,7 +301,6 @@ export default function OSRecruitingOnboarding() {
   const selected = selectedId ? recruitingCandidates.find((c) => c.id === selectedId) ?? null : null;
 
   function moveStage(id: string, to: StageKey) {
-    setStageMap((m) => ({ ...m, [id]: to }));
     void runPageStageMove(mutations, "onboarding", id, to);
   }
   function onDragStart(e: React.DragEvent, id: string) {

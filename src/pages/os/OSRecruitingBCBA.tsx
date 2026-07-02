@@ -126,11 +126,7 @@ export default function OSRecruitingBCBA() {
     []
   );
 
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() => {
-    const m: Record<string, StageKey> = {};
-    baseCandidates.forEach((c) => { m[c.id] = classify(c); });
-    return m;
-  });
+  const stageMap = useMemo<Record<string, StageKey>>(() => ({}), []);
 
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
@@ -228,7 +224,7 @@ export default function OSRecruitingBCBA() {
 
   const selected = selectedId ? baseCandidates.find((c) => c.id === selectedId) ?? null : null;
 
-  function moveStage(id: string, to: StageKey) { setStageMap((m) => ({ ...m, [id]: to }));
+  function moveStage(id: string, to: StageKey) {
     void runPageStageMove(mutations, "bcba", id, to); }
   // expose canonical mapping for downstream UI badges
   const canonicalFor = (k: StageKey) => mapBcbaStageToCanonical(k);

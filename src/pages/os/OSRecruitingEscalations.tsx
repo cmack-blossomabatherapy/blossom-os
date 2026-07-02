@@ -353,8 +353,7 @@ export default function OSRecruitingEscalations() {
   }, [base]);
   // Optimistic UI map; real status persists via mutations.resolveEscalation /
   // mutations.updateEscalation for rows that originated in the live table.
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(defaults);
-  useEffect(() => { setStageMap(defaults); }, [defaults]);
+  const stageMap = useMemo<Record<string, StageKey>>(() => ({}), []);
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
@@ -462,7 +461,6 @@ export default function OSRecruitingEscalations() {
 
   function moveStage(id: string, to: StageKey) {
     const item = base.find((e) => e.id === id);
-    setStageMap((m) => ({ ...m, [id]: to }));
     // Persist for rows that originated from the live table (uuid ids).
     if (item && /^[0-9a-f-]{36}$/i.test(id)) {
       if (to === "resolved") void mutations.resolveEscalation(id);
