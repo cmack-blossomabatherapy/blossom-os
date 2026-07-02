@@ -2155,10 +2155,43 @@ export function ProviderCredentialingPage() {
   const [openRecord, setOpenRecord] = useState<string | null>(null);
   const [openProvider, setOpenProvider] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [providerType, setProviderType] = useState<string>("ALL");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [active, setActive] = useState<"all" | "active" | "inactive">("all");
+  const [expWindow, setExpWindow] = useState<"any" | "30" | "60" | "90">("any");
+  const [missingCr, setMissingCr] = useState(false);
+  const [missingDocs, setMissingDocs] = useState(false);
 
-  const list = providers.filter((p) =>
-    !q || p.provider_name.toLowerCase().includes(q.toLowerCase()) || (p.npi ?? "").includes(q)
-  );
+  const list = useMemo(() => providers.filter((p) => {
+    const query = q.trim().toLowerCase();
+    const matchesQ = !query
+      || p.provider_name.toLowerCase().includes(query)
+      || (p.npi ?? "").toLowerCase().includes(query)
+      || (p.caqh_id ?? "").toLowerCase().includes(query)
+      || (p.license_number ?? "").toLowerCase().includes(query);
+    if (!matchesQ) return false;
+    if (providerType !== "ALL" && p.provider_type !== providerType) return false;
+    if (stateFilter !== "ALL" && p.license_state !== stateFilter) return false;
+    if (active === "active" && !p.active) return false;
+    if (active === "inactive" && p.active) return false;
+    if (expWindow !== "any") {
+      const d = daysUntil(p.license_expiration_date);
+      const w = Number(expWindow);
+      if (d === null || d < 0 || d > w) return false;
+    }
+    if (missingCr && p.centralreach_provider_id) return false;
+    if (missingDocs) {
+      const hasDocs = documents.some((d) => d.provider_id === p.id);
+      if (hasDocs) return false;
+    }
+    return true;
+  }), [providers, documents, q, providerType, stateFilter, active, expWindow, missingCr, missingDocs]);
+
+  const hasFilters = !!q || providerType !== "ALL" || stateFilter !== "ALL" || active !== "all" || expWindow !== "any" || missingCr || missingDocs;
+  const clearFilters = () => {
+    setQ(""); setProviderType("ALL"); setStateFilter("ALL"); setActive("all");
+    setExpWindow("any"); setMissingCr(false); setMissingDocs(false);
+  };
 
   function startFor(providerId: string) { setDefaultProv(providerId); setAddRec(true); }
 
@@ -2169,18 +2202,72 @@ export function ProviderCredentialingPage() {
         title="Provider Credentialing"
         subtitle="Provider directory with payer/state coverage, licensing, and CentralReach readiness."
         icon={Stethoscope}
-        actions={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add provider</Button>}
+        actions={
+          <>
+            <Button size="sm" variant="outline" onClick={() => exportCsv("providers.csv", list as unknown as Record<string, unknown>[])}>
+              <Download className="h-4 w-4 mr-1.5" />Export CSV
+            </Button>
+            <Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add provider</Button>
+          </>
+        }
       />
       <LoadErr loading={loading} error={error} />
-      <div className="flex items-center gap-2">
+      <FromReportsBanner />
+      <div className="flex items-center gap-2 flex-wrap">
         <div className="relative max-w-sm w-full">
           <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search providers or NPI…" className="pl-7 h-9" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, NPI, CAQH, license…" className="pl-7 h-9" />
         </div>
+        <Select value={providerType} onValueChange={setProviderType}>
+          <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Type" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All types</SelectItem>{CRED_PROVIDER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All states</SelectItem>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={active} onValueChange={(v) => setActive(v as "all" | "active" | "inactive")}>
+          <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="active">Active only</SelectItem>
+            <SelectItem value="inactive">Inactive only</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={expWindow} onValueChange={(v) => setExpWindow(v as "any" | "30" | "60" | "90")}>
+          <SelectTrigger className="h-9 w-44"><SelectValue placeholder="License expiring" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="any">License: any</SelectItem>
+            <SelectItem value="30">Expiring &lt; 30 days</SelectItem>
+            <SelectItem value="60">Expiring &lt; 60 days</SelectItem>
+            <SelectItem value="90">Expiring &lt; 90 days</SelectItem>
+          </SelectContent>
+        </Select>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={missingCr} onCheckedChange={setMissingCr} /> Missing CR ID
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={missingDocs} onCheckedChange={setMissingDocs} /> Missing docs
+        </label>
+        {hasFilters && (
+          <Button size="sm" variant="ghost" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Clear</Button>
+        )}
       </div>
       <SectionCard title={`${list.length} provider${list.length === 1 ? "" : "s"}`} description="Each row shows credentialing posture across payers.">
         {list.length === 0 ? (
-          <Empty title="No providers yet" action={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1" />Add provider</Button>} />
+          hasFilters ? (
+            <Empty
+              title="No providers match these filters"
+              description="Try clearing filters or widening your search."
+              action={<Button size="sm" variant="outline" onClick={clearFilters}><X className="h-4 w-4 mr-1" />Clear filters</Button>}
+            />
+          ) : (
+            <Empty
+              title="No providers yet"
+              description="Add clinicians and other credentialable staff so you can start tracking payer coverage, licensing, and CentralReach IDs."
+              action={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1" />Add provider</Button>}
+            />
+          )
         ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
