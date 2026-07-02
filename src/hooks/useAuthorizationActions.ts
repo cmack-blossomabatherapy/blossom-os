@@ -74,6 +74,7 @@ export interface ExternalSendInput {
   recordId: string;
   channel: "outlook" | "email" | "sms" | "phone";
   summary: string;
+  recipientLabel?: string | null;
 }
 
 async function currentUserId(): Promise<string | null> {
@@ -421,12 +422,26 @@ export function useAuthorizationActions(): AuthorizationActions {
     (input, send) =>
       run("External send", async () => {
         const id = await ensureOverlay(input);
+        const when = new Date().toISOString();
+        const recipient = send.recipientLabel ?? "recipient";
         await logActivity({
           recordId: id,
           activityType: "external_send_pending",
-          description: `${CHANNEL_LABEL[send.channel]} send queued — integration pending. ${send.summary}`,
+          description: `${CHANNEL_LABEL[send.channel]} send queued for ${recipient} at ${when} — external integration pending. ${send.summary}`,
           newValue: send.channel,
         });
+        // Follow-up task so a coordinator/owner can manually send or confirm.
+        try {
+          await createTask({
+            recordId: id,
+            title: `Manual follow-up: ${CHANNEL_LABEL[send.channel]} ${recipient}`,
+            ownerLabel: null,
+            dueDate: new Date(Date.now() + 86_400_000).toISOString().slice(0, 10),
+            notes: `External send integration pending. ${send.summary}`,
+          });
+        } catch {
+          // Task creation is best-effort; the audit activity above is the source of truth.
+        }
       }, `${CHANNEL_LABEL[send.channel]} send queued — integration pending`),
     [run],
   );
