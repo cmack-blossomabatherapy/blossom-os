@@ -310,6 +310,7 @@ export default function OSHROrientationQueue() {
   const openCand = openCandId ? candById[openCandId] : null;
   const openSlot = openCand ? slotByCand.get(openCand.id) : undefined;
   const openBg = openCand ? bgByCand.get(openCand.id) : undefined;
+  const [scheduleFor, setScheduleFor] = useState<Candidate | null>(null);
 
   return (
     <OSShell>
@@ -328,7 +329,14 @@ export default function OSHROrientationQueue() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <HeaderBtn icon={Calendar} to="/hr/new-hires">Schedule orientation</HeaderBtn>
+            <HeaderBtn icon={Calendar} onClick={() => {
+              // Prefer opening scheduler for the selected candidate; otherwise
+              // pick the first candidate without a slot.
+              const target = openCand
+                ?? d.candidates.find((c: any) => !slotByCand.get(c.id)) as Candidate | undefined;
+              if (!target) { toast({ title: "No candidate to schedule" }); return; }
+              setScheduleFor(target);
+            }}>Schedule orientation</HeaderBtn>
             <HeaderBtn icon={Send} onClick={async () => {
               const scheduled = (d.candidates ?? []).filter((c: any) => {
                 const slot = (d.slots ?? []).find((s: any) => s.candidate_id === c.id);
@@ -687,6 +695,16 @@ export default function OSHROrientationQueue() {
           onClose={() => setOpenCandId(null)}
           onChanged={() => { void d.reload(); }}
           onMessage={() => navigate("/hr/messages")}
+          toast={toast}
+          onSchedule={() => setScheduleFor(openCand)}
+        />
+      )}
+
+      {scheduleFor && (
+        <ScheduleOrientationDialog
+          cand={scheduleFor}
+          onClose={() => setScheduleFor(null)}
+          onSaved={() => { setScheduleFor(null); void d.reload(); }}
           toast={toast}
         />
       )}
