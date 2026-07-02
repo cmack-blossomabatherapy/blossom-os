@@ -773,10 +773,17 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
             <div className="grid grid-cols-2 gap-2 text-[12.5px]">
               <StatusRow label="Background check" value={bg?.status ?? (emp ? "n/a" : "not started")} tone={bg?.status === "cleared" ? "ok" : bg?.status === "flagged" ? "crit" : "warn"} />
               <StatusRow label="Orientation" value={orient?.status ?? (emp?.status === "active" ? "completed" : "pending")} tone={orient?.status === "completed" ? "ok" : orient?.status === "missed" ? "crit" : "warn"} />
-              <StatusRow label="Viventium" value={emp ? "synced" : "pending"} tone={emp ? "ok" : "warn"} />
               <StatusRow label="Training" value={trs.length ? `${trs.filter((t) => t.status === "completed").length}/${trs.length}` : "—"} tone={trs.length && trs.every((t) => t.status === "completed") ? "ok" : "muted"} />
             </div>
           </div>
+
+          {/* Integration readiness — honest per-provider status */}
+          {onb && (
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Integration readiness</p>
+              <IntegrationReadinessPanel row={onb} />
+            </div>
+          )}
 
           {/* Tasks */}
           {tasks.length > 0 && (
