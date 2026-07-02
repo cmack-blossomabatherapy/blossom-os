@@ -138,6 +138,7 @@ import AiMemory from "./pages/admin/ai/Memory";
 import AiAnalytics from "./pages/admin/ai/Analytics";
 import AiAppearance from "./pages/admin/ai/Appearance";
 import Integrations from "./pages/admin/Integrations";
+import IntegrationIngestAdminPage from "./pages/admin/IntegrationIngest";
 import JourneyHub from "./pages/hr/JourneyHub";
 import JourneyDrive from "./pages/hr/JourneyDrive";
 import LeadershipDashboard from "./pages/LeadershipDashboard";
@@ -1083,6 +1084,7 @@ const App = () => (
                   <Route path="/admin/knowledge-base" element={<PermissionRoute allowedRoles={["admin"]}><KnowledgeBase /></PermissionRoute>} />
                   <Route path="/admin/ai-audit" element={<PermissionRoute allowedRoles={["admin"]}><AiAuditLog /></PermissionRoute>} />
                   <Route path="/admin/integrations" element={<PermissionRoute allowedRoles={["admin"]}><Integrations /></PermissionRoute>} />
+                  <Route path="/admin/integration-ingest" element={<AdminRoute><IntegrationIngestAdminPage /></AdminRoute>} />
                   <Route path="/admin/mapsly" element={<PermissionRoute allowedRoles={["admin"]}><MapslyHub /></PermissionRoute>} />
                   <Route path="/mileage" element={<MileageCenter />} />
                   <Route path="/bd/territories" element={<BDTerritories />} />
