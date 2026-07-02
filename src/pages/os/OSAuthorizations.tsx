@@ -855,13 +855,17 @@ function AuthDrawer({
           <Button
             size="sm"
             variant="outline"
-            title="Outbound email/SMS integration is pending — message is logged to the activity feed."
+            title="Outbound email/SMS integration is pending — queues an audit entry and a follow-up task for the coordinator to send manually."
             onClick={() => {
-              void runRefresh(() => actions.queueExternalSend(overlay, { channel: "email", summary: `Message BCBA ${e.bcba}` }));
-              toast.info("Message queued", { description: "External send integration pending — logged to activity feed." });
+              void runRefresh(() => actions.queueExternalSend(overlay, {
+                channel: "email",
+                recipientLabel: e.bcba,
+                summary: `Message BCBA ${e.bcba}`,
+              }));
+              toast.info("Follow-up queued", { description: "External send integration pending — logged an audit entry and created a follow-up task." });
             }}
           >
-            <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message BCBA
+            <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Queue Message Follow-Up
             <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700">Queued</span>
           </Button>
           <Button size="sm" variant="outline" onClick={() => setNoteDialogOpen(true)}>
