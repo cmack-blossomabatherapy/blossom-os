@@ -3,7 +3,8 @@ import { Navigate } from "react-router-dom";
 import {
   Stethoscope, Building2, IdCard, AlertTriangle, Calendar, Plus, Filter,
   Download, RefreshCw, ListChecks, FileSignature, ShieldCheck, Activity,
-  Search, X, Trash2, Upload, FileText, ListTodo, type LucideIcon,
+  Search, X, Trash2, Upload, FileText, ListTodo, BarChart3, Save, BookmarkPlus,
+  type LucideIcon,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
