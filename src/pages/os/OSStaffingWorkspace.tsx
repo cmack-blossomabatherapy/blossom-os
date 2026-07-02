@@ -855,13 +855,15 @@ function PreferencesTab() {
 
 /* ============================== Live Map tab ============================ */
 
-function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
+function LiveMapTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
   const { clients } = useClients();
   const { preferences } = useStaffingWorkspace();
   const needs = useMemo(() => getClientStaffingNeeds(clients), [clients]);
   const [stateFilter, setStateFilter] = useState<string>("ALL");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [proposeOpen, setProposeOpen] = useState(false);
+  const [preselectRbtId, setPreselectRbtId] = useState<string | null>(null);
+  const [drawerClient, setDrawerClient] = useState<Client | null>(null);
 
   const states = Array.from(new Set([...needs.map((n) => n.client.state), ...mockRBTProfiles.map((r) => r.state)])).sort();
   const visibleNeeds = needs.filter((n) => stateFilter === "ALL" || n.client.state === stateFilter);
@@ -1003,7 +1005,11 @@ function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
               {selectedNeed ? `RBTs near ${selectedNeed.client.childName}` : `Available RBTs (${visibleRBTs.length})`}
             </h3>
             {selectedNeed && (
-              <Button size="sm" onClick={() => setProposeOpen(true)}>Propose match</Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => setDrawerClient(selectedNeed.client)}>Open case</Button>
+                <Button size="sm" variant="outline" onClick={() => setTab("match-queue")}>Match Queue</Button>
+                <Button size="sm" onClick={() => { setPreselectRbtId(null); setProposeOpen(true); }}>Propose match</Button>
+              </div>
             )}
           </div>
           <div className="space-y-2 max-h-[520px] overflow-y-auto">
@@ -1050,6 +1056,17 @@ function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
                     {scored && (
                       <span className="text-sm font-semibold">{scored.score}</span>
                     )}
+                    {selectedNeed && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        disabled={!!scored?.blocked}
+                        onClick={() => { setPreselectRbtId(r.id); setProposeOpen(true); }}
+                      >
+                        Propose
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
@@ -1061,7 +1078,8 @@ function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
       {selectedNeed && (
         <ProposeMatchDialog
           open={proposeOpen}
-          onOpenChange={setProposeOpen}
+          onOpenChange={(o) => { setProposeOpen(o); if (!o) setPreselectRbtId(null); }}
+          initialRbtId={preselectRbtId}
           caseInfo={{
             id: selectedNeed.client.id,
             childName: selectedNeed.client.childName,
@@ -1072,6 +1090,12 @@ function LiveMapTab({ setTab: _setTab }: { setTab: (t: StaffingTab) => void }) {
           preferences={preferences}
         />
       )}
+      <CaseDetailDrawer
+        open={!!drawerClient}
+        onOpenChange={(o) => !o && setDrawerClient(null)}
+        client={drawerClient}
+        onJumpQueue={() => { setTab("match-queue"); setDrawerClient(null); }}
+      />
     </div>
   );
 }
