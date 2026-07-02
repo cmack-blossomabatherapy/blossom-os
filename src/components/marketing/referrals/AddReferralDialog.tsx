@@ -79,8 +79,9 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
     setSaving(true);
     try {
       let resolvedCompanyId: string | null = null;
-      if (companyMode === "existing" && companyId) resolvedCompanyId = companyId;
-      else if (companyMode === "new" && newCompanyName.trim()) {
+      // Resolve permissively: whichever signal is present wins so the link
+      // is never silently lost if the user forgot to toggle the mode.
+      if (companyMode === "new" && newCompanyName.trim()) {
         resolvedCompanyId = await findOrCreateCompany({
           company_name: newCompanyName.trim(),
           company_type: newCompanyType || null,
@@ -97,6 +98,31 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
           relationship_owner: owners.length ? owners : null,
           source: "Manual",
         });
+      } else if (companyId) {
+        resolvedCompanyId = companyId;
+      } else if (newCompanyName.trim()) {
+        resolvedCompanyId = await findOrCreateCompany({
+          company_name: newCompanyName.trim(),
+          company_type: newCompanyType || null,
+          website_url: newCompanyWebsite || null,
+          domain: extractDomain(newCompanyEmail || email, newCompanyWebsite),
+          state: newCompanyState || null,
+          main_phone: newCompanyPhone || null,
+          main_email: newCompanyEmail || null,
+          city: newCompanyCity || null,
+          address_line_1: newCompanyAddr1 || null,
+          zip_code: newCompanyZip || null,
+          relationship_stage: newCompanyStage || null,
+          notes: newCompanyNotes || null,
+          relationship_owner: owners.length ? owners : null,
+          source: "Manual",
+        });
+      }
+      if (!resolvedCompanyId && companyMode !== "none") {
+        const proceed = window.confirm(
+          "No company is linked to this contact yet. Save without a company?\n\nTip: choose an existing company or use \"Create new\" to link one now.",
+        );
+        if (!proceed) { setSaving(false); return; }
       }
       await createContact({
         company_id: resolvedCompanyId,
@@ -185,12 +211,20 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
               ))}
             </div>
             {companyMode === "existing" && (
-              <Select value={companyId} onValueChange={setCompanyId}>
-                <SelectTrigger><SelectValue placeholder="Choose a company" /></SelectTrigger>
-                <SelectContent>
-                  {sortedCompanies.map((c) => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Select value={companyId} onValueChange={(v) => { if (v === "__create__") { setCompanyMode("new"); setCompanyId(""); } else setCompanyId(v); }}>
+                  <SelectTrigger><SelectValue placeholder="Choose a company" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__create__">+ Create new company…</SelectItem>
+                    {sortedCompanies.map((c) => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {companyId && (
+                  <p className="text-xs text-emerald-600">
+                    Linked to {sortedCompanies.find((c) => c.id === companyId)?.company_name ?? "company"}
+                  </p>
+                )}
+              </div>
             )}
             {companyMode === "new" && (
               <div className="grid grid-cols-2 gap-3">
