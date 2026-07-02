@@ -12,7 +12,7 @@ describe("App.tsx legacy dashboard redirects", () => {
       { from: '"/intake-dashboard"', to: '"/intake"' },
       { from: '"/authorizations-dashboard"', to: '"/authorizations"' },
       { from: '"/scheduling-dashboard"', to: '"/scheduling"' },
-      { from: '"/staffing-dashboard"', to: '"/staffing"' },
+      { from: '"/staffing-dashboard"', to: '"/ops/staffing?tab=open-cases"' },
       { from: '"/qa-dashboard"', to: '"/qa-workspace"' },
       { from: '"/finance-dashboard"', to: '"/billing-finance"' },
       { from: '"/recruiting-dashboard"', to: '"/recruiting/workspace"' },
