@@ -237,32 +237,63 @@ function OSLeadsV2Inner() {
   const [profileState, setProfileState] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
 
-  // Hydrate UI state from URL on first render so deep-links work.
-  const [view, setView] = useState<ViewMode>(() => {
-    const v = searchParams.get("view") as ViewMode | null;
-    return v && VIEW_MODES.includes(v) ? v : "list";
-  });
-  const [query, setQuery] = useState<string>(() => searchParams.get("q") ?? "");
-  const [filters, setFilters] = useState<FilterState>(() => filtersFromParams(searchParams));
-  const [activeKpi, setActiveKpi] = useState<string | null>(() => searchParams.get("kpi"));
-  const [activeTab, setActiveTab] = useState<string>(() => searchParams.get("tab") || "all");
-  const [openLeadId, setOpenLeadId] = useState<string | null>(null);
-  // Export 89: open the drawer when navigated to /leads?lead=<id>.
-  useEffect(() => {
-    const id = searchParams.get("lead");
-    if (id) {
-      setOpenLeadId(id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
-  const [page, setPage] = useState(0);
+  // All view state is derived from the URL so browser back/forward restores
+  // filters, search, tab, sort, pagination, and the open drawer exactly.
+  const viewParam = searchParams.get("view") as ViewMode | null;
+  const view: ViewMode = viewParam && VIEW_MODES.includes(viewParam) ? viewParam : "list";
+  const query = searchParams.get("q") ?? "";
+  const filters = useMemo(() => filtersFromParams(searchParams), [searchParams]);
+  const activeKpi = searchParams.get("kpi");
+  const activeTab = searchParams.get("tab") || "all";
+  const openLeadId = searchParams.get("lead") || null;
+  const page = Math.max(0, (Number(searchParams.get("p")) || 1) - 1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+
+  /** Mutate URL params. Push by default so back/forward traverses UI state. */
+  const updateParams = (
+    mutate: (p: URLSearchParams) => void,
+    opts?: { replace?: boolean },
+  ) => {
+    const next = new URLSearchParams(searchParams);
+    mutate(next);
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: opts?.replace ?? false });
+    }
+  };
+  const resetPage = (p: URLSearchParams) => p.delete("p");
+  const setView = (v: ViewMode) =>
+    updateParams((p) => { if (v === "list") p.delete("view"); else p.set("view", v); });
+  // Typing shouldn't spam history — mirror query with replace, then reset page.
+  const setQuery = (v: string) =>
+    updateParams((p) => {
+      const t = v.trim();
+      if (t) p.set("q", t); else p.delete("q");
+      resetPage(p);
+    }, { replace: true });
+  const setFilters = (next: FilterState | ((f: FilterState) => FilterState)) =>
+    updateParams((p) => {
+      const nextFilters = typeof next === "function" ? next(filtersFromParams(p)) : next;
+      const params = applyStateToParams(p, {
+        view, tab: activeTab, kpi: activeKpi, query, filters: nextFilters,
+      });
+      // applyStateToParams returns a fresh object, copy back into p.
+      Array.from(p.keys()).forEach((k) => p.delete(k));
+      params.forEach((val, k) => p.set(k, val));
+      resetPage(p);
+    });
+  const setActiveKpi = (k: string | null) =>
+    updateParams((p) => { if (k) p.set("kpi", k); else p.delete("kpi"); resetPage(p); });
+  const setActiveTab = (t: string) =>
+    updateParams((p) => { if (t && t !== "all") p.set("tab", t); else p.delete("tab"); resetPage(p); });
+  const setOpenLeadId = (id: string | null) =>
+    updateParams((p) => { if (id) p.set("lead", id); else p.delete("lead"); });
+  const setPage = (n: number) =>
+    updateParams((p) => { if (n > 0) p.set("p", String(n + 1)); else p.delete("p"); });
 
   // Manual lead creation (Add Lead button + ?new=1 deep link).
   const [newLeadOpen, setNewLeadOpen] = useState<boolean>(() => searchParams.get("new") === "1");
   useEffect(() => {
     if (searchParams.get("new") === "1") setNewLeadOpen(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
   const handleNewLeadOpenChange = (next: boolean) => {
     setNewLeadOpen(next);
@@ -272,17 +303,6 @@ function OSLeadsV2Inner() {
       setSearchParams(params, { replace: true });
     }
   };
-
-  // Mirror state → URL. Uses replace so filter tweaks don't pollute history.
-  useEffect(() => {
-    const next = applyStateToParams(searchParams, {
-      view, tab: activeTab, kpi: activeKpi, query, filters,
-    });
-    if (next.toString() !== searchParams.toString()) {
-      setSearchParams(next, { replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, activeTab, activeKpi, query, filters]);
 
   // Load profile state + display_name for scoping.
   useEffect(() => {
@@ -335,9 +355,6 @@ function OSLeadsV2Inner() {
       return true;
     });
   }, [scopedLeads, query, filters, activeKpi, activeTab]);
-
-  // Reset page on filter changes
-  useEffect(() => { setPage(0); }, [query, filters, activeKpi, view, activeTab]);
 
   // Drop selected ids that are no longer visible after filtering.
   useEffect(() => {
