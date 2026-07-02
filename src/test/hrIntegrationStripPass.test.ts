@@ -26,9 +26,9 @@ describe("HR integration status strip wiring", () => {
     expect(src).toContain("centralreach");
   });
 
-  it("strip never claims 'synced' unless catalog is connected", () => {
+  it("strip only labels a provider connected when catalog status === 'connected'", () => {
     const src = readFileSync("src/components/hr/HRIntegrationStatusStrip.tsx", "utf8");
-    // We removed synced messaging; ensure no fabricated 'synced' string.
-    expect(src).not.toMatch(/"synced"/);
+    expect(src).toContain('status === "connected"');
+    expect(src).toContain('"not connected"');
   });
 });
