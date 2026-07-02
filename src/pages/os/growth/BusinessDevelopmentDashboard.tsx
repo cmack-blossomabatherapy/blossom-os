@@ -462,6 +462,7 @@ export default function BusinessDevelopmentDashboard() {
                 <SelectItem value="overdue">Overdue</SelectItem>
                 <SelectItem value="week">Due this week</SelectItem>
                 <SelectItem value="done">Completed</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
             <FilterSelect value={taskPriority} onChange={setTaskPriority} label="Priority" options={[...PRIORITIES]} />
@@ -473,6 +474,12 @@ export default function BusinessDevelopmentDashboard() {
             const list = tasks.filter((t) => {
               if (taskPartner !== "all" && t.company_id !== taskPartner) return false;
               if (taskPriority !== "all" && t.priority !== taskPriority) return false;
+              const isArchived = !!t.archived_at;
+              if (taskStatusFilter === "archived") {
+                if (!isArchived) return false;
+              } else if (isArchived) {
+                return false;
+              }
               switch (taskStatusFilter) {
                 case "open": if (t.status !== "Open") return false; break;
                 case "done": if (t.status !== "Done") return false; break;
@@ -489,7 +496,10 @@ export default function BusinessDevelopmentDashboard() {
               {list.map((t) => (
                 <div key={t.id} className="rounded-xl border border-border/60 bg-card p-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className={`text-sm font-medium ${t.status === "Done" ? "line-through text-muted-foreground" : ""}`}>{t.title}</div>
+                    <div className={`text-sm font-medium ${t.status === "Done" ? "line-through text-muted-foreground" : ""}`}>
+                      {t.title}
+                      {t.archived_at && <Badge variant="secondary" className="ml-2 align-middle">Archived</Badge>}
+                    </div>
                     <div className="text-xs text-muted-foreground">{partnerName(t.company_id)} - {t.due_date ?? "no due"} - {t.priority ?? "Medium"}</div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -499,7 +509,13 @@ export default function BusinessDevelopmentDashboard() {
                         if (p) setDetailPartner(p);
                       }}><Eye className="h-3.5 w-3.5" /></Button>
                     )}
-                    <Button size="sm" variant={t.status === "Done" ? "ghost" : "outline"} onClick={() => handleToggleTask(t)}>
+                    <Button size="sm" variant="ghost" onClick={() => setEditTask(t)} title="Edit">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleArchiveTask(t)} title={t.archived_at ? "Restore" : "Archive"}>
+                      {t.archived_at ? <Archive className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                    </Button>
+                    <Button size="sm" variant={t.status === "Done" ? "ghost" : "outline"} onClick={() => handleToggleTask(t)} disabled={!!t.archived_at}>
                       <CheckCircle2 className="h-4 w-4 mr-1.5" /> {t.status === "Done" ? "Reopen" : "Complete"}
                     </Button>
                   </div>
