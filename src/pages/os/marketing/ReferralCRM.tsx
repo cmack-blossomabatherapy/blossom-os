@@ -1900,6 +1900,18 @@ function ListsModule() {
   const editing = useMemo(() => s.lists.find((l) => l.id === editingId) ?? null, [s.lists, editingId]);
   const staticList = useMemo(() => s.lists.find((l) => l.id === staticListIdForAdd) ?? null, [s.lists, staticListIdForAdd]);
 
+  const [q, setQ] = useState("");
+  const [kindF, setKindF] = useState<string>("all");
+  const [objectF, setObjectF] = useState<string>("all");
+  const filteredLists = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return s.lists.filter((l) =>
+      (kindF === "all" || l.kind === kindF) &&
+      (objectF === "all" || l.object === objectF) &&
+      (!needle || l.name.toLowerCase().includes(needle))
+    );
+  }, [s.lists, q, kindF, objectF]);
+
   return (
     <div className="space-y-4">
       <SectionHeader
@@ -1907,8 +1919,31 @@ function ListsModule() {
         subtitle="Static lists hold a manual set of records. Active lists evaluate criteria live."
         right={<Button size="sm" onClick={() => setCreating(true)}><Plus className="size-4 mr-1" />Create list</Button>}
       />
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search lists by name..." }}
+        filters={[
+          { key: "kind", label: "Kind", value: kindF, onChange: setKindF, options: [
+            { value: "all", label: "All kinds" },
+            { value: "active", label: "Active" },
+            { value: "static", label: "Static" },
+          ] },
+          { key: "object", label: "Object", value: objectF, onChange: setObjectF, options: [
+            { value: "all", label: "All objects" },
+            { value: "contacts", label: "Contacts" },
+            { value: "companies", label: "Companies" },
+          ] },
+        ]}
+        resultCount={filteredLists.length}
+        totalCount={s.lists.length}
+        onClear={() => { setQ(""); setKindF("all"); setObjectF("all"); }}
+      />
       <div className="grid lg:grid-cols-2 gap-4">
-        {s.lists.map((l) => {
+        {filteredLists.length === 0 && (
+          <div className="col-span-full rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">
+            No lists match the current filters.
+          </div>
+        )}
+        {filteredLists.map((l) => {
           const matches = evalList(s, l);
           return (
             <div key={l.id} className="rounded-2xl border bg-card p-5">
@@ -3036,9 +3071,36 @@ function SupabaseQuickImport() {
 function ImportsModule() {
   const s = useCrm();
   const batches = s.importBatches ?? [];
+  const [q, setQ] = useState("");
+  const [statusF, setStatusF] = useState<string>("all");
+  const statuses = useMemo(
+    () => Array.from(new Set(batches.map((b) => b.status).filter(Boolean))) as string[],
+    [batches],
+  );
+  const filteredBatches = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return batches.filter((b) =>
+      (statusF === "all" || b.status === statusF) &&
+      (!needle || (b.fileName ?? "").toLowerCase().includes(needle))
+    );
+  }, [batches, q, statusF]);
   return (
     <div className="space-y-4">
       <SupabaseQuickImport />
+      {batches.length > 0 && (
+        <TableFilterBar
+          search={{ value: q, onChange: setQ, placeholder: "Search by file name..." }}
+          filters={[
+            { key: "status", label: "Status", value: statusF, onChange: setStatusF, options: [
+              { value: "all", label: "All statuses" },
+              ...statuses.map((v) => ({ value: v, label: v })),
+            ] },
+          ]}
+          resultCount={filteredBatches.length}
+          totalCount={batches.length}
+          onClear={() => { setQ(""); setStatusF("all"); }}
+        />
+      )}
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="px-4 py-3 flex items-center justify-between border-b bg-muted/30">
           <div>
@@ -3047,11 +3109,17 @@ function ImportsModule() {
               All CSV / HubSpot imports persisted to the backend (referral_import_batches).
             </p>
           </div>
-          <Badge variant="secondary" className="text-[10px]">{batches.length} batches</Badge>
+          <Badge variant="secondary" className="text-[10px]">
+            {filteredBatches.length === batches.length ? `${batches.length} batches` : `${filteredBatches.length} of ${batches.length}`}
+          </Badge>
         </div>
         {batches.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
             No imports yet. Use the importer above to add referrals into the CRM.
+          </div>
+        ) : filteredBatches.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">
+            No batches match the current filters.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -3069,7 +3137,7 @@ function ImportsModule() {
                 </tr>
               </thead>
               <tbody>
-                {batches.map((b) => (
+                {filteredBatches.map((b) => (
                   <tr key={b.id} className="border-t">
                     <td className="px-3 py-1.5">{b.fileName}</td>
                     <td className="px-3 py-1.5 text-muted-foreground">{new Date(b.uploadedAt).toLocaleString()}</td>
@@ -4092,6 +4160,23 @@ function UsersModule() {
     );
   }
 
+  const [uq, setUq] = useState("");
+  const [roleF, setRoleF] = useState<string>("all");
+  const [statusF, setStatusF] = useState<string>("all");
+  const [stateF, setStateF] = useState<string>("all");
+  const filteredUsers = useMemo(() => {
+    const needle = uq.trim().toLowerCase();
+    return s.users.filter((u) => {
+      const active = u.active !== false;
+      if (statusF === "active" && !active) return false;
+      if (statusF === "inactive" && active) return false;
+      if (roleF !== "all" && u.role !== roleF) return false;
+      if (stateF !== "all" && !(u.states ?? []).includes(stateF)) return false;
+      if (needle && !`${u.name} ${u.email} ${u.mobilePhone ?? ""}`.toLowerCase().includes(needle)) return false;
+      return true;
+    });
+  }, [s.users, uq, roleF, statusF, stateF]);
+
   return (
     <div className="space-y-4">
       {/* USERS */}
@@ -4101,6 +4186,29 @@ function UsersModule() {
           subtitle="Create, edit, and deactivate Referral CRM users."
           right={<Button size="sm" className="h-8 gap-1.5" onClick={() => setEditingUser("new")}><Plus className="size-3.5" /> New User</Button>}
         />
+        <div className="mb-3">
+          <TableFilterBar
+            search={{ value: uq, onChange: setUq, placeholder: "Search users by name, email, phone..." }}
+            filters={[
+              { key: "role", label: "Role", value: roleF, onChange: setRoleF, options: [
+                { value: "all", label: "All roles" },
+                ...CRM_ROLES.map((r) => ({ value: r.id, label: r.label })),
+              ] },
+              { key: "status", label: "Status", value: statusF, onChange: setStatusF, options: [
+                { value: "all", label: "All statuses" },
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+              ] },
+              { key: "state", label: "State", value: stateF, onChange: setStateF, options: [
+                { value: "all", label: "All states" },
+                ...STATES.map((st) => ({ value: st, label: st })),
+              ] },
+            ]}
+            resultCount={filteredUsers.length}
+            totalCount={s.users.length}
+            onClear={() => { setUq(""); setRoleF("all"); setStatusF("all"); setStateF("all"); }}
+          />
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-[11px] uppercase text-muted-foreground">
@@ -4115,7 +4223,10 @@ function UsersModule() {
               </tr>
             </thead>
             <tbody>
-              {s.users.map((u) => {
+              {filteredUsers.length === 0 && (
+                <tr><td colSpan={7} className="py-6 text-center text-muted-foreground text-xs">No users match the current filters.</td></tr>
+              )}
+              {filteredUsers.map((u) => {
                 const userTeams = s.teams.filter((t) => t.memberIds.includes(u.id));
                 return (
                   <tr key={u.id} className="border-t">
@@ -4452,6 +4563,12 @@ function DeletedModule() {
   const t = s.tasks.filter((x) => x.deletedAt);
   const archivedFiles = s.attachments.filter((x) => x.archivedAt);
 
+  const [q, setQ] = useState("");
+  const [typeF, setTypeF] = useState<string>("all");
+  const needle = q.trim().toLowerCase();
+  const matchLabel = (label: string) => !needle || label.toLowerCase().includes(needle);
+  const showType = (t: string) => typeF === "all" || typeF === t;
+
   const fileLabel = (a: Attachment): string => {
     if (a.objectType === "contact") {
       const x = s.contacts.find((y) => y.id === a.objectId); return x ? `Contact: ${fullName(x)}` : `Contact: ${a.objectId}`;
@@ -4483,21 +4600,59 @@ function DeletedModule() {
     </div>
   );
 
+  const filteredContacts = c.filter((x) => matchLabel(fullName(x)));
+  const filteredCompanies = co.filter((x) => matchLabel(x.name));
+  const filteredReferrals = r.filter((x) => matchLabel(x.name));
+  const filteredTasks = t.filter((x) => matchLabel(x.title));
+  const filteredFiles = archivedFiles.filter((a) => matchLabel(`${a.fileName} ${fileLabel(a)}`));
+  const totalMatches =
+    (showType("contacts") ? filteredContacts.length : 0) +
+    (showType("companies") ? filteredCompanies.length : 0) +
+    (showType("referrals") ? filteredReferrals.length : 0) +
+    (showType("tasks") ? filteredTasks.length : 0) +
+    (showType("files") ? filteredFiles.length : 0);
+  const totalAll = c.length + co.length + r.length + t.length + archivedFiles.length;
+
   return (
     <div className="space-y-4">
-      <Section title="Deleted Contacts" items={c.map((x) => ({ id: x.id, label: fullName(x), deletedAt: x.deletedAt }))}
-        restore={crm.restoreContact} hardDelete={crm.hardDeleteContact} />
-      <Section title="Deleted Companies" items={co.map((x) => ({ id: x.id, label: x.name, deletedAt: x.deletedAt }))}
-        restore={crm.restoreCompany} hardDelete={crm.hardDeleteCompany} />
-      <Section title="Deleted Referrals" items={r.map((x) => ({ id: x.id, label: x.name, deletedAt: x.deletedAt }))}
-        restore={crm.restoreReferral} />
-      <Section title="Deleted Tasks" items={t.map((x) => ({ id: x.id, label: x.title, deletedAt: x.deletedAt }))}
-        restore={crm.restoreTask} hardDelete={crm.hardDeleteTask} />
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search deleted items..." }}
+        filters={[
+          { key: "type", label: "Type", value: typeF, onChange: setTypeF, options: [
+            { value: "all", label: "All types" },
+            { value: "contacts", label: "Contacts" },
+            { value: "companies", label: "Companies" },
+            { value: "referrals", label: "Referrals" },
+            { value: "tasks", label: "Tasks" },
+            { value: "files", label: "Files" },
+          ] },
+        ]}
+        resultCount={totalMatches}
+        totalCount={totalAll}
+        onClear={() => { setQ(""); setTypeF("all"); }}
+      />
+      {showType("contacts") && (
+        <Section title="Deleted Contacts" items={filteredContacts.map((x) => ({ id: x.id, label: fullName(x), deletedAt: x.deletedAt }))}
+          restore={crm.restoreContact} hardDelete={crm.hardDeleteContact} />
+      )}
+      {showType("companies") && (
+        <Section title="Deleted Companies" items={filteredCompanies.map((x) => ({ id: x.id, label: x.name, deletedAt: x.deletedAt }))}
+          restore={crm.restoreCompany} hardDelete={crm.hardDeleteCompany} />
+      )}
+      {showType("referrals") && (
+        <Section title="Deleted Referrals" items={filteredReferrals.map((x) => ({ id: x.id, label: x.name, deletedAt: x.deletedAt }))}
+          restore={crm.restoreReferral} />
+      )}
+      {showType("tasks") && (
+        <Section title="Deleted Tasks" items={filteredTasks.map((x) => ({ id: x.id, label: x.title, deletedAt: x.deletedAt }))}
+          restore={crm.restoreTask} hardDelete={crm.hardDeleteTask} />
+      )}
+      {showType("files") && (
       <div className="rounded-2xl border bg-card p-5">
         <h3 className="font-semibold mb-3">Archived Files</h3>
-        {archivedFiles.length === 0 ? <p className="text-sm text-muted-foreground">Nothing here.</p> : (
+        {filteredFiles.length === 0 ? <p className="text-sm text-muted-foreground">Nothing here.</p> : (
           <div className="divide-y text-sm">
-            {archivedFiles.map((a) => (
+            {filteredFiles.map((a) => (
               <div key={a.id} className="py-2 flex items-center justify-between">
                 <div>
                   <p className="font-medium">{a.fileName}</p>
@@ -4516,6 +4671,7 @@ function DeletedModule() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
