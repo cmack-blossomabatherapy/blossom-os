@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
+import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
+import { IntegrationReadinessSummary } from "@/components/hr/IntegrationReadinessSummary";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -39,7 +41,12 @@ interface Enrollment {
 }
 interface Cert { id: string; track_id: string; code: string; name: string; description: string | null; }
 interface UserCert { id: string; enrollment_id: string; certificate_id: string; awarded_at: string; }
-interface Onboarding { id: string; employee_id: string; status: string; blockers: string[] | null; }
+interface Onboarding extends OnboardingReadinessRow {
+  id: string;
+  employee_id: string;
+  status: string;
+  blockers: string[] | null;
+}
 
 /* ---------------- atoms ---------------- */
 type Tone = "ok" | "warn" | "crit" | "muted" | "info";
@@ -157,7 +164,7 @@ function useData() {
         supabase.from("academy_enrollments").select("id,track_id,employee_id,status,current_week_id,start_date"),
         supabase.from("academy_certificates").select("id,track_id,code,name,description"),
         supabase.from("academy_user_certificates").select("id,enrollment_id,certificate_id,awarded_at"),
-        supabase.from("employee_onboarding").select("id,employee_id,status,blockers"),
+        supabase.from("employee_onboarding").select("id,employee_id,status,blockers,viventium_status,viventium_synced_at,viventium_notes,stellar_status,stellar_synced_at,stellar_notes,centralreach_status,centralreach_synced_at,centralreach_notes"),
       ]);
       if (cancel) return;
       setState({
