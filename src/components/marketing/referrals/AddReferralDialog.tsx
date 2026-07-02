@@ -79,8 +79,28 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
     setSaving(true);
     try {
       let resolvedCompanyId: string | null = null;
-      if (companyMode === "existing" && companyId) resolvedCompanyId = companyId;
-      else if (companyMode === "new" && newCompanyName.trim()) {
+      // Resolve permissively: whichever signal is present wins so the link
+      // is never silently lost if the user forgot to toggle the mode.
+      if (companyMode === "new" && newCompanyName.trim()) {
+        resolvedCompanyId = await findOrCreateCompany({
+          company_name: newCompanyName.trim(),
+          company_type: newCompanyType || null,
+          website_url: newCompanyWebsite || null,
+          domain: extractDomain(newCompanyEmail || email, newCompanyWebsite),
+          state: newCompanyState || null,
+          main_phone: newCompanyPhone || null,
+          main_email: newCompanyEmail || null,
+          city: newCompanyCity || null,
+          address_line_1: newCompanyAddr1 || null,
+          zip_code: newCompanyZip || null,
+          relationship_stage: newCompanyStage || null,
+          notes: newCompanyNotes || null,
+          relationship_owner: owners.length ? owners : null,
+          source: "Manual",
+        });
+      } else if (companyId) {
+        resolvedCompanyId = companyId;
+      } else if (newCompanyName.trim()) {
         resolvedCompanyId = await findOrCreateCompany({
           company_name: newCompanyName.trim(),
           company_type: newCompanyType || null,
@@ -98,7 +118,13 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
           source: "Manual",
         });
       }
-      await createContact({
+      if (!resolvedCompanyId && companyMode !== "none") {
+        const proceed = window.confirm(
+          "No company is linked to this contact yet. Save without a company?\n\nTip: choose an existing company or use \"Create new\" to link one now.",
+        );
+        if (!proceed) { setSaving(false); return; }
+      }
+      const created = await createContact({
         company_id: resolvedCompanyId,
         first_name: firstName || null,
         last_name: lastName || null,
