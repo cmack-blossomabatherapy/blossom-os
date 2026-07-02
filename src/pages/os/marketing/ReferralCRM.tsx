@@ -1900,6 +1900,18 @@ function ListsModule() {
   const editing = useMemo(() => s.lists.find((l) => l.id === editingId) ?? null, [s.lists, editingId]);
   const staticList = useMemo(() => s.lists.find((l) => l.id === staticListIdForAdd) ?? null, [s.lists, staticListIdForAdd]);
 
+  const [q, setQ] = useState("");
+  const [kindF, setKindF] = useState<string>("all");
+  const [objectF, setObjectF] = useState<string>("all");
+  const filteredLists = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return s.lists.filter((l) =>
+      (kindF === "all" || l.kind === kindF) &&
+      (objectF === "all" || l.object === objectF) &&
+      (!needle || l.name.toLowerCase().includes(needle))
+    );
+  }, [s.lists, q, kindF, objectF]);
+
   return (
     <div className="space-y-4">
       <SectionHeader
@@ -1907,8 +1919,31 @@ function ListsModule() {
         subtitle="Static lists hold a manual set of records. Active lists evaluate criteria live."
         right={<Button size="sm" onClick={() => setCreating(true)}><Plus className="size-4 mr-1" />Create list</Button>}
       />
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search lists by name..." }}
+        filters={[
+          { key: "kind", label: "Kind", value: kindF, onChange: setKindF, options: [
+            { value: "all", label: "All kinds" },
+            { value: "active", label: "Active" },
+            { value: "static", label: "Static" },
+          ] },
+          { key: "object", label: "Object", value: objectF, onChange: setObjectF, options: [
+            { value: "all", label: "All objects" },
+            { value: "contacts", label: "Contacts" },
+            { value: "companies", label: "Companies" },
+          ] },
+        ]}
+        resultCount={filteredLists.length}
+        totalCount={s.lists.length}
+        onClear={() => { setQ(""); setKindF("all"); setObjectF("all"); }}
+      />
       <div className="grid lg:grid-cols-2 gap-4">
-        {s.lists.map((l) => {
+        {filteredLists.length === 0 && (
+          <div className="col-span-full rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">
+            No lists match the current filters.
+          </div>
+        )}
+        {filteredLists.map((l) => {
           const matches = evalList(s, l);
           return (
             <div key={l.id} className="rounded-2xl border bg-card p-5">
