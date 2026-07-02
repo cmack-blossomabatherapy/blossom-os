@@ -36,16 +36,23 @@ const PRIORITIES: Priority[] = ["urgent", "high", "medium", "low"];
 const ESC_STATUSES: EscalationStatus[] = ["open", "in_review", "waiting", "escalated", "resolved"];
 const TASK_STATUSES: TaskStatus[] = ["open", "in_progress", "waiting", "blocked", "completed", "escalated"];
 
+const LEADERSHIP_ROLES = new Set<string>([
+  "super_admin", "executive_leadership", "executive", "operations_leadership",
+  "ops_manager", "director_of_operations", "coo", "admin",
+]);
+
 function useActor() {
-  const { profile } = useOSRole();
-  return profile?.name || "State Director";
+  const { role } = useOSRole();
+  return role === "state_director" ? "State Director"
+    : role === "assistant_state_director" ? "Assistant State Director"
+    : String(role || "Operator").replace(/_/g, " ");
 }
 
 function useAvailableStates() {
-  const { profile } = useOSRole();
+  const { role, activeState } = useOSRole();
   const snap = useStateDirectorSnapshot();
-  const isLeadership = ["super_admin", "executive_leadership", "executive", "operations_leadership", "ops_manager", "director_of_operations", "coo"].includes(profile?.role ?? "");
-  const assigned = (profile?.state as StateCode | undefined) ?? undefined;
+  const isLeadership = LEADERSHIP_ROLES.has(String(role));
+  const assigned = (activeState as StateCode | undefined) ?? undefined;
   return { profiles: snap.profiles, isLeadership, assigned };
 }
 
@@ -496,7 +503,7 @@ function TaskDetail({ task, onClose }: { task: OpsTask; onClose: () => void }) {
 /* --------------------------- 1. State Operations -------------------------- */
 
 export function StateOperationsPage() {
-  const { profile } = useOSRole();
+  const { role, activeState } = useOSRole();
   const { profiles, isLeadership, assigned } = useAvailableStates();
   const initialState: StateCode | "all" = isLeadership ? "all" : (assigned ?? profiles[0]?.code ?? "GA");
   const [stateFilter, setStateFilter] = useState<StateCode | "all">(initialState);
@@ -692,7 +699,7 @@ export function StateOperationsPage() {
       </SectionCard>
 
       <Card className="p-4 rounded-2xl border-border/60 bg-muted/20 text-xs text-muted-foreground">
-        Signed in as {profile?.name ?? "State Director"} · {profile?.role} · Data source: Blossom OS local · Ready for CentralReach / CTM / Apploi / BloomGrowth integration adapters.
+        Viewing as <span className="font-medium">{String(role).replace(/_/g, " ")}</span>{assigned ? ` · state ${assigned}` : ""} · Data source: Blossom OS local · Ready for CentralReach / CTM / Apploi / BloomGrowth integration adapters.
       </Card>
 
       <CreateEscalationDialog open={escOpen} onOpenChange={setEscOpen} defaultState={stateFilter === "all" ? undefined : stateFilter} />
