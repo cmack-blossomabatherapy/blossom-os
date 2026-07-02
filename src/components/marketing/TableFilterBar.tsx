@@ -65,6 +65,9 @@ export function TableFilterBar({
       search?.onChange("");
       filters.forEach((f) => f.onChange(f.defaultValue ?? "all"));
     });
+  const handleClearFilters = () => {
+    filters.forEach((f) => f.onChange(f.defaultValue ?? "all"));
+  };
 
   return (
     <div
@@ -151,13 +154,16 @@ export function TableFilterBar({
               totalCount={group.totalCount}
             />
           ))}
-          <button
-            type="button"
-            onClick={handleClearAll}
-            className="ml-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
-          >
-            Clear all
-          </button>
+          {activeFilters.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="ml-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+              aria-label="Clear all filter groups"
+            >
+              Clear all filter groups
+            </button>
+          )}
         </div>
       )}
     </div>
