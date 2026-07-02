@@ -163,6 +163,36 @@ function patientDisplayName(r: { patientFirstName?: string; patientLastInitial?:
   return r.name ?? "Unnamed patient";
 }
 
+function CopyShareLinkButton() {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      sonnerToast.success("Share link copied to clipboard");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: select the URL in a visible input so the user can copy it manually.
+      sonnerToast.error("Could not copy automatically", {
+        description: "Your browser blocked clipboard access. The URL is shown in the address bar.",
+      });
+    }
+  };
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-9 gap-1.5"
+      onClick={handleCopy}
+      aria-label="Copy share link"
+    >
+      {copied ? <CheckCircle2 className="size-3.5" /> : <LinkIcon className="size-3.5" />}
+      {copied ? "Copied" : "Copy share link"}
+    </Button>
+  );
+}
+
 // ===========================================================
 // Dashboard
 // ===========================================================
