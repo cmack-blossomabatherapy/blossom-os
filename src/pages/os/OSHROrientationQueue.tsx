@@ -872,3 +872,95 @@ function ActionBtn({ icon: Icon, children, primary, onClick }: { icon: React.Ele
     </button>
   );
 }
+
+/* ---------------- schedule orientation modal ---------------- */
+function ScheduleOrientationDialog({
+  cand, onClose, onSaved, toast,
+}: {
+  cand: Candidate; onClose: () => void; onSaved: () => void;
+  toast: ReturnType<typeof useToast>["toast"];
+}) {
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("09:00");
+  const [format, setFormat] = useState("virtual");
+  const [facilitator, setFacilitator] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!date) { toast({ title: "Pick a date" }); return; }
+    setSaving(true);
+    const payload: Record<string, unknown> = {
+      candidate_id: cand.id,
+      scheduled_date: date,
+      scheduled_time: time || null,
+      format,
+      status: "Scheduled",
+      notes: notes || null,
+    };
+    if (facilitator) payload.facilitator = facilitator;
+    const { data, error } = await (supabase.from("recruiting_orientation_slots") as any)
+      .insert(payload).select("id").maybeSingle();
+    setSaving(false);
+    if (error) { toast({ title: "Could not schedule", description: error.message }); return; }
+    await logHrEvent({
+      eventType: "orientation_scheduled",
+      title: `Orientation scheduled for ${cand.first_name} ${cand.last_name}`,
+      description: `${date}${time ? " " + time : ""} · ${format}`,
+      metadata: { candidate_id: cand.id, slot_id: data?.id ?? null, scheduled_date: date, scheduled_time: time, format, facilitator },
+    });
+    toast({ title: "Orientation scheduled" });
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" />
+      <div className="relative w-full max-w-md rounded-2xl border border-border/70 bg-card shadow-2xl p-5 space-y-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Schedule orientation</p>
+          <h3 className="text-base font-semibold tracking-tight mt-0.5">{cand.first_name} {cand.last_name}</h3>
+          <p className="text-[12px] text-muted-foreground">{cand.role ?? "—"} · {cand.state ?? "—"}</p>
+        </div>
+        <div className="space-y-3">
+          <label className="block text-[11.5px] text-muted-foreground space-y-1">
+            <span>Date</span>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+              className="w-full h-9 rounded-lg border border-border/70 bg-background px-2 text-[13px]" />
+          </label>
+          <label className="block text-[11.5px] text-muted-foreground space-y-1">
+            <span>Time</span>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
+              className="w-full h-9 rounded-lg border border-border/70 bg-background px-2 text-[13px]" />
+          </label>
+          <label className="block text-[11.5px] text-muted-foreground space-y-1">
+            <span>Format</span>
+            <select value={format} onChange={(e) => setFormat(e.target.value)}
+              className="w-full h-9 rounded-lg border border-border/70 bg-background px-2 text-[13px]">
+              <option value="virtual">Virtual</option>
+              <option value="in_person">In-person</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </label>
+          <label className="block text-[11.5px] text-muted-foreground space-y-1">
+            <span>Facilitator (optional)</span>
+            <input value={facilitator} onChange={(e) => setFacilitator(e.target.value)}
+              placeholder="Owner / facilitator"
+              className="w-full h-9 rounded-lg border border-border/70 bg-background px-2 text-[13px]" />
+          </label>
+          <label className="block text-[11.5px] text-muted-foreground space-y-1">
+            <span>Notes (optional)</span>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+              className="w-full rounded-lg border border-border/70 bg-background px-2 py-1.5 text-[13px]" />
+          </label>
+        </div>
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+          <button onClick={onClose} className="h-9 px-3 rounded-lg text-[13px] border border-border/70 bg-card hover:bg-muted">Cancel</button>
+          <button onClick={save} disabled={saving} className="h-9 px-3 rounded-lg text-[13px] bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
+            {saving ? "Scheduling…" : "Schedule"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
