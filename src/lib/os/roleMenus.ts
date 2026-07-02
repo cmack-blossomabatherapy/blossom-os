@@ -159,7 +159,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "State Intake Support",    path: "/intake/dashboard",       icon: Briefcase },
           { label: "State Task Queue",        path: "/ops/tasks",              icon: ClipboardList },
           { label: "Escalation Support",      path: "/ops/state-escalations",  icon: AlertTriangle },
-          { label: "Follow-Up Tracker",       path: "/ops/tasks",              icon: Activity },
           { label: "Staffing Support",        path: "/ops/staffing",           icon: Users },
           { label: "Scheduling Support",      path: "/ops/scheduling",         icon: Calendar },
           { label: "Authorization Support",   path: "/authorizations",         icon: ShieldCheck },

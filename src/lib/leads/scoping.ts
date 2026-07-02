@@ -24,8 +24,8 @@ export function scopeLeadsForUser(leads: Lead[], scope: LeadScope): Lead[] {
   const roles = (scope.roles ?? []).map(String);
   if (roles.some((r) => LEADERSHIP_ROLES.has(r))) return leads;
 
-  // State Director — only their assigned state.
-  if (roles.includes("state_director") && scope.state) {
+  // State Director / Assistant State Director — only their assigned state.
+  if ((roles.includes("state_director") || roles.includes("assistant_state_director")) && scope.state) {
     return leads.filter((l) => (l.state || "").toUpperCase() === scope.state!.toUpperCase());
   }
 

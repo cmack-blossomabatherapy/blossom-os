@@ -18,8 +18,8 @@ export function scopeClientsForUser(clients: Client[], scope: ClientScope): Clie
   const roles = (scope.roles ?? []).map(String);
   if (roles.some((r) => LEADERSHIP.has(r))) return clients;
 
-  // State Director — only their state.
-  if (roles.includes("state_director") && scope.state) {
+  // State Director / Assistant State Director — only their state.
+  if ((roles.includes("state_director") || roles.includes("assistant_state_director")) && scope.state) {
     const st = scope.state.toUpperCase();
     return clients.filter((c) => (c.state || "").toUpperCase() === st);
   }

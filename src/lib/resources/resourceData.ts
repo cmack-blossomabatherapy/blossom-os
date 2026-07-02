@@ -585,7 +585,14 @@ export function isVisibleToRole(r: Resource, role: OSRole, state?: string): bool
   if (r.sensitivity === "admin_only" && role !== "super_admin") return false;
   // Hard safety net — defensive keyword check on title/tags.
   if (containsCredentialKeywords(r.title) || r.tags.some(containsCredentialKeywords)) return false;
-  const roleOk = r.roles.length === 0 || r.roles.includes(role) || role === "super_admin";
+  // Assistant State Director mirrors State Director resource visibility
+  // (state operational SOPs, staffing/scheduling/auth support docs, etc.).
+  const mirrored = role === "assistant_state_director" && r.roles.includes("state_director");
+  const roleOk =
+    r.roles.length === 0 ||
+    r.roles.includes(role) ||
+    role === "super_admin" ||
+    mirrored;
   const stateOk = r.states.length === 0 || (state ? r.states.includes(state) : true);
   return roleOk && stateOk;
 }
