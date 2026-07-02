@@ -229,6 +229,12 @@ import OSPayrollTrainingAcademy from "./pages/os/OSPayrollTrainingAcademy";
 import OSCaseManager from "./pages/os/case-manager/OSCaseManager";
 import ClinicalDirectorDashboard from "./pages/os/clinical/ClinicalDirectorDashboard";
 import BehavioralSupportDashboard from "./pages/os/behavioral-support/BehavioralSupportDashboard";
+import BehavioralSupportCrisisSupport from "./pages/os/behavioral-support/BehavioralSupportCrisisSupport";
+import BehavioralSupportEscalations from "./pages/os/behavioral-support/BehavioralSupportEscalations";
+import BehavioralSupportPlans from "./pages/os/behavioral-support/BehavioralSupportPlans";
+import BehavioralSupportFollowUps from "./pages/os/behavioral-support/BehavioralSupportFollowUps";
+import BehavioralSupportSupervisionVisibility from "./pages/os/behavioral-support/BehavioralSupportSupervisionVisibility";
+import BehavioralSupportEvaluations from "./pages/os/behavioral-support/BehavioralSupportEvaluations";
 import {
   CMTrainingAcademy, CMAssignedFamilies, CMParentCommunication, CMFamilySupport,
   CMProgressFollowUps, CMSchedulingCoordination, CMAuthorizationsVisibility,
