@@ -1648,7 +1648,7 @@ function HandoffQueue({
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(({ ev, derived }) => {
+          {visibleRows.map(({ ev, derived }) => {
             const partner = ev.referral_company_id ? partnerById.get(ev.referral_company_id) : null;
             const busy = busyId === ev.id;
             const suggestion =
@@ -1771,6 +1771,27 @@ function HandoffQueue({
               </div>
             );
           })}
+          {hasMore ? (
+            <div
+              ref={sentinelRef}
+              className="rounded-2xl border border-dashed border-border/60 bg-card/30 p-3 text-center text-[11px] text-muted-foreground"
+            >
+              Loading more… ({visibleRows.length} of {filtered.length})
+              <div className="mt-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setVisibleCount((c) => Math.min(c + PAGE_SIZE, filtered.length))}
+                >
+                  Load more
+                </Button>
+              </div>
+            </div>
+          ) : filtered.length > PAGE_SIZE ? (
+            <div className="text-center text-[11px] text-muted-foreground py-2">
+              All {filtered.length} handoffs loaded
+            </div>
+          ) : null}
         </div>
       )}
 
