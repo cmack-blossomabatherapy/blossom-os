@@ -48,6 +48,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { IntegrationReadinessPanel } from "@/components/marketing/IntegrationReadinessPanel";
 import {
   Sheet,
   SheetContent,
