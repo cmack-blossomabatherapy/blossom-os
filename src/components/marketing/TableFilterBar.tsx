@@ -115,8 +115,22 @@ export function TableFilterBar({
           )}
         </div>
       </div>
-      {activeFilters.length >= 2 && (
+      {hasActive && (
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
+            Active
+          </span>
+          {search?.value && (
+            <button
+              type="button"
+              onClick={() => search.onChange("")}
+              className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/10"
+              aria-label="Clear search"
+            >
+              <span className="font-medium">Search:</span> {search.value}
+              <X className="size-3" />
+            </button>
+          )}
           {activeFilters.map((f) => {
             const opt = f.options.find((o) => o.value === f.value);
             return (
@@ -125,6 +139,7 @@ export function TableFilterBar({
                 type="button"
                 onClick={() => f.onChange(f.defaultValue ?? "all")}
                 className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/10"
+                aria-label={`Remove ${f.label} filter`}
               >
                 <span className="font-medium">{f.label}:</span> {opt?.label ?? f.value}
                 <X className="size-3" />
