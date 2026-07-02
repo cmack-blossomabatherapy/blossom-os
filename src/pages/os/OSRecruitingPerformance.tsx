@@ -365,11 +365,11 @@ export default function OSRecruitingPerformance() {
           <div className="flex flex-wrap items-center gap-2">
             <select value={stateF} onChange={(e) => setStateF(e.target.value)} className="h-10 rounded-xl bg-muted/60 border border-border px-3 text-sm">
               <option value="all">All states</option>
-              {recruitingStates.map((s) => <option key={s} value={s}>{s}</option>)}
+              {derivedStates.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
             <select value={recruiterF} onChange={(e) => setRecruiterF(e.target.value)} className="h-10 rounded-xl bg-muted/60 border border-border px-3 text-sm">
               <option value="all">All recruiters</option>
-              {recruitingRecruiters.map((r) => <option key={r} value={r}>{r}</option>)}
+              {derivedRecruiters.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
             <select value={roleF} onChange={(e) => setRoleF(e.target.value as typeof roleF)} className="h-10 rounded-xl bg-muted/60 border border-border px-3 text-sm">
               <option value="all">All roles</option>
