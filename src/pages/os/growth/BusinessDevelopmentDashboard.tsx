@@ -1631,21 +1631,95 @@ function HandoffQueue({
       </div>
 
       {error ? (
-        <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
-          Couldn't load handoff queue: {error.message}
+        <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-xs text-destructive space-y-2">
+          <div className="flex items-center gap-2 font-semibold">
+            <AlertTriangle className="h-3.5 w-3.5" /> Couldn't load handoff queue
+          </div>
+          <div className="text-destructive/80">{error.message}</div>
+          <Button size="sm" variant="outline" onClick={() => refresh()}>
+            Try again
+          </Button>
         </div>
       ) : loading ? (
-        <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-6 text-center text-xs text-muted-foreground">
-          Loading handoff queue...
+        <div className="space-y-2" aria-busy="true" aria-label="Loading handoff queue">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-border/70 bg-card p-3 animate-pulse">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <div className="h-4 w-16 rounded-full bg-muted" />
+                <div className="h-4 w-20 rounded-full bg-muted" />
+                <div className="h-4 w-12 rounded-full bg-muted" />
+              </div>
+              <div className="mt-2 h-3 w-32 rounded bg-muted" />
+              <div className="mt-2 space-y-1.5">
+                <div className="h-3 w-2/3 rounded bg-muted" />
+                <div className="h-3 w-1/2 rounded bg-muted" />
+                <div className="h-3 w-3/4 rounded bg-muted" />
+              </div>
+              <div className="mt-3 flex gap-1.5">
+                <div className="h-7 w-28 rounded-md bg-muted" />
+                <div className="h-7 w-36 rounded-md bg-muted" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-8 text-center">
-          <Inbox className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
-          <div className="text-sm font-semibold">No source handoffs match these filters</div>
-          <div className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-            Clear filters or wait for new CTM, LeadTrap, Google Ads, Meta Ads, RetellAI, Go Integrate Nava, or manual imports to arrive.
-          </div>
-        </div>
+        (() => {
+          const hasFilters =
+            !!search.trim() ||
+            statusFilter !== "all" ||
+            systemFilter !== "all" ||
+            stateFilter !== "all" ||
+            linkFilter !== "all" ||
+            assignFilter !== "all";
+          const noData = events.length === 0;
+          return (
+            <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-8 text-center">
+              <Inbox className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+              <div className="text-sm font-semibold">
+                {noData
+                  ? "No source handoffs yet"
+                  : hasFilters
+                    ? "No handoffs match these filters"
+                    : "You're all caught up"}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+                {noData
+                  ? "Handoffs appear here as new CTM, LeadTrap, Google Ads, Meta Ads, RetellAI, Go Integrate Nava, or manual source events arrive."
+                  : hasFilters
+                    ? "Try clearing filters to see the full queue."
+                    : "Every source handoff has been reviewed."}
+              </div>
+              {hasFilters && !noData && (
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setSearch("");
+                      setStatusFilter("all");
+                      setSystemFilter("all");
+                      setStateFilter("all");
+                      setLinkFilter("all");
+                      setAssignFilter("all");
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => refresh()}>
+                    Refresh
+                  </Button>
+                </div>
+              )}
+              {noData && (
+                <div className="mt-3">
+                  <Button size="sm" variant="outline" onClick={() => refresh()}>
+                    Refresh
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })()
       ) : (
         <div className="space-y-2">
           {visibleRows.map(({ ev, derived }) => {
