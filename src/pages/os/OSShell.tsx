@@ -620,7 +620,10 @@ function buildSectionsForRole(role: string): NavSection[] {
         to: i.path,
         label: i.label,
         icon: i.icon,
-        end: i.path === "/dashboard" || i.path === "/",
+        // Always exact-match. Menu items in this shell are leaves, so hub
+        // paths like "/marketing" must not stay highlighted on siblings
+        // such as "/marketing/lead-sources".
+        end: true,
         disabled: !isPathLiveForRole(role, basePath),
       };
     }),
