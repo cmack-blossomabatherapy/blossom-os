@@ -4563,6 +4563,12 @@ function DeletedModule() {
   const t = s.tasks.filter((x) => x.deletedAt);
   const archivedFiles = s.attachments.filter((x) => x.archivedAt);
 
+  const [q, setQ] = useState("");
+  const [typeF, setTypeF] = useState<string>("all");
+  const needle = q.trim().toLowerCase();
+  const matchLabel = (label: string) => !needle || label.toLowerCase().includes(needle);
+  const showType = (t: string) => typeF === "all" || typeF === t;
+
   const fileLabel = (a: Attachment): string => {
     if (a.objectType === "contact") {
       const x = s.contacts.find((y) => y.id === a.objectId); return x ? `Contact: ${fullName(x)}` : `Contact: ${a.objectId}`;
@@ -4594,21 +4600,59 @@ function DeletedModule() {
     </div>
   );
 
+  const filteredContacts = c.filter((x) => matchLabel(fullName(x)));
+  const filteredCompanies = co.filter((x) => matchLabel(x.name));
+  const filteredReferrals = r.filter((x) => matchLabel(x.name));
+  const filteredTasks = t.filter((x) => matchLabel(x.title));
+  const filteredFiles = archivedFiles.filter((a) => matchLabel(`${a.fileName} ${fileLabel(a)}`));
+  const totalMatches =
+    (showType("contacts") ? filteredContacts.length : 0) +
+    (showType("companies") ? filteredCompanies.length : 0) +
+    (showType("referrals") ? filteredReferrals.length : 0) +
+    (showType("tasks") ? filteredTasks.length : 0) +
+    (showType("files") ? filteredFiles.length : 0);
+  const totalAll = c.length + co.length + r.length + t.length + archivedFiles.length;
+
   return (
     <div className="space-y-4">
-      <Section title="Deleted Contacts" items={c.map((x) => ({ id: x.id, label: fullName(x), deletedAt: x.deletedAt }))}
-        restore={crm.restoreContact} hardDelete={crm.hardDeleteContact} />
-      <Section title="Deleted Companies" items={co.map((x) => ({ id: x.id, label: x.name, deletedAt: x.deletedAt }))}
-        restore={crm.restoreCompany} hardDelete={crm.hardDeleteCompany} />
-      <Section title="Deleted Referrals" items={r.map((x) => ({ id: x.id, label: x.name, deletedAt: x.deletedAt }))}
-        restore={crm.restoreReferral} />
-      <Section title="Deleted Tasks" items={t.map((x) => ({ id: x.id, label: x.title, deletedAt: x.deletedAt }))}
-        restore={crm.restoreTask} hardDelete={crm.hardDeleteTask} />
+      <TableFilterBar
+        search={{ value: q, onChange: setQ, placeholder: "Search deleted items..." }}
+        filters={[
+          { key: "type", label: "Type", value: typeF, onChange: setTypeF, options: [
+            { value: "all", label: "All types" },
+            { value: "contacts", label: "Contacts" },
+            { value: "companies", label: "Companies" },
+            { value: "referrals", label: "Referrals" },
+            { value: "tasks", label: "Tasks" },
+            { value: "files", label: "Files" },
+          ] },
+        ]}
+        resultCount={totalMatches}
+        totalCount={totalAll}
+        onClear={() => { setQ(""); setTypeF("all"); }}
+      />
+      {showType("contacts") && (
+        <Section title="Deleted Contacts" items={filteredContacts.map((x) => ({ id: x.id, label: fullName(x), deletedAt: x.deletedAt }))}
+          restore={crm.restoreContact} hardDelete={crm.hardDeleteContact} />
+      )}
+      {showType("companies") && (
+        <Section title="Deleted Companies" items={filteredCompanies.map((x) => ({ id: x.id, label: x.name, deletedAt: x.deletedAt }))}
+          restore={crm.restoreCompany} hardDelete={crm.hardDeleteCompany} />
+      )}
+      {showType("referrals") && (
+        <Section title="Deleted Referrals" items={filteredReferrals.map((x) => ({ id: x.id, label: x.name, deletedAt: x.deletedAt }))}
+          restore={crm.restoreReferral} />
+      )}
+      {showType("tasks") && (
+        <Section title="Deleted Tasks" items={filteredTasks.map((x) => ({ id: x.id, label: x.title, deletedAt: x.deletedAt }))}
+          restore={crm.restoreTask} hardDelete={crm.hardDeleteTask} />
+      )}
+      {showType("files") && (
       <div className="rounded-2xl border bg-card p-5">
         <h3 className="font-semibold mb-3">Archived Files</h3>
-        {archivedFiles.length === 0 ? <p className="text-sm text-muted-foreground">Nothing here.</p> : (
+        {filteredFiles.length === 0 ? <p className="text-sm text-muted-foreground">Nothing here.</p> : (
           <div className="divide-y text-sm">
-            {archivedFiles.map((a) => (
+            {filteredFiles.map((a) => (
               <div key={a.id} className="py-2 flex items-center justify-between">
                 <div>
                   <p className="font-medium">{a.fileName}</p>
@@ -4627,6 +4671,7 @@ function DeletedModule() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
