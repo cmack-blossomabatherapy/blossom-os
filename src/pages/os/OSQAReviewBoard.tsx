@@ -1,13 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ClipboardCheck, Search, Sparkles, AlertTriangle, CheckCircle2,
-  Send, PlayCircle, ArrowUpRight, MapPin, Clock, UserCheck,
+  Send, PlayCircle, ArrowUpRight, MapPin, Clock, UserCheck, X, FileCheck2, StickyNote, Flag,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQAReviews, type QAReviewItem, type QAReviewStatus } from "@/hooks/useQAReviews";
+import { useSlideout } from "@/hooks/useSlideout";
 
 type LaneKey = "suggested" | "in_review" | "issues" | "ready" | "submitted";
 
@@ -38,12 +39,54 @@ const LANE_TONE: Record<LaneKey, string> = {
 };
 
 export default function OSQAReviewBoard() {
-  const { items, loading, error, updateStatus } = useQAReviews();
+  const { items, loading, error, updateStatus, assignOwner, patchRow } = useQAReviews();
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState(params.get("q") ?? "");
   const [stateFilter, setStateFilter] = useState(params.get("state") ?? "all");
   const [ownerFilter, setOwnerFilter] = useState(params.get("owner") ?? "all");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const deepLinkConsumed = useRef(false);
+
+  // Consume deep-link params once items are loaded
+  useEffect(() => {
+    if (deepLinkConsumed.current) return;
+    if (loading || items.length === 0) return;
+    const idP = params.get("id");
+    const clientP = params.get("client");
+    let missed: string | null = null;
+    if (idP) {
+      const found = items.find((i) => i.id === idP);
+      if (found) setOpenId(found.id);
+      else missed = `review ${idP}`;
+    } else if (clientP) {
+      const found = items.find(
+        (i) =>
+          i.client_id === clientP ||
+          i.clientName.toLowerCase().includes(clientP.toLowerCase()),
+      );
+      if (found) {
+        setQuery(found.clientName);
+        setOpenId(found.id);
+      } else {
+        setQuery(clientP);
+        missed = `client "${clientP}"`;
+      }
+    }
+    if (missed) toast.error(`Could not locate ${missed}`);
+    if (idP || clientP) {
+      const p = new URLSearchParams(params);
+      p.delete("id");
+      p.delete("client");
+      setParams(p, { replace: true });
+    }
+    deepLinkConsumed.current = true;
+  }, [items, loading, params, setParams]);
+
+  const openItem = useMemo(
+    () => (openId ? items.find((i) => i.id === openId) ?? null : null),
+    [openId, items],
+  );
 
   const states = useMemo(
     () => Array.from(new Set(items.map((i) => i.clientState).filter(Boolean) as string[])).sort(),
@@ -186,22 +229,37 @@ export default function OSQAReviewBoard() {
                 items={lanes[lane]}
                 busyId={busyId}
                 onAdvance={advance}
+                onOpen={(id) => setOpenId(id)}
               />
             ))}
           </div>
         )}
       </div>
+      <ReviewDrawer
+        item={openItem}
+        onClose={() => setOpenId(null)}
+        onAdvance={advance}
+        onAssignOwner={async (id, owner) => {
+          try { await assignOwner(id, owner); toast.success("QA owner updated"); }
+          catch (e) { toast.error(e instanceof Error ? e.message : "Failed to update owner"); }
+        }}
+        onPatch={async (id, patch, okMsg) => {
+          try { await patchRow(id, patch); toast.success(okMsg); }
+          catch (e) { toast.error(e instanceof Error ? e.message : "Failed to save"); }
+        }}
+      />
     </OSShell>
   );
 }
 
 function LaneColumn({
-  lane, items, busyId, onAdvance,
+  lane, items, busyId, onAdvance, onOpen,
 }: {
   lane: LaneKey;
   items: QAReviewItem[];
   busyId: string | null;
   onAdvance: (i: QAReviewItem, next: QAReviewStatus) => void;
+  onOpen: (id: string) => void;
 }) {
   return (
     <div className={cn(
@@ -224,7 +282,7 @@ function LaneColumn({
           </p>
         ) : (
           items.map((item) => (
-            <BoardCard key={item.id} item={item} lane={lane} busy={busyId === item.id} onAdvance={onAdvance} />
+            <BoardCard key={item.id} item={item} lane={lane} busy={busyId === item.id} onAdvance={onAdvance} onOpen={onOpen} />
           ))
         )}
       </div>
@@ -233,18 +291,25 @@ function LaneColumn({
 }
 
 function BoardCard({
-  item, lane, busy, onAdvance,
+  item, lane, busy, onAdvance, onOpen,
 }: {
   item: QAReviewItem;
   lane: LaneKey;
   busy: boolean;
   onAdvance: (i: QAReviewItem, next: QAReviewStatus) => void;
+  onOpen: (id: string) => void;
 }) {
   const aging = item.daysInStage;
   const blockers = item.blockers ?? [];
   const alerts = item.alerts ?? [];
   return (
-    <div className="p-3.5 hover:bg-muted/30 transition-colors">
+    <div
+      className="p-3.5 hover:bg-muted/30 transition-colors cursor-pointer"
+      onClick={() => onOpen(item.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(item.id); } }}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -287,7 +352,7 @@ function BoardCard({
             <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400 truncate">{alerts[0]}</p>
           )}
         </div>
-        <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <div className="flex flex-col items-end gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
           {lane === "suggested" && (
             <button
               onClick={() => onAdvance(item, "In Review")}
