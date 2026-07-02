@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { queueHrMessage, type HrMessageChannel } from "@/lib/hr/activityEvents";
+import { HRMessageHistory } from "@/components/hr/HRMessageHistory";
 
 /* ---------------- types ---------------- */
 interface Employee {
@@ -423,6 +424,7 @@ export default function OSHRMessages() {
   const routeAvailability = useIntegrationRouteAvailability(openOnb ?? null);
   const [replyBody, setReplyBody] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set(["in_app"]));
+  const [messageHistoryKey, setMessageHistoryKey] = useState(0);
 
   // Reset channel selection when switching conversations, and drop any
   // provider channels that are no longer routable for the new employee.
@@ -966,6 +968,7 @@ export default function OSHRMessages() {
                             : undefined,
                         });
                         setReplyBody("");
+                        setMessageHistoryKey(k => k + 1);
                       }}
                       className="inline-flex items-center gap-1.5 h-7 px-3 rounded-lg bg-primary text-primary-foreground text-[12px] hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
                     >
@@ -994,6 +997,12 @@ export default function OSHRMessages() {
               <Link to="/hr/employee-support" className="inline-flex items-center gap-1.5 text-[12px] text-primary hover:opacity-80">
                 <UserCheck className="h-3.5 w-3.5" strokeWidth={1.75} /> Open employee record <ChevronRight className="h-3 w-3" strokeWidth={1.75} />
               </Link>
+
+              {/* Durable message history from hr_messages */}
+              <HRMessageHistory
+                employeeId={openEmp?.id ?? null}
+                refreshKey={messageHistoryKey}
+              />
             </div>
           </div>
         </div>

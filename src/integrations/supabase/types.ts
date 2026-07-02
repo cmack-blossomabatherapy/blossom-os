@@ -16110,6 +16110,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_hr_operator: { Args: { _user_id: string }; Returns: boolean }
       is_marketing_user: { Args: { _uid: string }; Returns: boolean }
       is_platform_admin: { Args: { _uid: string }; Returns: boolean }
       is_vault_admin: { Args: { _user_id: string }; Returns: boolean }

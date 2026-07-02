@@ -9,6 +9,8 @@ import {
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
 import { IntegrationReadinessPanel } from "@/components/hr/IntegrationReadinessPanel";
+import { HRIntegrationReadinessEditor } from "@/components/hr/HRIntegrationReadinessEditor";
+import { HRRecentActivity } from "@/components/hr/HRRecentActivity";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { logHrEvent } from "@/lib/hr/activityEvents";
@@ -103,6 +105,7 @@ function useNewHiresData() {
   const [trainings, setTrainings] = useState<TrainingRow[]>([]);
   const [documents, setDocuments] = useState<DocRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,9 +132,9 @@ function useNewHiresData() {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [reloadKey]);
 
-  return { employees, onboarding, tasks, trainings, documents, loading };
+  return { employees, onboarding, tasks, trainings, documents, loading, reload: () => setReloadKey((k) => k + 1) };
 }
 
 /* ─── unified onboarding pipeline ─── */
@@ -783,7 +786,20 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
             <div>
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Integration readiness</p>
               <IntegrationReadinessPanel row={onb} />
+              <div className="mt-3">
+                <HRIntegrationReadinessEditor
+                  onboardingId={onb.id}
+                  employeeId={emp?.id ?? null}
+                  row={onb as any}
+                  onSaved={hr.reload}
+                />
+              </div>
             </div>
+          )}
+
+          {/* Recent HR activity */}
+          {(emp?.id || onb?.id) && (
+            <HRRecentActivity employeeId={emp?.id ?? null} onboardingId={onb?.id ?? null} />
           )}
 
           {/* Tasks */}
@@ -851,11 +867,17 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
                     if (stellar && !["ready", "synced", "not_applicable"].includes(stellar)) blockers.push("Stellar (background check)");
                     const viv = (onb as any).viventium_status;
                     if (viv && !["ready", "synced", "not_applicable"].includes(viv)) blockers.push("Viventium");
+                    const cr = (onb as any).centralreach_status;
+                    if (cr && !["ready", "synced", "not_applicable"].includes(cr)) blockers.push("CentralReach");
                   }
+                  const missingDocs = docs.filter((d) => d.required && d.status !== "verified");
+                  if (missingDocs.length) blockers.push(`${missingDocs.length} required document(s) not verified`);
+                  const trIncomplete = trs.filter((t) => t.status !== "completed");
+                  if (trIncomplete.length) blockers.push(`${trIncomplete.length} training(s) not complete`);
                   if (blockers.length) {
-                    toast({ title: "Cannot activate — blockers exist", description: blockers.join(", ") });
+                    toast({ title: "Cannot mark ready — blockers exist", description: blockers.join(", ") });
                     await logHrEvent({
-                      eventType: "new_hire_mark_ready_blocked",
+                      eventType: "ready_blocked",
                       title: `${item.name} blocked from activation`,
                       description: blockers.join(", "),
                       employeeId: emp.id, onboardingId: onb?.id ?? null,
@@ -863,14 +885,18 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
                     });
                     return;
                   }
-                  if (onb) await supabase.from("employee_onboarding").update({ status: "ready_for_start" as never }).eq("id", onb.id);
-                  const { error } = await supabase.from("employees").update({ status: "active" }).eq("id", emp.id);
+                  // "Mark ready" only advances the onboarding record. Activation
+                  // of the employee row is a separate downstream action.
+                  const { error } = onb
+                    ? await supabase.from("employee_onboarding").update({ status: "ready_for_start" as never }).eq("id", onb.id)
+                    : { error: null } as any;
                   if (!error) await logHrEvent({
                     eventType: "new_hire_marked_ready",
                     title: `${item.name} marked ready for staffing`,
                     employeeId: emp.id, onboardingId: onb?.id ?? null,
                   });
-                  toast({ title: error ? "Could not update" : "Marked ready for staffing", description: error?.message ?? `${item.name} is ready to staff.` });
+                  hr.reload();
+                  toast({ title: error ? "Could not update" : "Marked ready for staffing", description: error?.message ?? `${item.name} onboarding is ready for start.` });
                 } else {
                   toast({ title: "Marked ready", description: `${item.name} flagged ready for staffing.` });
                 }

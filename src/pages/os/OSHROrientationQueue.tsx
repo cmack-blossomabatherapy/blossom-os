@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { queueHrMessage, logHrEvent } from "@/lib/hr/activityEvents";
+import { HRMessageHistory } from "@/components/hr/HRMessageHistory";
 
 /* ---------------- types ---------------- */
 interface Slot {
@@ -309,6 +310,7 @@ export default function OSHROrientationQueue() {
   const openCand = openCandId ? candById[openCandId] : null;
   const openSlot = openCand ? slotByCand.get(openCand.id) : undefined;
   const openBg = openCand ? bgByCand.get(openCand.id) : undefined;
+  const [scheduleFor, setScheduleFor] = useState<Candidate | null>(null);
 
   return (
     <OSShell>
@@ -327,7 +329,14 @@ export default function OSHROrientationQueue() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <HeaderBtn icon={Calendar} to="/hr/new-hires">Schedule orientation</HeaderBtn>
+            <HeaderBtn icon={Calendar} onClick={() => {
+              // Prefer opening scheduler for the selected candidate; otherwise
+              // pick the first candidate without a slot.
+              const target = openCand
+                ?? d.candidates.find((c: any) => !slotByCand.get(c.id)) as Candidate | undefined;
+              if (!target) { toast({ title: "No candidate to schedule" }); return; }
+              setScheduleFor(target);
+            }}>Schedule orientation</HeaderBtn>
             <HeaderBtn icon={Send} onClick={async () => {
               const scheduled = (d.candidates ?? []).filter((c: any) => {
                 const slot = (d.slots ?? []).find((s: any) => s.candidate_id === c.id);
@@ -687,6 +696,16 @@ export default function OSHROrientationQueue() {
           onChanged={() => { void d.reload(); }}
           onMessage={() => navigate("/hr/messages")}
           toast={toast}
+          onSchedule={() => setScheduleFor(openCand)}
+        />
+      )}
+
+      {scheduleFor && (
+        <ScheduleOrientationDialog
+          cand={scheduleFor}
+          onClose={() => setScheduleFor(null)}
+          onSaved={() => { setScheduleFor(null); void d.reload(); }}
+          toast={toast}
         />
       )}
     </OSShell>
@@ -695,11 +714,12 @@ export default function OSHROrientationQueue() {
 
 /* ---------------- detail panel ---------------- */
 function DetailPanel({
-  cand, slot, bg, onClose, onChanged, onMessage, toast,
+  cand, slot, bg, onClose, onChanged, onMessage, toast, onSchedule,
 }: {
   cand: Candidate; slot?: Slot; bg?: BgCheck; onClose: () => void;
   onChanged: () => void; onMessage: () => void;
   toast: ReturnType<typeof useToast>["toast"];
+  onSchedule?: () => void;
 }) {
   const days = daysFromToday(slot?.scheduled_date ?? null);
   const slotSt = slotStatusTone(slot?.status ?? (slot ? null : "not_scheduled"), days);
@@ -766,7 +786,11 @@ function DetailPanel({
           {/* Actions */}
           <div className="flex flex-wrap gap-2 pt-1">
             <ActionBtn icon={Calendar} onClick={async () => {
-              if (!slot) return toast({ title: "No orientation slot yet" });
+              if (!slot) {
+                if (onSchedule) onSchedule();
+                else toast({ title: "No orientation slot yet" });
+                return;
+              }
               const next = window.prompt("Reschedule to (YYYY-MM-DD):", slot.scheduled_date ?? "");
               if (!next) return;
               const { error } = await supabase.from("recruiting_orientation_slots")
@@ -783,6 +807,26 @@ function DetailPanel({
               toast({ title: error ? "Could not update" : "Marked attended" });
               if (!error) onChanged();
             }}>Mark attended</ActionBtn>
+            <ActionBtn icon={AlertCircle} onClick={async () => {
+              if (!slot) return toast({ title: "No orientation slot to mark" });
+              const { error } = await supabase.from("recruiting_orientation_slots")
+                .update({ status: "no_show" }).eq("id", slot.id);
+              if (!error) {
+                await logHrEvent({
+                  eventType: "orientation_no_show",
+                  title: `${cand.first_name} ${cand.last_name} did not attend orientation`,
+                  metadata: { candidate_id: cand.id, slot_id: slot.id },
+                });
+                await queueHrMessage({
+                  subject: "Missed orientation — follow up",
+                  body: `${cand.first_name}, we missed you at orientation. Reply here to reschedule.`,
+                  channels: ["in_app"],
+                  metadata: { candidate_id: cand.id, slot_id: slot.id, source: "orientation_no_show_followup" },
+                });
+              }
+              toast({ title: error ? "Could not update" : "Marked no-show — follow-up queued" });
+              if (!error) onChanged();
+            }}>Mark no-show</ActionBtn>
             <ActionBtn icon={Send} onClick={async () => {
               const res = await queueHrMessage({
                 body: `Reminder for ${cand.first_name} ${cand.last_name}: your orientation is coming up.`,
@@ -791,6 +835,7 @@ function DetailPanel({
                 metadata: { candidate_id: cand.id, slot_id: slot?.id ?? null, source: "orientation_row_reminder" },
               });
               toast({ title: res.status === "queued" ? "Reminder queued in Blossom OS" : "Could not queue reminder" });
+              onChanged();
             }}>Send reminder</ActionBtn>
             <ActionBtn icon={MessageSquare} onClick={onMessage}>Message</ActionBtn>
             <ActionBtn icon={UserCheck} primary onClick={async () => {
@@ -800,6 +845,16 @@ function DetailPanel({
               toast({ title: error ? "Could not mark ready" : "Marked ready for staffing" });
               if (!error) { onChanged(); onClose(); }
             }}>Mark ready</ActionBtn>
+          </div>
+
+          {/* Reminder history from hr_messages */}
+          <div className="pt-2">
+            <HRMessageHistory
+              title="Recent reminders & messages"
+              // hr_messages does not carry a candidate id column — filter is best-effort.
+              // Show recent HR messages to keep operators aware; harmless if empty.
+              limit={5}
+            />
           </div>
         </div>
       </div>
@@ -815,5 +870,97 @@ function ActionBtn({ icon: Icon, children, primary, onClick }: { icon: React.Ele
     <button onClick={onClick} className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {children}
     </button>
+  );
+}
+
+/* ---------------- schedule orientation modal ---------------- */
+function ScheduleOrientationDialog({
+  cand, onClose, onSaved, toast,
+}: {
+  cand: Candidate; onClose: () => void; onSaved: () => void;
+  toast: ReturnType<typeof useToast>["toast"];
+}) {
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("09:00");
+  const [format, setFormat] = useState("virtual");
+  const [facilitator, setFacilitator] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!date) { toast({ title: "Pick a date" }); return; }
+    setSaving(true);
+    const payload: Record<string, unknown> = {
+      candidate_id: cand.id,
+      scheduled_date: date,
+      scheduled_time: time || null,
+      format,
+      status: "Scheduled",
+      notes: notes || null,
+    };
+    if (facilitator) payload.facilitator = facilitator;
+    const { data, error } = await (supabase.from("recruiting_orientation_slots") as any)
+      .insert(payload).select("id").maybeSingle();
+    setSaving(false);
+    if (error) { toast({ title: "Could not schedule", description: error.message }); return; }
+    await logHrEvent({
+      eventType: "orientation_scheduled",
+      title: `Orientation scheduled for ${cand.first_name} ${cand.last_name}`,
+      description: `${date}${time ? " " + time : ""} · ${format}`,
+      metadata: { candidate_id: cand.id, slot_id: data?.id ?? null, scheduled_date: date, scheduled_time: time, format, facilitator },
+    });
+    toast({ title: "Orientation scheduled" });
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" />
+      <div className="relative w-full max-w-md rounded-2xl border border-border/70 bg-card shadow-2xl p-5 space-y-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Schedule orientation</p>
+          <h3 className="text-base font-semibold tracking-tight mt-0.5">{cand.first_name} {cand.last_name}</h3>
+          <p className="text-[12px] text-muted-foreground">{cand.role ?? "—"} · {cand.state ?? "—"}</p>
+        </div>
+        <div className="space-y-3">
+          <label className="block text-[11.5px] text-muted-foreground space-y-1">
+            <span>Date</span>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+              className="w-full h-9 rounded-lg border border-border/70 bg-background px-2 text-[13px]" />
+          </label>
+          <label className="block text-[11.5px] text-muted-foreground space-y-1">
+            <span>Time</span>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
+              className="w-full h-9 rounded-lg border border-border/70 bg-background px-2 text-[13px]" />
+          </label>
+          <label className="block text-[11.5px] text-muted-foreground space-y-1">
+            <span>Format</span>
+            <select value={format} onChange={(e) => setFormat(e.target.value)}
+              className="w-full h-9 rounded-lg border border-border/70 bg-background px-2 text-[13px]">
+              <option value="virtual">Virtual</option>
+              <option value="in_person">In-person</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </label>
+          <label className="block text-[11.5px] text-muted-foreground space-y-1">
+            <span>Facilitator (optional)</span>
+            <input value={facilitator} onChange={(e) => setFacilitator(e.target.value)}
+              placeholder="Owner / facilitator"
+              className="w-full h-9 rounded-lg border border-border/70 bg-background px-2 text-[13px]" />
+          </label>
+          <label className="block text-[11.5px] text-muted-foreground space-y-1">
+            <span>Notes (optional)</span>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+              className="w-full rounded-lg border border-border/70 bg-background px-2 py-1.5 text-[13px]" />
+          </label>
+        </div>
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+          <button onClick={onClose} className="h-9 px-3 rounded-lg text-[13px] border border-border/70 bg-card hover:bg-muted">Cancel</button>
+          <button onClick={save} disabled={saving} className="h-9 px-3 rounded-lg text-[13px] bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
+            {saving ? "Scheduling…" : "Schedule"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
