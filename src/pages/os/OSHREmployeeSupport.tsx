@@ -8,6 +8,7 @@ import {
   LifeBuoy,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
+import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -257,6 +258,7 @@ export default function OSHREmployeeSupport() {
             </Link>
           </div>
         </header>
+        <HRIntegrationStatusStrip className="mb-6" />
 
         {/* KPIs */}
         <div className="grid gap-3 mb-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
