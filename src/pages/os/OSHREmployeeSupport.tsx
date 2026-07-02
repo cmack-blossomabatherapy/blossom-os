@@ -10,6 +10,8 @@ import {
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
 import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
+import { HRIntegrationReadinessEditor } from "@/components/hr/HRIntegrationReadinessEditor";
+import { HRRecentActivity } from "@/components/hr/HRRecentActivity";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
