@@ -433,7 +433,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
   }, [s, view, q, stateFilter, ownerFilter, partnerFilter, sort.key, sort.dir]);
 
   // Reset to page 1 whenever filters/search/view/pageSize change.
-  React.useEffect(() => {
+  useEffect(() => {
     if (page !== 1) setPageStr("1");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, q, stateFilter, ownerFilter, partnerFilter, pageSize]);
