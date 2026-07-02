@@ -33,6 +33,31 @@ import { CaseDetailDrawer } from "@/components/staffing/CaseDetailDrawer";
 import { ProposeMatchDialog } from "@/components/staffing/ProposeMatchDialog";
 import type { Client } from "@/data/clients";
 
+/* --------------------- structured match fit helper --------------------- */
+
+function evaluateMatchFit(
+  match: { client_id: string; rbt_name: string; match_score: number },
+  clients: Client[],
+  preferences: FamilyStaffingPreferenceRow[],
+) {
+  const client = clients.find((c) => c.id === match.client_id) ?? null;
+  const relevant = preferences.filter(
+    (p) =>
+      p.status === "active" &&
+      (p.client_id === match.client_id ||
+        (client && p.client_name.toLowerCase() === client.childName.toLowerCase())),
+  );
+  const scored: PreferenceScoringResult = applyPreferenceScoring(match.match_score, relevant, {
+    rbtName: match.rbt_name,
+    rbtState: client?.state ?? null,
+  });
+  const anyImpact = scored.applied.some((a) => a.impact !== 0);
+  const blocked = scored.blocked;
+  const warning = !blocked && (anyImpact || scored.applied.length > 0);
+  const fitLabel: "Blocked" | "Warning" | "Clean" = blocked ? "Blocked" : warning ? "Warning" : "Clean";
+  return { client, relevant, scored, blocked, warning, fitLabel };
+}
+
 /* ---------------------------- tab definitions ---------------------------- */
 
 const TABS: { id: StaffingTab; label: string; icon: typeof Users }[] = [
