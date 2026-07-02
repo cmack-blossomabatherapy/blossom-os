@@ -474,8 +474,9 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   business_development: new Set<string>([
     "/business-development",
     "/marketing/referral-crm",
-    "/phone",
     "/reports",
+    "/academy",
+    "/resource-library",
   ]),
   clinical_director: new Set<string>([
     "/clinical-director",
