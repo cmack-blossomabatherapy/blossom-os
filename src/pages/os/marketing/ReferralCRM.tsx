@@ -788,15 +788,15 @@ const COMPANY_VIEWS = [
 
 function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const s = useCrm();
-  const [viewRaw, setView] = useUrlState("ov", "all");
+  const [viewRaw, _setView] = useUrlState("ov", "all");
   const view = (COMPANY_VIEWS.some((v) => v.id === viewRaw)
     ? viewRaw
     : "all") as (typeof COMPANY_VIEWS)[number]["id"];
-  const [q, setQ] = useUrlState("oq", "", { history: "replace" });
-  const [stateFilter, setStateFilter] = useUrlState("os", "all");
-  const [tierFilter, setTierFilter] = useUrlState("ot", "all");
-  const [ownerFilter, setOwnerFilter] = useUrlState("oo", "all");
-  const [partnerFilter, setPartnerFilter] = useUrlState("op", "all");
+  const [q, _setQ] = useUrlState("oq", "", { history: "replace" });
+  const [stateFilter, _setStateFilter] = useUrlState("os", "all");
+  const [tierFilter, _setTierFilter] = useUrlState("ot", "all");
+  const [ownerFilter, _setOwnerFilter] = useUrlState("oo", "all");
+  const [partnerFilter, _setPartnerFilter] = useUrlState("op", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [creating, setCreating] = useState(false);
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
@@ -808,9 +808,17 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     else { setSortKey(key); setSortDir("asc"); }
   };
   const [pageStr, setPageStr] = useUrlState("opg", "1");
-  const [pageSizeStr, setPageSizeStr] = useUrlState("ops", "25");
+  const [pageSizeStr, _setPageSizeStr] = useUrlState("ops", "25");
   const page = Math.max(1, Number(pageStr) || 1);
   const pageSize = Math.max(1, Number(pageSizeStr) || 25);
+  const resetPage = () => { if ((Number(pageStr) || 1) !== 1) setPageStr("1"); };
+  const setView = (v: string) => { _setView(v); resetPage(); };
+  const setQ = (v: string) => { _setQ(v); resetPage(); };
+  const setStateFilter = (v: string) => { _setStateFilter(v); resetPage(); };
+  const setTierFilter = (v: string) => { _setTierFilter(v); resetPage(); };
+  const setOwnerFilter = (v: string) => { _setOwnerFilter(v); resetPage(); };
+  const setPartnerFilter = (v: string) => { _setPartnerFilter(v); resetPage(); };
+  const setPageSizeStr = (v: string) => { _setPageSizeStr(v); resetPage(); };
 
   const rows = useMemo(() => {
     let r = scopedCompanies(s);
@@ -846,11 +854,6 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     });
     return sorted;
   }, [s, view, q, stateFilter, tierFilter, ownerFilter, partnerFilter, sort.key, sort.dir]);
-
-  useEffect(() => {
-    if (page !== 1) setPageStr("1");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, q, stateFilter, tierFilter, ownerFilter, partnerFilter, pageSize]);
 
   const pagedRows = useMemo(
     () => rows.slice((page - 1) * pageSize, page * pageSize),
