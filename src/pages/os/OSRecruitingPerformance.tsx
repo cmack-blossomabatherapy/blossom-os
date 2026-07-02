@@ -163,7 +163,7 @@ export default function OSRecruitingPerformance() {
   }, [stateF, recruiterF, roleF]);
 
   // Live-only client staffing needs, adapted to the shape this page renders.
-  // Replaces the removed static getClientStaffingNeeds() demo helper.
+  // The prior static demo helper for client needs has been removed entirely.
   const clientNeeds = useMemo<LiveClientNeed[]>(() => {
     const now = Date.now();
     return liveStaffingNeeds
