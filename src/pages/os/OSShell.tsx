@@ -207,7 +207,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/intake/benefits-cheat-sheets",
     "/phone/ai-calls",
     "/leads",
-    "/ask-blossom",
+    "/ai/assistant",
   ]),
   authorization_coordinator: new Set<string>([
     "/authorizations",
