@@ -23,6 +23,14 @@ type Row<T> = T & Record<string, unknown>;
 interface ClientsContextValue {
   clients: Client[];
   loading: boolean;
+  /**
+   * Warnings surfaced from the Scheduling overlay merge path. When the
+   * durable Scheduling overlay tables cannot be read, refetch() populates
+   * this with a human-readable message so Scheduling surfaces can warn
+   * the user that they may be looking at stale Monday-only data.
+   */
+  dataWarnings: string[];
+  schedulingOverlayError: string | null;
   getClient: (id: string) => Client | undefined;
   addClient: (client: Omit<Client, "id"> & { id?: string }) => Promise<Client | null>;
   updateClient: (id: string, patch: Partial<Client>) => Promise<void>;
