@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarPlus, RefreshCcw } from "lucide-react";
 import { useSchedulingActions } from "@/hooks/useSchedulingActions";
 import { CRSyncBadge } from "@/components/scheduling/SchedulingDialogs";
+import { SchedulingOverlayWarning } from "@/components/scheduling/SchedulingOverlayWarning";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -71,6 +72,7 @@ export default function MakeUpSessions() {
 
   return (
     <div className="mx-auto max-w-[1400px] px-6 md:px-10 py-8 space-y-6">
+      <SchedulingOverlayWarning />
       <header className="flex items-start justify-between gap-6 flex-wrap">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Scheduling</p>

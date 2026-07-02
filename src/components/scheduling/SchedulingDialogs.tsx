@@ -298,30 +298,30 @@ export function AdjustmentDialog({
         oldRbtName: oldRbt || null, newRbtName: newRbt || null,
         newLocation: location || null, reason,
       });
-      await logAction({
-        clientId: client.id, clientName: client.childName, actionType: "schedule_adjustment", title: `Adjustment: ${type}`,
-        note: reason, state: client.state ?? null,
-        metadata: { adjustment_id: (row as { id?: string } | null)?.id, applied_local: applyLocal && canApplyLocal() },
-      });
+      // Persist-first: attempt the durable schedule overlay write BEFORE
+      // we log anything that claims `applied_local: true`. If the overlay
+      // write fails, we keep the dialog open and never write a misleading
+      // action log.
       let appliedLocal = false;
       if (applyLocal && canApplyLocal()) {
         const slot = tryBuildLocalSlot();
         if (slot) {
           try {
-            // addScheduleSlot persists to the durable Scheduling overlay
-            // first — if that fails we surface a clear error and keep the
-            // dialog open so the user can retry, instead of falsely
-            // claiming "Saved and applied".
             await addScheduleSlot(client.id, slot);
             appliedLocal = true;
           } catch (err) {
             toast.error("Could not save schedule in Blossom OS. Please try again.", {
               description: (err as Error)?.message,
             });
-            return; // keep dialog open
+            return; // keep dialog open, do NOT log applied_local: true
           }
         }
       }
+      await logAction({
+        clientId: client.id, clientName: client.childName, actionType: "schedule_adjustment", title: `Adjustment: ${type}`,
+        note: reason, state: client.state ?? null,
+        metadata: { adjustment_id: (row as { id?: string } | null)?.id, applied_local: appliedLocal },
+      });
       toast.success(
         appliedLocal
           ? "Saved and applied to Blossom OS schedule. CentralReach sync not connected yet."
@@ -472,27 +472,36 @@ export function AssignRbtDialog({
     if (!client || !trimmed) { toast.error("Select a client and RBT."); return; }
     setBusy(true);
     try {
-      await logAction({
-        clientId: client.id, clientName: client.childName, actionType: "rbt_assigned",
-        title: `RBT assigned: ${trimmed}`, note,
-        state: client.state ?? null,
-        status: "completed",
-        metadata: { rbt_name: trimmed, prior_rbt: client.rbt ?? null },
-      });
-      // assignRbt persists to the durable Scheduling overlay first and
-      // throws if that write fails — we must not toast success or close
-      // the dialog in that case.
+      // Persist-first: the durable overlay write must succeed BEFORE we
+      // write a misleading `rbt_assigned` activity log. If assignRbt
+      // throws we surface an error and keep the dialog open.
       try {
         await assignRbt([client.id], trimmed);
       } catch (err) {
         toast.error("Could not save assignment in Blossom OS. Please try again.", {
           description: (err as Error)?.message,
         });
-        return; // keep dialog open
+        return; // do NOT call logAction, do NOT toast success
       }
-      toast.success(`Paired ${client.childName} with ${trimmed}. Staged in Blossom OS; CentralReach sync not connected yet.`);
+      // Durable assignment saved. Now record the activity log. If logging
+      // fails we do NOT undo the assignment — instead we tell the user
+      // the assignment saved but the activity log did not.
+      try {
+        await logAction({
+          clientId: client.id, clientName: client.childName, actionType: "rbt_assigned",
+          title: `RBT assigned: ${trimmed}`, note,
+          state: client.state ?? null,
+          status: "completed",
+          metadata: { rbt_name: trimmed, prior_rbt: client.rbt ?? null },
+        });
+        toast.success(`Paired ${client.childName} with ${trimmed}. Staged in Blossom OS; CentralReach sync not connected yet.`);
+      } catch (err) {
+        toast.error("Assignment saved, but the activity log could not be recorded.", {
+          description: (err as Error)?.message,
+        });
+      }
       onOpenChange(false); onSaved?.(trimmed);
-    } catch { /* logAction toast already handled */ } finally { setBusy(false); }
+    } finally { setBusy(false); }
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

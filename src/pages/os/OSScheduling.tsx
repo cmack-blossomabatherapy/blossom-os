@@ -6,6 +6,7 @@
    ArrowUpRight, ShieldCheck, Activity, MapPin, Clock, CircleDot, Send,
  } from "lucide-react";
  import { OSShell } from "./OSShell";
+import { SchedulingOverlayWarning } from "@/components/scheduling/SchedulingOverlayWarning";
  import { cn } from "@/lib/utils";
  import { useClients } from "@/contexts/ClientsContext";
  import { type Client, type ScheduleSlot } from "@/data/clients";
@@ -140,7 +141,7 @@ import { useSchedulingActions } from "@/hooks/useSchedulingActions";
  /* ---------------- page ---------------- */
 
  export default function OSScheduling() {
-  const { clients, schedulingOverlayError } = useClients();
+  const { clients } = useClients();
    const cr = useCentralReachOps();
   const { activeState } = useOSRole();
    const [params, setParams] = useSearchParams();
@@ -247,18 +248,7 @@ import { useSchedulingActions } from "@/hooks/useSchedulingActions";
            </div>
          </header>
 
-        {schedulingOverlayError ? (
-          <div
-            role="alert"
-            className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200"
-          >
-            <span className="font-semibold">Scheduling overlay unavailable —</span>
-            <span>
-              showing Monday-only data. Assignments, start dates, and schedule
-              overlays from Blossom OS could not be loaded. {schedulingOverlayError}
-            </span>
-          </div>
-        ) : null}
+        <SchedulingOverlayWarning />
 
          {/* TOP — schedule timeline + filters */}
          <section className="rounded-2xl bg-card border border-border/70 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">

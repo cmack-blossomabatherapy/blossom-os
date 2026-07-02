@@ -5,6 +5,7 @@ import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import { useCentralReachOps, type ProviderRosterEntry } from "@/hooks/useCentralReachOps";
 import { ContactAttemptDialog, ProviderRiskDialog } from "@/components/scheduling/SchedulingDialogs";
+import { SchedulingOverlayWarning } from "@/components/scheduling/SchedulingOverlayWarning";
 
 const TARGET = 32;
 
@@ -45,6 +46,7 @@ export default function OSSchedulingRosterRBTs() {
   return (
     <OSShell>
       <div className="mx-auto max-w-[1400px] px-6 md:px-10 py-8 space-y-6">
+        <SchedulingOverlayWarning />
         <header className="space-y-3">
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div>
