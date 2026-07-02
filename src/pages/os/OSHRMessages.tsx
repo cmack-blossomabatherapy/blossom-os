@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { queueHrMessage, type HrMessageChannel } from "@/lib/hr/activityEvents";
+import { HRMessageHistory } from "@/components/hr/HRMessageHistory";
 
 /* ---------------- types ---------------- */
 interface Employee {
