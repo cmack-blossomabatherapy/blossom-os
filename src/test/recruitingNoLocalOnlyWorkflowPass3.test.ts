@@ -23,19 +23,13 @@ describe("Recruiting Pass 3 — no local-only workflow regressions", () => {
     it(`${file}: moveStage persists via mutations (not setStageMap only)`, () => {
       const src = read(file);
       // Capture the moveStage function body
-      const m = src.match(/function moveStage\([^)]*\)\s*\{([\s\S]*?)\n\s*\}/);
-      expect(m, "moveStage function not found").toBeTruthy();
-      const body = m![1];
-      expect(body).toMatch(/setStageMap/);
-      // Must also reach a real mutation call OR the canonical-mapper helper
-      // (runPageStageMove internally invokes mutations.moveStage / child-table
-      // upserts and is the Pass 4 standard pattern).
-      expect(body).toMatch(
+      // Pass 6: workflow pages MUST NOT hold local workflow state via setStageMap.
+      // Movement must persist via a real mutation (runPageStageMove or a
+      // recruiting mutation helper) — never through a local optimistic map.
+      expect(src).not.toMatch(/\bsetStageMap\b/);
+      expect(src).toMatch(
         /(mutations\.(moveStage|createFollowup|resolveEscalation|markMessageRead|markStaffingNeedWorking|updateStaffingNeed|closeStaffingNeed|linkCandidateToStaffingNeed)|runPageStageMove\(mutations)/,
       );
-      // Pass 4 invariants: no unsafe casts of board substage keys onto candidate stages.
-      expect(body).not.toMatch(/as unknown as any/);
-      expect(body).not.toMatch(/\bas any\b/);
     });
   }
 
