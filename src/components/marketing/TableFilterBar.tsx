@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Search, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -148,6 +148,7 @@ export function TableFilterBar({
               label={group.label}
               values={group.values}
               onClearGroup={group.onClearGroup}
+              totalCount={group.totalCount}
             />
           ))}
           <button
@@ -180,18 +181,35 @@ function countMatches(f: FilterDef, value: string): number | undefined {
   return count;
 }
 
+function groupUnionCount(f: FilterDef, values: string[]): number | undefined {
+  if (!f.countSource || !f.countValue) return undefined;
+  let count = 0;
+  for (const row of f.countSource) {
+    const v = f.countValue(row);
+    if (v == null) continue;
+    if (Array.isArray(v)) {
+      if (values.some((val) => v.includes(val))) count++;
+    } else if (values.includes(v)) {
+      count++;
+    }
+  }
+  return count;
+}
+
 function groupActiveFilters(filters: FilterDef[]) {
   // Group by human label so multiple FilterDefs targeting the same field
   // (or a single multi-value filter using comma-separated values) collapse
   // into one chip group that can be cleared in a single click.
-  const groups = new Map<string, { label: string; values: ChipValue[]; clears: Array<() => void> }>();
+  const groups = new Map<string, { label: string; values: ChipValue[]; clears: Array<() => void>; totals: (number | undefined)[]; filterCount: number }>();
   for (const f of filters) {
     const def = f.defaultValue ?? "all";
     const reset = () => f.onChange(def);
     const raw = String(f.value ?? "");
     const parts = raw.includes(",") ? raw.split(",").map((p) => p.trim()).filter(Boolean) : [raw];
-    const bucket = groups.get(f.label) ?? { label: f.label, values: [], clears: [] };
+    const bucket = groups.get(f.label) ?? { label: f.label, values: [], clears: [], totals: [], filterCount: 0 };
     bucket.clears.push(reset);
+    bucket.totals.push(groupUnionCount(f, parts));
+    bucket.filterCount++;
     parts.forEach((part, idx) => {
       const opt = f.options.find((o) => o.value === part);
       bucket.values.push({
@@ -209,49 +227,78 @@ function groupActiveFilters(filters: FilterDef[]) {
     });
     groups.set(f.label, bucket);
   }
-  return Array.from(groups.values()).map((g) => ({
-    label: g.label,
-    values: g.values,
-    onClearGroup: () => g.clears.forEach((fn) => fn()),
-  }));
+  return Array.from(groups.values()).map((g) => {
+    const totalCount =
+      g.filterCount === 1 && g.totals[0] != null ? g.totals[0] : undefined;
+    return {
+      label: g.label,
+      values: g.values,
+      onClearGroup: () => g.clears.forEach((fn) => fn()),
+      totalCount,
+    };
+  });
 }
 
 function FilterChipGroup({
   label,
   values,
   onClearGroup,
+  totalCount,
 }: {
   label: string;
   values: ChipValue[];
   onClearGroup: () => void;
+  totalCount?: number;
 }) {
+  const [collapsed, setCollapsed] = React.useState(false);
   const multi = values.length > 1;
   return (
     <span className="inline-flex items-stretch overflow-hidden rounded-full border border-primary/20 bg-primary/5 text-[11px] text-primary">
       <span className="inline-flex items-center gap-1 px-2 py-0.5 font-medium">
         {label}:
-        {values.map((v, i) => (
-          <span key={v.key} className="inline-flex items-center gap-0.5 font-normal">
-            {i > 0 && <span className="text-primary/40">,</span>}
-            <span>{v.label}</span>
-            {v.count != null && (
+        {collapsed ? (
+          <span className="inline-flex items-center gap-1 font-normal">
+            {values.length} selected
+            {totalCount != null && (
               <span className="ml-0.5 inline-flex h-3.5 min-w-[1.1rem] items-center justify-center rounded-full bg-primary/20 px-1 text-[9px] font-semibold tabular-nums text-primary/90">
-                {v.count}
+                {totalCount}
               </span>
             )}
-            {multi && (
-              <button
-                type="button"
-                onClick={v.onRemove}
-                className="rounded-full p-0.5 hover:bg-primary/15"
-                aria-label={`Remove ${label}: ${v.label}`}
-              >
-                <X className="size-2.5" />
-              </button>
-            )}
           </span>
-        ))}
+        ) : (
+          values.map((v, i) => (
+            <span key={v.key} className="inline-flex items-center gap-0.5 font-normal">
+              {i > 0 && <span className="text-primary/40">,</span>}
+              <span>{v.label}</span>
+              {v.count != null && (
+                <span className="ml-0.5 inline-flex h-3.5 min-w-[1.1rem] items-center justify-center rounded-full bg-primary/20 px-1 text-[9px] font-semibold tabular-nums text-primary/90">
+                  {v.count}
+                </span>
+              )}
+              {multi && (
+                <button
+                  type="button"
+                  onClick={v.onRemove}
+                  className="rounded-full p-0.5 hover:bg-primary/15"
+                  aria-label={`Remove ${label}: ${v.label}`}
+                >
+                  <X className="size-2.5" />
+                </button>
+              )}
+            </span>
+          ))
+        )}
       </span>
+      {multi && (
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          className="inline-flex items-center border-l border-primary/20 px-1.5 hover:bg-primary/10"
+          aria-label={`${collapsed ? "Expand" : "Collapse"} ${label} filters`}
+        >
+          {collapsed ? <ChevronDown className="size-3" /> : <ChevronUp className="size-3" />}
+        </button>
+      )}
       <button
         type="button"
         onClick={onClearGroup}
