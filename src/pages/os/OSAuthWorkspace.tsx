@@ -1318,7 +1318,7 @@ function AuthDetailDrawer({
             const tl = liveAuth?.timeline ?? [];
             const prRequested = tl.find((e) => /PR requested|Progress report requested/i.test(e.description));
             const escalated = tl.find((e) => /Escalat/i.test(e.description));
-            if (!prRequested && !escalated && !liveAuth) {
+            if (!prRequested && !escalated) {
               return <p className="text-[12.5px] text-muted-foreground">No PR tracking activity has been logged yet.</p>;
             }
             return (
