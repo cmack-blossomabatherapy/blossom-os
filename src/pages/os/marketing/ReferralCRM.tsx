@@ -3414,7 +3414,7 @@ function FilesModule() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((a) => (
+              {pagedRows.map((a) => (
                 <tr key={a.id} className="border-t hover:bg-muted/30">
                   <td className="px-3 py-2">
                     <button
@@ -3442,6 +3442,13 @@ function FilesModule() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(sz) => { setPageSizeStr(String(sz)); setPageStr("1"); }}
+        />
       </div>
       <UploadFileDialog open={uploadOpen} onOpenChange={setUploadOpen} />
     </div>
