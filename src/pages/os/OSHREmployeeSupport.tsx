@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
+import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -130,7 +131,9 @@ interface CaseRow {
   opened_at: string; due_date: string | null; closed_at: string | null;
   resolution: string | null; updated_at: string;
 }
-interface OnbRow { id: string; employee_id: string; status: string; stage_entered_at: string; blockers: string[] }
+interface OnbRow extends OnboardingReadinessRow {
+  id: string; employee_id: string; status: string; stage_entered_at: string; blockers: string[];
+}
 interface TrRow { id: string; employee_id: string; course_id: string; status: string; due_date: string | null }
 interface DocRow { id: string; employee_id: string; doc_type: string; name: string; status: string; required: boolean }
 
@@ -149,7 +152,7 @@ function useSupportData() {
       const [emp, cs, onb, tr, dc] = await Promise.all([
         supabase.from("employees").select("id,first_name,last_name,preferred_name,job_title,state,status,email,phone,hire_date,start_date").order("last_name"),
         supabase.from("employee_cases").select("*").order("opened_at", { ascending: false }),
-        supabase.from("employee_onboarding").select("id,employee_id,status,stage_entered_at,blockers"),
+        supabase.from("employee_onboarding").select("id,employee_id,status,stage_entered_at,blockers,viventium_status,viventium_synced_at,viventium_notes,stellar_status,stellar_synced_at,stellar_notes,centralreach_status,centralreach_synced_at,centralreach_notes"),
         supabase.from("employee_trainings").select("id,employee_id,course_id,status,due_date"),
         supabase.from("employee_documents_hr").select("id,employee_id,doc_type,name,status,required"),
       ]);
