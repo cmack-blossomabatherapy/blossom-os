@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
+import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,12 @@ interface Case {
   title: string; summary: string | null; owner_role: string | null; due_date: string | null;
   opened_at: string; closed_at: string | null; updated_at: string;
 }
-interface Onboarding { id: string; employee_id: string; status: string; blockers: string[] | null; }
+interface Onboarding extends OnboardingReadinessRow {
+  id: string;
+  employee_id: string;
+  status: string;
+  blockers: string[] | null;
+}
 interface Training { id: string; employee_id: string; status: string; due_date: string | null; course_id: string | null; }
 interface Announcement {
   id: string; title: string; body: string; priority: string; audience: string;
@@ -184,7 +190,7 @@ function useData() {
       const [e, c, o, t, a, s2, cd] = await Promise.all([
         supabase.from("employees").select("id,first_name,last_name,job_title,state,status,start_date").order("last_name"),
         supabase.from("employee_cases").select("*").order("updated_at", { ascending: false }),
-        supabase.from("employee_onboarding").select("id,employee_id,status,blockers"),
+        supabase.from("employee_onboarding").select("id,employee_id,status,blockers,viventium_status,viventium_synced_at,viventium_notes,stellar_status,stellar_synced_at,stellar_notes,centralreach_status,centralreach_synced_at,centralreach_notes"),
         supabase.from("employee_trainings").select("id,employee_id,status,due_date,course_id"),
         supabase.from("hr_announcements").select("*").order("publish_at", { ascending: false }).limit(20),
         supabase.from("recruiting_orientation_slots").select("id,candidate_id,scheduled_date,scheduled_time,status,format").order("scheduled_date", { ascending: true }),
@@ -800,6 +806,21 @@ export default function OSHRMessages() {
                     {openTrn.filter(t => t.status === "completed").length}/{openTrn.length} complete
                   </p>
                 </div>
+              </div>
+
+              {/* integration routing readiness */}
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Routing readiness</p>
+                {openOnb ? (
+                  <IntegrationReadinessPanel row={openOnb} />
+                ) : (
+                  <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-[12px] text-muted-foreground">
+                    No onboarding record — outbound reminders can't be routed through Viventium, Stellar, or CentralReach yet.
+                  </div>
+                )}
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Messages route to a provider only when it shows connected and synced. Otherwise, this reply is delivered in-app only.
+                </p>
               </div>
 
               {/* conversation timeline */}
