@@ -159,8 +159,6 @@ export default function OSRecruitingBackgroundChecks() {
     (c: RecruitingCandidate) => liveBgByName.get(c.name.toLowerCase()) ?? null,
     [liveBgByName],
   );
-
-  const stageMap = useMemo<Record<string, StageKey>>(() => ({}), []);
   const [activeChip, setActiveChip] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [state, setState] = useState<string>("all");
@@ -169,8 +167,6 @@ export default function OSRecruitingBackgroundChecks() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const stageOf = (c: RecruitingCandidate) => {
-    const override = stageMap[c.id];
-    if (override) return override;
     const live = findLiveBgFor(c);
     if (live) return bgStatusToStage(live.status, classify(c));
     return classify(c);
@@ -209,7 +205,7 @@ export default function OSRecruitingBackgroundChecks() {
         default: return true;
       }
     });
-  }, [pool, stageMap, activeChip, search, state, role, recruiter]);
+  }, [pool, activeChip, search, state, role, recruiter]);
 
   const summary = useMemo(() => {
     const get = (pred: (c: RecruitingCandidate) => boolean) => pool.filter(pred).length;
@@ -224,7 +220,7 @@ export default function OSRecruitingBackgroundChecks() {
       stalled:         get((c) => c.daysInStage >= 5 && c.backgroundCheck !== "Clear"),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pool, stageMap]);
+  }, [pool]);
 
   const flaggedQueue = useMemo(
     () => pool.filter((c) => c.backgroundCheck === "Delayed"),
@@ -245,7 +241,7 @@ export default function OSRecruitingBackgroundChecks() {
       if (c.backgroundCheck === "Clear" && c.orientation === "Not Scheduled") return true;
       return false;
     });
-  }, [pool, stageMap]);
+  }, [pool]);
 
   const selected = selectedId ? recruitingCandidates.find((c) => c.id === selectedId) ?? null : null;
 

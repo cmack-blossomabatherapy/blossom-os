@@ -132,9 +132,6 @@ export default function OSRecruitingRBT() {
     () => recruitingCandidates.filter((c) => c.role === "RBT"),
     []
   );
-
-  const stageMap = useMemo<Record<string, StageKey>>(() => ({}), []);
-
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
@@ -143,7 +140,7 @@ export default function OSRecruitingRBT() {
   const [sourceF, setSourceF] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => classify(c);
 
   const staffingNeeds = useMemo(() => getClientStaffingNeeds().filter((n) => n.client.bcba), []);
 
@@ -173,7 +170,7 @@ export default function OSRecruitingRBT() {
         default:            return true;
       }
     });
-  }, [baseCandidates, stageMap, activeChip, search, stateF, recruiterF, urgencyF, sourceF]);
+  }, [baseCandidates, activeChip, search, stateF, recruiterF, urgencyF, sourceF]);
 
   const summary = useMemo(() => {
     const get = (pred: (c: RecruitingCandidate) => boolean) => baseCandidates.filter(pred).length;
@@ -188,7 +185,7 @@ export default function OSRecruitingRBT() {
       stalled:          get(isStalled),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseCandidates, stageMap, staffingNeeds]);
+  }, [baseCandidates, staffingNeeds]);
 
   const orientationReadyList = useMemo(
     () => baseCandidates.filter((c) => isOrientationReady(c) || isStaffingReady(c)),

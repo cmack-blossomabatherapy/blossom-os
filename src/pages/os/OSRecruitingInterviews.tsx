@@ -141,7 +141,6 @@ export default function OSRecruitingInterviews() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
   const { items: liveInterviews } = useRecruitingInterviews();
-  const stageMap = useMemo<Record<string, StageKey>>(() => ({}), []);
   const [activeChip, setActiveChip] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [state, setState] = useState<string>("all");
@@ -199,7 +198,7 @@ export default function OSRecruitingInterviews() {
     }
   }
 
-  const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
+  const stageOf = (c: RecruitingCandidate) => classify(c);
 
   const candidates = useMemo(() => {
     return recruitingCandidates.filter((c) => {
@@ -229,7 +228,7 @@ export default function OSRecruitingInterviews() {
         default: return true;
       }
     });
-  }, [stageMap, activeChip, search, state, role, recruiter, source]);
+  }, [activeChip, search, state, role, recruiter, source]);
 
   const all = recruitingCandidates;
   const summary = useMemo(() => {
@@ -245,7 +244,7 @@ export default function OSRecruitingInterviews() {
       followUp:     get((c) => c.blockers.length > 0 && c.daysInStage >= 3),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stageMap]);
+  }, []);
 
   const todays = useMemo(() => {
     return recruitingCandidates
@@ -260,7 +259,7 @@ export default function OSRecruitingInterviews() {
         || (s === "completed" && c.daysInStage >= 2);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stageMap]);
+  }, []);
 
   const selected = selectedId ? recruitingCandidates.find((c) => c.id === selectedId) ?? null : null;
 

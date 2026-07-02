@@ -202,8 +202,6 @@ export default function OSRecruitingOnboarding() {
     (c: RecruitingCandidate) => liveOnboardingByName.get(c.name.toLowerCase()) ?? null,
     [liveOnboardingByName],
   );
-
-  const stageMap = useMemo<Record<string, StageKey>>(() => ({}), []);
   const [activeChip, setActiveChip] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [state, setState] = useState<string>("all");
@@ -213,8 +211,6 @@ export default function OSRecruitingOnboarding() {
   const [checks, setChecks] = useState<Record<string, boolean[]>>({});
 
   const stageOf = (c: RecruitingCandidate) => {
-    const override = stageMap[c.id];
-    if (override) return override;
     const live = findLiveOnboardingFor(c);
     if (live) return onboardingSummaryToStage(live, classify(c));
     return classify(c);
@@ -255,7 +251,7 @@ export default function OSRecruitingOnboarding() {
         default: return true;
       }
     });
-  }, [pool, stageMap, activeChip, search, state, role, recruiter]);
+  }, [pool, activeChip, search, state, role, recruiter]);
 
   const summary = useMemo(() => {
     const get = (pred: (c: RecruitingCandidate) => boolean) => pool.filter(pred).length;
@@ -270,7 +266,7 @@ export default function OSRecruitingOnboarding() {
       stalled:        get((c) => c.daysInStage >= 5 && c.onboardingStatus !== "Complete"),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pool, stageMap]);
+  }, [pool]);
 
   const missingFeed = useMemo(
     () => pool
