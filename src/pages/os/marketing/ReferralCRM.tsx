@@ -4923,6 +4923,10 @@ function PatientPipelineModule({
   const [stateFilter, setStateFilter] = useUrlState("ppst", "all");
   const [intakeFilter, setIntakeFilter] = useUrlState("ppi", "all");
   const [insFilter, setInsFilter] = useUrlState("ppins", "all");
+  const [pageStr, setPageStr] = useUrlState("pppg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("ppps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
 
   const rows = useMemo(() => {
     let r = scopedReferrals(s);
@@ -4940,6 +4944,8 @@ function PatientPipelineModule({
     }
     return [...r].sort((a, b) => (b.referralDate || "").localeCompare(a.referralDate || ""));
   }, [s, q, statusFilter, stateFilter, intakeFilter, insFilter]);
+  useEffect(() => { setPageStr("1"); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [q, statusFilter, stateFilter, intakeFilter, insFilter]);
+  const pagedRows = rows.slice((page - 1) * pageSize, page * pageSize);
 
   const byStatus = useMemo(() => {
     const map: Record<string, number> = {};
@@ -5003,7 +5009,7 @@ function PatientPipelineModule({
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => {
+              {pagedRows.map((r) => {
                 const contact = r.contactId ? s.contacts.find((c) => c.id === r.contactId) : undefined;
                 return (
                   <tr key={r.id} className="border-t hover:bg-muted/30">
@@ -5036,6 +5042,13 @@ function PatientPipelineModule({
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(sz) => { setPageSizeStr(String(sz)); setPageStr("1"); }}
+        />
       </div>
 
       <p className="text-[11px] text-muted-foreground">
