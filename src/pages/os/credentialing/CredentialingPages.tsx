@@ -3,7 +3,8 @@ import { Navigate } from "react-router-dom";
 import {
   Stethoscope, Building2, IdCard, AlertTriangle, Calendar, Plus, Filter,
   Download, RefreshCw, ListChecks, FileSignature, ShieldCheck, Activity,
-  Search, X, Trash2, Upload, FileText, ListTodo, type LucideIcon,
+  Search, X, Trash2, Upload, FileText, ListTodo, BarChart3, Save, BookmarkPlus,
+  type LucideIcon,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  listCredViews, saveCredView, deleteCredView,
+  type CredentialingSavedView,
+} from "@/lib/os/credentialingSavedViews";
 import {
   useCredentialingData, useCredentialingActivity,
   createCredProvider, updateCredProvider, createCredRecord, updateCredRecord,
@@ -123,16 +128,168 @@ function LoadErr({ loading, error }: { loading: boolean; error: string | null })
   return null;
 }
 
-function Empty({ icon: Icon = FileSignature, title, action }: { icon?: LucideIcon; title: string; action?: ReactNode }) {
+function Empty({
+  icon: Icon = FileSignature, title, description, action,
+}: {
+  icon?: LucideIcon;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
   return (
     <div className="text-center py-10">
       <div className="h-10 w-10 mx-auto rounded-full bg-muted grid place-items-center mb-3">
         <Icon className="h-5 w-5 text-muted-foreground" />
       </div>
       <div className="text-sm font-medium text-foreground">{title}</div>
+      {description ? (
+        <div className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">{description}</div>
+      ) : null}
       {action ? <div className="mt-3">{action}</div> : null}
     </div>
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/* From-reports contextual banner                                             */
+/* -------------------------------------------------------------------------- */
+function FromReportsBanner() {
+  const params = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
+  if (params.get("from") !== "reports") return null;
+  const report = params.get("report");
+  const label = report ? `Opened from Reports · ${report}` : "Opened from Reports";
+  return (
+    <div className="rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-medium px-3 py-2 inline-flex items-center gap-2">
+      <BarChart3 className="h-3.5 w-3.5" /> {label}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Saved views bar (built-ins + user custom views)                            */
+/* -------------------------------------------------------------------------- */
+interface BuiltInView { id: string; label: string }
+
+function SavedViewsBar<T extends Record<string, unknown>>({
+  pageKey, builtIns, activeId, onApplyBuiltIn, currentFilters,
+  onApplyCustom, hasActiveFilters, onClear,
+}: {
+  pageKey: string;
+  builtIns: BuiltInView[];
+  activeId: string;
+  onApplyBuiltIn: (id: string) => void;
+  currentFilters: T;
+  onApplyCustom: (filters: T) => void;
+  hasActiveFilters: boolean;
+  onClear: () => void;
+}) {
+  const [custom, setCustom] = useState<CredentialingSavedView<T>[]>(() => listCredViews<T>(pageKey));
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+    const refresh = () => setCustom(listCredViews<T>(pageKey));
+    window.addEventListener("credentialing-saved-views-changed", refresh);
+    return () => window.removeEventListener("credentialing-saved-views-changed", refresh);
+  }, [pageKey]);
+
+  function commitSave() {
+    const trimmed = name.trim();
+    if (!trimmed) { toast.error("Give this view a name"); return; }
+    saveCredView<T>(pageKey, trimmed, currentFilters);
+    toast.success(`Saved view · ${trimmed}`);
+    setName("");
+    setSaveOpen(false);
+  }
+
+  function removeCustom(id: string, label: string) {
+    deleteCredView(pageKey, id);
+    toast.message(`Removed view · ${label}`);
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      {builtIns.map((v) => (
+        <button
+          key={v.id}
+          onClick={() => onApplyBuiltIn(v.id)}
+          className={cn(
+            "px-2.5 h-7 text-xs font-medium rounded-md whitespace-nowrap transition-colors border",
+            activeId === v.id
+              ? "bg-primary/10 text-primary border-primary/30"
+              : "bg-card text-muted-foreground hover:text-foreground border-border/60",
+          )}
+        >
+          {v.label}
+        </button>
+      ))}
+      {custom.length > 0 && <div className="h-5 w-px bg-border/60 mx-0.5" />}
+      {custom.map((v) => (
+        <div key={v.id} className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card text-xs font-medium overflow-hidden">
+          <button className="px-2.5 h-7 text-muted-foreground hover:text-foreground" onClick={() => onApplyCustom(v.filters)}>
+            {v.name}
+          </button>
+          <button
+            className="h-7 px-1.5 text-muted-foreground hover:text-red-600 border-l border-border/60"
+            title="Delete saved view"
+            onClick={() => removeCustom(v.id, v.name)}
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+      {hasActiveFilters && (
+        <button
+          onClick={() => setSaveOpen(true)}
+          className="ml-1 inline-flex items-center gap-1 px-2.5 h-7 text-xs font-medium rounded-md border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
+        >
+          <BookmarkPlus className="h-3 w-3" /> Save current view
+        </button>
+      )}
+      {hasActiveFilters && (
+        <button
+          onClick={onClear}
+          className="ml-1 px-2.5 h-7 text-xs font-medium rounded-md whitespace-nowrap text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+        >
+          <X className="h-3 w-3" /> Clear filters
+        </button>
+      )}
+      <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Save current view</DialogTitle>
+            <DialogDescription>Name this filter combination so you can jump back to it later.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>View name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. GA blocked payers" onKeyDown={(e) => { if (e.key === "Enter") commitSave(); }} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveOpen(false)}>Cancel</Button>
+            <Button onClick={commitSave}><Save className="h-3.5 w-3.5 mr-1" /> Save view</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* CentralReach readiness helpers                                             */
+/* -------------------------------------------------------------------------- */
+function readinessMissingFields(
+  record: CredentialingRecord,
+  provider: CredentialingProvider | null | undefined,
+): string[] {
+  const missing: string[] = [];
+  if (!provider?.centralreach_provider_id) missing.push("Provider CentralReach ID");
+  if (!record.centralreach_external_id) missing.push("Record CentralReach ID");
+  if (!provider?.npi) missing.push("Provider NPI");
+  if (!provider?.license_state) missing.push("Provider license state");
+  if (!record.payer_name) missing.push("Payer");
+  if (!record.state) missing.push("State");
+  if (!APPROVED_CRED_STATUSES.includes(record.status)) missing.push("Approved / credentialable status");
+  return missing;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -682,6 +839,13 @@ function RecordDetailSheet({
       toast.message(`CentralReach already ${status}`);
       return;
     }
+    if (status === "Ready To Sync") {
+      const missing = readinessMissingFields(record, provider);
+      if (missing.length) {
+        toast.error(`Can't mark Ready To Sync — missing: ${missing.join(", ")}`);
+        return;
+      }
+    }
     try {
       await updateCredRecord(
         record.id,
@@ -979,6 +1143,24 @@ function RecordDetailSheet({
                 </div>
                 <Field label="Last record update" value={record.updated_at ? new Date(record.updated_at).toLocaleString() : null} />
                 <Field label="Last readiness update" value={record.centralreach_last_readiness_at ? new Date(record.centralreach_last_readiness_at).toLocaleString() : null} />
+                {(() => {
+                  const missing = readinessMissingFields(record, provider);
+                  if (!missing.length) {
+                    return (
+                      <div className="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs p-3">
+                        All required identifiers are present. This record can be marked Ready To Sync.
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/70 text-amber-900 text-xs p-3">
+                      <div className="font-medium mb-1">Missing before Ready To Sync ({missing.length})</div>
+                      <ul className="list-disc pl-4 space-y-0.5">
+                        {missing.map((m) => <li key={m}>{m}</li>)}
+                      </ul>
+                    </div>
+                  );
+                })()}
                 {record.centralreach_sync_status === "Sync Error" && record.centralreach_sync_error ? (
                   <div className="rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs p-3">
                     <div className="font-medium mb-0.5">Sync error</div>
@@ -986,7 +1168,14 @@ function RecordDetailSheet({
                   </div>
                 ) : null}
                 <div className="flex flex-wrap gap-2 pt-2">
-                  <Button size="sm" variant="outline" onClick={() => setCrSync("Ready To Sync")}>Mark Ready To Sync</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={readinessMissingFields(record, provider).length > 0}
+                    onClick={() => setCrSync("Ready To Sync")}
+                  >
+                    Mark Ready To Sync
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => setCrSync("Synced")}>Mark Synced</Button>
                   <Button size="sm" variant="outline" onClick={() => { setSyncErrorNote(record.centralreach_sync_error ?? ""); setSyncErrorOpen(true); }}>Mark Sync Error…</Button>
                   <Button size="sm" variant="outline" onClick={() => setCrIdsOpen(true)}>Edit CentralReach IDs</Button>
@@ -1686,6 +1875,10 @@ export function CredentialingDashboardPage() {
   const [stateFilter, setStateFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [payerFilter, setPayerFilter] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<string>("ALL");
+  const [ownerFilter, setOwnerFilter] = useState<string>("");
+  const [providerTypeFilter, setProviderTypeFilter] = useState<string>("ALL");
+  const [crSyncFilter, setCrSyncFilter] = useState<string>("ALL");
   const [savedView, setSavedView] = useState<string>("all");
   const [missingOnly, setMissingOnly] = useState(false);
   const [overdueOnly, setOverdueOnly] = useState(false);
@@ -1714,24 +1907,38 @@ export function CredentialingDashboardPage() {
 
   const clearFilters = () => {
     setSavedView("all"); setStateFilter("ALL"); setStatusFilter("ALL"); setPayerFilter("");
+    setTypeFilter("ALL"); setOwnerFilter(""); setProviderTypeFilter("ALL"); setCrSyncFilter("ALL");
     setMissingOnly(false); setOverdueOnly(false); setCrNotReady(false); setReadyToSync(false);
   };
 
-  const filtered = useMemo(() => records.filter((r) =>
-    (stateFilter === "ALL" || r.state === stateFilter) &&
-    (statusFilter === "ALL" || r.status === statusFilter) &&
-    (!payerFilter || r.payer_name.toLowerCase().includes(payerFilter.toLowerCase())) &&
-    (!missingOnly || r.status === "Missing Info" || (r as unknown as { missing_items?: string[] }).missing_items?.length) &&
-    (!overdueOnly || (() => { const d = daysUntil(r.next_follow_up_date); return d !== null && d < 0; })()) &&
-    (!crNotReady || r.centralreach_sync_status !== "Synced") &&
-    (!readyToSync || (r.centralreach_sync_status === "Ready To Sync" && APPROVED_CRED_STATUSES.includes(r.status))) &&
-    (savedView !== "expiring-30" || (() => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 30; })())
-  ), [records, stateFilter, statusFilter, payerFilter, missingOnly, overdueOnly, crNotReady, readyToSync, savedView]);
+  const filtered = useMemo(() => records.filter((r) => {
+    const prov = providerById.get(r.provider_id);
+    const q = payerFilter.toLowerCase();
+    const matchesQ = !q || r.payer_name.toLowerCase().includes(q) || (prov?.provider_name.toLowerCase().includes(q) ?? false);
+    return (
+      matchesQ &&
+      (stateFilter === "ALL" || r.state === stateFilter) &&
+      (statusFilter === "ALL" || r.status === statusFilter) &&
+      (typeFilter === "ALL" || r.credentialing_type === typeFilter) &&
+      (!ownerFilter || (r.owner_name ?? "").toLowerCase().includes(ownerFilter.toLowerCase())) &&
+      (providerTypeFilter === "ALL" || prov?.provider_type === providerTypeFilter) &&
+      (crSyncFilter === "ALL" || r.centralreach_sync_status === crSyncFilter) &&
+      (!missingOnly || r.status === "Missing Info" || (r.missing_items?.length ?? 0) > 0) &&
+      (!overdueOnly || (() => { const d = daysUntil(r.next_follow_up_date); return d !== null && d < 0; })()) &&
+      (!crNotReady || r.centralreach_sync_status !== "Synced") &&
+      (!readyToSync || (r.centralreach_sync_status === "Ready To Sync" && APPROVED_CRED_STATUSES.includes(r.status))) &&
+      (savedView !== "expiring-30" || (() => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 30; })())
+    );
+  }), [records, providerById, stateFilter, statusFilter, payerFilter, typeFilter, ownerFilter, providerTypeFilter, crSyncFilter, missingOnly, overdueOnly, crNotReady, readyToSync, savedView]);
 
   const activeFilterCount = (
     (stateFilter !== "ALL" ? 1 : 0) +
     (statusFilter !== "ALL" ? 1 : 0) +
     (payerFilter ? 1 : 0) +
+    (typeFilter !== "ALL" ? 1 : 0) +
+    (ownerFilter ? 1 : 0) +
+    (providerTypeFilter !== "ALL" ? 1 : 0) +
+    (crSyncFilter !== "ALL" ? 1 : 0) +
     (missingOnly ? 1 : 0) +
     (overdueOnly ? 1 : 0) +
     (crNotReady ? 1 : 0) +
@@ -1784,9 +1991,12 @@ export function CredentialingDashboardPage() {
       />
       <LoadErr loading={loading} error={error} />
 
-      {/* Saved views — operational filter presets */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mt-1">
-        {[
+      <FromReportsBanner />
+
+      <SavedViewsBar
+        pageKey="dashboard"
+        activeId={savedView}
+        builtIns={[
           { id: "all", label: "All records" },
           { id: "my-open-work", label: "My open work" },
           { id: "missing-info", label: "Missing Info" },
@@ -1795,29 +2005,30 @@ export function CredentialingDashboardPage() {
           { id: "expiring-30", label: "Expiring in 30 Days" },
           { id: "cr-not-ready", label: "CentralReach Not Ready" },
           { id: "ready-to-sync", label: "Ready To Sync" },
-        ].map((v) => (
-          <button
-            key={v.id}
-            onClick={() => applyView(v.id)}
-            className={cn(
-              "px-2.5 h-7 text-xs font-medium rounded-md whitespace-nowrap transition-colors border",
-              savedView === v.id
-                ? "bg-primary/10 text-primary border-primary/30"
-                : "bg-card text-muted-foreground hover:text-foreground border-border/60",
-            )}
-          >
-            {v.label}
-          </button>
-        ))}
-        {activeFilterCount > 0 && (
-          <button
-            onClick={clearFilters}
-            className="ml-1 px-2.5 h-7 text-xs font-medium rounded-md whitespace-nowrap text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-          >
-            <X className="h-3 w-3" /> Clear filters
-          </button>
-        )}
-      </div>
+          { id: "uncredentialed-bcbas", label: "Uncredentialed BCBAs" },
+        ]}
+        onApplyBuiltIn={applyView}
+        currentFilters={{
+          stateFilter, statusFilter, payerFilter, typeFilter, ownerFilter,
+          providerTypeFilter, crSyncFilter, missingOnly, overdueOnly, crNotReady, readyToSync, savedView,
+        }}
+        onApplyCustom={(f) => {
+          setStateFilter(f.stateFilter ?? "ALL");
+          setStatusFilter(f.statusFilter ?? "ALL");
+          setPayerFilter(f.payerFilter ?? "");
+          setTypeFilter(f.typeFilter ?? "ALL");
+          setOwnerFilter(f.ownerFilter ?? "");
+          setProviderTypeFilter(f.providerTypeFilter ?? "ALL");
+          setCrSyncFilter(f.crSyncFilter ?? "ALL");
+          setMissingOnly(!!f.missingOnly);
+          setOverdueOnly(!!f.overdueOnly);
+          setCrNotReady(!!f.crNotReady);
+          setReadyToSync(!!f.readyToSync);
+          setSavedView(f.savedView ?? "all");
+        }}
+        hasActiveFilters={activeFilterCount > 0}
+        onClear={clearFilters}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Active providers" value={kpis.activeProviders} tone="ok" />
@@ -1834,10 +2045,10 @@ export function CredentialingDashboardPage() {
         title="Credentialing records"
         description="All payer/state credentialing work, filterable."
         action={
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center justify-end">
             <div className="relative">
               <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
-              <Input placeholder="Payer…" className="h-9 pl-7 w-40" value={payerFilter} onChange={(e) => setPayerFilter(e.target.value)} />
+              <Input placeholder="Provider or payer…" className="h-9 pl-7 w-52" value={payerFilter} onChange={(e) => setPayerFilter(e.target.value)} />
             </div>
             <Select value={stateFilter} onValueChange={setStateFilter}>
               <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
@@ -1847,6 +2058,33 @@ export function CredentialingDashboardPage() {
               <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent><SelectItem value="ALL">All statuses</SelectItem>{CRED_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Type" /></SelectTrigger>
+              <SelectContent><SelectItem value="ALL">All types</SelectItem>{CRED_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={providerTypeFilter} onValueChange={setProviderTypeFilter}>
+              <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Provider type" /></SelectTrigger>
+              <SelectContent><SelectItem value="ALL">All providers</SelectItem>{CRED_PROVIDER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={crSyncFilter} onValueChange={setCrSyncFilter}>
+              <SelectTrigger className="h-9 w-40"><SelectValue placeholder="CentralReach" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">CR: any status</SelectItem>
+                {(["Not Connected","Ready To Sync","Synced","Sync Error"] as const).map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input placeholder="Owner…" className="h-9 w-32" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} />
+            <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+              <Switch checked={missingOnly} onCheckedChange={setMissingOnly} /> Missing items
+            </label>
+            <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+              <Switch checked={overdueOnly} onCheckedChange={setOverdueOnly} /> Overdue
+            </label>
+            <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+              <Switch checked={readyToSync} onCheckedChange={setReadyToSync} /> Ready to sync
+            </label>
           </div>
         }
       >
@@ -1917,10 +2155,43 @@ export function ProviderCredentialingPage() {
   const [openRecord, setOpenRecord] = useState<string | null>(null);
   const [openProvider, setOpenProvider] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [providerType, setProviderType] = useState<string>("ALL");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [active, setActive] = useState<"all" | "active" | "inactive">("all");
+  const [expWindow, setExpWindow] = useState<"any" | "30" | "60" | "90">("any");
+  const [missingCr, setMissingCr] = useState(false);
+  const [missingDocs, setMissingDocs] = useState(false);
 
-  const list = providers.filter((p) =>
-    !q || p.provider_name.toLowerCase().includes(q.toLowerCase()) || (p.npi ?? "").includes(q)
-  );
+  const list = useMemo(() => providers.filter((p) => {
+    const query = q.trim().toLowerCase();
+    const matchesQ = !query
+      || p.provider_name.toLowerCase().includes(query)
+      || (p.npi ?? "").toLowerCase().includes(query)
+      || (p.caqh_id ?? "").toLowerCase().includes(query)
+      || (p.license_number ?? "").toLowerCase().includes(query);
+    if (!matchesQ) return false;
+    if (providerType !== "ALL" && p.provider_type !== providerType) return false;
+    if (stateFilter !== "ALL" && p.license_state !== stateFilter) return false;
+    if (active === "active" && !p.active) return false;
+    if (active === "inactive" && p.active) return false;
+    if (expWindow !== "any") {
+      const d = daysUntil(p.license_expiration_date);
+      const w = Number(expWindow);
+      if (d === null || d < 0 || d > w) return false;
+    }
+    if (missingCr && p.centralreach_provider_id) return false;
+    if (missingDocs) {
+      const hasDocs = documents.some((d) => d.provider_id === p.id);
+      if (hasDocs) return false;
+    }
+    return true;
+  }), [providers, documents, q, providerType, stateFilter, active, expWindow, missingCr, missingDocs]);
+
+  const hasFilters = !!q || providerType !== "ALL" || stateFilter !== "ALL" || active !== "all" || expWindow !== "any" || missingCr || missingDocs;
+  const clearFilters = () => {
+    setQ(""); setProviderType("ALL"); setStateFilter("ALL"); setActive("all");
+    setExpWindow("any"); setMissingCr(false); setMissingDocs(false);
+  };
 
   function startFor(providerId: string) { setDefaultProv(providerId); setAddRec(true); }
 
@@ -1931,18 +2202,72 @@ export function ProviderCredentialingPage() {
         title="Provider Credentialing"
         subtitle="Provider directory with payer/state coverage, licensing, and CentralReach readiness."
         icon={Stethoscope}
-        actions={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add provider</Button>}
+        actions={
+          <>
+            <Button size="sm" variant="outline" onClick={() => exportCsv("providers.csv", list as unknown as Record<string, unknown>[])}>
+              <Download className="h-4 w-4 mr-1.5" />Export CSV
+            </Button>
+            <Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add provider</Button>
+          </>
+        }
       />
       <LoadErr loading={loading} error={error} />
-      <div className="flex items-center gap-2">
+      <FromReportsBanner />
+      <div className="flex items-center gap-2 flex-wrap">
         <div className="relative max-w-sm w-full">
           <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search providers or NPI…" className="pl-7 h-9" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, NPI, CAQH, license…" className="pl-7 h-9" />
         </div>
+        <Select value={providerType} onValueChange={setProviderType}>
+          <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Type" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All types</SelectItem>{CRED_PROVIDER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All states</SelectItem>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={active} onValueChange={(v) => setActive(v as "all" | "active" | "inactive")}>
+          <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="active">Active only</SelectItem>
+            <SelectItem value="inactive">Inactive only</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={expWindow} onValueChange={(v) => setExpWindow(v as "any" | "30" | "60" | "90")}>
+          <SelectTrigger className="h-9 w-44"><SelectValue placeholder="License expiring" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="any">License: any</SelectItem>
+            <SelectItem value="30">Expiring &lt; 30 days</SelectItem>
+            <SelectItem value="60">Expiring &lt; 60 days</SelectItem>
+            <SelectItem value="90">Expiring &lt; 90 days</SelectItem>
+          </SelectContent>
+        </Select>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={missingCr} onCheckedChange={setMissingCr} /> Missing CR ID
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={missingDocs} onCheckedChange={setMissingDocs} /> Missing docs
+        </label>
+        {hasFilters && (
+          <Button size="sm" variant="ghost" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Clear</Button>
+        )}
       </div>
       <SectionCard title={`${list.length} provider${list.length === 1 ? "" : "s"}`} description="Each row shows credentialing posture across payers.">
         {list.length === 0 ? (
-          <Empty title="No providers yet" action={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1" />Add provider</Button>} />
+          hasFilters ? (
+            <Empty
+              title="No providers match these filters"
+              description="Try clearing filters or widening your search."
+              action={<Button size="sm" variant="outline" onClick={clearFilters}><X className="h-4 w-4 mr-1" />Clear filters</Button>}
+            />
+          ) : (
+            <Empty
+              title="No providers yet"
+              description="Add clinicians and other credentialable staff so you can start tracking payer coverage, licensing, and CentralReach IDs."
+              action={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1" />Add provider</Button>}
+            />
+          )
         ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
@@ -2004,13 +2329,42 @@ export function InsuranceCredentialingPage() {
   const [matrixSel, setMatrixSel] = useState<{ payer: string; state: string } | null>(null);
   const [defaultPayer, setDefaultPayer] = useState<string | undefined>();
   const [defaultState, setDefaultState] = useState<string | undefined>();
+  const [payerQ, setPayerQ] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [typeFilter, setTypeFilter] = useState<string>("ALL");
+  const [pendingOnly, setPendingOnly] = useState(false);
+  const [blockedOnly, setBlockedOnly] = useState(false);
+  const [expiringOnly, setExpiringOnly] = useState(false);
+  const [gapsOnly, setGapsOnly] = useState(false);
+
+  const filteredRecords = useMemo(() => records.filter((r) => {
+    const q = payerQ.trim().toLowerCase();
+    if (q && !r.payer_name.toLowerCase().includes(q)) return false;
+    if (stateFilter !== "ALL" && r.state !== stateFilter) return false;
+    if (statusFilter !== "ALL" && r.status !== statusFilter) return false;
+    if (typeFilter !== "ALL" && r.credentialing_type !== typeFilter) return false;
+    if (pendingOnly && !ACTIVE_CRED_STATUSES.includes(r.status)) return false;
+    if (blockedOnly && !(r.status === "Blocked" || r.status === "Denied")) return false;
+    if (expiringOnly) {
+      const d = daysUntil(r.expiration_date);
+      if (d === null || d < 0 || d > 90) return false;
+    }
+    return true;
+  }), [records, payerQ, stateFilter, statusFilter, typeFilter, pendingOnly, blockedOnly, expiringOnly]);
+
+  const hasFilters = !!payerQ || stateFilter !== "ALL" || statusFilter !== "ALL" || typeFilter !== "ALL" || pendingOnly || blockedOnly || expiringOnly || gapsOnly;
+  const clearFilters = () => {
+    setPayerQ(""); setStateFilter("ALL"); setStatusFilter("ALL"); setTypeFilter("ALL");
+    setPendingOnly(false); setBlockedOnly(false); setExpiringOnly(false); setGapsOnly(false);
+  };
 
   const matrix = useMemo(() => {
     const map = new Map<string, {
       payer: string; state: string; required: number; credentialed: number;
       pending: number; blocked: number; expiring: number; nextFollowUp: string | null;
     }>();
-    records.forEach((r) => {
+    filteredRecords.forEach((r) => {
       const key = `${r.payer_name}|${r.state ?? "—"}`;
       let row = map.get(key);
       if (!row) {
@@ -2027,8 +2381,10 @@ export function InsuranceCredentialingPage() {
         row.nextFollowUp = r.next_follow_up_date;
       }
     });
-    return Array.from(map.values()).sort((a, b) => (b.blocked - a.blocked) || (b.pending - a.pending));
-  }, [records]);
+    let rows = Array.from(map.values());
+    if (gapsOnly) rows = rows.filter((r) => r.credentialed < r.required);
+    return rows.sort((a, b) => (b.blocked - a.blocked) || (b.pending - a.pending));
+  }, [filteredRecords, gapsOnly]);
 
   return (
     <Shell>
@@ -2036,14 +2392,65 @@ export function InsuranceCredentialingPage() {
         eyebrow="Credentialing" title="Insurance Credentialing"
         subtitle="Payer + state credentialing matrix. See which payers are blocking growth or authorizations."
         icon={Building2}
-        actions={<Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1.5" />Add payer credentialing record</Button>}
+        actions={
+          <>
+            <Button size="sm" variant="outline" onClick={() => exportCsv("payer-matrix.csv", matrix as unknown as Record<string, unknown>[])}>
+              <Download className="h-4 w-4 mr-1.5" />Export CSV
+            </Button>
+            <Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1.5" />Add payer credentialing record</Button>
+          </>
+        }
       />
       <LoadErr loading={loading} error={error} />
+      <FromReportsBanner />
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative max-w-xs w-full">
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+          <Input value={payerQ} onChange={(e) => setPayerQ(e.target.value)} placeholder="Search payer…" className="pl-7 h-9" />
+        </div>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All states</SelectItem>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All statuses</SelectItem>{CRED_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Type" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All types</SelectItem>{CRED_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+        </Select>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={pendingOnly} onCheckedChange={setPendingOnly} /> Pending
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={blockedOnly} onCheckedChange={setBlockedOnly} /> Blocked/Denied
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={expiringOnly} onCheckedChange={setExpiringOnly} /> Expiring &lt; 90d
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={gapsOnly} onCheckedChange={setGapsOnly} /> Gaps only
+        </label>
+        {hasFilters && (
+          <Button size="sm" variant="ghost" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Clear</Button>
+        )}
+      </div>
       <SectionCard title="Payer / state posture" description={`${matrix.length} payer-state combinations.`}>
         {matrix.length === 0 ? (
-          <Empty title="No payer credentialing yet" action={
-            <Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1" />Add payer credentialing record</Button>
-          } />
+          hasFilters || records.length > 0 ? (
+            <Empty
+              title="No records match these filters"
+              description="Try clearing filters to see every payer / state combination."
+              action={<Button size="sm" variant="outline" onClick={clearFilters}><X className="h-4 w-4 mr-1" />Clear filters</Button>}
+            />
+          ) : (
+            <Empty
+              title="No payer credentialing yet"
+              description="Track which payers each provider is credentialed for so scheduling and billing know who can see which clients."
+              action={<Button size="sm" onClick={() => setAddRec(true)}><Plus className="h-4 w-4 mr-1" />Add payer credentialing record</Button>}
+            />
+          )
         ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
@@ -2110,8 +2517,43 @@ export function BCBACredentialsPage() {
   const [defaultProv, setDefaultProv] = useState<string | undefined>();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
   const [openProvider, setOpenProvider] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [expWindow, setExpWindow] = useState<"any" | "30" | "60" | "90">("any");
+  const [missingCr, setMissingCr] = useState(false);
+  const [missingDocs, setMissingDocs] = useState(false);
+  const [noCoverage, setNoCoverage] = useState(false);
+  const [openTasksOnly, setOpenTasksOnly] = useState(false);
 
-  const bcbaProviders = providers.filter((p) => p.provider_type === "BCBA");
+  const bcbaAll = useMemo(() => providers.filter((p) => p.provider_type === "BCBA"), [providers]);
+  const bcbaProviders = useMemo(() => bcbaAll.filter((p) => {
+    const query = q.trim().toLowerCase();
+    if (query) {
+      const match = p.provider_name.toLowerCase().includes(query)
+        || (p.npi ?? "").toLowerCase().includes(query)
+        || (p.caqh_id ?? "").toLowerCase().includes(query)
+        || (p.license_number ?? "").toLowerCase().includes(query);
+      if (!match) return false;
+    }
+    if (stateFilter !== "ALL" && p.license_state !== stateFilter) return false;
+    if (expWindow !== "any") {
+      const d = daysUntil(p.license_expiration_date);
+      const w = Number(expWindow);
+      if (d === null || d < 0 || d > w) return false;
+    }
+    if (missingCr && p.centralreach_provider_id) return false;
+    if (missingDocs && documents.some((d) => d.provider_id === p.id)) return false;
+    const provRecs = records.filter((r) => r.provider_id === p.id);
+    if (noCoverage && provRecs.some((r) => APPROVED_CRED_STATUSES.includes(r.status))) return false;
+    if (openTasksOnly && !tasks.some((t) => t.status !== "Done" && provRecs.some((r) => r.id === t.credentialing_record_id))) return false;
+    return true;
+  }), [bcbaAll, records, documents, tasks, q, stateFilter, expWindow, missingCr, missingDocs, noCoverage, openTasksOnly]);
+
+  const hasFilters = !!q || stateFilter !== "ALL" || expWindow !== "any" || missingCr || missingDocs || noCoverage || openTasksOnly;
+  const clearFilters = () => {
+    setQ(""); setStateFilter("ALL"); setExpWindow("any"); setMissingCr(false);
+    setMissingDocs(false); setNoCoverage(false); setOpenTasksOnly(false);
+  };
 
   return (
     <Shell>
@@ -2119,14 +2561,66 @@ export function BCBACredentialsPage() {
         eyebrow="Credentialing" title="BCBA Credentials"
         subtitle="Credentialing posture for every BCBA: licensing, CAQH, payer coverage, documents, CentralReach."
         icon={IdCard}
-        actions={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add BCBA</Button>}
+        actions={
+          <>
+            <Button size="sm" variant="outline" onClick={() => exportCsv("bcbas.csv", bcbaProviders as unknown as Record<string, unknown>[])}>
+              <Download className="h-4 w-4 mr-1.5" />Export CSV
+            </Button>
+            <Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1.5" />Add BCBA</Button>
+          </>
+        }
       />
       <LoadErr loading={loading} error={error} />
+      <FromReportsBanner />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative max-w-sm w-full">
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, NPI, CAQH, license…" className="pl-7 h-9" />
+        </div>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All states</SelectItem>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={expWindow} onValueChange={(v) => setExpWindow(v as "any" | "30" | "60" | "90")}>
+          <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="any">License: any</SelectItem>
+            <SelectItem value="30">Expiring &lt; 30 days</SelectItem>
+            <SelectItem value="60">Expiring &lt; 60 days</SelectItem>
+            <SelectItem value="90">Expiring &lt; 90 days</SelectItem>
+          </SelectContent>
+        </Select>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={missingCr} onCheckedChange={setMissingCr} /> Missing CR ID
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={missingDocs} onCheckedChange={setMissingDocs} /> Missing docs
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={noCoverage} onCheckedChange={setNoCoverage} /> No approved payer
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={openTasksOnly} onCheckedChange={setOpenTasksOnly} /> Open tasks
+        </label>
+        {hasFilters && (
+          <Button size="sm" variant="ghost" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Clear</Button>
+        )}
+      </div>
       <SectionCard title={`${bcbaProviders.length} BCBA${bcbaProviders.length === 1 ? "" : "s"}`}>
         {bcbaProviders.length === 0 ? (
-          <Empty title="No BCBAs in the credentialing directory yet" action={
-            <Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1" />Add BCBA</Button>
-          } />
+          hasFilters || bcbaAll.length > 0 ? (
+            <Empty
+              title="No BCBAs match these filters"
+              description="Try clearing filters or widening your search."
+              action={<Button size="sm" variant="outline" onClick={clearFilters}><X className="h-4 w-4 mr-1" />Clear filters</Button>}
+            />
+          ) : (
+            <Empty
+              title="No BCBAs in the credentialing directory yet"
+              description="Add BCBAs to start tracking payer coverage, license expirations, CAQH, and CentralReach readiness."
+              action={<Button size="sm" onClick={() => setAddProv(true)}><Plus className="h-4 w-4 mr-1" />Add BCBA</Button>}
+            />
+          )
         ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
@@ -2188,6 +2682,13 @@ export function UncredentialedBCBAsPage() {
   const [addRec, setAddRec] = useState(false);
   const [defaultProv, setDefaultProv] = useState<string | undefined>();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [payerFilter, setPayerFilter] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [blockedOnly, setBlockedOnly] = useState(false);
+  const [missingInfoOnly, setMissingInfoOnly] = useState(false);
+  const [noPayerRecsOnly, setNoPayerRecsOnly] = useState(false);
 
   const gap = useMemo(() => {
     const bcbaProviders = providers.filter((p) => p.provider_type === "BCBA");
@@ -2203,13 +2704,37 @@ export function UncredentialedBCBAsPage() {
       const focus = blockedFirst ?? missingInfo ?? activeFirst ?? null;
       const missingItemsCount = provRecs.reduce((n, r) => n + (r.missing_items?.length ?? 0), 0);
       return {
-        provider: p, state: p.license_state, blocked, missingPayerRecs,
+        provider: p, state: p.license_state, blocked, missingPayerRecs, provRecs,
         focusRecordId: focus?.id ?? null,
         missingItemsCount,
+        hasMissingInfo: !!missingInfo || missingItemsCount > 0,
+        hasNoPayerRecs: provRecs.length === 0,
         hasGap: provRecs.length === 0 || missingPayerRecs.length > 0 || blocked.length > 0,
       };
     }).filter((g) => g.hasGap);
   }, [providers, records]);
+
+  const filteredGap = useMemo(() => gap.filter((g) => {
+    const query = q.trim().toLowerCase();
+    if (query && !g.provider.provider_name.toLowerCase().includes(query)) return false;
+    if (stateFilter !== "ALL" && g.state !== stateFilter) return false;
+    if (payerFilter && !g.provRecs.some((r) => r.payer_name.toLowerCase().includes(payerFilter.toLowerCase()))) return false;
+    if (ownerFilter) {
+      const own = ownerFilter.toLowerCase();
+      const anyOwner = g.provRecs.some((r) => (r.owner_name ?? "").toLowerCase().includes(own));
+      if (!anyOwner) return false;
+    }
+    if (blockedOnly && g.blocked.length === 0) return false;
+    if (missingInfoOnly && !g.hasMissingInfo) return false;
+    if (noPayerRecsOnly && !g.hasNoPayerRecs) return false;
+    return true;
+  }), [gap, q, stateFilter, payerFilter, ownerFilter, blockedOnly, missingInfoOnly, noPayerRecsOnly]);
+
+  const hasFilters = !!q || stateFilter !== "ALL" || !!payerFilter || !!ownerFilter || blockedOnly || missingInfoOnly || noPayerRecsOnly;
+  const clearFilters = () => {
+    setQ(""); setStateFilter("ALL"); setPayerFilter(""); setOwnerFilter("");
+    setBlockedOnly(false); setMissingInfoOnly(false); setNoPayerRecsOnly(false);
+  };
 
   return (
     <Shell>
@@ -2217,11 +2742,57 @@ export function UncredentialedBCBAsPage() {
         eyebrow="Credentialing" title="Uncredentialed BCBAs"
         subtitle="BCBAs missing payer/state credentialing, or with blockers preventing approval."
         icon={AlertTriangle}
+        actions={
+          <Button size="sm" variant="outline" onClick={() => exportCsv("uncredentialed-bcbas.csv", filteredGap.map((g) => ({
+            provider: g.provider.provider_name, state: g.state ?? "",
+            missing_payers: g.missingPayerRecs.map((r) => `${r.payer_name} (${r.status})`).join("; "),
+            blocker: g.blocked[0]?.blocker_reason ?? "",
+            owner: g.missingPayerRecs[0]?.owner_name ?? g.blocked[0]?.owner_name ?? "",
+          })))}>
+            <Download className="h-4 w-4 mr-1.5" />Export CSV
+          </Button>
+        }
       />
       <LoadErr loading={loading} error={error} />
-      <SectionCard title={`${gap.length} BCBA${gap.length === 1 ? "" : "s"} with gaps`}>
-        {gap.length === 0 ? (
-          <Empty title="No uncredentialed BCBAs. Nice." />
+      <FromReportsBanner />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative max-w-xs w-full">
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search BCBA…" className="pl-7 h-9" />
+        </div>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All states</SelectItem>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Input placeholder="Payer…" className="h-9 w-32" value={payerFilter} onChange={(e) => setPayerFilter(e.target.value)} />
+        <Input placeholder="Owner…" className="h-9 w-32" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} />
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={blockedOnly} onCheckedChange={setBlockedOnly} /> Blocked
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={missingInfoOnly} onCheckedChange={setMissingInfoOnly} /> Missing info
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={noPayerRecsOnly} onCheckedChange={setNoPayerRecsOnly} /> No payer records
+        </label>
+        {hasFilters && (
+          <Button size="sm" variant="ghost" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Clear</Button>
+        )}
+      </div>
+      <SectionCard title={`${filteredGap.length} BCBA${filteredGap.length === 1 ? "" : "s"} with gaps`}>
+        {filteredGap.length === 0 ? (
+          hasFilters ? (
+            <Empty
+              title="No BCBAs match these filters"
+              description="Try clearing filters to see all BCBAs with gaps."
+              action={<Button size="sm" variant="outline" onClick={clearFilters}><X className="h-4 w-4 mr-1" />Clear filters</Button>}
+            />
+          ) : (
+            <Empty
+              title="No uncredentialed BCBAs. Nice."
+              description="Every BCBA in the directory has approved payer coverage and no active blockers."
+            />
+          )
         ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
@@ -2231,7 +2802,7 @@ export function UncredentialedBCBAsPage() {
                 ))}</tr>
               </thead>
               <tbody>
-                {gap.map((g) => {
+                {filteredGap.map((g) => {
                   const missingList = g.missingPayerRecs.length
                     ? g.missingPayerRecs.map((r) => `${r.payer_name} (${r.status})`).join(", ")
                     : "No payer records yet";
@@ -2294,6 +2865,11 @@ export function ExpiringCredentialsPage() {
   const { records, providerById, loading, error, reload, tasks, documents } = useCredentialingData();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
   const [windowDays, setWindowDays] = useState<30 | 60 | 90>(90);
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [payerQ, setPayerQ] = useState("");
+  const [providerTypeFilter, setProviderTypeFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   async function startRenewal(r: CredentialingRecord) {
     try {
@@ -2336,9 +2912,27 @@ export function ExpiringCredentialsPage() {
 
   const visible = useMemo(() => {
     const all = [...grouped.d15, ...grouped.d30, ...grouped.d60, ...grouped.d90];
-    return all.filter((r) => { const d = daysUntil(r.expiration_date)!; return d <= windowDays; })
+    return all.filter((r) => {
+      const d = daysUntil(r.expiration_date)!;
+      if (d > windowDays) return false;
+      if (ownerFilter && !(r.owner_name ?? "").toLowerCase().includes(ownerFilter.toLowerCase())) return false;
+      if (stateFilter !== "ALL" && r.state !== stateFilter) return false;
+      if (payerQ && !r.payer_name.toLowerCase().includes(payerQ.toLowerCase())) return false;
+      if (statusFilter !== "ALL" && r.status !== statusFilter) return false;
+      if (providerTypeFilter !== "ALL") {
+        const prov = providerById.get(r.provider_id);
+        if (prov?.provider_type !== providerTypeFilter) return false;
+      }
+      return true;
+    })
       .sort((a, b) => (daysUntil(a.expiration_date)! - daysUntil(b.expiration_date)!));
-  }, [grouped, windowDays]);
+  }, [grouped, windowDays, ownerFilter, stateFilter, payerQ, statusFilter, providerTypeFilter, providerById]);
+
+  const hasExtraFilters = !!ownerFilter || stateFilter !== "ALL" || !!payerQ || statusFilter !== "ALL" || providerTypeFilter !== "ALL";
+  const clearFilters = () => {
+    setOwnerFilter(""); setStateFilter("ALL"); setPayerQ("");
+    setStatusFilter("ALL"); setProviderTypeFilter("ALL");
+  };
 
   return (
     <Shell>
@@ -2346,23 +2940,60 @@ export function ExpiringCredentialsPage() {
         eyebrow="Credentialing" title="Expiring Credentials"
         subtitle="30 / 60 / 90 day renewal command center. Anything under 15 days is critical."
         icon={Calendar}
+        actions={
+          <Button size="sm" variant="outline" onClick={() => exportCsv("expiring-credentials.csv", visible as unknown as Record<string, unknown>[])}>
+            <Download className="h-4 w-4 mr-1.5" />Export CSV
+          </Button>
+        }
       />
       <LoadErr loading={loading} error={error} />
+      <FromReportsBanner />
       <div className="grid gap-4 md:grid-cols-4">
         <KpiCard label="< 15 days" value={grouped.d15.length} tone="danger" />
         <KpiCard label="< 30 days" value={grouped.d15.length + grouped.d30.length} tone="warn" />
         <KpiCard label="< 60 days" value={grouped.d15.length + grouped.d30.length + grouped.d60.length} />
         <KpiCard label="< 90 days" value={grouped.d15.length + grouped.d30.length + grouped.d60.length + grouped.d90.length} />
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap items-center">
         {([30, 60, 90] as const).map((w) => (
           <Button key={w} size="sm" variant={windowDays === w ? "default" : "outline"} onClick={() => setWindowDays(w)}>
             {`< ${w} days`}
           </Button>
         ))}
+        <div className="w-px h-6 bg-border mx-1" />
+        <Input placeholder="Payer…" className="h-9 w-32" value={payerQ} onChange={(e) => setPayerQ(e.target.value)} />
+        <Input placeholder="Owner…" className="h-9 w-32" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} />
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All states</SelectItem>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={providerTypeFilter} onValueChange={setProviderTypeFilter}>
+          <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Provider type" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All providers</SelectItem>{CRED_PROVIDER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All statuses</SelectItem>{CRED_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        {hasExtraFilters && (
+          <Button size="sm" variant="ghost" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Clear</Button>
+        )}
       </div>
       <SectionCard title={`${visible.length} expiring credential${visible.length === 1 ? "" : "s"}`}>
-        {visible.length === 0 ? <Empty title="Nothing expiring in this window. " /> : (
+        {visible.length === 0 ? (
+          hasExtraFilters ? (
+            <Empty
+              title="No records match these filters"
+              description="Try clearing filters or widening the expiration window."
+              action={<Button size="sm" variant="outline" onClick={clearFilters}><X className="h-4 w-4 mr-1" />Clear filters</Button>}
+            />
+          ) : (
+            <Empty
+              title="Nothing expiring in this window"
+              description="Try a wider window (60 or 90 days) to check upcoming renewals."
+            />
+          )
+        ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">

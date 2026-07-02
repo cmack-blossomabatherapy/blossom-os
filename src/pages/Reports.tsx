@@ -294,12 +294,12 @@ function GrowthView() {
 
 function CredentialingView() {
   const cards: { label: string; to: string; description: string }[] = [
-    { label: "Provider Credentialing", to: "/credentialing/providers", description: "Provider directory, NPI/CAQH, licensing." },
-    { label: "Insurance Credentialing", to: "/credentialing/insurance", description: "Payer/state credentialing pipeline and gaps." },
-    { label: "BCBA Credentials", to: "/credentialing/bcba", description: "BCBA license, payer coverage, CentralReach IDs." },
-    { label: "Uncredentialed BCBAs", to: "/credentialing/uncredentialed-bcbas", description: "Active BCBAs without approved coverage." },
-    { label: "Expiring Credentials", to: "/credentialing/expiring", description: "30 / 60 / 90 day expiration window." },
-    { label: "Credentialing Dashboard", to: "/credentialing", description: "Operational overview and follow-ups." },
+    { label: "Credentialing Status", to: "/credentialing?from=reports&report=cred-status", description: "Operational overview and follow-ups." },
+    { label: "BCBA Credential Coverage", to: "/credentialing/bcba?from=reports&report=cred-bcba-coverage", description: "BCBA license, payer coverage, CentralReach IDs." },
+    { label: "Uncredentialed BCBAs", to: "/credentialing/uncredentialed-bcbas?from=reports&report=cred-uncredentialed-bcbas", description: "Active BCBAs without approved coverage." },
+    { label: "Expiring Credentials", to: "/credentialing/expiring?from=reports&report=cred-expiring", description: "30 / 60 / 90 day expiration window." },
+    { label: "Payer Credentialing Matrix", to: "/credentialing/insurance?from=reports&report=cred-payer-matrix", description: "Payer/state credentialing pipeline and gaps." },
+    { label: "Provider Credentialing", to: "/credentialing/providers?from=reports&report=cred-providers", description: "Provider directory, NPI/CAQH, licensing." },
   ];
   return (
     <div className="space-y-4">
