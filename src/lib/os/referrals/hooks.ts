@@ -64,11 +64,11 @@ export function useReferralBatches() {
   return { data, loading, error, refresh };
 }
 
-export function useReferralTasks(filter: { companyId?: string; contactId?: string } = {}) {
+export function useReferralTasks(filter: { companyId?: string; contactId?: string; includeArchived?: boolean } = {}) {
   const [data, setData] = useState<ReferralCrmTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const key = `${filter.companyId ?? ""}|${filter.contactId ?? ""}`;
+  const key = `${filter.companyId ?? ""}|${filter.contactId ?? ""}|${filter.includeArchived ? "1" : "0"}`;
   const refresh = useCallback(async () => {
     try { setError(null); setData(await listTasks(filter)); } catch (e) { setError(e instanceof Error ? e : new Error(String(e))); } finally { setLoading(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
