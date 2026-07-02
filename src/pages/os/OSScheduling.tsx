@@ -6,6 +6,7 @@
    ArrowUpRight, ShieldCheck, Activity, MapPin, Clock, CircleDot, Send,
  } from "lucide-react";
  import { OSShell } from "./OSShell";
+import { SchedulingOverlayWarning } from "@/components/scheduling/SchedulingOverlayWarning";
  import { cn } from "@/lib/utils";
  import { useClients } from "@/contexts/ClientsContext";
  import { type Client, type ScheduleSlot } from "@/data/clients";
