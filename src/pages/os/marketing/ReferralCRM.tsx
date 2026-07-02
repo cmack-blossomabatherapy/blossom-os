@@ -3071,9 +3071,36 @@ function SupabaseQuickImport() {
 function ImportsModule() {
   const s = useCrm();
   const batches = s.importBatches ?? [];
+  const [q, setQ] = useState("");
+  const [statusF, setStatusF] = useState<string>("all");
+  const statuses = useMemo(
+    () => Array.from(new Set(batches.map((b) => b.status).filter(Boolean))) as string[],
+    [batches],
+  );
+  const filteredBatches = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return batches.filter((b) =>
+      (statusF === "all" || b.status === statusF) &&
+      (!needle || (b.fileName ?? "").toLowerCase().includes(needle))
+    );
+  }, [batches, q, statusF]);
   return (
     <div className="space-y-4">
       <SupabaseQuickImport />
+      {batches.length > 0 && (
+        <TableFilterBar
+          search={{ value: q, onChange: setQ, placeholder: "Search by file name..." }}
+          filters={[
+            { key: "status", label: "Status", value: statusF, onChange: setStatusF, options: [
+              { value: "all", label: "All statuses" },
+              ...statuses.map((v) => ({ value: v, label: v })),
+            ] },
+          ]}
+          resultCount={filteredBatches.length}
+          totalCount={batches.length}
+          onClear={() => { setQ(""); setStatusF("all"); }}
+        />
+      )}
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="px-4 py-3 flex items-center justify-between border-b bg-muted/30">
           <div>
@@ -3082,11 +3109,17 @@ function ImportsModule() {
               All CSV / HubSpot imports persisted to the backend (referral_import_batches).
             </p>
           </div>
-          <Badge variant="secondary" className="text-[10px]">{batches.length} batches</Badge>
+          <Badge variant="secondary" className="text-[10px]">
+            {filteredBatches.length === batches.length ? `${batches.length} batches` : `${filteredBatches.length} of ${batches.length}`}
+          </Badge>
         </div>
         {batches.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
             No imports yet. Use the importer above to add referrals into the CRM.
+          </div>
+        ) : filteredBatches.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">
+            No batches match the current filters.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -3104,7 +3137,7 @@ function ImportsModule() {
                 </tr>
               </thead>
               <tbody>
-                {batches.map((b) => (
+                {filteredBatches.map((b) => (
                   <tr key={b.id} className="border-t">
                     <td className="px-3 py-1.5">{b.fileName}</td>
                     <td className="px-3 py-1.5 text-muted-foreground">{new Date(b.uploadedAt).toLocaleString()}</td>
