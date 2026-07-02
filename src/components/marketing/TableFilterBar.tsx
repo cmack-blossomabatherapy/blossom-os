@@ -51,6 +51,15 @@ export function TableFilterBar({
     (f) => f.value && f.value !== (f.defaultValue ?? "all"),
   );
   const hasActive = activeFilters.length > 0 || Boolean(search?.value);
+  // Fall back to a built-in reset that clears search + every filter to its
+  // default, so every filter bar exposes a Clear-all control without callers
+  // having to wire one up.
+  const handleClearAll =
+    onClear ??
+    (() => {
+      search?.onChange("");
+      filters.forEach((f) => f.onChange(f.defaultValue ?? "all"));
+    });
 
   return (
     <div
@@ -104,13 +113,14 @@ export function TableFilterBar({
               {typeof totalCount === "number" && totalCount !== resultCount ? ` of ${totalCount}` : ""}
             </span>
           )}
-          {hasActive && onClear && (
+          {hasActive && (
             <button
               type="button"
-              onClick={onClear}
+              onClick={handleClearAll}
               className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+              aria-label="Clear all filters"
             >
-              <X className="size-3" /> Clear
+              <X className="size-3" /> Clear all
             </button>
           )}
         </div>
@@ -146,6 +156,13 @@ export function TableFilterBar({
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={handleClearAll}
+            className="ml-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+          >
+            Clear all
+          </button>
         </div>
       )}
     </div>
