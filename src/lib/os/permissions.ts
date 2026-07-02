@@ -301,6 +301,29 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
     },
     leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: true, workflowBottlenecks: true, aiInsights: true },
   },
+  /**
+   * Clinical Director owns clinical quality, BCBA oversight, supervision
+   * health, treatment plan / progress report pipelines, evaluations, and
+   * clinical escalations. Company scope, no HR/finance authority.
+   */
+  clinical_director: {
+    modules: [
+      "dashboard", "command_center", "clients", "cases", "authorizations",
+      "staff", "scheduling", "evaluations", "training", "reports", "kpi",
+      "sop", "analytics_hub", "ai_assistant", "ai_insights",
+    ],
+    scope: "company",
+    actions: {
+      dashboard: VIEW,
+      clients: VIEW_EDIT,
+      cases: FULL,
+      staff: VIEW_EDIT,
+      scheduling: VIEW,
+      reports: ["view", "export"],
+      training: VIEW,
+    },
+    leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: true, workflowBottlenecks: true, aiInsights: true },
+  },
   state_director: {
     modules: [
       "dashboard", "command_center", "leads", "intake", "clients", "authorizations", "scheduling", "cases",
