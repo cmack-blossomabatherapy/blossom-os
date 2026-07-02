@@ -19,9 +19,10 @@ describe("App.tsx legacy dashboard redirects", () => {
       { from: '"/phone-calls"', to: '"/phone"' },
     ];
 
+    const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\//g, "\\/");
     for (const { from, to } of redirects) {
       const re = new RegExp(
-        `<Route path=${from.replace(/[/]/g, "\\/")} element=\\{<Navigate to=${to.replace(/[/]/g, "\\/")} replace />\\} />`,
+        `<Route path=${escapeRegex(from)} element=\\{<Navigate to=${escapeRegex(to)} replace />\\} />`,
       );
       expect(src).toMatch(re);
     }
