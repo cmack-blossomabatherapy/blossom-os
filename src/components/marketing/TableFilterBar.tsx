@@ -320,6 +320,9 @@ function FilterChipGroup({
   totalCount,
   collapsed: controlledCollapsed,
   onToggle,
+  isMulti,
+  onSelectAll,
+  allSelected,
 }: {
   label: string;
   values: ChipValue[];
@@ -327,10 +330,14 @@ function FilterChipGroup({
   totalCount?: number;
   collapsed?: boolean;
   onToggle?: () => void;
+  isMulti?: boolean;
+  onSelectAll?: () => void;
+  allSelected?: boolean;
 }) {
   const [internalCollapsed, setInternalCollapsed] = React.useState(false);
   const collapsed = controlledCollapsed ?? internalCollapsed;
-  const multi = values.length > 1;
+  const hasMultipleValues = values.length > 1;
+  const canSelectAll = isMulti && onSelectAll && !allSelected && values.length > 0;
   const handleToggle = () => {
     if (onToggle) onToggle();
     else setInternalCollapsed((c) => !c);
@@ -358,7 +365,7 @@ function FilterChipGroup({
                   {v.count}
                 </span>
               )}
-              {multi && (
+              {hasMultipleValues && (
                 <button
                   type="button"
                   onClick={v.onRemove}
@@ -372,7 +379,17 @@ function FilterChipGroup({
           ))
         )}
       </span>
-      {multi && (
+      {canSelectAll && (
+        <button
+          type="button"
+          onClick={onSelectAll}
+          className="inline-flex items-center border-l border-primary/20 px-2 text-[11px] font-medium hover:bg-primary/10"
+          aria-label={`Select all ${label}`}
+        >
+          Select all
+        </button>
+      )}
+      {hasMultipleValues && (
         <button
           type="button"
           onClick={handleToggle}
@@ -385,10 +402,14 @@ function FilterChipGroup({
       <button
         type="button"
         onClick={onClearGroup}
-        className="inline-flex items-center border-l border-primary/20 px-1.5 hover:bg-primary/10"
+        className="inline-flex items-center border-l border-primary/20 px-2 hover:bg-primary/10"
         aria-label={`Clear ${label} filter`}
       >
-        <X className="size-3" />
+        {isMulti ? (
+          <span className="text-[11px] font-medium">Clear</span>
+        ) : (
+          <X className="size-3" />
+        )}
       </button>
     </span>
   );
