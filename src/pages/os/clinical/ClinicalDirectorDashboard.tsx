@@ -44,7 +44,7 @@ export default function ClinicalDirectorDashboard() {
   ).length;
 
   const treatmentPlansQueued = auths.qaItems.filter(
-    (a) => a.stage === "In QA Review" || a.stage === "Awaiting Submission" || a.stage === "Pending Signature",
+    (a) => a.stage === "In QA Review" || a.stage === "Awaiting Submission" || a.stage === "Submitted",
   ).length;
 
   const progressReportsDue = auths.qaItems.filter((a) => {
@@ -54,7 +54,7 @@ export default function ClinicalDirectorDashboard() {
 
   const escalations = auths.qaItems.filter((a) => {
     const meta = auths.metaById.get(a.id);
-    return meta?.escalated || a.stage === "Denied";
+    return a.stage === "Denied" || meta?.priority === "urgent" || meta?.priority === "high";
   }).length;
 
   const openEvaluations = auths.qaItems.filter(
@@ -71,7 +71,7 @@ export default function ClinicalDirectorDashboard() {
     return latest;
   }, [cr.pairingsByClient]);
 
-  const snapshot = [
+  const snapshot: Array<{ label: string; value: number | string; hint: string; icon: typeof UserCheck; isText?: boolean }> = [
     { label: "BCBAs under oversight", value: cr.counts.bcbaCount,      hint: "active in last 60d", icon: UserCheck },
     { label: "Active clients",        value: cr.counts.activeClients,  hint: "with sessions",       icon: Users },
     { label: "Supervision risk",      value: supervisionRisk,          hint: "uncovered / at-risk", icon: Eye },
