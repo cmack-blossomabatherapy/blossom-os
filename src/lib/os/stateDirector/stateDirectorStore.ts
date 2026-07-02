@@ -79,7 +79,7 @@ function record(kind: ActivityKind, message: string, actor: string, state?: Stat
   return { id: uid("act"), kind, message, actor: actor || "System", createdAt: nowIso(), state, relatedId };
 }
 
-function mutate(fn: (draft: StateDirectorSnapshot) => StateDirectorSnapshot | void) {
+function mutate(fn: (draft: StateDirectorSnapshot) => StateDirectorSnapshot | void): StateDirectorSnapshot {
   const current = adapter.read();
   const clone: StateDirectorSnapshot = {
     profiles: [...current.profiles],
@@ -88,7 +88,8 @@ function mutate(fn: (draft: StateDirectorSnapshot) => StateDirectorSnapshot | vo
     tasks: current.tasks.map((t) => ({ ...t, notes: [...t.notes] })),
     activity: [...current.activity],
   };
-  const next = fn(clone) ?? clone;
+  const returned = fn(clone);
+  const next: StateDirectorSnapshot = returned ?? clone;
   adapter.write(next);
   return next;
 }
