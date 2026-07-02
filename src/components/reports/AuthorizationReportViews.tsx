@@ -304,7 +304,7 @@ export function AuthExpirationRiskReport() {
                   <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <Link to={`/os/authorizations`} className="text-[13px] font-semibold tracking-tight hover:text-[hsl(265_70%_55%)]">
+                        <Link to={`/authorizations`} className="text-[13px] font-semibold tracking-tight hover:text-[hsl(265_70%_55%)]">
                           {a.clientName}
                         </Link>
                         <Badge variant="secondary" className="rounded-full text-[10px] font-medium">{a.state} · {a.payor}</Badge>
@@ -374,7 +374,7 @@ export function AuthExpirationRiskReport() {
         actions={[
           { label: "Open Auth Risk Center", to: "/os/auth-risk-center" },
           { label: "Open Supervision Tracking", to: "/os/supervision-tracking" },
-          { label: "Open Authorization Workspace", to: "/os/authorizations" },
+          { label: "Open Authorization Workspace", to: "/authorizations" },
         ]}
       />
     </div>
@@ -507,7 +507,7 @@ export function AuthWorkflowBottleneckReport() {
                 <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <Link to={`/os/authorizations`} className="text-[13px] font-semibold tracking-tight hover:text-[hsl(265_70%_55%)]">
+                      <Link to={`/authorizations`} className="text-[13px] font-semibold tracking-tight hover:text-[hsl(265_70%_55%)]">
                         {a.clientName}
                       </Link>
                       <Badge variant="secondary" className="rounded-full text-[10px] font-medium">{a.stage}</Badge>
@@ -580,7 +580,7 @@ export function AuthWorkflowBottleneckReport() {
 
       <ReportActions
         actions={[
-          { label: "Open Authorization Workspace", to: "/os/authorizations" },
+          { label: "Open Authorization Workspace", to: "/authorizations" },
           { label: "Open QA Review", to: "/os/qa-team" },
           { label: "Open Missing Documentation Queue", to: "/os/auth-risk-center" },
           { label: "Open Supervision Tracking", to: "/os/supervision-tracking" },
@@ -781,7 +781,7 @@ export function AuthOperationalPerformanceReport() {
 
       <ReportActions
         actions={[
-          { label: "Open Authorizations", to: "/os/authorizations" },
+          { label: "Open Authorizations", to: "/authorizations" },
           { label: "Open Auth Risk Center", to: "/os/auth-risk-center" },
           { label: "Open Workflow Bottlenecks", to: "/reports/auth-workflow-bottleneck" },
         ]}
