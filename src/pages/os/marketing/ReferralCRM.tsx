@@ -5224,8 +5224,12 @@ export default function ReferralCRM() {
   const [moduleRaw, setModuleRaw] = useUrlState("m", "dashboard");
   const module = moduleRaw as ModuleId;
   const setModule = (id: ModuleId) => setModuleRaw(id);
-  const [contactId, setContactId] = useState<ID | null>(null);
-  const [companyId, setCompanyId] = useState<ID | null>(null);
+  const [contactIdRaw, setContactIdRaw] = useUrlState("c", "");
+  const [companyIdRaw, setCompanyIdRaw] = useUrlState("co", "");
+  const contactId: ID | null = contactIdRaw || null;
+  const companyId: ID | null = companyIdRaw || null;
+  const setContactId = (id: ID | null) => setContactIdRaw(id ?? "");
+  const setCompanyId = (id: ID | null) => setCompanyIdRaw(id ?? "");
   const [backendMissing, setBackendMissing] = useState<string[]>([]);
 
   // Bridge: hydrate Supabase referral data into the CRM store and install
