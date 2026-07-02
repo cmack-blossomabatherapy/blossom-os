@@ -350,18 +350,6 @@ export default function OSHRTrainingAcademy() {
           <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
             <Card className="p-5">
               <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Management</h3>
-            </Card>
-
-            <Card className="p-5">
-              <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Integration readiness</h3>
-              <p className="text-[12px] text-muted-foreground mb-3">
-                Training completions and onboarding records only sync when the provider is connected.
-              </p>
-              <IntegrationReadinessSummary rows={data.onboarding} />
-            </Card>
-
-            <Card className="p-5">
-              <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Quick links</h3>
               <nav className="space-y-1">
                 {[
                   { label: "Create Journey",      to: "/training/manage" },
@@ -376,6 +364,14 @@ export default function OSHRTrainingAcademy() {
                   </Link>
                 ))}
               </nav>
+            </Card>
+
+            <Card className="p-5">
+              <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Integration readiness</h3>
+              <p className="text-[12px] text-muted-foreground mb-3">
+                Training completions and onboarding records only sync when the provider is connected.
+              </p>
+              <IntegrationReadinessSummary rows={data.onboarding} />
             </Card>
 
             <Card className="p-5">
