@@ -1616,7 +1616,10 @@ function NewReferralDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 // ===========================================================
 function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
-  const [groupBy, setGroupBy] = useState<"owner" | "state" | "status">("owner");
+  const [groupByRaw, setGroupByRaw] = useUrlState("tg", "owner");
+  const groupBy: "owner" | "state" | "status" =
+    groupByRaw === "state" || groupByRaw === "status" ? groupByRaw : "owner";
+  const setGroupBy = (v: "owner" | "state" | "status") => setGroupByRaw(v);
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [tQuery, setTQuery] = useUrlState("tq", "", { history: "replace" });
@@ -3334,6 +3337,10 @@ function FilesModule() {
   const [category, setCategory] = useUrlState("fc", "all");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pageStr, setPageStr] = useUrlState("fpg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("fps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
   const objectLabel = (a: Attachment): string => {
     if (a.objectType === "contact") {
       const c = s.contacts.find((x) => x.id === a.objectId); return c ? contactDisplayName(c) : a.objectId;
@@ -3349,6 +3356,8 @@ function FilesModule() {
     if (q && !a.fileName.toLowerCase().includes(q.toLowerCase()) && !objectLabel(a).toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
+  useEffect(() => { setPageStr("1"); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [q, type, category]);
+  const pagedRows = rows.slice((page - 1) * pageSize, page * pageSize);
   async function openFile(a: Attachment) {
     if (!a.storagePath) {
       toast({ title: "No file backing this attachment", variant: "destructive" });
@@ -3405,7 +3414,7 @@ function FilesModule() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((a) => (
+              {pagedRows.map((a) => (
                 <tr key={a.id} className="border-t hover:bg-muted/30">
                   <td className="px-3 py-2">
                     <button
@@ -3433,6 +3442,13 @@ function FilesModule() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(sz) => { setPageSizeStr(String(sz)); setPageStr("1"); }}
+        />
       </div>
       <UploadFileDialog open={uploadOpen} onOpenChange={setUploadOpen} />
     </div>
@@ -3566,6 +3582,10 @@ function AuditModule() {
   const [q, setQ] = useUrlState("aq", "", { history: "replace" });
   const [action, setAction] = useUrlState("aa", "all");
   const [objectType, setObjectType] = useUrlState("ao", "all");
+  const [pageStr, setPageStr] = useUrlState("apg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("aps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
   const rows = s.auditLog.filter((r) => {
     if (action !== "all" && r.action !== action) return false;
     if (objectType !== "all" && (r.objectType || "") !== objectType) return false;
@@ -3575,6 +3595,8 @@ function AuditModule() {
     }
     return true;
   });
+  useEffect(() => { setPageStr("1"); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [q, action, objectType]);
+  const pagedRows = rows.slice((page - 1) * pageSize, page * pageSize);
   const actions = Array.from(new Set(s.auditLog.map((r) => r.action)));
   const objectTypes = Array.from(new Set(s.auditLog.map((r) => r.objectType as string).filter((x) => !!x)));
   return (
@@ -3602,7 +3624,7 @@ function AuditModule() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => {
+              {pagedRows.map((r) => {
                 const Icon = AUDIT_ICON[r.action] ?? Activity;
                 return (
                   <tr key={r.id} className="border-t">
@@ -3618,6 +3640,13 @@ function AuditModule() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(sz) => { setPageSizeStr(String(sz)); setPageStr("1"); }}
+        />
       </div>
     </div>
   );
@@ -3641,6 +3670,10 @@ function ActivitiesModule() {
   const s = useCrm();
   const [f, setF] = useUrlState("af", "all");
   const [q, setQ] = useUrlState("aq2", "", { history: "replace" });
+  const [pageStr, setPageStr] = useUrlState("a2pg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("a2ps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
   const rows = s.activity.filter((a) => {
     if (f !== "all" && a.type !== f) return false;
     if (q) {
@@ -3649,6 +3682,8 @@ function ActivitiesModule() {
     }
     return true;
   });
+  useEffect(() => { setPageStr("1"); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [f, q]);
+  const pagedRows = rows.slice((page - 1) * pageSize, page * pageSize);
   return (
     <div className="space-y-4">
       <TableFilterBar
@@ -3660,9 +3695,10 @@ function ActivitiesModule() {
         totalCount={s.activity.length}
         onClear={() => { setQ(""); setF("all"); }}
       />
-      <div className="rounded-2xl border bg-card divide-y">
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="divide-y">
         {rows.length === 0 && <p className="text-sm text-muted-foreground text-center py-10">No activity in this view.</p>}
-        {rows.map((a) => {
+        {pagedRows.map((a) => {
           const Icon = ACTIVITY_ICON[a.type] ?? Activity;
           const targetName = a.contactId
             ? contactDisplayName(s.contacts.find((c) => c.id === a.contactId))
@@ -3685,6 +3721,14 @@ function ActivitiesModule() {
             </div>
           );
         })}
+        </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(sz) => { setPageSizeStr(String(sz)); setPageStr("1"); }}
+        />
       </div>
     </div>
   );
@@ -4879,6 +4923,10 @@ function PatientPipelineModule({
   const [stateFilter, setStateFilter] = useUrlState("ppst", "all");
   const [intakeFilter, setIntakeFilter] = useUrlState("ppi", "all");
   const [insFilter, setInsFilter] = useUrlState("ppins", "all");
+  const [pageStr, setPageStr] = useUrlState("pppg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("ppps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
 
   const rows = useMemo(() => {
     let r = scopedReferrals(s);
@@ -4896,6 +4944,8 @@ function PatientPipelineModule({
     }
     return [...r].sort((a, b) => (b.referralDate || "").localeCompare(a.referralDate || ""));
   }, [s, q, statusFilter, stateFilter, intakeFilter, insFilter]);
+  useEffect(() => { setPageStr("1"); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [q, statusFilter, stateFilter, intakeFilter, insFilter]);
+  const pagedRows = rows.slice((page - 1) * pageSize, page * pageSize);
 
   const byStatus = useMemo(() => {
     const map: Record<string, number> = {};
@@ -4959,7 +5009,7 @@ function PatientPipelineModule({
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => {
+              {pagedRows.map((r) => {
                 const contact = r.contactId ? s.contacts.find((c) => c.id === r.contactId) : undefined;
                 return (
                   <tr key={r.id} className="border-t hover:bg-muted/30">
@@ -4992,6 +5042,13 @@ function PatientPipelineModule({
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(sz) => { setPageSizeStr(String(sz)); setPageStr("1"); }}
+        />
       </div>
 
       <p className="text-[11px] text-muted-foreground">
