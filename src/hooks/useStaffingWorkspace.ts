@@ -73,9 +73,23 @@ export function useStaffingWorkspace() {
   }, []);
 
   const setStatus = useCallback(
-    async (id: string, status: StaffingMatchStatus, extra?: { rejection_reason?: string; notes?: string }) => {
+    async (
+      id: string,
+      status: StaffingMatchStatus,
+      extra?: {
+        rejection_reason?: string;
+        notes?: string;
+        /** Hydrated client name from the caller. Used for the audit row. */
+        client_name?: string;
+        /** Optional explicit client id override (rare). */
+        client_id?: string | null;
+        /** Optional detail line to persist to the audit row. */
+        detail?: string | null;
+      },
+    ) => {
       try {
-        const row = await updateMatchStatus(id, status, extra);
+        const { client_name: _cn, client_id: _cid, detail: _d, ...storeExtra } = extra ?? {};
+        const row = await updateMatchStatus(id, status, storeExtra);
         setMatches((prev) => prev.map((m) => (m.id === id ? row : m)));
         toast.success(`Match marked ${status}`);
         // Audit trail — persist a status_change activity row so match
@@ -91,12 +105,24 @@ export function useStaffingWorkspace() {
             : status === "Rejected" ? "resolved"
             : status === "Pending" ? "in_progress"
             : "open";
+          const resolvedClientId = extra?.client_id ?? row.client_id ?? null;
+          const clientLabel =
+            extra?.client_name?.trim() ||
+            (resolvedClientId
+              ? `Unknown client (${String(resolvedClientId).slice(0, 8)})`
+              : "Unknown client");
+          const detail =
+            extra?.detail !== undefined
+              ? extra.detail
+              : status === "Rejected"
+                ? extra?.rejection_reason ?? null
+                : extra?.notes ?? null;
           const activityRow = await upsertCaseActivity({
-            client_id: row.client_id,
-            client_name: row.rbt_name, // best available label when client name not hydrated here
+            client_id: resolvedClientId,
+            client_name: clientLabel,
             activity_type: "status_change",
             title,
-            detail: status === "Rejected" ? extra?.rejection_reason ?? null : extra?.notes ?? null,
+            detail,
             status: activityStatus as StaffingCaseActivityRow["status"],
           });
           setActivity((prev) => [activityRow, ...prev.filter((a) => a.id !== activityRow.id)]);
