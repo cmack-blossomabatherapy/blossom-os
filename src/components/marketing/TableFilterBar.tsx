@@ -70,6 +70,32 @@ export function TableFilterBar({
     filters.forEach((f) => f.onChange(f.defaultValue ?? "all"));
   };
 
+  const [collapsedGroups, setCollapsedGroups] = useUrlState("fcg", "");
+  const collapsedSet = React.useMemo(
+    () =>
+      new Set(
+        collapsedGroups
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((s) => decodeURIComponent(s)),
+      ),
+    [collapsedGroups],
+  );
+  const toggleCollapsed = React.useCallback(
+    (label: string) => {
+      const next = new Set(collapsedSet);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      setCollapsedGroups(
+        Array.from(next)
+          .map((l) => encodeURIComponent(l))
+          .join(","),
+      );
+    },
+    [collapsedSet, setCollapsedGroups],
+  );
+
   return (
     <div
       className={cn(
