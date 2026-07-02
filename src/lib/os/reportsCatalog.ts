@@ -8,7 +8,7 @@ import type { OSRole } from "./permissions";
 export type ReportCategoryId =
   | "operations" | "qa" | "authorizations" | "scheduling" | "recruiting"
   | "financial" | "clinical" | "training" | "leadership" | "state" | "hr"
-  | "credentialing";
+  | "credentialing" | "business_development";
 
 export interface ReportCategoryDef {
   id: ReportCategoryId;
@@ -32,6 +32,7 @@ export const REPORT_CATEGORIES: ReportCategoryDef[] = [
   { id: "state", name: "State Analytics", description: "Cross-state benchmarks, regional risk, market share.", icon: MapPin, tone: "from-[hsl(345_85%_96%)] to-[hsl(15_85%_96%)]", accent: "hsl(350 70% 55%)" },
   { id: "hr", name: "HR & Payroll", description: "Payroll readiness, employee hours, BCBA minimums, exceptions.", icon: Calculator, tone: "from-[hsl(265_100%_97%)] to-[hsl(245_100%_97%)]", accent: "hsl(265 70% 55%)" },
   { id: "credentialing", name: "Credentialing", description: "Provider credentialing status, BCBA coverage, expirations, payer matrix.", icon: ShieldCheck, tone: "from-[hsl(195_80%_95%)] to-[hsl(215_80%_96%)]", accent: "hsl(200 75% 45%)" },
+  { id: "business_development", name: "Business Development", description: "Referral partners, outreach follow-up, source handoffs, provider and community activity.", icon: HeartPulse, tone: "from-[hsl(320_70%_96%)] to-[hsl(300_70%_96%)]", accent: "hsl(320 65% 50%)" },
 ];
 
 export type ReportType = "dashboard" | "table" | "summary" | "trend";
