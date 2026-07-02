@@ -4587,6 +4587,13 @@ function DeletedModule() {
   const r = s.referrals.filter((x) => x.deletedAt);
   const t = s.tasks.filter((x) => x.deletedAt);
   const archivedFiles = s.attachments.filter((x) => x.archivedAt);
+  const deletedCounts = [
+    ...c.map(() => ({ type: "contacts" as const })),
+    ...co.map(() => ({ type: "companies" as const })),
+    ...r.map(() => ({ type: "referrals" as const })),
+    ...t.map(() => ({ type: "tasks" as const })),
+    ...archivedFiles.map(() => ({ type: "files" as const })),
+  ];
 
   const [q, setQ] = useState("");
   const [typeF, setTypeF] = useState<string>("all");
