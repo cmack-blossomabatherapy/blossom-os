@@ -34,6 +34,78 @@ interface CatalogRow { id: string; status: string }
 
 type Tone = "ok" | "warn" | "crit" | "muted";
 
+export type IntegrationProviderKey = ProviderKey;
+
+export interface ProviderRouteStatus {
+  key: ProviderKey;
+  label: string;
+  connected: boolean;
+  synced: boolean;
+  syncedAt: string | null;
+  reason: string; // human-readable reason when not routable
+  routable: boolean;
+}
+
+/**
+ * Compute per-provider routing eligibility from the catalog + a single
+ * onboarding readiness row. A provider is routable only when the catalog
+ * says `connected` AND the row records a `synced` status with a real
+ * timestamp.
+ */
+export function useIntegrationRouteAvailability(row: OnboardingReadinessRow | null | undefined) {
+  const [catalog, setCatalog] = useState<Record<ProviderKey, string>>({
+    viventium: "not_configured",
+    stellar_checks: "not_configured",
+    centralreach: "not_configured",
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("integration_catalog")
+        .select("id,status")
+        .in("id", ["viventium", "stellar_checks", "centralreach"]);
+      if (cancelled) return;
+      if (data) {
+        const next: Record<ProviderKey, string> = {
+          viventium: "not_configured",
+          stellar_checks: "not_configured",
+          centralreach: "not_configured",
+        };
+        for (const c of data as CatalogRow[]) {
+          if (c.id in next) next[c.id as ProviderKey] = c.status;
+        }
+        setCatalog(next);
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const providers: ProviderRouteStatus[] = (Object.keys(PROVIDER_META) as ProviderKey[]).map((key) => {
+    const meta = PROVIDER_META[key];
+    const catalogStatus = catalog[key];
+    const connected = catalogStatus === "connected";
+    const rowStatus = row
+      ? ((row[`${meta.column}_status` as keyof OnboardingReadinessRow] as string) ?? "not_started")
+      : "not_started";
+    const syncedAt = row
+      ? ((row[`${meta.column}_synced_at` as keyof OnboardingReadinessRow] as string | null | undefined) ?? null)
+      : null;
+    const synced = (rowStatus === "synced" || rowStatus === "ready") && !!syncedAt;
+    const routable = connected && synced;
+    let reason = "";
+    if (!connected) reason = "Integration not connected";
+    else if (!row) reason = "No onboarding record for this employee";
+    else if (!synced) reason = `Not synced (status: ${rowStatus.replace(/_/g, " ")})`;
+    return { key, label: meta.label, connected, synced, syncedAt, reason, routable };
+  });
+
+  return { providers, loading };
+}
+
 function toneFor(catalogStatus: string, rowStatus: string): Tone {
   if (catalogStatus !== "connected") return "muted";
   if (rowStatus === "synced" || rowStatus === "ready") return "ok";
