@@ -352,11 +352,6 @@ function FilterChipGroup({
   };
 
   const selectedCount = values.length;
-  const selectionSummary = allSelected
-    ? `All ${totalOptions} selected`
-    : selectedCount === totalOptions && totalOptions > 0
-      ? `All ${totalOptions} selected`
-      : `selected`; // fallback, handled inline below
   const showPartialCount = totalOptions > 0 && !allSelected && selectedCount !== totalOptions;
 
   return (
