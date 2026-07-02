@@ -90,7 +90,7 @@ function describeSkipReason(row: ImportErrorRow): string {
   const src = typeof p.external_id_source === "string"
     ? describeIdentitySource(p.external_id_source as any)
     : null;
-  return [reason.replaceAll("_", " "), detail, src].filter(Boolean).join(" · ");
+  return [reason.replace(/_/g, " "), detail, src].filter(Boolean).join(" · ");
 }
 
 function pickCandidateEmail(row: ImportErrorRow): string | null {
