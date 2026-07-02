@@ -8,6 +8,8 @@ import {
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
 import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
+import { HRIntegrationReadinessEditor } from "@/components/hr/HRIntegrationReadinessEditor";
+import { HRRecentActivity } from "@/components/hr/HRRecentActivity";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -666,6 +668,21 @@ export default function OSHRCompliance() {
               <section>
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Integration readiness</p>
                 <IntegrationReadinessPanel row={openOnb ?? {}} />
+                {openOnb && (
+                  <div className="mt-3">
+                    <HRIntegrationReadinessEditor
+                      onboardingId={openOnb.id}
+                      employeeId={openEmp.id}
+                      row={openOnb as any}
+                      onSaved={refresh}
+                    />
+                  </div>
+                )}
+              </section>
+
+              {/* Recent HR activity */}
+              <section>
+                <HRRecentActivity employeeId={openEmp.id} onboardingId={openOnb?.id ?? null} />
               </section>
 
               {/* Documents */}
@@ -781,18 +798,31 @@ export default function OSHRCompliance() {
                   </button>
                   <button onClick={async () => {
                     const pending = (openDocs ?? []).filter((d: any) => d.status === "missing" || d.status === "requested" || d.status === "expired");
-                    if (pending.length) {
-                      toast({ title: "Cannot mark ready", description: `${pending.length} document(s) not verified.` });
+                    const integrationBlockers: string[] = [];
+                    if (openOnb) {
+                      const ok = ["ready", "synced", "not_applicable"];
+                      if ((openOnb as any).viventium_status && !ok.includes((openOnb as any).viventium_status)) integrationBlockers.push("Viventium");
+                      if ((openOnb as any).stellar_status && !ok.includes((openOnb as any).stellar_status)) integrationBlockers.push("Stellar Checks");
+                      if ((openOnb as any).centralreach_status && !ok.includes((openOnb as any).centralreach_status)) integrationBlockers.push("CentralReach");
+                    }
+                    const blockers: string[] = [];
+                    if (pending.length) blockers.push(`${pending.length} document(s) not verified`);
+                    if (integrationBlockers.length) blockers.push(`Integrations pending: ${integrationBlockers.join(", ")}`);
+                    if (blockers.length) {
+                      toast({ title: "Cannot mark ready", description: blockers.join(" · ") });
                       await logHrEvent({
-                        eventType: "compliance_mark_ready_blocked",
+                        eventType: "ready_blocked",
                         title: `${openEmp.first_name} ${openEmp.last_name} blocked from staffing`,
-                        description: pending.map((d: any) => d.doc_type ?? d.type ?? "document").join(", "),
+                        description: blockers.join(" · "),
                         employeeId: openEmp.id,
-                        metadata: { pending_count: pending.length },
+                        metadata: { pending_count: pending.length, integration_blockers: integrationBlockers },
                       });
                       return;
                     }
-                    const { error } = await supabase.from("employees").update({ status: "active" }).eq("id", openEmp.id);
+                    // Only mark onboarding ready for start — do NOT activate the employee here.
+                    const { error } = openOnb
+                      ? await supabase.from("employee_onboarding").update({ status: "ready_for_start" as never }).eq("id", openOnb.id)
+                      : { error: null } as any;
                     if (!error) await logHrEvent({ eventType: "compliance_marked_ready", title: `${openEmp.first_name} ${openEmp.last_name} marked staffing ready`, employeeId: openEmp.id });
                     toast({ title: error ? "Could not update" : "Marked staffing ready" });
                     if (!error) { setOpenEmpId(null); refresh(); }
