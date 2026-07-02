@@ -3582,6 +3582,10 @@ function AuditModule() {
   const [q, setQ] = useUrlState("aq", "", { history: "replace" });
   const [action, setAction] = useUrlState("aa", "all");
   const [objectType, setObjectType] = useUrlState("ao", "all");
+  const [pageStr, setPageStr] = useUrlState("apg", "1");
+  const [pageSizeStr, setPageSizeStr] = useUrlState("aps", "25");
+  const page = Math.max(1, Number(pageStr) || 1);
+  const pageSize = Math.max(1, Number(pageSizeStr) || 25);
   const rows = s.auditLog.filter((r) => {
     if (action !== "all" && r.action !== action) return false;
     if (objectType !== "all" && (r.objectType || "") !== objectType) return false;
@@ -3591,6 +3595,8 @@ function AuditModule() {
     }
     return true;
   });
+  useEffect(() => { setPageStr("1"); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [q, action, objectType]);
+  const pagedRows = rows.slice((page - 1) * pageSize, page * pageSize);
   const actions = Array.from(new Set(s.auditLog.map((r) => r.action)));
   const objectTypes = Array.from(new Set(s.auditLog.map((r) => r.objectType as string).filter((x) => !!x)));
   return (
@@ -3618,7 +3624,7 @@ function AuditModule() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => {
+              {pagedRows.map((r) => {
                 const Icon = AUDIT_ICON[r.action] ?? Activity;
                 return (
                   <tr key={r.id} className="border-t">
@@ -3634,6 +3640,13 @@ function AuditModule() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(sz) => { setPageSizeStr(String(sz)); setPageStr("1"); }}
+        />
       </div>
     </div>
   );
