@@ -4,6 +4,7 @@ import {
   Workflow, GraduationCap, ClipboardCheck, ShieldCheck, Inbox, MessageSquare,
   Sparkles, UserPlus, CalendarPlus, BookOpen, ChevronRight, Search,
   CheckCircle2, AlertTriangle, Clock, FileText, Heart, TrendingUp, Activity,
+  ClipboardList,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";

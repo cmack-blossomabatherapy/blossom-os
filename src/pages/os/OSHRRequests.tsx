@@ -4,6 +4,7 @@ import {
   Inbox, Sparkles, Search, Filter, Plus, Send, CheckCircle2, AlertCircle,
   ChevronRight, X, Clock, MessageSquare, ArrowRight, UserCheck, ShieldAlert,
   ShieldCheck, GraduationCap, Flag, MailQuestion, ListChecks,
+  ClipboardList,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";

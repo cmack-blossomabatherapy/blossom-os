@@ -5,6 +5,7 @@ import {
   CheckCircle2, AlertTriangle, Clock, Workflow, X, MapPin, Briefcase,
   FileText, Heart, GraduationCap, ShieldCheck, ArrowUpRight, UserCircle2,
   Mail, Phone, Activity, BookOpen,
+  LifeBuoy,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";

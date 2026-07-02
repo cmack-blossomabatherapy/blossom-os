@@ -4,6 +4,7 @@ import {
   Search, Bell, Flame, ChevronRight, Users, UserPlus, CalendarClock, GraduationCap,
   ClipboardCheck, ShieldCheck, Inbox, HeartHandshake, Sparkles, BookOpen, Workflow,
   AlertTriangle, CheckCircle2, FileText, Hourglass,
+  ClipboardList,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
