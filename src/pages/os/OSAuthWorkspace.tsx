@@ -466,9 +466,13 @@ export default function OSAuthWorkspace() {
     assignees: Array.from(new Set(AUTHS.map((a) => a.coordinator).filter((c) => c && c !== "Unassigned"))).sort(),
   }), [AUTHS]);
 
-  const openAuth = visible.find((a) => a.id === openId) ?? null;
-  // Get the underlying live Authorization (for real timeline / activity).
+  // Deep-link resolution: always look in the FULL source list, not the
+  // currently visible queue/filter subset. Otherwise `/auth-workspace?authId=...`
+  // silently fails whenever the record is outside the active queue/filters.
+  const openAuth = openId ? AUTHS.find((a) => a.id === openId) ?? null : null;
   const openLiveAuth = openAuth ? liveItems.find((x) => x.id === openAuth.id) ?? null : null;
+  const openIsOutsideView =
+    !!openAuth && !visible.some((a) => a.id === openAuth.id);
 
   const toggleSel = (id: string) =>
     setSelected((prev) => {
@@ -598,6 +602,28 @@ export default function OSAuthWorkspace() {
           <Link to="/authorizations" className="font-semibold hover:underline">
             Open Authorizations workspace →
           </Link>
+        </div>
+      )}
+
+      {openIsOutsideView && (
+        <div className="os-card flex flex-wrap items-center justify-between gap-2 border border-amber-200 bg-amber-50/80 p-3 text-[12px] text-amber-900">
+          <span>
+            Opened from link. This authorization is outside your current queue or filters.
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { clearAllFilters(); setActiveQueue("all"); }}
+              className="rounded-lg border border-amber-300 bg-white/80 px-2.5 py-1 font-semibold hover:bg-white"
+            >
+              Clear filters
+            </button>
+            <button
+              onClick={() => setActiveQueue("all")}
+              className="rounded-lg border border-amber-300 bg-white/80 px-2.5 py-1 font-semibold hover:bg-white"
+            >
+              Show in all authorizations
+            </button>
+          </div>
         </div>
       )}
 
