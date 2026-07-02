@@ -568,6 +568,16 @@ export default function BusinessDevelopmentDashboard() {
       />
       <OutreachDialog open={outreachOpen} onOpenChange={setOutreachOpen} partners={visiblePartners} defaultCompanyId={outPartner !== "all" ? outPartner : undefined} onSave={handleLogOutreach} />
       <TaskDialog open={taskOpen} onOpenChange={setTaskOpen} partners={visiblePartners} defaultCompanyId={taskPartner !== "all" ? taskPartner : undefined} onSave={handleAddTask} />
+      <TaskDialog
+        open={!!editTask}
+        onOpenChange={(v) => { if (!v) setEditTask(null); }}
+        partners={partners}
+        initial={editTask ?? undefined}
+        onSave={async (patch) => {
+          if (editTask) await handleUpdateTask(editTask.id, patch);
+          setEditTask(null);
+        }}
+      />
       <PartnerDetailDialog
         partner={detailPartner}
         onClose={() => setDetailPartner(null)}
