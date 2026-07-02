@@ -780,7 +780,7 @@ export default function OSHRCompliance() {
                     <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.75} /> Message
                   </button>
                   <button onClick={async () => {
-                    const pending = (openEmpDocs ?? []).filter((d: any) => d.status === "missing" || d.status === "requested" || d.status === "expired");
+                    const pending = (openDocs ?? []).filter((d: any) => d.status === "missing" || d.status === "requested" || d.status === "expired");
                     if (pending.length) {
                       toast({ title: "Cannot mark ready", description: `${pending.length} document(s) not verified.` });
                       await logHrEvent({
