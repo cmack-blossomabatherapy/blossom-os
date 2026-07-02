@@ -109,7 +109,10 @@ describe("Marketing Pass 107 - integration readiness", () => {
     expect(s.toLowerCase()).not.toContain("est. mobile share");
   });
 
-  it("IntegrationIngestPreviewPanel is wired on Lead Sources page", () => {
-    expect(read("src/pages/os/marketing/LeadSources.tsx")).toContain("IntegrationIngestPreviewPanel");
+  it("IntegrationIngestPreviewPanel is admin-only and no longer on Lead Sources", () => {
+    expect(read("src/pages/os/marketing/LeadSources.tsx")).not.toContain("IntegrationIngestPreviewPanel");
+    expect(read("src/pages/admin/IntegrationIngest.tsx")).toContain("IntegrationIngestPreviewPanel");
+    const app = read("src/App.tsx");
+    expect(app).toMatch(/path="\/admin\/integration-ingest"[\s\S]{0,120}AdminRoute/);
   });
 });
