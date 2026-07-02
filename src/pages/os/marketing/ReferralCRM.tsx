@@ -5063,6 +5063,7 @@ export default function ReferralCRM() {
     <MktgPage
       title="Blossom Referral CRM"
       subtitle="Track contacts, companies, referrals, and outreach for every state."
+      actions={<CopyShareLinkButton />}
     >
       {backendMissing.length > 0 && (
         <div className="mb-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
