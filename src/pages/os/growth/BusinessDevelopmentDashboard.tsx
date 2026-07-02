@@ -1057,7 +1057,7 @@ function SourceHandoffsPanel({
   onLogOutreachForPartner,
   onCreateTaskForPartner,
 }: { partners: ReferralCompany[]; outreach: ReferralActivity[] } & HandoffActions) {
-  const { sources, events, loading, error, refresh } = useMarketingSourceSignals();
+  const { sources, events, loading, error, refresh, hasMoreEvents, loadingMoreEvents, loadMoreEvents } = useMarketingSourceSignals();
 
   // Aggregate BD-safe view of lead source signals from referral partner data.
   const partnerRows = useMemo(() => {
@@ -1171,6 +1171,9 @@ function SourceHandoffsPanel({
         loading={loading}
         error={error}
         refresh={refresh}
+        hasMoreEvents={hasMoreEvents}
+        loadingMoreEvents={loadingMoreEvents}
+        loadMoreEvents={loadMoreEvents}
         onCreatePartnerFromEvent={onCreatePartnerFromEvent}
         onLogOutreachForPartner={onLogOutreachForPartner}
         onCreateTaskForPartner={onCreateTaskForPartner}
