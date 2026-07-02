@@ -2682,6 +2682,13 @@ export function UncredentialedBCBAsPage() {
   const [addRec, setAddRec] = useState(false);
   const [defaultProv, setDefaultProv] = useState<string | undefined>();
   const [openRecord, setOpenRecord] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [payerFilter, setPayerFilter] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [blockedOnly, setBlockedOnly] = useState(false);
+  const [missingInfoOnly, setMissingInfoOnly] = useState(false);
+  const [noPayerRecsOnly, setNoPayerRecsOnly] = useState(false);
 
   const gap = useMemo(() => {
     const bcbaProviders = providers.filter((p) => p.provider_type === "BCBA");
@@ -2697,13 +2704,37 @@ export function UncredentialedBCBAsPage() {
       const focus = blockedFirst ?? missingInfo ?? activeFirst ?? null;
       const missingItemsCount = provRecs.reduce((n, r) => n + (r.missing_items?.length ?? 0), 0);
       return {
-        provider: p, state: p.license_state, blocked, missingPayerRecs,
+        provider: p, state: p.license_state, blocked, missingPayerRecs, provRecs,
         focusRecordId: focus?.id ?? null,
         missingItemsCount,
+        hasMissingInfo: !!missingInfo || missingItemsCount > 0,
+        hasNoPayerRecs: provRecs.length === 0,
         hasGap: provRecs.length === 0 || missingPayerRecs.length > 0 || blocked.length > 0,
       };
     }).filter((g) => g.hasGap);
   }, [providers, records]);
+
+  const filteredGap = useMemo(() => gap.filter((g) => {
+    const query = q.trim().toLowerCase();
+    if (query && !g.provider.provider_name.toLowerCase().includes(query)) return false;
+    if (stateFilter !== "ALL" && g.state !== stateFilter) return false;
+    if (payerFilter && !g.provRecs.some((r) => r.payer_name.toLowerCase().includes(payerFilter.toLowerCase()))) return false;
+    if (ownerFilter) {
+      const own = ownerFilter.toLowerCase();
+      const anyOwner = g.provRecs.some((r) => (r.owner_name ?? "").toLowerCase().includes(own));
+      if (!anyOwner) return false;
+    }
+    if (blockedOnly && g.blocked.length === 0) return false;
+    if (missingInfoOnly && !g.hasMissingInfo) return false;
+    if (noPayerRecsOnly && !g.hasNoPayerRecs) return false;
+    return true;
+  }), [gap, q, stateFilter, payerFilter, ownerFilter, blockedOnly, missingInfoOnly, noPayerRecsOnly]);
+
+  const hasFilters = !!q || stateFilter !== "ALL" || !!payerFilter || !!ownerFilter || blockedOnly || missingInfoOnly || noPayerRecsOnly;
+  const clearFilters = () => {
+    setQ(""); setStateFilter("ALL"); setPayerFilter(""); setOwnerFilter("");
+    setBlockedOnly(false); setMissingInfoOnly(false); setNoPayerRecsOnly(false);
+  };
 
   return (
     <Shell>
@@ -2711,11 +2742,57 @@ export function UncredentialedBCBAsPage() {
         eyebrow="Credentialing" title="Uncredentialed BCBAs"
         subtitle="BCBAs missing payer/state credentialing, or with blockers preventing approval."
         icon={AlertTriangle}
+        actions={
+          <Button size="sm" variant="outline" onClick={() => exportCsv("uncredentialed-bcbas.csv", filteredGap.map((g) => ({
+            provider: g.provider.provider_name, state: g.state ?? "",
+            missing_payers: g.missingPayerRecs.map((r) => `${r.payer_name} (${r.status})`).join("; "),
+            blocker: g.blocked[0]?.blocker_reason ?? "",
+            owner: g.missingPayerRecs[0]?.owner_name ?? g.blocked[0]?.owner_name ?? "",
+          })))}>
+            <Download className="h-4 w-4 mr-1.5" />Export CSV
+          </Button>
+        }
       />
       <LoadErr loading={loading} error={error} />
-      <SectionCard title={`${gap.length} BCBA${gap.length === 1 ? "" : "s"} with gaps`}>
-        {gap.length === 0 ? (
-          <Empty title="No uncredentialed BCBAs. Nice." />
+      <FromReportsBanner />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative max-w-xs w-full">
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search BCBA…" className="pl-7 h-9" />
+        </div>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent><SelectItem value="ALL">All states</SelectItem>{CRED_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        <Input placeholder="Payer…" className="h-9 w-32" value={payerFilter} onChange={(e) => setPayerFilter(e.target.value)} />
+        <Input placeholder="Owner…" className="h-9 w-32" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} />
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={blockedOnly} onCheckedChange={setBlockedOnly} /> Blocked
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={missingInfoOnly} onCheckedChange={setMissingInfoOnly} /> Missing info
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground border rounded-md px-2 h-9">
+          <Switch checked={noPayerRecsOnly} onCheckedChange={setNoPayerRecsOnly} /> No payer records
+        </label>
+        {hasFilters && (
+          <Button size="sm" variant="ghost" onClick={clearFilters}><X className="h-3 w-3 mr-1" />Clear</Button>
+        )}
+      </div>
+      <SectionCard title={`${filteredGap.length} BCBA${filteredGap.length === 1 ? "" : "s"} with gaps`}>
+        {filteredGap.length === 0 ? (
+          hasFilters ? (
+            <Empty
+              title="No BCBAs match these filters"
+              description="Try clearing filters to see all BCBAs with gaps."
+              action={<Button size="sm" variant="outline" onClick={clearFilters}><X className="h-4 w-4 mr-1" />Clear filters</Button>}
+            />
+          ) : (
+            <Empty
+              title="No uncredentialed BCBAs. Nice."
+              description="Every BCBA in the directory has approved payer coverage and no active blockers."
+            />
+          )
         ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
@@ -2725,7 +2802,7 @@ export function UncredentialedBCBAsPage() {
                 ))}</tr>
               </thead>
               <tbody>
-                {gap.map((g) => {
+                {filteredGap.map((g) => {
                   const missingList = g.missingPayerRecs.length
                     ? g.missingPayerRecs.map((r) => `${r.payer_name} (${r.status})`).join(", ")
                     : "No payer records yet";
