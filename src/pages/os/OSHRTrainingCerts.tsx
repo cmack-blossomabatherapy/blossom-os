@@ -635,6 +635,13 @@ export default function OSHRTrainingCerts() {
           {/* RIGHT RAIL */}
           <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
             <Card className="p-5">
+              <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Integration readiness</h3>
+              <p className="text-[12px] text-muted-foreground mb-3">
+                Sync coverage across active onboarding records. Rows only count as synced when the provider is connected.
+              </p>
+              <IntegrationReadinessSummary rows={d.onboarding} />
+            </Card>
+            <Card className="p-5">
               <div className="flex items-center gap-2 mb-3">
                 <GraduationCap className="h-4 w-4 text-primary" strokeWidth={1.75} />
                 <h3 className="text-sm font-medium tracking-tight">Workflow Guidance</h3>
