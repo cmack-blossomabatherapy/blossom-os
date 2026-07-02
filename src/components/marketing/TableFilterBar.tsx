@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useUrlState } from "@/hooks/useUrlState";
 
 export type FilterOption = { value: string; label: string; count?: number };
 
@@ -68,6 +69,32 @@ export function TableFilterBar({
   const handleClearFilters = () => {
     filters.forEach((f) => f.onChange(f.defaultValue ?? "all"));
   };
+
+  const [collapsedGroups, setCollapsedGroups] = useUrlState("fcg", "");
+  const collapsedSet = React.useMemo(
+    () =>
+      new Set(
+        collapsedGroups
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((s) => decodeURIComponent(s)),
+      ),
+    [collapsedGroups],
+  );
+  const toggleCollapsed = React.useCallback(
+    (label: string) => {
+      const next = new Set(collapsedSet);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      setCollapsedGroups(
+        Array.from(next)
+          .map((l) => encodeURIComponent(l))
+          .join(","),
+      );
+    },
+    [collapsedSet, setCollapsedGroups],
+  );
 
   return (
     <div
@@ -143,6 +170,7 @@ export function TableFilterBar({
               label="Search"
               values={[{ key: "search", label: search.value, onRemove: () => search.onChange("") }]}
               onClearGroup={() => search.onChange("")}
+              collapsed={false}
             />
           )}
           {groupActiveFilters(activeFilters).map((group) => (
@@ -152,6 +180,8 @@ export function TableFilterBar({
               values={group.values}
               onClearGroup={group.onClearGroup}
               totalCount={group.totalCount}
+              collapsed={collapsedSet.has(group.label)}
+              onToggle={() => toggleCollapsed(group.label)}
             />
           ))}
           {activeFilters.length > 0 && (
@@ -250,14 +280,23 @@ function FilterChipGroup({
   values,
   onClearGroup,
   totalCount,
+  collapsed: controlledCollapsed,
+  onToggle,
 }: {
   label: string;
   values: ChipValue[];
   onClearGroup: () => void;
   totalCount?: number;
+  collapsed?: boolean;
+  onToggle?: () => void;
 }) {
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [internalCollapsed, setInternalCollapsed] = React.useState(false);
+  const collapsed = controlledCollapsed ?? internalCollapsed;
   const multi = values.length > 1;
+  const handleToggle = () => {
+    if (onToggle) onToggle();
+    else setInternalCollapsed((c) => !c);
+  };
   return (
     <span className="inline-flex items-stretch overflow-hidden rounded-full border border-primary/20 bg-primary/5 text-[11px] text-primary">
       <span className="inline-flex items-center gap-1 px-2 py-0.5 font-medium">
@@ -298,7 +337,7 @@ function FilterChipGroup({
       {multi && (
         <button
           type="button"
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={handleToggle}
           className="inline-flex items-center border-l border-primary/20 px-1.5 hover:bg-primary/10"
           aria-label={`${collapsed ? "Expand" : "Collapse"} ${label} filters`}
         >
