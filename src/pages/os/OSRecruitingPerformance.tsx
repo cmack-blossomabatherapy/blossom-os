@@ -5,12 +5,6 @@ import {
   AlertTriangle, CheckCircle2, UserPlus, ClipboardList, RefreshCw,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
-import {
-  recruitingRecruiters,
-  recruitingStates,
-  staffingDemandByRegion,
-  type RecruitingCandidate,
-} from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import {
   useRecruitingCandidates,
@@ -22,8 +16,29 @@ import {
   useRecruitingEscalations,
   useRecruitingStaffingNeeds,
 } from "@/hooks/useRecruitingCandidates";
-import { getClientStaffingNeeds } from "@/data/staffing";
 import { cn } from "@/lib/utils";
+
+// Pass 7: RecruitingCandidate type comes from the live-backed legacy adapter
+// so this page never imports from the removed static demo module.
+type RecruitingCandidate = ReturnType<typeof useLegacyRecruitingCandidates>[number];
+
+// Local pressure-signal proxy: since staffing demand no longer comes from a
+// static regional map, we derive per-state demand from live open staffing needs.
+type LiveClientNeed = {
+  client: { id: string; state: string; childName: string; clinic: string; bcba: boolean };
+  priority: "High" | "Medium" | "Low";
+  daysWaiting: number;
+  role_needed: string;
+};
+
+const KNOWN_STATES = ["GA", "NC", "TN", "VA", "MD", "NJ"] as const;
+
+function normPriority(p: string | null | undefined): "High" | "Medium" | "Low" {
+  const v = (p ?? "").toLowerCase();
+  if (v.startsWith("high") || v === "urgent" || v === "critical") return "High";
+  if (v.startsWith("med")) return "Medium";
+  return "Low";
+}
 
 // Recruiting → Staffing & Operations → Recruiting Performance
 
@@ -147,7 +162,53 @@ export default function OSRecruitingPerformance() {
     });
   }, [stateF, recruiterF, roleF]);
 
-  const clientNeeds = useMemo(() => getClientStaffingNeeds(), []);
+  // Live-only client staffing needs, adapted to the shape this page renders.
+  // The prior static demo helper for client needs has been removed entirely.
+  const clientNeeds = useMemo<LiveClientNeed[]>(() => {
+    const now = Date.now();
+    return liveStaffingNeeds
+      .filter((n) => n.status !== "filled" && n.status !== "closed" && !n.filled_at)
+      .map((n) => {
+        const opened = n.opened_at ? new Date(n.opened_at).getTime() : now;
+        const daysWaiting = Math.max(0, Math.round((now - opened) / (1000 * 60 * 60 * 24)));
+        return {
+          client: {
+            id: n.id,
+            state: n.state,
+            childName: n.client_label,
+            clinic: n.notes ?? n.state,
+            // bcba flag is used only to phrase "needs RBT/BCBA"; invert role_needed
+            bcba: n.role_needed !== "BCBA",
+          },
+          priority: normPriority(n.priority),
+          daysWaiting,
+          role_needed: n.role_needed,
+        };
+      });
+  }, [liveStaffingNeeds]);
+
+  // Derived directories replace the removed static recruiters/states arrays.
+  const derivedRecruiters = useMemo(() => {
+    const set = new Set<string>();
+    recruitingCandidates.forEach((c) => { if (c.recruiter) set.add(c.recruiter); });
+    return Array.from(set).sort();
+  }, [recruitingCandidates]);
+
+  const derivedStates = useMemo(() => {
+    const set = new Set<string>(KNOWN_STATES);
+    recruitingCandidates.forEach((c) => { if (c.state) set.add(c.state); });
+    liveStaffingNeeds.forEach((n) => { if (n.state) set.add(n.state); });
+    return Array.from(set).sort();
+  }, [recruitingCandidates, liveStaffingNeeds]);
+
+  // Per-state open demand from live needs (replaces staffingDemandByRegion map).
+  const demandByState = useMemo(() => {
+    const map: Record<string, number> = {};
+    clientNeeds.forEach((n) => {
+      map[n.client.state] = (map[n.client.state] ?? 0) + 1;
+    });
+    return map;
+  }, [clientNeeds]);
 
   // Snapshot metrics
   const snapshot = useMemo(() => {
@@ -204,7 +265,7 @@ export default function OSRecruitingPerformance() {
 
   // Recruiter activity
   const recruiterRows = useMemo(() => {
-    return recruitingRecruiters.map((name) => {
+    return derivedRecruiters.map((name) => {
       const owned = base.filter((c) => c.recruiter === name);
       const stalled = owned.filter(isStalled).length;
       const onboardingDelay = owned.filter(isOnboardingDelayed).length;
@@ -215,23 +276,23 @@ export default function OSRecruitingPerformance() {
       const speed = owned.length ? Math.round((onboardComplete / owned.length) * 100) : 0;
       return { name, load: owned.length, stalled, onboardingDelay, orientationDelay, followUps, ready, speed };
     }).filter((r) => r.load > 0);
-  }, [base]);
+  }, [base, derivedRecruiters]);
 
   // State recruiting pressure
   const statePressure = useMemo(() => {
-    return recruitingStates.map((s) => {
+    return derivedStates.map((s) => {
       const inState = base.filter((c) => c.state === s);
       const ready = inState.filter((c) => c.readinessStatus === "Ready for Staffing").length;
       const stalled = inState.filter(isStalled).length;
       const onboardingDelay = inState.filter(isOnboardingDelayed).length;
       const orientationDelay = inState.filter(isOrientationDelayed).length;
-      const demand = Object.entries(staffingDemandByRegion).filter(([k]) => k.startsWith(`${s}-`)).reduce((sum, [, v]) => sum + v.demand, 0);
+      const demand = demandByState[s] ?? 0;
       const clientGap = clientNeeds.filter((n) => n.client.state === s).length;
       const pressure = Math.max(0, demand + clientGap - ready);
       const tone: Tone = pressure >= 6 ? "crit" : pressure >= 3 ? "warn" : "ok";
       return { state: s, ready, stalled, onboardingDelay, orientationDelay, demand, clientGap, pressure, tone };
     }).sort((a, b) => b.pressure - a.pressure);
-  }, [base, clientNeeds]);
+  }, [base, clientNeeds, derivedStates, demandByState]);
 
   // Bottlenecks
   const bottlenecks = useMemo(() => {
@@ -304,11 +365,11 @@ export default function OSRecruitingPerformance() {
           <div className="flex flex-wrap items-center gap-2">
             <select value={stateF} onChange={(e) => setStateF(e.target.value)} className="h-10 rounded-xl bg-muted/60 border border-border px-3 text-sm">
               <option value="all">All states</option>
-              {recruitingStates.map((s) => <option key={s} value={s}>{s}</option>)}
+              {derivedStates.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
             <select value={recruiterF} onChange={(e) => setRecruiterF(e.target.value)} className="h-10 rounded-xl bg-muted/60 border border-border px-3 text-sm">
               <option value="all">All recruiters</option>
-              {recruitingRecruiters.map((r) => <option key={r} value={r}>{r}</option>)}
+              {derivedRecruiters.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
             <select value={roleF} onChange={(e) => setRoleF(e.target.value as typeof roleF)} className="h-10 rounded-xl bg-muted/60 border border-border px-3 text-sm">
               <option value="all">All roles</option>

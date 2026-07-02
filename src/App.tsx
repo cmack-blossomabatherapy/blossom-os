@@ -70,10 +70,11 @@ import RbtMatchQueue from "./pages/os/operations/RbtMatchQueue";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
 
+// Recruiting Pass 7 / Reports cleanup: /reports is the single visible Reports
+// destination. Legacy /reports/ai/* aliases now redirect to /reports rather
+// than routing users into AI dashboards.
 function AiReportRedirect() {
-  const { pathname } = useLocation();
-  const id = pathname.split("/").pop();
-  return <Navigate to={`/dashboards/ai/${id}`} replace />;
+  return <Navigate to="/reports" replace />;
 }
 import Automations from "./pages/Automations";
 import Team from "./pages/Team";
@@ -806,7 +807,7 @@ const App = () => (
                   <Route path="/reports/cancellation-command-center" element={<CancellationCommandCenter />} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
-                  <Route path="/reports/ai/new" element={<Navigate to="/dashboards/ai/new" replace />} />
+                  <Route path="/reports/ai/new" element={<Navigate to="/reports" replace />} />
                   <Route path="/reports/ai/:id" element={<AiReportRedirect />} />
                   <Route path="/reports/:reportId" element={<ReportDetail />} />
                   <Route path="/kpi" element={<OSKpiScorecards />} />
