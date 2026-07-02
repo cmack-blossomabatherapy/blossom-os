@@ -1143,6 +1143,24 @@ function RecordDetailSheet({
                 </div>
                 <Field label="Last record update" value={record.updated_at ? new Date(record.updated_at).toLocaleString() : null} />
                 <Field label="Last readiness update" value={record.centralreach_last_readiness_at ? new Date(record.centralreach_last_readiness_at).toLocaleString() : null} />
+                {(() => {
+                  const missing = readinessMissingFields(record, provider);
+                  if (!missing.length) {
+                    return (
+                      <div className="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs p-3">
+                        All required identifiers are present. This record can be marked Ready To Sync.
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/70 text-amber-900 text-xs p-3">
+                      <div className="font-medium mb-1">Missing before Ready To Sync ({missing.length})</div>
+                      <ul className="list-disc pl-4 space-y-0.5">
+                        {missing.map((m) => <li key={m}>{m}</li>)}
+                      </ul>
+                    </div>
+                  );
+                })()}
                 {record.centralreach_sync_status === "Sync Error" && record.centralreach_sync_error ? (
                   <div className="rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs p-3">
                     <div className="font-medium mb-0.5">Sync error</div>
