@@ -8,7 +8,13 @@ import {
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
 import { IntegrationReadinessSummary } from "@/components/hr/IntegrationReadinessSummary";
-import type { OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
+import {
+  ReadinessFilterChips,
+  useIntegrationCatalogStatus,
+  rowMatchesReadinessFilter,
+  type OnboardingReadinessRow,
+  type ReadinessFilter,
+} from "@/components/hr/IntegrationReadinessPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -123,6 +129,20 @@ export default function OSHRTrainingAcademy() {
   const data = useAcademyData();
   const [query, setQuery] = useState("");
   const [openTrack, setOpenTrack] = useState<string | null>(null);
+  const [readinessFilter, setReadinessFilter] = useState<ReadinessFilter>("all");
+  const { catalog: readinessCatalog } = useIntegrationCatalogStatus();
+
+  const readinessCounts = useMemo(() => ({
+    all: data.onboarding.length,
+    missing_connected: data.onboarding.filter((o) => rowMatchesReadinessFilter(o, readinessCatalog, "missing_connected")).length,
+    missing_synced: data.onboarding.filter((o) => rowMatchesReadinessFilter(o, readinessCatalog, "missing_synced")).length,
+    missing_any: data.onboarding.filter((o) => rowMatchesReadinessFilter(o, readinessCatalog, "missing_any")).length,
+  }), [data.onboarding, readinessCatalog]);
+
+  const filteredOnboarding = useMemo(() => {
+    if (readinessFilter === "all") return data.onboarding;
+    return data.onboarding.filter((o) => rowMatchesReadinessFilter(o, readinessCatalog, readinessFilter));
+  }, [data.onboarding, readinessCatalog, readinessFilter]);
 
   const hrTrack = data.tracks.find((t) => t.name === HR_TRACK);
   const otherTracks = data.tracks.filter((t) => t.name !== HR_TRACK);
@@ -371,7 +391,18 @@ export default function OSHRTrainingAcademy() {
               <p className="text-[12px] text-muted-foreground mb-3">
                 Training completions and onboarding records only sync when the provider is connected.
               </p>
-              <IntegrationReadinessSummary rows={data.onboarding} />
+              <ReadinessFilterChips
+                value={readinessFilter}
+                onChange={setReadinessFilter}
+                counts={readinessCounts}
+                className="mb-3"
+              />
+              <IntegrationReadinessSummary rows={filteredOnboarding} />
+              <p className="mt-2 text-[10.5px] text-muted-foreground">
+                {readinessFilter === "all"
+                  ? `${data.onboarding.length} onboarding record${data.onboarding.length === 1 ? "" : "s"}`
+                  : `${filteredOnboarding.length} of ${data.onboarding.length} record${data.onboarding.length === 1 ? "" : "s"} match this filter`}
+              </p>
             </Card>
 
             <Card className="p-5">

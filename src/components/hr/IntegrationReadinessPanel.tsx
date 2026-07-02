@@ -18,6 +18,115 @@ const PROVIDER_META: Record<ProviderKey, { label: string; column: string }> = {
   centralreach: { label: "CentralReach", column: "centralreach" },
 };
 
+export type ReadinessFilter = "all" | "missing_connected" | "missing_synced" | "missing_any";
+
+export type ProviderCatalogStatus = Record<ProviderKey, string>;
+
+const DEFAULT_CATALOG: ProviderCatalogStatus = {
+  viventium: "not_configured",
+  stellar_checks: "not_configured",
+  centralreach: "not_configured",
+};
+
+/** Shared hook: reads current integration_catalog status for the three HR providers. */
+export function useIntegrationCatalogStatus() {
+  const [catalog, setCatalog] = useState<ProviderCatalogStatus>(DEFAULT_CATALOG);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("integration_catalog")
+        .select("id,status")
+        .in("id", ["viventium", "stellar_checks", "centralreach"]);
+      if (cancelled) return;
+      if (data) {
+        const next: ProviderCatalogStatus = { ...DEFAULT_CATALOG };
+        for (const c of data as CatalogRow[]) {
+          if (c.id in next) next[c.id as ProviderKey] = c.status;
+        }
+        setCatalog(next);
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return { catalog, loading };
+}
+
+/**
+ * Returns true when a row is "unready" per the requested filter.
+ *  - missing_connected: at least one provider is not connected in the catalog.
+ *  - missing_synced:    at least one connected provider has no synced row (with timestamp).
+ *  - missing_any:       either of the above is true.
+ *  - all:               always true (no filter applied).
+ */
+export function rowMatchesReadinessFilter(
+  row: OnboardingReadinessRow,
+  catalog: ProviderCatalogStatus,
+  filter: ReadinessFilter,
+): boolean {
+  if (filter === "all") return true;
+  const providers = Object.keys(PROVIDER_META) as ProviderKey[];
+  let missingConnected = false;
+  let missingSynced = false;
+  for (const key of providers) {
+    const col = PROVIDER_META[key].column;
+    const connected = catalog[key] === "connected";
+    if (!connected) { missingConnected = true; continue; }
+    const rs = (row[`${col}_status` as keyof OnboardingReadinessRow] as string) ?? "not_started";
+    const at = row[`${col}_synced_at` as keyof OnboardingReadinessRow] as string | null | undefined;
+    const synced = (rs === "synced" || rs === "ready") && !!at;
+    if (!synced) missingSynced = true;
+  }
+  if (filter === "missing_connected") return missingConnected;
+  if (filter === "missing_synced") return missingSynced;
+  return missingConnected || missingSynced; // missing_any
+}
+
+/** Compact chip row for filtering by integration readiness. */
+export function ReadinessFilterChips({
+  value,
+  onChange,
+  counts,
+  className,
+}: {
+  value: ReadinessFilter;
+  onChange: (v: ReadinessFilter) => void;
+  counts?: Partial<Record<ReadinessFilter, number>>;
+  className?: string;
+}) {
+  const items: [ReadinessFilter, string][] = [
+    ["all", "All"],
+    ["missing_connected", "Missing connected"],
+    ["missing_synced", "Missing synced"],
+    ["missing_any", "Any gap"],
+  ];
+  return (
+    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
+      {items.map(([k, label]) => {
+        const active = value === k;
+        const n = counts?.[k];
+        return (
+          <button
+            key={k}
+            type="button"
+            onClick={() => onChange(k)}
+            className={cn(
+              "h-7 px-2.5 rounded-lg text-[11.5px] transition-colors border",
+              active
+                ? "bg-foreground text-background border-foreground"
+                : "bg-card text-muted-foreground border-border/70 hover:bg-muted",
+            )}
+          >
+            {label}{typeof n === "number" ? ` · ${n}` : ""}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export interface OnboardingReadinessRow {
   viventium_status?: string | null;
   viventium_synced_at?: string | null;

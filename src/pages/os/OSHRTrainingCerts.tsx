@@ -7,7 +7,14 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
-import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
+import {
+  IntegrationReadinessPanel,
+  ReadinessFilterChips,
+  useIntegrationCatalogStatus,
+  rowMatchesReadinessFilter,
+  type OnboardingReadinessRow,
+  type ReadinessFilter,
+} from "@/components/hr/IntegrationReadinessPanel";
 import { IntegrationReadinessSummary } from "@/components/hr/IntegrationReadinessSummary";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -223,6 +230,8 @@ export default function OSHRTrainingCerts() {
   const d = useData();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [readinessFilter, setReadinessFilter] = useState<ReadinessFilter>("all");
+  const { catalog: readinessCatalog } = useIntegrationCatalogStatus();
 
   /* indexes */
   const empById = useMemo(() => Object.fromEntries(d.employees.map(e => [e.id, e])), [d.employees]);
@@ -309,6 +318,20 @@ export default function OSHRTrainingCerts() {
     });
     return items.slice(0, 20);
   }, [d.onboarding, d.empTrainings, empById, courseById]);
+
+  /* filter blocker rows by integration readiness of the employee's onboarding row */
+  const filteredBlockerRows = useMemo(() => {
+    if (readinessFilter === "all") return blockerRows;
+    return blockerRows.filter(b => b.onb && rowMatchesReadinessFilter(b.onb, readinessCatalog, readinessFilter));
+  }, [blockerRows, readinessFilter, readinessCatalog]);
+
+  /* counts for each filter chip (based on distinct onboarding rows) */
+  const readinessCounts = useMemo(() => ({
+    all: d.onboarding.length,
+    missing_connected: d.onboarding.filter(o => rowMatchesReadinessFilter(o, readinessCatalog, "missing_connected")).length,
+    missing_synced: d.onboarding.filter(o => rowMatchesReadinessFilter(o, readinessCatalog, "missing_synced")).length,
+    missing_any: d.onboarding.filter(o => rowMatchesReadinessFilter(o, readinessCatalog, "missing_any")).length,
+  }), [d.onboarding, readinessCatalog]);
 
   /* certifications view — from employee_trainings with renewal/expires + academy certs */
   const certRows = useMemo(() => {
@@ -597,15 +620,31 @@ export default function OSHRTrainingCerts() {
 
             {/* READINESS BLOCKERS */}
             <section>
-              <h2 className="text-base font-medium tracking-tight mb-3">Readiness blockers</h2>
+              <div className="flex items-end justify-between mb-3 gap-3 flex-wrap">
+                <div>
+                  <h2 className="text-base font-medium tracking-tight">Readiness blockers</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Filter by integration readiness — providers must be connected and rows must be synced.
+                  </p>
+                </div>
+                <ReadinessFilterChips
+                  value={readinessFilter}
+                  onChange={setReadinessFilter}
+                  counts={readinessCounts}
+                />
+              </div>
               <Card>
                 {d.loading ? (
                   <div className="p-6"><p className="text-sm text-muted-foreground">Loading…</p></div>
-                ) : blockerRows.length === 0 ? (
-                  <Empty icon={CheckCircle2} title="No training blockers right now." hint="No employees are blocked by training or onboarding." />
+                ) : filteredBlockerRows.length === 0 ? (
+                  <Empty
+                    icon={CheckCircle2}
+                    title={readinessFilter === "all" ? "No training blockers right now." : "No employees match this readiness filter."}
+                    hint={readinessFilter === "all" ? "No employees are blocked by training or onboarding." : "Try a different readiness filter."}
+                  />
                 ) : (
                   <ul className="divide-y divide-border/70">
-                    {blockerRows.map((b, i) => (
+                    {filteredBlockerRows.map((b, i) => (
                       <li key={i} className="px-4 py-3 flex flex-col gap-2">
                         <div className="flex items-center gap-3">
                           <div className="h-8 w-8 rounded-xl bg-destructive/10 text-destructive grid place-items-center shrink-0">
