@@ -257,7 +257,7 @@ export default function ClinicDetail() {
                     return (
                       <tr
                         key={r.id}
-                        onClick={() => navigate(`/staffing/${r.id}`)}
+                        onClick={() => navigate(`/ops/staffing/rbt/${r.id}`)}
                         className="border-b border-border/40 last:border-b-0 hover:bg-muted/20 cursor-pointer"
                       >
                         <td className="px-4 py-2.5 font-medium text-foreground">{r.name}</td>
