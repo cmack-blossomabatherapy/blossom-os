@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
+import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
+import { IntegrationReadinessSummary } from "@/components/hr/IntegrationReadinessSummary";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -39,7 +41,12 @@ interface Enrollment {
 }
 interface Cert { id: string; track_id: string; code: string; name: string; description: string | null; }
 interface UserCert { id: string; enrollment_id: string; certificate_id: string; awarded_at: string; }
-interface Onboarding { id: string; employee_id: string; status: string; blockers: string[] | null; }
+interface Onboarding extends OnboardingReadinessRow {
+  id: string;
+  employee_id: string;
+  status: string;
+  blockers: string[] | null;
+}
 
 /* ---------------- atoms ---------------- */
 type Tone = "ok" | "warn" | "crit" | "muted" | "info";
@@ -157,7 +164,7 @@ function useData() {
         supabase.from("academy_enrollments").select("id,track_id,employee_id,status,current_week_id,start_date"),
         supabase.from("academy_certificates").select("id,track_id,code,name,description"),
         supabase.from("academy_user_certificates").select("id,enrollment_id,certificate_id,awarded_at"),
-        supabase.from("employee_onboarding").select("id,employee_id,status,blockers"),
+        supabase.from("employee_onboarding").select("id,employee_id,status,blockers,viventium_status,viventium_synced_at,viventium_notes,stellar_status,stellar_synced_at,stellar_notes,centralreach_status,centralreach_synced_at,centralreach_notes"),
       ]);
       if (cancel) return;
       setState({
@@ -278,16 +285,23 @@ export default function OSHRTrainingCerts() {
 
   /* readiness blockers (onboarding blockers + overdue training) */
   const blockerRows = useMemo(() => {
-    const items: { emp: Employee | undefined; kind: string; detail: string; days: number | null }[] = [];
+    const items: {
+      emp: Employee | undefined;
+      onb?: Onboarding;
+      kind: string;
+      detail: string;
+      days: number | null;
+    }[] = [];
     d.onboarding.forEach(o => {
       (o.blockers ?? []).forEach(b => {
-        items.push({ emp: empById[o.employee_id], kind: "Onboarding blocker", detail: b, days: null });
+        items.push({ emp: empById[o.employee_id], onb: o, kind: "Onboarding blocker", detail: b, days: null });
       });
     });
     d.empTrainings.filter(isOverdue).forEach(t => {
       const days = t.due_date ? daysBetween(new Date(), new Date(t.due_date)) : null;
       items.push({
         emp: empById[t.employee_id],
+        onb: d.onboarding.find(o => o.employee_id === t.employee_id),
         kind: "Overdue training",
         detail: courseById[t.course_id]?.title ?? "Training",
         days,
@@ -592,21 +606,24 @@ export default function OSHRTrainingCerts() {
                 ) : (
                   <ul className="divide-y divide-border/70">
                     {blockerRows.map((b, i) => (
-                      <li key={i} className="px-4 py-3 flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-xl bg-destructive/10 text-destructive grid place-items-center shrink-0">
-                          <AlertCircle className="h-4 w-4" strokeWidth={1.75} />
+                      <li key={i} className="px-4 py-3 flex flex-col gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-xl bg-destructive/10 text-destructive grid place-items-center shrink-0">
+                            <AlertCircle className="h-4 w-4" strokeWidth={1.75} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] font-medium tracking-tight truncate">
+                              {b.emp ? `${b.emp.first_name} ${b.emp.last_name}` : "Unknown"}
+                              <span className="text-muted-foreground font-normal"> · {b.emp?.job_title}</span>
+                            </p>
+                            <p className="text-[11.5px] text-muted-foreground truncate">{b.kind}: {b.detail}</p>
+                          </div>
+                          {b.days != null && <Pill tone="crit">{b.days}d overdue</Pill>}
+                          <Link to="/hr/employee-support" className="h-7 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                            Resolve
+                          </Link>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-medium tracking-tight truncate">
-                            {b.emp ? `${b.emp.first_name} ${b.emp.last_name}` : "Unknown"}
-                            <span className="text-muted-foreground font-normal"> · {b.emp?.job_title}</span>
-                          </p>
-                          <p className="text-[11.5px] text-muted-foreground truncate">{b.kind}: {b.detail}</p>
-                        </div>
-                        {b.days != null && <Pill tone="crit">{b.days}d overdue</Pill>}
-                        <Link to="/hr/employee-support" className="h-7 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                          Resolve
-                        </Link>
+                        {b.onb && <IntegrationReadinessPanel row={b.onb} className="ml-11" />}
                       </li>
                     ))}
                   </ul>
@@ -617,6 +634,13 @@ export default function OSHRTrainingCerts() {
 
           {/* RIGHT RAIL */}
           <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+            <Card className="p-5">
+              <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Integration readiness</h3>
+              <p className="text-[12px] text-muted-foreground mb-3">
+                Sync coverage across active onboarding records. Rows only count as synced when the provider is connected.
+              </p>
+              <IntegrationReadinessSummary rows={d.onboarding} />
+            </Card>
             <Card className="p-5">
               <div className="flex items-center gap-2 mb-3">
                 <GraduationCap className="h-4 w-4 text-primary" strokeWidth={1.75} />

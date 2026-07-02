@@ -6,6 +6,9 @@ import {
   Eye, Users, Pencil, Workflow, Clock, ArrowRight, CheckCircle2,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
+import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
+import { IntegrationReadinessSummary } from "@/components/hr/IntegrationReadinessSummary";
+import type { OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +27,7 @@ interface ModuleRow {
 }
 interface Certificate { id: string; track_id: string; code: string; name: string; description: string | null; position: number; awarded_after_phase_id: string | null; }
 interface Enrollment  { id: string; track_id: string; employee_id: string; status: string; current_week_id: string | null; }
+interface OnboardingRow extends OnboardingReadinessRow { id: string; employee_id: string; status: string }
 
 /* ---------------- atoms (Blossom OS) ---------------- */
 type Tone = "ok" | "warn" | "crit" | "muted";
@@ -77,18 +81,20 @@ function useAcademyData() {
   const [modules, setModules] = useState<ModuleRow[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [onboarding, setOnboarding] = useState<OnboardingRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [tr, ph, wk, md, ct, en] = await Promise.all([
+      const [tr, ph, wk, md, ct, en, ob] = await Promise.all([
         supabase.from("academy_tracks").select("id,name,description").order("name"),
         supabase.from("academy_phases").select("id,track_id,name,position,tagline").order("position"),
         supabase.from("academy_weeks").select("id,phase_id,week_number,title").order("week_number"),
         supabase.from("academy_modules").select("id,week_id,position,title,module_type,duration_label,is_required,is_archived").eq("is_archived", false).order("position"),
         supabase.from("academy_certificates").select("id,track_id,code,name,description,position,awarded_after_phase_id").order("position"),
         supabase.from("academy_enrollments").select("id,track_id,employee_id,status,current_week_id"),
+        supabase.from("employee_onboarding").select("id,employee_id,status,viventium_status,viventium_synced_at,stellar_status,stellar_synced_at,centralreach_status,centralreach_synced_at"),
       ]);
       if (cancelled) return;
       setTracks((tr.data ?? []) as Track[]);
@@ -97,12 +103,13 @@ function useAcademyData() {
       setModules((md.data ?? []) as ModuleRow[]);
       setCertificates((ct.data ?? []) as Certificate[]);
       setEnrollments((en.data ?? []) as Enrollment[]);
+      setOnboarding((ob.data ?? []) as OnboardingRow[]);
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, []);
 
-  return { tracks, phases, weeks, modules, certificates, enrollments, loading };
+  return { tracks, phases, weeks, modules, certificates, enrollments, onboarding, loading };
 }
 
 /* ---------------- page ---------------- */
@@ -188,6 +195,8 @@ export default function OSHRTrainingAcademy() {
             </Link>
           </div>
         </header>
+
+        <HRIntegrationStatusStrip className="mb-6" />
 
         {/* KPI strip — lightweight only */}
         <div className="grid gap-3 mb-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
@@ -355,6 +364,14 @@ export default function OSHRTrainingAcademy() {
                   </Link>
                 ))}
               </nav>
+            </Card>
+
+            <Card className="p-5">
+              <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Integration readiness</h3>
+              <p className="text-[12px] text-muted-foreground mb-3">
+                Training completions and onboarding records only sync when the provider is connected.
+              </p>
+              <IntegrationReadinessSummary rows={data.onboarding} />
             </Card>
 
             <Card className="p-5">
