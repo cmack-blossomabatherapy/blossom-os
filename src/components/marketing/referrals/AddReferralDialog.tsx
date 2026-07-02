@@ -124,7 +124,7 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
         );
         if (!proceed) { setSaving(false); return; }
       }
-      const created = await createContact({
+      await createContact({
         company_id: resolvedCompanyId,
         first_name: firstName || null,
         last_name: lastName || null,
