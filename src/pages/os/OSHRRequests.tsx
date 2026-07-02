@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
+import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +23,12 @@ interface Employee {
   id: string; first_name: string; last_name: string; job_title: string;
   state: string; status: string; start_date: string | null;
 }
-interface Onboarding { id: string; employee_id: string; status: string; blockers: string[] | null; }
+interface Onboarding extends OnboardingReadinessRow {
+  id: string;
+  employee_id: string;
+  status: string;
+  blockers: string[] | null;
+}
 interface Training { id: string; employee_id: string; status: string; due_date: string | null; course_id: string | null; }
 
 /* ---------------- atoms ---------------- */
@@ -173,7 +179,7 @@ function useData(reloadKey = 0) {
       const [c, e, o, t] = await Promise.all([
         supabase.from("employee_cases").select("*").order("opened_at", { ascending: false }),
         supabase.from("employees").select("id,first_name,last_name,job_title,state,status,start_date").order("last_name"),
-        supabase.from("employee_onboarding").select("id,employee_id,status,blockers"),
+        supabase.from("employee_onboarding").select("id,employee_id,status,blockers,viventium_status,viventium_synced_at,viventium_notes,stellar_status,stellar_synced_at,stellar_notes,centralreach_status,centralreach_synced_at,centralreach_notes"),
         supabase.from("employee_trainings").select("id,employee_id,status,due_date,course_id"),
       ]);
       if (cancel) return;
@@ -674,6 +680,18 @@ export default function OSHRRequests() {
                     <p className="text-[13px] font-medium mt-0.5 truncate">{openTrn.filter(t => t.due_date && t.status !== "completed" && new Date(t.due_date+"T23:59:59").getTime() < Date.now()).length}</p>
                   </Card>
                 </div>
+              </section>
+
+              {/* Integration readiness */}
+              <section>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Integration readiness</p>
+                {openOnb ? (
+                  <IntegrationReadinessPanel row={openOnb} />
+                ) : (
+                  <Card className="p-4 text-[12px] text-muted-foreground">
+                    No onboarding record found for this employee — readiness will populate once onboarding is initialized.
+                  </Card>
+                )}
               </section>
 
               {/* Resolution */}
