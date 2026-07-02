@@ -389,7 +389,46 @@ export default function OSAuthorizations() {
               onApply={applySavedView}
               triggerClassName="h-8 rounded-md border-0 bg-transparent px-2"
             />
-            <Button variant="ghost" size="sm" onClick={() => toast("Export — coming soon")}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (!visible.length) { toast.info("Nothing to export — the current view is empty."); return; }
+                const cols: { key: string; label: string }[] = [
+                  { key: "id", label: "Auth ID" },
+                  { key: "clientName", label: "Client" },
+                  { key: "state", label: "State" },
+                  { key: "payor", label: "Payer" },
+                  { key: "requestType", label: "Auth Type" },
+                  { key: "stage", label: "Stage" },
+                  { key: "coordinator", label: "Coordinator" },
+                  { key: "bcba", label: "BCBA" },
+                  { key: "startDate", label: "Start Date" },
+                  { key: "submittedDate", label: "Submitted" },
+                  { key: "approvedDate", label: "Approved" },
+                  { key: "expirationDate", label: "Expires" },
+                  { key: "daysToExpire", label: "Days To Expire" },
+                  { key: "missingDocsCount", label: "Missing Docs" },
+                  { key: "prStatus", label: "PR Status" },
+                  { key: "source", label: "Source" },
+                ];
+                const escape = (v: unknown) => {
+                  const s = v === null || v === undefined ? "" : String(v);
+                  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+                };
+                const header = cols.map(c => escape(c.label)).join(",");
+                const body = visible.map(r => cols.map(c => escape((r as any)[c.key])).join(",")).join("\n");
+                const csv = `${header}\n${body}`;
+                const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `authorizations-${new Date().toISOString().slice(0,10)}.csv`;
+                document.body.appendChild(a); a.click(); a.remove();
+                URL.revokeObjectURL(url);
+                toast.success(`Exported ${visible.length} authorization${visible.length === 1 ? "" : "s"}`);
+              }}
+            >
               <Download className="mr-1.5 h-4 w-4" /> Export
             </Button>
             <Button variant="ghost" size="sm" asChild>
