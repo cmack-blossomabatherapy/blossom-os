@@ -603,7 +603,7 @@ function CategoryCard({ cat }: { cat: ReturnType<typeof visibleCategoriesForRole
   const Icon = cat.icon;
   return (
     <Link
-      to={`/os/reports?category=${cat.id}`}
+      to={`/reports?category=${cat.id}`}
       onClick={(e) => { e.preventDefault(); /* scroll to category section in future */ }}
       className="group block"
     >
