@@ -7,7 +7,12 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
-import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
+import {
+  IntegrationReadinessPanel,
+  useIntegrationRouteAvailability,
+  type OnboardingReadinessRow,
+} from "@/components/hr/IntegrationReadinessPanel";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -412,6 +417,27 @@ export default function OSHRMessages() {
   const openEmp = openConv ? empById[openConv.empId] : null;
   const openOnb = openConv ? onbByEmp.get(openConv.empId) : undefined;
   const openTrn = openConv ? trnByEmp.get(openConv.empId) ?? [] : [];
+
+  /* honest routing: which providers can this reply actually route through */
+  const routeAvailability = useIntegrationRouteAvailability(openOnb ?? null);
+  const [replyBody, setReplyBody] = useState("");
+  const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set(["in_app"]));
+
+  // Reset channel selection when switching conversations, and drop any
+  // provider channels that are no longer routable for the new employee.
+  useEffect(() => {
+    setReplyBody("");
+    setSelectedChannels(new Set(["in_app"]));
+  }, [openId]);
+  useEffect(() => {
+    setSelectedChannels((prev) => {
+      const next = new Set(prev);
+      for (const p of routeAvailability.providers) {
+        if (!p.routable && next.has(p.key)) next.delete(p.key);
+      }
+      return next;
+    });
+  }, [routeAvailability.providers]);
 
   return (
     <OSShell>
@@ -838,9 +864,59 @@ export default function OSHRMessages() {
               {/* compose */}
               <div>
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Reply</p>
+
+                {/* channel picker — gated by real integration readiness */}
+                <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedChannels(prev => {
+                      const n = new Set(prev);
+                      n.has("in_app") ? n.delete("in_app") : n.add("in_app");
+                      // in-app must always remain as a fallback route
+                      if (n.size === 0) n.add("in_app");
+                      return n;
+                    })}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
+                      selectedChannels.has("in_app")
+                        ? "bg-primary/10 text-primary border-primary/20"
+                        : "bg-muted text-muted-foreground border-border/70",
+                    )}
+                    title="Always available — delivered inside Blossom OS"
+                  >
+                    In-app
+                  </button>
+                  {routeAvailability.providers.map((p) => {
+                    const on = selectedChannels.has(p.key);
+                    return (
+                      <button
+                        key={p.key}
+                        type="button"
+                        disabled={!p.routable}
+                        onClick={() => setSelectedChannels(prev => {
+                          const n = new Set(prev);
+                          n.has(p.key) ? n.delete(p.key) : n.add(p.key);
+                          return n;
+                        })}
+                        title={p.routable ? `Route via ${p.label} (synced ${p.syncedAt ? new Date(p.syncedAt).toLocaleDateString() : ""})` : p.reason}
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
+                          !p.routable && "opacity-50 cursor-not-allowed line-through",
+                          p.routable && on && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+                          p.routable && !on && "bg-muted text-muted-foreground border-border/70 hover:bg-card",
+                        )}
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <div className="rounded-xl border border-border/70 bg-card focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-ring/30 transition">
                   <textarea
                     rows={3}
+                    value={replyBody}
+                    onChange={(e) => setReplyBody(e.target.value)}
                     placeholder="Write a supportive message…"
                     className="w-full bg-transparent text-[13px] p-3 outline-none resize-none placeholder:text-muted-foreground/70"
                   />
@@ -849,11 +925,38 @@ export default function OSHRMessages() {
                       <QuickAction icon={CalendarClock} label="Schedule" />
                       <QuickAction icon={Mail} label="Template" />
                     </div>
-                    <button className="inline-flex items-center gap-1.5 h-7 px-3 rounded-lg bg-primary text-primary-foreground text-[12px] hover:opacity-90 transition">
+                    <button
+                      type="button"
+                      disabled={!replyBody.trim() || selectedChannels.size === 0}
+                      onClick={() => {
+                        // Honest guard: filter selection down to routes that are
+                        // actually available right now (catalog connected + row synced).
+                        const providerRoutes = routeAvailability.providers
+                          .filter((p) => p.routable && selectedChannels.has(p.key))
+                          .map((p) => p.label);
+                        const routes: string[] = [];
+                        if (selectedChannels.has("in_app")) routes.push("In-app");
+                        routes.push(...providerRoutes);
+                        const dropped = routeAvailability.providers
+                          .filter((p) => selectedChannels.has(p.key) && !p.routable)
+                          .map((p) => p.label);
+                        toast({
+                          title: routes.length ? `Sent via ${routes.join(", ")}` : "Sent in-app",
+                          description: dropped.length
+                            ? `Skipped ${dropped.join(", ")} — provider not connected or employee not synced.`
+                            : undefined,
+                        });
+                        setReplyBody("");
+                      }}
+                      className="inline-flex items-center gap-1.5 h-7 px-3 rounded-lg bg-primary text-primary-foreground text-[12px] hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
                       <Send className="h-3 w-3" strokeWidth={2} /> Send
                     </button>
                   </div>
                 </div>
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  Provider channels are only available when the integration is connected and this employee's onboarding row is synced. In-app is always delivered.
+                </p>
               </div>
 
               {/* actions */}
