@@ -251,6 +251,7 @@ function groupActiveFilters(filters: FilterDef[]) {
     selectAllHandlers: Array<() => void>;
     multiFilterCount: number;
     allSelectedCount: number;
+    totalOptions: number;
   };
   const groups = new Map<string, Bucket>();
   for (const f of filters) {
@@ -273,6 +274,7 @@ function groupActiveFilters(filters: FilterDef[]) {
       selectAllHandlers: [],
       multiFilterCount: 0,
       allSelectedCount: 0,
+      totalOptions: 0,
     };
     bucket.clears.push(reset);
     bucket.totals.push(groupUnionCount(f, parts));
@@ -281,6 +283,7 @@ function groupActiveFilters(filters: FilterDef[]) {
     if (onSelectAll) bucket.selectAllHandlers.push(onSelectAll);
     bucket.multiFilterCount += isMulti ? 1 : 0;
     bucket.allSelectedCount += allSelected ? 1 : 0;
+    bucket.totalOptions += allSelectable.length;
     parts.forEach((part, idx) => {
       const opt = f.options.find((o) => o.value === part);
       bucket.values.push({
@@ -309,9 +312,11 @@ function groupActiveFilters(filters: FilterDef[]) {
       isMulti: g.isMulti,
       onSelectAll: g.selectAllHandlers.length > 0 ? () => g.selectAllHandlers.forEach((fn) => fn()) : undefined,
       allSelected: g.multiFilterCount > 0 && g.allSelectedCount === g.multiFilterCount,
+      totalOptions: g.totalOptions,
     };
   });
 }
+
 
 function FilterChipGroup({
   label,
