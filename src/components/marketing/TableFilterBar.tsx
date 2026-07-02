@@ -20,6 +20,8 @@ export type FilterDef = {
   countSource?: unknown[];
   /** Optional accessor to match a row against an active option value. */
   countValue?: (row: unknown) => string | string[] | null | undefined;
+  /** When true, the filter supports multiple comma-separated values and shows per-group "Select all" / "Clear" actions. */
+  multi?: boolean;
 };
 
 interface TableFilterBarProps {
@@ -182,6 +184,9 @@ export function TableFilterBar({
               totalCount={group.totalCount}
               collapsed={collapsedSet.has(group.label)}
               onToggle={() => toggleCollapsed(group.label)}
+              isMulti={group.isMulti}
+              onSelectAll={group.onSelectAll}
+              allSelected={group.allSelected}
             />
           ))}
           {activeFilters.length > 0 && (
@@ -236,16 +241,46 @@ function groupActiveFilters(filters: FilterDef[]) {
   // Group by human label so multiple FilterDefs targeting the same field
   // (or a single multi-value filter using comma-separated values) collapse
   // into one chip group that can be cleared in a single click.
-  const groups = new Map<string, { label: string; values: ChipValue[]; clears: Array<() => void>; totals: (number | undefined)[]; filterCount: number }>();
+  type Bucket = {
+    label: string;
+    values: ChipValue[];
+    clears: Array<() => void>;
+    totals: (number | undefined)[];
+    filterCount: number;
+    isMulti: boolean;
+    selectAllHandlers: Array<() => void>;
+    multiFilterCount: number;
+    allSelectedCount: number;
+  };
+  const groups = new Map<string, Bucket>();
   for (const f of filters) {
     const def = f.defaultValue ?? "all";
     const reset = () => f.onChange(def);
     const raw = String(f.value ?? "");
     const parts = raw.includes(",") ? raw.split(",").map((p) => p.trim()).filter(Boolean) : [raw];
-    const bucket = groups.get(f.label) ?? { label: f.label, values: [], clears: [], totals: [], filterCount: 0 };
+    const isMulti = f.multi === true;
+    const allSelectable = f.options.filter((o) => o.value !== def).map((o) => o.value);
+    const allSelected = isMulti && allSelectable.length > 0 && allSelectable.every((v) => parts.includes(v));
+    const onSelectAll = isMulti && allSelectable.length > 0 ? () => f.onChange(allSelectable.join(",")) : undefined;
+
+    const bucket = groups.get(f.label) ?? {
+      label: f.label,
+      values: [],
+      clears: [],
+      totals: [],
+      filterCount: 0,
+      isMulti: false,
+      selectAllHandlers: [],
+      multiFilterCount: 0,
+      allSelectedCount: 0,
+    };
     bucket.clears.push(reset);
     bucket.totals.push(groupUnionCount(f, parts));
     bucket.filterCount++;
+    bucket.isMulti ||= isMulti;
+    if (onSelectAll) bucket.selectAllHandlers.push(onSelectAll);
+    bucket.multiFilterCount += isMulti ? 1 : 0;
+    bucket.allSelectedCount += allSelected ? 1 : 0;
     parts.forEach((part, idx) => {
       const opt = f.options.find((o) => o.value === part);
       bucket.values.push({
@@ -271,6 +306,9 @@ function groupActiveFilters(filters: FilterDef[]) {
       values: g.values,
       onClearGroup: () => g.clears.forEach((fn) => fn()),
       totalCount,
+      isMulti: g.isMulti,
+      onSelectAll: g.selectAllHandlers.length > 0 ? () => g.selectAllHandlers.forEach((fn) => fn()) : undefined,
+      allSelected: g.multiFilterCount > 0 && g.allSelectedCount === g.multiFilterCount,
     };
   });
 }
@@ -282,6 +320,9 @@ function FilterChipGroup({
   totalCount,
   collapsed: controlledCollapsed,
   onToggle,
+  isMulti,
+  onSelectAll,
+  allSelected,
 }: {
   label: string;
   values: ChipValue[];
@@ -289,10 +330,14 @@ function FilterChipGroup({
   totalCount?: number;
   collapsed?: boolean;
   onToggle?: () => void;
+  isMulti?: boolean;
+  onSelectAll?: () => void;
+  allSelected?: boolean;
 }) {
   const [internalCollapsed, setInternalCollapsed] = React.useState(false);
   const collapsed = controlledCollapsed ?? internalCollapsed;
-  const multi = values.length > 1;
+  const hasMultipleValues = values.length > 1;
+  const canSelectAll = isMulti && onSelectAll && !allSelected && values.length > 0;
   const handleToggle = () => {
     if (onToggle) onToggle();
     else setInternalCollapsed((c) => !c);
@@ -320,7 +365,7 @@ function FilterChipGroup({
                   {v.count}
                 </span>
               )}
-              {multi && (
+              {hasMultipleValues && (
                 <button
                   type="button"
                   onClick={v.onRemove}
@@ -334,7 +379,17 @@ function FilterChipGroup({
           ))
         )}
       </span>
-      {multi && (
+      {canSelectAll && (
+        <button
+          type="button"
+          onClick={onSelectAll}
+          className="inline-flex items-center border-l border-primary/20 px-2 text-[11px] font-medium hover:bg-primary/10"
+          aria-label={`Select all ${label}`}
+        >
+          Select all
+        </button>
+      )}
+      {hasMultipleValues && (
         <button
           type="button"
           onClick={handleToggle}
@@ -347,10 +402,14 @@ function FilterChipGroup({
       <button
         type="button"
         onClick={onClearGroup}
-        className="inline-flex items-center border-l border-primary/20 px-1.5 hover:bg-primary/10"
+        className="inline-flex items-center border-l border-primary/20 px-2 hover:bg-primary/10"
         aria-label={`Clear ${label} filter`}
       >
-        <X className="size-3" />
+        {isMulti ? (
+          <span className="text-[11px] font-medium">Clear</span>
+        ) : (
+          <X className="size-3" />
+        )}
       </button>
     </span>
   );
