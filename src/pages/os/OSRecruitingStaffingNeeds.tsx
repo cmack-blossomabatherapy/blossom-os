@@ -350,13 +350,12 @@ export default function OSRecruitingStaffingNeeds() {
           <SummaryCard label="Escalations"          value={summary.escalations} icon={Bell}         tone="crit" onClick={() => setActiveChip("escalated")} />
         </div>
 
-        {/* Live vs Suggested pill summary */}
+        {/* Live pill summary */}
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
           <Pill tone="info">{liveNeeds.length} live</Pill>
-          <Pill tone="muted">{suggestedNeeds.length} suggested</Pill>
           {liveStaffingNeedsLoading && <span>Loading live needs…</span>}
           <span className="text-muted-foreground/70">
-            Live rows persist to <code className="text-foreground/80">recruiting_staffing_needs</code>; suggested rows are client-demand signals not yet logged.
+            Live rows persist to <code className="text-foreground/80">recruiting_staffing_needs</code>.
           </span>
         </div>
 
