@@ -181,11 +181,10 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
     let action: "insert" | "update" | "skip" = "insert";
     let existingId: string | null = null;
     if (externalId) {
-      const { data: existing } = await supabase
-        .from("recruiting_candidates")
-        .select("id")
-        .eq("external_provider" as any, "apploi")
-        .eq("external_candidate_id" as any, String(externalId))
+      const q = supabase.from("recruiting_candidates").select("id") as any;
+      const { data: existing } = await q
+        .eq("external_provider", "apploi")
+        .eq("external_candidate_id", String(externalId))
         .maybeSingle();
       if ((existing as any)?.id) {
         existingId = (existing as any).id as string;
