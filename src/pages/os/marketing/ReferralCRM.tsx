@@ -3472,14 +3472,14 @@ function FilesModule() {
       <TableFilterBar
         search={{ value: q, onChange: setQ, placeholder: "Search files..." }}
         filters={[
-          { key: "ft", label: "Object", value: type, onChange: setType, options: [
+          { key: "ft", label: "Object", value: type, onChange: setType, countSource: s.attachments, countValue: (a) => (a as Attachment).archivedAt ? null : (a as Attachment).objectType, options: [
             { value: "all", label: "All objects" },
             { value: "contact", label: "Contacts" },
             { value: "company", label: "Companies" },
             { value: "referral", label: "Referrals" },
             { value: "general", label: "General" },
           ] },
-          { key: "fc", label: "Category", value: category, onChange: setCategory, options: [
+          { key: "fc", label: "Category", value: category, onChange: setCategory, countSource: s.attachments, countValue: (a) => (a as Attachment).archivedAt ? null : (a as Attachment).category || null, options: [
             { value: "all", label: "All" },
             ...["Lunch & Learn", "Insurance", "Outreach", "Welcome Packet", "Other"].map((c) => ({ value: c, label: c })),
           ], width: 160 },
