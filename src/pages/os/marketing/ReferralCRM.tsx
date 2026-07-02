@@ -1616,7 +1616,10 @@ function NewReferralDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 // ===========================================================
 function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
-  const [groupBy, setGroupBy] = useState<"owner" | "state" | "status">("owner");
+  const [groupByRaw, setGroupByRaw] = useUrlState("tg", "owner");
+  const groupBy: "owner" | "state" | "status" =
+    groupByRaw === "state" || groupByRaw === "status" ? groupByRaw : "owner";
+  const setGroupBy = (v: "owner" | "state" | "status") => setGroupByRaw(v);
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [tQuery, setTQuery] = useUrlState("tq", "", { history: "replace" });
