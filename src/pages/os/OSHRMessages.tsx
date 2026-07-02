@@ -424,6 +424,7 @@ export default function OSHRMessages() {
   const routeAvailability = useIntegrationRouteAvailability(openOnb ?? null);
   const [replyBody, setReplyBody] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set(["in_app"]));
+  const [messageHistoryKey, setMessageHistoryKey] = useState(0);
 
   // Reset channel selection when switching conversations, and drop any
   // provider channels that are no longer routable for the new employee.
