@@ -8,7 +8,7 @@ import type { OSRole } from "./permissions";
 export type ReportCategoryId =
   | "operations" | "qa" | "authorizations" | "scheduling" | "recruiting"
   | "financial" | "clinical" | "training" | "leadership" | "state" | "hr"
-  | "credentialing";
+  | "credentialing" | "business_development";
 
 export interface ReportCategoryDef {
   id: ReportCategoryId;
@@ -32,6 +32,7 @@ export const REPORT_CATEGORIES: ReportCategoryDef[] = [
   { id: "state", name: "State Analytics", description: "Cross-state benchmarks, regional risk, market share.", icon: MapPin, tone: "from-[hsl(345_85%_96%)] to-[hsl(15_85%_96%)]", accent: "hsl(350 70% 55%)" },
   { id: "hr", name: "HR & Payroll", description: "Payroll readiness, employee hours, BCBA minimums, exceptions.", icon: Calculator, tone: "from-[hsl(265_100%_97%)] to-[hsl(245_100%_97%)]", accent: "hsl(265 70% 55%)" },
   { id: "credentialing", name: "Credentialing", description: "Provider credentialing status, BCBA coverage, expirations, payer matrix.", icon: ShieldCheck, tone: "from-[hsl(195_80%_95%)] to-[hsl(215_80%_96%)]", accent: "hsl(200 75% 45%)" },
+  { id: "business_development", name: "Business Development", description: "Referral partners, outreach follow-up, source handoffs, provider and community activity.", icon: HeartPulse, tone: "from-[hsl(320_70%_96%)] to-[hsl(300_70%_96%)]", accent: "hsl(320 65% 50%)" },
 ];
 
 export type ReportType = "dashboard" | "table" | "summary" | "trend";
@@ -141,6 +142,15 @@ export const REPORTS: ReportDef[] = [
   { id: "sd-bottlenecks", title: "Operational Bottlenecks", description: "Where workflows are stuck: intake, auth, onboarding, recruiting, staffing, QA.", category: "operations", visibleTo: ["super_admin", "operations_leadership", "state_director"], type: "dashboard", owner: "State Director", lastUpdated: "Live", popularity: 78, aiInsight: "Staffing is the #1 bottleneck - 8 clients waiting.", sparkline: [40, 42, 46, 48, 52, 55, 60], tags: ["Friction"] },
   { id: "sd-state-comparison", title: "State Comparison", description: "How your state ranks across growth, retention, cancellations, recruiting.", category: "state", visibleTo: ["super_admin", "operations_leadership", "state_director", "executive_leadership"], type: "dashboard", owner: "State Director", lastUpdated: "Live", popularity: 75, aiInsight: "VA leads the network in hours-per-client efficiency.", sparkline: [60, 62, 64, 66, 68, 70, 72], tags: ["Benchmark"] },
   { id: "sd-action-report", title: "Operational Action Report", description: "What actually needs action - overdue, urgent, escalations, unresolved.", category: "operations", visibleTo: ["super_admin", "operations_leadership", "state_director"], type: "dashboard", owner: "State Director", lastUpdated: "Live", popularity: 90, aiInsight: "5 critical items unresolved - staffing dominant theme.", kpiPreviews: [{ label: "Critical", value: "5", trend: "down" }, { label: "Resolved", value: "12", delta: "+4", trend: "up" }], sparkline: [30, 34, 38, 44, 48, 52, 58, 60], tags: ["Action", "Execution"] },
+
+  /* ---------- Business Development - Growth Reports ---------- */
+  { id: "bd-referral-sources", title: "Referral Sources", description: "Referral partner activity, volume, and conversion by source.", category: "business_development", visibleTo: ["super_admin", "business_development", "marketing_growth_lead", "executive_leadership"], type: "dashboard", owner: "Business Development", lastUpdated: "Live", popularity: 90, aiInsight: "Live from referral_companies and outreach events.", sparkline: [30, 34, 40, 44, 50, 56, 60, 66], tags: ["Referrals", "Sources"], drilldownPath: "/business-development?tab=partners" },
+  { id: "bd-outreach-followup", title: "Outreach Follow-Up", description: "Open referral partner follow-ups and recent outreach activity.", category: "business_development", visibleTo: ["super_admin", "business_development", "marketing_growth_lead"], type: "table", owner: "Business Development", lastUpdated: "Live", popularity: 88, aiInsight: "Overdue follow-ups appear here as tasks age.", sparkline: [22, 24, 26, 28, 32, 34, 36, 40], tags: ["Follow-Up", "Outreach"], drilldownPath: "/business-development?tab=outreach" },
+  { id: "bd-partner-activity", title: "Partner Activity", description: "Every referral partner with last-contact recency and pipeline stage.", category: "business_development", visibleTo: ["super_admin", "business_development", "marketing_growth_lead"], type: "table", owner: "Business Development", lastUpdated: "Live", popularity: 86, aiInsight: "Sort by last activity to prioritize outreach.", sparkline: [50, 54, 58, 60, 64, 68, 72, 76], tags: ["Partners"], drilldownPath: "/business-development?tab=partners" },
+  { id: "bd-follow-up-risk", title: "Partner Follow-Up Risk", description: "Stale partners, overdue follow-ups, and warm partners without a next step.", category: "business_development", visibleTo: ["super_admin", "business_development", "marketing_growth_lead"], type: "table", owner: "Business Development", lastUpdated: "Live", popularity: 84, aiInsight: "Anything past due surfaces on the Tasks tab.", sparkline: [40, 42, 44, 48, 52, 56, 60, 64], tags: ["Risk", "Follow-Up"], drilldownPath: "/business-development?tab=tasks" },
+  { id: "bd-source-handoff", title: "Source Handoff Performance", description: "Lead source signals ready for BD outreach by source, channel, and state.", category: "business_development", visibleTo: ["super_admin", "business_development", "marketing_growth_lead"], type: "dashboard", owner: "Business Development", lastUpdated: "Live", popularity: 82, aiInsight: "Reads live marketing_sources + marketing_source_events.", sparkline: [30, 34, 38, 42, 48, 52, 58, 64], tags: ["Handoff", "Sources"], drilldownPath: "/business-development?tab=sources" },
+  { id: "bd-provider-relationships", title: "Provider Relationship Activity", description: "Pediatric offices, therapy practices, and health systems referring families.", category: "business_development", visibleTo: ["super_admin", "business_development", "marketing_growth_lead"], type: "table", owner: "Business Development", lastUpdated: "Live", popularity: 78, aiInsight: "Filtered to provider-typed referral partners.", sparkline: [20, 24, 28, 32, 36, 40, 44, 48], tags: ["Providers"], drilldownPath: "/business-development?tab=providers" },
+  { id: "bd-community-relationships", title: "Community Relationship Activity", description: "Schools, autism organizations, and community partners you engage with.", category: "business_development", visibleTo: ["super_admin", "business_development", "marketing_growth_lead"], type: "table", owner: "Business Development", lastUpdated: "Live", popularity: 76, aiInsight: "Filtered to community-typed referral partners.", sparkline: [18, 22, 26, 28, 32, 36, 40, 44], tags: ["Community"], drilldownPath: "/business-development?tab=community" },
 ];
 
 export function visibleReportsForRole(role: OSRole): ReportDef[] {
@@ -305,6 +315,11 @@ export const ROLE_AI_SUMMARY: Partial<Record<OSRole, RoleAISummary>> = {
     { icon: ShieldCheck, text: "BCBA productivity & supervision reports available.", tone: "emerald" },
     { icon: GraduationCap, text: "Training Academy ready when you need it.", tone: "violet" },
     { icon: TrendingUp, text: "Use reports to coach BCBAs across the network.", tone: "sky" },
+  ]},
+  business_development:  { headline: "Referral partners active. A few source handoffs waiting on first outreach.", insights: [
+    { icon: TrendingUp, text: "New source signals flow in from marketing_source_events.", tone: "emerald" },
+    { icon: AlertTriangle, text: "Stale partners with no touch in 30+ days need follow-up.", tone: "amber" },
+    { icon: Sparkles, text: "Referral CRM is shared with Marketing - all activity is durable.", tone: "violet" },
   ]},
 };
 

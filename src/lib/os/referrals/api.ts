@@ -172,8 +172,9 @@ export { extractDomain };
 
 // ---------- referral_crm_tasks ----------
 
-export async function listTasks(filter: { companyId?: string; contactId?: string } = {}): Promise<ReferralCrmTask[]> {
-  let q = supabase.from("referral_crm_tasks").select("*").is("archived_at", null).order("due_date", { ascending: true, nullsFirst: false });
+export async function listTasks(filter: { companyId?: string; contactId?: string; includeArchived?: boolean } = {}): Promise<ReferralCrmTask[]> {
+  let q = supabase.from("referral_crm_tasks").select("*").order("due_date", { ascending: true, nullsFirst: false });
+  if (!filter.includeArchived) q = q.is("archived_at", null);
   if (filter.companyId) q = q.eq("company_id", filter.companyId);
   if (filter.contactId) q = q.eq("contact_id", filter.contactId);
   const { data, error } = await q;
@@ -195,6 +196,19 @@ export async function setTaskStatus(id: string, status: "Open" | "Done"): Promis
   const { error } = await supabase
     .from("referral_crm_tasks")
     .update({ status, completed_at: status === "Done" ? new Date().toISOString() : null })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateTask(id: string, patch: Partial<ReferralCrmTask>): Promise<void> {
+  const { error } = await supabase.from("referral_crm_tasks").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function setTaskArchived(id: string, archived: boolean): Promise<void> {
+  const { error } = await supabase
+    .from("referral_crm_tasks")
+    .update({ archived_at: archived ? new Date().toISOString() : null })
     .eq("id", id);
   if (error) throw error;
 }

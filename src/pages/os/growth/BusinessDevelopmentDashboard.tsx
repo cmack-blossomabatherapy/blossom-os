@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   HeartHandshake, MessageSquare, Briefcase, Users, BarChart3,
   Plus, CalendarPlus, ClipboardList, Download, CheckCircle2, Search,
-  Inbox, Archive, Pencil, Eye, AlertTriangle,
+  Inbox, Archive, Pencil, Eye, AlertTriangle, Trash2, Radio,
   type LucideIcon,
 } from "lucide-react";
 import { GrowthPageShell, StatCard } from "@/components/os/growth/GrowthPageShell";
@@ -21,6 +21,7 @@ import { useReferralCompanies, useReferralActivities, useReferralTasks } from "@
 import { REFERRAL_PARTNER_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
 import {
   createCompany, createActivity, createTask, setTaskStatus, updateCompany,
+  updateTask, setTaskArchived,
   type ReferralCrmTask,
 } from "@/lib/os/referrals/api";
 import {
@@ -29,6 +30,54 @@ import {
 } from "@/lib/os/referrals/types";
 
 type TabKey = "overview" | "partners" | "outreach" | "tasks" | "providers" | "community" | "sources";
+
+type MarketingSourceRow = {
+  id: string;
+  name: string;
+  source_system: string | null;
+  channel: string | null;
+  state: string | null;
+  is_active: boolean;
+};
+type MarketingSourceEventRow = {
+  id: string;
+  source_id: string | null;
+  source_system: string;
+  state: string | null;
+  status: string;
+  event_type: string | null;
+  occurred_at: string;
+  referral_company_id: string | null;
+};
+
+function useMarketingSourceSignals() {
+  const [sources, setSources] = useState<MarketingSourceRow[]>([]);
+  const [events, setEvents] = useState<MarketingSourceEventRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [{ data: s, error: sErr }, { data: e, error: eErr }] = await Promise.all([
+          supabase.from("marketing_sources").select("id,name,source_system,channel,state,is_active").order("name"),
+          supabase.from("marketing_source_events").select("id,source_id,source_system,state,status,event_type,occurred_at,referral_company_id").order("occurred_at", { ascending: false }).limit(500),
+        ]);
+        if (cancelled) return;
+        if (sErr) throw sErr;
+        if (eErr) throw eErr;
+        setSources((s ?? []) as MarketingSourceRow[]);
+        setEvents((e ?? []) as MarketingSourceEventRow[]);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return { sources, events, loading, error };
+}
 
 const TABS: { key: TabKey; label: string; icon: LucideIcon }[] = [
   { key: "overview",   label: "Overview",   icon: BarChart3 },
@@ -87,7 +136,7 @@ export default function BusinessDevelopmentDashboard() {
 
   const { data: partners, loading: partnersLoading, error: partnersError, refresh: refreshPartners } = useReferralCompanies();
   const { data: outreach, refresh: refreshOutreach } = useReferralActivities();
-  const { data: tasks, refresh: refreshTasks } = useReferralTasks();
+  const { data: tasks, refresh: refreshTasks } = useReferralTasks({ includeArchived: true });
 
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState<string>("all");
@@ -103,9 +152,10 @@ export default function BusinessDevelopmentDashboard() {
   const [outTo, setOutTo] = useState<string>("");
 
   // task filters
-  const [taskStatusFilter, setTaskStatusFilter] = useState<"all" | "open" | "overdue" | "week" | "done">("open");
+  const [taskStatusFilter, setTaskStatusFilter] = useState<"all" | "open" | "overdue" | "week" | "done" | "archived">("open");
   const [taskPartner, setTaskPartner] = useState<string>("all");
   const [taskPriority, setTaskPriority] = useState<string>("all");
+  const [editTask, setEditTask] = useState<ReferralCrmTask | null>(null);
 
   // detail drawer / edit
   const [detailPartner, setDetailPartner] = useState<ReferralCompany | null>(null);
@@ -139,8 +189,8 @@ export default function BusinessDevelopmentDashboard() {
     const activeSet = visiblePartners;
     const activePartners = activeSet.filter((p) => p.relationship_stage === "Active" || p.relationship_stage === "Strong Partner").length;
     const outreachThisWeek = outreach.filter((o) => now - new Date(o.activity_date).getTime() <= week).length;
-    const followUpsDue = tasks.filter((t) => t.status === "Open" && t.due_date && new Date(t.due_date).getTime() <= now).length;
-    const overdueFollowUps = tasks.filter((t) => t.status === "Open" && t.due_date && new Date(t.due_date).getTime() < now - 86_400_000).length;
+    const followUpsDue = tasks.filter((t) => !t.archived_at && t.status === "Open" && t.due_date && new Date(t.due_date).getTime() <= now).length;
+    const overdueFollowUps = tasks.filter((t) => !t.archived_at && t.status === "Open" && t.due_date && new Date(t.due_date).getTime() < now - 86_400_000).length;
     const openOpportunities = activeSet.filter((p) => p.relationship_stage === "New" || p.relationship_stage === "Warm").length;
     const newPartners30 = activeSet.filter((p) => now - new Date(p.created_at).getTime() <= month).length;
     const conversion = activeSet.length ? Math.round((activePartners / activeSet.length) * 100) : 0;
@@ -157,7 +207,7 @@ export default function BusinessDevelopmentDashboard() {
       (p) => (p.relationship_stage === "Warm" || p.relationship_stage === "New") && !p.next_follow_up_at,
     );
     const overdueTasksList = tasks.filter(
-      (t) => t.status === "Open" && t.due_date && new Date(t.due_date).getTime() < now,
+      (t) => !t.archived_at && t.status === "Open" && t.due_date && new Date(t.due_date).getTime() < now,
     );
     const outreachByCompany = new Set(outreach.map((o) => o.company_id).filter(Boolean));
     const newPartnersNoOutreach = visiblePartners.filter((p) => !outreachByCompany.has(p.id));
@@ -227,6 +277,27 @@ export default function BusinessDevelopmentDashboard() {
   const handleToggleTask = async (t: ReferralCrmTask) => {
     try {
       await setTaskStatus(t.id, t.status === "Done" ? "Open" : "Done");
+      refreshTasks();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update task");
+    }
+  };
+
+  const handleArchiveTask = async (t: ReferralCrmTask) => {
+    const archiving = !t.archived_at;
+    try {
+      await setTaskArchived(t.id, archiving);
+      toast.success(archiving ? "Task archived" : "Task restored");
+      refreshTasks();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to archive task");
+    }
+  };
+
+  const handleUpdateTask = async (id: string, patch: Partial<ReferralCrmTask>) => {
+    try {
+      await updateTask(id, patch);
+      toast.success("Follow-up updated");
       refreshTasks();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to update task");
@@ -391,6 +462,7 @@ export default function BusinessDevelopmentDashboard() {
                 <SelectItem value="overdue">Overdue</SelectItem>
                 <SelectItem value="week">Due this week</SelectItem>
                 <SelectItem value="done">Completed</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
             <FilterSelect value={taskPriority} onChange={setTaskPriority} label="Priority" options={[...PRIORITIES]} />
@@ -402,6 +474,12 @@ export default function BusinessDevelopmentDashboard() {
             const list = tasks.filter((t) => {
               if (taskPartner !== "all" && t.company_id !== taskPartner) return false;
               if (taskPriority !== "all" && t.priority !== taskPriority) return false;
+              const isArchived = !!t.archived_at;
+              if (taskStatusFilter === "archived") {
+                if (!isArchived) return false;
+              } else if (isArchived) {
+                return false;
+              }
               switch (taskStatusFilter) {
                 case "open": if (t.status !== "Open") return false; break;
                 case "done": if (t.status !== "Done") return false; break;
@@ -418,7 +496,10 @@ export default function BusinessDevelopmentDashboard() {
               {list.map((t) => (
                 <div key={t.id} className="rounded-xl border border-border/60 bg-card p-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className={`text-sm font-medium ${t.status === "Done" ? "line-through text-muted-foreground" : ""}`}>{t.title}</div>
+                    <div className={`text-sm font-medium ${t.status === "Done" ? "line-through text-muted-foreground" : ""}`}>
+                      {t.title}
+                      {t.archived_at && <Badge variant="secondary" className="ml-2 align-middle">Archived</Badge>}
+                    </div>
                     <div className="text-xs text-muted-foreground">{partnerName(t.company_id)} - {t.due_date ?? "no due"} - {t.priority ?? "Medium"}</div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -428,7 +509,13 @@ export default function BusinessDevelopmentDashboard() {
                         if (p) setDetailPartner(p);
                       }}><Eye className="h-3.5 w-3.5" /></Button>
                     )}
-                    <Button size="sm" variant={t.status === "Done" ? "ghost" : "outline"} onClick={() => handleToggleTask(t)}>
+                    <Button size="sm" variant="ghost" onClick={() => setEditTask(t)} title="Edit">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleArchiveTask(t)} title={t.archived_at ? "Restore" : "Archive"}>
+                      {t.archived_at ? <Archive className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                    </Button>
+                    <Button size="sm" variant={t.status === "Done" ? "ghost" : "outline"} onClick={() => handleToggleTask(t)} disabled={!!t.archived_at}>
                       <CheckCircle2 className="h-4 w-4 mr-1.5" /> {t.status === "Done" ? "Reopen" : "Complete"}
                     </Button>
                   </div>
@@ -481,6 +568,16 @@ export default function BusinessDevelopmentDashboard() {
       />
       <OutreachDialog open={outreachOpen} onOpenChange={setOutreachOpen} partners={visiblePartners} defaultCompanyId={outPartner !== "all" ? outPartner : undefined} onSave={handleLogOutreach} />
       <TaskDialog open={taskOpen} onOpenChange={setTaskOpen} partners={visiblePartners} defaultCompanyId={taskPartner !== "all" ? taskPartner : undefined} onSave={handleAddTask} />
+      <TaskDialog
+        open={!!editTask}
+        onOpenChange={(v) => { if (!v) setEditTask(null); }}
+        partners={partners}
+        initial={editTask ?? undefined}
+        onSave={async (patch) => {
+          if (editTask) await handleUpdateTask(editTask.id, patch);
+          setEditTask(null);
+        }}
+      />
       <PartnerDetailDialog
         partner={detailPartner}
         onClose={() => setDetailPartner(null)}
@@ -787,8 +884,10 @@ function NeedsAttentionPanel({
 }
 
 function SourceHandoffsPanel({ partners, outreach }: { partners: ReferralCompany[]; outreach: ReferralActivity[] }) {
+  const { sources, events, loading, error } = useMarketingSourceSignals();
+
   // Aggregate BD-safe view of lead source signals from referral partner data.
-  const rows = useMemo(() => {
+  const partnerRows = useMemo(() => {
     const map = new Map<string, { source: string; type: string; states: Set<string>; count: number; last: string | null }>();
     for (const p of partners) {
       const src = (p.source && p.source.trim()) || "Direct / Manual";
@@ -818,16 +917,133 @@ function SourceHandoffsPanel({ partners, outreach }: { partners: ReferralCompany
     return Array.from(map.values()).sort((a, b) => b.count - a.count);
   }, [partners, outreach]);
 
+  // Real marketing source signals from marketing_sources + marketing_source_events
+  const sourceRows = useMemo(() => {
+    if (sources.length === 0 && events.length === 0) return [];
+    const partnerCountBySource = new Map<string, number>();
+    for (const p of partners) {
+      const key = (p.source && p.source.trim().toLowerCase()) || "";
+      if (!key) continue;
+      partnerCountBySource.set(key, (partnerCountBySource.get(key) ?? 0) + 1);
+    }
+    const eventsBySource = new Map<string, MarketingSourceEventRow[]>();
+    for (const ev of events) {
+      const key = ev.source_id ?? `sys:${ev.source_system}`;
+      const arr = eventsBySource.get(key) ?? [];
+      arr.push(ev);
+      eventsBySource.set(key, arr);
+    }
+    type Row = {
+      key: string; name: string; system: string; channel: string; state: string;
+      leadCount: number; partnerCount: number; last: string | null; status: string; suggestion: string;
+    };
+    const rows: Row[] = [];
+    const now = Date.now();
+    for (const s of sources) {
+      const evs = eventsBySource.get(s.id) ?? [];
+      const last = evs[0]?.occurred_at ?? null;
+      const daysOld = last ? Math.floor((now - new Date(last).getTime()) / 86_400_000) : null;
+      const pCount = partnerCountBySource.get(s.name.toLowerCase()) ?? 0;
+      let status = "No action needed";
+      let suggestion = "Review source";
+      if (evs.length > 0 && pCount === 0) { status = "Needs BD outreach"; suggestion = "Create referral partner"; }
+      else if (evs.length > 0 && pCount > 0 && daysOld !== null && daysOld <= 14) { status = "Active partner"; suggestion = "Log outreach"; }
+      else if (evs.length > 0 && daysOld !== null && daysOld > 30) { status = "Stale / no outreach"; suggestion = "Add follow-up"; }
+      else if (evs.length === 0 && s.is_active) { status = "New signal"; suggestion = "Review source"; }
+      rows.push({
+        key: `src:${s.id}`,
+        name: s.name,
+        system: s.source_system ?? "-",
+        channel: s.channel ?? "-",
+        state: s.state ?? "-",
+        leadCount: evs.length,
+        partnerCount: pCount,
+        last,
+        status,
+        suggestion,
+      });
+    }
+    // Orphaned events with no source row - group by system
+    for (const [key, evs] of eventsBySource) {
+      if (key.startsWith("sys:")) {
+        const system = key.slice(4);
+        rows.push({
+          key,
+          name: `(${system} events)`,
+          system,
+          channel: "-",
+          state: evs[0]?.state ?? "-",
+          leadCount: evs.length,
+          partnerCount: 0,
+          last: evs[0]?.occurred_at ?? null,
+          status: "New signal",
+          suggestion: "Review source",
+        });
+      }
+    }
+    return rows.sort((a, b) => b.leadCount - a.leadCount);
+  }, [sources, events, partners]);
+
   return (
     <div className="space-y-3">
       <div className="rounded-2xl border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
-        Business Development read-only view of lead source signals derived from referral partner activity. Full marketing source
-        analytics live in the Marketing workspace; deeper source integrations will surface here as they come online.
+        Business Development read-only view of live lead source signals from marketing_sources and marketing_source_events, plus
+        aggregate source tags on your referral partners. Full marketing analytics and campaign management remain in the Marketing workspace.
       </div>
-      {rows.length === 0 ? (
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+          <Radio className="h-3.5 w-3.5" /> Live marketing source signals
+        </div>
+        {error ? (
+          <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+            Couldn't load marketing source signals: {error.message}
+          </div>
+        ) : loading ? (
+          <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-6 text-center text-xs text-muted-foreground">Loading source signals...</div>
+        ) : sourceRows.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-8 text-center">
+            <Inbox className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+            <div className="text-sm font-semibold">Source integrations are ready</div>
+            <div className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+              Once CTM, LeadTrap, Google Ads, Meta/Facebook Ads, RetellAI, Go Integrate Nava, or manual imports create source events,
+              BD handoffs will appear here.
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-border/70 bg-card overflow-hidden">
+            <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground border-b border-border/60">
+              <div className="col-span-3">Source</div>
+              <div className="col-span-2">System</div>
+              <div className="col-span-1">State</div>
+              <div className="col-span-1 text-right">Leads</div>
+              <div className="col-span-1 text-right">Partners</div>
+              <div className="col-span-2">Last activity</div>
+              <div className="col-span-2">Status / next action</div>
+            </div>
+            {sourceRows.map((r) => (
+              <div key={r.key} className="grid grid-cols-12 gap-2 px-3 py-2 text-xs border-b border-border/40 last:border-0">
+                <div className="col-span-3 truncate font-medium">{r.name}</div>
+                <div className="col-span-2 text-muted-foreground truncate">{r.system} {r.channel !== "-" && `/ ${r.channel}`}</div>
+                <div className="col-span-1 text-muted-foreground truncate">{r.state}</div>
+                <div className="col-span-1 text-right">{r.leadCount}</div>
+                <div className="col-span-1 text-right">{r.partnerCount}</div>
+                <div className="col-span-2 text-muted-foreground">{r.last ? r.last.slice(0, 10) : "-"}</div>
+                <div className="col-span-2 text-muted-foreground truncate"><Badge variant="outline" className="mr-1">{r.status}</Badge>{r.suggestion}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground pt-2">
+          <HeartHandshake className="h-3.5 w-3.5" /> Referral partner source tags
+        </div>
+      {partnerRows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-10 text-center">
           <Inbox className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
-          <div className="text-sm font-semibold">No source signals yet</div>
+          <div className="text-sm font-semibold">No partner source tags yet</div>
           <div className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
             Once partners have a source tagged and outreach is logged, this view will show handoff readiness by source and channel.
           </div>
@@ -841,7 +1057,7 @@ function SourceHandoffsPanel({ partners, outreach }: { partners: ReferralCompany
             <div className="col-span-1 text-right">Partners</div>
             <div className="col-span-2">Last activity</div>
           </div>
-          {rows.map((r) => (
+          {partnerRows.map((r) => (
             <div key={`${r.source}-${r.type}`} className="grid grid-cols-12 gap-2 px-3 py-2 text-xs border-b border-border/40 last:border-0">
               <div className="col-span-4 truncate">{r.source}</div>
               <div className="col-span-3 text-muted-foreground truncate">{r.type}</div>
@@ -852,6 +1068,7 @@ function SourceHandoffsPanel({ partners, outreach }: { partners: ReferralCompany
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -951,30 +1168,40 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (t: Partial<ReferralCrmTask> & { title: string }) => Promise<void>; defaultCompanyId?: string }) {
-  const [form, setForm] = useState<{ title?: string; company_id?: string; assigned_user_id?: string; due_date?: string; priority: string }>({ priority: "Medium", company_id: defaultCompanyId });
-  useMemo(() => {
-    if (open) setForm((f) => ({ ...f, company_id: defaultCompanyId ?? f.company_id }));
-  }, [open, defaultCompanyId]);
+function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId, initial }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (t: Partial<ReferralCrmTask> & { title: string }) => Promise<void>; defaultCompanyId?: string; initial?: ReferralCrmTask }) {
+  const [form, setForm] = useState<{ title?: string; company_id?: string; due_date?: string; priority: string; notes?: string }>({ priority: "Medium", company_id: defaultCompanyId });
+  useEffect(() => {
+    if (!open) return;
+    if (initial) {
+      setForm({
+        title: initial.title,
+        company_id: initial.company_id ?? undefined,
+        due_date: initial.due_date ?? undefined,
+        priority: initial.priority ?? "Medium",
+        notes: initial.notes ?? undefined,
+      });
+    } else {
+      setForm((f) => ({ ...f, company_id: defaultCompanyId ?? f.company_id }));
+    }
+  }, [open, defaultCompanyId, initial]);
   const [saving, setSaving] = useState(false);
+  const isEdit = !!initial;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Add Follow-Up Task</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEdit ? "Edit Follow-Up Task" : "Add Follow-Up Task"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <Input placeholder="Title *" value={form.title ?? ""} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <Select value={form.company_id ?? ""} onValueChange={(v) => setForm({ ...form, company_id: v })}>
             <SelectTrigger><SelectValue placeholder="Partner (optional)" /></SelectTrigger>
             <SelectContent>{partners.map((p) => <SelectItem key={p.id} value={p.id}>{p.company_name}</SelectItem>)}</SelectContent>
           </Select>
-          <div className="grid grid-cols-2 gap-3">
-            <Input placeholder="Owner (name or id)" value={form.assigned_user_id ?? ""} onChange={(e) => setForm({ ...form, assigned_user_id: e.target.value })} />
-            <Input type="date" value={form.due_date ?? ""} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
-          </div>
+          <Input type="date" value={form.due_date ?? ""} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
           <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
           </Select>
+          <Input placeholder="Notes (optional)" value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -984,15 +1211,15 @@ function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId }: 
             await onSave({
               title: form.title.trim(),
               company_id: form.company_id ?? null,
-              assigned_user_id: form.assigned_user_id ?? null,
               due_date: form.due_date ?? null,
               priority: form.priority,
-              status: "Open",
+              notes: form.notes ?? null,
+              ...(isEdit ? {} : { status: "Open" }),
             });
             setSaving(false);
             onOpenChange(false);
             setForm({ priority: "Medium" });
-          }}>{saving ? "Saving..." : "Save"}</Button>
+          }}>{saving ? "Saving..." : isEdit ? "Save changes" : "Save"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
