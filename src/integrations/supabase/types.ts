@@ -2967,6 +2967,612 @@ export type Database = {
           },
         ]
       }
+      case_manager_assignments: {
+        Row: {
+          active: boolean
+          case_manager_user_id: string
+          centralreach_client_id: string | null
+          centralreach_last_synced_at: string | null
+          centralreach_patient_id: string | null
+          centralreach_sync_status: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_primary: boolean
+          metadata: Json
+          state: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          case_manager_user_id: string
+          centralreach_client_id?: string | null
+          centralreach_last_synced_at?: string | null
+          centralreach_patient_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_primary?: boolean
+          metadata?: Json
+          state?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          case_manager_user_id?: string
+          centralreach_client_id?: string | null
+          centralreach_last_synced_at?: string | null
+          centralreach_patient_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_primary?: boolean
+          metadata?: Json
+          state?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      case_manager_communications: {
+        Row: {
+          case_manager_user_id: string | null
+          centralreach_client_id: string | null
+          centralreach_sync_status: string | null
+          channel: string
+          client_id: string | null
+          client_name: string | null
+          contact_name: string | null
+          created_at: string
+          created_by: string | null
+          direction: string
+          followup_at: string | null
+          id: string
+          linked_escalation_id: string | null
+          linked_service_issue_id: string | null
+          metadata: Json
+          needs_followup: boolean
+          occurred_at: string
+          outcome: string | null
+          sentiment: string | null
+          source_system: string | null
+          state: string | null
+          subject: string | null
+          summary: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          case_manager_user_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          channel?: string
+          client_id?: string | null
+          client_name?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          followup_at?: string | null
+          id?: string
+          linked_escalation_id?: string | null
+          linked_service_issue_id?: string | null
+          metadata?: Json
+          needs_followup?: boolean
+          occurred_at?: string
+          outcome?: string | null
+          sentiment?: string | null
+          source_system?: string | null
+          state?: string | null
+          subject?: string | null
+          summary: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          case_manager_user_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          channel?: string
+          client_id?: string | null
+          client_name?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          followup_at?: string | null
+          id?: string
+          linked_escalation_id?: string | null
+          linked_service_issue_id?: string | null
+          metadata?: Json
+          needs_followup?: boolean
+          occurred_at?: string
+          outcome?: string | null
+          sentiment?: string | null
+          source_system?: string | null
+          state?: string | null
+          subject?: string | null
+          summary?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      case_manager_community_resources: {
+        Row: {
+          active: boolean
+          category: string | null
+          city: string | null
+          county: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          email: string | null
+          id: string
+          metadata: Json
+          name: string
+          notes: string | null
+          phone: string | null
+          state: string | null
+          tags: string[] | null
+          updated_at: string
+          updated_by: string | null
+          website: string | null
+        }
+        Insert: {
+          active?: boolean
+          category?: string | null
+          city?: string | null
+          county?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+        }
+        Update: {
+          active?: boolean
+          category?: string | null
+          city?: string | null
+          county?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      case_manager_escalations: {
+        Row: {
+          assigned_owner_user_id: string | null
+          case_manager_user_id: string | null
+          centralreach_client_id: string | null
+          centralreach_sync_status: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          escalated_to_role: string | null
+          escalation_type: string
+          id: string
+          linked_service_issue_id: string | null
+          metadata: Json
+          owner_department: string | null
+          parent_communication_needed: boolean
+          reason: string
+          resolution_note: string | null
+          resolved_at: string | null
+          severity: string
+          sla_due_at: string | null
+          state: string | null
+          status: string
+          summary: string | null
+          updated_at: string
+          updated_by: string | null
+          updates: Json
+        }
+        Insert: {
+          assigned_owner_user_id?: string | null
+          case_manager_user_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          escalated_to_role?: string | null
+          escalation_type?: string
+          id?: string
+          linked_service_issue_id?: string | null
+          metadata?: Json
+          owner_department?: string | null
+          parent_communication_needed?: boolean
+          reason: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          severity?: string
+          sla_due_at?: string | null
+          state?: string | null
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          updates?: Json
+        }
+        Update: {
+          assigned_owner_user_id?: string | null
+          case_manager_user_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          escalated_to_role?: string | null
+          escalation_type?: string
+          id?: string
+          linked_service_issue_id?: string | null
+          metadata?: Json
+          owner_department?: string | null
+          parent_communication_needed?: boolean
+          reason?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          severity?: string
+          sla_due_at?: string | null
+          state?: string | null
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          updates?: Json
+        }
+        Relationships: []
+      }
+      case_manager_follow_ups: {
+        Row: {
+          assigned_to_user_id: string | null
+          case_manager_user_id: string | null
+          category: string
+          centralreach_client_id: string | null
+          centralreach_sync_status: string | null
+          client_id: string | null
+          client_name: string | null
+          completed_at: string | null
+          completion_note: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_at: string | null
+          id: string
+          linked_escalation_id: string | null
+          linked_service_issue_id: string | null
+          metadata: Json
+          priority: string
+          recurring_cadence: string | null
+          state: string | null
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          case_manager_user_id?: string | null
+          category?: string
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          completed_at?: string | null
+          completion_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          linked_escalation_id?: string | null
+          linked_service_issue_id?: string | null
+          metadata?: Json
+          priority?: string
+          recurring_cadence?: string | null
+          state?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          case_manager_user_id?: string | null
+          category?: string
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          completed_at?: string | null
+          completion_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          linked_escalation_id?: string | null
+          linked_service_issue_id?: string | null
+          metadata?: Json
+          priority?: string
+          recurring_cadence?: string | null
+          state?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      case_manager_handoffs: {
+        Row: {
+          assigned_to_user_id: string | null
+          case_manager_user_id: string | null
+          centralreach_client_id: string | null
+          centralreach_sync_status: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          handoff_type: string
+          id: string
+          metadata: Json
+          priority: string
+          request_note: string | null
+          resolved_at: string | null
+          response_note: string | null
+          state: string | null
+          status: string
+          title: string
+          to_department: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          case_manager_user_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          handoff_type?: string
+          id?: string
+          metadata?: Json
+          priority?: string
+          request_note?: string | null
+          resolved_at?: string | null
+          response_note?: string | null
+          state?: string | null
+          status?: string
+          title: string
+          to_department: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          case_manager_user_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          handoff_type?: string
+          id?: string
+          metadata?: Json
+          priority?: string
+          request_note?: string | null
+          resolved_at?: string | null
+          response_note?: string | null
+          state?: string | null
+          status?: string
+          title?: string
+          to_department?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      case_manager_notes: {
+        Row: {
+          body: string
+          case_manager_user_id: string | null
+          centralreach_client_id: string | null
+          centralreach_sync_status: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          id: string
+          linked_escalation_id: string | null
+          linked_service_issue_id: string | null
+          metadata: Json
+          note_type: string
+          owner_user_id: string | null
+          priority: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          state: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body: string
+          case_manager_user_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          linked_escalation_id?: string | null
+          linked_service_issue_id?: string | null
+          metadata?: Json
+          note_type?: string
+          owner_user_id?: string | null
+          priority?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          state?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string
+          case_manager_user_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          linked_escalation_id?: string | null
+          linked_service_issue_id?: string | null
+          metadata?: Json
+          note_type?: string
+          owner_user_id?: string | null
+          priority?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          state?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      case_manager_service_issues: {
+        Row: {
+          action_plan: string | null
+          assigned_owner_user_id: string | null
+          case_manager_user_id: string | null
+          centralreach_client_id: string | null
+          centralreach_sync_status: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_at: string | null
+          id: string
+          issue_type: string
+          linked_escalation_id: string | null
+          metadata: Json
+          owner_department: string | null
+          parent_impact: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          severity: string
+          state: string | null
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          action_plan?: string | null
+          assigned_owner_user_id?: string | null
+          case_manager_user_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          issue_type?: string
+          linked_escalation_id?: string | null
+          metadata?: Json
+          owner_department?: string | null
+          parent_impact?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          severity?: string
+          state?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          action_plan?: string | null
+          assigned_owner_user_id?: string | null
+          case_manager_user_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          issue_type?: string
+          linked_escalation_id?: string | null
+          metadata?: Json
+          owner_department?: string | null
+          parent_impact?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          severity?: string
+          state?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -17592,6 +18198,12 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_active_case_manager: { Args: never; Returns: boolean }
+      is_case_manager_for_client: {
+        Args: { _client_id: string }
+        Returns: boolean
+      }
+      is_cm_oversight: { Args: never; Returns: boolean }
       is_employee_self: { Args: { _employee_id: string }; Returns: boolean }
       is_hr_operator: { Args: { _user_id: string }; Returns: boolean }
       is_marketing_user: { Args: { _uid: string }; Returns: boolean }
@@ -17842,6 +18454,7 @@ export type Database = {
         | "credentialing"
         | "credentialing_coordinator"
         | "business_development"
+        | "case_manager"
       assessment_document_type: "Assessment Notes" | "Treatment Plan"
       assessment_location: "Home" | "School" | "Clinic"
       assessment_status:
@@ -18564,6 +19177,7 @@ export const Constants = {
         "credentialing",
         "credentialing_coordinator",
         "business_development",
+        "case_manager",
       ],
       assessment_document_type: ["Assessment Notes", "Treatment Plan"],
       assessment_location: ["Home", "School", "Clinic"],

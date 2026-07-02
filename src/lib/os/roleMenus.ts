@@ -658,8 +658,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Escalations",                path: "/case-manager/escalations",     icon: Flame },
           { label: "Community Referrals",        path: "/case-manager/community",       icon: HeartHandshake },
           { label: "Evaluations",                path: "/evaluations",                  icon: ClipboardCheck },
-          { label: "Case Manager Resources",     path: "/case-manager/resources",       icon: Library },
-          { label: "Phone System",               path: "/phone",                        icon: Phone },
         ],
       },
       TRAINING_AND_RESOURCES,
