@@ -166,6 +166,133 @@ function FromReportsBanner() {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Saved views bar (built-ins + user custom views)                            */
+/* -------------------------------------------------------------------------- */
+interface BuiltInView { id: string; label: string }
+
+function SavedViewsBar<T extends Record<string, unknown>>({
+  pageKey, builtIns, activeId, onApplyBuiltIn, currentFilters,
+  onApplyCustom, hasActiveFilters, onClear,
+}: {
+  pageKey: string;
+  builtIns: BuiltInView[];
+  activeId: string;
+  onApplyBuiltIn: (id: string) => void;
+  currentFilters: T;
+  onApplyCustom: (filters: T) => void;
+  hasActiveFilters: boolean;
+  onClear: () => void;
+}) {
+  const [custom, setCustom] = useState<CredentialingSavedView<T>[]>(() => listCredViews<T>(pageKey));
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+    const refresh = () => setCustom(listCredViews<T>(pageKey));
+    window.addEventListener("credentialing-saved-views-changed", refresh);
+    return () => window.removeEventListener("credentialing-saved-views-changed", refresh);
+  }, [pageKey]);
+
+  function commitSave() {
+    const trimmed = name.trim();
+    if (!trimmed) { toast.error("Give this view a name"); return; }
+    saveCredView<T>(pageKey, trimmed, currentFilters);
+    toast.success(`Saved view · ${trimmed}`);
+    setName("");
+    setSaveOpen(false);
+  }
+
+  function removeCustom(id: string, label: string) {
+    deleteCredView(pageKey, id);
+    toast.message(`Removed view · ${label}`);
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      {builtIns.map((v) => (
+        <button
+          key={v.id}
+          onClick={() => onApplyBuiltIn(v.id)}
+          className={cn(
+            "px-2.5 h-7 text-xs font-medium rounded-md whitespace-nowrap transition-colors border",
+            activeId === v.id
+              ? "bg-primary/10 text-primary border-primary/30"
+              : "bg-card text-muted-foreground hover:text-foreground border-border/60",
+          )}
+        >
+          {v.label}
+        </button>
+      ))}
+      {custom.length > 0 && <div className="h-5 w-px bg-border/60 mx-0.5" />}
+      {custom.map((v) => (
+        <div key={v.id} className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card text-xs font-medium overflow-hidden">
+          <button className="px-2.5 h-7 text-muted-foreground hover:text-foreground" onClick={() => onApplyCustom(v.filters)}>
+            {v.name}
+          </button>
+          <button
+            className="h-7 px-1.5 text-muted-foreground hover:text-red-600 border-l border-border/60"
+            title="Delete saved view"
+            onClick={() => removeCustom(v.id, v.name)}
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+      {hasActiveFilters && (
+        <button
+          onClick={() => setSaveOpen(true)}
+          className="ml-1 inline-flex items-center gap-1 px-2.5 h-7 text-xs font-medium rounded-md border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
+        >
+          <BookmarkPlus className="h-3 w-3" /> Save current view
+        </button>
+      )}
+      {hasActiveFilters && (
+        <button
+          onClick={onClear}
+          className="ml-1 px-2.5 h-7 text-xs font-medium rounded-md whitespace-nowrap text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+        >
+          <X className="h-3 w-3" /> Clear filters
+        </button>
+      )}
+      <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Save current view</DialogTitle>
+            <DialogDescription>Name this filter combination so you can jump back to it later.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>View name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. GA blocked payers" onKeyDown={(e) => { if (e.key === "Enter") commitSave(); }} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveOpen(false)}>Cancel</Button>
+            <Button onClick={commitSave}><Save className="h-3.5 w-3.5 mr-1" /> Save view</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* CentralReach readiness helpers                                             */
+/* -------------------------------------------------------------------------- */
+function readinessMissingFields(
+  record: CredentialingRecord,
+  provider: CredentialingProvider | null | undefined,
+): string[] {
+  const missing: string[] = [];
+  if (!provider?.centralreach_provider_id) missing.push("Provider CentralReach ID");
+  if (!record.centralreach_external_id) missing.push("Record CentralReach ID");
+  if (!provider?.npi) missing.push("Provider NPI");
+  if (!provider?.license_state) missing.push("Provider license state");
+  if (!record.payer_name) missing.push("Payer");
+  if (!record.state) missing.push("State");
+  if (!APPROVED_CRED_STATUSES.includes(record.status)) missing.push("Approved / credentialable status");
+  return missing;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Add Provider dialog                                                        */
 /* -------------------------------------------------------------------------- */
 function AddProviderDialog({ open, onOpenChange, onCreated }: {
