@@ -80,7 +80,7 @@ export default function ClinicalDirectorDashboard() {
     { label: "Open evaluations",      value: openEvaluations,          hint: "missing items",       icon: ClipboardCheck },
     { label: "Clinical escalations",  value: escalations,              hint: "needs attention",     icon: AlertTriangle },
     { label: "CentralReach sync",     value: crConnected ? "Data available" : "Not connected", hint: lastSession ? `Last session ${lastSession}` : "No CR data yet", icon: Plug, isText: true },
-  ] as const;
+  ];
 
   const topRisks = cr.coverageRisks.slice(0, 6);
   const topAging = auths.qaItems
