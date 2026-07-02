@@ -403,16 +403,30 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
   hr_team: {
     sections: [
       {
-        id: "hr", label: "HR", items: [
-          { label: "HR Dashboard",       path: "/hr-team",            icon: LayoutDashboard },
-          { label: "User Management",    path: "/user-management",    icon: Users },
-          { label: "HR Requests",        path: "/hr/requests",        icon: ClipboardList },
-          { label: "Compliance Items",   path: "/hr/compliance",      icon: ShieldCheck },
-          { label: "Evaluations",        path: "/evaluations",        icon: ClipboardCheck },
-          { label: "Device Requests",    path: "/device-requests",    icon: Wrench },
-          { label: "Device Inventory",   path: "/device-inventory",   icon: Wrench },
-          { label: "HR Reports",         path: "/reports",            icon: BarChart3 },
-          { label: "Phone System",       path: "/phone",              icon: Phone },
+        id: "hr_command", label: "HR Command", items: [
+          { label: "HR Dashboard",                path: "/hr-team",                     icon: LayoutDashboard },
+          { label: "HR Workspace",                path: "/hr/workspace",                icon: Workflow },
+          { label: "New Hires",                   path: "/hr/new-hires",                icon: UserPlus },
+          { label: "Orientation Queue",           path: "/hr/orientation-queue",        icon: CalendarClock },
+          { label: "Training & Certifications",   path: "/hr/training-certifications",  icon: GraduationCap },
+          { label: "Compliance Items",            path: "/hr/compliance",               icon: ShieldCheck },
+          { label: "Employee Support",            path: "/hr/employee-support",         icon: LifeBuoy },
+          { label: "HR Requests",                 path: "/hr/requests",                 icon: ClipboardList },
+          { label: "Evaluations",                 path: "/hr/evaluations",              icon: ClipboardCheck },
+          { label: "Messages & Announcements",    path: "/hr/messages",                 icon: MessageSquare },
+          { label: "HR Resources",                path: "/hr/team-resources",           icon: BookOpen },
+        ],
+      },
+      {
+        id: "hr_people", label: "People & Access", items: [
+          { label: "User Management",             path: "/user-management",             icon: Users },
+          { label: "Device Requests",             path: "/device-requests",             icon: Wrench },
+          { label: "Device Inventory",            path: "/device-inventory",            icon: Wrench },
+        ],
+      },
+      {
+        id: "hr_comms", label: "Communications", items: [
+          { label: "Phone System",                path: "/phone",                       icon: Phone },
         ],
       },
       TRAINING_AND_RESOURCES,
@@ -423,16 +437,30 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
   hr_lead: {
     sections: [
       {
-        id: "hr", label: "HR Leadership", items: [
-          { label: "HR Dashboard",          path: "/hr-team",                icon: LayoutDashboard },
-          { label: "User Management",       path: "/user-management",        icon: Users },
-          { label: "HR Requests",           path: "/hr/requests",            icon: ClipboardList },
-          { label: "Compliance Items",      path: "/hr/compliance",          icon: ShieldCheck },
-          { label: "Evaluations",           path: "/evaluations",            icon: ClipboardCheck },
-          { label: "Device Requests",       path: "/device-requests",        icon: Wrench },
-          { label: "Device Inventory",      path: "/device-inventory",       icon: Wrench },
-          { label: "HR Reports",            path: "/reports",                icon: BarChart3 },
-          { label: "Phone System",          path: "/phone",                  icon: Phone },
+        id: "hr_command", label: "HR Command", items: [
+          { label: "HR Dashboard",                path: "/hr-team",                     icon: LayoutDashboard },
+          { label: "HR Workspace",                path: "/hr/workspace",                icon: Workflow },
+          { label: "New Hires",                   path: "/hr/new-hires",                icon: UserPlus },
+          { label: "Orientation Queue",           path: "/hr/orientation-queue",        icon: CalendarClock },
+          { label: "Training & Certifications",   path: "/hr/training-certifications",  icon: GraduationCap },
+          { label: "Compliance Items",            path: "/hr/compliance",               icon: ShieldCheck },
+          { label: "Employee Support",            path: "/hr/employee-support",         icon: LifeBuoy },
+          { label: "HR Requests",                 path: "/hr/requests",                 icon: ClipboardList },
+          { label: "Evaluations",                 path: "/hr/evaluations",              icon: ClipboardCheck },
+          { label: "Messages & Announcements",    path: "/hr/messages",                 icon: MessageSquare },
+          { label: "HR Resources",                path: "/hr/team-resources",           icon: BookOpen },
+        ],
+      },
+      {
+        id: "hr_people", label: "People & Access", items: [
+          { label: "User Management",             path: "/user-management",             icon: Users },
+          { label: "Device Requests",             path: "/device-requests",             icon: Wrench },
+          { label: "Device Inventory",            path: "/device-inventory",            icon: Wrench },
+        ],
+      },
+      {
+        id: "hr_comms", label: "Communications", items: [
+          { label: "Phone System",                path: "/phone",                       icon: Phone },
         ],
       },
       TRAINING_AND_RESOURCES,
