@@ -30,12 +30,34 @@ export interface UseQADeepLinkOptions<T extends QADeepLinkItem> {
   setClientFilter?: (client: string) => void;
   /** Optional callback once an id-target has been opened (for scroll-into-view). */
   onFocus?: (id: string) => void;
+  /**
+   * Grouped-page resolvers (QA Pass 6).
+   * When present, they translate the incoming deep-link param into the
+   * openId that the current page's drawer actually uses (client id, BCBA id,
+   * supervision row id, escalation id, etc.). Return `null` to indicate
+   * "not found on this page". If a resolver is supplied it takes precedence
+   * over the default direct-id match.
+   */
+  resolveOpenIdForAuth?: (authId: string) => string | null;
+  resolveOpenIdForClient?: (clientParam: string) => string | null;
+  resolveOpenIdForBcba?: (bcbaParam: string) => string | null;
 }
 
 export function useQADeepLink<T extends QADeepLinkItem>(
   opts: UseQADeepLinkOptions<T>,
 ) {
-  const { items, loading, setOpenId, setQuery, setBcbaFilter, setClientFilter, onFocus } = opts;
+  const {
+    items,
+    loading,
+    setOpenId,
+    setQuery,
+    setBcbaFilter,
+    setClientFilter,
+    onFocus,
+    resolveOpenIdForAuth,
+    resolveOpenIdForClient,
+    resolveOpenIdForBcba,
+  } = opts;
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const consumed = useRef(false);
@@ -58,11 +80,16 @@ export function useQADeepLink<T extends QADeepLinkItem>(
     let missed: string[] = [];
 
     if (idParam) {
+      // Grouped pages: their drawer id is NOT the authorization id
+      // (it's a client id, BCBA id, supervision row id, etc). Let the
+      // caller translate the auth id to the correct openId.
+      const resolved = resolveOpenIdForAuth ? resolveOpenIdForAuth(idParam) : null;
       const found = items.find((i) => i.id === idParam);
-      if (found) {
-        matchedId = found.id;
-        setOpenId?.(found.id);
-        onFocus?.(found.id);
+      const openTarget = resolved ?? (found ? found.id : null);
+      if (openTarget) {
+        matchedId = openTarget;
+        setOpenId?.(openTarget);
+        onFocus?.(openTarget);
       } else {
         missed.push(`record ${idParam}`);
       }
@@ -74,6 +101,13 @@ export function useQADeepLink<T extends QADeepLinkItem>(
       );
       if (setBcbaFilter) setBcbaFilter(bcbaParam);
       else setQuery?.(bcbaParam);
+      // Grouped-BCBA pages: also open the matching BCBA row drawer.
+      const bcbaOpenId = resolveOpenIdForBcba ? resolveOpenIdForBcba(bcbaParam) : null;
+      if (bcbaOpenId && !matchedId) {
+        matchedId = bcbaOpenId;
+        setOpenId?.(bcbaOpenId);
+        onFocus?.(bcbaOpenId);
+      }
       if (!exists) missed.push(`BCBA "${bcbaParam}"`);
     }
 
@@ -85,11 +119,17 @@ export function useQADeepLink<T extends QADeepLinkItem>(
       );
       if (setClientFilter) setClientFilter(clientParam);
       else setQuery?.(clientParam);
-      if (exact && !matchedId) {
-        matchedId = exact.id;
-        setOpenId?.(exact.id);
-        onFocus?.(exact.id);
-      } else if (!exact) {
+      // Grouped-client pages resolve to the client group's drawer id.
+      const clientOpenId = resolveOpenIdForClient
+        ? resolveOpenIdForClient(clientParam)
+        : exact
+        ? exact.id
+        : null;
+      if (clientOpenId && !matchedId) {
+        matchedId = clientOpenId;
+        setOpenId?.(clientOpenId);
+        onFocus?.(clientOpenId);
+      } else if (!clientOpenId && !exact) {
         missed.push(`client "${clientParam}"`);
       }
     }
