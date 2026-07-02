@@ -20,13 +20,6 @@ const ACTIONS = [
   { label: "Phone System",           to: "/phone",                  icon: Phone },
 ];
 
-function daysBetween(iso: string | null | undefined): number | null {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.floor((Date.now() - t) / 86_400_000);
-}
-
 export default function ClinicalDirectorDashboard() {
   const [stateFilter, setStateFilter] = useState<string>("");
   const cr = useCentralReachOps({ stateFilter: stateFilter || null });
