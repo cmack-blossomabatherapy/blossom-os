@@ -1112,6 +1112,8 @@ function ApploiHandoffTab() {
   const [owner, setOwner] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
 
   const handoffByRecordId = useMemo(() => {
     const m = new Map<string, typeof handoffs[number]>();
@@ -1173,6 +1175,16 @@ function ApploiHandoffTab() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input className="pl-8" placeholder="Search candidate, role, record id, owner..." value={query} onChange={(e) => setQuery(e.target.value)} />
+          </div>
+          <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={stateFilter} onChange={(e) => setStateFilter(e.target.value)}>
+            <option value="ALL">All states</option>
+            {Array.from(new Set(rows.map((r) => ((r.metadata ?? {}) as Record<string, unknown>).state as string | undefined).filter(Boolean))).sort().map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
           <select className="h-9 rounded-md border border-border/60 bg-background px-3 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="ALL">All handoff statuses</option>
             <option value="none">No decision yet</option>
@@ -1212,6 +1224,17 @@ function ApploiHandoffTab() {
               {!loading && rows
                 .filter((r) => {
                   const ex = handoffByRecordId.get(r.id);
+                  const meta = (r.metadata ?? {}) as Record<string, unknown>;
+                  const rowState = (meta.state as string | undefined) ?? null;
+                  if (stateFilter !== "ALL" && rowState !== stateFilter) return false;
+                  if (query) {
+                    const q = query.toLowerCase();
+                    const hay = [
+                      r.person_name, r.display_title, r.record_kind, r.provider_record_id,
+                      ex?.assigned_owner, ex?.candidate_name, ex?.candidate_role,
+                    ].filter(Boolean).join(" ").toLowerCase();
+                    if (!hay.includes(q)) return false;
+                  }
                   if (statusFilter === "ALL") return true;
                   if (statusFilter === "none") return !ex;
                   return ex?.status === statusFilter;
