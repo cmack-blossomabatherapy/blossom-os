@@ -526,7 +526,6 @@ const ROLE_ALIASES: Record<
   credentialing_lead: "credentialing_team",
   rcm_team: "billing_finance",
   assistant_state_director: "state_director",
-  business_development: "marketing_team",
   clinical_director: "operations_leadership",
   viewer: "behavioral_support",
 };
