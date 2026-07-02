@@ -107,11 +107,20 @@ describe("Scheduling Pass 4 — page map and Reports rule intact", () => {
     expect(menus).not.toContain("/scheduling-team");
   });
 
-  it("Scheduling menu does not include /scheduling/reports", () => {
+  it("Scheduling menu does not include /scheduling/reports and resolves to exactly one /reports item", async () => {
     const block = menus.slice(menus.indexOf("scheduling_team:"), menus.indexOf("scheduling_team:") + 4000);
     expect(block).not.toContain("/scheduling/reports");
-    // /reports is the shared reports home and remains in nav.
-    expect(block).toContain('"/reports"');
+    // /reports is delivered via the shared TRAINING_AND_RESOURCES section
+    // appended to the scheduling_team menu.
+    expect(block).toContain("TRAINING_AND_RESOURCES");
+    // Resolve the live menu and prove exactly one /reports entry exists.
+    const { ROLE_MENUS } = await import("@/lib/os/roleMenus");
+    const menu = ROLE_MENUS.scheduling_team;
+    expect(menu).toBeTruthy();
+    const paths = (menu?.sections ?? []).flatMap((s) => s.items.map((i) => i.path));
+    const reportPaths = paths.filter((p) => p === "/reports");
+    expect(reportPaths.length).toBe(1);
+    expect(paths).not.toContain("/scheduling/reports");
   });
 
   it("BCBA Productivity V3 and Cancellation Command Center remain mounted", () => {
