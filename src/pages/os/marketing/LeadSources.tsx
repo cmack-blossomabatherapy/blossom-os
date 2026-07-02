@@ -18,7 +18,6 @@ import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { LeadSourceActions } from "@/components/marketing/LeadSourceActions";
 import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
 import { SourceManagerCard } from "@/components/marketing/SourceManagerCard";
-import { IntegrationReadinessPanel } from "@/components/marketing/IntegrationReadinessPanel";
 import { IntegrationIngestPreviewPanel } from "@/components/marketing/IntegrationIngestPreviewPanel";
 
 /* -------------------------------------------------------------------------- *
@@ -119,7 +118,6 @@ export default function LeadSources() {
     >
       <LeadSourceActions sourceLabel="All Sources" sourceValue="Website" sourcePage="lead-sources" />
       <SourceManagerCard />
-      <IntegrationReadinessPanel />
       <IntegrationIngestPreviewPanel />
       {/* -- HERO ------------------------------------------------------- */}
       <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
