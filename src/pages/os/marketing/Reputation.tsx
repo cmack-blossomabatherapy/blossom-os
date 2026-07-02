@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
 import { MarketingWorkPanel } from "@/components/marketing/MarketingWorkPanel";
-import { useMarketingReputationEvents } from "@/hooks/useMarketingReputationEvents";
+import { useMarketingReputationEvents, type MarketingReputationEvent } from "@/hooks/useMarketingReputationEvents";
 import { ReputationEventLogDialog } from "@/components/marketing/ReputationEventLogDialog";
 import { BulkReputationEventImportDialog } from "@/components/marketing/BulkReputationEventImportDialog";
 import { Button } from "@/components/ui/button";
@@ -970,12 +970,12 @@ function ReputationEventsPanel() {
         className="mb-3"
         search={{ value: q, onChange: setQ, placeholder: "Search text or source..." }}
         filters={[
-          { key: "elsrc", label: "Source", value: srcFilter, onChange: setSrcFilter, options: [{ value: "all", label: "All" }, ...sources.map((s) => ({ value: s, label: s }))] },
-          { key: "elst", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All" }, ...statesList.map((s) => ({ value: s, label: s }))] },
-          { key: "elr", label: "Rating", value: ratingFilter, onChange: setRatingFilter, options: [
+          { key: "elsrc", label: "Source", value: srcFilter, onChange: setSrcFilter, countSource: rows, countValue: (r) => (r as MarketingReputationEvent).source_system, options: [{ value: "all", label: "All" }, ...sources.map((s) => ({ value: s, label: s }))] },
+          { key: "elst", label: "State", value: stateFilter, onChange: setStateFilter, countSource: rows, countValue: (r) => (r as MarketingReputationEvent).state ?? "", options: [{ value: "all", label: "All" }, ...statesList.map((s) => ({ value: s, label: s }))] },
+          { key: "elr", label: "Rating", value: ratingFilter, onChange: setRatingFilter, countSource: rows, countValue: (r) => { const rt = (r as MarketingReputationEvent).rating; if (rt == null) return "none"; if (rt === 5) return "5"; if (rt === 4) return "4"; if (rt > 0 && rt <= 3) return "low"; return ""; }, options: [
             { value: "all", label: "Any" }, { value: "5", label: "5 stars" }, { value: "4", label: "4 stars" }, { value: "low", label: "1-3 stars" }, { value: "none", label: "No rating" },
           ] },
-          { key: "elsent", label: "Sentiment", value: sentFilter, onChange: setSentFilter, options: [
+          { key: "elsent", label: "Sentiment", value: sentFilter, onChange: setSentFilter, countSource: rows, countValue: (r) => (r as MarketingReputationEvent).sentiment ?? "", options: [
             { value: "all", label: "Any" }, { value: "positive", label: "Positive" }, { value: "neutral", label: "Neutral" }, { value: "negative", label: "Negative" },
           ] },
         ]}

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-export type FilterOption = { value: string; label: string };
+export type FilterOption = { value: string; label: string; count?: number };
 
 export type FilterDef = {
   key: string;
@@ -15,6 +15,10 @@ export type FilterDef = {
   /** The default value that represents "no filter". Defaults to "all". */
   defaultValue?: string;
   width?: number;
+  /** Optional data source to compute the count shown on active filter chips. */
+  countSource?: unknown[];
+  /** Optional accessor to match a row against an active option value. */
+  countValue?: (row: unknown) => string | string[] | null | undefined;
 };
 
 interface TableFilterBarProps {
@@ -31,6 +35,7 @@ interface TableFilterBarProps {
   extra?: React.ReactNode;
   sticky?: boolean;
 }
+
 
 /**
  * Shared filter bar for every table across the Marketing surfaces. Renders
@@ -158,7 +163,22 @@ export function TableFilterBar({
   );
 }
 
-type ChipValue = { key: string; label: string; onRemove: () => void };
+type ChipValue = { key: string; label: string; count?: number; onRemove: () => void };
+
+function countMatches(f: FilterDef, value: string): number | undefined {
+  if (!f.countSource || !f.countValue) return undefined;
+  let count = 0;
+  for (const row of f.countSource) {
+    const v = f.countValue(row);
+    if (v == null) continue;
+    if (Array.isArray(v)) {
+      if (v.includes(value)) count++;
+    } else if (v === value) {
+      count++;
+    }
+  }
+  return count;
+}
 
 function groupActiveFilters(filters: FilterDef[]) {
   // Group by human label so multiple FilterDefs targeting the same field
@@ -177,6 +197,7 @@ function groupActiveFilters(filters: FilterDef[]) {
       bucket.values.push({
         key: `${f.key}:${part}:${idx}`,
         label: opt?.label ?? part,
+        count: countMatches(f, part),
         onRemove: () => {
           if (parts.length <= 1) {
             reset();
@@ -213,6 +234,11 @@ function FilterChipGroup({
           <span key={v.key} className="inline-flex items-center gap-0.5 font-normal">
             {i > 0 && <span className="text-primary/40">,</span>}
             <span>{v.label}</span>
+            {v.count != null && (
+              <span className="ml-0.5 inline-flex h-3.5 min-w-[1.1rem] items-center justify-center rounded-full bg-primary/20 px-1 text-[9px] font-semibold tabular-nums text-primary/90">
+                {v.count}
+              </span>
+            )}
             {multi && (
               <button
                 type="button"

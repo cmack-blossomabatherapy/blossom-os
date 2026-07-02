@@ -178,8 +178,8 @@ export default function EmailMarketing() {
           className="mb-3"
           search={{ value: q, onChange: setQ, placeholder: "Search recipient, campaign, event..." }}
           filters={[
-            { key: "evt", label: "Event", value: evtFilter, onChange: setEvtFilter, options: [{ value: "all", label: "All" }, ...eventTypes.map((t) => ({ value: t, label: t }))] },
-            { key: "cmp", label: "Campaign", value: campFilter, onChange: setCampFilter, options: [{ value: "all", label: "All" }, { value: "__none__", label: "No campaign" }, ...campaigns.map((c) => ({ value: c.id, label: c.name }))], width: 180 },
+            { key: "evt", label: "Event", value: evtFilter, onChange: setEvtFilter, countSource: events, countValue: (e) => (e as EmailEvent).event_type ?? "", options: [{ value: "all", label: "All" }, ...eventTypes.map((t) => ({ value: t, label: t }))] },
+            { key: "cmp", label: "Campaign", value: campFilter, onChange: setCampFilter, countSource: events, countValue: (e) => (e as EmailEvent).campaign_id ?? "__none__", options: [{ value: "all", label: "All" }, { value: "__none__", label: "No campaign" }, ...campaigns.map((c) => ({ value: c.id, label: c.name }))], width: 180 },
           ]}
           resultCount={filteredEvents.length}
           totalCount={events.length}
