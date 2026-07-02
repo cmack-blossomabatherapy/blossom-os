@@ -557,7 +557,6 @@ export default function OSBCBAScheduling() {
             <QuickAction to="/bcba/scheduling"            icon={MessageSquare}  label="Contact scheduling" />
             <QuickAction to="/bcba/parent-training"  icon={CalendarClock}  label="Parent training" />
             <QuickAction to="/bcba/supervision"      icon={Users}          label="Supervision" />
-            <QuickAction to="/ai"                    icon={Sparkles}       label="Operational Insights" />
           </div>
         </section>
       </div>

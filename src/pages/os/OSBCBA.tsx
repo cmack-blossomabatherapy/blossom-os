@@ -573,7 +573,6 @@ export default function OSBCBA() {
               <Quick to="/bcba/parent-training" icon={Baby} label="Parent training" />
               <Quick to="/bcba/scheduling" icon={CalendarDays} label="Scheduling" />
               <Quick to="/bcba/authorizations" icon={FileSignature} label="View PRs" />
-              <Quick to="/ai/assistant" icon={Sparkles} label="Operational Insights" />
             </div>
           </Card>
 

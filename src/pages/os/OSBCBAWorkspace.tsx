@@ -510,7 +510,6 @@ export default function OSBCBAWorkspace() {
               <Quick to="/bcba/scheduling" icon={CalendarDays} label="Scheduling" />
               <Quick to="/bcba/clients" icon={ClipboardCheck} label="Clients" />
               <Quick to="/bcba/authorizations" icon={NotebookPen} label="Authorizations" />
-              <Quick to="/ai/assistant" icon={Sparkles} label="Operational Insights" />
             </div>
           </Card>
 

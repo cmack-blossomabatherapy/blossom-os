@@ -569,7 +569,6 @@ export default function OSBCBASupervision() {
             <QuickAction to="/bcba/workspace"      icon={Activity}        label="Open workspace" />
             <QuickAction to="/bcba/parent-training" icon={HeartHandshake} label="Parent training" />
             <QuickAction to="/bcba/scheduling"          icon={MessageSquare}   label="Contact scheduling" />
-            <QuickAction to="/ai"                  icon={Sparkles}        label="Operational Insights" />
           </div>
         </section>
       </div>
