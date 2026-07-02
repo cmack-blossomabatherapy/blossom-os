@@ -175,6 +175,7 @@ export function visibleReportsForRole(role: OSRole): ReportDef[] {
     "operations_leadership",
     "executive_leadership",
     "state_director",
+    "assistant_state_director",
     "qa_team",
   ];
   const CRED_OPERATIONAL_IDS = [
@@ -204,10 +205,15 @@ export function visibleReportsForRole(role: OSRole): ReportDef[] {
   // even when the role isn't listed in the operational ID buckets above.
   const QA_ROLES: OSRole[] = ["qa_team", "qa_director", "qa_specialist"];
   const isQA = QA_ROLES.includes(role);
+  // Assistant State Director shares the State Director's state-support
+  // report surface — mirror state_director visibility without duplicating
+  // every catalog entry.
+  const mirrorsStateDirector = role === "assistant_state_director";
   for (const r of REPORTS) {
     const roles = r.visibleTo as readonly OSRole[];
     if (roles.includes(role)) ids.add(r.id);
     if (isQA && roles.includes("qa_team")) ids.add(r.id);
+    if (mirrorsStateDirector && roles.includes("state_director")) ids.add(r.id);
   }
 
   return Array.from(ids)
