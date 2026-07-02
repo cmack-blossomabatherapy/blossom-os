@@ -1797,7 +1797,15 @@ function HandoffQueue({
                 ? "Create a follow-up task"
                 : "No further action";
             return (
-              <div key={ev.id} className="rounded-2xl border border-border/70 bg-card p-3">
+              <div
+                key={ev.id}
+                data-handoff-id={ev.id}
+                className={`rounded-2xl border p-3 transition-colors ${
+                  activeEventId === ev.id
+                    ? "border-primary/60 bg-primary/5 ring-1 ring-primary/40"
+                    : "border-border/70 bg-card"
+                }`}
+              >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -1835,7 +1843,7 @@ function HandoffQueue({
                         size="sm"
                         variant="outline"
                         disabled={busy}
-                        onClick={() => onCreatePartnerFromEvent(buildPartnerPrefill(ev))}
+                        onClick={() => { setActiveEventId(ev.id); onCreatePartnerFromEvent(buildPartnerPrefill(ev)); }}
                       >
                         <Plus className="h-3.5 w-3.5 mr-1" /> Create Partner
                       </Button>
@@ -1843,7 +1851,7 @@ function HandoffQueue({
                         size="sm"
                         variant="outline"
                         disabled={busy || partners.length === 0}
-                        onClick={() => setLinkPickerFor(ev)}
+                        onClick={() => { setActiveEventId(ev.id); setLinkPickerFor(ev); }}
                       >
                         <Link2 className="h-3.5 w-3.5 mr-1" /> Link to Existing Partner
                       </Button>
@@ -1855,6 +1863,7 @@ function HandoffQueue({
                     disabled={busy}
                     onClick={() => {
                       if (!partner) { toast.error("Create or link a partner first"); return; }
+                      setActiveEventId(ev.id);
                       onLogOutreachForPartner(partner.id, {
                         subject: `${ev.source_system} handoff${ev.caller_name ? ` - ${ev.caller_name}` : ""}`,
                         notes: ev.payload_summary ?? undefined,
@@ -1869,6 +1878,7 @@ function HandoffQueue({
                     disabled={busy}
                     onClick={() => {
                       if (!partner) { toast.error("Create or link a partner first"); return; }
+                      setActiveEventId(ev.id);
                       onCreateTaskForPartner(partner.id, {
                         title: `Follow up on ${ev.source_system} handoff`,
                         notes: [
