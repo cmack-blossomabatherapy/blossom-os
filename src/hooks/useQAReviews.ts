@@ -108,5 +108,17 @@ export function useQAReviews() {
     [fetchRows],
   );
 
-  return { items, rows, loading, error, refresh: fetchRows, updateStatus, assignOwner };
+  const patchRow = useCallback(
+    async (id: string, patch: Partial<QAReviewRow>) => {
+      const { error } = await supabase
+        .from("client_qa_reviews")
+        .update(patch)
+        .eq("id", id);
+      if (error) throw error;
+      await fetchRows();
+    },
+    [fetchRows],
+  );
+
+  return { items, rows, loading, error, refresh: fetchRows, updateStatus, assignOwner, patchRow };
 }
