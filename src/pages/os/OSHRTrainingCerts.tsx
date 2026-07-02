@@ -285,16 +285,23 @@ export default function OSHRTrainingCerts() {
 
   /* readiness blockers (onboarding blockers + overdue training) */
   const blockerRows = useMemo(() => {
-    const items: { emp: Employee | undefined; kind: string; detail: string; days: number | null }[] = [];
+    const items: {
+      emp: Employee | undefined;
+      onb?: Onboarding;
+      kind: string;
+      detail: string;
+      days: number | null;
+    }[] = [];
     d.onboarding.forEach(o => {
       (o.blockers ?? []).forEach(b => {
-        items.push({ emp: empById[o.employee_id], kind: "Onboarding blocker", detail: b, days: null });
+        items.push({ emp: empById[o.employee_id], onb: o, kind: "Onboarding blocker", detail: b, days: null });
       });
     });
     d.empTrainings.filter(isOverdue).forEach(t => {
       const days = t.due_date ? daysBetween(new Date(), new Date(t.due_date)) : null;
       items.push({
         emp: empById[t.employee_id],
+        onb: d.onboarding.find(o => o.employee_id === t.employee_id),
         kind: "Overdue training",
         detail: courseById[t.course_id]?.title ?? "Training",
         days,
