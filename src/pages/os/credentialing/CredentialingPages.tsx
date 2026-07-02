@@ -1875,6 +1875,10 @@ export function CredentialingDashboardPage() {
   const [stateFilter, setStateFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [payerFilter, setPayerFilter] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<string>("ALL");
+  const [ownerFilter, setOwnerFilter] = useState<string>("");
+  const [providerTypeFilter, setProviderTypeFilter] = useState<string>("ALL");
+  const [crSyncFilter, setCrSyncFilter] = useState<string>("ALL");
   const [savedView, setSavedView] = useState<string>("all");
   const [missingOnly, setMissingOnly] = useState(false);
   const [overdueOnly, setOverdueOnly] = useState(false);
@@ -1903,24 +1907,38 @@ export function CredentialingDashboardPage() {
 
   const clearFilters = () => {
     setSavedView("all"); setStateFilter("ALL"); setStatusFilter("ALL"); setPayerFilter("");
+    setTypeFilter("ALL"); setOwnerFilter(""); setProviderTypeFilter("ALL"); setCrSyncFilter("ALL");
     setMissingOnly(false); setOverdueOnly(false); setCrNotReady(false); setReadyToSync(false);
   };
 
-  const filtered = useMemo(() => records.filter((r) =>
-    (stateFilter === "ALL" || r.state === stateFilter) &&
-    (statusFilter === "ALL" || r.status === statusFilter) &&
-    (!payerFilter || r.payer_name.toLowerCase().includes(payerFilter.toLowerCase())) &&
-    (!missingOnly || r.status === "Missing Info" || (r as unknown as { missing_items?: string[] }).missing_items?.length) &&
-    (!overdueOnly || (() => { const d = daysUntil(r.next_follow_up_date); return d !== null && d < 0; })()) &&
-    (!crNotReady || r.centralreach_sync_status !== "Synced") &&
-    (!readyToSync || (r.centralreach_sync_status === "Ready To Sync" && APPROVED_CRED_STATUSES.includes(r.status))) &&
-    (savedView !== "expiring-30" || (() => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 30; })())
-  ), [records, stateFilter, statusFilter, payerFilter, missingOnly, overdueOnly, crNotReady, readyToSync, savedView]);
+  const filtered = useMemo(() => records.filter((r) => {
+    const prov = providerById.get(r.provider_id);
+    const q = payerFilter.toLowerCase();
+    const matchesQ = !q || r.payer_name.toLowerCase().includes(q) || (prov?.provider_name.toLowerCase().includes(q) ?? false);
+    return (
+      matchesQ &&
+      (stateFilter === "ALL" || r.state === stateFilter) &&
+      (statusFilter === "ALL" || r.status === statusFilter) &&
+      (typeFilter === "ALL" || r.credentialing_type === typeFilter) &&
+      (!ownerFilter || (r.owner_name ?? "").toLowerCase().includes(ownerFilter.toLowerCase())) &&
+      (providerTypeFilter === "ALL" || prov?.provider_type === providerTypeFilter) &&
+      (crSyncFilter === "ALL" || r.centralreach_sync_status === crSyncFilter) &&
+      (!missingOnly || r.status === "Missing Info" || (r.missing_items?.length ?? 0) > 0) &&
+      (!overdueOnly || (() => { const d = daysUntil(r.next_follow_up_date); return d !== null && d < 0; })()) &&
+      (!crNotReady || r.centralreach_sync_status !== "Synced") &&
+      (!readyToSync || (r.centralreach_sync_status === "Ready To Sync" && APPROVED_CRED_STATUSES.includes(r.status))) &&
+      (savedView !== "expiring-30" || (() => { const d = daysUntil(r.expiration_date); return d !== null && d >= 0 && d <= 30; })())
+    );
+  }), [records, providerById, stateFilter, statusFilter, payerFilter, typeFilter, ownerFilter, providerTypeFilter, crSyncFilter, missingOnly, overdueOnly, crNotReady, readyToSync, savedView]);
 
   const activeFilterCount = (
     (stateFilter !== "ALL" ? 1 : 0) +
     (statusFilter !== "ALL" ? 1 : 0) +
     (payerFilter ? 1 : 0) +
+    (typeFilter !== "ALL" ? 1 : 0) +
+    (ownerFilter ? 1 : 0) +
+    (providerTypeFilter !== "ALL" ? 1 : 0) +
+    (crSyncFilter !== "ALL" ? 1 : 0) +
     (missingOnly ? 1 : 0) +
     (overdueOnly ? 1 : 0) +
     (crNotReady ? 1 : 0) +
