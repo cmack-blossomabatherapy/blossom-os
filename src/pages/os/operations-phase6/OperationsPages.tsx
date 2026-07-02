@@ -12,6 +12,20 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+/**
+ * NOTE:
+ * The State Director command center pages (StateOperationsPage,
+ * StateEscalationsPage, OperationalTasksPage) have moved to
+ * `src/pages/os/stateDirector/StateDirectorPages.tsx` and are now backed by
+ * the persisted state-director operating store. They are re-exported below
+ * so existing App.tsx imports keep working.
+ */
+export {
+  StateOperationsPage,
+  StateEscalationsPage,
+  OperationalTasksPage,
+} from "@/pages/os/stateDirector/StateDirectorPages";
+
 /* -------------------------------------------------------------------------- */
 /* Layout primitives                                                          */
 /* -------------------------------------------------------------------------- */
