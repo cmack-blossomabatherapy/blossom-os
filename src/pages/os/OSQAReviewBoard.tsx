@@ -435,3 +435,230 @@ function LaneChip({
     </div>
   );
 }
+
+/* ---------------------------- Review Drawer ---------------------------- */
+
+type ReviewDrawerProps = {
+  item: QAReviewItem | null;
+  onClose: () => void;
+  onAdvance: (i: QAReviewItem, next: QAReviewStatus) => void;
+  onAssignOwner: (id: string, owner: string | null) => Promise<void>;
+  onPatch: (id: string, patch: Partial<QAReviewItem>, okMsg: string) => Promise<void>;
+};
+
+function ReviewDrawer({ item, onClose, onAdvance, onAssignOwner, onPatch }: ReviewDrawerProps) {
+  const isOpen = !!item;
+  useSlideout(isOpen, onClose);
+  const [ownerDraft, setOwnerDraft] = useState("");
+  const [noteDraft, setNoteDraft] = useState("");
+
+  useEffect(() => {
+    setOwnerDraft(item?.assigned_qa_owner ?? "");
+    setNoteDraft(item?.notes ?? "");
+  }, [item?.id, item?.assigned_qa_owner, item?.notes]);
+
+  if (!item) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex" role="dialog" aria-modal="true">
+      <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <aside className="w-full max-w-[560px] h-full bg-card border-l border-border shadow-2xl overflow-y-auto">
+        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur border-b border-border px-5 py-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">QA Review</p>
+            <h2 className="text-lg font-semibold text-foreground truncate">{item.clientName}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {item.status} · {item.daysInStage}d in stage
+            </p>
+          </div>
+          <button onClick={onClose} className="h-8 w-8 rounded-lg hover:bg-muted inline-flex items-center justify-center">
+            <X className="size-4" />
+          </button>
+        </header>
+
+        <div className="p-5 space-y-5">
+          <section className="grid grid-cols-2 gap-3 text-sm">
+            <Field label="State" value={item.clientState ?? "—"} />
+            <Field label="BCBA" value={item.bcba ?? "—"} />
+            <Field label="QA Owner" value={item.assigned_qa_owner ?? "Unassigned"} />
+            <Field label="Status" value={item.status} />
+            <Field label="Days in stage" value={`${item.daysInStage}d`} />
+            <Field label="Next action" value={item.next_action || "—"} />
+          </section>
+
+          <section className="grid grid-cols-2 gap-2">
+            <Check label="Treatment plan received" checked={item.treatment_plan_received} />
+            <Check label="Notes verified" checked={item.notes_verified} />
+            <Check label="Documentation complete" checked={item.documentation_complete} />
+            <Check label="Errors found" checked={item.errors_found} tone={item.errors_found ? "bad" : "muted"} />
+          </section>
+
+          {(item.error_types?.length ?? 0) > 0 && (
+            <ChipList label="Error types" items={item.error_types as string[]} tone="destructive" />
+          )}
+          {(item.blockers?.length ?? 0) > 0 && (
+            <ChipList label="Blockers" items={item.blockers} tone="destructive" />
+          )}
+          {(item.alerts?.length ?? 0) > 0 && (
+            <ChipList label="Alerts" items={item.alerts} tone="warning" />
+          )}
+
+          <section>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">QA Owner</p>
+            <div className="flex gap-2">
+              <input
+                value={ownerDraft}
+                onChange={(e) => setOwnerDraft(e.target.value)}
+                placeholder="Assign owner…"
+                className="flex-1 h-9 px-3 rounded-lg bg-muted/60 border border-border text-sm"
+              />
+              <button
+                onClick={() => onAssignOwner(item.id, ownerDraft.trim() || null)}
+                className="h-9 px-3 rounded-lg bg-secondary border border-border text-sm font-medium hover:bg-muted"
+              >
+                Save
+              </button>
+            </div>
+          </section>
+
+          <section>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">QA Notes</p>
+            <textarea
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              rows={4}
+              className="w-full px-3 py-2 rounded-lg bg-muted/60 border border-border text-sm"
+              placeholder="Add QA notes…"
+            />
+            <div className="mt-2 flex justify-end">
+              <button
+                onClick={() => onPatch(item.id, { notes: noteDraft }, "Notes saved")}
+                className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 inline-flex items-center gap-1"
+              >
+                <StickyNote className="size-3" /> Save notes
+              </button>
+            </div>
+          </section>
+
+          <section>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Workflow actions</p>
+            <div className="grid grid-cols-2 gap-2">
+              {item.status === "Awaiting Review" && (
+                <ActionBtn icon={PlayCircle} label="Start Review" onClick={() => onAdvance(item, "In Review")} />
+              )}
+              <ActionBtn
+                icon={FileCheck2}
+                label={item.treatment_plan_received ? "TP Received ✓" : "Mark TP Received"}
+                onClick={() => onPatch(item.id, { treatment_plan_received: !item.treatment_plan_received }, "Treatment plan updated")}
+              />
+              <ActionBtn
+                icon={CheckCircle2}
+                label={item.notes_verified ? "Notes Verified ✓" : "Mark Notes Verified"}
+                onClick={() => onPatch(item.id, { notes_verified: !item.notes_verified }, "Notes verification updated")}
+              />
+              <ActionBtn
+                icon={CheckCircle2}
+                label={item.documentation_complete ? "Docs Complete ✓" : "Mark Docs Complete"}
+                onClick={() => onPatch(item.id, { documentation_complete: !item.documentation_complete }, "Documentation status updated")}
+              />
+              <ActionBtn
+                icon={Flag}
+                label="Flag Issues Found"
+                tone="destructive"
+                onClick={() => onAdvance(item, "Issues Found")}
+              />
+              <ActionBtn
+                icon={CheckCircle2}
+                label="Mark Ready for Submission"
+                onClick={() => onAdvance(item, "Ready for Submission")}
+              />
+              <ActionBtn
+                icon={Send}
+                label="Submit to Auth"
+                tone="success"
+                onClick={() => onAdvance(item, "Submitted to Auth")}
+              />
+            </div>
+          </section>
+
+          <div className="pt-2 border-t border-border">
+            <Link
+              to={`/clients/${item.client_id}`}
+              className="text-xs text-primary inline-flex items-center gap-1 hover:underline"
+            >
+              Open client record <ArrowUpRight className="size-3" />
+            </Link>
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-muted/40 border border-border/60 px-3 py-2">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-sm text-foreground mt-0.5 truncate">{value}</p>
+    </div>
+  );
+}
+
+function Check({ label, checked, tone = "muted" }: { label: string; checked: boolean; tone?: "muted" | "bad" }) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-lg px-3 py-2 border text-xs",
+        checked
+          ? tone === "bad"
+            ? "bg-destructive/10 border-destructive/30 text-destructive"
+            : "bg-success/10 border-success/30 text-success"
+          : "bg-muted/40 border-border/60 text-muted-foreground",
+      )}
+    >
+      <span className={cn("size-2 rounded-full", checked ? (tone === "bad" ? "bg-destructive" : "bg-success") : "bg-muted-foreground/40")} />
+      {label}
+    </div>
+  );
+}
+
+function ChipList({ label, items, tone }: { label: string; items: string[]; tone: "destructive" | "warning" }) {
+  const toneClass = tone === "destructive"
+    ? "bg-destructive/10 text-destructive border-destructive/30"
+    : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30";
+  return (
+    <section>
+      <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((v, i) => (
+          <span key={`${v}-${i}`} className={cn("text-[11px] px-2 py-0.5 rounded-md border", toneClass)}>{v}</span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ActionBtn({
+  icon: Icon, label, onClick, tone,
+}: {
+  icon: React.ElementType;
+  label: string;
+  onClick: () => void;
+  tone?: "destructive" | "success";
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "h-9 px-3 rounded-lg text-xs font-medium border transition inline-flex items-center justify-center gap-1.5",
+        tone === "destructive"
+          ? "border-destructive/30 text-destructive hover:bg-destructive/10"
+          : tone === "success"
+          ? "border-success/30 text-success hover:bg-success/10"
+          : "border-border/70 text-foreground bg-card hover:bg-muted",
+      )}
+    >
+      <Icon className="size-3.5" strokeWidth={1.75} /> {label}
+    </button>
+  );
+}
