@@ -12,6 +12,20 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+/**
+ * NOTE:
+ * The State Director command center pages (StateOperationsPage,
+ * StateEscalationsPage, OperationalTasksPage) have moved to
+ * `src/pages/os/stateDirector/StateDirectorPages.tsx` and are now backed by
+ * the persisted state-director operating store. They are re-exported below
+ * so existing App.tsx imports keep working.
+ */
+export {
+  StateOperationsPage,
+  StateEscalationsPage,
+  OperationalTasksPage,
+} from "@/pages/os/stateDirector/StateDirectorPages";
+
 /* -------------------------------------------------------------------------- */
 /* Layout primitives                                                          */
 /* -------------------------------------------------------------------------- */
@@ -142,111 +156,7 @@ function SectionCard({ title, description, children, action }: { title: string; 
 /* 1. State Operations                                                        */
 /* -------------------------------------------------------------------------- */
 
-const STATE_HEALTH = [
-  { state: "Georgia", health: "Healthy", esc: 1, staffing: "92%", intake: "12 in pipeline", auths: "3 expiring", clinical: "On track" },
-  { state: "North Carolina", health: "Watch", esc: 3, staffing: "84%", intake: "9 in pipeline", auths: "5 expiring", clinical: "2 PR overdue" },
-  { state: "Tennessee", health: "Healthy", esc: 0, staffing: "95%", intake: "4 in pipeline", auths: "1 expiring", clinical: "On track" },
-  { state: "Virginia", health: "Risk", esc: 5, staffing: "76%", intake: "7 in pipeline", auths: "8 expiring", clinical: "Coverage gaps" },
-  { state: "Maryland", health: "Watch", esc: 2, staffing: "88%", intake: "5 in pipeline", auths: "2 expiring", clinical: "On track" },
-];
 
-const STATE_ESCALATIONS = [
-  { state: "VA", topic: "Hard-to-staff Richmond client", owner: "Staffing Team", age: "3 days", status: "Escalated" },
-  { state: "NC", topic: "Auth denial — BCBS pediatric ABA", owner: "Authorizations", age: "5 days", status: "Pending" },
-  { state: "VA", topic: "Family preference conflict", owner: "Case Manager", age: "1 day", status: "Pending" },
-];
-
-export function StateOperationsPage() {
-  return (
-    <Shell>
-      <PageHeader
-        eyebrow="Operations"
-        title="State Operations"
-        subtitle="State-level visibility into operational health, escalations, staffing, intake, authorizations, clinical risk, and stuck work."
-        icon={MapPin}
-        actions={<Button size="sm" variant="outline">Filter by state</Button>}
-      />
-      <ActionRow actions={["Filter by state", "Open escalation", "Assign follow-up", "View department owner", "Mark issue resolved"]} />
-
-      <SectionCard title="State Health Overview" description="State Directors see their state. Leadership sees all states.">
-        <div className="overflow-x-auto -mx-2">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>{["State", "Health", "Escalations", "Staffing", "Intake", "Authorizations", "Clinical"].map((h) => (
-                <th key={h} className="text-left font-medium px-4 py-3">{h}</th>
-              ))}</tr>
-            </thead>
-            <tbody>
-              {STATE_HEALTH.map((s) => (
-                <tr key={s.state} className="border-t border-border/60">
-                  <td className="px-4 py-3 font-medium">{s.state}</td>
-                  <td className="px-4 py-3"><Badge variant="outline" className={cn(
-                    s.health === "Healthy" && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                    s.health === "Watch" && "bg-amber-50 text-amber-800 border-amber-200",
-                    s.health === "Risk" && "bg-red-50 text-red-700 border-red-200",
-                  )}>{s.health}</Badge></td>
-                  <td className="px-4 py-3 text-muted-foreground">{s.esc}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{s.staffing}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{s.intake}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{s.auths}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{s.clinical}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <SectionCard title="State Escalations" description="Open escalations awaiting department owner action.">
-          <ul className="divide-y divide-border/60">
-            {STATE_ESCALATIONS.map((e, i) => (
-              <li key={i} className="py-3 flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-medium">{e.state} · {e.topic}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">Owner: {e.owner} · Open {e.age}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={e.status} />
-                  <Button size="sm" variant="ghost">Open</Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
-
-        <SectionCard title="Department Dependencies" description="Cross-department handoffs that affect state outcomes.">
-          <ul className="space-y-2 text-sm">
-            {[
-              ["Intake → VOB", "Solum"], ["VOB → Authorizations", "Auth Team"],
-              ["Authorizations → Staffing", "Staffing"], ["Staffing → Scheduling", "Scheduling"],
-              ["Scheduling → Clinical", "BCBA / RBT"], ["Clinical → QA", "QA Team"],
-            ].map(([flow, owner]) => (
-              <li key={flow} className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
-                <span>{flow}</span>
-                <span className="text-xs text-muted-foreground">Owner: {owner}</span>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-4">
-        <KPI label="Open staffing requests" value={14} tone="warn" />
-        <KPI label="Intake in pipeline" value={37} tone="info" />
-        <KPI label="Auths expiring < 30d" value={19} tone="warn" />
-        <KPI label="Clinical risks" value={4} tone="danger" />
-      </div>
-
-      <Card className="p-5 rounded-2xl border-border/60 bg-muted/30">
-        <div className="text-sm">
-          <span className="font-medium">State Directors</span> see state health and escalation visibility.
-          They are not the default execution owner for every department — work routes to the department owner.
-        </div>
-      </Card>
-    </Shell>
-  );
-}
 
 /* -------------------------------------------------------------------------- */
 /* 2. Authorizations                                                          */
@@ -495,61 +405,11 @@ export function FamilyStaffingPreferencesPage() {
 /* 11. State Escalations                                                      */
 /* -------------------------------------------------------------------------- */
 
-export function StateEscalationsPage() {
-  return (
-    <Shell>
-      <PageHeader
-        eyebrow="Operations"
-        title="State Escalations"
-        subtitle="Open operational escalations by state, owner department, age, and status."
-        icon={AlertTriangle}
-        actions={<Button size="sm" variant="outline">Open escalation</Button>}
-      />
-      <ActionRow actions={["Open escalation", "Assign follow-up", "View department owner", "Mark issue resolved"]} />
-      <DataTable
-        columns={["State", "Topic", "Department Owner", "Age", "Status", "Next Action"]}
-        rows={STATE_ESCALATIONS.map((e) => [e.state, e.topic, e.owner, e.age, <StatusBadge status={e.status} />, "Assign follow-up"])}
-      />
-    </Shell>
-  );
-}
 
 /* -------------------------------------------------------------------------- */
 /* 12. Operational Tasks                                                      */
 /* -------------------------------------------------------------------------- */
 
-export function OperationalTasksPage() {
-  return (
-    <Shell>
-      <PageHeader
-        eyebrow="Operations"
-        title="Operational Tasks"
-        subtitle="Cross-department operational tasks routed to the correct owner."
-        icon={ListTodo}
-        actions={<Button size="sm"><Plus className="h-4 w-4 mr-1.5" />Create task</Button>}
-      />
-      <ActionRow actions={["Create task", "Assign owner", "Update status", "Escalate", "Mark complete"]} />
-      <DataTable
-        columns={["Task", "Owner", "Department", "Due", "Priority", "Status"]}
-        rows={[
-          ["Follow up with payer rep — Aetna", "Briana Diaz", "Authorizations", "Today", "High", <StatusBadge status="Pending" />],
-          ["Match RBT to Sophia Reyes", "Devon Ross", "Staffing", "Tomorrow", "High", <StatusBadge status="Escalated" />],
-          ["Update SOP — VOB intake handoff", "Sasha Long", "Operations", "Fri", "Medium", <StatusBadge status="In Review" />],
-          ["Resubmit denial TRK-99205", "Marcus Hill", "Authorizations", "Mon", "High", <StatusBadge status="Resubmitted" />],
-        ]}
-      />
-      <Card className="p-5 rounded-2xl border-border/60 bg-muted/30 flex items-center justify-between">
-        <div className="text-sm">
-          <div className="font-medium">Need a roadmap view?</div>
-          <div className="text-muted-foreground">See what other operational workflows are coming online.</div>
-        </div>
-        <Button asChild size="sm" variant="outline">
-          <Link to="/dashboard">Back to Dashboard <ArrowUpRight className="h-3.5 w-3.5 ml-1" /></Link>
-        </Button>
-      </Card>
-    </Shell>
-  );
-}
 
 // Silence unused imports for icons reserved for future expansion.
 void ClipboardList; void FileSignature;

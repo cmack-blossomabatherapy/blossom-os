@@ -600,6 +600,11 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/training",
     "/resource-library",
     "/reports",
+    // Redirect targets used by menu items above must also be treated as live
+    // so the shell never renders the "coming soon" banner after redirect.
+    "/scheduling-workspace",
+    "/ops/authorizations",
+    "/ops/family-staffing-preferences",
   ]),
   assistant_state_director: new Set<string>([
     "/state-operations",
@@ -613,6 +618,10 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/training",
     "/resource-library",
     "/reports",
+    "/scheduling-workspace",
+    "/ops/authorizations",
+    "/ops/family-staffing-preferences",
+    "/qa-team",
   ]),
 };
 
