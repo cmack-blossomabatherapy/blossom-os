@@ -745,6 +745,21 @@ function DetailPanel({ item, employee, onboarding, trainings, documents, related
             </div>
           </div>
 
+          {/* Integration readiness */}
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Integration readiness</p>
+            {onboarding ? (
+              <IntegrationReadinessPanel row={onboarding} />
+            ) : (
+              <p className="text-[12px] text-muted-foreground">
+                No onboarding record — integration sync is only tracked for employees with an active onboarding row.
+              </p>
+            )}
+            <p className="mt-2 text-[11px] text-muted-foreground/80">
+              Provider status only shows "synced" when the integration is connected in the catalog and this employee's row has a real sync timestamp.
+            </p>
+          </div>
+
           {/* Related cases */}
           {relatedCases.length > 0 && (
             <div>
