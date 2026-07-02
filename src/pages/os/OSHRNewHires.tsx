@@ -83,7 +83,12 @@ interface Emp {
   job_title: string; state: string; status: string; start_date: string | null;
   hire_date: string | null; email: string | null; phone: string | null;
 }
-interface OnbRow { id: string; employee_id: string; status: OnboardingStatus; stage_entered_at: string; blockers: string[]; hr_owner: string | null }
+interface OnbRow {
+  id: string; employee_id: string; status: OnboardingStatus; stage_entered_at: string; blockers: string[]; hr_owner: string | null;
+  viventium_status?: string | null; viventium_synced_at?: string | null; viventium_notes?: string | null;
+  stellar_status?: string | null; stellar_synced_at?: string | null; stellar_notes?: string | null;
+  centralreach_status?: string | null; centralreach_synced_at?: string | null; centralreach_notes?: string | null;
+}
 interface TaskRow { id: string; onboarding_id: string; title: string; completed: boolean; due_date: string | null }
 interface TrainingRow { id: string; employee_id: string; course_id: string; status: string; due_date: string | null; completed_at: string | null }
 interface DocRow { id: string; employee_id: string; doc_type: string; name: string; status: string; required: boolean }
@@ -102,7 +107,7 @@ function useNewHiresData() {
     (async () => {
       const [emp, onb, tr, dc] = await Promise.all([
         supabase.from("employees").select("id,first_name,last_name,preferred_name,job_title,state,status,start_date,hire_date,email,phone").order("hire_date", { ascending: false }),
-        supabase.from("employee_onboarding").select("id,employee_id,status,stage_entered_at,blockers"),
+        supabase.from("employee_onboarding").select("id,employee_id,status,stage_entered_at,blockers,viventium_status,viventium_synced_at,viventium_notes,stellar_status,stellar_synced_at,stellar_notes,centralreach_status,centralreach_synced_at,centralreach_notes"),
         supabase.from("employee_trainings").select("id,employee_id,course_id,status,due_date,completed_at"),
         supabase.from("employee_documents_hr").select("id,employee_id,doc_type,name,status,required"),
       ]);
