@@ -226,9 +226,9 @@ function buildSections(args: {
         title: "State Operations",
         items: [
           { label: "State Operations",            path: "/state-operations",                icon: MapPin },
-          { label: "Authorizations",              path: "/ops/authorizations",              icon: ShieldCheck },
-          { label: "Approved Authorizations",     path: "/ops/approved-authorizations",     icon: CheckCircle2 },
-          { label: "Denials",                     path: "/ops/denials",                     icon: XCircle },
+          { label: "Authorizations",              path: "/authorizations",                  icon: ShieldCheck },
+          { label: "Approved Authorizations",     path: "/authorizations?stage=approved",   icon: CheckCircle2 },
+          { label: "Denials",                     path: "/authorizations?stage=denied",     icon: XCircle },
           { label: "Scheduling",                  path: "/ops/scheduling",                  icon: Calendar },
           { label: "Staffing",                    path: "/ops/staffing",                    icon: UsersIcon },
           { label: "Case Management",             path: "/ops/case-management",             icon: HeartHandshake },

@@ -1,6 +1,7 @@
 import { ScrollText } from "lucide-react";
 import { ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import OpsRecordsWorkspace from "./OpsRecordsWorkspace";
 import { OPS_STORE_KEYS } from "@/lib/os/operations/recordsStore";
 
@@ -61,7 +62,19 @@ export default function PayerRequirements() {
             >
               <ExternalLink className="h-3 w-3" /> View Matching Auths
             </Link>
-            <button onClick={() => remove(r.id)} className="text-xs text-muted-foreground hover:text-rose-600">Delete</button>
+            <button
+              onClick={async () => {
+                try {
+                  await Promise.resolve(remove(r.id));
+                  toast.success("Payer requirement deleted");
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Could not delete requirement");
+                }
+              }}
+              className="text-xs text-muted-foreground hover:text-rose-600"
+            >
+              Delete
+            </button>
           </>
         );
       }}

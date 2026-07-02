@@ -6,7 +6,7 @@ import {
   Calendar, FileSignature, ClipboardList, UserCheck,
   LayoutDashboard, AlertTriangle, MapPin, Stethoscope, CheckCircle2,
   XCircle, Gauge, LineChart, Activity, Inbox, type LucideIcon,
-  FileCheck2, Clock, Eye, Flame, Library, UserPlus, Bell, List, Sparkles,
+  FileCheck2, Clock, Eye, Flame, Library, UserPlus, Bell, List, Sparkles, ChevronRight,
   Workflow, CalendarClock, LifeBuoy,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
@@ -354,12 +354,34 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
         id: "authorizations", label: "Authorizations", items: [
           { label: "Authorizations Dashboard",  path: "/authorizations",                  icon: LayoutDashboard },
           { label: "Auth Queue",                path: "/auth-workspace",                  icon: ShieldCheck },
-          { label: "Approved Authorizations",   path: "/ops/approved-authorizations",     icon: CheckCircle2 },
+          { label: "Initial → Treatment Handoff", path: "/authorizations/handoff",        icon: ChevronRight },
+          { label: "Approved Authorizations",   path: "/authorizations?stage=approved",   icon: CheckCircle2 },
           { label: "Expiring Authorizations",   path: "/ops/expiring-authorizations",     icon: Calendar },
-          { label: "Denials",                   path: "/ops/denials",                     icon: XCircle },
+          { label: "Denials",                   path: "/authorizations?stage=denied",     icon: XCircle },
           { label: "Missing Docs",              path: "/ops/missing-docs",                icon: AlertTriangle },
           { label: "Payer Requirements",        path: "/ops/payer-requirements",          icon: FileSignature },
           { label: "Authorization Reports",     path: "/reports",                         icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* -------------------- Authorizations — Manager ----------------------------- */
+  authorization_manager: {
+    sections: [
+      {
+        id: "authorizations", label: "Authorizations", items: [
+          { label: "Authorizations Dashboard",    path: "/authorizations",                  icon: LayoutDashboard },
+          { label: "Auth Queue",                  path: "/auth-workspace",                  icon: ShieldCheck },
+          { label: "Team Workload",               path: "/auth-workspace?view=team",        icon: Users },
+          { label: "Initial → Treatment Handoff", path: "/authorizations/handoff",          icon: ChevronRight },
+          { label: "Approved Authorizations",     path: "/authorizations?stage=approved",   icon: CheckCircle2 },
+          { label: "Expiring Authorizations",     path: "/ops/expiring-authorizations",     icon: Calendar },
+          { label: "Denials",                     path: "/authorizations?stage=denied",     icon: XCircle },
+          { label: "Missing Docs",                path: "/ops/missing-docs",                icon: AlertTriangle },
+          { label: "Payer Requirements",          path: "/ops/payer-requirements",          icon: FileSignature },
+          { label: "Authorization Reports",       path: "/reports",                         icon: BarChart3 },
         ],
       },
       TRAINING_AND_RESOURCES,

@@ -52,8 +52,8 @@ export interface OpsRecordsWorkspaceProps {
   statusOptions?: StatusOption[];
   seed?: OpsRecord[];
   rowActions?: (row: OpsRecord, ctx: {
-    update: (id: string, patch: Partial<OpsRecord>) => void;
-    remove: (id: string) => void;
+    update: (id: string, patch: Partial<OpsRecord>) => Promise<void> | void;
+    remove: (id: string) => Promise<void> | void;
   }) => ReactNode;
   buckets?: { label: string; predicate: (row: OpsRecord) => boolean }[];
   /**
@@ -81,20 +81,23 @@ export default function OpsRecordsWorkspace(props: OpsRecordsWorkspaceProps) {
   const useRemote = !!props.supabaseTable;
   const rows = useRemote ? remote.rows : local.rows;
   const create = useRemote
-    ? ((row: Omit<OpsRecord, "id" | "createdAt" | "updatedAt">) => {
-        remote.create(row).catch((e) => toast.error(e.message ?? "Failed to save"));
+    ? (async (row: Omit<OpsRecord, "id" | "createdAt" | "updatedAt">) => {
+        try { await remote.create(row); }
+        catch (e: any) { toast.error(e?.message ?? "Failed to save"); throw e; }
       })
-    : local.create;
+    : (async (row: Omit<OpsRecord, "id" | "createdAt" | "updatedAt">) => { local.create(row); });
   const update = useRemote
-    ? ((id: string, patch: Partial<OpsRecord>) => {
-        remote.update(id, patch).catch((e) => toast.error(e.message ?? "Failed to update"));
+    ? (async (id: string, patch: Partial<OpsRecord>) => {
+        try { await remote.update(id, patch); }
+        catch (e: any) { toast.error(e?.message ?? "Failed to update"); throw e; }
       })
-    : local.update;
+    : (async (id: string, patch: Partial<OpsRecord>) => { local.update(id, patch); });
   const remove = useRemote
-    ? ((id: string) => {
-        remote.remove(id).catch((e) => toast.error(e.message ?? "Failed to delete"));
+    ? (async (id: string) => {
+        try { await remote.remove(id); }
+        catch (e: any) { toast.error(e?.message ?? "Failed to delete"); throw e; }
       })
-    : local.remove;
+    : (async (id: string) => { local.remove(id); });
   const loading = useRemote && remote.loading;
   const loadError = useRemote ? remote.error : null;
   const [query, setQuery] = useState("");

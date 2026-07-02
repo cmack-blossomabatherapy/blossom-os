@@ -228,6 +228,7 @@ type Filters = {
 const STAGE_TO_VIEW: Record<string, ViewId> = {
   awaiting: "awaiting", submitted: "submitted", approved: "approved",
   expiring: "expiring", qa: "qa", denied: "denied", missing: "missing",
+  missing_docs: "missing",
   pr: "needs_pr", high_risk: "high_risk", mine: "mine", recent: "recent",
 };
 function paramToView(params: URLSearchParams): ViewId | null {
@@ -388,7 +389,46 @@ export default function OSAuthorizations() {
               onApply={applySavedView}
               triggerClassName="h-8 rounded-md border-0 bg-transparent px-2"
             />
-            <Button variant="ghost" size="sm" onClick={() => toast("Export — coming soon")}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (!visible.length) { toast.info("Nothing to export — the current view is empty."); return; }
+                const cols: { key: string; label: string }[] = [
+                  { key: "id", label: "Auth ID" },
+                  { key: "clientName", label: "Client" },
+                  { key: "state", label: "State" },
+                  { key: "payor", label: "Payer" },
+                  { key: "requestType", label: "Auth Type" },
+                  { key: "stage", label: "Stage" },
+                  { key: "coordinator", label: "Coordinator" },
+                  { key: "bcba", label: "BCBA" },
+                  { key: "startDate", label: "Start Date" },
+                  { key: "submittedDate", label: "Submitted" },
+                  { key: "approvedDate", label: "Approved" },
+                  { key: "expirationDate", label: "Expires" },
+                  { key: "daysToExpire", label: "Days To Expire" },
+                  { key: "missingDocsCount", label: "Missing Docs" },
+                  { key: "prStatus", label: "PR Status" },
+                  { key: "source", label: "Source" },
+                ];
+                const escape = (v: unknown) => {
+                  const s = v === null || v === undefined ? "" : String(v);
+                  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+                };
+                const header = cols.map(c => escape(c.label)).join(",");
+                const body = visible.map(r => cols.map(c => escape((r as any)[c.key])).join(",")).join("\n");
+                const csv = `${header}\n${body}`;
+                const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `authorizations-${new Date().toISOString().slice(0,10)}.csv`;
+                document.body.appendChild(a); a.click(); a.remove();
+                URL.revokeObjectURL(url);
+                toast.success(`Exported ${visible.length} authorization${visible.length === 1 ? "" : "s"}`);
+              }}
+            >
               <Download className="mr-1.5 h-4 w-4" /> Export
             </Button>
             <Button variant="ghost" size="sm" asChild>
@@ -815,13 +855,17 @@ function AuthDrawer({
           <Button
             size="sm"
             variant="outline"
-            title="Outbound email/SMS integration is pending — message is logged to the activity feed."
+            title="Outbound email/SMS integration is pending — queues an audit entry and a follow-up task for the coordinator to send manually."
             onClick={() => {
-              void runRefresh(() => actions.queueExternalSend(overlay, { channel: "email", summary: `Message BCBA ${e.bcba}` }));
-              toast.info("Message queued", { description: "External send integration pending — logged to activity feed." });
+              void runRefresh(() => actions.queueExternalSend(overlay, {
+                channel: "email",
+                recipientLabel: e.bcba,
+                summary: `Message BCBA ${e.bcba}`,
+              }));
+              toast.info("Follow-up queued", { description: "External send integration pending — logged an audit entry and created a follow-up task." });
             }}
           >
-            <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message BCBA
+            <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Queue Message Follow-Up
             <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700">Queued</span>
           </Button>
           <Button size="sm" variant="outline" onClick={() => setNoteDialogOpen(true)}>
@@ -1304,10 +1348,13 @@ function AskBlossomAuthRail({ auths, onOpen }: { auths: EnrichedAuth[]; onOpen: 
         <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Try asking</p>
         <div className="space-y-1.5">
           {prompts.map((p) => (
-            <button key={p} onClick={() => toast(`"${p}" — assistant coming soon`)}
-              className="w-full text-left text-[12px] px-3 py-2 rounded-xl bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition">
+            <Link
+              key={p}
+              to={`/ai/assistant?context=authorizations&q=${encodeURIComponent(p)}`}
+              className="block w-full text-left text-[12px] px-3 py-2 rounded-xl bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition"
+            >
               {p}
-            </button>
+            </Link>
           ))}
         </div>
       </div>
