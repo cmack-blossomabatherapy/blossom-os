@@ -7,7 +7,12 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
-import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/components/hr/IntegrationReadinessPanel";
+import {
+  IntegrationReadinessPanel,
+  useIntegrationRouteAvailability,
+  type OnboardingReadinessRow,
+} from "@/components/hr/IntegrationReadinessPanel";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
