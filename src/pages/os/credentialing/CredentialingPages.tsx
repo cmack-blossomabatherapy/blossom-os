@@ -1991,9 +1991,12 @@ export function CredentialingDashboardPage() {
       />
       <LoadErr loading={loading} error={error} />
 
-      {/* Saved views — operational filter presets */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mt-1">
-        {[
+      <FromReportsBanner />
+
+      <SavedViewsBar
+        pageKey="dashboard"
+        activeId={savedView}
+        builtIns={[
           { id: "all", label: "All records" },
           { id: "my-open-work", label: "My open work" },
           { id: "missing-info", label: "Missing Info" },
@@ -2002,29 +2005,30 @@ export function CredentialingDashboardPage() {
           { id: "expiring-30", label: "Expiring in 30 Days" },
           { id: "cr-not-ready", label: "CentralReach Not Ready" },
           { id: "ready-to-sync", label: "Ready To Sync" },
-        ].map((v) => (
-          <button
-            key={v.id}
-            onClick={() => applyView(v.id)}
-            className={cn(
-              "px-2.5 h-7 text-xs font-medium rounded-md whitespace-nowrap transition-colors border",
-              savedView === v.id
-                ? "bg-primary/10 text-primary border-primary/30"
-                : "bg-card text-muted-foreground hover:text-foreground border-border/60",
-            )}
-          >
-            {v.label}
-          </button>
-        ))}
-        {activeFilterCount > 0 && (
-          <button
-            onClick={clearFilters}
-            className="ml-1 px-2.5 h-7 text-xs font-medium rounded-md whitespace-nowrap text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-          >
-            <X className="h-3 w-3" /> Clear filters
-          </button>
-        )}
-      </div>
+          { id: "uncredentialed-bcbas", label: "Uncredentialed BCBAs" },
+        ]}
+        onApplyBuiltIn={applyView}
+        currentFilters={{
+          stateFilter, statusFilter, payerFilter, typeFilter, ownerFilter,
+          providerTypeFilter, crSyncFilter, missingOnly, overdueOnly, crNotReady, readyToSync, savedView,
+        }}
+        onApplyCustom={(f) => {
+          setStateFilter(f.stateFilter ?? "ALL");
+          setStatusFilter(f.statusFilter ?? "ALL");
+          setPayerFilter(f.payerFilter ?? "");
+          setTypeFilter(f.typeFilter ?? "ALL");
+          setOwnerFilter(f.ownerFilter ?? "");
+          setProviderTypeFilter(f.providerTypeFilter ?? "ALL");
+          setCrSyncFilter(f.crSyncFilter ?? "ALL");
+          setMissingOnly(!!f.missingOnly);
+          setOverdueOnly(!!f.overdueOnly);
+          setCrNotReady(!!f.crNotReady);
+          setReadyToSync(!!f.readyToSync);
+          setSavedView(f.savedView ?? "all");
+        }}
+        hasActiveFilters={activeFilterCount > 0}
+        onClear={clearFilters}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Active providers" value={kpis.activeProviders} tone="ok" />
