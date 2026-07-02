@@ -5,12 +5,6 @@ import {
   AlertTriangle, CheckCircle2, UserPlus, ClipboardList, RefreshCw,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
-import {
-  recruitingRecruiters,
-  recruitingStates,
-  staffingDemandByRegion,
-  type RecruitingCandidate,
-} from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import {
   useRecruitingCandidates,
@@ -22,8 +16,29 @@ import {
   useRecruitingEscalations,
   useRecruitingStaffingNeeds,
 } from "@/hooks/useRecruitingCandidates";
-import { getClientStaffingNeeds } from "@/data/staffing";
 import { cn } from "@/lib/utils";
+
+// Pass 7: RecruitingCandidate type comes from the live-backed legacy adapter
+// so this page never imports from the removed static demo module.
+type RecruitingCandidate = ReturnType<typeof useLegacyRecruitingCandidates>[number];
+
+// Local pressure-signal proxy: since staffing demand no longer comes from a
+// static regional map, we derive per-state demand from live open staffing needs.
+type LiveClientNeed = {
+  client: { id: string; state: string; childName: string; clinic: string; bcba: boolean };
+  priority: "High" | "Medium" | "Low";
+  daysWaiting: number;
+  role_needed: string;
+};
+
+const KNOWN_STATES = ["GA", "NC", "TN", "VA", "MD", "NJ"] as const;
+
+function normPriority(p: string | null | undefined): "High" | "Medium" | "Low" {
+  const v = (p ?? "").toLowerCase();
+  if (v.startsWith("high") || v === "urgent" || v === "critical") return "High";
+  if (v.startsWith("med")) return "Medium";
+  return "Low";
+}
 
 // Recruiting → Staffing & Operations → Recruiting Performance
 
