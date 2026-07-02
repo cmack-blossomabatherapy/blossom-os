@@ -124,12 +124,12 @@ export function TableFilterBar({
             <Select key={f.key} value={f.value} onValueChange={f.onChange}>
               <SelectTrigger
                 className={cn(
-                  "h-9 text-xs",
+                  "h-9 text-xs w-auto",
                   isActive && "border-primary/40 bg-primary/5 text-foreground",
                 )}
-                style={{ width: f.width ?? undefined, minWidth: f.width ? undefined : 130 }}
+                style={{ width: f.width ?? undefined, minWidth: f.width ? undefined : 140, maxWidth: 240 }}
               >
-                <span className="text-muted-foreground mr-1">{f.label}:</span>
+                <span className="text-muted-foreground mr-1 whitespace-nowrap">{f.label}:</span>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
