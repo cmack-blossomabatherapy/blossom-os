@@ -427,7 +427,6 @@ export default function OSHRMessages() {
             <HeaderBtn icon={Megaphone}>Send announcement</HeaderBtn>
             <HeaderBtn icon={BellRing}>Schedule reminder</HeaderBtn>
             <HeaderBtn icon={Pin}>Create update</HeaderBtn>
-            <HeaderBtn icon={Sparkles} primary to="/ai/assistant">Operational Insights</HeaderBtn>
           </div>
         </header>
 
@@ -697,13 +696,13 @@ export default function OSHRMessages() {
           {/* ASIDE */}
           <aside className="space-y-6">
             <section>
-              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2 px-1">Operational Insights</h3>
+              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2 px-1">Priority Actions</h3>
               <Card className="p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary grid place-items-center">
-                    <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.75} />
                   </div>
-                  <p className="text-[12.5px] font-medium tracking-tight">Communication assistant</p>
+                  <p className="text-[12.5px] font-medium tracking-tight">Communication follow-ups</p>
                 </div>
                 <div className="space-y-1.5">
                   {[

@@ -367,7 +367,6 @@ export default function OSHRCompliance() {
               URL.revokeObjectURL(url);
               toast({ title: "Report exported" });
             }}>Export CSV</HeaderBtn>
-            <HeaderBtn icon={Sparkles} primary to="/ai/assistant">Operational Insights</HeaderBtn>
           </div>
         </header>
 
@@ -582,23 +581,17 @@ export default function OSHRCompliance() {
             <Card className="p-5 sticky top-6">
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-7 w-7 rounded-xl bg-primary/10 grid place-items-center">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
+                  <ShieldCheck className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
                 </div>
-                <p className="text-[13px] font-medium tracking-tight">Operational Insights</p>
+                <p className="text-[13px] font-medium tracking-tight">Priority Actions</p>
               </div>
-              <p className="text-[12px] text-muted-foreground mb-4">Compliance & readiness shortcuts.</p>
-              <div className="space-y-1.5">
-                {[
-                  "Who has expiring certifications?",
-                  "Which employees are blocked from readiness?",
-                  "Show missing onboarding documents.",
-                  "Who still needs CPR renewal?",
-                  "Summarize pending compliance reviews.",
-                ].map(p => (
-                  <Link key={p} to="/ai/assistant" className="block text-[12.5px] text-foreground/80 hover:text-foreground rounded-lg px-2.5 py-1.5 hover:bg-muted transition-colors leading-snug">
-                    "{p}"
-                  </Link>
-                ))}
+              <p className="text-[12px] text-muted-foreground mb-4">Compliance &amp; readiness shortcuts.</p>
+              <div className="space-y-1.5 text-[12.5px] text-foreground/80">
+                <div className="px-2.5 py-1.5">Review expiring certifications this week</div>
+                <div className="px-2.5 py-1.5">Unblock employees flagged in readiness</div>
+                <div className="px-2.5 py-1.5">Request missing onboarding documents</div>
+                <div className="px-2.5 py-1.5">Follow up on pending CPR renewals</div>
+                <div className="px-2.5 py-1.5">Close out pending compliance reviews</div>
               </div>
             </Card>
 

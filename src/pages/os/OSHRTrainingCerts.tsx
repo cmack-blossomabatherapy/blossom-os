@@ -338,7 +338,6 @@ export default function OSHRTrainingCerts() {
             <HeaderBtn icon={Workflow} to="/training/manage">Create journey</HeaderBtn>
             <HeaderBtn icon={BookOpen} to="/training/manage">Create module</HeaderBtn>
             <HeaderBtn icon={ShieldCheck} to="/hr/compliance">Manage certifications</HeaderBtn>
-            <HeaderBtn icon={Sparkles} to="/ai/assistant" primary>Operational Insights</HeaderBtn>
           </div>
         </header>
 
@@ -618,11 +617,11 @@ export default function OSHRTrainingCerts() {
           <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
             <Card className="p-5">
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.75} />
-                <h3 className="text-sm font-medium tracking-tight">Operational Insights</h3>
+                <GraduationCap className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                <h3 className="text-sm font-medium tracking-tight">Workflow Guidance</h3>
               </div>
               <p className="text-[12px] text-muted-foreground mb-3">
-                Operational learning assistant — scoped to HR Team data and permissions.
+                Where to focus training and certification work.
               </p>
               <ul className="space-y-1.5">
                 {[

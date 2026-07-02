@@ -5,6 +5,7 @@ import {
   CheckCircle2, AlertTriangle, Clock, Workflow, X, MapPin, Briefcase,
   FileText, Heart, GraduationCap, ShieldCheck, ArrowUpRight, UserCircle2,
   Mail, Phone, Activity, BookOpen,
+  LifeBuoy,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -254,9 +255,6 @@ export default function OSHREmployeeSupport() {
             <Link to="/hr/workspace" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <Workflow className="h-3.5 w-3.5" strokeWidth={1.75} /> HR Workspace
             </Link>
-            <Link to="/ai/assistant" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
-              <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} /> Operational Insights
-            </Link>
           </div>
         </header>
 
@@ -402,8 +400,8 @@ export default function OSHREmployeeSupport() {
           <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
             <Card className="p-5">
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Operational Insights</h3>
+                <LifeBuoy className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
+                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Priority Actions</h3>
               </div>
               <div className="space-y-1.5">
                 {[

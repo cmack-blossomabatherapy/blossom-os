@@ -40,7 +40,7 @@ describe("Sprint 21 — HR Team menu + role mapping", () => {
 
   it("hr_team live paths cover the HR menu and exclude vault/nfc standalone paths", () => {
     const live = ROLE_SPECIFIC_LIVE_PATHS.hr_team!;
-    for (const p of ["/hr-team", "/user-management", "/hr/requests", "/hr/compliance", "/evaluations", "/device-requests", "/device-inventory", "/phone"]) {
+    for (const p of ["/hr-team", "/user-management", "/hr/requests", "/hr/compliance", "/hr/evaluations", "/device-requests", "/device-inventory", "/phone"]) {
       expect(live.has(p)).toBe(true);
     }
     expect(live.has("/user-logins-vault")).toBe(false);

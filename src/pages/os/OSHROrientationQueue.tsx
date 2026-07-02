@@ -329,7 +329,6 @@ export default function OSHROrientationQueue() {
             <HeaderBtn icon={Calendar} to="/hr/new-hires">Schedule orientation</HeaderBtn>
             <HeaderBtn icon={Send} onClick={() => toast({ title: "Reminders sent", description: "Upcoming orientation invitees notified." })}>Send reminders</HeaderBtn>
             <HeaderBtn icon={MessageSquare} to="/hr/messages">Message hires</HeaderBtn>
-            <HeaderBtn icon={Sparkles} primary to="/ai/assistant">Operational Insights</HeaderBtn>
           </div>
         </header>
 
@@ -607,11 +606,11 @@ export default function OSHROrientationQueue() {
           <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
             <Card className="p-5">
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.75} />
-                <h3 className="text-sm font-medium tracking-tight">Operational Insights</h3>
+                <CalendarClock className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                <h3 className="text-sm font-medium tracking-tight">Priority Actions</h3>
               </div>
               <p className="text-[12px] text-muted-foreground mb-3">
-                Orientation assistant — scoped to HR Team data and permissions.
+                Focus areas for the orientation queue this week.
               </p>
               <ul className="space-y-1.5">
                 {[

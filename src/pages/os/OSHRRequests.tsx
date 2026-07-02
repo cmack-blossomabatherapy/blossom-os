@@ -4,6 +4,7 @@ import {
   Inbox, Sparkles, Search, Filter, Plus, Send, CheckCircle2, AlertCircle,
   ChevronRight, X, Clock, MessageSquare, ArrowRight, UserCheck, ShieldAlert,
   ShieldCheck, GraduationCap, Flag, MailQuestion, ListChecks,
+  ClipboardList,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -341,7 +342,6 @@ export default function OSHRRequests() {
             <HeaderBtn icon={Plus} to="/hr/employee-support">Open employee support</HeaderBtn>
             <HeaderBtn icon={Send} to="/hr/messages">Message employee</HeaderBtn>
             <HeaderBtn icon={ListChecks} to="/hr/new-hires">New hire pipeline</HeaderBtn>
-            <HeaderBtn icon={Sparkles} primary to="/ai/assistant">Operational Insights</HeaderBtn>
           </div>
         </header>
 
@@ -571,23 +571,17 @@ export default function OSHRRequests() {
             <Card className="p-5 sticky top-6">
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-7 w-7 rounded-xl bg-primary/10 grid place-items-center">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
+                  <ClipboardList className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
                 </div>
-                <p className="text-[13px] font-medium tracking-tight">Operational Insights</p>
+                <p className="text-[13px] font-medium tracking-tight">Priority Actions</p>
               </div>
               <p className="text-[12px] text-muted-foreground mb-4">Operational support for HR workflows.</p>
-              <div className="space-y-1.5">
-                {[
-                  "Which requests are urgent?",
-                  "Show unresolved onboarding blockers.",
-                  "Who is waiting on follow-up?",
-                  "Which employees are blocked from readiness?",
-                  "Summarize open HR requests.",
-                ].map(p => (
-                  <Link key={p} to="/ai/assistant" className="block text-[12.5px] text-foreground/80 hover:text-foreground rounded-lg px-2.5 py-1.5 hover:bg-muted transition-colors leading-snug">
-                    "{p}"
-                  </Link>
-                ))}
+              <div className="space-y-1.5 text-[12.5px] text-foreground/80">
+                <div className="rounded-lg px-2.5 py-1.5">Triage urgent requests</div>
+                <div className="rounded-lg px-2.5 py-1.5">Unblock onboarding-related tickets</div>
+                <div className="rounded-lg px-2.5 py-1.5">Follow up on requests waiting on employees</div>
+                <div className="rounded-lg px-2.5 py-1.5">Escalate readiness blockers</div>
+                <div className="rounded-lg px-2.5 py-1.5">Close out resolved conversations</div>
               </div>
             </Card>
 
