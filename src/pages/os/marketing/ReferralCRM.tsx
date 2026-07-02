@@ -412,7 +412,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
   const view = (CONTACT_VIEWS.some((v) => v.id === viewRaw)
     ? viewRaw
     : "all") as (typeof CONTACT_VIEWS)[number]["id"];
-  const [q, setQ] = useUrlState("cq", "");
+  const [q, setQ] = useUrlState("cq", "", { history: "replace" });
   const [stateFilter, setStateFilter] = useUrlState("cs", "all");
   const [ownerFilter, setOwnerFilter] = useUrlState("co", "all");
   const [partnerFilter, setPartnerFilter] = useUrlState("cp", "all");
@@ -789,7 +789,7 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const view = (COMPANY_VIEWS.some((v) => v.id === viewRaw)
     ? viewRaw
     : "all") as (typeof COMPANY_VIEWS)[number]["id"];
-  const [q, setQ] = useUrlState("oq", "");
+  const [q, setQ] = useUrlState("oq", "", { history: "replace" });
   const [stateFilter, setStateFilter] = useUrlState("os", "all");
   const [tierFilter, setTierFilter] = useUrlState("ot", "all");
   const [ownerFilter, setOwnerFilter] = useUrlState("oo", "all");
@@ -1254,7 +1254,7 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
   const setDrawerFocusStage = (v: string | null) => setDrawerFocusStageRaw(v ?? "");
   const [statusFilter, setStatusFilter] = useUrlState("rs", "all");
   const [stageFilter, setStageFilter] = useUrlState("rp", "all");
-  const [rQuery, setRQuery] = useUrlState("rq", "");
+  const [rQuery, setRQuery] = useUrlState("rq", "", { history: "replace" });
   const [rStateFilter, setRStateFilter] = useUrlState("rst", "all");
   const [rServiceFilter, setRServiceFilter] = useUrlState("rsv", "all");
   const [rIntakeOwnerFilter, setRIntakeOwnerFilter] = useUrlState("rio", "all");
@@ -1619,7 +1619,7 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const [groupBy, setGroupBy] = useState<"owner" | "state" | "status">("owner");
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<Set<ID>>(new Set());
-  const [tQuery, setTQuery] = useUrlState("tq", "");
+  const [tQuery, setTQuery] = useUrlState("tq", "", { history: "replace" });
   const [tStatusFilter, setTStatusFilter] = useUrlState("ts", "all");
   const [tPriorityFilter, setTPriorityFilter] = useUrlState("tpr", "all");
   const [tOwnerFilter, setTOwnerFilter] = useUrlState("to", "all");
@@ -3329,7 +3329,7 @@ function SettingsModule() {
 // ===========================================================
 function FilesModule() {
   const s = useCrm();
-  const [q, setQ] = useUrlState("fq", "");
+  const [q, setQ] = useUrlState("fq", "", { history: "replace" });
   const [type, setType] = useUrlState("ft", "all");
   const [category, setCategory] = useUrlState("fc", "all");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -3563,7 +3563,7 @@ const AUDIT_ICON: Record<string, typeof Activity> = {
 
 function AuditModule() {
   const s = useCrm();
-  const [q, setQ] = useUrlState("aq", "");
+  const [q, setQ] = useUrlState("aq", "", { history: "replace" });
   const [action, setAction] = useUrlState("aa", "all");
   const [objectType, setObjectType] = useUrlState("ao", "all");
   const rows = s.auditLog.filter((r) => {
@@ -3640,7 +3640,7 @@ const ACTIVITY_FILTERS: { id: "all" | ActivityEvent["type"]; label: string }[] =
 function ActivitiesModule() {
   const s = useCrm();
   const [f, setF] = useUrlState("af", "all");
-  const [q, setQ] = useUrlState("aq2", "");
+  const [q, setQ] = useUrlState("aq2", "", { history: "replace" });
   const rows = s.activity.filter((a) => {
     if (f !== "all" && a.type !== f) return false;
     if (q) {
@@ -4874,7 +4874,7 @@ function PatientPipelineModule({
   onOpenContact, onOpenCompany,
 }: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
   const s = useCrm();
-  const [q, setQ] = useUrlState("ppq", "");
+  const [q, setQ] = useUrlState("ppq", "", { history: "replace" });
   const [statusFilter, setStatusFilter] = useUrlState("pps", "all");
   const [stateFilter, setStateFilter] = useUrlState("ppst", "all");
   const [intakeFilter, setIntakeFilter] = useUrlState("ppi", "all");
