@@ -563,47 +563,20 @@ export default function OSBCBA() {
           </section>
         </div>
 
-        {/* ── Quick actions + AI ── */}
-        <section className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <SectionTitle title="Quick actions" />
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-              <Quick to="/bcba/clients" icon={Users} label="Open caseload" />
-              <Quick to="/bcba/supervision" icon={Stethoscope} label="Supervision" />
-              <Quick to="/bcba/parent-training" icon={Baby} label="Parent training" />
-              <Quick to="/bcba/scheduling" icon={CalendarDays} label="Scheduling" />
-              <Quick to="/bcba/authorizations" icon={FileSignature} label="View PRs" />
-            </div>
-          </Card>
-
+        {/* ── Quick actions ── */}
+        <section>
           <Card>
-            <div className="flex items-center gap-2">
-              <div className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
-                <Sparkles className="size-4" />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-foreground">Insights</div>
-                <div className="text-xs text-muted-foreground">Scoped to your caseload</div>
-              </div>
+            <SectionTitle title="Quick actions" />
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+              <Quick to="/bcba/clients"        icon={Users}          label="Open caseload" />
+              <Quick to="/bcba/workspace"      icon={FileSignature}  label="Treatment plans" />
+              <Quick to="/bcba/supervision"    icon={Stethoscope}    label="Supervision" />
+              <Quick to="/bcba/parent-training" icon={Baby}          label="Parent training" />
+              <Quick to="/bcba/scheduling"     icon={CalendarDays}   label="Scheduling" />
+              <Quick to="/bcba/authorizations" icon={FileSignature}  label="Authorizations" />
+              <Quick to="/evaluations"         icon={ClipboardCheck} label="Evaluations" />
+              <Quick to="/reports"             icon={ChevronRight}   label="Reports" />
             </div>
-            <ul className="mt-4 space-y-2">
-              {[
-                "Which clients should I prioritize today?",
-                "Which PRs are due first this month?",
-                "Which clients are missing supervision?",
-                "Summarize my scheduling issues.",
-              ].map((q) => (
-                <li key={q}>
-                  <Link
-                    to={`/ai/assistant?q=${encodeURIComponent(q)}`}
-                    className="group flex items-center justify-between gap-2 rounded-xl bg-muted/60 px-3 py-2 text-sm text-foreground transition hover:bg-muted"
-                  >
-                    <span className="truncate">{q}</span>
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground transition group-hover:text-foreground" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
           </Card>
         </section>
 
