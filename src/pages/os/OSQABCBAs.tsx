@@ -205,7 +205,24 @@ export default function OSQABCBAs() {
   const [qaFilter, setQaFilter] = useState("all");
   const [urgencyFilter, setUrgencyFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
-  useQADeepLink({ items, loading, setOpenId, setQuery, setBcbaFilter });
+  // QA Pass 6 — the drawer id here is the BCBA name/group id, not an auth id.
+  // Resolvers translate ?id=/?focus=<authId> and ?bcba=<name> into the group id.
+  useQADeepLink({
+    items,
+    loading,
+    setOpenId,
+    setQuery,
+    setBcbaFilter,
+    resolveOpenIdForAuth: (authId) => {
+      const group = allBcbas.find((b) => b.auths.some((a) => a.id === authId));
+      return group ? group.id : null;
+    },
+    resolveOpenIdForBcba: (name) => {
+      const p = name.toLowerCase();
+      const match = allBcbas.find((b) => b.name.toLowerCase() === p);
+      return match ? match.id : null;
+    },
+  });
 
   const states  = useMemo(() => Array.from(new Set(allBcbas.flatMap(b => b.states))).sort(), [allBcbas]);
   const names   = useMemo(() => allBcbas.map(b => b.name).sort(), [allBcbas]);
