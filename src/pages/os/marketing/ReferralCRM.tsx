@@ -3116,7 +3116,7 @@ function ImportsModule() {
         <TableFilterBar
           search={{ value: q, onChange: setQ, placeholder: "Search by file name..." }}
           filters={[
-            { key: "status", label: "Status", value: statusF, onChange: setStatusF, options: [
+            { key: "status", label: "Status", value: statusF, onChange: setStatusF, countSource: batches, countValue: (b) => (b as ImportBatch).status, options: [
               { value: "all", label: "All statuses" },
               ...statuses.map((v) => ({ value: v, label: v })),
             ] },
