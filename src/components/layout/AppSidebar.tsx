@@ -712,7 +712,7 @@ export function AppSidebar({
                   variant="mobile"
                   onNavigate={() => {
                     onMobileOpenChange?.(false);
-                    navigate("/ask-blossom");
+                    navigate("/ai/assistant");
                   }}
                 />
               </div>
@@ -904,7 +904,7 @@ export function AppSidebar({
             <div className="pt-2">
               <AskBlossomCard
                 variant="desktop"
-                onNavigate={() => navigate("/ask-blossom")}
+                onNavigate={() => navigate("/ai/assistant")}
               />
             </div>
           )}
