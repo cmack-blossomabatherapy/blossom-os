@@ -520,16 +520,39 @@ function EmptyInvite({ onAdd, label = "Add first partner" }: { onAdd: () => void
   );
 }
 
-function RelationshipList({ partners, onAdd }: { partners: ReferralCompany[]; onAdd: () => void }) {
-  if (partners.length === 0) return <EmptyInvite onAdd={onAdd} />;
+function RelationshipList({
+  partners, onAdd, emptyLabel, emptyCopy, onView, onEdit, onLogOutreach, onAddTask,
+}: {
+  partners: ReferralCompany[];
+  onAdd: () => void;
+  emptyLabel?: string;
+  emptyCopy?: string;
+  onView?: (p: ReferralCompany) => void;
+  onEdit?: (p: ReferralCompany) => void;
+  onLogOutreach?: (p: ReferralCompany) => void;
+  onAddTask?: (p: ReferralCompany) => void;
+}) {
+  if (partners.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-10 text-center">
+        <HeartHandshake className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+        <h3 className="text-sm font-semibold text-foreground">{emptyLabel ?? "Add first partner"}</h3>
+        {emptyCopy && <p className="text-xs text-muted-foreground mt-2 max-w-md mx-auto">{emptyCopy}</p>}
+        <Button size="sm" className="mt-4" onClick={onAdd}><Plus className="h-4 w-4 mr-1.5" /> {emptyLabel ?? "Add first partner"}</Button>
+      </div>
+    );
+  }
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
       {partners.map((p) => (
-        <div key={p.id} className="rounded-2xl border border-border/70 bg-card p-4">
-          <div className="font-semibold">{p.company_name}</div>
-          <div className="text-xs text-muted-foreground">{p.company_type ?? "-"} - {p.relationship_stage}</div>
-          {p.main_email && <div className="text-xs text-muted-foreground mt-1 truncate">{p.main_email}</div>}
-        </div>
+        <PartnerCard
+          key={p.id}
+          p={p}
+          onView={onView ? () => onView(p) : undefined}
+          onEdit={onEdit ? () => onEdit(p) : undefined}
+          onLogOutreach={onLogOutreach ? () => onLogOutreach(p) : undefined}
+          onAddTask={onAddTask ? () => onAddTask(p) : undefined}
+        />
       ))}
     </div>
   );
@@ -548,14 +571,33 @@ type PartnerForm = {
   notes?: string;
 };
 
-function PartnerDialog({ open, onOpenChange, onSave }: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (p: Partial<ReferralCompany> & { company_name: string }) => Promise<void> }) {
+function PartnerDialog({ open, onOpenChange, onSave, initial }: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (p: Partial<ReferralCompany> & { company_name: string }) => Promise<void>; initial?: ReferralCompany }) {
   const [form, setForm] = useState<PartnerForm>({ company_type: "Therapy Practice", relationship_stage: "New" });
+  // Sync with initial when dialog opens
+  useMemo(() => {
+    if (open && initial) {
+      setForm({
+        company_name: initial.company_name,
+        company_type: initial.company_type ?? undefined,
+        main_phone: initial.main_phone ?? undefined,
+        main_email: initial.main_email ?? undefined,
+        city: initial.city ?? undefined,
+        state: initial.state ?? undefined,
+        source: initial.source ?? undefined,
+        relationship_stage: initial.relationship_stage ?? "New",
+        next_follow_up_at: initial.next_follow_up_at?.slice(0, 10) ?? undefined,
+        notes: initial.notes ?? undefined,
+      });
+    } else if (open && !initial) {
+      setForm({ company_type: "Therapy Practice", relationship_stage: "New" });
+    }
+  }, [open, initial]);
   const [saving, setSaving] = useState(false);
   const reset = () => setForm({ company_type: "Therapy Practice", relationship_stage: "New" });
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Add Referral Partner</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{initial ? "Edit Referral Partner" : "Add Referral Partner"}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <Input placeholder="Partner name *" value={form.company_name ?? ""} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className="col-span-2" />
           <Input placeholder="Main phone" value={form.main_phone ?? ""} onChange={(e) => setForm({ ...form, main_phone: e.target.value })} />
@@ -593,16 +635,19 @@ function PartnerDialog({ open, onOpenChange, onSave }: { open: boolean; onOpenCh
             });
             setSaving(false);
             onOpenChange(false); reset();
-          }}>{saving ? "Saving..." : "Save Partner"}</Button>
+          }}>{saving ? "Saving..." : initial ? "Save Changes" : "Save Partner"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function OutreachDialog({ open, onOpenChange, partners, onSave }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (o: { company_id: string; activity_type: string; outcome?: string | null; subject?: string; notes?: string; activity_date: string }) => Promise<void> }) {
+function OutreachDialog({ open, onOpenChange, partners, onSave, defaultCompanyId }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (o: { company_id: string; activity_type: string; outcome?: string | null; subject?: string; notes?: string; activity_date: string }) => Promise<void>; defaultCompanyId?: string }) {
   const initial = { activity_type: "Email", outcome: "Sent Email" as string | null, date: new Date().toISOString().slice(0, 10) };
-  const [form, setForm] = useState<{ company_id?: string; activity_type: string; outcome: string | null; subject?: string; notes?: string; date: string }>(initial);
+  const [form, setForm] = useState<{ company_id?: string; activity_type: string; outcome: string | null; subject?: string; notes?: string; date: string }>({ ...initial, company_id: defaultCompanyId });
+  useMemo(() => {
+    if (open) setForm((f) => ({ ...f, company_id: defaultCompanyId ?? f.company_id }));
+  }, [open, defaultCompanyId]);
   const [saving, setSaving] = useState(false);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -653,8 +698,11 @@ function OutreachDialog({ open, onOpenChange, partners, onSave }: { open: boolea
   );
 }
 
-function TaskDialog({ open, onOpenChange, partners, onSave }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (t: Partial<ReferralCrmTask> & { title: string }) => Promise<void> }) {
-  const [form, setForm] = useState<{ title?: string; company_id?: string; assigned_user_id?: string; due_date?: string; priority: string }>({ priority: "Medium" });
+function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (t: Partial<ReferralCrmTask> & { title: string }) => Promise<void>; defaultCompanyId?: string }) {
+  const [form, setForm] = useState<{ title?: string; company_id?: string; assigned_user_id?: string; due_date?: string; priority: string }>({ priority: "Medium", company_id: defaultCompanyId });
+  useMemo(() => {
+    if (open) setForm((f) => ({ ...f, company_id: defaultCompanyId ?? f.company_id }));
+  }, [open, defaultCompanyId]);
   const [saving, setSaving] = useState(false);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
