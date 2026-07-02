@@ -280,14 +280,23 @@ function FilterChipGroup({
   values,
   onClearGroup,
   totalCount,
+  collapsed: controlledCollapsed,
+  onToggle,
 }: {
   label: string;
   values: ChipValue[];
   onClearGroup: () => void;
   totalCount?: number;
+  collapsed?: boolean;
+  onToggle?: () => void;
 }) {
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [internalCollapsed, setInternalCollapsed] = React.useState(false);
+  const collapsed = controlledCollapsed ?? internalCollapsed;
   const multi = values.length > 1;
+  const handleToggle = () => {
+    if (onToggle) onToggle();
+    else setInternalCollapsed((c) => !c);
+  };
   return (
     <span className="inline-flex items-stretch overflow-hidden rounded-full border border-primary/20 bg-primary/5 text-[11px] text-primary">
       <span className="inline-flex items-center gap-1 px-2 py-0.5 font-medium">
@@ -328,7 +337,7 @@ function FilterChipGroup({
       {multi && (
         <button
           type="button"
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={handleToggle}
           className="inline-flex items-center border-l border-primary/20 px-1.5 hover:bg-primary/10"
           aria-label={`${collapsed ? "Expand" : "Collapse"} ${label} filters`}
         >
