@@ -698,6 +698,259 @@ function OutreachDialog({ open, onOpenChange, partners, onSave, defaultCompanyId
   );
 }
 
+function PartnerCard({
+  p, onView, onEdit, onLogOutreach, onAddTask, onArchive,
+}: {
+  p: ReferralCompany;
+  onView?: () => void;
+  onEdit?: () => void;
+  onLogOutreach?: () => void;
+  onAddTask?: () => void;
+  onArchive?: () => void;
+}) {
+  const archived = (p.status ?? "Active") === "Archived";
+  return (
+    <div className={`rounded-2xl border border-border/70 bg-card p-4 ${archived ? "opacity-60" : ""}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-semibold truncate">{p.company_name}</div>
+          <div className="text-xs text-muted-foreground">{p.company_type ?? "-"} - {p.city ?? "-"}{p.state ? `, ${p.state}` : ""}</div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {archived && <Badge variant="secondary">Archived</Badge>}
+          <Badge variant="outline">{p.relationship_stage}</Badge>
+        </div>
+      </div>
+      <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
+        {p.main_phone && <div>{p.main_phone}</div>}
+        {p.main_email && <div className="truncate">{p.main_email}</div>}
+        {p.last_contacted_at && <div>Last contact: {p.last_contacted_at.slice(0, 10)} ({daysSince(p.last_contacted_at)}d ago)</div>}
+        {p.next_follow_up_at && <div>Next: {p.next_follow_up_at.slice(0, 10)}</div>}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {onView && <Button size="sm" variant="ghost" onClick={onView}><Eye className="h-3.5 w-3.5 mr-1" />View</Button>}
+        {onEdit && <Button size="sm" variant="ghost" onClick={onEdit}><Pencil className="h-3.5 w-3.5 mr-1" />Edit</Button>}
+        {onLogOutreach && <Button size="sm" variant="ghost" onClick={onLogOutreach}><MessageSquare className="h-3.5 w-3.5 mr-1" />Log</Button>}
+        {onAddTask && <Button size="sm" variant="ghost" onClick={onAddTask}><CalendarPlus className="h-3.5 w-3.5 mr-1" />Follow-up</Button>}
+        {onArchive && <Button size="sm" variant="ghost" onClick={onArchive}><Archive className="h-3.5 w-3.5 mr-1" />{archived ? "Restore" : "Archive"}</Button>}
+      </div>
+    </div>
+  );
+}
+
+function NeedsAttentionPanel({
+  data, onOpenPartner,
+}: {
+  data: {
+    stalePartners: ReferralCompany[];
+    warmNoFollowUp: ReferralCompany[];
+    overdueTasksList: ReferralCrmTask[];
+    newPartnersNoOutreach: ReferralCompany[];
+  };
+  onOpenPartner: (p: ReferralCompany) => void;
+}) {
+  const groups: { title: string; items: ReferralCompany[]; hint: string }[] = [
+    { title: "Stale partners (30d+)", items: data.stalePartners.slice(0, 6), hint: "No outreach logged in the last 30 days." },
+    { title: "Warm without follow-up", items: data.warmNoFollowUp.slice(0, 6), hint: "Warm or new partners with no scheduled next step." },
+    { title: "New with no outreach", items: data.newPartnersNoOutreach.slice(0, 6), hint: "Partners added but never contacted." },
+  ];
+  return (
+    <div className="rounded-2xl border border-border/70 bg-card p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <AlertTriangle className="h-4 w-4 text-amber-500" />
+        <div className="text-sm font-semibold">Needs attention</div>
+        <Badge variant="outline" className="ml-auto">{data.overdueTasksList.length} overdue tasks</Badge>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {groups.map((g) => (
+          <div key={g.title} className="rounded-xl border border-border/60 bg-background/50 p-3">
+            <div className="text-xs font-medium mb-1">{g.title}</div>
+            <div className="text-[11px] text-muted-foreground mb-2">{g.hint}</div>
+            {g.items.length === 0 ? (
+              <div className="text-xs text-muted-foreground italic">All clear</div>
+            ) : (
+              <ul className="space-y-1">
+                {g.items.map((p) => (
+                  <li key={p.id}>
+                    <button className="text-xs text-left hover:underline truncate w-full" onClick={() => onOpenPartner(p)}>
+                      {p.company_name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SourceHandoffsPanel({ partners, outreach }: { partners: ReferralCompany[]; outreach: ReferralActivity[] }) {
+  // Aggregate BD-safe view of lead source signals from referral partner data.
+  const rows = useMemo(() => {
+    const map = new Map<string, { source: string; type: string; states: Set<string>; count: number; last: string | null }>();
+    for (const p of partners) {
+      const src = (p.source && p.source.trim()) || "Direct / Manual";
+      const key = `${src}||${p.company_type ?? "Unknown"}`;
+      const entry = map.get(key) ?? { source: src, type: p.company_type ?? "Unknown", states: new Set<string>(), count: 0, last: null };
+      entry.count += 1;
+      if (p.state) entry.states.add(p.state);
+      const lc = p.last_contacted_at ?? null;
+      if (lc && (!entry.last || new Date(lc) > new Date(entry.last))) entry.last = lc;
+      map.set(key, entry);
+    }
+    // enrich last activity from outreach
+    const byCompany = new Map<string, string>();
+    for (const o of outreach) {
+      if (!o.company_id) continue;
+      const prev = byCompany.get(o.company_id);
+      if (!prev || new Date(o.activity_date) > new Date(prev)) byCompany.set(o.company_id, o.activity_date);
+    }
+    for (const p of partners) {
+      const last = byCompany.get(p.id);
+      if (!last) continue;
+      const src = (p.source && p.source.trim()) || "Direct / Manual";
+      const key = `${src}||${p.company_type ?? "Unknown"}`;
+      const entry = map.get(key);
+      if (entry && (!entry.last || new Date(last) > new Date(entry.last))) entry.last = last;
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [partners, outreach]);
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-2xl border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+        Business Development read-only view of lead source signals derived from referral partner activity. Full marketing source
+        analytics live in the Marketing workspace; deeper source integrations will surface here as they come online.
+      </div>
+      {rows.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-10 text-center">
+          <Inbox className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+          <div className="text-sm font-semibold">No source signals yet</div>
+          <div className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+            Once partners have a source tagged and outreach is logged, this view will show handoff readiness by source and channel.
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-border/70 bg-card overflow-hidden">
+          <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground border-b border-border/60">
+            <div className="col-span-4">Source</div>
+            <div className="col-span-3">Channel / Type</div>
+            <div className="col-span-2">States</div>
+            <div className="col-span-1 text-right">Partners</div>
+            <div className="col-span-2">Last activity</div>
+          </div>
+          {rows.map((r) => (
+            <div key={`${r.source}-${r.type}`} className="grid grid-cols-12 gap-2 px-3 py-2 text-xs border-b border-border/40 last:border-0">
+              <div className="col-span-4 truncate">{r.source}</div>
+              <div className="col-span-3 text-muted-foreground truncate">{r.type}</div>
+              <div className="col-span-2 text-muted-foreground truncate">{Array.from(r.states).join(", ") || "-"}</div>
+              <div className="col-span-1 text-right">{r.count}</div>
+              <div className="col-span-2 text-muted-foreground">{r.last ? r.last.slice(0, 10) : "-"}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PartnerDetailDialog({
+  partner, onClose, outreach, tasks, onEdit, onLogOutreach, onAddTask, onArchive,
+}: {
+  partner: ReferralCompany | null;
+  onClose: () => void;
+  outreach: ReferralActivity[];
+  tasks: ReferralCrmTask[];
+  onEdit: (p: ReferralCompany) => void;
+  onLogOutreach: (p: ReferralCompany) => void;
+  onAddTask: (p: ReferralCompany) => void;
+  onArchive: (p: ReferralCompany) => void;
+}) {
+  if (!partner) return null;
+  const p = partner;
+  const relatedOutreach = outreach.filter((o) => o.company_id === p.id).slice(0, 20);
+  const relatedTasks = tasks.filter((t) => t.company_id === p.id).slice(0, 20);
+  const archived = (p.status ?? "Active") === "Archived";
+  return (
+    <Dialog open={!!partner} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {p.company_name}
+            {archived && <Badge variant="secondary">Archived</Badge>}
+            <Badge variant="outline">{p.relationship_stage}</Badge>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 text-sm">
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <Field label="Type" value={p.company_type ?? "-"} />
+            <Field label="Source" value={p.source ?? "-"} />
+            <Field label="Location" value={`${p.city ?? "-"}${p.state ? `, ${p.state}` : ""}`} />
+            <Field label="Phone" value={p.main_phone ?? "-"} />
+            <Field label="Email" value={p.main_email ?? "-"} />
+            <Field label="Last contacted" value={p.last_contacted_at ? p.last_contacted_at.slice(0, 10) : "-"} />
+            <Field label="Next follow-up" value={p.next_follow_up_at ? p.next_follow_up_at.slice(0, 10) : "-"} />
+          </div>
+          {p.notes && (
+            <div>
+              <div className="text-xs font-medium mb-1">Notes</div>
+              <div className="text-xs text-muted-foreground whitespace-pre-wrap">{p.notes}</div>
+            </div>
+          )}
+          <div>
+            <div className="text-xs font-medium mb-1">Recent outreach ({relatedOutreach.length})</div>
+            {relatedOutreach.length === 0 ? (
+              <div className="text-xs text-muted-foreground italic">No outreach logged.</div>
+            ) : (
+              <ul className="space-y-1 max-h-40 overflow-auto">
+                {relatedOutreach.map((o) => (
+                  <li key={o.id} className="text-xs">
+                    <span className="text-muted-foreground">{o.activity_date.slice(0, 10)}</span> - {o.activity_type}
+                    {o.subject ? ` - ${o.subject}` : ""}{o.outcome ? ` (${o.outcome})` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <div className="text-xs font-medium mb-1">Related tasks ({relatedTasks.length})</div>
+            {relatedTasks.length === 0 ? (
+              <div className="text-xs text-muted-foreground italic">No tasks.</div>
+            ) : (
+              <ul className="space-y-1 max-h-40 overflow-auto">
+                {relatedTasks.map((t) => (
+                  <li key={t.id} className="text-xs">
+                    <span className={t.status === "Done" ? "line-through text-muted-foreground" : ""}>{t.title}</span>
+                    <span className="text-muted-foreground"> - {t.due_date ?? "no due"} - {t.priority ?? "Medium"}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+        <DialogFooter className="flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => onEdit(p)}><Pencil className="h-3.5 w-3.5 mr-1" />Edit</Button>
+          <Button variant="outline" size="sm" onClick={() => onLogOutreach(p)}><MessageSquare className="h-3.5 w-3.5 mr-1" />Log outreach</Button>
+          <Button variant="outline" size="sm" onClick={() => onAddTask(p)}><CalendarPlus className="h-3.5 w-3.5 mr-1" />Add follow-up</Button>
+          <Button variant="outline" size="sm" onClick={() => onArchive(p)}><Archive className="h-3.5 w-3.5 mr-1" />{archived ? "Restore" : "Archive"}</Button>
+          <Button size="sm" onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-xs">{value}</div>
+    </div>
+  );
+}
+
 function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (t: Partial<ReferralCrmTask> & { title: string }) => Promise<void>; defaultCompanyId?: string }) {
   const [form, setForm] = useState<{ title?: string; company_id?: string; assigned_user_id?: string; due_date?: string; priority: string }>({ priority: "Medium", company_id: defaultCompanyId });
   useMemo(() => {
