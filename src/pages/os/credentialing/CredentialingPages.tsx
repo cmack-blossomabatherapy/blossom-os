@@ -277,19 +277,38 @@ function SavedViewsBar<T extends Record<string, unknown>>({
 /* -------------------------------------------------------------------------- */
 /* CentralReach readiness helpers                                             */
 /* -------------------------------------------------------------------------- */
+/**
+ * CentralReach readiness split into two buckets:
+ *  - `required`: operational data we can't send without. These block "Ready To Sync".
+ *  - `recommended`: nice-to-have identifiers (CentralReach IDs). They do NOT
+ *    block Ready To Sync because we may not have the CR IDs yet — we only
+ *    surface them so users know what's still missing for a clean handoff.
+ * Uses the shared APPROVED_CRED_STATUSES list so we don't invent a new one.
+ */
+function readinessCheck(
+  record: CredentialingRecord,
+  provider: CredentialingProvider | null | undefined,
+): { required: string[]; recommended: string[] } {
+  const required: string[] = [];
+  const recommended: string[] = [];
+  if (!provider?.npi) required.push("Provider NPI");
+  if (!provider?.license_state) required.push("Provider license state");
+  if (!record.payer_name) required.push("Payer");
+  if (!record.state) required.push("State");
+  if (!APPROVED_CRED_STATUSES.includes(record.status)) {
+    required.push(`Credentialing status must be one of: ${APPROVED_CRED_STATUSES.join(", ")}`);
+  }
+  if (!provider?.centralreach_provider_id) recommended.push("Provider CentralReach ID");
+  if (!record.centralreach_external_id) recommended.push("Record CentralReach ID");
+  return { required, recommended };
+}
+
 function readinessMissingFields(
   record: CredentialingRecord,
   provider: CredentialingProvider | null | undefined,
 ): string[] {
-  const missing: string[] = [];
-  if (!provider?.centralreach_provider_id) missing.push("Provider CentralReach ID");
-  if (!record.centralreach_external_id) missing.push("Record CentralReach ID");
-  if (!provider?.npi) missing.push("Provider NPI");
-  if (!provider?.license_state) missing.push("Provider license state");
-  if (!record.payer_name) missing.push("Payer");
-  if (!record.state) missing.push("State");
-  if (!APPROVED_CRED_STATUSES.includes(record.status)) missing.push("Approved / credentialable status");
-  return missing;
+  // Backwards-compatible helper: only the hard-required fields block sync.
+  return readinessCheck(record, provider).required;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -842,7 +861,9 @@ function RecordDetailSheet({
     if (status === "Ready To Sync") {
       const missing = readinessMissingFields(record, provider);
       if (missing.length) {
-        toast.error(`Can't mark Ready To Sync — missing: ${missing.join(", ")}`);
+        toast.error(
+          `Not ready yet — please fill in ${missing.length === 1 ? "this field" : "these fields"}: ${missing.join(", ")}`,
+        );
         return;
       }
     }
@@ -1144,20 +1165,32 @@ function RecordDetailSheet({
                 <Field label="Last record update" value={record.updated_at ? new Date(record.updated_at).toLocaleString() : null} />
                 <Field label="Last readiness update" value={record.centralreach_last_readiness_at ? new Date(record.centralreach_last_readiness_at).toLocaleString() : null} />
                 {(() => {
-                  const missing = readinessMissingFields(record, provider);
-                  if (!missing.length) {
-                    return (
-                      <div className="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs p-3">
-                        All required identifiers are present. This record can be marked Ready To Sync.
-                      </div>
-                    );
-                  }
+                  const { required, recommended } = readinessCheck(record, provider);
                   return (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50/70 text-amber-900 text-xs p-3">
-                      <div className="font-medium mb-1">Missing before Ready To Sync ({missing.length})</div>
-                      <ul className="list-disc pl-4 space-y-0.5">
-                        {missing.map((m) => <li key={m}>{m}</li>)}
-                      </ul>
+                    <div className="space-y-2">
+                      {required.length === 0 ? (
+                        <div className="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs p-3">
+                          Ready to sync — every required field is filled in.
+                          {recommended.length > 0
+                            ? " CentralReach IDs are optional but recommended for a cleaner handoff."
+                            : ""}
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50/70 text-amber-900 text-xs p-3">
+                          <div className="font-medium mb-1">Not ready yet — fill in {required.length} required field{required.length === 1 ? "" : "s"}</div>
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            {required.map((m) => <li key={m}>{m}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      {recommended.length > 0 && (
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-xs p-3">
+                          <div className="font-medium mb-1">Recommended (won't block sync)</div>
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            {recommended.map((m) => <li key={m}>{m}</li>)}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}

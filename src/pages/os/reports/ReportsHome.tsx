@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Sparkles, Plus, Bookmark, Star, History,
-  ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Trash2,
+  ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Trash2, X,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -27,9 +27,18 @@ import { useAuthorizationReportMetrics } from "@/hooks/useAuthorizationReportMet
 
 export default function ReportsHome() {
   const { role } = useOSRole();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get("category");
   const reports = useMemo(() => visibleReportsForRole(role), [role]);
+  const activeCategoryDef = useMemo(
+    () => (activeCategory ? REPORT_CATEGORIES.find(c => c.id === activeCategory) : null),
+    [activeCategory],
+  );
+  function clearCategoryFilter() {
+    const next = new URLSearchParams(searchParams);
+    next.delete("category");
+    setSearchParams(next, { replace: true });
+  }
   const authReportMetrics = useAuthorizationReportMetrics();
   // Overlay live Authorizations KPI previews so report cards never render
   // the catalog's bare "-" placeholders for those three reports.
@@ -72,9 +81,20 @@ export default function ReportsHome() {
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const filteredReports = search
-    ? reportsWithLive.filter(r => (r.title + r.description + (r.tags || []).join(" ")).toLowerCase().includes(search.toLowerCase()))
-    : reportsWithLive;
+  // When a category filter is active, search prioritizes matches inside the
+  // active category first, then the rest — but never hides other matches.
+  const filteredReports = useMemo(() => {
+    if (!search) return reportsWithLive;
+    const q = search.toLowerCase();
+    const matches = reportsWithLive.filter(r =>
+      (r.title + r.description + (r.tags || []).join(" ")).toLowerCase().includes(q),
+    );
+    if (!activeCategory) return matches;
+    return [
+      ...matches.filter(r => r.category === activeCategory),
+      ...matches.filter(r => r.category !== activeCategory),
+    ];
+  }, [reportsWithLive, search, activeCategory]);
 
   function onFav(id: string) { setFavs(toggleFavorite(id)); }
 
@@ -128,10 +148,21 @@ export default function ReportsHome() {
         <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[hsl(265_100%_90%)] opacity-50 blur-3xl" />
         <div className="absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-[hsl(215_100%_90%)] opacity-40 blur-3xl" />
         <div className="relative">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="rounded-full bg-white/70 text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(265_70%_55%)]">
               Reports OS · {roleLabel}
             </Badge>
+            {activeCategoryDef && (
+              <button
+                type="button"
+                onClick={clearCategoryFilter}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(265_70%_55%/0.35)] bg-white/80 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)] hover:bg-white"
+                aria-label={`Clear ${activeCategoryDef.name} filter`}
+              >
+                {activeCategoryDef.name} focus
+                <X className="h-3 w-3" />
+              </button>
+            )}
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/60 px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -140,9 +171,25 @@ export default function ReportsHome() {
               Live
             </span>
           </div>
-          <h1 className="mt-3 text-[34px] font-semibold tracking-tight md:text-[40px]">Reports &amp; Analytics</h1>
+          <h1 className="mt-3 text-[34px] font-semibold tracking-tight md:text-[40px]">
+            {activeCategoryDef ? `${activeCategoryDef.name} Reports` : "Reports & Analytics"}
+          </h1>
           <p className="mt-1 max-w-2xl text-[14px] text-muted-foreground">
-            Operational intelligence for every department. Browse dashboards across your role.
+            {activeCategoryDef ? (
+              <>
+                Focused on {activeCategoryDef.name.toLowerCase()} reports.{" "}
+                <button
+                  type="button"
+                  onClick={clearCategoryFilter}
+                  className="font-medium text-[hsl(265_70%_55%)] underline-offset-2 hover:underline"
+                >
+                  Clear filter to view all reports
+                </button>
+                .
+              </>
+            ) : (
+              "Operational intelligence for every department. Browse dashboards across your role."
+            )}
           </p>
 
           {/* AI summary */}
@@ -321,11 +368,15 @@ export default function ReportsHome() {
       {/* ============== ALL REPORTS (grouped by category) ============== */}
       <section className="mt-10">
         <SectionHeader
-          title={`All reports · ${reports.length}`}
-          subtitle={`Every report available for ${roleLabel}, grouped by category.`}
+          title={activeCategoryDef
+            ? `${activeCategoryDef.name} reports · ${reports.filter(r => r.category === activeCategoryDef.id).length}`
+            : `All reports · ${reports.length}`}
+          subtitle={activeCategoryDef
+            ? `Showing ${activeCategoryDef.name.toLowerCase()} reports first. Other categories are listed below.`
+            : `Every report available for ${roleLabel}, grouped by category.`}
         />
-        <div className="mt-4 space-y-6">
-          {categoriesOrdered.map(cat => {
+        {(() => {
+          const renderCat = (cat: (typeof categoriesOrdered)[number]) => {
             const inCat = reports
               .filter(r => r.category === cat.id)
               .sort((a, b) => b.popularity - a.popularity);
@@ -352,8 +403,40 @@ export default function ReportsHome() {
                 </div>
               </div>
             );
-          })}
-        </div>
+          };
+          if (!activeCategoryDef) {
+            return <div className="mt-4 space-y-6">{categoriesOrdered.map(renderCat)}</div>;
+          }
+          const active = categoriesOrdered.find(c => c.id === activeCategoryDef.id);
+          const others = categoriesOrdered.filter(c => c.id !== activeCategoryDef.id);
+          return (
+            <div className="mt-4 space-y-8">
+              {active && renderCat(active)}
+              {others.length > 0 && (
+                <div className="pt-4 border-t border-border/60">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                      <h3 className="text-[13.5px] font-semibold tracking-tight text-muted-foreground">
+                        Other available reports
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        Not part of the current {activeCategoryDef.name.toLowerCase()} focus.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearCategoryFilter}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-[hsl(265_70%_55%)] hover:underline"
+                    >
+                      <X className="h-3 w-3" /> Clear filter
+                    </button>
+                  </div>
+                  <div className="space-y-6">{others.map(renderCat)}</div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </section>
 
       {/* ============== RECENT + FAVORITES ============== */}
