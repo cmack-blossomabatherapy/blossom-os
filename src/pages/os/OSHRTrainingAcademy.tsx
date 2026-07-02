@@ -391,7 +391,18 @@ export default function OSHRTrainingAcademy() {
               <p className="text-[12px] text-muted-foreground mb-3">
                 Training completions and onboarding records only sync when the provider is connected.
               </p>
-              <IntegrationReadinessSummary rows={data.onboarding} />
+              <ReadinessFilterChips
+                value={readinessFilter}
+                onChange={setReadinessFilter}
+                counts={readinessCounts}
+                className="mb-3"
+              />
+              <IntegrationReadinessSummary rows={filteredOnboarding} />
+              <p className="mt-2 text-[10.5px] text-muted-foreground">
+                {readinessFilter === "all"
+                  ? `${data.onboarding.length} onboarding record${data.onboarding.length === 1 ? "" : "s"}`
+                  : `${filteredOnboarding.length} of ${data.onboarding.length} record${data.onboarding.length === 1 ? "" : "s"} match this filter`}
+              </p>
             </Card>
 
             <Card className="p-5">
