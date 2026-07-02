@@ -22,7 +22,7 @@ import {
 } from "@/hooks/useRecruitingCandidates";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
-import { RecruitingIntegrationsPanel } from "@/components/recruiting/RecruitingIntegrationsPanel";
+import { IntegrationsHubPointer } from "@/components/integrations/IntegrationsHubPointer";
 import { useRecruitingActivity } from "@/hooks/useRecruitingMutations";
 
 type Tone = "ok" | "warn" | "crit";
@@ -454,7 +454,10 @@ export default function OSRecruitingWorkspace() {
               </div>
             </Card>
 
-            <RecruitingIntegrationsPanel />
+            <IntegrationsHubPointer
+              scope="Recruiting"
+              description="Apploi, Outlook, and Viventium connection state now lives in Admin → Integrations so every department sees the same readiness signals."
+            />
 
             <RecruitingActivityCard />
           </aside>
