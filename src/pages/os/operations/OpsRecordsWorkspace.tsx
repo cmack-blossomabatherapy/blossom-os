@@ -21,6 +21,7 @@ export type FieldDef = {
 export type ColumnDef = {
   key: string;
   label: string;
+  render?: (row: OpsRecord) => ReactNode;
 };
 
 export type StatusOption = {
@@ -222,6 +223,9 @@ export default function OpsRecordsWorkspace(props: OpsRecordsWorkspaceProps) {
                 <tr key={r.id} className="border-b border-border/40 last:border-0 hover:bg-muted/30">
                   {columns.map((c) => {
                     const val = r[c.key] ?? "";
+                    if (c.render) {
+                      return <td key={c.key} className="px-4 py-3 text-foreground/85">{c.render(r)}</td>;
+                    }
                     if (c.key === statusField && statusOptions.length) {
                       const opt = statusOptions.find((s) => s.value === val);
                       return (
