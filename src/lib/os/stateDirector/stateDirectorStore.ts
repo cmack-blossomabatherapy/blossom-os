@@ -88,8 +88,8 @@ function mutate(fn: (draft: StateDirectorSnapshot) => StateDirectorSnapshot | vo
     tasks: current.tasks.map((t) => ({ ...t, notes: [...t.notes] })),
     activity: [...current.activity],
   };
-  const returned = fn(clone);
-  const next: StateDirectorSnapshot = returned ?? clone;
+  const returned = fn(clone) as StateDirectorSnapshot | void;
+  const next: StateDirectorSnapshot = returned === undefined ? clone : returned;
   adapter.write(next);
   return next;
 }
