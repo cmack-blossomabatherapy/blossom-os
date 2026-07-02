@@ -1,18 +1,13 @@
+import { useMemo, useState } from "react";
 import { OSShell } from "../OSShell";
 import { Link } from "react-router-dom";
 import {
   Stethoscope, UserCheck, Eye, FileCheck2, BarChart3, ClipboardCheck,
-  AlertTriangle, ShieldCheck, Phone, Plug, ArrowUpRight,
+  AlertTriangle, ShieldCheck, Phone, Plug, ArrowUpRight, Users, FileText,
 } from "lucide-react";
-
-const SNAPSHOT = [
-  { label: "BCBAs under oversight", value: "—", hint: "active caseloads", icon: UserCheck },
-  { label: "Supervision risk",      value: "—", hint: "behind / at risk",  icon: Eye },
-  { label: "Treatment plans queued",value: "—", hint: "awaiting review",   icon: FileCheck2 },
-  { label: "Progress reports due",  value: "—", hint: "next 14 days",      icon: BarChart3 },
-  { label: "Open evaluations",      value: "—", hint: "in process",        icon: ClipboardCheck },
-  { label: "Clinical escalations",  value: "—", hint: "needs attention",   icon: AlertTriangle },
-];
+import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { daysUntil } from "@/data/authorizations";
 
 const ACTIONS = [
   { label: "BCBA Oversight",         to: "/assigned-bcbas",         icon: UserCheck },
@@ -26,6 +21,66 @@ const ACTIONS = [
 ];
 
 export default function ClinicalDirectorDashboard() {
+  const [stateFilter, setStateFilter] = useState<string>("");
+  const cr = useCentralReachOps({ stateFilter: stateFilter || null });
+  const auths = useLiveAuthorizations();
+
+  const states = useMemo(() => {
+    const s = new Set<string>();
+    cr.rbtRoster.forEach((r) => r.state && s.add(r.state));
+    cr.bcbaRoster.forEach((r) => r.state && s.add(r.state));
+    return Array.from(s).sort();
+  }, [cr.rbtRoster, cr.bcbaRoster]);
+
+  const supervisionRisk = cr.coverageRisks.filter(
+    (r) => r.level === "at_risk" || r.level === "uncovered",
+  ).length;
+
+  const treatmentPlansQueued = auths.qaItems.filter(
+    (a) => a.stage === "In QA Review" || a.stage === "Awaiting Submission" || a.stage === "Submitted",
+  ).length;
+
+  const progressReportsDue = auths.qaItems.filter((a) => {
+    const d = daysUntil(a.expirationDate);
+    return d !== null && d <= 30;
+  }).length;
+
+  const escalations = auths.qaItems.filter((a) => {
+    const meta = auths.metaById.get(a.id);
+    return a.stage === "Denied" || meta?.priority === "urgent" || meta?.priority === "high";
+  }).length;
+
+  const openEvaluations = auths.qaItems.filter(
+    (a) => (a.missingRequirements?.length ?? 0) > 0,
+  ).length;
+
+  const crConnected = cr.totalSessions > 0;
+  const lastSession = useMemo(() => {
+    let latest: string | null = null;
+    cr.pairingsByClient.forEach((p) => {
+      const d = p.lastRbtSessionDate;
+      if (d && (!latest || d > latest)) latest = d;
+    });
+    return latest;
+  }, [cr.pairingsByClient]);
+
+  const snapshot: Array<{ label: string; value: number | string; hint: string; icon: typeof UserCheck; isText?: boolean }> = [
+    { label: "BCBAs under oversight", value: cr.counts.bcbaCount,      hint: "active in last 60d", icon: UserCheck },
+    { label: "Active clients",        value: cr.counts.activeClients,  hint: "with sessions",       icon: Users },
+    { label: "Supervision risk",      value: supervisionRisk,          hint: "uncovered / at-risk", icon: Eye },
+    { label: "Treatment plans queued",value: treatmentPlansQueued,     hint: "awaiting review",     icon: FileCheck2 },
+    { label: "Progress reports due",  value: progressReportsDue,       hint: "next 30 days",        icon: BarChart3 },
+    { label: "Open evaluations",      value: openEvaluations,          hint: "missing items",       icon: ClipboardCheck },
+    { label: "Clinical escalations",  value: escalations,              hint: "needs attention",     icon: AlertTriangle },
+    { label: "CentralReach sync",     value: crConnected ? "Data available" : "Not connected", hint: lastSession ? `Last session ${lastSession}` : "No CR data yet", icon: Plug, isText: true },
+  ];
+
+  const topRisks = cr.coverageRisks.slice(0, 6);
+  const topAging = auths.qaItems
+    .filter((a) => a.expirationDate)
+    .sort((a, b) => (a.expirationDate! < b.expirationDate! ? -1 : 1))
+    .slice(0, 6);
+
   return (
     <OSShell>
       <div className="space-y-6 p-6 max-w-7xl mx-auto">
@@ -39,22 +94,35 @@ export default function ClinicalDirectorDashboard() {
               Oversight of clinical quality, supervision health, treatment plans, and escalations.
             </p>
           </div>
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-accent"
-          >
-            <ArrowUpRight className="h-4 w-4" /> Export clinical summary
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={stateFilter}
+              onChange={(e) => setStateFilter(e.target.value)}
+              className="rounded-md border border-border bg-background px-2 py-2 text-sm"
+              aria-label="State filter"
+            >
+              <option value="">All states</option>
+              {states.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <Link
+              to="/reports"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-accent"
+            >
+              <ArrowUpRight className="h-4 w-4" /> Go to Reports
+            </Link>
+          </div>
         </header>
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {SNAPSHOT.map((s) => (
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {snapshot.map((s) => (
             <div key={s.label} className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{s.label}</span>
                 <s.icon className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="mt-2 text-2xl font-semibold">{s.value}</div>
+              <div className={"mt-2 font-semibold " + (s.isText ? "text-base" : "text-2xl")}>
+                {cr.loading || auths.loading ? "…" : String(s.value)}
+              </div>
               <div className="text-xs text-muted-foreground mt-1">{s.hint}</div>
             </div>
           ))}
@@ -77,16 +145,71 @@ export default function ClinicalDirectorDashboard() {
           </div>
         </section>
 
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-lg border border-border bg-card">
+            <div className="border-b border-border px-4 py-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold flex items-center gap-2"><Eye className="h-4 w-4" /> Supervision Risk</h2>
+              <Link to="/supervision-visibility" className="text-xs text-primary hover:underline">Open</Link>
+            </div>
+            <div className="divide-y divide-border">
+              {topRisks.length === 0 && (
+                <div className="p-4 text-sm text-muted-foreground">
+                  No supervision risk data yet. Upload CentralReach billing data to populate this view.
+                </div>
+              )}
+              {topRisks.map((r) => (
+                <div key={r.clientName} className="flex items-center justify-between px-4 py-2 text-sm">
+                  <div>
+                    <div className="font-medium">{r.clientName}</div>
+                    <div className="text-xs text-muted-foreground">{r.state ?? "—"} · BCBA {r.bcbaName ?? "unassigned"}</div>
+                  </div>
+                  <span className={"text-xs px-2 py-0.5 rounded-full " + (r.level === "uncovered" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800")}>
+                    {r.level.replace("_", " ")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card">
+            <div className="border-b border-border px-4 py-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold flex items-center gap-2"><FileText className="h-4 w-4" /> Treatment Plan / Progress Report Aging</h2>
+              <Link to="/treatment-plan-reviews" className="text-xs text-primary hover:underline">Open</Link>
+            </div>
+            <div className="divide-y divide-border">
+              {topAging.length === 0 && (
+                <div className="p-4 text-sm text-muted-foreground">No authorizations in the pipeline yet.</div>
+              )}
+              {topAging.map((a) => {
+                const d = daysUntil(a.expirationDate);
+                return (
+                  <div key={a.id} className="flex items-center justify-between px-4 py-2 text-sm">
+                    <div>
+                      <div className="font-medium">{a.clientName}</div>
+                      <div className="text-xs text-muted-foreground">{a.stage} · exp {a.expirationDate ?? "—"}</div>
+                    </div>
+                    <span className={"text-xs px-2 py-0.5 rounded-full " + ((d ?? 999) < 0 ? "bg-red-100 text-red-700" : (d ?? 999) < 14 ? "bg-amber-100 text-amber-800" : "bg-muted text-muted-foreground")}>
+                      {d === null ? "—" : d < 0 ? `${Math.abs(d)}d overdue` : `${d}d`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
         <section className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Plug className="h-4 w-4" /> CentralReach integration
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Clinical data sync with CentralReach is integration-ready. Live wiring will populate
-            supervision, treatment plan, and progress report queues automatically.
+            {crConnected
+              ? `Uploaded CentralReach billing data available (${cr.totalSessions.toLocaleString()} session rows, ${cr.lookbackDays}d lookback). Live API sync not yet enabled.`
+              : "No CentralReach data uploaded or synced yet. Upload a billing export in Reports to populate supervision, plan, and progress report queues."}
           </p>
           <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-muted px-2 py-0.5 text-xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Not connected
+            <span className={"h-1.5 w-1.5 rounded-full " + (crConnected ? "bg-emerald-500" : "bg-amber-500")} />
+            {crConnected ? "Uploaded data available · Sync pending" : "Not connected"}
           </div>
         </section>
       </div>

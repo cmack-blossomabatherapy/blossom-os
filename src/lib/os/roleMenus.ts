@@ -614,7 +614,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Evaluations",                 path: "/evaluations",            icon: ClipboardCheck },
           { label: "Clinical Escalations",        path: "/escalations-followups",  icon: AlertTriangle },
           { label: "QA Dashboard",                path: "/qa-team",                icon: ShieldCheck },
-          { label: "Clinical Reports",            path: "/reports",                icon: BarChart3 },
           { label: "Phone System",                path: "/phone",                  icon: Phone },
         ],
       },
