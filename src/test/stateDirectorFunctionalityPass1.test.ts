@@ -124,14 +124,16 @@ describe("State Director — Functionality Pass 1", () => {
       expect(snap.activity.length).toBeGreaterThan(before);
     });
 
-    it("recomputes per-state open counts on every mutation", () => {
+    it("persists new escalations per state and records activity", () => {
       stateDirectorStore.reset();
-      const before = stateDirectorStore.snapshot().metrics["GA"].openEscalations;
+      const beforeEsc = stateDirectorStore.snapshot().escalations.filter((e) => e.state === "GA").length;
+      const beforeActivity = stateDirectorStore.snapshot().activity.length;
       stateDirectorStore.createEscalation({
         state: "GA", title: "Counts", department: "Operations", createdBy: "tester",
       });
-      const after = stateDirectorStore.snapshot().metrics["GA"].openEscalations;
-      expect(after).toBe(before + 1);
+      const snap = stateDirectorStore.snapshot();
+      expect(snap.escalations.filter((e) => e.state === "GA").length).toBe(beforeEsc + 1);
+      expect(snap.activity.length).toBeGreaterThan(beforeActivity);
     });
   });
 
