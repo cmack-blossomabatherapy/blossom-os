@@ -408,6 +408,8 @@ const CONTACT_VIEWS = [
 
 function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
   const s = useCrm();
+  const contacts = scopedContacts(s);
+
   const [viewRaw, _setView] = useUrlState("cv", "all");
   const view = (CONTACT_VIEWS.some((v) => v.id === viewRaw)
     ? viewRaw
@@ -485,9 +487,9 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
 
   const totalContacts = scopedContacts(s).length;
   const contactFilters: FilterDef[] = [
-    { key: "cs", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
-    { key: "co", label: "Owner", value: ownerFilter, onChange: setOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
-    { key: "cp", label: "Partner", value: partnerFilter, onChange: setPartnerFilter, options: [{ value: "all", label: "All statuses" }, ...["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => ({ value: v, label: v }))], width: 170 },
+    { key: "cs", label: "State", value: stateFilter, onChange: setStateFilter, countSource: contacts, countValue: (c) => (c as Contact).state || "", options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
+    { key: "co", label: "Owner", value: ownerFilter, onChange: setOwnerFilter, countSource: contacts, countValue: (c) => (c as Contact).ownerId || "__unassigned__", options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
+    { key: "cp", label: "Partner", value: partnerFilter, onChange: setPartnerFilter, countSource: contacts, countValue: (c) => (c as Contact).referralPartnerStatus || "", options: [{ value: "all", label: "All statuses" }, ...["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => ({ value: v, label: v }))], width: 170 },
   ];
 
   const allChecked = pagedRows.length > 0 && pagedRows.every((r) => selected.has(r.id));
@@ -788,6 +790,8 @@ const COMPANY_VIEWS = [
 
 function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const s = useCrm();
+  const companies = scopedCompanies(s);
+
   const [viewRaw, _setView] = useUrlState("ov", "all");
   const view = (COMPANY_VIEWS.some((v) => v.id === viewRaw)
     ? viewRaw
@@ -862,10 +866,10 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
 
   const totalCompanies = scopedCompanies(s).length;
   const companyFilters: FilterDef[] = [
-    { key: "os", label: "State", value: stateFilter, onChange: setStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
-    { key: "ot", label: "Tier", value: tierFilter, onChange: setTierFilter, options: [{ value: "all", label: "All tiers" }, ...["Tier A", "Tier B", "Tier C"].map((v) => ({ value: v, label: v }))] },
-    { key: "oo", label: "Owner", value: ownerFilter, onChange: setOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
-    { key: "op", label: "Partner", value: partnerFilter, onChange: setPartnerFilter, options: [{ value: "all", label: "All statuses" }, ...["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => ({ value: v, label: v }))], width: 170 },
+    { key: "os", label: "State", value: stateFilter, onChange: setStateFilter, countSource: companies, countValue: (c) => (c as Company).state || "", options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
+    { key: "ot", label: "Tier", value: tierFilter, onChange: setTierFilter, countSource: companies, countValue: (c) => (c as Company).relationshipTier || "", options: [{ value: "all", label: "All tiers" }, ...["Tier A", "Tier B", "Tier C"].map((v) => ({ value: v, label: v }))] },
+    { key: "oo", label: "Owner", value: ownerFilter, onChange: setOwnerFilter, countSource: companies, countValue: (c) => (c as Company).ownerId || "__unassigned__", options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
+    { key: "op", label: "Partner", value: partnerFilter, onChange: setPartnerFilter, countSource: companies, countValue: (c) => (c as Company).referralPartnerStatus || "", options: [{ value: "all", label: "All statuses" }, ...["Active Referral Partner", "Warm Relationship", "Connected", "New Target", "Inactive"].map((v) => ({ value: v, label: v }))], width: 170 },
   ];
 
   const allChecked = pagedRows.length > 0 && pagedRows.every((r) => selected.has(r.id));
@@ -1349,11 +1353,11 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
     rIntakeOwnerFilter !== "all" || !!rQuery;
   const referralServices = useMemo(() => Array.from(new Set(s.referrals.map((r) => r.serviceType).filter((x): x is string => !!x))).sort(), [s.referrals]);
   const referralFilters: FilterDef[] = [
-    { key: "rs", label: "Status", value: statusFilter, onChange: setStatusFilter, options: [{ value: "all", label: "All statuses" }, ...["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"].map((v) => ({ value: v, label: v }))], width: 160 },
-    { key: "rp", label: "Pipeline", value: stageFilter, onChange: setStageFilter, options: [{ value: "all", label: "All stages" }, { value: "__none__", label: "Not linked" }, ...FAMILY_LEAD_PIPELINE_STAGES.map((v) => ({ value: v, label: v }))], width: 200 },
-    { key: "rst", label: "State", value: rStateFilter, onChange: setRStateFilter, options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
-    { key: "rsv", label: "Service", value: rServiceFilter, onChange: setRServiceFilter, options: [{ value: "all", label: "All services" }, ...referralServices.map((v) => ({ value: v, label: v }))], width: 160 },
-    { key: "rio", label: "Intake owner", value: rIntakeOwnerFilter, onChange: setRIntakeOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 180 },
+    { key: "rs", label: "Status", value: statusFilter, onChange: setStatusFilter, countSource: allRows, countValue: (r) => (r as Referral).referralStatus || "", options: [{ value: "all", label: "All statuses" }, ...["New", "In Review", "Intake Form Sent", "Scheduled", "Active", "Closed", "Lost"].map((v) => ({ value: v, label: v }))], width: 160 },
+    { key: "rp", label: "Pipeline", value: stageFilter, onChange: setStageFilter, countSource: allRows, countValue: (r) => { const ref = r as Referral; const lead = ref.leadId ? leadById.get(ref.leadId) : undefined; return lead ? canonicalFamilyLeadStage(lead.status) : "__none__"; }, options: [{ value: "all", label: "All stages" }, { value: "__none__", label: "Not linked" }, ...FAMILY_LEAD_PIPELINE_STAGES.map((v) => ({ value: v, label: v }))], width: 200 },
+    { key: "rst", label: "State", value: rStateFilter, onChange: setRStateFilter, countSource: allRows, countValue: (r) => (r as Referral).state || "", options: [{ value: "all", label: "All states" }, ...STATES.map((st) => ({ value: st, label: st }))] },
+    { key: "rsv", label: "Service", value: rServiceFilter, onChange: setRServiceFilter, countSource: allRows, countValue: (r) => (r as Referral).serviceType || "", options: [{ value: "all", label: "All services" }, ...referralServices.map((v) => ({ value: v, label: v }))], width: 160 },
+    { key: "rio", label: "Intake owner", value: rIntakeOwnerFilter, onChange: setRIntakeOwnerFilter, countSource: allRows, countValue: (r) => (r as Referral).assignedIntakeOwnerId || "__unassigned__", options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 180 },
   ];
 
   const allChecked = pagedRows.length > 0 && pagedRows.every((r) => selected.has(r.id));
@@ -1625,6 +1629,8 @@ function NewReferralDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 // ===========================================================
 function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
+  const tasks = scopedTasks(s);
+
   const [groupByRaw, setGroupByRaw] = useUrlState("tg", "owner");
   const groupBy: "owner" | "state" | "status" =
     groupByRaw === "state" || groupByRaw === "status" ? groupByRaw : "owner";
@@ -1720,12 +1726,22 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   };
 
   const totalTasks = scopedTasks(s).length;
+  const taskDueBucket = (t: Task): string | null => {
+    if (!t.dueDate) return "none";
+    const now = Date.now();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const due = new Date(t.dueDate).getTime();
+    if (due < today.getTime()) return t.status === "Completed" ? null : "overdue";
+    if (due < today.getTime() + 86400000) return "today";
+    if (due <= now + 7 * 86400000) return "week";
+    return null;
+  };
   const taskFilters: FilterDef[] = [
-    { key: "ts", label: "Status", value: tStatusFilter, onChange: setTStatusFilter, options: [{ value: "all", label: "All" }, ...["Open", "In Progress", "Completed"].map((v) => ({ value: v, label: v }))] },
-    { key: "tpr", label: "Priority", value: tPriorityFilter, onChange: setTPriorityFilter, options: [{ value: "all", label: "All" }, ...["Low", "Medium", "High"].map((v) => ({ value: v, label: v }))] },
-    { key: "tt", label: "Type", value: tTypeFilter, onChange: setTTypeFilter, options: [{ value: "all", label: "All" }, ...["Call", "Email", "Meeting", "Lunch & Learn", "Follow-Up", "Other"].map((v) => ({ value: v, label: v }))], width: 150 },
-    { key: "to", label: "Owner", value: tOwnerFilter, onChange: setTOwnerFilter, options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
-    { key: "td", label: "Due", value: tDueFilter, onChange: setTDueFilter, options: [{ value: "all", label: "Any" }, { value: "overdue", label: "Overdue" }, { value: "today", label: "Today" }, { value: "week", label: "Next 7d" }, { value: "none", label: "No date" }] },
+    { key: "ts", label: "Status", value: tStatusFilter, onChange: setTStatusFilter, countSource: tasks, countValue: (t) => (t as Task).status || "", options: [{ value: "all", label: "All" }, ...["Open", "In Progress", "Completed"].map((v) => ({ value: v, label: v }))] },
+    { key: "tpr", label: "Priority", value: tPriorityFilter, onChange: setTPriorityFilter, countSource: tasks, countValue: (t) => (t as Task).priority || "", options: [{ value: "all", label: "All" }, ...["Low", "Medium", "High"].map((v) => ({ value: v, label: v }))] },
+    { key: "tt", label: "Type", value: tTypeFilter, onChange: setTTypeFilter, countSource: tasks, countValue: (t) => (t as Task).type || "", options: [{ value: "all", label: "All" }, ...["Call", "Email", "Meeting", "Lunch & Learn", "Follow-Up", "Other"].map((v) => ({ value: v, label: v }))], width: 150 },
+    { key: "to", label: "Owner", value: tOwnerFilter, onChange: setTOwnerFilter, countSource: tasks, countValue: (t) => (t as Task).assignedUserId || "__unassigned__", options: [{ value: "all", label: "All owners" }, { value: "__unassigned__", label: "Unassigned" }, ...s.users.map((u) => ({ value: u.id, label: u.name }))], width: 160 },
+    { key: "td", label: "Due", value: tDueFilter, onChange: setTDueFilter, countSource: tasks, countValue: (t) => taskDueBucket(t as Task), options: [{ value: "all", label: "Any" }, { value: "overdue", label: "Overdue" }, { value: "today", label: "Today" }, { value: "week", label: "Next 7d" }, { value: "none", label: "No date" }] },
   ];
 
   return (
@@ -1931,12 +1947,12 @@ function ListsModule() {
       <TableFilterBar
         search={{ value: q, onChange: setQ, placeholder: "Search lists by name..." }}
         filters={[
-          { key: "kind", label: "Kind", value: kindF, onChange: setKindF, options: [
+          { key: "kind", label: "Kind", value: kindF, onChange: setKindF, countSource: s.lists, countValue: (l) => (l as ListDef).kind, options: [
             { value: "all", label: "All kinds" },
             { value: "active", label: "Active" },
             { value: "static", label: "Static" },
           ] },
-          { key: "object", label: "Object", value: objectF, onChange: setObjectF, options: [
+          { key: "object", label: "Object", value: objectF, onChange: setObjectF, countSource: s.lists, countValue: (l) => (l as ListDef).object, options: [
             { value: "all", label: "All objects" },
             { value: "contacts", label: "Contacts" },
             { value: "companies", label: "Companies" },
