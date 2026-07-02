@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type LeadCommunicationRow = {
@@ -38,6 +38,10 @@ export function useLeadJourneyLive(leadId: string | null | undefined) {
   const [communications, setCommunications] = useState<LeadCommunicationRow[]>([]);
   const [tasks, setTasks] = useState<LeadTaskRow[]>([]);
   const [loading, setLoading] = useState(false);
+  // Unique per-hook-instance id so multiple components mounting this hook
+  // for the same lead don't collide on a shared Supabase realtime channel
+  // (which throws "cannot add postgres_changes callbacks after subscribe()").
+  const instanceId = useId();
 
   const refetch = useCallback(async () => {
     if (!isUuid(leadId)) {
@@ -60,12 +64,12 @@ export function useLeadJourneyLive(leadId: string | null | undefined) {
   useEffect(() => {
     if (!isUuid(leadId)) return;
     const channel = supabase
-      .channel(`lead-journey-${leadId}`)
+      .channel(`lead-journey-${leadId}-${instanceId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "intake_communications", filter: `lead_id=eq.${leadId}` }, () => { void refetch(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "intake_tasks", filter: `lead_id=eq.${leadId}` }, () => { void refetch(); })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [leadId, refetch]);
+  }, [leadId, refetch, instanceId]);
 
   const logInteraction = useCallback(
     async (kind: "call" | "sms" | "email" | "note", preview: string, owner?: string, subject?: string) => {
