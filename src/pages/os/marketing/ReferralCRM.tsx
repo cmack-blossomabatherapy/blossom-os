@@ -4650,7 +4650,7 @@ function DeletedModule() {
       <TableFilterBar
         search={{ value: q, onChange: setQ, placeholder: "Search deleted items..." }}
         filters={[
-          { key: "type", label: "Type", value: typeF, onChange: setTypeF, options: [
+          { key: "type", label: "Type", value: typeF, onChange: setTypeF, countSource: deletedCounts, countValue: (x) => (x as { type: string }).type, options: [
             { value: "all", label: "All types" },
             { value: "contacts", label: "Contacts" },
             { value: "companies", label: "Companies" },
