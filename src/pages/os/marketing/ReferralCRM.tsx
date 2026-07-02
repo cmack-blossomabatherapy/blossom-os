@@ -6,7 +6,7 @@ import {
   Plus, Search, X, CheckCircle2, Pencil, RotateCcw, Activity, AlertCircle,
   ChevronRight, Tag, UserPlus, Paperclip, FileText, History, Phone, Mail,
   Calendar, StickyNote, FileUp,
-  ArrowUp, ArrowDown, ChevronsUpDown,
+  ArrowUp, ArrowDown, ChevronsUpDown, Link as LinkIcon,
 } from "lucide-react";
 import { MktgPage } from "./_shared";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   useCrm, crm, fullName, activeContacts, activeCompanies, activeReferrals,
@@ -160,6 +161,36 @@ function patientDisplayName(r: { patientFirstName?: string; patientLastInitial?:
     return `${r.patientFirstName ?? ""} ${r.patientLastInitial ? r.patientLastInitial + "." : ""}`.trim();
   }
   return r.name ?? "Unnamed patient";
+}
+
+function CopyShareLinkButton() {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      sonnerToast.success("Share link copied to clipboard");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: select the URL in a visible input so the user can copy it manually.
+      sonnerToast.error("Could not copy automatically", {
+        description: "Your browser blocked clipboard access. The URL is shown in the address bar.",
+      });
+    }
+  };
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-9 gap-1.5"
+      onClick={handleCopy}
+      aria-label="Copy share link"
+    >
+      {copied ? <CheckCircle2 className="size-3.5" /> : <LinkIcon className="size-3.5" />}
+      {copied ? "Copied" : "Copy share link"}
+    </Button>
+  );
 }
 
 // ===========================================================
@@ -5032,6 +5063,7 @@ export default function ReferralCRM() {
     <MktgPage
       title="Blossom Referral CRM"
       subtitle="Track contacts, companies, referrals, and outreach for every state."
+      actions={<CopyShareLinkButton />}
     >
       {backendMissing.length > 0 && (
         <div className="mb-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
