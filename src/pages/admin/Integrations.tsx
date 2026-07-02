@@ -48,6 +48,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { IntegrationReadinessPanel } from "@/components/marketing/IntegrationReadinessPanel";
 import {
   Sheet,
   SheetContent,
@@ -1252,6 +1253,12 @@ export default function Integrations() {
         {/* Intake Communication Setup - CTM / Jivetel / Mailchimp Email / Mailchimp SMS */}
         <div className="mt-8">
           <IntakeCommunicationSetupPanel />
+        </div>
+
+        {/* Marketing integration readiness — moved here from the Marketing pages
+            so all integration configuration lives in one admin home. */}
+        <div className="mt-8">
+          <IntegrationReadinessPanel />
         </div>
 
         {/* Search & filters */}

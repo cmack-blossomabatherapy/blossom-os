@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Inbox, Plus, Phone, Mail, MessageSquare, Search, Filter, AlertTriangle,
-  CheckCircle2, ExternalLink, Link2, FileText, Copy, ShieldCheck, Radio,
+  CheckCircle2, ExternalLink, Link2, FileText, Copy, Radio,
   Megaphone, HeartHandshake, Globe, type LucideIcon,
 } from "lucide-react";
 import { GrowthPageShell, Section, StatCard } from "@/components/os/growth/GrowthPageShell";
@@ -30,7 +30,6 @@ import {
 } from "@/lib/leads/leadSourceEvents";
 import { useMarketingSourceEvents } from "@/hooks/useMarketingSourceEvents";
 import { sourceSystemToSourceValue } from "@/lib/marketing/sourceEventMapper";
-import { BLOSSOM_INTEGRATIONS } from "@/lib/os/integrations/integrationRegistry";
 import { EditSourceEventDialog } from "@/components/marketing/EditSourceEventDialog";
 import { Pencil, UserPlus, Code2 } from "lucide-react";
 import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
@@ -76,12 +75,6 @@ const EVENT_TYPE_ICON: Record<LeadSourceEventType, LucideIcon> = {
   business_development: HeartHandshake,
   manual_import: FileText,
 };
-
-/** Sources we want featured in the integration readiness panel. */
-const READINESS_SOURCE_IDS = [
-  "ctm", "retell", "leadtrap", "google-ads", "meta-ads", "mailchimp",
-  "ms365", "jivetel", "calendly", "apploi", "centralreach",
-] as const;
 
 /* ----------------------------- Add-event dialog ---------------------------- */
 
@@ -599,7 +592,6 @@ export default function LeadSourceInbox() {
               />
             )}
           </Section>
-          <IntegrationReadinessPanel />
         </aside>
       </div>
 
@@ -833,71 +825,4 @@ function Field({ label, value }: { label: string; value?: string }) {
   );
 }
 
-/* -------------------------- Integration readiness ------------------------- */
-
-const READINESS_STATUS_LABEL: Record<string, string> = {
-  connected: "Connected",
-  ready_for_api: "Ready for API",
-  needs_credentials: "Needs credentials",
-  future: "Future",
-};
-
-function readinessStatusFor(id: string): keyof typeof READINESS_STATUS_LABEL {
-  // Map registry status to inbox readiness label.
-  const reg = BLOSSOM_INTEGRATIONS.find((i) => i.id === id);
-  if (!reg) return "future";
-  switch (reg.status) {
-    case "connected": return "connected";
-    case "configured": return "ready_for_api";
-    case "planned":
-    case "maybe": return "future";
-    default: return "needs_credentials";
-  }
-}
-
-function nextStepFor(id: string): string {
-  switch (id) {
-    case "ctm":         return "Add CTM API key + webhook for call leads";
-    case "retell":      return "Wire Retell post-call webhook with transcript payload";
-    case "leadtrap":    return "Connect LeadTrap webhook for inbound web forms";
-    case "google-ads":  return "Enable Google Ads lead form extension + conversion";
-    case "meta-ads":    return "Hook Meta Lead Ads webhook into inbox";
-    case "mailchimp":   return "Connect Mailchimp campaign reply/sync";
-    case "ms365":       return "Authorize Outlook for parent email threading";
-    case "jivetel":     return "Forward Jivetel call events to inbox";
-    case "calendly":    return "Sync Calendly intake bookings to inbox";
-    case "apploi":      return "Pipe Apploi applicant events (recruiting)";
-    case "centralreach": return "Confirm shared dataset stays in sync";
-    default:            return "Define inbound payload schema";
-  }
-}
-
-function IntegrationReadinessPanel() {
-  return (
-    <Section title="Integration readiness" description="Source systems Blossom OS is preparing to ingest from.">
-      <div className="rounded-2xl border border-border/70 bg-card divide-y divide-border/60">
-        {READINESS_SOURCE_IDS.map((id) => {
-          const reg = BLOSSOM_INTEGRATIONS.find((i) => i.id === id);
-          const status = readinessStatusFor(id);
-          if (!reg) return null;
-          return (
-            <div key={id} className="p-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="font-medium text-sm truncate">{reg.displayName ?? reg.name}</div>
-                <Badge variant={status === "connected" ? "default" : "outline"} className="text-[10px]">
-                  {READINESS_STATUS_LABEL[status]}
-                </Badge>
-              </div>
-              <div className="text-[11px] text-muted-foreground truncate mt-0.5">
-                Inbound: {(reg.inboundData ?? []).slice(0, 3).join(", ") || "-"}
-              </div>
-              <div className="text-[11px] text-muted-foreground mt-1 flex items-start gap-1">
-                <ShieldCheck className="h-3 w-3 mt-0.5" /> {nextStepFor(id)}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </Section>
-  );
-}
+/* Integration readiness panel moved to Admin > Integrations. */

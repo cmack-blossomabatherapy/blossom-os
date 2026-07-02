@@ -38,9 +38,13 @@ describe("Marketing Pass 101 — campaign + source management", () => {
     expect(src).toContain("useMarketingCampaigns");
     expect(src).toContain("CampaignFormDialog");
   });
-  it("LeadSources.tsx mounts SourceManagerCard and IntegrationReadinessPanel", () => {
+  it("LeadSources.tsx mounts SourceManagerCard (integration readiness now lives in admin)", () => {
     const src = read("src/pages/os/marketing/LeadSources.tsx");
     expect(src).toContain("SourceManagerCard");
+    expect(src).not.toContain("IntegrationReadinessPanel");
+  });
+  it("Admin Integrations page hosts IntegrationReadinessPanel", () => {
+    const src = read("src/pages/admin/Integrations.tsx");
     expect(src).toContain("IntegrationReadinessPanel");
   });
   it("SourceManagerCard uses marketing_sources hook", () => {
