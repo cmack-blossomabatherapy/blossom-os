@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   AdminSettings, CallQueue, ChangeRequest, CoverageTemplate, DEFAULT_SETTINGS,
   Employee, HolidayProfile, RetellCall, SharedRouting,
@@ -142,6 +143,11 @@ function syncDirectoryEmployees(phoneEmployees: Employee[], directoryEmployees: 
 
 export function PhoneSystemProvider({ children }: { children: ReactNode }) {
   const { members: directoryMembers, loading: directoryLoading } = useEmployeeDirectory();
+  const { isAdmin, roles } = useAuth();
+  // Only admin/ops_manager can write to phone_system_state (per RLS). Gate
+  // seed + directory-sync + persist writes to avoid RLS-violation error floods
+  // for non-privileged users, who still read the shared state via SELECT.
+  const canWrite = isAdmin || (roles as string[]).includes("ops_manager");
   const [queues, setQueues] = useState<CallQueue[]>(SEED_QUEUES);
   const [employees, setEmployees] = useState<Employee[]>(SEED_EMPLOYEES);
   const [shared, setShared] = useState<SharedRouting[]>(SEED_SHARED);
@@ -217,20 +223,22 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
       if (remote.corporateMenu === undefined) toSeed.push(["corporateMenu", nextMenu]);
       if (remote.stateIntakeRouting === undefined) toSeed.push(["stateIntakeRouting", nextIntake]);
       if (remote.directoryLabels === undefined) toSeed.push(["directoryLabels", nextLabels]);
-      await Promise.all(toSeed.map(([k, v]) => saveToDb(k, v)));
+      if (canWrite) {
+        await Promise.all(toSeed.map(([k, v]) => saveToDb(k, v)));
+      }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [canWrite]);
 
   // Sync extensions with directory data once we're hydrated.
   useEffect(() => {
     if (!hydrated || directoryLoading || directoryMembers.length === 0) return;
     setEmployees((current) => {
       const merged = syncDirectoryEmployees(current, directoryMembers);
-      saveToDb("employees", merged);
+      if (canWrite) saveToDb("employees", merged);
       return merged;
     });
-  }, [directoryMembers, directoryLoading, hydrated]);
+  }, [directoryMembers, directoryLoading, hydrated, canWrite]);
 
   // Realtime: when another user updates a key, pull it in.
   useEffect(() => {
@@ -266,7 +274,7 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
   // Helper: update local state AND persist to DB.
   const persist = <T,>(key: StateKey, setter: (v: T) => void) => (v: T) => {
     setter(v);
-    void saveToDb(key, v);
+    if (canWrite) void saveToDb(key, v);
   };
 
   const value: PhoneSystemState = {
