@@ -682,6 +682,18 @@ export default function OSHRRequests() {
                 </div>
               </section>
 
+              {/* Integration readiness */}
+              <section>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Integration readiness</p>
+                {openOnb ? (
+                  <IntegrationReadinessPanel row={openOnb} />
+                ) : (
+                  <Card className="p-4 text-[12px] text-muted-foreground">
+                    No onboarding record found for this employee — readiness will populate once onboarding is initialized.
+                  </Card>
+                )}
+              </section>
+
               {/* Resolution */}
               {openCase.resolution && (
                 <section>
