@@ -203,8 +203,26 @@ export default function OSQAClients() {
   const [escFilter, setEscFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
 
-  // QA Pass 5 deep links — bcba/client/query routing.
-  useQADeepLink({ items, loading, setQuery, setBcbaFilter });
+  // QA Pass 6 deep links — grouped page: translate auth id / client param
+  // into the client-group's drawer id (`ClientRow.id`).
+  useQADeepLink({
+    items,
+    loading,
+    setOpenId,
+    setQuery,
+    setBcbaFilter,
+    resolveOpenIdForAuth: (authId) => {
+      const group = allClients.find((c) => c.auths.some((a) => a.id === authId));
+      return group ? group.id : null;
+    },
+    resolveOpenIdForClient: (param) => {
+      const p = param.toLowerCase();
+      const match = allClients.find(
+        (c) => c.id === param || c.name.toLowerCase() === p,
+      );
+      return match ? match.id : null;
+    },
+  });
 
   const states  = useMemo(() => Array.from(new Set(allClients.map(c => c.state).filter(Boolean))).sort(), [allClients]);
   const bcbas   = useMemo(() => Array.from(new Set(allClients.map(c => c.bcba).filter(Boolean))).sort(), [allClients]);
