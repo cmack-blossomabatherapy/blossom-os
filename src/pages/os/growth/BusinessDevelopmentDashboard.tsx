@@ -69,22 +69,84 @@ function useMarketingSourceSignals() {
   const [error, setError] = useState<Error | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
   const refresh = useCallback(() => setReloadTick((n) => n + 1), []);
+  // Keyset cursor pagination on (occurred_at DESC, id DESC). Rendering the
+  // full history at once became slow once marketing_source_events grew past a
+  // few thousand rows and made real-time updates noisy: every INSERT would
+  // trigger a full reload of the top 500 rows. We now:
+  //   - fetch a small first page (PAGE_SIZE),
+  //   - let callers pull older rows via loadMoreEvents() using a keyset
+  //     cursor so results stay stable even while new events stream in, and
+  //   - handle realtime INSERT/UPDATE/DELETE inline instead of refetching.
+  const PAGE_SIZE = 50;
+  const EVENT_COLS =
+    "id,source_id,source_system,state,status,event_type,occurred_at,assigned_to,assigned_at,caller_name,caller_email,caller_phone,lead_id,payload_summary,referral_company_id,referral_contact_id,reviewed_at,reviewed_by,sync_status";
+  const [hasMoreEvents, setHasMoreEvents] = useState(false);
+  const [loadingMoreEvents, setLoadingMoreEvents] = useState(false);
+  const cursorRef = useRef<{ occurred_at: string; id: string } | null>(null);
+
+  // Build a keyset filter: (occurred_at, id) < (cursor.occurred_at, cursor.id)
+  // Uses PostgREST's `or(...)` because Supabase doesn't expose tuple compares.
+  const fetchEventsPage = useCallback(
+    async (cursor: { occurred_at: string; id: string } | null) => {
+      let q = supabase
+        .from("marketing_source_events")
+        .select(EVENT_COLS)
+        .order("occurred_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(PAGE_SIZE);
+      if (cursor) {
+        q = q.or(
+          `occurred_at.lt.${cursor.occurred_at},and(occurred_at.eq.${cursor.occurred_at},id.lt.${cursor.id})`,
+        );
+      }
+      const { data, error: err } = await q;
+      if (err) throw err;
+      const rows = (data ?? []) as MarketingSourceEventRow[];
+      return rows;
+    },
+    [],
+  );
+
+  const loadMoreEvents = useCallback(async () => {
+    if (loadingMoreEvents || !hasMoreEvents) return;
+    setLoadingMoreEvents(true);
+    try {
+      const rows = await fetchEventsPage(cursorRef.current);
+      if (rows.length > 0) {
+        cursorRef.current = { occurred_at: rows[rows.length - 1].occurred_at, id: rows[rows.length - 1].id };
+      }
+      setHasMoreEvents(rows.length === PAGE_SIZE);
+      setEvents((prev) => {
+        const seen = new Set(prev.map((r) => r.id));
+        const merged = [...prev];
+        for (const r of rows) if (!seen.has(r.id)) merged.push(r);
+        return merged;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setLoadingMoreEvents(false);
+    }
+  }, [fetchEventsPage, hasMoreEvents, loadingMoreEvents]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         setLoading(true);
-        const [{ data: s, error: sErr }, { data: e, error: eErr }] = await Promise.all([
+        cursorRef.current = null;
+        const [{ data: s, error: sErr }, rows] = await Promise.all([
           supabase.from("marketing_sources").select("id,name,source_system,channel,state,is_active").order("name"),
-          supabase.from("marketing_source_events").select(
-            "id,source_id,source_system,state,status,event_type,occurred_at,assigned_to,assigned_at,caller_name,caller_email,caller_phone,lead_id,payload_summary,referral_company_id,referral_contact_id,reviewed_at,reviewed_by,sync_status",
-          ).order("occurred_at", { ascending: false }).limit(500),
+          fetchEventsPage(null),
         ]);
         if (cancelled) return;
         if (sErr) throw sErr;
-        if (eErr) throw eErr;
         setSources((s ?? []) as MarketingSourceRow[]);
-        setEvents((e ?? []) as MarketingSourceEventRow[]);
+        setEvents(rows);
+        if (rows.length > 0) {
+          cursorRef.current = { occurred_at: rows[rows.length - 1].occurred_at, id: rows[rows.length - 1].id };
+        }
+        setHasMoreEvents(rows.length === PAGE_SIZE);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
@@ -92,8 +154,46 @@ function useMarketingSourceSignals() {
       }
     })();
     return () => { cancelled = true; };
-  }, [reloadTick]);
-  return { sources, events, loading, error, refresh };
+  }, [reloadTick, fetchEventsPage]);
+
+  // Realtime: apply granular updates instead of blanket refetching. This
+  // avoids "list jumps to the top" behavior while users are paginating older
+  // rows, and keeps the UI responsive under bursty webhook traffic.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`bd-marketing-source-events-${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "marketing_source_events" },
+        (payload) => {
+          const row = payload.new as MarketingSourceEventRow;
+          setEvents((prev) => (prev.some((r) => r.id === row.id) ? prev : [row, ...prev]));
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "marketing_source_events" },
+        (payload) => {
+          const row = payload.new as MarketingSourceEventRow;
+          setEvents((prev) => prev.map((r) => (r.id === row.id ? row : r)));
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "marketing_source_events" },
+        (payload) => {
+          const oldRow = payload.old as { id?: string };
+          if (!oldRow?.id) return;
+          setEvents((prev) => prev.filter((r) => r.id !== oldRow.id));
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  return { sources, events, loading, error, refresh, hasMoreEvents, loadingMoreEvents, loadMoreEvents };
 }
 
 const TABS: { key: TabKey; label: string; icon: LucideIcon }[] = [
