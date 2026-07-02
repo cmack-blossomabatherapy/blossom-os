@@ -11,6 +11,7 @@ import { IntegrationReadinessPanel, type OnboardingReadinessRow } from "@/compon
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { logHrEvent } from "@/lib/hr/activityEvents";
 
 /* ---------------- types ---------------- */
 interface Doc {
@@ -779,7 +780,20 @@ export default function OSHRCompliance() {
                     <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.75} /> Message
                   </button>
                   <button onClick={async () => {
+                    const pending = (openDocs ?? []).filter((d: any) => d.status === "missing" || d.status === "requested" || d.status === "expired");
+                    if (pending.length) {
+                      toast({ title: "Cannot mark ready", description: `${pending.length} document(s) not verified.` });
+                      await logHrEvent({
+                        eventType: "compliance_mark_ready_blocked",
+                        title: `${openEmp.first_name} ${openEmp.last_name} blocked from staffing`,
+                        description: pending.map((d: any) => d.doc_type ?? d.type ?? "document").join(", "),
+                        employeeId: openEmp.id,
+                        metadata: { pending_count: pending.length },
+                      });
+                      return;
+                    }
                     const { error } = await supabase.from("employees").update({ status: "active" }).eq("id", openEmp.id);
+                    if (!error) await logHrEvent({ eventType: "compliance_marked_ready", title: `${openEmp.first_name} ${openEmp.last_name} marked staffing ready`, employeeId: openEmp.id });
                     toast({ title: error ? "Could not update" : "Marked staffing ready" });
                     if (!error) { setOpenEmpId(null); refresh(); }
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">

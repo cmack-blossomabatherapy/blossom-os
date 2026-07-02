@@ -19,6 +19,7 @@ import { IntegrationReadinessSummary } from "@/components/hr/IntegrationReadines
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { queueHrMessage } from "@/lib/hr/activityEvents";
 
 /* ---------------- types ---------------- */
 interface Employee {
@@ -466,9 +467,16 @@ export default function OSHRTrainingCerts() {
                           <div className="flex items-center gap-2 justify-end">
                             <Pill tone={r.tone}>{r.label}</Pill>
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 const name = r.emp ? `${r.emp.first_name} ${r.emp.last_name}` : "employee";
-                                toast({ title: "Reminder sent", description: `${name} was reminded about ${r.course?.title ?? "this training"}.` });
+                                const res = await queueHrMessage({
+                                  body: `Reminder for ${name}: ${r.course?.title ?? "training"} is due ${r.t.due_date ?? "soon"}.`,
+                                  subject: "Training reminder",
+                                  employeeId: r.emp?.id ?? null,
+                                  channels: ["in_app"],
+                                  metadata: { training_id: r.t.id, course_id: r.t.course_id, source: "training_reminder" },
+                                });
+                                toast({ title: res.status === "queued" ? "Reminder queued in Blossom OS" : "Could not queue reminder" });
                               }}
                               className="h-7 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors inline-flex items-center gap-1"
                             >
