@@ -225,7 +225,18 @@ export default function OSQASupervision() {
   const [escFilter, setEscFilter] = useState("all");
   const [urgFilter, setUrgFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
-  useQADeepLink({ items, loading: aLoading, setOpenId, setQuery, setBcbaFilter });
+  // QA Pass 6 — supervision row ids are per-client keys, not auth ids.
+  useQADeepLink({
+    items,
+    loading: aLoading,
+    setOpenId,
+    setQuery,
+    setBcbaFilter,
+    resolveOpenIdForAuth: (authId) => {
+      const row = rows.find((r) => r.auth?.id === authId);
+      return row ? row.id : null;
+    },
+  });
 
   const states = useMemo(() => Array.from(new Set(rows.map(r => r.state).filter(s => s && s !== "—"))).sort(), [rows]);
   const bcbas  = useMemo(() => Array.from(new Set(rows.map(r => r.bcba).filter((v): v is string => !!v))).sort(), [rows]);
