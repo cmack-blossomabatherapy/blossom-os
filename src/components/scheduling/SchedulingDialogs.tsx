@@ -298,30 +298,30 @@ export function AdjustmentDialog({
         oldRbtName: oldRbt || null, newRbtName: newRbt || null,
         newLocation: location || null, reason,
       });
-      await logAction({
-        clientId: client.id, clientName: client.childName, actionType: "schedule_adjustment", title: `Adjustment: ${type}`,
-        note: reason, state: client.state ?? null,
-        metadata: { adjustment_id: (row as { id?: string } | null)?.id, applied_local: applyLocal && canApplyLocal() },
-      });
+      // Persist-first: attempt the durable schedule overlay write BEFORE
+      // we log anything that claims `applied_local: true`. If the overlay
+      // write fails, we keep the dialog open and never write a misleading
+      // action log.
       let appliedLocal = false;
       if (applyLocal && canApplyLocal()) {
         const slot = tryBuildLocalSlot();
         if (slot) {
           try {
-            // addScheduleSlot persists to the durable Scheduling overlay
-            // first — if that fails we surface a clear error and keep the
-            // dialog open so the user can retry, instead of falsely
-            // claiming "Saved and applied".
             await addScheduleSlot(client.id, slot);
             appliedLocal = true;
           } catch (err) {
             toast.error("Could not save schedule in Blossom OS. Please try again.", {
               description: (err as Error)?.message,
             });
-            return; // keep dialog open
+            return; // keep dialog open, do NOT log applied_local: true
           }
         }
       }
+      await logAction({
+        clientId: client.id, clientName: client.childName, actionType: "schedule_adjustment", title: `Adjustment: ${type}`,
+        note: reason, state: client.state ?? null,
+        metadata: { adjustment_id: (row as { id?: string } | null)?.id, applied_local: appliedLocal },
+      });
       toast.success(
         appliedLocal
           ? "Saved and applied to Blossom OS schedule. CentralReach sync not connected yet."
