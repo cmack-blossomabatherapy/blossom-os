@@ -439,7 +439,7 @@ export default function OSBCBAParentTraining() {
 
         {/* Scheduling coordination */}
         <Section title="Scheduling coordination" action={
-          <Link to="/scheduling" className="text-xs font-medium text-primary hover:underline">Message scheduling →</Link>
+          <Link to="/bcba/scheduling" className="text-xs font-medium text-primary hover:underline">Message scheduling →</Link>
         }>
           {counts.schedRisk === 0 ? (
             <Card className="border-dashed bg-muted/30 text-center text-sm text-muted-foreground">No scheduling instability affecting parent training.</Card>
@@ -517,7 +517,7 @@ export default function OSBCBAParentTraining() {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
             <QuickAction to="/bcba/scheduling"      icon={CalendarClock}  label="Schedule training" />
             <QuickAction to="/bcba/clients"         icon={UserCheck}      label="Open clients" />
-            <QuickAction to="/scheduling"           icon={MessageSquare}  label="Contact scheduling" />
+            <QuickAction to="/bcba/scheduling"           icon={MessageSquare}  label="Contact scheduling" />
             <QuickAction to="/bcba/supervision"     icon={Users}          label="Supervision" />
             <QuickAction to="/bcba/workspace"       icon={Activity}       label="Open workspace" />
             <QuickAction to="/ai"                   icon={Sparkles}       label="Operational Insights" />
@@ -583,7 +583,7 @@ export default function OSBCBAParentTraining() {
                   <div className="grid grid-cols-2 gap-2">
                     <PanelLink to="/bcba/scheduling" icon={CalendarClock}>Schedule training</PanelLink>
                     <PanelLink to="/bcba/clients" icon={UserCheck}>Open client</PanelLink>
-                    <PanelLink to="/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
+                    <PanelLink to="/bcba/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
                     <PanelLink to="/bcba/supervision" icon={Users}>Supervision</PanelLink>
                     <PanelLink to="/bcba/authorizations" icon={FileSignature}>View PR</PanelLink>
                     <PanelLink to={`/ai?q=${encodeURIComponent(`Tell me about parent training for ${activeRow.client.clientName}`)}`} icon={Sparkles}>Operational Insights</PanelLink>

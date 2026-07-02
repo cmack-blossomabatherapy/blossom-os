@@ -425,7 +425,7 @@ export default function OSBCBA() {
             <SectionTitle
               title="Supervision alerts"
               hint="Clients without recent BCBA touch."
-              action={<Link to="/supervision" className="text-sm text-primary hover:opacity-80">Open</Link>}
+              action={<Link to="/bcba/supervision" className="text-sm text-primary hover:opacity-80">Open</Link>}
             />
             <Card className="p-0">
               {loading ? (
@@ -457,7 +457,7 @@ export default function OSBCBA() {
             <SectionTitle
               title="PR & authorization alerts"
               hint="Live from authorization workspace."
-              action={<Link to="/authorizations" className="text-sm text-primary hover:opacity-80">Open</Link>}
+              action={<Link to="/bcba/authorizations" className="text-sm text-primary hover:opacity-80">Open</Link>}
             />
             <Card className="p-0">
               {loading ? (
@@ -489,7 +489,7 @@ export default function OSBCBA() {
             <SectionTitle
               title="Parent training alerts"
               hint="Clients without recent 97156 cadence."
-              action={<Link to="/parent-training" className="text-sm text-primary hover:opacity-80">Open</Link>}
+              action={<Link to="/bcba/parent-training" className="text-sm text-primary hover:opacity-80">Open</Link>}
             />
             <Card className="p-0">
               {loading ? (
@@ -521,7 +521,7 @@ export default function OSBCBA() {
             <SectionTitle
               title="Scheduling issues"
               hint="Coverage gaps on your caseload."
-              action={<Link to="/scheduling" className="text-sm text-primary hover:opacity-80">Open</Link>}
+              action={<Link to="/bcba/scheduling" className="text-sm text-primary hover:opacity-80">Open</Link>}
             />
             <Card className="p-0">
               {loading ? (
@@ -568,11 +568,11 @@ export default function OSBCBA() {
           <Card className="lg:col-span-2">
             <SectionTitle title="Quick actions" />
             <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-              <Quick to="/clients" icon={Users} label="Open caseload" />
-              <Quick to="/supervision" icon={Stethoscope} label="Supervision" />
-              <Quick to="/parent-training" icon={Baby} label="Parent training" />
-              <Quick to="/scheduling" icon={CalendarDays} label="Scheduling" />
-              <Quick to="/authorizations" icon={FileSignature} label="View PRs" />
+              <Quick to="/bcba/clients" icon={Users} label="Open caseload" />
+              <Quick to="/bcba/supervision" icon={Stethoscope} label="Supervision" />
+              <Quick to="/bcba/parent-training" icon={Baby} label="Parent training" />
+              <Quick to="/bcba/scheduling" icon={CalendarDays} label="Scheduling" />
+              <Quick to="/bcba/authorizations" icon={FileSignature} label="View PRs" />
               <Quick to="/ai/assistant" icon={Sparkles} label="Operational Insights" />
             </div>
           </Card>

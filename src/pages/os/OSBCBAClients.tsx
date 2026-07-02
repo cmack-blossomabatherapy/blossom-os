@@ -446,7 +446,7 @@ export default function OSBCBAClients() {
                     <PanelLink to="/bcba/supervision" icon={Eye}>Open supervision</PanelLink>
                     <PanelLink to="/bcba/authorizations" icon={FileSignature}>Open PR</PanelLink>
                     <PanelLink to="/bcba/parent-training" icon={HeartHandshake}>Parent training</PanelLink>
-                    <PanelLink to="/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
+                    <PanelLink to="/bcba/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
                     <PanelLink to="/ai" icon={Sparkles}>Operational Insights</PanelLink>
                   </div>
                 </Section>

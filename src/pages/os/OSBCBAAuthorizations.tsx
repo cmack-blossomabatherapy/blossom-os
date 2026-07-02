@@ -600,9 +600,9 @@ export default function OSBCBAAuthorizations() {
 
                 <PanelSection title="Quick actions">
                   <div className="grid grid-cols-2 gap-2">
-                    <PanelLink to="/authorizations" icon={FileSignature}>Open PR</PanelLink>
+                    <PanelLink to="/bcba/authorizations" icon={FileSignature}>Open PR</PanelLink>
                     <PanelLink to="/bcba/clients"   icon={Users}>View client</PanelLink>
-                    <PanelLink to="/authorizations" icon={Upload}>Upload docs</PanelLink>
+                    <PanelLink to="/bcba/authorizations" icon={Upload}>Upload docs</PanelLink>
                     <PanelLink to="/qa-team"        icon={MessageSquare}>Message QA</PanelLink>
                     <PanelLink to="/bcba/scheduling" icon={CalendarClock}>Scheduling</PanelLink>
                     <PanelLink to="/ai"             icon={Sparkles}>Operational Insights</PanelLink>
