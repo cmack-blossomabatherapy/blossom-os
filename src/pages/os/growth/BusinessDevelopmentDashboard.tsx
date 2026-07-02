@@ -1386,6 +1386,9 @@ function HandoffQueue({
     assignFilter: string;
     sortMode: string;
     search: string;
+    visibleCount: number;
+    scrollY: number;
+    activeEventId: string | null;
   };
   const defaultPrefs: HandoffPrefs = {
     statusFilter: "all",
@@ -1395,6 +1398,9 @@ function HandoffQueue({
     assignFilter: "all",
     sortMode: "newest",
     search: "",
+    visibleCount: 25,
+    scrollY: 0,
+    activeEventId: null,
   };
   const loadedPrefs = useMemo<HandoffPrefs>(() => {
     if (typeof window === "undefined") return defaultPrefs;
@@ -1417,9 +1423,11 @@ function HandoffQueue({
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
+      const raw = window.sessionStorage.getItem(PREFS_KEY);
+      const existing = raw ? (JSON.parse(raw) as Partial<HandoffPrefs>) : {};
       window.sessionStorage.setItem(
         PREFS_KEY,
-        JSON.stringify({ statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search }),
+        JSON.stringify({ ...existing, statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search }),
       );
     } catch {
       /* ignore quota */
@@ -1431,8 +1439,32 @@ function HandoffQueue({
 
   // Infinite scroll: render in pages of PAGE_SIZE, expand via IntersectionObserver.
   const PAGE_SIZE = 25;
-  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
+  const [visibleCount, setVisibleCount] = useState<number>(
+    Math.max(PAGE_SIZE, loadedPrefs.visibleCount || PAGE_SIZE),
+  );
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [activeEventId, setActiveEventId] = useState<string | null>(loadedPrefs.activeEventId);
+  const restoredRef = useRef<boolean>(false);
+
+  // Persist visibleCount, active event id, and last scroll position for restoration
+  // when the user opens a drawer/dialog for an event and returns to the panel.
+  const persistPref = (partial: Partial<HandoffPrefs>) => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.sessionStorage.getItem(PREFS_KEY);
+      const existing = raw ? (JSON.parse(raw) as Partial<HandoffPrefs>) : {};
+      window.sessionStorage.setItem(PREFS_KEY, JSON.stringify({ ...existing, ...partial }));
+    } catch {
+      /* ignore quota */
+    }
+  };
+  useEffect(() => { persistPref({ visibleCount }); }, [visibleCount]);
+  useEffect(() => { persistPref({ activeEventId }); }, [activeEventId]);
+  useEffect(() => {
+    const onScroll = () => persistPref({ scrollY: window.scrollY });
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -1495,11 +1527,40 @@ function HandoffQueue({
 
   // Reset paging when filters/sort/search change so users always start at the top of a fresh result set.
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
+    if (restoredRef.current) setVisibleCount(PAGE_SIZE);
   }, [statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search]);
 
   const visibleRows = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = visibleCount < filtered.length;
+
+  // On mount, once data is available, restore the last-open event's scroll position.
+  useEffect(() => {
+    if (restoredRef.current) return;
+    if (loading) return;
+    if (filtered.length === 0) { restoredRef.current = true; return; }
+    // Ensure the active event is within the visible page window.
+    if (activeEventId) {
+      const idx = filtered.findIndex((r) => r.ev.id === activeEventId);
+      if (idx >= 0 && idx >= visibleCount) {
+        setVisibleCount(Math.min(filtered.length, idx + PAGE_SIZE));
+        return;
+      }
+    }
+    // Defer to next frame so the DOM has rendered the rows.
+    const raf = requestAnimationFrame(() => {
+      if (activeEventId) {
+        const el = document.querySelector<HTMLElement>(`[data-handoff-id="${activeEventId}"]`);
+        if (el) {
+          el.scrollIntoView({ block: "center" });
+          restoredRef.current = true;
+          return;
+        }
+      }
+      if (loadedPrefs.scrollY) window.scrollTo({ top: loadedPrefs.scrollY });
+      restoredRef.current = true;
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [loading, filtered, activeEventId, visibleCount, loadedPrefs.scrollY]);
 
   useEffect(() => {
     if (!hasMore) return;
