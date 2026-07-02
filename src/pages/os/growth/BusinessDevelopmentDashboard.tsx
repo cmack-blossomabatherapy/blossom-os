@@ -1048,30 +1048,40 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (t: Partial<ReferralCrmTask> & { title: string }) => Promise<void>; defaultCompanyId?: string }) {
-  const [form, setForm] = useState<{ title?: string; company_id?: string; assigned_user_id?: string; due_date?: string; priority: string }>({ priority: "Medium", company_id: defaultCompanyId });
-  useMemo(() => {
-    if (open) setForm((f) => ({ ...f, company_id: defaultCompanyId ?? f.company_id }));
-  }, [open, defaultCompanyId]);
+function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId, initial }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (t: Partial<ReferralCrmTask> & { title: string }) => Promise<void>; defaultCompanyId?: string; initial?: ReferralCrmTask }) {
+  const [form, setForm] = useState<{ title?: string; company_id?: string; due_date?: string; priority: string; notes?: string }>({ priority: "Medium", company_id: defaultCompanyId });
+  useEffect(() => {
+    if (!open) return;
+    if (initial) {
+      setForm({
+        title: initial.title,
+        company_id: initial.company_id ?? undefined,
+        due_date: initial.due_date ?? undefined,
+        priority: initial.priority ?? "Medium",
+        notes: initial.notes ?? undefined,
+      });
+    } else {
+      setForm((f) => ({ ...f, company_id: defaultCompanyId ?? f.company_id }));
+    }
+  }, [open, defaultCompanyId, initial]);
   const [saving, setSaving] = useState(false);
+  const isEdit = !!initial;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Add Follow-Up Task</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEdit ? "Edit Follow-Up Task" : "Add Follow-Up Task"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <Input placeholder="Title *" value={form.title ?? ""} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <Select value={form.company_id ?? ""} onValueChange={(v) => setForm({ ...form, company_id: v })}>
             <SelectTrigger><SelectValue placeholder="Partner (optional)" /></SelectTrigger>
             <SelectContent>{partners.map((p) => <SelectItem key={p.id} value={p.id}>{p.company_name}</SelectItem>)}</SelectContent>
           </Select>
-          <div className="grid grid-cols-2 gap-3">
-            <Input placeholder="Owner (name or id)" value={form.assigned_user_id ?? ""} onChange={(e) => setForm({ ...form, assigned_user_id: e.target.value })} />
-            <Input type="date" value={form.due_date ?? ""} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
-          </div>
+          <Input type="date" value={form.due_date ?? ""} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
           <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
           </Select>
+          <Input placeholder="Notes (optional)" value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -1081,15 +1091,15 @@ function TaskDialog({ open, onOpenChange, partners, onSave, defaultCompanyId }: 
             await onSave({
               title: form.title.trim(),
               company_id: form.company_id ?? null,
-              assigned_user_id: form.assigned_user_id ?? null,
               due_date: form.due_date ?? null,
               priority: form.priority,
-              status: "Open",
+              notes: form.notes ?? null,
+              ...(isEdit ? {} : { status: "Open" }),
             });
             setSaving(false);
             onOpenChange(false);
             setForm({ priority: "Medium" });
-          }}>{saving ? "Saving..." : "Save"}</Button>
+          }}>{saving ? "Saving..." : isEdit ? "Save changes" : "Save"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
