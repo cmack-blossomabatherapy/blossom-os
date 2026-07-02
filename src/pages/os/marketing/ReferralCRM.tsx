@@ -1258,12 +1258,12 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
   const drawerFocusStage = drawerFocusStageRaw || null;
   const setDrawerLeadId = (v: string | null) => setDrawerLeadIdRaw(v ?? "");
   const setDrawerFocusStage = (v: string | null) => setDrawerFocusStageRaw(v ?? "");
-  const [statusFilter, setStatusFilter] = useUrlState("rs", "all");
-  const [stageFilter, setStageFilter] = useUrlState("rp", "all");
-  const [rQuery, setRQuery] = useUrlState("rq", "", { history: "replace" });
-  const [rStateFilter, setRStateFilter] = useUrlState("rst", "all");
-  const [rServiceFilter, setRServiceFilter] = useUrlState("rsv", "all");
-  const [rIntakeOwnerFilter, setRIntakeOwnerFilter] = useUrlState("rio", "all");
+  const [statusFilter, _setStatusFilter] = useUrlState("rs", "all");
+  const [stageFilter, _setStageFilter] = useUrlState("rp", "all");
+  const [rQuery, _setRQuery] = useUrlState("rq", "", { history: "replace" });
+  const [rStateFilter, _setRStateFilter] = useUrlState("rst", "all");
+  const [rServiceFilter, _setRServiceFilter] = useUrlState("rsv", "all");
+  const [rIntakeOwnerFilter, _setRIntakeOwnerFilter] = useUrlState("rio", "all");
   const [selected, setSelected] = useState<Set<ID>>(new Set());
   const [bulkTaskOpen, setBulkTaskOpen] = useState(false);
   const [sortKey, setSortKey] = useUrlState("rsk", "date");
@@ -1274,9 +1274,17 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
     else { setSortKey(key); setSortDir("asc"); }
   };
   const [pageStr, setPageStr] = useUrlState("rpg", "1");
-  const [pageSizeStr, setPageSizeStr] = useUrlState("rps", "25");
+  const [pageSizeStr, _setPageSizeStr] = useUrlState("rps", "25");
   const page = Math.max(1, Number(pageStr) || 1);
   const pageSize = Math.max(1, Number(pageSizeStr) || 25);
+  const resetPage = () => { if ((Number(pageStr) || 1) !== 1) setPageStr("1"); };
+  const setStatusFilter = (v: string) => { _setStatusFilter(v); resetPage(); };
+  const setStageFilter = (v: string) => { _setStageFilter(v); resetPage(); };
+  const setRQuery = (v: string) => { _setRQuery(v); resetPage(); };
+  const setRStateFilter = (v: string) => { _setRStateFilter(v); resetPage(); };
+  const setRServiceFilter = (v: string) => { _setRServiceFilter(v); resetPage(); };
+  const setRIntakeOwnerFilter = (v: string) => { _setRIntakeOwnerFilter(v); resetPage(); };
+  const setPageSizeStr = (v: string) => { _setPageSizeStr(v); resetPage(); };
   const allRows = scopedReferrals(s);
   const rows = useMemo(() => {
     const filtered = allRows.filter((r) => {
@@ -1330,11 +1338,6 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
       return 0;
     });
   }, [allRows, statusFilter, stageFilter, leadById, rStateFilter, rServiceFilter, rIntakeOwnerFilter, rQuery, s, sort.key, sort.dir]);
-
-  useEffect(() => {
-    if (page !== 1) setPageStr("1");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, stageFilter, rStateFilter, rServiceFilter, rIntakeOwnerFilter, rQuery, pageSize]);
 
   const pagedRows = useMemo(
     () => rows.slice((page - 1) * pageSize, page * pageSize),
