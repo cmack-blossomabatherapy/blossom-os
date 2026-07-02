@@ -572,7 +572,7 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
               </tr>
             </thead>
             <tbody>
-              {rows.map((c) => (
+              {pagedRows.map((c) => (
                 <tr key={c.id} className="border-t hover:bg-muted/30">
                   <td className="px-3 py-2"><Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggleOne(c.id)} /></td>
                   <td className="px-3 py-2">
@@ -602,6 +602,13 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalRows={rows.length}
+          onPageChange={(p) => setPageStr(String(p))}
+          onPageSizeChange={(n) => { setPageSizeStr(String(n)); setPageStr("1"); }}
+        />
       </div>
 
       <NewContactDialog open={creating} onOpenChange={setCreating} />
