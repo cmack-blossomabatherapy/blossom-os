@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   HeartHandshake, MessageSquare, Briefcase, Users, BarChart3,
@@ -1376,16 +1376,63 @@ function HandoffQueue({
   error: Error | null;
   refresh: () => void;
 } & HandoffActions) {
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [systemFilter, setSystemFilter] = useState<string>("all");
-  const [stateFilter, setStateFilter] = useState<string>("all");
-  const [linkFilter, setLinkFilter] = useState<string>("all"); // all|linked|unlinked
-  const [assignFilter, setAssignFilter] = useState<string>("all"); // all|assigned|unassigned
-  const [sortMode, setSortMode] = useState<string>("newest");
-  const [search, setSearch] = useState("");
+  // Persist filter/sort/search across tab switches and remounts.
+  const PREFS_KEY = "bd.handoffQueue.prefs.v1";
+  type HandoffPrefs = {
+    statusFilter: string;
+    systemFilter: string;
+    stateFilter: string;
+    linkFilter: string;
+    assignFilter: string;
+    sortMode: string;
+    search: string;
+  };
+  const defaultPrefs: HandoffPrefs = {
+    statusFilter: "all",
+    systemFilter: "all",
+    stateFilter: "all",
+    linkFilter: "all",
+    assignFilter: "all",
+    sortMode: "newest",
+    search: "",
+  };
+  const loadedPrefs = useMemo<HandoffPrefs>(() => {
+    if (typeof window === "undefined") return defaultPrefs;
+    try {
+      const raw = window.sessionStorage.getItem(PREFS_KEY);
+      if (!raw) return defaultPrefs;
+      return { ...defaultPrefs, ...(JSON.parse(raw) as Partial<HandoffPrefs>) };
+    } catch {
+      return defaultPrefs;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [statusFilter, setStatusFilter] = useState<string>(loadedPrefs.statusFilter);
+  const [systemFilter, setSystemFilter] = useState<string>(loadedPrefs.systemFilter);
+  const [stateFilter, setStateFilter] = useState<string>(loadedPrefs.stateFilter);
+  const [linkFilter, setLinkFilter] = useState<string>(loadedPrefs.linkFilter);
+  const [assignFilter, setAssignFilter] = useState<string>(loadedPrefs.assignFilter);
+  const [sortMode, setSortMode] = useState<string>(loadedPrefs.sortMode);
+  const [search, setSearch] = useState<string>(loadedPrefs.search);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({ statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search }),
+      );
+    } catch {
+      /* ignore quota */
+    }
+  }, [statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search]);
   const [linkPickerFor, setLinkPickerFor] = useState<MarketingSourceEventRow | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Infinite scroll: render in pages of PAGE_SIZE, expand via IntersectionObserver.
+  const PAGE_SIZE = 25;
+  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -1445,6 +1492,29 @@ function HandoffQueue({
     }
     return rows;
   }, [events, outreach, statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search]);
+
+  // Reset paging when filters/sort/search change so users always start at the top of a fresh result set.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search]);
+
+  const visibleRows = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMore = visibleCount < filtered.length;
+
+  useEffect(() => {
+    if (!hasMore) return;
+    const node = sentinelRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          setVisibleCount((c) => Math.min(c + PAGE_SIZE, filtered.length));
+        }
+      }
+    }, { rootMargin: "300px" });
+    io.observe(node);
+    return () => io.disconnect();
+  }, [hasMore, filtered.length]);
 
   const partnerById = useMemo(() => {
     const m = new Map<string, ReferralCompany>();
@@ -1578,7 +1648,7 @@ function HandoffQueue({
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(({ ev, derived }) => {
+          {visibleRows.map(({ ev, derived }) => {
             const partner = ev.referral_company_id ? partnerById.get(ev.referral_company_id) : null;
             const busy = busyId === ev.id;
             const suggestion =
@@ -1701,6 +1771,27 @@ function HandoffQueue({
               </div>
             );
           })}
+          {hasMore ? (
+            <div
+              ref={sentinelRef}
+              className="rounded-2xl border border-dashed border-border/60 bg-card/30 p-3 text-center text-[11px] text-muted-foreground"
+            >
+              Loading more… ({visibleRows.length} of {filtered.length})
+              <div className="mt-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setVisibleCount((c) => Math.min(c + PAGE_SIZE, filtered.length))}
+                >
+                  Load more
+                </Button>
+              </div>
+            </div>
+          ) : filtered.length > PAGE_SIZE ? (
+            <div className="text-center text-[11px] text-muted-foreground py-2">
+              All {filtered.length} handoffs loaded
+            </div>
+          ) : null}
         </div>
       )}
 
