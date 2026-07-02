@@ -78,6 +78,32 @@ export function useStaffingWorkspace() {
         const row = await updateMatchStatus(id, status, extra);
         setMatches((prev) => prev.map((m) => (m.id === id ? row : m)));
         toast.success(`Match marked ${status}`);
+        // Audit trail — persist a status_change activity row so match
+        // decisions have durable history alongside the match record itself.
+        try {
+          const title =
+            status === "Assigned" ? `Match assigned to ${row.rbt_name}`
+            : status === "Rejected" ? `Match rejected for ${row.rbt_name}`
+            : status === "Pending" ? `Match re-opened for ${row.rbt_name}`
+            : `Match marked ${status} for ${row.rbt_name}`;
+          const activityStatus =
+            status === "Assigned" ? "resolved"
+            : status === "Rejected" ? "resolved"
+            : status === "Pending" ? "in_progress"
+            : "open";
+          const activityRow = await upsertCaseActivity({
+            client_id: row.client_id,
+            client_name: row.rbt_name, // best available label when client name not hydrated here
+            activity_type: "status_change",
+            title,
+            detail: status === "Rejected" ? extra?.rejection_reason ?? null : extra?.notes ?? null,
+            status: activityStatus as StaffingCaseActivityRow["status"],
+          });
+          setActivity((prev) => [activityRow, ...prev.filter((a) => a.id !== activityRow.id)]);
+        } catch (auditErr) {
+          // Non-fatal: audit failure must not block the status change UX.
+          console.warn("staffing status_change audit write failed", auditErr);
+        }
         return row;
       } catch (err) {
         toast.error("Failed to update match", { description: (err as Error).message });

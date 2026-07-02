@@ -54,7 +54,7 @@
  const resources: Resource[] = [
    // Category 1 — Staffing Operations
    { id: "s1", title: "Staffing SOP", description: "Master SOP for staffing operations and execution.", category: "Staffing Operations", type: "SOP", minutes: 12, updated: "2026-05-12", featured: true, workflows: ["staffing"], owner: "Scheduling" },
-   { id: "s2", title: "Staffing Queue Workflow", description: "How Scheduling prioritizes and works the staffing queue.", category: "Staffing Operations", type: "Workflow", minutes: 8, updated: "2026-05-10", workflows: ["staffing"], href: "/staffing", owner: "Scheduling" },
+   { id: "s2", title: "Staffing Queue Workflow", description: "How Scheduling prioritizes and works the staffing queue.", category: "Staffing Operations", type: "Workflow", minutes: 8, updated: "2026-05-10", workflows: ["staffing"], href: "/ops/staffing?tab=open-cases", owner: "Scheduling" },
    { id: "s3", title: "Pairing Workflow SOP", description: "How BCBA / RBT / client pairings are coordinated.", category: "Staffing Operations", type: "SOP", minutes: 9, updated: "2026-05-08", featured: true, workflows: ["pairing"], owner: "Scheduling" },
    { id: "s4", title: "Staffing Escalation Guide", description: "What to do when staffing becomes blocked or delayed.", category: "Staffing Operations", type: "Guide", minutes: 6, updated: "2026-05-04", workflows: ["escalation", "staffing"], owner: "Scheduling" },
    { id: "s5", title: "Coverage Risk Workflow", description: "How to identify and manage staffing instability.", category: "Staffing Operations", type: "Workflow", minutes: 7, updated: "2026-05-06", workflows: ["coverage"], owner: "Scheduling" },
@@ -124,7 +124,7 @@
 
    // Category 8 — Systems & Tools
    { id: "y1", title: "Blossom OS Scheduling Workspace Guide", description: "Every panel, filter, and action in the Scheduling workspace.", category: "Systems & Tools", type: "Guide", minutes: 6, updated: "2026-05-18", href: "/scheduling", system: "Blossom OS", owner: "Operations" },
-   { id: "y2", title: "Staffing Queue Usage Guide", description: "How to work the staffing queue end-to-end.", category: "Systems & Tools", type: "Guide", minutes: 5, updated: "2026-05-15", href: "/staffing", system: "Blossom OS", owner: "Operations" },
+   { id: "y2", title: "Staffing Queue Usage Guide", description: "How to work the staffing queue end-to-end.", category: "Systems & Tools", type: "Guide", minutes: 5, updated: "2026-05-15", href: "/ops/staffing?tab=open-cases", system: "Blossom OS", owner: "Operations" },
    { id: "y3", title: "Scheduling Dashboard Guide", description: "Reading the scheduling team dashboard.", category: "Systems & Tools", type: "Guide", minutes: 4, updated: "2026-05-11", href: "/scheduling", system: "Blossom OS", owner: "Operations" },
    { id: "y4", title: "Operational Insights Usage Guide", description: "Using AI for scheduling questions and operational lookups.", category: "Systems & Tools", type: "Guide", minutes: 4, updated: "2026-05-08", href: "/ai/assistant", system: "Blossom OS", owner: "Operations" },
    { id: "y5", title: "CentralReach Scheduling Reference", description: "Source-of-truth scheduling reference in CR.", category: "Systems & Tools", type: "Reference", minutes: 6, updated: "2026-04-26", system: "CentralReach", owner: "Operations" },
@@ -548,7 +548,7 @@
          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Jump to</p>
          <div className="mt-2 space-y-1">
            <RailLink to="/scheduling" label="Scheduling workspace" icon={CalendarDays} />
-           <RailLink to="/staffing" label="Staffing Queue" icon={UserPlus} />
+           <RailLink to="/ops/staffing?tab=coverage" label="Staffing Queue" icon={UserPlus} />
            <RailLink to="/scheduling" label="Scheduling dashboard" icon={Layers} />
            <RailLink to="/ai/assistant" label="Operational Insights" icon={Bot} />
            <RailLink to="/training" label="Training Academy" icon={GraduationCap} />

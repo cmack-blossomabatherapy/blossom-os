@@ -230,7 +230,7 @@ import { useSchedulingActions } from "@/hooks/useSchedulingActions";
                 <button onClick={() => setCancelOpen(true)} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition text-sm font-medium inline-flex items-center gap-2">
                  <MessageSquare className="size-4" /> Log Cancellation
                </button>
-               <Link to="/staffing" className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">
+               <Link to="/ops/staffing?tab=coverage" className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">
                  <ListChecks className="size-4" /> Open Staffing Queue
                </Link>
              </div>
@@ -436,7 +436,7 @@ import { useSchedulingActions } from "@/hooks/useSchedulingActions";
            </div>
            <div className="flex flex-wrap items-center gap-2">
              <Link to={`/clients?id=${client.id}`} className="h-9 px-3 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted text-xs font-medium inline-flex items-center gap-1.5"><ArrowUpRight className="size-3.5" /> Open Client</Link>
-             <Link to="/staffing" className="h-9 px-3 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted text-xs font-medium inline-flex items-center gap-1.5"><Users className="size-3.5" /> Staffing Queue</Link>
+             <Link to="/ops/staffing?tab=open-cases" className="h-9 px-3 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted text-xs font-medium inline-flex items-center gap-1.5"><Users className="size-3.5" /> Staffing Queue</Link>
              <Link to="/staff" className="h-9 px-3 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted text-xs font-medium inline-flex items-center gap-1.5"><ShieldCheck className="size-3.5" /> BCBA / RBT</Link>
              <Link to="/authorizations" className="h-9 px-3 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted text-xs font-medium inline-flex items-center gap-1.5"><Activity className="size-3.5" /> Auths</Link>
            </div>

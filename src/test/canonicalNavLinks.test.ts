@@ -83,7 +83,7 @@ describe("Pass 5B: navigation configs use canonical routes", () => {
       ['/intake-dashboard', '/intake'],
       ['/authorizations-dashboard', '/authorizations'],
       ['/scheduling-dashboard', '/scheduling'],
-      ['/staffing-dashboard', '/staffing'],
+      ['/staffing-dashboard', '/ops/staffing?tab=open-cases'],
       ['/qa-dashboard', '/qa-workspace'],
       ['/finance-dashboard', '/billing-finance'],
       ['/recruiting-dashboard', '/recruiting/workspace'],
@@ -94,9 +94,10 @@ describe("Pass 5B: navigation configs use canonical routes", () => {
       ['/payroll', '/payroll/workspace'],
       ['/intake/vob-decision', '/vob-decision-center'],
     ];
+    const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\//g, "\\/");
     for (const [from, to] of required) {
       const re = new RegExp(
-        `<Route\\s+path="${from.replace(/[/]/g, "\\/")}"\\s+element=\\{<Navigate to="${to.replace(/[/]/g, "\\/")}" replace />\\}`,
+        `<Route\\s+path="${escapeRegex(from)}"\\s+element=\\{<Navigate to="${escapeRegex(to)}" replace />\\}`,
       );
       expect(combined).toMatch(re);
     }

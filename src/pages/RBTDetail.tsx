@@ -17,7 +17,7 @@ export default function RBTDetail() {
     return (
       <div className="p-8 text-center">
         <p className="text-sm text-muted-foreground">Staff member not found</p>
-        <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate("/staffing")}>
+        <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate("/ops/staffing?tab=open-cases")}>
           <ArrowLeft className="h-4 w-4 mr-1.5" /> Back to Staffing
         </Button>
       </div>
@@ -31,7 +31,7 @@ export default function RBTDetail() {
   return (
     <div className="space-y-5 animate-fade-in">
       <button
-        onClick={() => navigate("/staffing")}
+        onClick={() => navigate("/ops/staffing?tab=map")}
         className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to Staffing
