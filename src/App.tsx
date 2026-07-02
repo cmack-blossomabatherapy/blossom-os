@@ -1058,6 +1058,7 @@ const App = () => (
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/pipeline" element={<Pipeline />} />
                   <Route path="/staffing/:id" element={<RBTDetail />} />
+                  <Route path="/ops/staffing/rbt/:id" element={<RBTDetail />} />
                   <Route path="/qa" element={<Navigate to="/qa-team" replace />} />
                   <Route path="/qa/:id" element={<QADetail />} />
                   <Route path="/documents" element={<Documents />} />
