@@ -1130,7 +1130,7 @@ function RightContextPanel({
           Ask Blossom AI can help summarize an authorization, explain a blocker, or draft a PR follow-up.
         </p>
         <Link
-          to="/ai-assistant?context=authorizations"
+          to="/ai/assistant?context=authorizations"
           className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-lg bg-foreground/90 px-2.5 text-[12px] font-semibold text-background transition hover:bg-foreground"
         >
           Open Ask Blossom <ChevronRight className="h-3 w-3" />

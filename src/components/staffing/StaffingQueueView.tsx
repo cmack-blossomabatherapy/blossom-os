@@ -123,7 +123,11 @@ export function StaffingQueueView({ searchQuery, onStartMatching }: Props) {
                         <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(event) => { event.stopPropagation(); onStartMatching?.(); }}>
                           Assign <ArrowRight className="h-3 w-3 ml-1" />
                         </Button>
-                        {n.client.rbt && <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(event) => { event.stopPropagation(); assignRbt([n.client.id], n.client.rbt ?? ""); }}>Confirm</Button>}
+                        {n.client.rbt && <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={async (event) => {
+                          event.stopPropagation();
+                          try { await assignRbt([n.client.id], n.client.rbt ?? ""); }
+                          catch (err) { console.error("Failed to confirm RBT assignment", err); }
+                        }}>Confirm</Button>}
                       </td>
                     </tr>
                   ))}
