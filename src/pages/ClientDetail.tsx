@@ -239,7 +239,10 @@ export default function ClientDetail() {
           <DropdownMenuContent align="start">
             <DropdownMenuLabel className="text-[10px]">Assign BCBA</DropdownMenuLabel>
             {BCBAS.map((b) => (
-              <DropdownMenuItem key={b} onClick={() => { assignBcba([client.id], b); toast.success(`${b} assigned`); }}>{b}</DropdownMenuItem>
+              <DropdownMenuItem key={b} onClick={async () => {
+                try { await assignBcba([client.id], b); toast.success(`${b} assigned`); }
+                catch (err) { toast.error(err instanceof Error ? err.message : "Failed to assign BCBA"); }
+              }}>{b}</DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -253,7 +256,10 @@ export default function ClientDetail() {
           <DropdownMenuContent align="start">
             <DropdownMenuLabel className="text-[10px]">Assign RBT</DropdownMenuLabel>
             {RBTS.map((r) => (
-              <DropdownMenuItem key={r} onClick={() => { assignRbt([client.id], r); toast.success(`${r} assigned`); }}>{r}</DropdownMenuItem>
+              <DropdownMenuItem key={r} onClick={async () => {
+                try { await assignRbt([client.id], r); toast.success(`${r} assigned`); }
+                catch (err) { toast.error(err instanceof Error ? err.message : "Failed to assign RBT"); }
+              }}>{r}</DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -730,7 +736,10 @@ export default function ClientDetail() {
         label="Start date"
         defaultDate={client.startDate ?? undefined}
         confirmLabel="Set start date"
-        onConfirm={(d) => { setStartDate([client.id], d); toast.success("Start date set"); }}
+        onConfirm={async (d) => {
+          try { await setStartDate([client.id], d); toast.success("Start date set"); }
+          catch (err) { toast.error(err instanceof Error ? err.message : "Failed to set start date"); }
+        }}
       />
 
       <DatePickerDialog
