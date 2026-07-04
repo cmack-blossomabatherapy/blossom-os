@@ -31,6 +31,7 @@ import type {
 import { applyPreferenceScoring, type PreferenceScoringResult } from "@/lib/os/staffing/preferenceScoring";
 import { CaseDetailDrawer } from "@/components/staffing/CaseDetailDrawer";
 import { ProposeMatchDialog } from "@/components/staffing/ProposeMatchDialog";
+import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
 import type { Client } from "@/data/clients";
 
 /* --------------------- structured match fit helper --------------------- */
@@ -227,6 +228,7 @@ function OpenCasesTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
         <Button size="sm" variant="outline" onClick={() => setTab("match-queue")}>
           Go to Match Queue <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
         </Button>
+        <SendToStateSupportButton fromDepartment="Staffing" />
       </div>
 
       <Card className="rounded-2xl border-border/60 overflow-hidden">
