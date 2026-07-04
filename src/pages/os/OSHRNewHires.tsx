@@ -14,6 +14,7 @@ import { HRRecentActivity } from "@/components/hr/HRRecentActivity";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { logHrEvent } from "@/lib/hr/activityEvents";
+import { getHrReadinessBlockers } from "@/lib/hr/readiness";
 import { ONBOARDING_STAGES, type OnboardingStatus } from "@/lib/hr/types";
 import {
   useRecruitingCandidates, useRecruitingBackgroundChecks,
@@ -860,20 +861,14 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
               primary
               onClick={async () => {
                 if (emp) {
-                  const blockers: string[] = [];
-                  if (onb) {
-                    if ((onb as any).blockers && (onb as any).blockers.length) blockers.push(...(onb as any).blockers);
-                    const stellar = (onb as any).stellar_status;
-                    if (stellar && !["ready", "synced", "not_applicable"].includes(stellar)) blockers.push("Stellar (background check)");
-                    const viv = (onb as any).viventium_status;
-                    if (viv && !["ready", "synced", "not_applicable"].includes(viv)) blockers.push("Viventium");
-                    const cr = (onb as any).centralreach_status;
-                    if (cr && !["ready", "synced", "not_applicable"].includes(cr)) blockers.push("CentralReach");
-                  }
-                  const missingDocs = docs.filter((d) => d.required && d.status !== "verified");
-                  if (missingDocs.length) blockers.push(`${missingDocs.length} required document(s) not verified`);
-                  const trIncomplete = trs.filter((t) => t.status !== "completed");
-                  if (trIncomplete.length) blockers.push(`${trIncomplete.length} training(s) not complete`);
+                  const blockers = getHrReadinessBlockers({
+                    onboarding: onb as any,
+                    documents: docs as any,
+                    trainings: trs as any,
+                    orientationRequired: !!orient,
+                    orientationCompleted: orient?.status === "completed",
+                    employeeRole: emp.job_title,
+                  });
                   if (blockers.length) {
                     toast({ title: "Cannot mark ready — blockers exist", description: blockers.join(", ") });
                     await logHrEvent({
