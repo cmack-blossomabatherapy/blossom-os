@@ -38,6 +38,7 @@ function fromTaskRow(r: any): OpsTask {
     linkedCandidateId: r.candidate_id ?? undefined,
     notes: [],
     completedAt: r.completed_at ?? undefined,
+    centralreachSyncStatus: r.centralreach_sync_status ?? undefined,
   };
 }
 
@@ -60,6 +61,7 @@ function fromEscRow(r: any): Escalation {
     linkedCandidateId: r.candidate_id ?? undefined,
     resolution: r.resolution ?? undefined,
     notes: [],
+    centralreachSyncStatus: r.centralreach_sync_status ?? undefined,
   };
 }
 
