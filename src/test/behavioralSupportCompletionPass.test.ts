@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { readdirSync } from "node:fs";
 import { ROLE_MENUS } from "@/lib/os/roleMenus";
 import { ROLE_META } from "@/lib/roles";
 import { visibleReportsForRole } from "@/lib/os/reportsCatalog";
@@ -106,5 +107,71 @@ describe("Behavioral Support completion pass", () => {
     expect(bs).toBeDefined();
     expect(bs!.description.toLowerCase()).not.toContain("reports and training only");
     expect(bs!.owns.length).toBeGreaterThan(1);
+  });
+});
+
+describe("Behavioral Support pass 2 hardening", () => {
+  const pagesDir = "src/pages/os/behavioral-support";
+  const pageFiles = readdirSync(resolve(process.cwd(), pagesDir))
+    .filter((f) => f.endsWith(".tsx"));
+
+  it("has no browser prompt() calls in any Behavioral Support page", () => {
+    for (const f of pageFiles) {
+      const src = read(`${pagesDir}/${f}`);
+      // strip comments to avoid false positives
+      const stripped = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+      expect(stripped, `prompt() in ${f}`).not.toMatch(/\bprompt\s*\(/);
+    }
+  });
+
+  it("evaluations page is a real Behavioral Support-safe surface, not a Navigate redirect", () => {
+    const src = read(`${pagesDir}/BehavioralSupportEvaluations.tsx`);
+    expect(src).not.toMatch(/<Navigate\s+to=/);
+    expect(src).toMatch(/Behavioral Support Evaluations/);
+    expect(src).toMatch(/useBehavioralSupportData/);
+  });
+
+  it("CentralReach mapper does not compute supervision ratio from cancellations/rbt hours", () => {
+    const src = read("src/lib/integrations/centralreach/behavioralSupportMapper.ts");
+    expect(src).not.toMatch(/cancellationsLast30d\s*\)\s*\/\s*Math\.max\(\s*p\.rbtHoursLast30d/);
+    expect(src).toMatch(/97155/);
+    expect(src).toMatch(/97153/);
+    expect(src).toMatch(/computeSupervisionRatio/);
+  });
+
+  it("hardening migration exists with CHECK constraints and tightened plan/task SELECT", () => {
+    const migDir = resolve(process.cwd(), "supabase/migrations");
+    const files = readdirSync(migDir).filter((f) => f.endsWith(".sql"));
+    const hits = files
+      .map((f) => read(`supabase/migrations/${f}`))
+      .filter((sql) =>
+        sql.includes("bs_cases_severity_chk") &&
+        sql.includes("bs_plans_status_chk") &&
+        sql.includes("bs_tasks_status_chk") &&
+        sql.includes("bs_fu_status_chk"),
+      );
+    expect(hits.length, "expected a Behavioral Support hardening migration").toBeGreaterThan(0);
+    // The same migration must also tighten bs_plans_select / bs_tasks_select
+    // so BCBAs no longer have broad SELECT on all plans/tasks.
+    const hardening = hits[0];
+    expect(hardening).toMatch(/DROP POLICY IF EXISTS "bs_plans_select"/);
+    expect(hardening).toMatch(/DROP POLICY IF EXISTS "bs_tasks_select"/);
+    // The new SELECT policies must not grant broad bcba access.
+    const newPlanPolicy = hardening.split(/DROP POLICY IF EXISTS "bs_plans_select"[\s\S]*?CREATE POLICY "bs_plans_select"/)[1]?.split(";")[0] ?? "";
+    expect(newPlanPolicy).not.toMatch(/'bcba'/);
+    const newTaskPolicy = hardening.split(/DROP POLICY IF EXISTS "bs_tasks_select"[\s\S]*?CREATE POLICY "bs_tasks_select"/)[1]?.split(";")[0] ?? "";
+    expect(newTaskPolicy).not.toMatch(/'bcba'/);
+  });
+
+  it("Behavioral Support menu still exposes exactly one Reports link at /reports", () => {
+    const menu = ROLE_MENUS.behavioral_support!;
+    const paths = menu.sections.flatMap((s) => s.items.map((i) => i.path));
+    expect(paths.filter((p) => p === "/reports").length).toBe(1);
+    expect(paths).not.toContain("/behavioral-support/reports");
+  });
+
+  it("BCBA Productivity Report remains in the shared reports catalog for behavioral_support", () => {
+    const ids = visibleReportsForRole("behavioral_support").map((r) => r.id);
+    expect(ids).toContain("bcba-productivity-report-v3");
   });
 });
