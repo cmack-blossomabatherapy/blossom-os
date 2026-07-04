@@ -214,3 +214,95 @@ export async function insertActivity(input: {
     related_id: input.relatedId ?? null,
   });
 }
+
+/* ------------------------------ pass 3 ----------------------------------- */
+
+/**
+ * Subscribes to realtime changes on all five State Operations tables.
+ * The callback fires (with a debounce burden left to the caller) whenever
+ * anything changes so the store can rehydrate.
+ * Returns a teardown function.
+ */
+export function subscribeStateOperationsRealtime(cb: () => void): () => void {
+  const channel = supabase
+    .channel(`state-operations-${Math.random().toString(36).slice(2, 8)}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "state_operational_tasks" },       cb)
+    .on("postgres_changes", { event: "*", schema: "public", table: "state_operational_escalations" }, cb)
+    .on("postgres_changes", { event: "*", schema: "public", table: "state_operational_notes" },       cb)
+    .on("postgres_changes", { event: "*", schema: "public", table: "state_operational_activity" },    cb)
+    .on("postgres_changes", { event: "*", schema: "public", table: "state_department_handoffs" },     cb)
+    .subscribe();
+  return () => { void supabase.removeChannel(channel); };
+}
+
+/**
+ * Cross-department handoff — persists to `state_department_handoffs` AND
+ * creates a companion `state_operational_tasks` row scoped to the receiving
+ * department so it shows up in that department's operational task queue.
+ */
+export async function deliverHandoff(input: {
+  state: StateCode;
+  fromDepartment: Department;
+  toDepartment: Department;
+  subject: string;
+  body?: string;
+  priority?: Priority;
+  createdBy: string;
+  linkedClientId?: string;
+  linkedLeadId?: string;
+  linkedCandidateId?: string;
+  relatedEscalationId?: string;
+}) {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id ?? null;
+
+  // 1) Write the canonical handoff record.
+  const { data: handoff } = await supabase
+    .from("state_department_handoffs")
+    .insert({
+      state_code: input.state,
+      from_department: input.fromDepartment,
+      to_department: input.toDepartment,
+      subject: input.subject,
+      body: input.body ?? null,
+      priority: input.priority ?? "medium",
+      status: "open",
+      created_by: uid,
+      created_by_name: input.createdBy,
+      related_escalation_id: input.relatedEscalationId ?? null,
+      client_id: input.linkedClientId ?? null,
+      lead_id: input.linkedLeadId ?? null,
+      candidate_id: input.linkedCandidateId ?? null,
+      centralreach_sync_status: "not_connected",
+    })
+    .select("id")
+    .maybeSingle();
+
+  // 2) Companion operational task in the receiving department so it lands
+  //    in that department's queue instead of getting lost in a handoff table.
+  await insertTask({
+    state: input.state,
+    title: `[Handoff from ${input.fromDepartment}] ${input.subject}`,
+    description: input.body,
+    department: input.toDepartment,
+    priority: input.priority ?? "medium",
+    createdBy: input.createdBy,
+    relatedEscalationId: input.relatedEscalationId,
+    linkedClientId: input.linkedClientId,
+    linkedLeadId: input.linkedLeadId,
+    linkedCandidateId: input.linkedCandidateId,
+    sourceModule: "state_handoff",
+  });
+
+  // 3) Activity feed entry so directors see the routing happen live.
+  await insertActivity({
+    kind: "handoff",
+    message: `${input.fromDepartment} → ${input.toDepartment}: ${input.subject}`,
+    actor: input.createdBy,
+    state: input.state,
+    relatedType: "task",
+    relatedId: (handoff as any)?.id,
+  });
+
+  return handoff;
+}
