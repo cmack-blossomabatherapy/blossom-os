@@ -26,6 +26,7 @@ import {
   type EscalationStatus, type TaskStatus,
 } from "@/lib/os/stateDirector/stateDirectorStore";
 import { StateOpsCentralReachSummaryBadge } from "@/components/stateDirector/StateOpsCentralReachBadge";
+import { DailyHealthNotesPanel } from "@/components/stateDirector/DailyHealthNotesPanel";
 
 /* --------------------------------- helpers -------------------------------- */
 
@@ -47,6 +48,24 @@ function useActor() {
   return role === "state_director" ? "State Director"
     : role === "assistant_state_director" ? "Assistant State Director"
     : String(role || "Operator").replace(/_/g, " ");
+}
+
+function StateOperationsDailyHealthSlot({
+  stateFilter, isLeadership, assigned,
+}: {
+  stateFilter: StateCode | "all";
+  isLeadership: boolean;
+  assigned?: StateCode;
+}) {
+  const actor = useActor();
+  if (stateFilter === "all") return null;
+  return (
+    <DailyHealthNotesPanel
+      stateCode={stateFilter}
+      actor={actor}
+      canEdit={!isLeadership || Boolean(assigned)}
+    />
+  );
 }
 
 function useAvailableStates() {
@@ -546,7 +565,6 @@ export function StateOperationsPage() {
     { label: "Staffing",        icon: Users,       to: "/ops/staffing" },
     { label: "Scheduling",      icon: Calendar,    to: "/ops/scheduling" },
     { label: "QA / Clinical",   icon: Stethoscope, to: "/qa-team" },
-    { label: "Phone",           icon: Phone,       to: "/phone" },
   ];
 
   return (
@@ -583,6 +601,12 @@ export function StateOperationsPage() {
       </div>
 
       <StateOpsCentralReachSummaryBadge pendingCount={pendingCrCount} />
+
+      <StateOperationsDailyHealthSlot
+        stateFilter={stateFilter}
+        isLeadership={isLeadership}
+        assigned={assigned}
+      />
 
       <SectionCard title="State health" description={isLeadership ? "All states in scope." : "Your assigned state."}>
         <div className="overflow-x-auto -mx-2">

@@ -162,7 +162,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Staffing Support",        path: "/ops/staffing",           icon: Users },
           { label: "Scheduling Support",      path: "/ops/scheduling",         icon: Calendar },
           { label: "Authorization Support",   path: "/authorizations",         icon: ShieldCheck },
-          { label: "Phone System",            path: "/phone",                  icon: Phone },
         ],
       },
       STATE_TRAINING_AND_RESOURCES,

@@ -107,6 +107,19 @@ export function setStateDirectorAdapter(next: StateDirectorAdapter) { adapter = 
 /* ------------------------------- helpers ---------------------------------- */
 
 const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+const dbUuid = (): string => {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch { /* fallthrough */ }
+  // RFC4122 v4-ish fallback for environments without crypto.randomUUID.
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 const nowIso = () => new Date().toISOString();
 
 function record(kind: ActivityKind, message: string, actor: string, state?: StateCode, relatedId?: string): ActivityEvent {
@@ -161,7 +174,7 @@ export const stateDirectorStore = {
     let created: Escalation | null = null;
     mutate((s) => {
       const esc: Escalation = {
-        id: uid("esc"),
+        id: dbUuid(),
         state: input.state,
         title: input.title.trim(),
         description: input.description?.trim(),
@@ -185,14 +198,23 @@ export const stateDirectorStore = {
     });
     // Fire-and-forget Supabase persistence.
     void sbInsertEscalation({
+      id: created!.id,
       state: created!.state, title: created!.title,
       description: created!.description, department: created!.department,
       assignedTo: created!.assignedTo, priority: created!.priority,
       status: created!.status, dueAt: created!.dueAt, createdBy: created!.createdBy,
       linkedClientId: created!.linkedClientId, linkedLeadId: created!.linkedLeadId,
       linkedCandidateId: created!.linkedCandidateId,
+      sourceModule: "state_director_store",
     });
-    void sbInsertActivity({ kind: "escalation_created", message: `Escalation opened — ${created!.title}`, actor: input.createdBy, state: created!.state, relatedType: "escalation" });
+    void sbInsertActivity({
+      kind: "escalation_created",
+      message: `Escalation opened — ${created!.title}`,
+      actor: input.createdBy,
+      state: created!.state,
+      relatedType: "escalation",
+      relatedId: created!.id,
+    });
     return created!;
   },
 
@@ -227,7 +249,7 @@ export const stateDirectorStore = {
     mutate((s) => {
       const i = s.escalations.findIndex((e) => e.id === escId);
       if (i < 0 || !body.trim()) return;
-      const note: EscalationNote = { id: uid("note"), author, body: body.trim(), createdAt: nowIso() };
+      const note: EscalationNote = { id: dbUuid(), author, body: body.trim(), createdAt: nowIso() };
       s.escalations[i].notes.unshift(note);
       s.escalations[i].updatedAt = nowIso();
       s.activity.unshift(record("note_added", `Note added — ${s.escalations[i].title}`, author, s.escalations[i].state, escId));
@@ -235,7 +257,7 @@ export const stateDirectorStore = {
     // Best-effort Supabase persistence.
     const parent = adapter.read().escalations.find((e) => e.id === escId);
     if (parent && body.trim()) {
-      void sbInsertNote({ parentType: "escalation", parentId: escId, state: parent.state, body: body.trim(), author });
+      void sbInsertNote({ id: parent.notes[0]?.id, parentType: "escalation", parentId: escId, state: parent.state, body: body.trim(), author });
     }
   },
 
@@ -258,7 +280,7 @@ export const stateDirectorStore = {
     let created: OpsTask | null = null;
     mutate((s) => {
       const t: OpsTask = {
-        id: uid("task"),
+        id: dbUuid(),
         state: input.state,
         title: input.title.trim(),
         description: input.description?.trim(),
@@ -282,14 +304,24 @@ export const stateDirectorStore = {
       created = t;
     });
     void sbInsertTask({
+      id: created!.id,
       state: created!.state, title: created!.title,
       description: created!.description, department: created!.department,
       owner: created!.owner, priority: created!.priority, dueAt: created!.dueAt,
       createdBy: created!.createdBy,
       linkedClientId: created!.linkedClientId, linkedLeadId: created!.linkedLeadId,
       linkedCandidateId: created!.linkedCandidateId,
+      relatedEscalationId: created!.relatedEscalationId,
+      sourceModule: "state_director_store",
     });
-    void sbInsertActivity({ kind: "task_created", message: `Task created — ${created!.title}`, actor: input.createdBy, state: created!.state, relatedType: "task" });
+    void sbInsertActivity({
+      kind: "task_created",
+      message: `Task created — ${created!.title}`,
+      actor: input.createdBy,
+      state: created!.state,
+      relatedType: "task",
+      relatedId: created!.id,
+    });
     return created!;
   },
 
@@ -328,7 +360,7 @@ export const stateDirectorStore = {
       if (i < 0) return;
       const t = s.tasks[i];
       const esc: Escalation = {
-        id: uid("esc"),
+        id: dbUuid(),
         state: t.state,
         title: `Escalated task — ${t.title}`,
         description: t.description,
@@ -353,12 +385,24 @@ export const stateDirectorStore = {
     });
     if (created) {
       void sbInsertEscalation({
+        id: created.id,
         state: created.state, title: created.title,
         description: created.description, department: created.department,
         assignedTo: created.assignedTo, priority: created.priority,
         status: created.status, dueAt: created.dueAt, createdBy: created.createdBy,
+        linkedClientId: created.linkedClientId,
+        linkedLeadId: created.linkedLeadId,
+        linkedCandidateId: created.linkedCandidateId,
+        sourceModule: "state_director_store",
       });
-      void sbInsertActivity({ kind: "task_escalated", message: `Task escalated — ${created.title}`, actor, state: created.state, relatedType: "escalation" });
+      void sbInsertActivity({
+        kind: "task_escalated",
+        message: `Task escalated — ${created.title}`,
+        actor,
+        state: created.state,
+        relatedType: "escalation",
+        relatedId: created.id,
+      });
     }
     return created!;
   },
@@ -367,13 +411,13 @@ export const stateDirectorStore = {
     mutate((s) => {
       const i = s.tasks.findIndex((t) => t.id === taskId);
       if (i < 0 || !body.trim()) return;
-      s.tasks[i].notes.unshift({ id: uid("note"), author, body: body.trim(), createdAt: nowIso() });
+      s.tasks[i].notes.unshift({ id: dbUuid(), author, body: body.trim(), createdAt: nowIso() });
       s.tasks[i].updatedAt = nowIso();
       s.activity.unshift(record("note_added", `Note added — ${s.tasks[i].title}`, author, s.tasks[i].state, taskId));
     });
     const parent = adapter.read().tasks.find((t) => t.id === taskId);
     if (parent && body.trim()) {
-      void sbInsertNote({ parentType: "task", parentId: taskId, state: parent.state, body: body.trim(), author });
+      void sbInsertNote({ id: parent.notes[0]?.id, parentType: "task", parentId: taskId, state: parent.state, body: body.trim(), author });
     }
   },
 };

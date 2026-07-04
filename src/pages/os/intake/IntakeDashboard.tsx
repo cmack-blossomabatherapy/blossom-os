@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 import { cn } from "@/lib/utils";
+import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
 import {
   callParent,
   sendLeadEmail,
@@ -211,7 +212,12 @@ export default function IntakeDashboard() {
       eyebrow="Growth & Admissions"
       title="Intake Dashboard"
       description="Manage new referrals, parent communication, missing information, insurance checks, and movement from lead capture to ready to start services."
-      headerRight={<IntakeStateFilterToggle />}
+      headerRight={
+        <div className="flex items-center gap-2">
+          <IntakeStateFilterToggle />
+          <SendToStateSupportButton fromDepartment="Intake" />
+        </div>
+      }
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
         { label: "Open Leads", icon: List, to: "/leads" },

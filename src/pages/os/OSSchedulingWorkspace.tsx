@@ -16,6 +16,7 @@ import {
 } from "@/components/scheduling/SchedulingDialogs";
 import { SchedulingOverlayWarning } from "@/components/scheduling/SchedulingOverlayWarning";
 import { useSchedulingActions } from "@/hooks/useSchedulingActions";
+import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
 
 const RBT_TARGET_HOURS = 32;
 
@@ -166,6 +167,7 @@ export default function OSSchedulingWorkspace() {
               <button onClick={() => setPairingOpen(true)} className="h-10 px-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm">
                 <UserPlus className="size-4" /> Quick Pairing
               </button>
+              <SendToStateSupportButton fromDepartment="Scheduling" />
             </div>
           </div>
 
