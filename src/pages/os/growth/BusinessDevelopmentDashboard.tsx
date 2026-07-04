@@ -1087,7 +1087,7 @@ function NeedsAttentionPanel({
 }
 
 type HandoffActions = {
-  onCreatePartnerFromEvent: (prefill: Partial<PartnerForm>) => void;
+  onCreatePartnerFromEvent: (prefill: Partial<PartnerForm>, eventId?: string) => void;
   onLogOutreachForPartner: (companyId: string, prefill?: { subject?: string; notes?: string }) => void;
   onCreateTaskForPartner: (companyId: string, prefill?: { title?: string; notes?: string }) => void;
 };
@@ -1095,10 +1095,11 @@ type HandoffActions = {
 function SourceHandoffsPanel({
   partners,
   outreach,
+  tasks,
   onCreatePartnerFromEvent,
   onLogOutreachForPartner,
   onCreateTaskForPartner,
-}: { partners: ReferralCompany[]; outreach: ReferralActivity[] } & HandoffActions) {
+}: { partners: ReferralCompany[]; outreach: ReferralActivity[]; tasks: ReferralCrmTask[] } & HandoffActions) {
   const { sources, events, loading, error, refresh, hasMoreEvents, loadingMoreEvents, loadMoreEvents } = useMarketingSourceSignals();
 
   // Aggregate BD-safe view of lead source signals from referral partner data.
