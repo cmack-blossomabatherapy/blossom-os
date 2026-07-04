@@ -216,6 +216,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/ops/expiring-authorizations",
     "/ops/missing-docs",
     "/ops/payer-requirements",
+    "/ai/assistant",
   ]),
   authorization_manager: new Set<string>([
     "/authorizations",
@@ -224,6 +225,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/ops/expiring-authorizations",
     "/ops/missing-docs",
     "/ops/payer-requirements",
+    "/ai/assistant",
   ]),
   scheduling_team: new Set<string>([
     "/scheduling",
@@ -603,7 +605,6 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     // Redirect targets used by menu items above must also be treated as live
     // so the shell never renders the "coming soon" banner after redirect.
     "/scheduling-workspace",
-    "/ops/authorizations",
     "/ops/family-staffing-preferences",
   ]),
   assistant_state_director: new Set<string>([
@@ -619,7 +620,6 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/resource-library",
     "/reports",
     "/scheduling-workspace",
-    "/ops/authorizations",
     "/ops/family-staffing-preferences",
     "/qa-team",
   ]),

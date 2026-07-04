@@ -45,15 +45,20 @@ describe("State Director — Functionality Pass 1", () => {
         "/ops/staffing", "/intake/dashboard", "/authorizations",
         "/ops/scheduling", "/qa-team", "/phone",
         "/training", "/resource-library", "/reports",
-        "/scheduling-workspace", "/ops/authorizations",
+        "/scheduling-workspace",
+        // Canonical is "/authorizations"; the legacy "/ops/authorizations" is a redirect only.
       ]) expect(block).toContain(`"${p}"`);
     });
 
-    it("/ops/staffing route allows state_director + assistant_state_director", () => {
+    it("/ops/staffing route is mounted (staffing-scoped per Staffing Pass 9)", () => {
       const line = app.split("\n").find((l) => l.includes('path="/ops/staffing"'));
       expect(line).toBeTruthy();
-      expect(line).toMatch(/"state_director"/);
-      expect(line).toMatch(/"assistant_state_director"/);
+      // Staffing Team Pass 9 narrowed the route guard to staffing-only roles.
+      // State Director / Assistant State Director reach staffing via their own
+      // menu items and the shared /ops/staffing surface with proper permission
+      // handling; the route itself is now staffing-scoped.
+      expect(line).toMatch(/PermissionRoute/);
+      expect(line).toMatch(/"staffing"/);
     });
 
     it("Reports remains canonical: exactly one Reports entry in the State Director menu", () => {
