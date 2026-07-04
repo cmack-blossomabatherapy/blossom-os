@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { logHrEvent } from "@/lib/hr/activityEvents";
+import { getHrReadinessBlockers } from "@/lib/hr/readiness";
 
 /* ---------------- types ---------------- */
 interface Doc {
@@ -797,17 +798,12 @@ export default function OSHRCompliance() {
                     <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.75} /> Message
                   </button>
                   <button onClick={async () => {
-                    const pending = (openDocs ?? []).filter((d: any) => d.status === "missing" || d.status === "requested" || d.status === "expired");
-                    const integrationBlockers: string[] = [];
-                    if (openOnb) {
-                      const ok = ["ready", "synced", "not_applicable"];
-                      if ((openOnb as any).viventium_status && !ok.includes((openOnb as any).viventium_status)) integrationBlockers.push("Viventium");
-                      if ((openOnb as any).stellar_status && !ok.includes((openOnb as any).stellar_status)) integrationBlockers.push("Stellar Checks");
-                      if ((openOnb as any).centralreach_status && !ok.includes((openOnb as any).centralreach_status)) integrationBlockers.push("CentralReach");
-                    }
-                    const blockers: string[] = [];
-                    if (pending.length) blockers.push(`${pending.length} document(s) not verified`);
-                    if (integrationBlockers.length) blockers.push(`Integrations pending: ${integrationBlockers.join(", ")}`);
+                    const blockers = getHrReadinessBlockers({
+                      onboarding: openOnb as any,
+                      documents: openDocs as any,
+                      trainings: openTrn as any,
+                      employeeRole: openEmp.job_title,
+                    });
                     if (blockers.length) {
                       toast({ title: "Cannot mark ready", description: blockers.join(" · ") });
                       await logHrEvent({
@@ -815,7 +811,7 @@ export default function OSHRCompliance() {
                         title: `${openEmp.first_name} ${openEmp.last_name} blocked from staffing`,
                         description: blockers.join(" · "),
                         employeeId: openEmp.id,
-                        metadata: { pending_count: pending.length, integration_blockers: integrationBlockers },
+                        metadata: { blockers },
                       });
                       return;
                     }
