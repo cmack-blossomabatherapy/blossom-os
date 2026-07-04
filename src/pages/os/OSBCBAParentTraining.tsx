@@ -10,6 +10,7 @@ import type { ClientPairing } from "@/hooks/useCentralReachOps";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
+import { BcbaClientTimeline } from "@/components/bcba/BcbaClientTimeline";
 
 // Parent training (97156) cadence target — calm default, weekly touchpoint
 const PT_TARGET_DAYS = 14;
@@ -508,6 +509,7 @@ export default function OSBCBAParentTraining() {
                 onSupervision={() => bcba.openSupervision()}
                 onParentTraining={() => bcba.openParentTraining()}
               />
+              <BcbaClientTimeline scope={{}} className="mt-4" />
             </div>
             <BcbaTaskList
               tasks={bcba.workflow.tasks.filter((t) => t.status !== "completed" && (t.source_area === "parent_training" || !active)).slice(0, 6)}

@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Search, Sparkles, BookOpen, ClipboardCheck, FileSignature, HeartHandshake,
+  Search, BookOpen, ClipboardCheck, FileSignature, HeartHandshake,
   Calendar, MessageSquare, AlertTriangle, Workflow, FileText, PlayCircle,
-  HelpCircle, UserCheck, ChevronRight, Star, Clock, Bookmark, X, Loader2, CheckCircle2, AlertCircle,
+  HelpCircle, UserCheck, ChevronRight, Star, Clock, Bookmark, X, LifeBuoy,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useBcbaCaseload } from "@/hooks/useBcbaCaseload";
-import { supabase } from "@/integrations/supabase/client";
 
 type ResourceType = "SOP" | "Workflow" | "Guide" | "Template" | "Checklist" | "Recording" | "FAQ";
 
@@ -165,7 +164,7 @@ const CATEGORIES: Category[] = [
       { id: "o5", title: "Parent Training Page Guide",      type: "Guide", description: "Running 97156 cadence from one screen.", minutes: 4, updated: "2w ago", tags: ["os","pt"] },
       { id: "o6", title: "Scheduling Visibility Guide",     type: "Guide", description: "What BCBAs can see — and what they can't.", minutes: 3, updated: "2w ago", tags: ["os","scheduling"] },
       { id: "o7", title: "Authorization Page Guide",        type: "Guide", description: "Tracking auths and PRs operationally.", minutes: 4, updated: "2w ago", tags: ["os","auth"] },
-      { id: "o8", title: "Operational Insights Guide",            type: "Guide", description: "How to get clean operational answers from AI.", minutes: 3, updated: "1w ago", tags: ["os","ai"] },
+      { id: "o8", title: "Getting Clean Operational Answers",     type: "Guide", description: "How to find the right SOP, workflow, or template fast — plus who to ask when you can't.", minutes: 3, updated: "1w ago", tags: ["os","help"] },
       { id: "o9", title: "Notification Guide",              type: "Guide", description: "Tuning notifications to stay calm and informed.", minutes: 3, updated: "3w ago", tags: ["os"] },
     ],
   },
@@ -213,31 +212,10 @@ const CATEGORIES: Category[] = [
   },
 ];
 
-const AI_PROMPTS = [
-  "How does the PR escalation workflow work?",
-  "Where is the supervision SOP?",
-  "Show me parent training best practices.",
-  "How do I escalate scheduling concerns?",
-  "What is the reassessment process?",
-  "Summarize the supervision workflow.",
-];
-
 export default function OSBCBAResources() {
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<string>("foundations");
   const [open, setOpen] = useState<Resource | null>(null);
-
-  // Operational Insights guidance per resource (cached in-session).
-  type AiGuidance = {
-    summary: string;
-    when_to_use: string;
-    checklist: string[];
-    watch_outs: string[];
-  };
-  const [aiState, setAiState] = useState<{ loading: boolean; error: string | null; data: AiGuidance | null }>({
-    loading: false, error: null, data: null,
-  });
-  const aiCacheRef = useRef<Map<string, AiGuidance>>(new Map());
 
   // Caseload-aware: derive operational signals from REAL data and recommend resources.
   const c = useBcbaCaseload();
@@ -296,55 +274,13 @@ export default function OSBCBAResources() {
   const current = CATEGORIES.find((c) => c.id === activeCat)!;
   const totalCount = allResources.length;
 
-  // Fetch AI guidance whenever a resource is opened (cache per session).
-  useEffect(() => {
-    if (!open) return;
-    const cached = aiCacheRef.current.get(open.id);
-    if (cached) {
-      setAiState({ loading: false, error: null, data: cached });
-      return;
-    }
-    const meta = allResources.find((r) => r.id === open.id);
-    const category = meta?._catLabel ?? "BCBA Resources";
-    let cancelled = false;
-    setAiState({ loading: true, error: null, data: null });
-    (async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke("bcba-resource-ai", {
-          body: {
-            id: open.id,
-            title: open.title,
-            type: open.type,
-            category,
-            description: open.description,
-            tags: open.tags,
-            minutes: open.minutes,
-          },
-        });
-        if (cancelled) return;
-        if (error) {
-          setAiState({ loading: false, error: error.message || "Couldn't generate guidance.", data: null });
-          return;
-        }
-        if (!data || typeof data !== "object" || !("checklist" in data)) {
-          setAiState({ loading: false, error: "Couldn't generate guidance.", data: null });
-          return;
-        }
-        const g: AiGuidance = {
-          summary: String((data as any).summary ?? ""),
-          when_to_use: String((data as any).when_to_use ?? ""),
-          checklist: Array.isArray((data as any).checklist) ? (data as any).checklist.map(String) : [],
-          watch_outs: Array.isArray((data as any).watch_outs) ? (data as any).watch_outs.map(String) : [],
-        };
-        aiCacheRef.current.set(open.id, g);
-        setAiState({ loading: false, error: null, data: g });
-      } catch (e) {
-        if (cancelled) return;
-        setAiState({ loading: false, error: e instanceof Error ? e.message : "Couldn't generate guidance.", data: null });
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [open, allResources]);
+  // Suggest related resources from the same category when a resource is open.
+  const related = useMemo(() => {
+    if (!open) return [] as (Resource & { _catLabel?: string })[];
+    const cat = CATEGORIES.find((c) => c.resources.some((r) => r.id === open.id));
+    if (!cat) return [];
+    return cat.resources.filter((r) => r.id !== open.id).slice(0, 4).map((r) => ({ ...r, _catLabel: cat.label }));
+  }, [open]);
 
   return (
     <OSShell>
@@ -408,7 +344,7 @@ export default function OSBCBAResources() {
             {searchResults.length === 0 ? (
               <div className="rounded-2xl bg-muted/60 border border-border/60 p-10 text-center">
                 <p className="text-foreground">No matches for "{query}".</p>
-                <p className="text-sm text-muted-foreground mt-1">Try a broader term or ask Blossom AI.</p>
+                <p className="text-sm text-muted-foreground mt-1">Try a broader term or reach out to your State Director for help.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -424,7 +360,7 @@ export default function OSBCBAResources() {
             {recommended.length > 0 && (
               <section className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="size-4 text-primary" />
+                  <Star className="size-4 text-primary" />
                   <h2 className="text-xl font-medium tracking-tight">Recommended right now</h2>
                   <span className="text-xs text-muted-foreground">· based on your caseload</span>
                 </div>
@@ -565,86 +501,39 @@ export default function OSBCBAResources() {
                   </div>
                 </div>
 
-                {/* Resource summary — operational summary + checklist */}
-                <section className="rounded-2xl border border-border/70 bg-gradient-to-b from-primary/[0.04] to-transparent p-4 space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center size-6 rounded-lg bg-primary/10 text-primary">
-                        <Sparkles className="size-3.5" />
-                      </span>
-                      <div className="text-sm font-medium tracking-tight">Resource summary</div>
-                    </div>
-                    {aiState.loading && (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Loader2 className="size-3.5 animate-spin" /> Generating…
-                      </span>
-                    )}
+                {related.length > 0 && (
+                  <section className="rounded-2xl border border-border/70 bg-muted/30 p-4 space-y-3">
+                    <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Related resources</div>
+                    <ul className="divide-y divide-border/60">
+                      {related.map((r) => (
+                        <li key={r.id}>
+                          <button
+                            onClick={() => setOpen(r)}
+                            className="w-full text-left py-2.5 flex items-center justify-between gap-3 hover:text-foreground transition"
+                          >
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">{r.title}</div>
+                              <div className="text-xs text-muted-foreground truncate">{r.type} · {r.updated}</div>
+                            </div>
+                            <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                <section className="rounded-2xl border border-border/70 bg-card p-4 flex items-start gap-3">
+                  <span className="grid place-items-center size-9 rounded-xl bg-primary/10 text-primary shrink-0">
+                    <LifeBuoy className="size-4" />
+                  </span>
+                  <div className="text-sm">
+                    <div className="font-medium">Need help using this resource?</div>
+                    <p className="text-muted-foreground text-[13px] mt-0.5">
+                      Reach out to your Clinical Director or State Director for coaching, or open a{" "}
+                      <Link to="/tasks" className="underline underline-offset-2">support task</Link>.
+                    </p>
                   </div>
-
-                  {aiState.loading && !aiState.data && (
-                    <div className="space-y-2">
-                      <div className="h-3 rounded bg-muted animate-pulse" />
-                      <div className="h-3 rounded bg-muted animate-pulse w-5/6" />
-                      <div className="h-3 rounded bg-muted animate-pulse w-4/6" />
-                    </div>
-                  )}
-
-                  {aiState.error && (
-                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <AlertCircle className="size-4 mt-0.5 text-amber-500" />
-                      <span>{aiState.error}</span>
-                    </div>
-                  )}
-
-                  {aiState.data && (
-                    <div className="space-y-5">
-                      <div>
-                        <div className="text-[11px] uppercase tracking-widest text-muted-foreground mb-1.5">Summary</div>
-                        <p className="text-[14px] leading-relaxed text-foreground">{aiState.data.summary}</p>
-                      </div>
-
-                      {aiState.data.when_to_use && (
-                        <div>
-                          <div className="text-[11px] uppercase tracking-widest text-muted-foreground mb-1.5">When to use</div>
-                          <p className="text-[14px] leading-relaxed text-foreground">{aiState.data.when_to_use}</p>
-                        </div>
-                      )}
-
-                      {aiState.data.checklist.length > 0 && (
-                        <div>
-                          <div className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Step-by-step</div>
-                          <ol className="space-y-2">
-                            {aiState.data.checklist.map((step, i) => (
-                              <li key={i} className="flex items-start gap-2.5 text-[14px] leading-snug">
-                                <span className="mt-0.5 inline-flex items-center justify-center size-5 rounded-full bg-primary/10 text-primary text-[11px] font-medium shrink-0">
-                                  {i + 1}
-                                </span>
-                                <span className="text-foreground">{step}</span>
-                              </li>
-                            ))}
-                          </ol>
-                        </div>
-                      )}
-
-                      {aiState.data.watch_outs.length > 0 && (
-                        <div>
-                          <div className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Watch-outs</div>
-                          <ul className="space-y-1.5">
-                            {aiState.data.watch_outs.map((w, i) => (
-                              <li key={i} className="flex items-start gap-2 text-[13.5px] text-muted-foreground">
-                                <AlertTriangle className="size-3.5 mt-0.5 text-amber-500 shrink-0" />
-                                <span>{w}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-1">
-                        <CheckCircle2 className="size-3" /> Generated summary — verify against the source SOP.
-                      </div>
-                    </div>
-                  )}
                 </section>
 
                 <div className="flex items-center gap-2">

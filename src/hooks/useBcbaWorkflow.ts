@@ -138,6 +138,10 @@ export type BcbaWorkflowScope = {
   centralreachClientId?: string | null;
   bcbaId?: string | null;
   bcbaName?: string | null;
+  /** Cap for how many rows to fetch per table. Default 200. */
+  limit?: number;
+  /** Enable leadership-wide fetches (no client scope). Default false. */
+  broad?: boolean;
 };
 
 function normalizeScope(input?: BcbaWorkflowScope | string | null): BcbaWorkflowScope {
@@ -146,9 +150,18 @@ function normalizeScope(input?: BcbaWorkflowScope | string | null): BcbaWorkflow
   return input;
 }
 
+/** Canonical client-name normalization mirrored server-side by
+ *  `bcba_normalize_client_name` — keep in sync. */
+export function normalizeBcbaClientName(name?: string | null): string | null {
+  if (!name) return null;
+  return name.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) {
   const scope = normalizeScope(scopeInput);
-  const { clientId, clientName, centralreachClientId, bcbaId } = scope;
+  const { clientId, clientName, centralreachClientId, bcbaId, broad, limit } = scope;
+  const rowLimit = limit ?? 200;
+  const clientNameKey = normalizeBcbaClientName(clientName ?? null);
   const { user } = useAuth();
   const [tasks, setTasks] = useState<BcbaActionTask[]>([]);
   const [supervisionLogs, setSupervisionLogs] = useState<BcbaSupervisionLog[]>([]);
@@ -162,21 +175,31 @@ export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) 
     (q: any) => {
       if (clientId) return q.eq("client_id", clientId);
       if (centralreachClientId) return q.eq("centralreach_client_id", centralreachClientId);
-      if (clientName) return q.eq("client_name", clientName);
+      if (clientNameKey) return q.eq("client_name_key", clientNameKey);
       return q;
     },
-    [clientId, centralreachClientId, clientName],
+    [clientId, centralreachClientId, clientNameKey],
   );
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const tasksQ = db.from("bcba_action_tasks").select("*").order("created_at", { ascending: false }).limit(500);
-      const supQ = db.from("bcba_supervision_logs").select("*").order("occurred_at", { ascending: false }).limit(500);
-      const ptQ = db.from("bcba_parent_training_logs").select("*").order("occurred_at", { ascending: false }).limit(500);
-      const planQ = db.from("bcba_treatment_plan_items").select("*").order("due_date", { ascending: true }).limit(500);
-      const notesQ = db.from("bcba_client_notes").select("*").order("created_at", { ascending: false }).limit(500);
+      // Broad fetches (no client scope) are allowed by default so existing
+      // BCBA dashboard/workspace surfaces keep working. Pages that only care
+      // about a single client should always pass a scope; leadership views
+      // may opt out explicitly with `broad: false`.
+      const hasScope = !!(clientId || centralreachClientId || clientNameKey);
+      if (!hasScope && broad === false) {
+        setTasks([]); setSupervisionLogs([]); setPtLogs([]); setPlanItems([]); setNotes([]);
+        setLoading(false);
+        return;
+      }
+      const tasksQ = db.from("bcba_action_tasks").select("*").order("created_at", { ascending: false }).limit(rowLimit);
+      const supQ   = db.from("bcba_supervision_logs").select("*").order("occurred_at", { ascending: false }).limit(rowLimit);
+      const ptQ    = db.from("bcba_parent_training_logs").select("*").order("occurred_at", { ascending: false }).limit(rowLimit);
+      const planQ  = db.from("bcba_treatment_plan_items").select("*").order("due_date", { ascending: true }).limit(rowLimit);
+      const notesQ = db.from("bcba_client_notes").select("*").order("created_at", { ascending: false }).limit(rowLimit);
 
       const [t, s, p, pl, n] = await Promise.all([
         applyScope(tasksQ),
@@ -202,7 +225,7 @@ export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) 
     } finally {
       setLoading(false);
     }
-  }, [applyScope]);
+  }, [applyScope, broad, clientId, centralreachClientId, clientNameKey, rowLimit]);
 
   useEffect(() => {
     void refresh();
@@ -226,16 +249,22 @@ export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) 
 
   // Pass 3: derived workflow metrics for surfaces like the BCBA Productivity
   // Report and workspace signals card.
+  const now = Date.now();
+  const todayStr = new Date().toISOString().slice(0, 10);
   const metrics = {
     openTasks: tasks.filter((t) => t.status !== "completed").length,
     blockedTasks: tasks.filter((t) => t.status === "blocked").length,
+    escalatedTasks: tasks.filter((t) => t.status === "escalated").length,
+    dueTodayTasks: tasks.filter((t) => t.status !== "completed" && t.due_date === todayStr).length,
+    overdueTasks: tasks.filter((t) => t.status !== "completed" && !!t.due_date && new Date(t.due_date).getTime() < now).length,
     supervisionLogs30d: supervisionLogs.filter((s) => withinDays(s.occurred_at, 30)).length,
     parentTrainingLogs30d: ptLogs.filter((p) => withinDays(p.occurred_at, 30)).length,
     openPlanItems: planItems.filter((p) => p.status !== "complete" && p.status !== "completed").length,
     pendingCentralReachSync:
       tasks.filter((t) => (t.centralreach_sync_status ?? "pending_import") !== "synced").length +
       supervisionLogs.filter((s) => (s.centralreach_sync_status ?? "pending_import") !== "synced").length +
-      ptLogs.filter((p) => (p.centralreach_sync_status ?? "pending_import") !== "synced").length,
+      ptLogs.filter((p) => (p.centralreach_sync_status ?? "pending_import") !== "synced").length +
+      planItems.filter((p) => (p.centralreach_sync_status ?? "pending_import") !== "synced").length,
   };
 
   const uid = user?.id ?? null;
