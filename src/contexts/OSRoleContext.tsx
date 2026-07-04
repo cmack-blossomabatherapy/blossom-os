@@ -54,6 +54,12 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("marketing") || appRoles.includes("marketing_team")) return "marketing_team";
   if (appRoles.includes("behavioral_support")) return "behavioral_support";
   if (appRoles.includes("clinical_lead")) return "clinical_director";
+  // The Clinical Director OS role covers three DB app_role aliases:
+  //   - clinical_director (canonical, added 2026-07)
+  //   - clinic_director   (legacy alias kept for existing users)
+  //   - clinical_lead     (older label, mapped above)
+  if (appRoles.includes("clinical_director")) return "clinical_director";
+  if (appRoles.includes("clinic_director")) return "clinical_director";
   return null;
 }
 
