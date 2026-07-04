@@ -40,9 +40,13 @@ describe("Clinical Director Pass 2 — menu shape", () => {
     const shell = read("src/pages/os/OSShell.tsx");
     const start = shell.indexOf("clinical_director: new Set<string>([");
     expect(start).toBeGreaterThan(-1);
-    const block = shell.slice(start, shell.indexOf("]),", start));
+    const roleBlock = shell.slice(start, shell.indexOf("]),", start));
+    const stagedStart = shell.indexOf("STAGED_ROLE_LIVE_PATHS: ReadonlySet<string> = new Set([");
+    const stagedBlock = shell.slice(stagedStart, shell.indexOf("]);", stagedStart));
     for (const item of allItems()) {
-      expect(block).toContain(`"${item.path}"`);
+      const covered =
+        roleBlock.includes(`"${item.path}"`) || stagedBlock.includes(`"${item.path}"`);
+      expect(covered, `Menu path ${item.path} must be in role-specific or staged live paths`).toBe(true);
     }
   });
 });
