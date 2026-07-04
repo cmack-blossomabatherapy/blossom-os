@@ -3,6 +3,7 @@ import { OSShell } from "../OSShell";
 import { FileSignature, Plus, RefreshCw } from "lucide-react";
 import { useBehavioralSupportData } from "./useBehavioralSupportData";
 import { PLAN_STATUSES, TASK_STATUSES, type BSPlan, type BSPlanStatus, type BSTaskStatus } from "./behavioralSupportTypes";
+import { BehavioralSupportTaskDialog } from "./_dialogs";
 
 export default function BehavioralSupportPlans() {
   const bs = useBehavioralSupportData();
@@ -82,6 +83,7 @@ export default function BehavioralSupportPlans() {
 
 function PlanDrawer({ plan, bs, onClose }: { plan: BSPlan; bs: ReturnType<typeof useBehavioralSupportData>; onClose: () => void }) {
   const tasks = bs.planTasks.filter((t) => t.plan_id === plan.id);
+  const [taskOpen, setTaskOpen] = useState(false);
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
       <div className="bg-card w-full max-w-lg h-full overflow-auto p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
@@ -109,10 +111,7 @@ function PlanDrawer({ plan, bs, onClose }: { plan: BSPlan; bs: ReturnType<typeof
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">Tasks</h3>
             <button
-              onClick={async () => {
-                const title = prompt("Task title:");
-                if (title) await bs.createPlanTask({ plan_id: plan.id, case_id: plan.case_id, task_title: title });
-              }}
+              onClick={() => setTaskOpen(true)}
               className="text-xs text-primary hover:underline"
             >+ Add task</button>
           </div>
@@ -138,6 +137,19 @@ function PlanDrawer({ plan, bs, onClose }: { plan: BSPlan; bs: ReturnType<typeof
             </ul>
           )}
         </div>
+        <BehavioralSupportTaskDialog
+          open={taskOpen}
+          onOpenChange={setTaskOpen}
+          onSubmit={async ({ title, description, due_at }) => {
+            await bs.createPlanTask({
+              plan_id: plan.id,
+              case_id: plan.case_id,
+              task_title: title,
+              task_description: description ?? null,
+              due_at: due_at ?? null,
+            });
+          }}
+        />
       </div>
     </div>
   );

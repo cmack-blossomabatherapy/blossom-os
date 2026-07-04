@@ -5,11 +5,16 @@ import { Eye, RefreshCw, Flame, Bell, FileText } from "lucide-react";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { mapPairingsToSupervisionSignals } from "@/lib/integrations/centralreach/behavioralSupportMapper";
 import { useBehavioralSupportData } from "./useBehavioralSupportData";
+import { BehavioralSupportEscalationDialog, BehavioralSupportFollowupDialog } from "./_dialogs";
+
+type Signal = ReturnType<typeof mapPairingsToSupervisionSignals>[number];
 
 export default function BehavioralSupportSupervisionVisibility() {
   const cr = useCentralReachOps();
   const bs = useBehavioralSupportData();
   const [flagFilter, setFlagFilter] = useState<string>("all");
+  const [escalateFor, setEscalateFor] = useState<Signal | null>(null);
+  const [followupFor, setFollowupFor] = useState<Signal | null>(null);
 
   const signals = useMemo(() => {
     return mapPairingsToSupervisionSignals(
@@ -101,37 +106,13 @@ export default function BehavioralSupportSupervisionVisibility() {
                     </td>
                     <td className="px-3 py-2 text-right space-x-2 whitespace-nowrap">
                       <button
-                        onClick={async () => {
-                          const desc = prompt(`Escalation description for ${s.clientName}:`);
-                          if (desc) {
-                            await bs.createEscalation({
-                              client_name: s.clientName,
-                              state: s.state,
-                              bcba_name: s.bcbaName,
-                              escalation_type: s.riskFlags.includes("service_instability") ? "service_instability" : "supervision_gap",
-                              severity: "medium",
-                              description: desc,
-                              status: "new",
-                            });
-                          }
-                        }}
+                        onClick={() => setEscalateFor(s)}
                         className="text-xs text-red-600 hover:underline"
                       >
                         <Flame className="h-3 w-3 inline mr-0.5" /> Escalate
                       </button>
                       <button
-                        onClick={async () => {
-                          const dueStr = prompt(`Follow-up due (YYYY-MM-DD) for ${s.clientName}:`, new Date(Date.now() + 86400000).toISOString().slice(0, 10));
-                          if (dueStr) {
-                            await bs.createFollowup({
-                              client_name: s.clientName,
-                              followup_type: "bcba_checkin",
-                              priority: "medium",
-                              due_at: new Date(dueStr).toISOString(),
-                              status: "open",
-                            });
-                          }
-                        }}
+                        onClick={() => setFollowupFor(s)}
                         className="text-xs text-primary hover:underline"
                       >
                         <Bell className="h-3 w-3 inline mr-0.5" /> Follow-up
@@ -143,6 +124,39 @@ export default function BehavioralSupportSupervisionVisibility() {
             </table>
           )}
         </div>
+
+        <BehavioralSupportEscalationDialog
+          open={!!escalateFor}
+          onOpenChange={(v) => !v && setEscalateFor(null)}
+          clientName={escalateFor?.clientName}
+          onSubmit={async (description) => {
+            if (!escalateFor) return;
+            await bs.createEscalation({
+              client_name: escalateFor.clientName,
+              state: escalateFor.state,
+              bcba_name: escalateFor.bcbaName,
+              escalation_type: escalateFor.riskFlags.includes("service_instability") ? "service_instability" : "supervision_gap",
+              severity: "medium",
+              description,
+              status: "new",
+            });
+          }}
+        />
+        <BehavioralSupportFollowupDialog
+          open={!!followupFor}
+          onOpenChange={(v) => !v && setFollowupFor(null)}
+          clientName={followupFor?.clientName}
+          onSubmit={async ({ due_at }) => {
+            if (!followupFor) return;
+            await bs.createFollowup({
+              client_name: followupFor.clientName,
+              followup_type: "bcba_checkin",
+              priority: "medium",
+              due_at,
+              status: "open",
+            });
+          }}
+        />
       </div>
     </OSShell>
   );

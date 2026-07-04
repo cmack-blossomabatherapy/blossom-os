@@ -4,10 +4,14 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useBehavioralSupportData } from "./useBehavioralSupportData";
 import { SEVERITY_STYLE, ESC_STATUSES, type BSEscalationStatus } from "./behavioralSupportTypes";
+import { BehavioralSupportNoteDialog, BehavioralSupportPlanDialog } from "./_dialogs";
+import type { BSEscalation } from "./behavioralSupportTypes";
 
 export default function BehavioralSupportCrisisSupport() {
   const bs = useBehavioralSupportData();
   const [showResolved, setShowResolved] = useState(false);
+  const [noteFor, setNoteFor] = useState<BSEscalation | null>(null);
+  const [planFor, setPlanFor] = useState<BSEscalation | null>(null);
 
   const crises = bs.escalations.filter((e) =>
     (e.severity === "crisis" || e.severity === "high")
@@ -78,24 +82,11 @@ export default function BehavioralSupportCrisisSupport() {
                     </select>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={async () => {
-                          const note = prompt("Note:");
-                          if (note) await bs.addNote({ escalation_id: e.id, case_id: e.case_id, title: `Crisis note: ${e.client_name}`, body: note });
-                        }}
+                        onClick={() => setNoteFor(e)}
                         className="text-primary hover:underline"
                       >Add note</button>
                       <button
-                        onClick={async () => {
-                          const title = prompt("Support plan title:", `Support plan for ${e.client_name}`);
-                          if (title) await bs.createPlan({
-                            client_name: e.client_name,
-                            client_id: e.client_id,
-                            case_id: e.case_id,
-                            plan_title: title,
-                            reason_for_plan: e.description,
-                            plan_status: "draft",
-                          });
-                        }}
+                        onClick={() => setPlanFor(e)}
                         className="text-primary hover:underline"
                       >Create support plan</button>
                     </div>
@@ -105,6 +96,33 @@ export default function BehavioralSupportCrisisSupport() {
             </ul>
           )}
         </div>
+
+        <BehavioralSupportNoteDialog
+          open={!!noteFor}
+          onOpenChange={(v) => !v && setNoteFor(null)}
+          title={noteFor ? `Crisis note: ${noteFor.client_name}` : "Add note"}
+          onSubmit={async (body) => {
+            if (!noteFor) return;
+            await bs.addNote({ escalation_id: noteFor.id, case_id: noteFor.case_id, title: `Crisis note: ${noteFor.client_name}`, body });
+          }}
+        />
+        <BehavioralSupportPlanDialog
+          open={!!planFor}
+          onOpenChange={(v) => !v && setPlanFor(null)}
+          clientName={planFor?.client_name}
+          defaultTitle={planFor ? `Support plan for ${planFor.client_name}` : undefined}
+          onSubmit={async ({ plan_title, notes }) => {
+            if (!planFor) return;
+            await bs.createPlan({
+              client_name: planFor.client_name,
+              client_id: planFor.client_id,
+              case_id: planFor.case_id,
+              plan_title,
+              reason_for_plan: notes ?? planFor.description,
+              plan_status: "draft",
+            });
+          }}
+        />
       </div>
     </OSShell>
   );

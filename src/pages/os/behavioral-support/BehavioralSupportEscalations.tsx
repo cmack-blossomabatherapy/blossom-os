@@ -6,6 +6,7 @@ import {
   ESCALATION_TYPES, ESC_STATUSES, SEVERITY_STYLE,
   type BSEscalation, type BSEscalationStatus, type BSEscalationType, type BSSeverity,
 } from "./behavioralSupportTypes";
+import { BehavioralSupportNoteDialog } from "./_dialogs";
 
 export default function BehavioralSupportEscalations() {
   const bs = useBehavioralSupportData();
@@ -94,6 +95,7 @@ export default function BehavioralSupportEscalations() {
 }
 
 function EscalationRow({ row, bs }: { row: BSEscalation; bs: ReturnType<typeof useBehavioralSupportData> }) {
+  const [noteOpen, setNoteOpen] = useState(false);
   return (
     <tr>
       <td className="px-3 py-2">
@@ -117,11 +119,17 @@ function EscalationRow({ row, bs }: { row: BSEscalation; bs: ReturnType<typeof u
       <td className="px-3 py-2 text-xs text-muted-foreground">{row.due_at ? new Date(row.due_at).toLocaleDateString() : "—"}</td>
       <td className="px-3 py-2 text-right">
         <button
-          onClick={() => void bs.addNote({ escalation_id: row.id, case_id: row.case_id, title: `Note on ${row.client_name}`, body: prompt("Note:") ?? "" })}
+          onClick={() => setNoteOpen(true)}
           className="text-xs text-primary hover:underline"
         >
           Add note
         </button>
+        <BehavioralSupportNoteDialog
+          open={noteOpen}
+          onOpenChange={setNoteOpen}
+          title={`Note on ${row.client_name}`}
+          onSubmit={(body) => bs.addNote({ escalation_id: row.id, case_id: row.case_id, title: `Note on ${row.client_name}`, body })}
+        />
       </td>
     </tr>
   );

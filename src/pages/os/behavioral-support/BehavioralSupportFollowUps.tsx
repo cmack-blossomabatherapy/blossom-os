@@ -3,6 +3,7 @@ import { OSShell } from "../OSShell";
 import { Bell, Plus, RefreshCw, CheckCircle2 } from "lucide-react";
 import { useBehavioralSupportData } from "./useBehavioralSupportData";
 import { FU_TYPES, PRIORITIES, type BSFollowupType, type BSPriority } from "./behavioralSupportTypes";
+import { BehavioralSupportFollowupCompleteDialog } from "./_dialogs";
 
 export default function BehavioralSupportFollowUps() {
   const bs = useBehavioralSupportData();
@@ -81,6 +82,7 @@ function Section({ title, items, bs, tone, hideComplete }: {
   hideComplete?: boolean;
 }) {
   const toneClass = tone === "red" ? "text-red-600" : tone === "amber" ? "text-amber-600" : tone === "sky" ? "text-sky-600" : "text-muted-foreground";
+  const [completeFor, setCompleteFor] = useState<typeof items[number] | null>(null);
   return (
     <section>
       <h2 className={`text-sm font-semibold mb-2 ${toneClass}`}>{title} ({items.length})</h2>
@@ -99,10 +101,7 @@ function Section({ title, items, bs, tone, hideComplete }: {
               </div>
               {!hideComplete && (
                 <button
-                  onClick={async () => {
-                    const outcome = prompt("Outcome:");
-                    if (outcome !== null) await bs.completeFollowup(f.id, outcome);
-                  }}
+                  onClick={() => setCompleteFor(f)}
                   className="text-xs bg-emerald-500/10 text-emerald-600 rounded-md px-2.5 py-1.5 flex items-center gap-1"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" /> Complete
@@ -112,6 +111,14 @@ function Section({ title, items, bs, tone, hideComplete }: {
           ))}
         </ul>
       )}
+      <BehavioralSupportFollowupCompleteDialog
+        open={!!completeFor}
+        onOpenChange={(v) => !v && setCompleteFor(null)}
+        clientName={completeFor?.client_name}
+        onSubmit={async (outcome) => {
+          if (completeFor) await bs.completeFollowup(completeFor.id, outcome);
+        }}
+      />
     </section>
   );
 }
