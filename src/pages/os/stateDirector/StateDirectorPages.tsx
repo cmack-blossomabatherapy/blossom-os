@@ -26,6 +26,7 @@ import {
   type EscalationStatus, type TaskStatus,
 } from "@/lib/os/stateDirector/stateDirectorStore";
 import { StateOpsCentralReachSummaryBadge } from "@/components/stateDirector/StateOpsCentralReachBadge";
+import { DailyHealthNotesPanel } from "@/components/stateDirector/DailyHealthNotesPanel";
 
 /* --------------------------------- helpers -------------------------------- */
 
@@ -546,7 +547,6 @@ export function StateOperationsPage() {
     { label: "Staffing",        icon: Users,       to: "/ops/staffing" },
     { label: "Scheduling",      icon: Calendar,    to: "/ops/scheduling" },
     { label: "QA / Clinical",   icon: Stethoscope, to: "/qa-team" },
-    { label: "Phone",           icon: Phone,       to: "/phone" },
   ];
 
   return (
@@ -583,6 +583,14 @@ export function StateOperationsPage() {
       </div>
 
       <StateOpsCentralReachSummaryBadge pendingCount={pendingCrCount} />
+
+      {stateFilter !== "all" ? (
+        <DailyHealthNotesPanel
+          stateCode={stateFilter}
+          actor={useActorSafe()}
+          canEdit={!isLeadership || Boolean(assigned)}
+        />
+      ) : null}
 
       <SectionCard title="State health" description={isLeadership ? "All states in scope." : "Your assigned state."}>
         <div className="overflow-x-auto -mx-2">
