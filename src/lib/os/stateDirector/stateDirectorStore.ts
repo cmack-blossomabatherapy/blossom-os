@@ -4,6 +4,15 @@ import type {
   EscalationStatus, TaskStatus, Priority, Department, StateCode, ActivityEvent, ActivityKind, EscalationNote,
 } from "./types";
 import { STATE_DIRECTOR_SEED } from "./stateDirectorSeed";
+import {
+  loadStateOperationsSnapshot,
+  insertTask as sbInsertTask,
+  updateTaskRow as sbUpdateTaskRow,
+  insertEscalation as sbInsertEscalation,
+  updateEscalationRow as sbUpdateEscalationRow,
+  insertNote as sbInsertNote,
+  insertActivity as sbInsertActivity,
+} from "./stateOperationsService";
 
 /**
  * State Director operating store.
@@ -17,34 +26,49 @@ import { STATE_DIRECTOR_SEED } from "./stateDirectorSeed";
  * directly. Activity events are recorded automatically.
  */
 
-const KEY = "blossom.state_director.v1";
-
-function safeParse(raw: string | null): StateDirectorSnapshot | null {
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as StateDirectorSnapshot;
-    if (!parsed || !Array.isArray(parsed.escalations) || !Array.isArray(parsed.tasks)) return null;
-    return parsed;
-  } catch { return null; }
-}
+/**
+ * Persistence contract:
+ *  - Signed-in users hit Supabase as the source of truth. On first mount we
+ *    hydrate the in-memory cache from state_operational_* tables and every
+ *    subsequent mutation writes through to Supabase (fire-and-forget) while
+ *    updating the local cache synchronously so `useSyncExternalStore` stays
+ *    responsive.
+ *  - When Supabase is unavailable (offline preview, unauthenticated) we fall
+ *    back to a seeded in-memory snapshot labelled as preview-only. This is
+ *    NOT presented as live data anywhere in the UI.
+ */
 
 function createLocalStorageAdapter(): StateDirectorAdapter {
   const listeners = new Set<(s: StateDirectorSnapshot) => void>();
   let cache: StateDirectorSnapshot | null = null;
+  let hydrated = false;
 
   const read = (): StateDirectorSnapshot => {
     if (cache) return cache;
     if (typeof window === "undefined") return STATE_DIRECTOR_SEED;
-    const persisted = safeParse(window.localStorage.getItem(KEY));
-    cache = persisted ?? STATE_DIRECTOR_SEED;
+    cache = STATE_DIRECTOR_SEED;
+    // Kick off async Supabase hydration once; the seed acts only as a
+    // calm placeholder until real data lands.
+    if (!hydrated) {
+      hydrated = true;
+      void loadStateOperationsSnapshot().then((snap) => {
+        if (!snap) return;
+        const next: StateDirectorSnapshot = {
+          profiles: (cache ?? STATE_DIRECTOR_SEED).profiles,
+          metrics: (cache ?? STATE_DIRECTOR_SEED).metrics,
+          escalations: snap.escalations,
+          tasks: snap.tasks,
+          activity: snap.activity,
+        };
+        cache = next;
+        listeners.forEach((fn) => fn(next));
+      }).catch(() => { /* ignore */ });
+    }
     return cache;
   };
 
   const write = (next: StateDirectorSnapshot) => {
     cache = next;
-    if (typeof window !== "undefined") {
-      try { window.localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* quota — ignore */ }
-    }
     listeners.forEach((fn) => fn(next));
   };
 
@@ -52,15 +76,6 @@ function createLocalStorageAdapter(): StateDirectorAdapter {
     listeners.add(cb);
     return () => { listeners.delete(cb); };
   };
-
-  // Cross-tab sync
-  if (typeof window !== "undefined") {
-    window.addEventListener("storage", (e) => {
-      if (e.key !== KEY) return;
-      const parsed = safeParse(e.newValue);
-      if (parsed) { cache = parsed; listeners.forEach((fn) => fn(parsed)); }
-    });
-  }
 
   return { read, write, subscribe };
 }
@@ -149,6 +164,16 @@ export const stateDirectorStore = {
       recomputeMetrics(s);
       created = esc;
     });
+    // Fire-and-forget Supabase persistence.
+    void sbInsertEscalation({
+      state: created!.state, title: created!.title,
+      description: created!.description, department: created!.department,
+      assignedTo: created!.assignedTo, priority: created!.priority,
+      status: created!.status, dueAt: created!.dueAt, createdBy: created!.createdBy,
+      linkedClientId: created!.linkedClientId, linkedLeadId: created!.linkedLeadId,
+      linkedCandidateId: created!.linkedCandidateId,
+    });
+    void sbInsertActivity({ kind: "escalation_created", message: `Escalation opened — ${created!.title}`, actor: input.createdBy, state: created!.state, relatedType: "escalation" });
     return created!;
   },
 
@@ -170,6 +195,13 @@ export const stateDirectorStore = {
       }
       recomputeMetrics(s);
     });
+    const rowPatch: Record<string, unknown> = {};
+    if (patch.status) rowPatch.status = patch.status;
+    if (patch.priority) rowPatch.priority = patch.priority;
+    if (patch.assignedTo !== undefined) rowPatch.assigned_to_name = patch.assignedTo;
+    if (patch.resolution !== undefined) rowPatch.resolution = patch.resolution;
+    if (patch.status === "resolved") rowPatch.resolved_at = nowIso();
+    if (Object.keys(rowPatch).length) void sbUpdateEscalationRow(id, rowPatch);
   },
 
   addEscalationNote(escId: string, body: string, author: string) {
@@ -181,6 +213,11 @@ export const stateDirectorStore = {
       s.escalations[i].updatedAt = nowIso();
       s.activity.unshift(record("note_added", `Note added — ${s.escalations[i].title}`, author, s.escalations[i].state, escId));
     });
+    // Best-effort Supabase persistence.
+    const parent = adapter.read().escalations.find((e) => e.id === escId);
+    if (parent && body.trim()) {
+      void sbInsertNote({ parentType: "escalation", parentId: escId, state: parent.state, body: body.trim(), author });
+    }
   },
 
   resolveEscalation(id: string, resolution: string, actor: string) {
@@ -225,6 +262,15 @@ export const stateDirectorStore = {
       recomputeMetrics(s);
       created = t;
     });
+    void sbInsertTask({
+      state: created!.state, title: created!.title,
+      description: created!.description, department: created!.department,
+      owner: created!.owner, priority: created!.priority, dueAt: created!.dueAt,
+      createdBy: created!.createdBy,
+      linkedClientId: created!.linkedClientId, linkedLeadId: created!.linkedLeadId,
+      linkedCandidateId: created!.linkedCandidateId,
+    });
+    void sbInsertActivity({ kind: "task_created", message: `Task created — ${created!.title}`, actor: input.createdBy, state: created!.state, relatedType: "task" });
     return created!;
   },
 
@@ -245,6 +291,12 @@ export const stateDirectorStore = {
       }
       recomputeMetrics(s);
     });
+    const rowPatch: Record<string, unknown> = {};
+    if (patch.status) rowPatch.status = patch.status;
+    if (patch.priority) rowPatch.priority = patch.priority;
+    if (patch.owner !== undefined) rowPatch.assigned_to_name = patch.owner;
+    if (patch.status === "completed") rowPatch.completed_at = nowIso();
+    if (Object.keys(rowPatch).length) void sbUpdateTaskRow(id, rowPatch);
   },
 
   completeTask(id: string, actor: string) { this.updateTask(id, { status: "completed" }, actor); },
@@ -280,6 +332,15 @@ export const stateDirectorStore = {
       recomputeMetrics(s);
       created = esc;
     });
+    if (created) {
+      void sbInsertEscalation({
+        state: created.state, title: created.title,
+        description: created.description, department: created.department,
+        assignedTo: created.assignedTo, priority: created.priority,
+        status: created.status, dueAt: created.dueAt, createdBy: created.createdBy,
+      });
+      void sbInsertActivity({ kind: "task_escalated", message: `Task escalated — ${created.title}`, actor, state: created.state, relatedType: "escalation" });
+    }
     return created!;
   },
 
@@ -291,6 +352,10 @@ export const stateDirectorStore = {
       s.tasks[i].updatedAt = nowIso();
       s.activity.unshift(record("note_added", `Note added — ${s.tasks[i].title}`, author, s.tasks[i].state, taskId));
     });
+    const parent = adapter.read().tasks.find((t) => t.id === taskId);
+    if (parent && body.trim()) {
+      void sbInsertNote({ parentType: "task", parentId: taskId, state: parent.state, body: body.trim(), author });
+    }
   },
 };
 

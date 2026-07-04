@@ -16795,6 +16795,375 @@ export type Database = {
         }
         Relationships: []
       }
+      state_department_handoffs: {
+        Row: {
+          authorization_id: string | null
+          candidate_id: string | null
+          centralreach_reference_id: string | null
+          centralreach_sync_status: string
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          from_role: string | null
+          id: string
+          lead_id: string | null
+          metadata: Json
+          priority: string
+          provider_id: string | null
+          related_escalation_id: string | null
+          related_task_id: string | null
+          scheduling_item_id: string | null
+          state_code: string
+          status: string
+          title: string
+          to_department: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          authorization_id?: string | null
+          candidate_id?: string | null
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          from_role?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          priority?: string
+          provider_id?: string | null
+          related_escalation_id?: string | null
+          related_task_id?: string | null
+          scheduling_item_id?: string | null
+          state_code: string
+          status?: string
+          title: string
+          to_department: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          authorization_id?: string | null
+          candidate_id?: string | null
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          from_role?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          priority?: string
+          provider_id?: string | null
+          related_escalation_id?: string | null
+          related_task_id?: string | null
+          scheduling_item_id?: string | null
+          state_code?: string
+          status?: string
+          title?: string
+          to_department?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      state_operational_activity: {
+        Row: {
+          actor_name: string | null
+          actor_user_id: string | null
+          authorization_id: string | null
+          candidate_id: string | null
+          client_id: string | null
+          created_at: string
+          event_kind: string
+          id: string
+          lead_id: string | null
+          message: string
+          metadata: Json
+          provider_id: string | null
+          related_id: string | null
+          related_type: string | null
+          scheduling_item_id: string | null
+          state_code: string | null
+        }
+        Insert: {
+          actor_name?: string | null
+          actor_user_id?: string | null
+          authorization_id?: string | null
+          candidate_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          event_kind: string
+          id?: string
+          lead_id?: string | null
+          message: string
+          metadata?: Json
+          provider_id?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          scheduling_item_id?: string | null
+          state_code?: string | null
+        }
+        Update: {
+          actor_name?: string | null
+          actor_user_id?: string | null
+          authorization_id?: string | null
+          candidate_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          event_kind?: string
+          id?: string
+          lead_id?: string | null
+          message?: string
+          metadata?: Json
+          provider_id?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          scheduling_item_id?: string | null
+          state_code?: string | null
+        }
+        Relationships: []
+      }
+      state_operational_escalations: {
+        Row: {
+          assigned_to_name: string | null
+          assigned_to_user_id: string | null
+          authorization_id: string | null
+          candidate_id: string | null
+          category: string | null
+          centralreach_reference_id: string | null
+          centralreach_sync_status: string
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          department: string
+          description: string | null
+          due_at: string | null
+          external_source: string | null
+          id: string
+          lead_id: string | null
+          metadata: Json
+          priority: string
+          provider_id: string | null
+          resolution: string | null
+          resolved_at: string | null
+          scheduling_item_id: string | null
+          state_code: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          assigned_to_name?: string | null
+          assigned_to_user_id?: string | null
+          authorization_id?: string | null
+          candidate_id?: string | null
+          category?: string | null
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          department: string
+          description?: string | null
+          due_at?: string | null
+          external_source?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          priority?: string
+          provider_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          scheduling_item_id?: string | null
+          state_code: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          assigned_to_name?: string | null
+          assigned_to_user_id?: string | null
+          authorization_id?: string | null
+          candidate_id?: string | null
+          category?: string | null
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          department?: string
+          description?: string | null
+          due_at?: string | null
+          external_source?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          priority?: string
+          provider_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          scheduling_item_id?: string | null
+          state_code?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      state_operational_notes: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          id: string
+          metadata: Json
+          parent_id: string
+          parent_type: string
+          state_code: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          metadata?: Json
+          parent_id: string
+          parent_type: string
+          state_code: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          metadata?: Json
+          parent_id?: string
+          parent_type?: string
+          state_code?: string
+        }
+        Relationships: []
+      }
+      state_operational_tasks: {
+        Row: {
+          assigned_to_name: string | null
+          assigned_to_user_id: string | null
+          authorization_id: string | null
+          candidate_id: string | null
+          category: string | null
+          centralreach_reference_id: string | null
+          centralreach_sync_status: string
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          department: string
+          description: string | null
+          due_at: string | null
+          escalated_at: string | null
+          external_source: string | null
+          id: string
+          lead_id: string | null
+          metadata: Json
+          owner_role: string | null
+          owner_user_id: string | null
+          priority: string
+          provider_id: string | null
+          related_escalation_id: string | null
+          scheduling_item_id: string | null
+          source_module: string | null
+          state_code: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          assigned_to_name?: string | null
+          assigned_to_user_id?: string | null
+          authorization_id?: string | null
+          candidate_id?: string | null
+          category?: string | null
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          department: string
+          description?: string | null
+          due_at?: string | null
+          escalated_at?: string | null
+          external_source?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          owner_role?: string | null
+          owner_user_id?: string | null
+          priority?: string
+          provider_id?: string | null
+          related_escalation_id?: string | null
+          scheduling_item_id?: string | null
+          source_module?: string | null
+          state_code: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          assigned_to_name?: string | null
+          assigned_to_user_id?: string | null
+          authorization_id?: string | null
+          candidate_id?: string | null
+          category?: string | null
+          centralreach_reference_id?: string | null
+          centralreach_sync_status?: string
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          department?: string
+          description?: string | null
+          due_at?: string | null
+          escalated_at?: string | null
+          external_source?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          owner_role?: string | null
+          owner_user_id?: string | null
+          priority?: string
+          provider_id?: string | null
+          related_escalation_id?: string | null
+          scheduling_item_id?: string | null
+          source_module?: string | null
+          state_code?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       time_clock_punches: {
         Row: {
           clinic: string | null
@@ -18529,6 +18898,9 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_is_leadership: { Args: never; Returns: boolean }
+      user_is_state_scoped_role: { Args: never; Returns: boolean }
+      user_state_code: { Args: never; Returns: string }
     }
     Enums: {
       academy_enrollment_status:

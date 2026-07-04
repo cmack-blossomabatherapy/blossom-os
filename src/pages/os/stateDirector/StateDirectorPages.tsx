@@ -505,6 +505,7 @@ function TaskDetail({ task, onClose }: { task: OpsTask; onClose: () => void }) {
 export function StateOperationsPage() {
   const { role, activeState } = useOSRole();
   const { profiles, isLeadership, assigned } = useAvailableStates();
+  const isAssistant = role === "assistant_state_director";
   const initialState: StateCode | "all" = isLeadership ? "all" : (assigned ?? profiles[0]?.code ?? "GA");
   const [stateFilter, setStateFilter] = useState<StateCode | "all">(initialState);
   const view = useStateDirectorView(stateFilter);
@@ -547,9 +548,11 @@ export function StateOperationsPage() {
   return (
     <Shell>
       <PageHeader
-        eyebrow="State Director · Command Center"
+        eyebrow={isAssistant ? "State Director Assistant · Support Center" : "State Director · Command Center"}
         title="State Operations"
-        subtitle="State-level operational health, escalation flow, and the department handoffs that move work forward."
+        subtitle={isAssistant
+          ? "State support queue, follow-ups, department handoffs, and blockers for your assigned state."
+          : "State-level operational health, escalation flow, and the department handoffs that move work forward."}
         icon={MapPin}
         actions={
           <div className="flex items-center gap-2">
@@ -619,7 +622,9 @@ export function StateOperationsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Department snapshots" description="State Directors coordinate — departments execute.">
+      <SectionCard title="Department snapshots" description={isAssistant
+        ? "State support helps unblock work; department owners still execute."
+        : "State Directors coordinate — departments execute."}>
         <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
           {departmentSnapshots.map((d) => (
             <Link key={d.label} to={d.to} className="group rounded-2xl border border-border/60 bg-muted/30 p-4 hover:bg-muted/50 transition">
@@ -699,7 +704,7 @@ export function StateOperationsPage() {
       </SectionCard>
 
       <Card className="p-4 rounded-2xl border-border/60 bg-muted/20 text-xs text-muted-foreground">
-        Viewing as <span className="font-medium">{String(role).replace(/_/g, " ")}</span>{assigned ? ` · state ${assigned}` : ""} · Data source: Blossom OS local · Ready for CentralReach / CTM / Apploi / BloomGrowth integration adapters.
+        Viewing as <span className="font-medium">{String(role).replace(/_/g, " ")}</span>{assigned ? ` · state ${assigned}` : ""} · Persisted to Blossom Cloud · CentralReach integration status: not connected (import-ready).
       </Card>
 
       <CreateEscalationDialog open={escOpen} onOpenChange={setEscOpen} defaultState={stateFilter === "all" ? undefined : stateFilter} />

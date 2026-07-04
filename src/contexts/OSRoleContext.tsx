@@ -192,9 +192,12 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   const setRole = useCallback((r: OSRole) => setRoleState(r), []);
   const setActiveHat = useCallback((id: string) => setActiveHatIdState(id), []);
   const setActiveState = useCallback((s: OSState) => {
-    // State Directors stay pinned to their profile state. Multi-hat users with
-    // a state-scoped active hat stay pinned to that hat's state.
-    if (!isSuperAdmin && derivedRole === "state_director" && profileState) return;
+    // State Directors AND Assistant State Directors stay pinned to their
+    // profile state. Multi-hat users with a state-scoped active hat stay
+    // pinned to that hat's state.
+    const isStateScopedRole =
+      derivedRole === "state_director" || derivedRole === "assistant_state_director";
+    if (!isSuperAdmin && isStateScopedRole && profileState) return;
     if (!isSuperAdmin && activeHat?.stateCode && activeHat.scope !== "company") return;
     setActiveStateInternal(s);
   }, [isSuperAdmin, derivedRole, profileState, activeHat]);
@@ -207,7 +210,10 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   const effectiveState: OSState = (() => {
     if (isSuperAdmin) return activeState;
     if (activeHat?.stateCode) return activeHat.stateCode as OSState;
-    if (derivedRole === "state_director" && profileState) return profileState;
+    if (
+      (derivedRole === "state_director" || derivedRole === "assistant_state_director")
+      && profileState
+    ) return profileState;
     return activeState;
   })();
 
