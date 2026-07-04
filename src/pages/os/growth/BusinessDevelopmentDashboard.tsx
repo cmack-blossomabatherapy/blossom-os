@@ -1641,7 +1641,7 @@ function HandoffQueue({
   }, [events]);
 
   const filtered = useMemo(() => {
-    let rows = events.map((e) => ({ ev: e, derived: deriveHandoffStatus(e, outreach) }));
+    let rows = events.map((e) => ({ ev: e, derived: deriveHandoffStatus(e, outreach, tasks) }));
     if (statusFilter !== "all") {
       rows = rows.filter((r) => {
         if (statusFilter === "new") return r.derived === "New / Needs BD review" || r.derived === "Stale handoff";
@@ -1683,7 +1683,7 @@ function HandoffQueue({
         rows.sort((a, b) => new Date(b.ev.occurred_at).getTime() - new Date(a.ev.occurred_at).getTime());
     }
     return rows;
-  }, [events, outreach, statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search]);
+  }, [events, outreach, tasks, statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search]);
 
   // Reset paging when filters/sort/search change so users always start at the top of a fresh result set.
   useEffect(() => {
