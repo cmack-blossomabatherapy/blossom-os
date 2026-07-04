@@ -688,7 +688,8 @@ const App = () => (
                   <Route path="/recruiting/resources"      element={<OSRecruitingResources />} />
                   <Route path="/hr-team" element={<OSHRTeam />} />
                   <Route path="/hr/workspace" element={<OSHRWorkspace />} />
-                  <Route path="/hr/training-academy" element={<OSHRTrainingAcademy />} />
+                  {/* /hr/training-academy is the universal LMS learner home; redirect to /academy. */}
+                  <Route path="/hr/training-academy" element={<Navigate to="/academy" replace />} />
                   <Route path="/os/onboarding" element={<OSOnboarding />} />
                   <Route path="/hr/onboarding-journey" element={<OSOnboarding />} />
                   <Route path="/hr/new-hires" element={<OSHRNewHires />} />
@@ -1136,7 +1137,8 @@ const App = () => (
                   <Route path="/admin/track-analytics" element={<Navigate to="/hr/track-analytics" replace />} />
                   <Route path="/hr/payroll" element={<PermissionRoute permission="hr.payroll.runs.view"><Payroll /></PermissionRoute>} />
                   <Route path="/hr/announcements" element={<PermissionRoute permission="hr.announcements.view"><Announcements /></PermissionRoute>} />
-                  <Route path="/hr/assistant" element={<HRAssistant />} />
+                  {/* Legacy HR Assistant is not part of the HR workflow — redirect back to the HR workspace. */}
+                  <Route path="/hr/assistant" element={<Navigate to="/hr/workspace" replace />} />
                   <Route path="/hr/welcome" element={<Welcome />} />
                   <Route path="/hr/recognition" element={<Recognition />} />
                   <Route path="/hr/feed" element={<AnnouncementsFeed />} />
