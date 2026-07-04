@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Loader2, Calendar, CalendarClock, AlertTriangle, MessageSquare, Sparkles,
+  Loader2, Calendar, CalendarClock, AlertTriangle, MessageSquare,
   X, ChevronRight, Activity, CheckCircle2, UserCheck, Users, Phone, UserX,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
@@ -9,6 +9,7 @@ import { useBcbaCaseload, daysSince, type Severity } from "@/hooks/useBcbaCaselo
 import type { ClientPairing } from "@/hooks/useCentralReachOps";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
 
 type Stability = "stable" | "watch" | "needs_attention" | "at_risk";
 
@@ -190,6 +191,13 @@ export default function OSBCBAScheduling() {
     () => (active ? rows.find((r) => r.client.clientName === active) ?? null : null),
     [active, rows],
   );
+
+  const clientOptions = useMemo(() => c.caseload.map((p) => p.clientName), [c.caseload]);
+  const bcba = useBcbaActionDialogs({
+    scope: { clientName: active ?? undefined, bcbaName: c.resolvedBcba },
+    clientOptions,
+    defaultSourceArea: "scheduling",
+  });
 
   return (
     <OSShell>
@@ -522,30 +530,23 @@ export default function OSBCBAScheduling() {
           </div>
         </Section>
 
-        {/* Operational Insights */}
-        <Section title="Operational Insights">
-          <Card className="bg-gradient-to-br from-primary/5 via-card to-card">
-            <div className="flex items-start gap-3">
-              <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary"><Sparkles className="size-5" /></div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground">Understand your scheduling pulse</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Scoped to your caseload only. Permission-aware.</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[
-                    "Which clients have unstable schedules?",
-                    "Which cancellations are affecting treatment most?",
-                    "Which clients are at staffing risk?",
-                    "Which schedules impact supervision?",
-                    "Summarize scheduling concerns this week",
-                  ].map((q) => (
-                    <Link key={q} to={`/ai?q=${encodeURIComponent(q)}`}
-                      className="rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-border hover:bg-muted">
-                      {q}
-                    </Link>
-                  ))}
-                </div>
-              </div>
+        {/* Persisted scheduling coordination workflow */}
+        <Section title="Scheduling coordination">
+          <Card>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">Scheduling coordination notes and tasks — visibility only, scheduling remains owned by the scheduling team.</p>
+              <BcbaQuickActionBar
+                onNote={() => bcba.openNote()}
+                onTask={() => bcba.openTask()}
+                onSupervision={() => bcba.openSupervision()}
+                onParentTraining={() => bcba.openParentTraining()}
+              />
             </div>
+            <BcbaTaskList
+              tasks={bcba.workflow.tasks.filter((t) => t.status !== "completed" && t.source_area === "scheduling").slice(0, 6)}
+              onComplete={(id) => bcba.workflow.completeTask(id)}
+              empty="No open scheduling coordination items."
+            />
           </Card>
         </Section>
 
@@ -616,12 +617,29 @@ export default function OSBCBAScheduling() {
 
                 <PanelSection title="Quick actions">
                   <div className="grid grid-cols-2 gap-2">
-                    <PanelLink to="/bcba/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
                     <PanelLink to="/bcba/clients" icon={UserCheck}>Open client</PanelLink>
                     <PanelLink to="/bcba/parent-training" icon={CalendarClock}>Parent training</PanelLink>
                     <PanelLink to="/bcba/supervision" icon={Users}>Supervision</PanelLink>
-                    <PanelLink to="/bcba/scheduling" icon={Calendar}>View schedule</PanelLink>
-                    <PanelLink to={`/ai?q=${encodeURIComponent(`Tell me about scheduling for ${activeRow.client.clientName}`)}`} icon={Sparkles}>Operational Insights</PanelLink>
+                    <PanelLink to="/bcba/workspace" icon={Calendar}>Open workspace</PanelLink>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => bcba.openNote(activeRow.client.clientName)}>Add scheduling note</button>
+                    <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => bcba.openTask(activeRow.client.clientName)}>Coordination task</button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200"
+                      onClick={async () => {
+                        try {
+                          await bcba.workflow.createTask({
+                            client_name: activeRow.client.clientName,
+                            source_area: "scheduling",
+                            title: `Escalate scheduling blocker: ${activeRow.client.clientName}`,
+                            priority: "high",
+                            status: "escalated",
+                          });
+                        } catch { /* toast handled by callers when using dialogs; keep quiet here */ }
+                      }}
+                    >Escalate blocker</button>
                   </div>
                 </PanelSection>
 
@@ -646,6 +664,7 @@ export default function OSBCBAScheduling() {
           )}
         </SheetContent>
       </Sheet>
+      {bcba.dialogs}
     </OSShell>
   );
 }
