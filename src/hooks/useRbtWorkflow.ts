@@ -350,6 +350,50 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
     setSupervision((prev) => prev.map((s) => s.id === id ? { ...s, acknowledged_by_rbt_at: nowIso } : s));
   }, []);
 
+  const resolveHelpRequest = useCallback(async (id: string, resolutionNote?: string) => {
+    const nowIso = new Date().toISOString();
+    const patch: Record<string, unknown> = { status: "resolved", resolved_at: nowIso };
+    if (resolutionNote) patch.resolution_note = resolutionNote;
+    await supabase.from("rbt_help_requests").update(patch).eq("id", id);
+    setHelpRequests((prev) => prev.map((h) => h.id === id ? { ...h, ...(patch as any) } : h));
+  }, []);
+
+  // Pass 3: realtime — refresh when the RBT's own rows change from any source
+  // (BCBA sends a message, supervisor logs supervision, CentralReach import).
+  useEffect(() => {
+    if (!employeeId) return;
+    const channel = supabase
+      .channel(`rbt-workflow-${employeeId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rbt_client_assignments",   filter: `rbt_employee_id=eq.${employeeId}` }, () => { void loadAll(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "rbt_sessions",             filter: `rbt_employee_id=eq.${employeeId}` }, () => { void loadAll(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "rbt_supervision",          filter: `rbt_employee_id=eq.${employeeId}` }, () => { void loadAll(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "rbt_messages",             filter: `recipient_employee_id=eq.${employeeId}` }, () => { void loadAll(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "rbt_help_requests",        filter: `rbt_employee_id=eq.${employeeId}` }, () => { void loadAll(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "rbt_session_support_logs", filter: `rbt_employee_id=eq.${employeeId}` }, () => { void loadAll(); })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [employeeId, loadAll]);
+
+  const metrics = useMemo(() => {
+    const pendingAck = supervision.filter((s) => !s.acknowledged_by_rbt_at).length
+      + sessions.filter((s) => !s.acknowledged_by_rbt_at && s.session_status !== "cancelled").length;
+    const unread = messages.filter((m) => !m.read_at).length;
+    const openHelp = helpRequests.filter((h) => h.status !== "resolved" && h.status !== "closed").length;
+    const pendingCr =
+      sessions.filter((s: any) => (s.centralreach_sync_status ?? "pending_import") !== "synced").length
+      + supervision.filter((s: any) => (s.centralreach_sync_status ?? "pending_import") !== "synced").length
+      + messages.filter((m: any) => (m.centralreach_sync_status ?? "pending_import") !== "synced").length
+      + helpRequests.filter((h: any) => (h.centralreach_sync_status ?? "pending_import") !== "synced").length
+      + supportLogs.filter((l: any) => (l.centralreach_sync_status ?? "pending_import") !== "synced").length;
+    return {
+      pendingAcknowledgements: pendingAck,
+      unreadMessages: unread,
+      openHelpRequests: openHelp,
+      upcomingSupervisionCount: supervision.filter((s) => s.supervision_date >= todayISODate()).length,
+      pendingCentralReachSync: pendingCr,
+    };
+  }, [supervision, sessions, messages, helpRequests, supportLogs]);
+
   return {
     loading, error, employeeId,
     clients, sessions, todaySessions, upcomingSessions, cancelledSessions,
@@ -362,5 +406,7 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
     markMessageRead, markMessageComplete,
     submitHelpRequest, logSessionSupport,
     acknowledgeSupervision,
+    resolveHelpRequest,
+    metrics,
   };
 }
