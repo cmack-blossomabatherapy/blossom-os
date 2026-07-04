@@ -699,6 +699,7 @@ export default function OSRecruitingEscalations() {
             })}
           </div>
         </section>
+        )}
 
         {/* Staffing delays + Stall risk */}
         <section className="grid lg:grid-cols-2 gap-4">
