@@ -2011,6 +2011,12 @@ function HandoffQueue({
                     <div className="mt-1 text-[11px] text-muted-foreground italic">
                       Suggested next action: {suggestion}
                     </div>
+                    {openTasks.length > 0 && (
+                      <div className="mt-1 text-[11px] text-muted-foreground">
+                        Open follow-ups: {openTasks.length}
+                        {nearestDue ? ` · next due ${new Date(nearestDue).toLocaleDateString()}` : ""}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
