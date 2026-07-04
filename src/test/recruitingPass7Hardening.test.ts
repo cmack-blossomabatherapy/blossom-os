@@ -46,8 +46,13 @@ describe("Recruiting Pass 7 — Apploi importer safety", () => {
   });
 
   it("handles missing external id via a durable normalized-record fallback, no blind insert", () => {
-    expect(src).toMatch(/normalized_record:/);
+    // The importer must import + call the resolver, and log skips when there
+    // is truly no durable id — the actual `normalized_record:${recordId}`
+    // fallback literal lives in the shared resolver module.
+    expect(src).toMatch(/resolveApploiIdentity/);
     expect(src).toMatch(/apploi_import_skipped/);
+    const resolver = read("src/lib/recruiting/apploiNormalizedIdentity.ts");
+    expect(resolver).toMatch(/normalized_record:\$\{recordId\}/);
   });
 
   it("selects candidate id after insert/update for activity events", () => {
