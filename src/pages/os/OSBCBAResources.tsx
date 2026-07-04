@@ -537,32 +537,6 @@ export default function OSBCBAResources() {
               </div>
             </section>
 
-            {/* Operational Insights */}
-            <section className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/[0.04] via-card to-card p-6 md:p-8">
-              <div className="flex items-start gap-4">
-                <div className="rounded-xl size-10 grid place-items-center bg-primary/10 text-primary shrink-0">
-                  <Sparkles className="size-5" />
-                </div>
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <h2 className="text-xl font-medium tracking-tight">Operational Insights</h2>
-                    <p className="text-sm text-muted-foreground">Find resources, summarize SOPs, and get workflow guidance — scoped to your BCBA role.</p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {AI_PROMPTS.map((p) => (
-                      <Link
-                        key={p}
-                        to={`/ai/assistant?q=${encodeURIComponent(p)}`}
-                        className="group flex items-center justify-between gap-3 rounded-xl bg-muted/60 border border-border/60 hover:bg-muted hover:border-border transition px-4 py-3"
-                      >
-                        <span className="text-sm">{p}</span>
-                        <ChevronRight className="size-4 text-muted-foreground group-hover:text-foreground transition" />
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
           </>
         )}
       </div>
