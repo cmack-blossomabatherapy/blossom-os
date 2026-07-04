@@ -193,6 +193,14 @@ function useMarketingSourceSignals() {
     };
   }, []);
 
+  // Pass 3: refresh source events when an external flow (e.g. Create Partner)
+  // links a handoff, so the queue reflects the new referral_company_id.
+  useEffect(() => {
+    const handler = () => setReloadTick((n) => n + 1);
+    window.addEventListener("bd:refresh-source-events", handler);
+    return () => window.removeEventListener("bd:refresh-source-events", handler);
+  }, []);
+
   return { sources, events, loading, error, refresh, hasMoreEvents, loadingMoreEvents, loadMoreEvents };
 }
 
@@ -337,14 +345,40 @@ export default function BusinessDevelopmentDashboard() {
   const [partnerPrefill, setPartnerPrefill] = useState<PartnerForm | null>(null);
   const [outreachPrefill, setOutreachPrefill] = useState<{ subject?: string; notes?: string } | null>(null);
   const [taskPrefill, setTaskPrefill] = useState<{ title?: string; notes?: string } | null>(null);
+  // Pass 3: retain the source event id that spawned a Create Partner flow so
+  // we can auto-link the newly created company back to the handoff via
+  // bd_link_source_event_to_referral. Reviewed remains an intentional user
+  // action; we do NOT auto-mark the event reviewed here.
+  const [pendingSourceEventId, setPendingSourceEventId] = useState<string | null>(null);
 
   const partnerName = (id?: string | null) => partners.find((p) => p.id === id)?.company_name ?? "-";
 
   const handleAddPartner = async (input: Partial<ReferralCompany> & { company_name: string }) => {
     try {
-      await createCompany(input);
-      toast.success("Partner added");
+      const created = await createCompany(input);
+      const eventId = pendingSourceEventId;
+      if (eventId && created?.id) {
+        try {
+          const { error: linkErr } = await (supabase as unknown as {
+            rpc: (name: string, params: Record<string, unknown>) => Promise<{ error: Error | null }>;
+          }).rpc("bd_link_source_event_to_referral", {
+            _event_id: eventId,
+            _company_id: created.id,
+          });
+          if (linkErr) throw linkErr;
+          toast.success("Partner created and source handoff linked.");
+        } catch {
+          toast.warning(
+            "Partner created, but the source handoff could not be linked. Use Link to Existing Partner to finish the handoff.",
+          );
+        }
+      } else {
+        toast.success("Partner added");
+      }
+      setPendingSourceEventId(null);
       refreshPartners();
+      // Refresh source events so the linked handoff reflects the new partner.
+      window.dispatchEvent(new CustomEvent("bd:refresh-source-events"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to save partner");
     }
@@ -675,7 +709,9 @@ export default function BusinessDevelopmentDashboard() {
           <SourceHandoffsPanel
             partners={visiblePartners}
             outreach={outreach}
-            onCreatePartnerFromEvent={(prefill) => {
+            tasks={tasks}
+            onCreatePartnerFromEvent={(prefill, eventId) => {
+              setPendingSourceEventId(eventId ?? null);
               setPartnerPrefill(prefill);
               setPartnerOpen(true);
             }}
@@ -695,7 +731,13 @@ export default function BusinessDevelopmentDashboard() {
 
       <PartnerDialog
         open={partnerOpen}
-        onOpenChange={(v) => { setPartnerOpen(v); if (!v) setPartnerPrefill(null); }}
+        onOpenChange={(v) => {
+          setPartnerOpen(v);
+          if (!v) {
+            setPartnerPrefill(null);
+            setPendingSourceEventId(null);
+          }
+        }}
         prefill={partnerPrefill ?? undefined}
         onSave={handleAddPartner}
       />
@@ -826,8 +868,10 @@ type PartnerForm = {
 
 function PartnerDialog({ open, onOpenChange, onSave, initial, prefill }: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (p: Partial<ReferralCompany> & { company_name: string }) => Promise<void>; initial?: ReferralCompany; prefill?: Partial<PartnerForm> | null }) {
   const [form, setForm] = useState<PartnerForm>({ company_type: "Therapy Practice", relationship_stage: "New" });
-  // Sync with initial when dialog opens
-  useMemo(() => {
+  // Sync with initial/prefill when dialog opens. This is a side-effect on
+  // props changing, so useEffect is the correct hook (useMemo returns a value
+  // and should not schedule state updates).
+  useEffect(() => {
     if (open && initial) {
       setForm({
         company_name: initial.company_name,
@@ -1045,7 +1089,7 @@ function NeedsAttentionPanel({
 }
 
 type HandoffActions = {
-  onCreatePartnerFromEvent: (prefill: Partial<PartnerForm>) => void;
+  onCreatePartnerFromEvent: (prefill: Partial<PartnerForm>, eventId?: string) => void;
   onLogOutreachForPartner: (companyId: string, prefill?: { subject?: string; notes?: string }) => void;
   onCreateTaskForPartner: (companyId: string, prefill?: { title?: string; notes?: string }) => void;
 };
@@ -1053,10 +1097,11 @@ type HandoffActions = {
 function SourceHandoffsPanel({
   partners,
   outreach,
+  tasks,
   onCreatePartnerFromEvent,
   onLogOutreachForPartner,
   onCreateTaskForPartner,
-}: { partners: ReferralCompany[]; outreach: ReferralActivity[] } & HandoffActions) {
+}: { partners: ReferralCompany[]; outreach: ReferralActivity[]; tasks: ReferralCrmTask[] } & HandoffActions) {
   const { sources, events, loading, error, refresh, hasMoreEvents, loadingMoreEvents, loadMoreEvents } = useMarketingSourceSignals();
 
   // Aggregate BD-safe view of lead source signals from referral partner data.
@@ -1168,6 +1213,7 @@ function SourceHandoffsPanel({
         events={events}
         partners={partners}
         outreach={outreach}
+        tasks={tasks}
         loading={loading}
         error={error}
         refresh={refresh}
@@ -1443,12 +1489,14 @@ type HandoffDerivedStatus =
   | "Assigned"
   | "Linked / Outreach needed"
   | "Needs follow-up plan"
+  | "Follow-up scheduled"
   | "Reviewed"
   | "Stale handoff";
 
 function deriveHandoffStatus(
   ev: MarketingSourceEventRow,
   outreach: ReferralActivity[],
+  tasks: ReferralCrmTask[] = [],
 ): HandoffDerivedStatus {
   const ageDays = Math.floor((Date.now() - new Date(ev.occurred_at).getTime()) / 86_400_000);
   if (ev.reviewed_at) return "Reviewed";
@@ -1458,13 +1506,17 @@ function deriveHandoffStatus(
   if (!ev.referral_company_id && ev.assigned_to) return "Assigned";
   const hasActivity = outreach.some((o) => o.company_id === ev.referral_company_id);
   if (ev.referral_company_id && !hasActivity) return "Linked / Outreach needed";
-  return "Needs follow-up plan";
+  const hasOpenFollowUp = tasks.some(
+    (t) => t.company_id === ev.referral_company_id && !t.archived_at && t.status === "Open",
+  );
+  return hasOpenFollowUp ? "Follow-up scheduled" : "Needs follow-up plan";
 }
 
 function HandoffQueue({
   events,
   partners,
   outreach,
+  tasks,
   loading,
   error,
   refresh,
@@ -1478,6 +1530,7 @@ function HandoffQueue({
   events: MarketingSourceEventRow[];
   partners: ReferralCompany[];
   outreach: ReferralActivity[];
+  tasks: ReferralCrmTask[];
   loading: boolean;
   error: Error | null;
   refresh: () => void;
@@ -1590,7 +1643,7 @@ function HandoffQueue({
   }, [events]);
 
   const filtered = useMemo(() => {
-    let rows = events.map((e) => ({ ev: e, derived: deriveHandoffStatus(e, outreach) }));
+    let rows = events.map((e) => ({ ev: e, derived: deriveHandoffStatus(e, outreach, tasks) }));
     if (statusFilter !== "all") {
       rows = rows.filter((r) => {
         if (statusFilter === "new") return r.derived === "New / Needs BD review" || r.derived === "Stale handoff";
@@ -1632,7 +1685,7 @@ function HandoffQueue({
         rows.sort((a, b) => new Date(b.ev.occurred_at).getTime() - new Date(a.ev.occurred_at).getTime());
     }
     return rows;
-  }, [events, outreach, statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search]);
+  }, [events, outreach, tasks, statusFilter, systemFilter, stateFilter, linkFilter, assignFilter, sortMode, search]);
 
   // Reset paging when filters/sort/search change so users always start at the top of a fresh result set.
   useEffect(() => {
@@ -1902,6 +1955,16 @@ function HandoffQueue({
           {visibleRows.map(({ ev, derived }) => {
             const partner = ev.referral_company_id ? partnerById.get(ev.referral_company_id) : null;
             const busy = busyId === ev.id;
+            // Pass 3: expose open follow-up count / nearest due date on the row.
+            const openTasks = ev.referral_company_id
+              ? tasks.filter(
+                  (t) => t.company_id === ev.referral_company_id && !t.archived_at && t.status === "Open",
+                )
+              : [];
+            const nearestDue = openTasks
+              .map((t) => t.due_date)
+              .filter((d): d is string => !!d)
+              .sort()[0];
             const suggestion =
               derived === "New / Needs BD review" || derived === "Stale handoff"
                 ? "Create or link a partner"
@@ -1950,6 +2013,12 @@ function HandoffQueue({
                     <div className="mt-1 text-[11px] text-muted-foreground italic">
                       Suggested next action: {suggestion}
                     </div>
+                    {openTasks.length > 0 && (
+                      <div className="mt-1 text-[11px] text-muted-foreground">
+                        Open follow-ups: {openTasks.length}
+                        {nearestDue ? ` · next due ${new Date(nearestDue).toLocaleDateString()}` : ""}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1959,7 +2028,10 @@ function HandoffQueue({
                         size="sm"
                         variant="outline"
                         disabled={busy}
-                        onClick={() => { setActiveEventId(ev.id); onCreatePartnerFromEvent(buildPartnerPrefill(ev)); }}
+                        onClick={() => {
+                          setActiveEventId(ev.id);
+                          onCreatePartnerFromEvent(buildPartnerPrefill(ev), ev.id);
+                        }}
                       >
                         <Plus className="h-3.5 w-3.5 mr-1" /> Create Partner
                       </Button>
