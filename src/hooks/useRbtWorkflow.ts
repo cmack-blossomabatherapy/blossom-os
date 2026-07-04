@@ -126,10 +126,17 @@ export interface UseRbtWorkflowResult {
   clients: RbtClientAssignment[];
   sessions: RbtSession[];
   todaySessions: RbtSession[];
+  upcomingSessions: RbtSession[];
+  cancelledSessions: RbtSession[];
   supervision: RbtSupervisionEntry[];
+  upcomingSupervision: RbtSupervisionEntry[];
   messages: RbtMessage[];
+  openMessages: RbtMessage[];
+  actionMessages: RbtMessage[];
   helpRequests: RbtHelpRequest[];
+  openHelpRequests: RbtHelpRequest[];
   supportLogs: RbtSessionSupportLog[];
+  latestSupportLogs: RbtSessionSupportLog[];
   refresh: () => Promise<void>;
   confirmSession: (sessionId: string) => Promise<void>;
   acknowledgeSession: (sessionId: string) => Promise<void>;
