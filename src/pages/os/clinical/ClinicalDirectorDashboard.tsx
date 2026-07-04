@@ -3,7 +3,7 @@ import { OSShell } from "../OSShell";
 import { Link } from "react-router-dom";
 import {
   Stethoscope, UserCheck, Eye, FileCheck2, BarChart3, ClipboardCheck,
-  AlertTriangle, ShieldCheck, Phone, Plug, ArrowUpRight, Users, FileText,
+  AlertTriangle, ShieldCheck, Plug, ArrowUpRight, Users, FileText,
   Plus, Activity as ActivityIcon,
 } from "lucide-react";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
@@ -21,7 +21,6 @@ const ACTIONS = [
   { label: "Evaluations",            to: "/evaluations",            icon: ClipboardCheck },
   { label: "Clinical Escalations",   to: "/escalations-followups",  icon: AlertTriangle },
   { label: "QA Dashboard",           to: "/qa-team",                icon: ShieldCheck },
-  { label: "Phone System",           to: "/phone",                  icon: Phone },
 ];
 
 export default function ClinicalDirectorDashboard() {
