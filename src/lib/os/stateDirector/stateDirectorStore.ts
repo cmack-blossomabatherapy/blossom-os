@@ -166,14 +166,14 @@ export const stateDirectorStore = {
     });
     // Fire-and-forget Supabase persistence.
     void sbInsertEscalation({
-      id: created!.id, state: created!.state, title: created!.title,
+      state: created!.state, title: created!.title,
       description: created!.description, department: created!.department,
       assignedTo: created!.assignedTo, priority: created!.priority,
       status: created!.status, dueAt: created!.dueAt, createdBy: created!.createdBy,
       linkedClientId: created!.linkedClientId, linkedLeadId: created!.linkedLeadId,
       linkedCandidateId: created!.linkedCandidateId,
     });
-    void sbInsertActivity({ kind: "escalation_created", message: `Escalation opened — ${created!.title}`, actor: input.createdBy, state: created!.state, relatedType: "escalation", relatedId: created!.id });
+    void sbInsertActivity({ kind: "escalation_created", message: `Escalation opened — ${created!.title}`, actor: input.createdBy, state: created!.state, relatedType: "escalation" });
     return created!;
   },
 
@@ -263,14 +263,14 @@ export const stateDirectorStore = {
       created = t;
     });
     void sbInsertTask({
-      id: created!.id, state: created!.state, title: created!.title,
+      state: created!.state, title: created!.title,
       description: created!.description, department: created!.department,
       owner: created!.owner, priority: created!.priority, dueAt: created!.dueAt,
-      createdBy: created!.createdBy, relatedEscalationId: created!.relatedEscalationId,
+      createdBy: created!.createdBy,
       linkedClientId: created!.linkedClientId, linkedLeadId: created!.linkedLeadId,
       linkedCandidateId: created!.linkedCandidateId,
     });
-    void sbInsertActivity({ kind: "task_created", message: `Task created — ${created!.title}`, actor: input.createdBy, state: created!.state, relatedType: "task", relatedId: created!.id });
+    void sbInsertActivity({ kind: "task_created", message: `Task created — ${created!.title}`, actor: input.createdBy, state: created!.state, relatedType: "task" });
     return created!;
   },
 
@@ -334,13 +334,12 @@ export const stateDirectorStore = {
     });
     if (created) {
       void sbInsertEscalation({
-        id: created.id, state: created.state, title: created.title,
+        state: created.state, title: created.title,
         description: created.description, department: created.department,
         assignedTo: created.assignedTo, priority: created.priority,
         status: created.status, dueAt: created.dueAt, createdBy: created.createdBy,
       });
-      void sbUpdateTaskRow(id, { status: "escalated", escalated_at: nowIso(), related_escalation_id: created.id });
-      void sbInsertActivity({ kind: "task_escalated", message: `Task escalated — ${created.title}`, actor, state: created.state, relatedType: "escalation", relatedId: created.id });
+      void sbInsertActivity({ kind: "task_escalated", message: `Task escalated — ${created.title}`, actor, state: created.state, relatedType: "escalation" });
     }
     return created!;
   },
