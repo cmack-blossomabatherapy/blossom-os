@@ -147,7 +147,7 @@ export async function insertTask(input: {
 }
 
 export async function updateTaskRow(id: UUID, patch: Record<string, unknown>) {
-  await supabase.from("state_operational_tasks").update(patch).eq("id", id);
+  await supabase.from("state_operational_tasks").update(patch as any).eq("id", id);
 }
 
 export async function insertEscalation(input: {
@@ -179,7 +179,7 @@ export async function insertEscalation(input: {
 }
 
 export async function updateEscalationRow(id: UUID, patch: Record<string, unknown>) {
-  await supabase.from("state_operational_escalations").update(patch).eq("id", id);
+  await supabase.from("state_operational_escalations").update(patch as any).eq("id", id);
 }
 
 export async function insertNote(input: {
