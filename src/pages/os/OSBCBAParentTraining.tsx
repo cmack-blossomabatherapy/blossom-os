@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Loader2, HeartHandshake, AlertTriangle, CalendarClock, MessageSquare, Sparkles,
+  Loader2, HeartHandshake, AlertTriangle, CalendarClock, MessageSquare,
   X, ChevronRight, Activity, CheckCircle2, UserCheck, Users, FileSignature, Phone,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
@@ -9,6 +9,7 @@ import { useBcbaCaseload, daysSince, daysUntil, type Severity } from "@/hooks/us
 import type { ClientPairing } from "@/hooks/useCentralReachOps";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
 
 // Parent training (97156) cadence target — calm default, weekly touchpoint
 const PT_TARGET_DAYS = 14;
@@ -194,6 +195,17 @@ export default function OSBCBAParentTraining() {
   const activeAuth = useMemo(
     () => (active ? c.authByClient.get(active.toLowerCase()) ?? null : null),
     [active, c.authByClient],
+  );
+
+  const clientOptions = useMemo(() => c.caseload.map((p) => p.clientName), [c.caseload]);
+  const bcba = useBcbaActionDialogs({
+    scope: { clientName: active ?? undefined, bcbaName: c.resolvedBcba },
+    clientOptions,
+    defaultSourceArea: "parent_training",
+  });
+  const activePtLogs = useMemo(
+    () => (active ? bcba.workflow.ptLogs.filter((l) => l.client_name === active) : []),
+    [active, bcba.workflow.ptLogs],
   );
 
   return (
@@ -485,30 +497,23 @@ export default function OSBCBAParentTraining() {
           )}
         </Section>
 
-        {/* Operational Insights */}
-        <Section title="Operational Insights">
-          <Card className="bg-gradient-to-br from-primary/5 via-card to-card">
-            <div className="flex items-start gap-3">
-              <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary"><Sparkles className="size-5" /></div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground">Coordinate your caregivers</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Scoped to your caseload only. Permission-aware.</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[
-                    "Which families need follow-up?",
-                    "Which parent trainings are overdue?",
-                    "Which caregivers are disengaged?",
-                    "Summarize my parent training risks",
-                    "Which clients have repeated cancellations?",
-                  ].map((q) => (
-                    <Link key={q} to={`/ai?q=${encodeURIComponent(q)}`}
-                      className="rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-border hover:bg-muted">
-                      {q}
-                    </Link>
-                  ))}
-                </div>
-              </div>
+        {/* Persisted parent training workflow */}
+        <Section title="Parent training follow-ups">
+          <Card>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">Persisted parent training logs and follow-up tasks.</p>
+              <BcbaQuickActionBar
+                onNote={() => bcba.openNote()}
+                onTask={() => bcba.openTask()}
+                onSupervision={() => bcba.openSupervision()}
+                onParentTraining={() => bcba.openParentTraining()}
+              />
             </div>
+            <BcbaTaskList
+              tasks={bcba.workflow.tasks.filter((t) => t.status !== "completed" && (t.source_area === "parent_training" || !active)).slice(0, 6)}
+              onComplete={(id) => bcba.workflow.completeTask(id)}
+              empty="No open parent training follow-ups."
+            />
           </Card>
         </Section>
 
@@ -582,11 +587,29 @@ export default function OSBCBAParentTraining() {
                   <div className="grid grid-cols-2 gap-2">
                     <PanelLink to="/bcba/scheduling" icon={CalendarClock}>Schedule training</PanelLink>
                     <PanelLink to="/bcba/clients" icon={UserCheck}>Open client</PanelLink>
-                    <PanelLink to="/bcba/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
                     <PanelLink to="/bcba/supervision" icon={Users}>Supervision</PanelLink>
                     <PanelLink to="/bcba/authorizations" icon={FileSignature}>View PR</PanelLink>
-                    <PanelLink to={`/ai?q=${encodeURIComponent(`Tell me about parent training for ${activeRow.client.clientName}`)}`} icon={Sparkles}>Operational Insights</PanelLink>
                   </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => bcba.openParentTraining(activeRow.client.clientName)}>Log parent training</button>
+                    <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => bcba.openNote(activeRow.client.clientName)}>Add note</button>
+                    <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => bcba.openTask(activeRow.client.clientName)}>Create task</button>
+                  </div>
+                </PanelSection>
+
+                <PanelSection title="Recent parent training logs">
+                  {activePtLogs.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No logged parent training sessions yet.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {activePtLogs.slice(0, 5).map((l) => (
+                        <li key={l.id} className="rounded-lg border border-border/60 bg-card p-2 text-xs">
+                          <div className="font-medium text-foreground">{new Date(l.occurred_at).toLocaleString()}{l.service_code ? ` · ${l.service_code}` : ""}{l.caregiver_name ? ` · ${l.caregiver_name}` : ""}</div>
+                          {l.notes ? <div className="mt-1 text-muted-foreground">{l.notes}</div> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </PanelSection>
 
                 <PanelSection title="Caregiver contact">
@@ -608,6 +631,7 @@ export default function OSBCBAParentTraining() {
           )}
         </SheetContent>
       </Sheet>
+      {bcba.dialogs}
     </OSShell>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle, CalendarClock, ChevronRight, FileSignature, Heart,
-  MessageSquare, NotebookPen, Sparkles, Stethoscope, UserCog, Users,
+  MessageSquare, NotebookPen, Stethoscope, UserCog, Users,
   CalendarDays, ClipboardCheck, ArrowRight, Baby, ShieldCheck, Loader2,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCentralReachOps, type ClientPairing } from "@/hooks/useCentralReachOps";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { cn } from "@/lib/utils";
+import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
 
 type Severity = "crit" | "warn" | "info";
 
@@ -154,6 +155,11 @@ export default function OSBCBA() {
     () => new Set(caseload.map((c) => c.clientName.toLowerCase())),
     [caseload]
   );
+  const bcba = useBcbaActionDialogs({
+    scope: { bcbaName: resolvedBcba },
+    clientOptions: caseload.map((c) => c.clientName),
+    defaultSourceArea: "caseload",
+  });
 
   // Auths for this BCBA — match by liveBcba mapping OR by client name in caseload.
   const myAuths = useMemo(() => {
@@ -577,6 +583,57 @@ export default function OSBCBA() {
               <Quick to="/evaluations"         icon={ClipboardCheck} label="Evaluations" />
               <Quick to="/reports"             icon={ChevronRight}   label="Reports" />
             </div>
+            <div className="mt-4">
+              <BcbaQuickActionBar
+                onNote={() => bcba.openNote()}
+                onTask={() => bcba.openTask()}
+                onSupervision={() => bcba.openSupervision()}
+                onParentTraining={() => bcba.openParentTraining()}
+                onPlanItem={() => bcba.openPlanItem()}
+              />
+            </div>
+          </Card>
+        </section>
+
+        {/* Persisted BCBA workflow summary */}
+        <section className="grid gap-6 lg:grid-cols-3">
+          <Card>
+            <SectionTitle title="My open tasks" />
+            <BcbaTaskList
+              tasks={bcba.workflow.tasks.filter((t) => t.status !== "completed").slice(0, 6)}
+              onComplete={(id) => bcba.workflow.completeTask(id)}
+              empty="No open tasks."
+            />
+          </Card>
+          <Card>
+            <SectionTitle title="Recent supervision logs" />
+            {bcba.workflow.supervisionLogs.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No supervision logs yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {bcba.workflow.supervisionLogs.slice(0, 5).map((l) => (
+                  <li key={l.id} className="rounded-lg border border-border/60 bg-card p-2 text-xs">
+                    <div className="font-medium text-foreground">{l.client_name ?? "—"} · {new Date(l.occurred_at).toLocaleDateString()}</div>
+                    <div className="mt-0.5 text-muted-foreground">{l.modality}{l.service_code ? ` · ${l.service_code}` : ""}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+          <Card>
+            <SectionTitle title="Recent parent training" />
+            {bcba.workflow.ptLogs.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No parent training logs yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {bcba.workflow.ptLogs.slice(0, 5).map((l) => (
+                  <li key={l.id} className="rounded-lg border border-border/60 bg-card p-2 text-xs">
+                    <div className="font-medium text-foreground">{l.client_name ?? "—"} · {new Date(l.occurred_at).toLocaleDateString()}</div>
+                    <div className="mt-0.5 text-muted-foreground">{l.caregiver_name ?? "—"}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </section>
 
@@ -587,6 +644,7 @@ export default function OSBCBA() {
           </div>
         ) : null}
       </div>
+      {bcba.dialogs}
     </OSShell>
   );
 }

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   AlertTriangle, ArrowRight, Baby, CalendarClock, ChevronRight,
   ClipboardCheck, FileSignature, Loader2, MessageSquare,
-  NotebookPen, ShieldCheck, Sparkles, Stethoscope, Users,
+  NotebookPen, ShieldCheck, Stethoscope, Users,
   CalendarDays, Activity, X,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
@@ -12,6 +12,9 @@ import type { ClientPairing } from "@/hooks/useCentralReachOps";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList,
+} from "@/components/bcba/BcbaActionDialogs";
 
 const sevRing: Record<Severity, string> = {
   crit: "bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/30",
@@ -90,6 +93,16 @@ const BUCKET_META: Record<ClientBucket, { label: string; hint: string }> = {
 export default function OSBCBAWorkspace() {
   const c = useBcbaCaseload();
   const [activeClient, setActiveClient] = useState<string | null>(null);
+  const clientOptions = useMemo(() => c.caseload.map((p) => p.clientName), [c.caseload]);
+  const bcba = useBcbaActionDialogs({
+    scope: { bcbaName: c.resolvedBcba },
+    clientOptions,
+    defaultSourceArea: "treatment_plan",
+  });
+  const openTasks = useMemo(
+    () => bcba.workflow.tasks.filter((t) => t.status !== "completed").slice(0, 8),
+    [bcba.workflow.tasks],
+  );
 
   // Bucket each caseload client
   const cards: CaseloadCard[] = useMemo(() => {
@@ -149,23 +162,23 @@ export default function OSBCBAWorkspace() {
     c.authAlerts.forEach((x) => items.push({
       key: "auth-" + x.a.id, sev: x.sev, client: x.a.clientName,
       type: "PR / Auth", title: x.label,
-      cta: { label: "Review PR", to: "/authorizations" },
+      cta: { label: "Review PR", to: "/bcba/authorizations" },
     }));
     c.coverageAlerts.forEach((x) => items.push({
       key: "cov-" + x.clientName,
       sev: x.level === "uncovered" ? "crit" : "warn",
       client: x.clientName, type: "Scheduling", title: x.reason,
-      cta: { label: "Message Scheduling", to: "/scheduling" },
+      cta: { label: "Message Scheduling", to: "/bcba/scheduling" },
     }));
     c.supervisionAlerts.forEach((x) => items.push({
       key: "sup-" + x.p.clientName, sev: x.sev, client: x.p.clientName,
       type: "Supervision", title: x.label,
-      cta: { label: "Open Supervision", to: "/supervision" },
+      cta: { label: "Open Supervision", to: "/bcba/supervision" },
     }));
     c.ptAlerts.forEach((x) => items.push({
       key: "pt-" + x.p.clientName, sev: "warn", client: x.p.clientName,
       type: "Parent training", title: `Last BCBA touch ${x.days}d ago`,
-      cta: { label: "Schedule session", to: "/parent-training" },
+      cta: { label: "Schedule session", to: "/bcba/parent-training" },
     }));
     const order = { crit: 0, warn: 1, info: 2 } as const;
     items.sort((a, b) => order[a.sev] - order[b.sev]);
@@ -374,7 +387,7 @@ export default function OSBCBAWorkspace() {
           <QueueCard
             title="Supervision queue"
             hint="Clients without recent BCBA touch."
-            href="/supervision"
+            href="/bcba/supervision"
             loading={c.loading}
             emptyText="Supervision cadence is healthy."
             rows={c.supervisionAlerts.slice(0, 6).map((x) => ({
@@ -388,7 +401,7 @@ export default function OSBCBAWorkspace() {
           <QueueCard
             title="PR queue"
             hint="Live from authorizations."
-            href="/authorizations"
+            href="/bcba/authorizations"
             loading={c.loading}
             emptyText="No PR or auth risks on your caseload."
             rows={c.authAlerts.slice(0, 6).map((x) => ({
@@ -402,7 +415,7 @@ export default function OSBCBAWorkspace() {
           <QueueCard
             title="Parent training"
             hint="Clients without recent 97156 cadence."
-            href="/parent-training"
+            href="/bcba/parent-training"
             loading={c.loading}
             emptyText="Parent training cadence is on track."
             rows={c.ptAlerts.slice(0, 6).map((x) => ({
@@ -416,7 +429,7 @@ export default function OSBCBAWorkspace() {
           <QueueCard
             title="Scheduling feed"
             hint="Coverage and cancellation signals."
-            href="/scheduling"
+            href="/bcba/scheduling"
             loading={c.loading}
             emptyText="All clients are covered and stable."
             rows={[
@@ -446,13 +459,13 @@ export default function OSBCBAWorkspace() {
                   .map((x) => ({
                     key: "b-" + x.a.id, client: x.a.clientName,
                     title: x.a.missingInfo ? "Missing information on auth" : "Authorization denied",
-                    tone: "crit" as Severity, cta: { label: "Open auth", to: "/authorizations" },
+                    tone: "crit" as Severity, cta: { label: "Open auth", to: "/bcba/authorizations" },
                   })),
                 ...c.coverageAlerts.filter((x) => x.level === "uncovered")
                   .slice(0, 4).map((x) => ({
                     key: "b-cov-" + x.clientName, client: x.clientName,
                     title: x.reason, tone: "crit" as Severity,
-                    cta: { label: "Message scheduling", to: "/scheduling" },
+                    cta: { label: "Message scheduling", to: "/bcba/scheduling" },
                   })),
               ].slice(0, 6);
               if (blockers.length === 0) return <EmptyLine>No active blockers on your caseload.</EmptyLine>;
@@ -498,11 +511,18 @@ export default function OSBCBAWorkspace() {
           </Card>
         </div>
 
-        {/* Quick Actions + AI */}
+        {/* Quick actions + persisted work queue */}
         <section className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
-            <SectionTitle title="Quick workflow actions" />
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+            <SectionTitle title="Quick workflow actions" hint="These persist to your BCBA workflow." />
+            <BcbaQuickActionBar
+              onNote={() => bcba.openNote()}
+              onTask={() => bcba.openTask()}
+              onSupervision={() => bcba.openSupervision()}
+              onParentTraining={() => bcba.openParentTraining()}
+              onPlanItem={() => bcba.openPlanItem()}
+            />
+            <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
               <Quick to="/bcba/clients" icon={Users} label="Open caseload" />
               <Quick to="/bcba/authorizations" icon={FileSignature} label="View PRs" />
               <Quick to="/bcba/supervision" icon={Stethoscope} label="Supervision" />
@@ -510,34 +530,17 @@ export default function OSBCBAWorkspace() {
               <Quick to="/bcba/scheduling" icon={CalendarDays} label="Scheduling" />
               <Quick to="/bcba/clients" icon={ClipboardCheck} label="Clients" />
               <Quick to="/bcba/authorizations" icon={NotebookPen} label="Authorizations" />
+              <Quick to="/reports" icon={MessageSquare} label="Reports" />
             </div>
           </Card>
 
           <Card>
-            <div className="flex items-center gap-2">
-              <div className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
-                <Sparkles className="size-4" />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-foreground">Insights</div>
-                <div className="text-xs text-muted-foreground">Scoped to your caseload</div>
-              </div>
-            </div>
-            <ul className="mt-4 space-y-2">
-              {[
-                "What should I prioritize today?",
-                "Which PRs are due first?",
-                "Which clients are missing supervision?",
-                "Summarize scheduling problems on my caseload.",
-              ].map((q) => (
-                <li key={q}>
-                  <Link to={`/ai/assistant?q=${encodeURIComponent(q)}`} className="group flex items-center justify-between gap-2 rounded-xl bg-muted/60 px-3 py-2 text-sm text-foreground hover:bg-muted">
-                    <span className="truncate">{q}</span>
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground transition group-hover:text-foreground" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <SectionTitle title="My open tasks" hint="Persisted BCBA action tasks." />
+            <BcbaTaskList
+              tasks={openTasks}
+              onComplete={(id) => bcba.workflow.completeTask(id)}
+              empty="No open tasks. Create one to track follow-ups."
+            />
           </Card>
         </section>
 
@@ -561,6 +564,7 @@ export default function OSBCBAWorkspace() {
           )}
         </SheetContent>
       </Sheet>
+      {bcba.dialogs}
     </OSShell>
   );
 }

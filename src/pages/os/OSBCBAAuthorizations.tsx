@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Search, Loader2, ShieldCheck, AlertTriangle, FileSignature,
-  Upload, MessageSquare, Sparkles, X, ChevronRight, CalendarClock,
+  Upload, MessageSquare, X, ChevronRight, CalendarClock,
   ClipboardCheck, PenLine, Users, Activity, ShieldAlert,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
@@ -10,6 +10,7 @@ import { useBcbaCaseload, daysUntil, type Severity } from "@/hooks/useBcbaCaselo
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
 
 const sevChip: Record<Severity, string> = {
   crit: "bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/30",
@@ -193,6 +194,15 @@ export default function OSBCBAAuthorizations() {
   }, [rows]);
 
   const activeRow = useMemo(() => rows.find((r) => r.a.id === activeId) ?? null, [rows, activeId]);
+  const clientOptions = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.a.clientName))),
+    [rows],
+  );
+  const bcba = useBcbaActionDialogs({
+    scope: { clientName: activeRow?.a.clientName ?? undefined, bcbaName: c.resolvedBcba },
+    clientOptions,
+    defaultSourceArea: "authorization",
+  });
 
   return (
     <OSShell>
@@ -512,6 +522,30 @@ export default function OSBCBAAuthorizations() {
             <QuickAction to="/bcba/workspace"      icon={Activity}       label="Workspace" />
           </div>
         </section>
+
+        {/* Persisted authorization / PR workflow */}
+        <section>
+          <div className="rounded-2xl border border-border/70 bg-card p-6">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight text-foreground">PR readiness workflow</h2>
+                <p className="text-xs text-muted-foreground">Persisted notes, tasks, and treatment plan status you own.</p>
+              </div>
+              <BcbaQuickActionBar
+                onNote={() => bcba.openNote()}
+                onTask={() => bcba.openTask()}
+                onSupervision={() => bcba.openSupervision()}
+                onParentTraining={() => bcba.openParentTraining()}
+                onPlanItem={() => bcba.openPlanItem()}
+              />
+            </div>
+            <BcbaTaskList
+              tasks={bcba.workflow.tasks.filter((t) => t.status !== "completed" && (t.source_area === "authorization" || t.source_area === "treatment_plan")).slice(0, 6)}
+              onComplete={(id) => bcba.workflow.completeTask(id)}
+              empty="No open PR / authorization tasks."
+            />
+          </div>
+        </section>
       </div>
 
       {/* Side panel */}
@@ -599,11 +633,40 @@ export default function OSBCBAAuthorizations() {
 
                 <PanelSection title="Quick actions">
                   <div className="grid grid-cols-2 gap-2">
-                    <PanelLink to="/bcba/authorizations" icon={FileSignature}>Open PR</PanelLink>
                     <PanelLink to="/bcba/clients"   icon={Users}>View client</PanelLink>
-                    <PanelLink to="/bcba/authorizations" icon={Upload}>Upload docs</PanelLink>
-                    <PanelLink to="/qa-team"        icon={MessageSquare}>Message QA</PanelLink>
                     <PanelLink to="/bcba/scheduling" icon={CalendarClock}>Scheduling</PanelLink>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => bcba.openNote(activeRow.a.clientName)}>Add PR note</button>
+                    <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => bcba.openTask(activeRow.a.clientName)}>Missing-info task</button>
+                    <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => bcba.openPlanItem(activeRow.a.clientName)}>Update PR status</button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                      onClick={async () => {
+                        try {
+                          await bcba.workflow.upsertPlanItem({
+                            client_name: activeRow.a.clientName,
+                            status: "ready_for_submission",
+                          });
+                        } catch { /* toast handled elsewhere */ }
+                      }}
+                    >Mark BCBA docs ready</button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+                      onClick={async () => {
+                        try {
+                          await bcba.workflow.createTask({
+                            client_name: activeRow.a.clientName,
+                            source_area: "authorization",
+                            title: `Flag QA / auth help needed: ${activeRow.a.clientName}`,
+                            priority: "high",
+                            status: "escalated",
+                          });
+                        } catch { /* noop */ }
+                      }}
+                    >Flag QA help needed</button>
                   </div>
                 </PanelSection>
               </div>
@@ -611,6 +674,7 @@ export default function OSBCBAAuthorizations() {
           )}
         </SheetContent>
       </Sheet>
+      {bcba.dialogs}
     </OSShell>
   );
 }

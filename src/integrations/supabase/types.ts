@@ -18102,6 +18102,10 @@ export type Database = {
         Args: { _dept_name: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      bcba_workflow_leadership_can_read: {
+        Args: { _uid: string }
+        Returns: boolean
+      }
       bd_assign_source_event: {
         Args: { _event_id: string }
         Returns: {

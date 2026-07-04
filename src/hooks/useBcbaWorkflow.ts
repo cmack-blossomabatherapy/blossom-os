@@ -118,12 +118,29 @@ export interface BcbaClientNote {
   created_at: string;
 }
 
-// Any-cast around generated types until they refresh; the tables exist.
+// Centralized typed wrapper. Generated Supabase types include these tables now,
+// but we keep the narrow cast in one place so page components don't need it.
 const db = supabase as unknown as {
   from: (table: string) => any;
 };
 
-export function useBcbaWorkflow(clientId?: string | null) {
+export type BcbaWorkflowScope = {
+  clientId?: string | null;
+  clientName?: string | null;
+  centralreachClientId?: string | null;
+  bcbaId?: string | null;
+  bcbaName?: string | null;
+};
+
+function normalizeScope(input?: BcbaWorkflowScope | string | null): BcbaWorkflowScope {
+  if (!input) return {};
+  if (typeof input === "string") return { clientId: input };
+  return input;
+}
+
+export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) {
+  const scope = normalizeScope(scopeInput);
+  const { clientId, clientName, centralreachClientId, bcbaId } = scope;
   const { user } = useAuth();
   const [tasks, setTasks] = useState<BcbaActionTask[]>([]);
   const [supervisionLogs, setSupervisionLogs] = useState<BcbaSupervisionLog[]>([]);
@@ -132,6 +149,16 @@ export function useBcbaWorkflow(clientId?: string | null) {
   const [notes, setNotes] = useState<BcbaClientNote[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const applyScope = useCallback(
+    (q: any) => {
+      if (clientId) return q.eq("client_id", clientId);
+      if (centralreachClientId) return q.eq("centralreach_client_id", centralreachClientId);
+      if (clientName) return q.eq("client_name", clientName);
+      return q;
+    },
+    [clientId, centralreachClientId, clientName],
+  );
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -144,11 +171,11 @@ export function useBcbaWorkflow(clientId?: string | null) {
       const notesQ = db.from("bcba_client_notes").select("*").order("created_at", { ascending: false }).limit(500);
 
       const [t, s, p, pl, n] = await Promise.all([
-        clientId ? tasksQ.eq("client_id", clientId) : tasksQ,
-        clientId ? supQ.eq("client_id", clientId) : supQ,
-        clientId ? ptQ.eq("client_id", clientId) : ptQ,
-        clientId ? planQ.eq("client_id", clientId) : planQ,
-        clientId ? notesQ.eq("client_id", clientId) : notesQ,
+        applyScope(tasksQ),
+        applyScope(supQ),
+        applyScope(ptQ),
+        applyScope(planQ),
+        applyScope(notesQ),
       ]);
 
       if (t.error) throw t.error;
@@ -167,7 +194,7 @@ export function useBcbaWorkflow(clientId?: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [clientId]);
+  }, [applyScope]);
 
   useEffect(() => {
     void refresh();
@@ -175,19 +202,31 @@ export function useBcbaWorkflow(clientId?: string | null) {
 
   const uid = user?.id ?? null;
 
+  // Ensures created rows always carry the best-available client identifiers
+  // so client-scoped queries later find them, even when only a name exists.
+  const withScopeDefaults = useCallback(
+    <T extends Record<string, any>>(input: T): T => ({
+      client_id: clientId ?? input.client_id ?? null,
+      client_name: clientName ?? input.client_name ?? null,
+      centralreach_client_id: centralreachClientId ?? input.centralreach_client_id ?? null,
+      ...input,
+    }),
+    [clientId, clientName, centralreachClientId],
+  );
+
   const createTask = useCallback(
     async (input: Partial<BcbaActionTask>) => {
-      const payload = {
+      const payload = withScopeDefaults({
         ...input,
         created_by: uid,
-        assigned_bcba: input.assigned_bcba ?? uid,
-      };
+        assigned_bcba: input.assigned_bcba ?? bcbaId ?? uid,
+      });
       const { data, error } = await db.from("bcba_action_tasks").insert(payload).select("*").single();
       if (error) throw error;
       setTasks((prev) => [data as BcbaActionTask, ...prev]);
       return data as BcbaActionTask;
     },
-    [uid],
+    [uid, bcbaId, withScopeDefaults],
   );
 
   const updateTask = useCallback(
@@ -207,39 +246,39 @@ export function useBcbaWorkflow(clientId?: string | null) {
 
   const logSupervision = useCallback(
     async (input: Partial<BcbaSupervisionLog>) => {
-      const payload = { ...input, created_by: uid, bcba_id: input.bcba_id ?? uid };
+      const payload = withScopeDefaults({ ...input, created_by: uid, bcba_id: input.bcba_id ?? bcbaId ?? uid });
       const { data, error } = await db.from("bcba_supervision_logs").insert(payload).select("*").single();
       if (error) throw error;
       setSupervisionLogs((prev) => [data as BcbaSupervisionLog, ...prev]);
       return data as BcbaSupervisionLog;
     },
-    [uid],
+    [uid, bcbaId, withScopeDefaults],
   );
 
   const logParentTraining = useCallback(
     async (input: Partial<BcbaParentTrainingLog>) => {
-      const payload = {
+      const payload = withScopeDefaults({
         service_code: "97156",
         ...input,
         created_by: uid,
-        bcba_id: input.bcba_id ?? uid,
-      };
+        bcba_id: input.bcba_id ?? bcbaId ?? uid,
+      });
       const { data, error } = await db.from("bcba_parent_training_logs").insert(payload).select("*").single();
       if (error) throw error;
       setPtLogs((prev) => [data as BcbaParentTrainingLog, ...prev]);
       return data as BcbaParentTrainingLog;
     },
-    [uid],
+    [uid, bcbaId, withScopeDefaults],
   );
 
   const upsertPlanItem = useCallback(
     async (input: Partial<BcbaTreatmentPlanItem> & { id?: string }) => {
-      const payload = {
+      const payload = withScopeDefaults({
         ...input,
         created_by: input.id ? undefined : uid,
-        bcba_id: input.bcba_id ?? uid,
+        bcba_id: input.bcba_id ?? bcbaId ?? uid,
         last_touched_at: new Date().toISOString(),
-      };
+      });
       if (input.id) {
         const { data, error } = await db
           .from("bcba_treatment_plan_items")
@@ -260,18 +299,18 @@ export function useBcbaWorkflow(clientId?: string | null) {
       setPlanItems((prev) => [data as BcbaTreatmentPlanItem, ...prev]);
       return data as BcbaTreatmentPlanItem;
     },
-    [uid],
+    [uid, bcbaId, withScopeDefaults],
   );
 
   const addNote = useCallback(
     async (input: Partial<BcbaClientNote>) => {
-      const payload = { ...input, author_id: uid, bcba_id: input.bcba_id ?? uid };
+      const payload = withScopeDefaults({ ...input, author_id: uid, bcba_id: input.bcba_id ?? bcbaId ?? uid });
       const { data, error } = await db.from("bcba_client_notes").insert(payload).select("*").single();
       if (error) throw error;
       setNotes((prev) => [data as BcbaClientNote, ...prev]);
       return data as BcbaClientNote;
     },
-    [uid],
+    [uid, bcbaId, withScopeDefaults],
   );
 
   return {
