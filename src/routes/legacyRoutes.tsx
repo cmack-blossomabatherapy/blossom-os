@@ -23,7 +23,7 @@ export const LegacyDashboardRedirects = (
         404/blank pages while the components themselves are gradually
         updated to the canonical routes. Do NOT remove without auditing
         every callsite. */}
-    <Route path="/os/authorizations" element={<Navigate to="/ops/authorizations" replace />} />
+    <Route path="/os/authorizations" element={<Navigate to="/authorizations" replace />} />
     <Route path="/hr/training-management" element={<Navigate to="/hr/training-center" replace />} />
     <Route path="/hr/training-assign" element={<Navigate to="/hr/training-center" replace />} />
     <Route path="/supervision" element={<Navigate to="/bcba/supervision" replace />} />
