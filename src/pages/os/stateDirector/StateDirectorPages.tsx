@@ -25,6 +25,7 @@ import {
   type Escalation, type OpsTask, type Priority, type Department, type StateCode,
   type EscalationStatus, type TaskStatus,
 } from "@/lib/os/stateDirector/stateDirectorStore";
+import { StateOpsCentralReachSummaryBadge } from "@/components/stateDirector/StateOpsCentralReachBadge";
 
 /* --------------------------------- helpers -------------------------------- */
 
