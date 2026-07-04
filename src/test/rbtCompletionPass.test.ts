@@ -5,6 +5,16 @@ import { ROLE_MENUS } from "@/lib/os/roleMenus";
 
 const APP_TSX = readFileSync(path.resolve(__dirname, "../App.tsx"), "utf8");
 
+const RBT_PAGES = [
+  "OSRBTMyDay",
+  "OSRBTClients",
+  "OSRBTSchedule",
+  "OSRBTSessionSupport",
+  "OSRBTSupervision",
+  "OSRBTMessages",
+  "OSRBTHelp",
+] as const;
+
 describe("RBT completion pass", () => {
   const menu = ROLE_MENUS.rbt;
   const paths = menu!.sections.flatMap((s) => s.items.map((i) => i.path));
@@ -63,5 +73,66 @@ describe("RBT completion pass", () => {
   it("exposes the useRbtWorkflow hook for self-scoped RBT data", async () => {
     const mod = await import("@/hooks/useRbtWorkflow");
     expect(typeof mod.useRbtWorkflow).toBe("function");
+  });
+
+  it("RBT menu has no duplicate Training Academy or Resource Library links", () => {
+    const trainingCount = paths.filter((p) => p === "/academy" || p === "/training").length;
+    const resourceCount = paths.filter((p) => p === "/resource-library").length;
+    expect(trainingCount).toBe(0);
+    expect(resourceCount).toBe(0);
+    // RBT-specific training/resources kept
+    expect(paths).toContain("/rbt/training-academy");
+    expect(paths).toContain("/rbt/resources");
+  });
+
+  it("RBT menu contains exactly one Reports link and it is /reports", () => {
+    const reports = paths.filter((p) => p === "/reports");
+    expect(reports.length).toBe(1);
+  });
+
+  it("every RBT workflow page imports useRbtWorkflow", () => {
+    for (const page of RBT_PAGES) {
+      const src = readFileSync(path.resolve(__dirname, `../pages/os/${page}.tsx`), "utf8");
+      expect(src, `${page} must import useRbtWorkflow`).toMatch(/useRbtWorkflow/);
+    }
+  });
+
+  it("RBT workflow pages do not rely on static demo arrays as primary data", () => {
+    const forbidden = [
+      /^const\s+CLIENTS\s*=\s*\[/m,
+      /^const\s+SESSIONS\s*=\s*\[/m,
+      /^const\s+CHANGES\s*=\s*\[/m,
+      /^const\s+ALERTS\s*=\s*\[/m,
+      /^const\s+UPDATES\s*=\s*\[/m,
+      /^const\s+SCHEDULE_CHANGES\s*=\s*\[/m,
+      /^const\s+BCBA_MESSAGES\s*=\s*\[/m,
+      /^const\s+ANNOUNCEMENTS\s*=\s*\[/m,
+      /^const\s+ACTIONS\s*=\s*\[/m,
+      /^const\s+UPCOMING\s*=\s*\[/m,
+      /^const\s+TIMELINE\s*=\s*\[/m,
+      /^const\s+SUPPORT_NOTES\s*=\s*\[/m,
+      /^const\s+OPEN_REQUESTS\s*=\s*\[/m,
+    ];
+    for (const page of RBT_PAGES) {
+      const src = readFileSync(path.resolve(__dirname, `../pages/os/${page}.tsx`), "utf8");
+      for (const rx of forbidden) {
+        expect(rx.test(src), `${page} still contains static demo array ${rx}`).toBe(false);
+      }
+    }
+  });
+
+  it("useRbtWorkflow exposes required data + mutation helpers", async () => {
+    const src = readFileSync(path.resolve(__dirname, "../hooks/useRbtWorkflow.ts"), "utf8");
+    for (const key of [
+      "clients", "sessions", "todaySessions", "supervision", "messages",
+      "helpRequests", "supportLogs",
+      "openMessages", "actionMessages", "openHelpRequests",
+      "upcomingSessions", "cancelledSessions", "upcomingSupervision", "latestSupportLogs",
+      "confirmSession", "acknowledgeSession",
+      "markMessageRead", "markMessageComplete",
+      "submitHelpRequest", "logSessionSupport", "acknowledgeSupervision",
+    ]) {
+      expect(src, `useRbtWorkflow must expose ${key}`).toMatch(new RegExp(`\\b${key}\\b`));
+    }
   });
 });
