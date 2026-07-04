@@ -684,7 +684,13 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Help",                         path: "/rbt/help",            icon: HeartHandshake },
         ],
       },
-      TRAINING_AND_RESOURCES,
+      {
+        id: "rbt-reports",
+        label: "Reports",
+        items: [
+          { label: "Reports", path: "/reports", icon: FileText },
+        ],
+      },
     ],
   },
 
