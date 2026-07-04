@@ -206,6 +206,7 @@ export const WORKSPACES: Workspace[] = [
       { label: "Onboarding Handoff",     path: "/recruiting/onboarding" },
       { label: "Orientation Queue",      path: "/recruiting/orientation" },
       { label: "Staffing Needs",         path: "/recruiting/staffing-needs" },
+      { label: "Recruiting Map",         path: "/recruiting/map" },
       { label: "Follow-Ups",             path: "/recruiting/follow-ups" },
       { label: "Messages",               path: "/recruiting/messages" },
       { label: "Escalations",            path: "/recruiting/escalations" },
