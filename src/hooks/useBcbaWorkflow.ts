@@ -185,10 +185,12 @@ export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) 
     setLoading(true);
     setError(null);
     try {
-      // Only pull broad datasets when the caller explicitly opts in. Scoped
-      // (per-client) queries always ignore the `broad` flag.
+      // Broad fetches (no client scope) are allowed by default so existing
+      // BCBA dashboard/workspace surfaces keep working. Pages that only care
+      // about a single client should always pass a scope; leadership views
+      // may opt out explicitly with `broad: false`.
       const hasScope = !!(clientId || centralreachClientId || clientNameKey);
-      if (!hasScope && !broad) {
+      if (!hasScope && broad === false) {
         setTasks([]); setSupervisionLogs([]); setPtLogs([]); setPlanItems([]); setNotes([]);
         setLoading(false);
         return;
