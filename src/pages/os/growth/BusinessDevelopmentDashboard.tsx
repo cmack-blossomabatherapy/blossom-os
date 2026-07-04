@@ -1487,12 +1487,14 @@ type HandoffDerivedStatus =
   | "Assigned"
   | "Linked / Outreach needed"
   | "Needs follow-up plan"
+  | "Follow-up scheduled"
   | "Reviewed"
   | "Stale handoff";
 
 function deriveHandoffStatus(
   ev: MarketingSourceEventRow,
   outreach: ReferralActivity[],
+  tasks: ReferralCrmTask[] = [],
 ): HandoffDerivedStatus {
   const ageDays = Math.floor((Date.now() - new Date(ev.occurred_at).getTime()) / 86_400_000);
   if (ev.reviewed_at) return "Reviewed";
@@ -1502,13 +1504,17 @@ function deriveHandoffStatus(
   if (!ev.referral_company_id && ev.assigned_to) return "Assigned";
   const hasActivity = outreach.some((o) => o.company_id === ev.referral_company_id);
   if (ev.referral_company_id && !hasActivity) return "Linked / Outreach needed";
-  return "Needs follow-up plan";
+  const hasOpenFollowUp = tasks.some(
+    (t) => t.company_id === ev.referral_company_id && !t.archived_at && t.status === "Open",
+  );
+  return hasOpenFollowUp ? "Follow-up scheduled" : "Needs follow-up plan";
 }
 
 function HandoffQueue({
   events,
   partners,
   outreach,
+  tasks,
   loading,
   error,
   refresh,
@@ -1522,6 +1528,7 @@ function HandoffQueue({
   events: MarketingSourceEventRow[];
   partners: ReferralCompany[];
   outreach: ReferralActivity[];
+  tasks: ReferralCrmTask[];
   loading: boolean;
   error: Error | null;
   refresh: () => void;
