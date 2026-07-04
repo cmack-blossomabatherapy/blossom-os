@@ -134,7 +134,8 @@ export type ActivityKind =
   | "task_escalated"
   | "note_added"
   | "health_changed"
-  | "snapshot_opened";
+  | "snapshot_opened"
+  | "handoff";
 
 export interface ActivityEvent {
   id: string;
