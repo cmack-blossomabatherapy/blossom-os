@@ -10,6 +10,28 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useBcbaWorkflow } from "@/hooks/useBcbaWorkflow";
 import { BcbaCentralReachSummaryBadge } from "@/components/bcba/BcbaCentralReachBadge";
+
+/**
+ * Pass 3: inline signal strip that surfaces BOS-native BCBA workflow
+ * activity (supervision entries, parent training entries, open tasks,
+ * open plan items) alongside the CentralReach-import metrics above.
+ * This is intentionally lightweight — the report itself is still CR-driven.
+ */
+function BcbaWorkflowSignalsInline() {
+  const w = useBcbaWorkflow();
+  const m = w.metrics;
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+      <BcbaCentralReachSummaryBadge pendingCount={m.pendingCentralReachSync} />
+      <span className="rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-muted-foreground">
+        Blossom OS · {m.supervisionLogs30d} supervision · {m.parentTrainingLogs30d} parent training (30d)
+      </span>
+      <span className="rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-muted-foreground">
+        {m.openTasks} open task{m.openTasks === 1 ? "" : "s"} · {m.openPlanItems} open plan item{m.openPlanItems === 1 ? "" : "s"}
+      </span>
+    </div>
+  );
+}
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
