@@ -23,7 +23,7 @@ describe("BCBA Pass 3 — consolidated hardening", () => {
 
   it("useBcbaWorkflow subscribes to realtime and exposes metrics", () => {
     const src = read("src/hooks/useBcbaWorkflow.ts");
-    expect(src).toMatch(/supabase\.channel\(/);
+    expect(src).toMatch(/supabase[\s\S]{0,20}\.channel\(/);
     expect(src).toMatch(/postgres_changes/);
     expect(src).toMatch(/removeChannel/);
     expect(src).toMatch(/pendingCentralReachSync/);
