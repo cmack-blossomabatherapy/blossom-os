@@ -6,6 +6,7 @@ import type {
 import { STATE_DIRECTOR_SEED } from "./stateDirectorSeed";
 import {
   loadStateOperationsSnapshot,
+  subscribeStateOperationsRealtime,
   insertTask as sbInsertTask,
   updateTaskRow as sbUpdateTaskRow,
   insertEscalation as sbInsertEscalation,
