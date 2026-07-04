@@ -53,7 +53,15 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("marketing_growth_lead")) return "marketing_growth_lead";
   if (appRoles.includes("marketing") || appRoles.includes("marketing_team")) return "marketing_team";
   if (appRoles.includes("behavioral_support")) return "behavioral_support";
-  if (appRoles.includes("clinical_lead")) return "clinical_director";
+  // The Clinical Director OS role covers three DB app_role aliases:
+  //   - clinical_director (canonical, added 2026-07)
+  //   - clinic_director   (legacy alias kept for existing users)
+  //   - clinical_lead     (older label)
+  // Use the string-based `has` helper because the AppRole union type may
+  // trail the DB enum (types.ts regenerates independently).
+  if (has("clinical_director") || has("clinic_director") || has("clinical_lead")) {
+    return "clinical_director";
+  }
   return null;
 }
 

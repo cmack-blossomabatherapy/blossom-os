@@ -4484,6 +4484,166 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_activity_log: {
+        Row: {
+          actor_name: string | null
+          actor_user_id: string | null
+          bcba_id: string | null
+          client_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          source_record_id: string | null
+          source_type: string | null
+          summary: string | null
+          work_item_id: string | null
+        }
+        Insert: {
+          actor_name?: string | null
+          actor_user_id?: string | null
+          bcba_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          source_record_id?: string | null
+          source_type?: string | null
+          summary?: string | null
+          work_item_id?: string | null
+        }
+        Update: {
+          actor_name?: string | null
+          actor_user_id?: string | null
+          bcba_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          source_record_id?: string | null
+          source_type?: string | null
+          summary?: string | null
+          work_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_activity_log_work_item_id_fkey"
+            columns: ["work_item_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_work_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_saved_views: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          is_shared: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          is_shared?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          is_shared?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      clinical_work_items: {
+        Row: {
+          bcba_id: string | null
+          bcba_name: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          id: string
+          metadata: Json
+          notes: string | null
+          owner_name: string | null
+          owner_user_id: string | null
+          priority: string
+          source_record_id: string | null
+          source_type: string
+          state: string | null
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bcba_id?: string | null
+          bcba_name?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          owner_name?: string | null
+          owner_user_id?: string | null
+          priority?: string
+          source_record_id?: string | null
+          source_type: string
+          state?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bcba_id?: string | null
+          bcba_name?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          owner_name?: string | null
+          owner_user_id?: string | null
+          priority?: string
+          source_record_id?: string | null
+          source_type?: string
+          state?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_work_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credentialing_activity: {
         Row: {
           activity_type: string
@@ -18072,6 +18232,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      can_manage_clinical_work: { Args: { _user_id: string }; Returns: boolean }
       can_manage_marketing: { Args: { _uid: string }; Returns: boolean }
       can_manage_role_assignments: {
         Args: { _user_id: string }
@@ -18083,6 +18244,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      can_view_clinical_work: { Args: { _user_id: string }; Returns: boolean }
       classify_eval_role: { Args: { _job_title: string }; Returns: string }
       compute_profile_completion: {
         Args: { emp: Database["public"]["Tables"]["employees"]["Row"] }
@@ -18203,6 +18365,7 @@ export type Database = {
         Args: { _client_id: string }
         Returns: boolean
       }
+      is_clinical_director: { Args: { _user_id: string }; Returns: boolean }
       is_cm_oversight: { Args: never; Returns: boolean }
       is_employee_self: { Args: { _employee_id: string }; Returns: boolean }
       is_hr_operator: { Args: { _user_id: string }; Returns: boolean }
@@ -18455,6 +18618,7 @@ export type Database = {
         | "credentialing_coordinator"
         | "business_development"
         | "case_manager"
+        | "clinical_director"
       assessment_document_type: "Assessment Notes" | "Treatment Plan"
       assessment_location: "Home" | "School" | "Clinic"
       assessment_status:
@@ -19178,6 +19342,7 @@ export const Constants = {
         "credentialing_coordinator",
         "business_development",
         "case_manager",
+        "clinical_director",
       ],
       assessment_document_type: ["Assessment Notes", "Treatment Plan"],
       assessment_location: ["Home", "School", "Clinic"],
