@@ -379,8 +379,6 @@ import { BlockIntakeRoute } from "./components/auth/BlockIntakeRoute";
 import {
   RoleManagementPage, EmployeeDirectoryPage, UserLoginsVaultPage,
   NFCBadgeManagementPage, DeviceRequestsPage,
-  HRDashboardPage, HREmployeeRecordsPage, HRRequestsPage, HRComplianceItemsPage,
-  HRNFCBadgeSupportPage, HRReportsPage,
 } from "./pages/os/people/PeoplePages";
 import {
   CredentialingDashboardPage, ProviderCredentialingPage, InsuranceCredentialingPage,
@@ -868,11 +866,11 @@ const App = () => (
                   <Route path="/device-inventory" element={<PermissionRoute allowedRoles={["admin", "hr", "hr_lead", "hr_admin", "hr_manager", "hr_team"]}><DeviceInventory /></PermissionRoute>} />
                   <Route path="/device-requests" element={<PermissionRoute allowedRoles={["admin", "hr", "hr_lead", "hr_admin", "hr_manager", "hr_team"]}><DeviceRequestsPage /></PermissionRoute>} />
                   {/* Phase 5 — HR */}
-                  <Route path="/hr/dashboard" element={<AdminRoute><HRDashboardPage /></AdminRoute>} />
-                  <Route path="/hr/employee-records" element={<AdminRoute><HREmployeeRecordsPage /></AdminRoute>} />
-                  {/* /hr/requests canonical OS-shell route defined above; legacy admin variant retired. */}
-                  <Route path="/admin/hr/requests" element={<AdminRoute><HRRequestsPage /></AdminRoute>} />
-                  <Route path="/hr/compliance-items" element={<AdminRoute><HRComplianceItemsPage /></AdminRoute>} />
+                  {/* Legacy HR admin routes — all redirect into the canonical OS HR surface. */}
+                  <Route path="/hr/dashboard" element={<Navigate to="/hr-team" replace />} />
+                  <Route path="/hr/employee-records" element={<Navigate to="/user-management" replace />} />
+                  <Route path="/admin/hr/requests" element={<Navigate to="/hr/requests" replace />} />
+                  <Route path="/hr/compliance-items" element={<Navigate to="/hr/compliance" replace />} />
                   <Route path="/hr/nfc-badge-support" element={<Navigate to="/user-management" replace />} />
                   {/* /hr/reports canonical PermissionRoute defined later; legacy admin variant retired. */}
                   <Route path="/admin/hr/reports" element={<Navigate to="/reports?category=hr" replace />} />
