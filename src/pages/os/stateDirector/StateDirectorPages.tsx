@@ -536,6 +536,9 @@ export function StateOperationsPage() {
 
   const escPreview = view.escalations.filter((e) => e.status !== "resolved").slice(0, 6);
   const taskPreview = view.tasks.filter((t) => t.status !== "completed").slice(0, 6);
+  const pendingCrCount =
+    view.tasks.filter((t) => (t.centralreachSyncStatus ?? "pending_import") !== "synced").length +
+    view.escalations.filter((e) => (e.centralreachSyncStatus ?? "pending_import") !== "synced").length;
 
   const departmentSnapshots: { label: string; icon: LucideIcon; to: string }[] = [
     { label: "Intake",          icon: Briefcase,   to: "/intake/dashboard" },
