@@ -11,6 +11,7 @@ import type { ClientPairing } from "@/hooks/useCentralReachOps";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
+import { BcbaClientTimeline } from "@/components/bcba/BcbaClientTimeline";
 
 type Status = "on_track" | "watch" | "needs" | "urgent";
 
@@ -561,6 +562,7 @@ export default function OSBCBASupervision() {
                 onSupervision={() => bcba.openSupervision()}
                 onParentTraining={() => bcba.openParentTraining()}
               />
+              <BcbaClientTimeline scope={{}} className="mt-4" />
             </div>
             <BcbaTaskList
               tasks={bcba.workflow.tasks.filter((t) => t.status !== "completed").slice(0, 6)}

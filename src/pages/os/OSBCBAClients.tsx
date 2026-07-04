@@ -11,6 +11,7 @@ import type { ClientPairing } from "@/hooks/useCentralReachOps";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
+import { BcbaClientTimeline } from "@/components/bcba/BcbaClientTimeline";
 
 type Health = "stable" | "watch" | "attention";
 
@@ -469,6 +470,7 @@ export default function OSBCBAClients() {
                       onParentTraining={() => bcba.openParentTraining(activeRow.client.clientName)}
                       onPlanItem={() => bcba.openPlanItem(activeRow.client.clientName)}
                     />
+                    <BcbaClientTimeline scope={{}} className="mt-4" />
                   </div>
                 </Section>
 

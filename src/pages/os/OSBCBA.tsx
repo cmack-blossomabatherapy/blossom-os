@@ -12,6 +12,7 @@ import { useCentralReachOps, type ClientPairing } from "@/hooks/useCentralReachO
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { cn } from "@/lib/utils";
 import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
+import { BcbaClientTimeline } from "@/components/bcba/BcbaClientTimeline";
 
 type Severity = "crit" | "warn" | "info";
 
@@ -591,6 +592,7 @@ export default function OSBCBA() {
                 onParentTraining={() => bcba.openParentTraining()}
                 onPlanItem={() => bcba.openPlanItem()}
               />
+              <BcbaClientTimeline scope={{}} className="mt-4" />
             </div>
           </Card>
         </section>

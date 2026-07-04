@@ -11,6 +11,7 @@ import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
+import { BcbaClientTimeline } from "@/components/bcba/BcbaClientTimeline";
 
 const sevChip: Record<Severity, string> = {
   crit: "bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/30",
@@ -538,6 +539,7 @@ export default function OSBCBAAuthorizations() {
                 onParentTraining={() => bcba.openParentTraining()}
                 onPlanItem={() => bcba.openPlanItem()}
               />
+              <BcbaClientTimeline scope={{}} className="mt-4" />
             </div>
             <BcbaTaskList
               tasks={bcba.workflow.tasks.filter((t) => t.status !== "completed" && (t.source_area === "authorization" || t.source_area === "treatment_plan")).slice(0, 6)}

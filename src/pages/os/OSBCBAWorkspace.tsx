@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import {
   useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList,
 } from "@/components/bcba/BcbaActionDialogs";
+import { BcbaClientTimeline } from "@/components/bcba/BcbaClientTimeline";
 import { BcbaCentralReachSummaryBadge } from "@/components/bcba/BcbaCentralReachBadge";
 
 const sevRing: Record<Severity, string> = {
@@ -527,6 +528,7 @@ export default function OSBCBAWorkspace() {
               onParentTraining={() => bcba.openParentTraining()}
               onPlanItem={() => bcba.openPlanItem()}
             />
+            <BcbaClientTimeline scope={{}} className="mt-4" />
             <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
               <Quick to="/bcba/clients" icon={Users} label="Open caseload" />
               <Quick to="/bcba/authorizations" icon={FileSignature} label="View PRs" />
