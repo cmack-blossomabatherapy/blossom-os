@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Loader2, Eye, AlertTriangle, CalendarClock, MessageSquare, Sparkles,
+  Loader2, Eye, AlertTriangle, CalendarClock, MessageSquare,
   X, ChevronRight, Users, HeartHandshake, FileSignature, Activity,
   CheckCircle2, ClipboardCheck, UserCheck, Clock,
 } from "lucide-react";
@@ -10,6 +10,7 @@ import { useBcbaCaseload, daysSince, daysUntil, type Severity } from "@/hooks/us
 import type { ClientPairing } from "@/hooks/useCentralReachOps";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
 
 type Status = "on_track" | "watch" | "needs" | "urgent";
 
@@ -227,6 +228,21 @@ export default function OSBCBASupervision() {
   const activeAuth = useMemo(
     () => (active ? c.authByClient.get(active.toLowerCase()) ?? null : null),
     [active, c.authByClient],
+  );
+
+  const clientOptions = useMemo(() => c.caseload.map((p) => p.clientName), [c.caseload]);
+  const bcba = useBcbaActionDialogs({
+    scope: { clientName: active ?? undefined, bcbaName: c.resolvedBcba },
+    clientOptions,
+    defaultSourceArea: "supervision",
+  });
+  const activeClientSupLogs = useMemo(
+    () => (active ? bcba.workflow.supervisionLogs.filter((l) => l.client_name === active) : []),
+    [active, bcba.workflow.supervisionLogs],
+  );
+  const activeClientTasks = useMemo(
+    () => (active ? bcba.workflow.tasks.filter((t) => t.client_name === active && t.status !== "completed") : []),
+    [active, bcba.workflow.tasks],
   );
 
   return (
@@ -534,30 +550,23 @@ export default function OSBCBASupervision() {
           )}
         </Section>
 
-        {/* Operational Insights */}
-        <Section title="Operational Insights">
-          <Card className="bg-gradient-to-br from-primary/5 via-card to-card">
-            <div className="flex items-start gap-3">
-              <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary"><Sparkles className="size-5" /></div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground">Plan your supervision week</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Scoped to your caseload only. Permission-aware.</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[
-                    "Which clients need supervision first?",
-                    "Which RBTs need support?",
-                    "Which overlaps are missing?",
-                    "Summarize my supervision risks this week",
-                    "Who has not been supervised in 21+ days?",
-                  ].map((q) => (
-                    <Link key={q} to={`/ai?q=${encodeURIComponent(q)}`}
-                      className="rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-border hover:bg-muted">
-                      {q}
-                    </Link>
-                  ))}
-                </div>
-              </div>
+        {/* Persisted supervision workflow */}
+        <Section title="Supervision follow-ups">
+          <Card>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">Persisted supervision logs and follow-up tasks.</p>
+              <BcbaQuickActionBar
+                onNote={() => bcba.openNote()}
+                onTask={() => bcba.openTask()}
+                onSupervision={() => bcba.openSupervision()}
+                onParentTraining={() => bcba.openParentTraining()}
+              />
             </div>
+            <BcbaTaskList
+              tasks={bcba.workflow.tasks.filter((t) => t.status !== "completed").slice(0, 6)}
+              onComplete={(id) => bcba.workflow.completeTask(id)}
+              empty="No open supervision follow-ups."
+            />
           </Card>
         </Section>
 
@@ -630,16 +639,43 @@ export default function OSBCBASupervision() {
                     <PanelLink to="/bcba/scheduling" icon={CalendarClock}>Schedule supervision</PanelLink>
                     <PanelLink to="/bcba/clients" icon={UserCheck}>Open client</PanelLink>
                     <PanelLink to="/bcba/authorizations" icon={FileSignature}>View PR</PanelLink>
-                    <PanelLink to="/bcba/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
                     <PanelLink to="/bcba/parent-training" icon={HeartHandshake}>Parent training</PanelLink>
-                    <PanelLink to={`/ai?q=${encodeURIComponent(`Tell me about supervision for ${activeRow.client.clientName}`)}`} icon={Sparkles}>Operational Insights</PanelLink>
                   </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => bcba.openSupervision(activeRow.client.clientName)}>Log supervision</button>
+                    <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => bcba.openNote(activeRow.client.clientName)}>Add note</button>
+                    <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => bcba.openTask(activeRow.client.clientName)}>Create task</button>
+                  </div>
+                </PanelSection>
+
+                <PanelSection title="Recent supervision logs">
+                  {activeClientSupLogs.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No logged supervision sessions yet.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {activeClientSupLogs.slice(0, 5).map((l) => (
+                        <li key={l.id} className="rounded-lg border border-border/60 bg-card p-2 text-xs">
+                          <div className="font-medium text-foreground">{new Date(l.occurred_at).toLocaleString()} · {l.modality}{l.service_code ? ` · ${l.service_code}` : ""}</div>
+                          {l.notes ? <div className="mt-1 text-muted-foreground">{l.notes}</div> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </PanelSection>
+
+                <PanelSection title="Open tasks for this client">
+                  <BcbaTaskList
+                    tasks={activeClientTasks}
+                    onComplete={(id) => bcba.workflow.completeTask(id)}
+                    empty="No open tasks."
+                  />
                 </PanelSection>
               </div>
             </>
           )}
         </SheetContent>
       </Sheet>
+      {bcba.dialogs}
     </OSShell>
   );
 }
