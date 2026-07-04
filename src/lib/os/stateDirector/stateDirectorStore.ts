@@ -6,6 +6,7 @@ import type {
 import { STATE_DIRECTOR_SEED } from "./stateDirectorSeed";
 import {
   loadStateOperationsSnapshot,
+  subscribeStateOperationsRealtime,
   insertTask as sbInsertTask,
   updateTaskRow as sbUpdateTaskRow,
   insertEscalation as sbInsertEscalation,
@@ -63,6 +64,24 @@ function createLocalStorageAdapter(): StateDirectorAdapter {
         cache = next;
         listeners.forEach((fn) => fn(next));
       }).catch(() => { /* ignore */ });
+      // Pass 3: realtime — any change to state ops tables triggers a
+      // rehydrate so all directors see the same live picture.
+      if (typeof window !== "undefined") {
+        subscribeStateOperationsRealtime(() => {
+          void loadStateOperationsSnapshot().then((snap) => {
+            if (!snap) return;
+            const next: StateDirectorSnapshot = {
+              profiles: (cache ?? STATE_DIRECTOR_SEED).profiles,
+              metrics: (cache ?? STATE_DIRECTOR_SEED).metrics,
+              escalations: snap.escalations,
+              tasks: snap.tasks,
+              activity: snap.activity,
+            };
+            cache = next;
+            listeners.forEach((fn) => fn(next));
+          }).catch(() => { /* ignore */ });
+        });
+      }
     }
     return cache;
   };

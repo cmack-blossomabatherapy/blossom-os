@@ -98,6 +98,7 @@ export interface Escalation {
   linkedCandidateId?: string;
   notes: EscalationNote[];
   resolution?: string;
+  centralreachSyncStatus?: string;
 }
 
 export interface OpsTask {
@@ -119,6 +120,7 @@ export interface OpsTask {
   linkedCandidateId?: string;
   notes: EscalationNote[];
   completedAt?: string;
+  centralreachSyncStatus?: string;
 }
 
 export type ActivityKind =
@@ -134,7 +136,8 @@ export type ActivityKind =
   | "task_escalated"
   | "note_added"
   | "health_changed"
-  | "snapshot_opened";
+  | "snapshot_opened"
+  | "handoff";
 
 export interface ActivityEvent {
   id: string;

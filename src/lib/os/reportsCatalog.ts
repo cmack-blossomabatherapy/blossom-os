@@ -231,6 +231,20 @@ export function visibleCategoriesForRole(role: OSRole): (ReportCategoryDef & { c
     .filter(c => c.count > 0);
 }
 
+/**
+ * Pass 3: State Director / Assistant State Director scoped reports view.
+ * Returns the reports that are visible for the role AND annotates each with
+ * the active state code so downstream UI can show "GA · State-scoped" style
+ * badging without duplicating catalog entries per state.
+ */
+export interface StateScopedReport extends ReportDef {
+  stateScope: string;
+}
+
+export function stateScopedReportsForDirector(role: OSRole, stateCode: string): StateScopedReport[] {
+  return visibleReportsForRole(role).map((r) => ({ ...r, stateScope: stateCode }));
+}
+
 export interface RoleAISummary {
   headline: string;
   insights: { icon: LucideIcon; text: string; tone: "violet" | "emerald" | "amber" | "rose" | "sky" }[];
