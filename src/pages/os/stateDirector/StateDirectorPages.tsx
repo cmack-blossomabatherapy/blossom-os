@@ -584,13 +584,11 @@ export function StateOperationsPage() {
 
       <StateOpsCentralReachSummaryBadge pendingCount={pendingCrCount} />
 
-      {stateFilter !== "all" ? (
-        <DailyHealthNotesPanel
-          stateCode={stateFilter}
-          actor={useActorSafe()}
-          canEdit={!isLeadership || Boolean(assigned)}
-        />
-      ) : null}
+      <StateOperationsDailyHealthSlot
+        stateFilter={stateFilter}
+        isLeadership={isLeadership}
+        assigned={assigned}
+      />
 
       <SectionCard title="State health" description={isLeadership ? "All states in scope." : "Your assigned state."}>
         <div className="overflow-x-auto -mx-2">
