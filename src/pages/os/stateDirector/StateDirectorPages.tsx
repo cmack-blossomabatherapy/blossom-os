@@ -50,6 +50,24 @@ function useActor() {
     : String(role || "Operator").replace(/_/g, " ");
 }
 
+function StateOperationsDailyHealthSlot({
+  stateFilter, isLeadership, assigned,
+}: {
+  stateFilter: StateCode | "all";
+  isLeadership: boolean;
+  assigned?: StateCode;
+}) {
+  const actor = useActor();
+  if (stateFilter === "all") return null;
+  return (
+    <DailyHealthNotesPanel
+      stateCode={stateFilter}
+      actor={actor}
+      canEdit={!isLeadership || Boolean(assigned)}
+    />
+  );
+}
+
 function useAvailableStates() {
   const { role, activeState } = useOSRole();
   const snap = useStateDirectorSnapshot();
