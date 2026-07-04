@@ -697,5 +697,7 @@ export function useCaseManagerWorkspace() {
     requestAuthorizationUpdate,
     requestClinicalUpdate,
     requestQaReview,
+    // shared patient/family operating timeline
+    writeClientTimelineEvent,
   };
 }
