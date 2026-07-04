@@ -18,9 +18,12 @@ describe("Clinical Director Pass 2 — menu shape", () => {
     menu.sections.flatMap((s) => s.items).filter((i) => typeof i.path === "string");
 
   it("has exactly one visible Reports menu item and it points to /reports", () => {
-    const reports = allItems().filter((i) => /reports/i.test(i.label));
-    expect(reports.length).toBe(1);
-    expect(reports[0].path).toBe("/reports");
+    // Reports = items whose PATH is /reports or starts with /reports/.
+    // (Labels like "Progress Reports" belong to /progress-reports and are
+    // clinical drilldowns, not the unified Reports destination.)
+    const reportsItems = allItems().filter((i) => /^\/reports(\/|$)/.test(i.path));
+    expect(reportsItems.length).toBe(1);
+    expect(reportsItems[0].path).toBe("/reports");
   });
 
   it("has no AI assistant items in the Clinical Director menu", () => {
