@@ -13757,6 +13757,8 @@ export type Database = {
       rbt_help_requests: {
         Row: {
           category: string
+          centralreach_reference: string | null
+          centralreach_sync_status: string
           created_at: string
           description: string
           first_response_at: string | null
@@ -13774,6 +13776,8 @@ export type Database = {
         }
         Insert: {
           category: string
+          centralreach_reference?: string | null
+          centralreach_sync_status?: string
           created_at?: string
           description: string
           first_response_at?: string | null
@@ -13791,6 +13795,8 @@ export type Database = {
         }
         Update: {
           category?: string
+          centralreach_reference?: string | null
+          centralreach_sync_status?: string
           created_at?: string
           description?: string
           first_response_at?: string | null
@@ -13869,6 +13875,8 @@ export type Database = {
         Row: {
           action_required: boolean
           body: string | null
+          centralreach_reference: string | null
+          centralreach_sync_status: string
           completed_at: string | null
           created_at: string
           due_at: string | null
@@ -13889,6 +13897,8 @@ export type Database = {
         Insert: {
           action_required?: boolean
           body?: string | null
+          centralreach_reference?: string | null
+          centralreach_sync_status?: string
           completed_at?: string | null
           created_at?: string
           due_at?: string | null
@@ -13909,6 +13919,8 @@ export type Database = {
         Update: {
           action_required?: boolean
           body?: string | null
+          centralreach_reference?: string | null
+          centralreach_sync_status?: string
           completed_at?: string | null
           created_at?: string
           due_at?: string | null
@@ -13987,6 +13999,8 @@ export type Database = {
       }
       rbt_session_support_logs: {
         Row: {
+          centralreach_reference: string | null
+          centralreach_sync_status: string
           checklist_completed: Json | null
           client_id: string | null
           created_at: string
@@ -14004,6 +14018,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          centralreach_reference?: string | null
+          centralreach_sync_status?: string
           checklist_completed?: Json | null
           client_id?: string | null
           created_at?: string
@@ -14021,6 +14037,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          centralreach_reference?: string | null
+          centralreach_sync_status?: string
           checklist_completed?: Json | null
           client_id?: string | null
           created_at?: string
@@ -14239,6 +14257,8 @@ export type Database = {
         Row: {
           acknowledged_by_rbt_at: string | null
           bcba_id: string | null
+          centralreach_reference: string | null
+          centralreach_sync_status: string
           client_id: string | null
           competency_area: string | null
           created_at: string
@@ -14255,6 +14275,8 @@ export type Database = {
         Insert: {
           acknowledged_by_rbt_at?: string | null
           bcba_id?: string | null
+          centralreach_reference?: string | null
+          centralreach_sync_status?: string
           client_id?: string | null
           competency_area?: string | null
           created_at?: string
@@ -14271,6 +14293,8 @@ export type Database = {
         Update: {
           acknowledged_by_rbt_at?: string | null
           bcba_id?: string | null
+          centralreach_reference?: string | null
+          centralreach_sync_status?: string
           client_id?: string | null
           competency_area?: string | null
           created_at?: string
