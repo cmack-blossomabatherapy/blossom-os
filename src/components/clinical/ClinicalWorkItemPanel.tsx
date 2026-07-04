@@ -75,7 +75,11 @@ export function ClinicalWorkItemPanel(props: ClinicalWorkItemPanelProps) {
 
   async function updateStatus(id: string, status: ClinicalStatus) {
     try {
-      await actions.updateStatus(id, status);
+      if (status === "reviewed") await actions.markReviewed(id);
+      else if (status === "escalated") await actions.escalate(id);
+      else if (status === "resolved") await actions.resolve(id);
+      else if (status === "archived") await actions.archive(id);
+      else await actions.reopen(id);
       await data.reload();
       toast.success(`Marked ${status.replace("_", " ")}`);
     } catch (e) {
