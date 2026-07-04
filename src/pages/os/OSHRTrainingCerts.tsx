@@ -233,6 +233,8 @@ export default function OSHRTrainingCerts() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [readinessFilter, setReadinessFilter] = useState<ReadinessFilter>("all");
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [messageRefresh, setMessageRefresh] = useState(0);
   const { catalog: readinessCatalog } = useIntegrationCatalogStatus();
 
   /* indexes */
