@@ -22,6 +22,7 @@ import {
   EditAuthorizationDialog,
 } from "@/components/authorizations/AuthorizationActionUI";
 import { AuthPromptDialog } from "@/components/authorizations/AuthPromptDialog";
+import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
 import {
   useAuthorizationActions,
   type EnsureOverlayInput,
@@ -583,6 +584,7 @@ export default function OSAuthWorkspace() {
           >
             <Plus className="h-3.5 w-3.5" /> New Authorization
           </button>
+          <SendToStateSupportButton fromDepartment="Authorizations" />
         </div>
       </header>
 
