@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Search, Loader2, ShieldCheck, AlertTriangle, CalendarClock,
-  Eye, HeartHandshake, MessageSquare, Sparkles, X, ChevronRight,
+  Eye, HeartHandshake, MessageSquare, X, ChevronRight,
   Users, FileSignature, Activity,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
@@ -10,6 +10,7 @@ import { useBcbaCaseload, daysSince, daysUntil, type Severity } from "@/hooks/us
 import type { ClientPairing } from "@/hooks/useCentralReachOps";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
 
 type Health = "stable" | "watch" | "attention";
 
@@ -184,6 +185,20 @@ export default function OSBCBAClients() {
   const activeAuth = useMemo(
     () => (activeClient ? c.authByClient.get(activeClient.toLowerCase()) ?? null : null),
     [activeClient, c.authByClient],
+  );
+  const clientOptions = useMemo(() => c.caseload.map((p) => p.clientName), [c.caseload]);
+  const bcba = useBcbaActionDialogs({
+    scope: { clientName: activeClient ?? undefined, bcbaName: c.resolvedBcba },
+    clientOptions,
+    defaultSourceArea: "caseload",
+  });
+  const activeClientTasks = useMemo(
+    () => (activeClient ? bcba.workflow.tasks.filter((t) => t.client_name === activeClient && t.status !== "completed") : []),
+    [activeClient, bcba.workflow.tasks],
+  );
+  const activeClientNotes = useMemo(
+    () => (activeClient ? bcba.workflow.notes.filter((n) => n.client_name === activeClient) : []),
+    [activeClient, bcba.workflow.notes],
   );
 
   return (
@@ -445,14 +460,46 @@ export default function OSBCBAClients() {
                     <PanelLink to="/bcba/supervision" icon={Eye}>Open supervision</PanelLink>
                     <PanelLink to="/bcba/authorizations" icon={FileSignature}>Open PR</PanelLink>
                     <PanelLink to="/bcba/parent-training" icon={HeartHandshake}>Parent training</PanelLink>
-                    <PanelLink to="/bcba/scheduling" icon={MessageSquare}>Message scheduling</PanelLink>
                   </div>
+                  <div className="mt-3">
+                    <BcbaQuickActionBar
+                      onNote={() => bcba.openNote(activeRow.client.clientName)}
+                      onTask={() => bcba.openTask(activeRow.client.clientName)}
+                      onSupervision={() => bcba.openSupervision(activeRow.client.clientName)}
+                      onParentTraining={() => bcba.openParentTraining(activeRow.client.clientName)}
+                      onPlanItem={() => bcba.openPlanItem(activeRow.client.clientName)}
+                    />
+                  </div>
+                </Section>
+
+                <Section title="Open tasks">
+                  <BcbaTaskList
+                    tasks={activeClientTasks}
+                    onComplete={(id) => bcba.workflow.completeTask(id)}
+                    empty="No open tasks for this client."
+                  />
+                </Section>
+
+                <Section title="Recent notes">
+                  {activeClientNotes.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No notes yet.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {activeClientNotes.slice(0, 5).map((n) => (
+                        <li key={n.id} className="rounded-lg border border-border/60 bg-card p-2 text-xs">
+                          <div className="font-medium text-foreground">{n.note_type} · {new Date(n.created_at).toLocaleDateString()}</div>
+                          <div className="mt-1 text-muted-foreground">{n.body}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </Section>
               </div>
             </>
           )}
         </SheetContent>
       </Sheet>
+      {bcba.dialogs}
     </OSShell>
   );
 }
