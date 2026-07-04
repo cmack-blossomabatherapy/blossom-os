@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useOSRole } from "@/contexts/OSRoleContext";
+import { ClinicalDirectorSection } from "@/components/clinical/ClinicalDirectorSection";
 
 type EmployeeRow = {
   id: string;
@@ -133,6 +134,7 @@ export default function OSEvaluations() {
 
   return (
     <OSShell>
+        <ClinicalDirectorSection sourceType="evaluation" title="Clinical Director workflow" />
       <header className="os-rise relative overflow-hidden rounded-[28px] border border-white/70 bg-gradient-to-br from-[hsl(265_100%_98%)] via-white to-[hsl(220_100%_98%)] p-7 shadow-[0_30px_70px_-40px_hsl(265_60%_50%/0.4)]">
         <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[hsl(265_70%_70%/0.25)] blur-3xl" />
         <div className="relative">

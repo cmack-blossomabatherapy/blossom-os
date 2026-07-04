@@ -12,6 +12,7 @@ import { useQADeepLink } from "@/hooks/useQADeepLink";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
+import { ClinicalDirectorSection } from "@/components/clinical/ClinicalDirectorSection";
 
 // Treatment Plan Reviews — operational QC layer for treatment plan workflows.
 // Real data only via useLiveAuthorizations. TP review derives from
@@ -267,6 +268,7 @@ export default function OSQATreatmentPlans() {
   return (
     <OSShell>
       <div className="mx-auto w-full max-w-[1500px] px-4 md:px-8 pb-24 pt-6 md:pt-10 space-y-6">
+        <ClinicalDirectorSection sourceType="authorization" title="Clinical Director workflow" />
         {/* HEADER */}
         <header>
           <div className="flex items-start justify-between flex-wrap gap-4">
