@@ -582,6 +582,8 @@ export function StateOperationsPage() {
         <KPI label="Open tasks"          value={rollup.openTasks}       tone="info" />
       </div>
 
+      <StateOpsCentralReachSummaryBadge pendingCount={pendingCrCount} />
+
       <SectionCard title="State health" description={isLeadership ? "All states in scope." : "Your assigned state."}>
         <div className="overflow-x-auto -mx-2">
           <table className="w-full text-sm">
