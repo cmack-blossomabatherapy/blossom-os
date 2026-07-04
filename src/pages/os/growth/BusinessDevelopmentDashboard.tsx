@@ -942,7 +942,10 @@ function PartnerDialog({ open, onOpenChange, onSave, initial, prefill }: { open:
 function OutreachDialog({ open, onOpenChange, partners, onSave, defaultCompanyId, prefill }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (o: { company_id: string; activity_type: string; outcome?: string | null; subject?: string; notes?: string; activity_date: string }) => Promise<void>; defaultCompanyId?: string; prefill?: { subject?: string; notes?: string } | null }) {
   const initial = { activity_type: "Email", outcome: "Sent Email" as string | null, date: new Date().toISOString().slice(0, 10) };
   const [form, setForm] = useState<{ company_id?: string; activity_type: string; outcome: string | null; subject?: string; notes?: string; date: string }>({ ...initial, company_id: defaultCompanyId });
-  useMemo(() => {
+  // Prefill company/subject/notes when the dialog opens. This is a side-effect
+  // (setForm) driven by prop changes, so useEffect is the correct hook —
+  // useMemo must remain pure.
+  useEffect(() => {
     if (open) setForm((f) => ({
       ...f,
       company_id: defaultCompanyId ?? f.company_id,
@@ -1646,10 +1649,16 @@ function HandoffQueue({
     let rows = events.map((e) => ({ ev: e, derived: deriveHandoffStatus(e, outreach, tasks) }));
     if (statusFilter !== "all") {
       rows = rows.filter((r) => {
-        if (statusFilter === "new") return r.derived === "New / Needs BD review" || r.derived === "Stale handoff";
-        if (statusFilter === "assigned") return r.derived === "Assigned";
-        if (statusFilter === "reviewed") return r.derived === "Reviewed";
-        return true;
+        switch (statusFilter) {
+          case "new":               return r.derived === "New / Needs BD review";
+          case "stale":             return r.derived === "Stale handoff";
+          case "assigned":          return r.derived === "Assigned";
+          case "linked":            return r.derived === "Linked / Outreach needed";
+          case "needs_followup":    return r.derived === "Needs follow-up plan";
+          case "followup_scheduled":return r.derived === "Follow-up scheduled";
+          case "reviewed":          return r.derived === "Reviewed";
+          default: return true;
+        }
       });
     }
     if (systemFilter !== "all") {
@@ -1814,9 +1823,13 @@ function HandoffQueue({
           <SelectTrigger className="h-8 w-44"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="new">New / Unreviewed</SelectItem>
+            <SelectItem value="new">New / Needs BD review</SelectItem>
             <SelectItem value="assigned">Assigned</SelectItem>
+            <SelectItem value="linked">Linked / Outreach needed</SelectItem>
+            <SelectItem value="needs_followup">Needs follow-up plan</SelectItem>
+            <SelectItem value="followup_scheduled">Follow-up scheduled</SelectItem>
             <SelectItem value="reviewed">Reviewed</SelectItem>
+            <SelectItem value="stale">Stale handoff</SelectItem>
           </SelectContent>
         </Select>
         <Select value={systemFilter} onValueChange={setSystemFilter}>
@@ -1966,15 +1979,14 @@ function HandoffQueue({
               .filter((d): d is string => !!d)
               .sort()[0];
             const suggestion =
-              derived === "New / Needs BD review" || derived === "Stale handoff"
-                ? "Create or link a partner"
-                : derived === "Assigned"
-                ? "Link to a partner"
-                : derived === "Linked / Outreach needed"
-                ? "Log outreach with linked partner"
-                : derived === "Needs follow-up plan"
-                ? "Create a follow-up task"
-                : "No further action";
+              derived === "New / Needs BD review"    ? "Create or link a partner"
+              : derived === "Stale handoff"          ? "Review and assign immediately"
+              : derived === "Assigned"               ? "Link to a partner"
+              : derived === "Linked / Outreach needed" ? "Log outreach with linked partner"
+              : derived === "Needs follow-up plan"   ? "Create a follow-up task"
+              : derived === "Follow-up scheduled"    ? "Work next scheduled follow-up"
+              : derived === "Reviewed"               ? "Reviewed"
+              : "No further action";
             return (
               <div
                 key={ev.id}
