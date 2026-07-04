@@ -1779,6 +1779,7 @@ export type Database = {
           centralreach_sync_status: string
           client_id: string | null
           client_name: string | null
+          client_name_key: string | null
           completed_at: string | null
           created_at: string
           created_by: string | null
@@ -1806,6 +1807,7 @@ export type Database = {
           centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
+          client_name_key?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -1833,6 +1835,7 @@ export type Database = {
           centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
+          client_name_key?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -2009,6 +2012,63 @@ export type Database = {
           },
         ]
       }
+      bcba_centralreach_outbox: {
+        Row: {
+          centralreach_client_id: string | null
+          client_id: string | null
+          client_name: string | null
+          client_name_key: string | null
+          created_at: string
+          created_by: string | null
+          event_type: string
+          id: string
+          last_error: string | null
+          payload: Json
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_record_id: string
+          source_table: string
+          sync_status: string
+          updated_at: string
+        }
+        Insert: {
+          centralreach_client_id?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          client_name_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_type: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_record_id: string
+          source_table: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Update: {
+          centralreach_client_id?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          client_name_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_record_id?: string
+          source_table?: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bcba_client_notes: {
         Row: {
           author_id: string | null
@@ -2019,6 +2079,7 @@ export type Database = {
           centralreach_sync_status: string
           client_id: string | null
           client_name: string | null
+          client_name_key: string | null
           created_at: string
           id: string
           note_type: string
@@ -2034,6 +2095,7 @@ export type Database = {
           centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
+          client_name_key?: string | null
           created_at?: string
           id?: string
           note_type?: string
@@ -2049,6 +2111,7 @@ export type Database = {
           centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
+          client_name_key?: string | null
           created_at?: string
           id?: string
           note_type?: string
@@ -2068,6 +2131,7 @@ export type Database = {
           centralreach_sync_status: string
           client_id: string | null
           client_name: string | null
+          client_name_key: string | null
           created_at: string
           created_by: string | null
           goal: string | null
@@ -2090,6 +2154,7 @@ export type Database = {
           centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
+          client_name_key?: string | null
           created_at?: string
           created_by?: string | null
           goal?: string | null
@@ -2112,6 +2177,7 @@ export type Database = {
           centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
+          client_name_key?: string | null
           created_at?: string
           created_by?: string | null
           goal?: string | null
@@ -2264,6 +2330,7 @@ export type Database = {
           centralreach_sync_status: string
           client_id: string | null
           client_name: string | null
+          client_name_key: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -2286,6 +2353,7 @@ export type Database = {
           centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
+          client_name_key?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -2308,6 +2376,7 @@ export type Database = {
           centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
+          client_name_key?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -2333,6 +2402,7 @@ export type Database = {
           centralreach_sync_status: string
           client_id: string | null
           client_name: string | null
+          client_name_key: string | null
           created_at: string
           created_by: string | null
           document_links: Json
@@ -2354,6 +2424,7 @@ export type Database = {
           centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
+          client_name_key?: string | null
           created_at?: string
           created_by?: string | null
           document_links?: Json
@@ -2375,6 +2446,7 @@ export type Database = {
           centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
+          client_name_key?: string | null
           created_at?: string
           created_by?: string | null
           document_links?: Json
@@ -18522,6 +18594,7 @@ export type Database = {
         Args: { _dept_name: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      bcba_normalize_client_name: { Args: { _name: string }; Returns: string }
       bcba_workflow_leadership_can_read: {
         Args: { _uid: string }
         Returns: boolean
