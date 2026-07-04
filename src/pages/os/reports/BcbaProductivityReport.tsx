@@ -8,6 +8,8 @@ import {
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useBcbaWorkflow } from "@/hooks/useBcbaWorkflow";
+import { BcbaCentralReachSummaryBadge } from "@/components/bcba/BcbaCentralReachBadge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1181,6 +1183,7 @@ export default function BcbaProductivityReport() {
             <p className="mt-1 text-sm text-muted-foreground">
               Monthly breakdown of each BCBA's productivity, supervision, parent training, caseload, and RBT support.
             </p>
+            <BcbaWorkflowSignalsInline />
           </div>
           <div className="flex flex-wrap items-center gap-2 print:hidden">
             <Button variant="outline" size="sm" onClick={handleSaveReport} disabled={!billingRaws.length}>
