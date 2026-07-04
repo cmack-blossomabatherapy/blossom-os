@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useRbtWorkflow, type RbtSession } from "@/hooks/useRbtWorkflow";
+import { RbtCentralReachSummaryBadge } from "@/components/rbt/RbtCentralReachBadge";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -93,6 +94,9 @@ export default function OSRBTMyDay() {
             <p className="text-[13px] text-muted-foreground mt-1">
               Your sessions, action items, supervision, and training for today.
             </p>
+            <div className="mt-2">
+              <RbtCentralReachSummaryBadge pendingCount={wf.metrics.pendingCentralReachSync} />
+            </div>
           </div>
         </header>
 
