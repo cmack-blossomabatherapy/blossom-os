@@ -369,6 +369,119 @@ export function useCaseManagerWorkspace() {
     [refresh, userId],
   );
 
+  const updateCommunication = useCallback(
+    async (id: string, patch: Partial<CMCommunication>) => {
+      const { error } = await sb.from("case_manager_communications").update(patch).eq("id", id);
+      if (error) throw error;
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const createAssignment = useCallback(
+    async (input: Partial<CMAssignment> & { client_name: string }) => {
+      const { data, error } = await sb
+        .from("case_manager_assignments")
+        .insert(withUser({ active: true, is_primary: true, ...input }))
+        .select()
+        .single();
+      if (error) throw error;
+      await refresh();
+      return data as CMAssignment;
+    },
+    [refresh, withUser],
+  );
+
+  const updateAssignment = useCallback(
+    async (id: string, patch: Partial<CMAssignment>) => {
+      const { error } = await sb.from("case_manager_assignments").update(patch).eq("id", id);
+      if (error) throw error;
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const updateFollowUp = useCallback(
+    async (id: string, patch: Partial<CMFollowUp>) => {
+      const { error } = await sb.from("case_manager_follow_ups").update({ ...patch, updated_by: userId }).eq("id", id);
+      if (error) throw error;
+      await refresh();
+    },
+    [refresh, userId],
+  );
+
+  const updateHandoff = useCallback(
+    async (id: string, patch: Partial<CMHandoff>) => {
+      const { error } = await sb.from("case_manager_handoffs").update(patch).eq("id", id);
+      if (error) throw error;
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const resolveHandoff = useCallback(
+    async (id: string, response_note?: string) => {
+      await updateHandoff(id, {
+        status: "resolved",
+        resolved_at: new Date().toISOString(),
+        response_note: response_note ?? null,
+      });
+    },
+    [updateHandoff],
+  );
+
+  const updateCommunityResource = useCallback(
+    async (id: string, patch: Partial<CMCommunityResource>) => {
+      const { error } = await sb.from("case_manager_community_resources").update(patch).eq("id", id);
+      if (error) throw error;
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const archiveCommunityResource = useCallback(
+    async (id: string) => {
+      await updateCommunityResource(id, { active: false });
+    },
+    [updateCommunityResource],
+  );
+
+  const makeDeptRequestHelper = useCallback(
+    (to_department: string, handoff_type: string, defaultTitle: string) =>
+      async (input: Partial<CMHandoff> & { title?: string; request_note?: string; client_id?: string | null; client_name?: string | null; state?: string | null; priority?: string }) => {
+        return createHandoff({
+          to_department,
+          handoff_type,
+          title: input.title ?? defaultTitle,
+          priority: input.priority ?? "normal",
+          status: "open",
+          ...input,
+        } as any);
+      },
+    [createHandoff],
+  );
+
+  const requestSchedulingUpdate = useMemo(
+    () => makeDeptRequestHelper("scheduling", "scheduling_update", "Scheduling update requested"),
+    [makeDeptRequestHelper],
+  );
+  const requestStaffingUpdate = useMemo(
+    () => makeDeptRequestHelper("staffing", "staffing_update", "Staffing update requested"),
+    [makeDeptRequestHelper],
+  );
+  const requestAuthorizationUpdate = useMemo(
+    () => makeDeptRequestHelper("authorizations", "authorization_update", "Authorization update requested"),
+    [makeDeptRequestHelper],
+  );
+  const requestClinicalUpdate = useMemo(
+    () => makeDeptRequestHelper("clinical", "clinical_update", "Clinical update requested"),
+    [makeDeptRequestHelper],
+  );
+  const requestQaReview = useMemo(
+    () => makeDeptRequestHelper("qa", "qa_review", "QA review requested"),
+    [makeDeptRequestHelper],
+  );
+
   // ---------- Derived KPI helpers ----------
 
   const now = Date.now();
@@ -376,6 +489,39 @@ export function useCaseManagerWorkspace() {
   startOfDay.setHours(0, 0, 0, 0);
   const endOfWeek = new Date(startOfDay);
   endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+  const collections = useMemo(() => {
+    const openFollowUps = followUps.filter((f) => f.status === "open");
+    const overdueFollowUps = openFollowUps.filter((f) => f.due_at && new Date(f.due_at).getTime() < now);
+    const dueThisWeekFollowUps = openFollowUps.filter((f) => {
+      if (!f.due_at) return false;
+      const t = new Date(f.due_at).getTime();
+      return t >= startOfDay.getTime() && t <= endOfWeek.getTime();
+    });
+    const openServiceIssues = serviceIssues.filter((i) => !["resolved", "closed"].includes(i.status));
+    const openEscalations = escalations.filter((e) => !["resolved", "closed"].includes(e.status));
+    const openHandoffs = handoffs.filter((h) => !["resolved", "closed"].includes(h.status));
+    const recentCommunications = communications.slice(0, 25);
+    const familiesByClientId = new Map<string, CMAssignment>();
+    assignments.forEach((a) => { if (a.client_id) familiesByClientId.set(a.client_id, a); });
+    const recordsByClientId = (clientId: string | null | undefined) => {
+      if (!clientId) return { notes: [], followUps: [], communications: [], serviceIssues: [], escalations: [], handoffs: [] };
+      return {
+        notes: notes.filter((n) => n.client_id === clientId),
+        followUps: followUps.filter((f) => f.client_id === clientId),
+        communications: communications.filter((c) => c.client_id === clientId),
+        serviceIssues: serviceIssues.filter((s) => s.client_id === clientId),
+        escalations: escalations.filter((e) => e.client_id === clientId),
+        handoffs: handoffs.filter((h) => h.client_id === clientId),
+      };
+    };
+    return {
+      openFollowUps, overdueFollowUps, dueThisWeekFollowUps,
+      openServiceIssues, openEscalations, openHandoffs,
+      recentCommunications, familiesByClientId, recordsByClientId,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignments, notes, followUps, communications, serviceIssues, escalations, handoffs]);
 
   const kpis = useMemo(() => {
     const openFollowUps = followUps.filter((f) => f.status === "open");
@@ -417,13 +563,17 @@ export function useCaseManagerWorkspace() {
     handoffs,
     communityResources,
     kpis,
+    // derived collections
+    ...collections,
     // mutations
     createNote,
     updateNote,
     createFollowUp,
     completeFollowUp,
     rescheduleFollowUp,
+    updateFollowUp,
     logCommunication,
+    updateCommunication,
     createServiceIssue,
     updateServiceIssue,
     resolveServiceIssue,
@@ -431,6 +581,18 @@ export function useCaseManagerWorkspace() {
     updateEscalation,
     resolveEscalation,
     createHandoff,
+    updateHandoff,
+    resolveHandoff,
+    createAssignment,
+    updateAssignment,
     createCommunityResource,
+    updateCommunityResource,
+    archiveCommunityResource,
+    // cross-department handoff helpers
+    requestSchedulingUpdate,
+    requestStaffingUpdate,
+    requestAuthorizationUpdate,
+    requestClinicalUpdate,
+    requestQaReview,
   };
 }
