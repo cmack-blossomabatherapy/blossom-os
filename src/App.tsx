@@ -238,7 +238,6 @@ import {
   CMTrainingAcademy, CMAssignedFamilies, CMParentCommunication, CMFamilySupport,
   CMProgressFollowUps, CMSchedulingCoordination, CMAuthorizationsVisibility,
   CMStaffingCoordination, CMServiceIssues, CMEscalations, CMCommunityReferrals,
-  CMResources,
 } from "./pages/os/case-manager/pages";
 import OSLeads from "./pages/os/OSLeads";
 import OSLeadsV2 from "./pages/os/OSLeadsV2";

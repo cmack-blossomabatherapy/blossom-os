@@ -1,6 +1,5 @@
 import OSTraining from "../OSTraining";
 import CommunityReferralsPage from "./CommunityReferrals";
-import CMResourcesPage from "./CMResourcesPage";
 import CMAssignedFamiliesPage from "./AssignedFamilies";
 import CMParentCommunicationPage from "./ParentCommunication";
 import CMFamilySupportPage from "./FamilySupport";
@@ -67,8 +66,4 @@ export function CMEscalations() {
 
 export function CMCommunityReferrals() {
   return <CommunityReferralsPage />;
-}
-
-export function CMResources() {
-  return <CMResourcesPage />;
 }
