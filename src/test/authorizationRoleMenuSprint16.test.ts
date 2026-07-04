@@ -9,9 +9,9 @@ const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 const REQUIRED_AUTH_PATHS = [
   "/authorizations",
   "/auth-workspace",
-  "/ops/approved-authorizations",
+  "/authorizations?stage=approved",
   "/ops/expiring-authorizations",
-  "/ops/denials",
+  "/authorizations?stage=denied",
   "/ops/missing-docs",
   "/ops/payer-requirements",
   "/reports",
@@ -57,9 +57,7 @@ describe("Sprint 16 — OSShell role-specific live paths", () => {
     for (const p of [
       "/authorizations",
       "/auth-workspace",
-      "/ops/approved-authorizations",
       "/ops/expiring-authorizations",
-      "/ops/denials",
       "/ops/missing-docs",
       "/ops/payer-requirements",
     ]) {
@@ -83,22 +81,22 @@ describe("Sprint 16 — OSShell role-specific live paths", () => {
 
 describe("Sprint 16 — App.tsx mounts Authorizations routes", () => {
   const app = read("src/App.tsx");
-  it.each(REQUIRED_AUTH_PATHS)("mounts %s", (path) => {
+  // Only bare paths (no query string) are declared as <Route path="…"> in App.tsx.
+  const MOUNTED_PATHS = REQUIRED_AUTH_PATHS.filter((p) => !p.includes("?"));
+  it.each(MOUNTED_PATHS)("mounts %s", (path) => {
     expect(app).toContain(`path="${path}"`);
   });
 
-  it("/ops/approved-authorizations is NOT AdminRoute-only", () => {
+  it("/ops/approved-authorizations is a legacy redirect to /authorizations?stage=approved", () => {
     const m = app.match(/path="\/ops\/approved-authorizations"[^\n]*/);
     expect(m).toBeTruthy();
-    expect(m![0]).not.toMatch(/<AdminRoute>/);
-    expect(m![0]).toMatch(/PermissionRoute/);
+    expect(m![0]).toMatch(/<Navigate to="\/authorizations\?stage=approved" replace \/>/);
   });
 
-  it("/ops/denials is NOT AdminRoute-only", () => {
+  it("/ops/denials is a legacy redirect to /authorizations?stage=denied", () => {
     const m = app.match(/path="\/ops\/denials"[^\n]*/);
     expect(m).toBeTruthy();
-    expect(m![0]).not.toMatch(/<AdminRoute>/);
-    expect(m![0]).toMatch(/PermissionRoute/);
+    expect(m![0]).toMatch(/<Navigate to="\/authorizations\?stage=denied" replace \/>/);
   });
 
   it.each(["/ops/expiring-authorizations", "/ops/missing-docs", "/ops/payer-requirements"])(
