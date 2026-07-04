@@ -193,6 +193,14 @@ function useMarketingSourceSignals() {
     };
   }, []);
 
+  // Pass 3: refresh source events when an external flow (e.g. Create Partner)
+  // links a handoff, so the queue reflects the new referral_company_id.
+  useEffect(() => {
+    const handler = () => setReloadTick((n) => n + 1);
+    window.addEventListener("bd:refresh-source-events", handler);
+    return () => window.removeEventListener("bd:refresh-source-events", handler);
+  }, []);
+
   return { sources, events, loading, error, refresh, hasMoreEvents, loadingMoreEvents, loadMoreEvents };
 }
 
