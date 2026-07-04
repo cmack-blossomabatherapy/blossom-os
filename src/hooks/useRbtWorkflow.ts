@@ -239,6 +239,32 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
     return sessions.filter((row) => row.session_date === today);
   }, [sessions]);
 
+  const upcomingSessions = useMemo(() => {
+    const today = todayISODate();
+    return sessions.filter((s) => s.session_date >= today && s.session_status !== "cancelled");
+  }, [sessions]);
+  const cancelledSessions = useMemo(
+    () => sessions.filter((s) => s.session_status === "cancelled" || !!s.cancellation_reason),
+    [sessions],
+  );
+  const upcomingSupervision = useMemo(() => {
+    const today = todayISODate();
+    return supervision.filter((s) => s.supervision_date >= today);
+  }, [supervision]);
+  const openMessages = useMemo(
+    () => messages.filter((m) => !m.completed_at && m.status !== "complete"),
+    [messages],
+  );
+  const actionMessages = useMemo(
+    () => messages.filter((m) => m.action_required && !m.completed_at),
+    [messages],
+  );
+  const openHelpRequests = useMemo(
+    () => helpRequests.filter((h) => h.status !== "resolved" && h.status !== "closed"),
+    [helpRequests],
+  );
+  const latestSupportLogs = useMemo(() => supportLogs.slice(0, 10), [supportLogs]);
+
   const confirmSession = useCallback(async (sessionId: string) => {
     const nowIso = new Date().toISOString();
     await supabase.from("rbt_sessions")
@@ -318,7 +344,11 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
 
   return {
     loading, error, employeeId,
-    clients, sessions, todaySessions, supervision, messages, helpRequests, supportLogs,
+    clients, sessions, todaySessions, upcomingSessions, cancelledSessions,
+    supervision, upcomingSupervision,
+    messages, openMessages, actionMessages,
+    helpRequests, openHelpRequests,
+    supportLogs, latestSupportLogs,
     refresh: loadAll,
     confirmSession, acknowledgeSession,
     markMessageRead, markMessageComplete,
