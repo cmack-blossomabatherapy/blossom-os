@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
+import { ClinicalDirectorSection } from "@/components/clinical/ClinicalDirectorSection";
 
 // QA → Escalations & Follow-Ups
 // Real data only — derived from live authorization workflows. Each escalation
@@ -570,6 +571,7 @@ export default function OSQAEscalations() {
   return (
     <OSShell>
       <div className="px-6 md:px-10 py-8 max-w-[1400px] mx-auto">
+        <ClinicalDirectorSection sourceType="manual" title="Clinical Director workflow" />
         {/* Header */}
         <header className="flex items-start justify-between gap-6 flex-wrap">
           <div>

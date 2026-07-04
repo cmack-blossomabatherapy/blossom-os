@@ -509,7 +509,6 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/escalations-followups",
     "/qa-team",
     "/reports",
-    "/phone",
   ]),
   bcba: new Set<string>([
     "/bcba",

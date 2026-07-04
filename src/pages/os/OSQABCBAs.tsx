@@ -13,6 +13,7 @@ import { useQADeepLink } from "@/hooks/useQADeepLink";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
+import { ClinicalDirectorSection } from "@/components/clinical/ClinicalDirectorSection";
 
 // QA → Assigned BCBAs. Operational coordination layer between QA and BCBAs.
 // Real data only — derived from useLiveAuthorizations, grouped per BCBA.
@@ -359,6 +360,7 @@ export default function OSQABCBAs() {
   return (
     <OSShell>
       <div className="mx-auto w-full max-w-[1500px] px-4 md:px-8 pb-24 pt-6 md:pt-10 space-y-6">
+        <ClinicalDirectorSection sourceType="bcba" title="Clinical Director workflow" />
         {/* HEADER */}
         <header>
           <div className="flex items-start justify-between flex-wrap gap-4">

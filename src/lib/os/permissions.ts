@@ -310,7 +310,7 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
     modules: [
       "dashboard", "command_center", "clients", "cases", "authorizations",
       "staff", "scheduling", "evaluations", "training", "reports", "kpi",
-      "sop", "analytics_hub", "ai_assistant", "ai_insights",
+      "sop", "analytics_hub",
     ],
     scope: "company",
     actions: {
@@ -322,7 +322,7 @@ const BASE_ROLE_PROFILES: Partial<Record<OSRole, RoleProfile>> = {
       reports: ["view", "export"],
       training: VIEW,
     },
-    leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: true, workflowBottlenecks: true, aiInsights: true },
+    leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },
   state_director: {
     modules: [
