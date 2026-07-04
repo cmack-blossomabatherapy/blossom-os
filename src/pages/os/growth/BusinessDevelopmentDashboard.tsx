@@ -1953,6 +1953,16 @@ function HandoffQueue({
           {visibleRows.map(({ ev, derived }) => {
             const partner = ev.referral_company_id ? partnerById.get(ev.referral_company_id) : null;
             const busy = busyId === ev.id;
+            // Pass 3: expose open follow-up count / nearest due date on the row.
+            const openTasks = ev.referral_company_id
+              ? tasks.filter(
+                  (t) => t.company_id === ev.referral_company_id && !t.archived_at && t.status === "Open",
+                )
+              : [];
+            const nearestDue = openTasks
+              .map((t) => t.due_date)
+              .filter((d): d is string => !!d)
+              .sort()[0];
             const suggestion =
               derived === "New / Needs BD review" || derived === "Stale handoff"
                 ? "Create or link a partner"
