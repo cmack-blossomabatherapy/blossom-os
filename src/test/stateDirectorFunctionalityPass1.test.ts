@@ -46,6 +46,7 @@ describe("State Director — Functionality Pass 1", () => {
         "/ops/scheduling", "/qa-team", "/phone",
         "/training", "/resource-library", "/reports",
         "/scheduling-workspace", "/ops/authorizations",
+        // Note: "/ops/authorizations" removed from live-path set — canonical is "/authorizations".
       ]) expect(block).toContain(`"${p}"`);
     });
 

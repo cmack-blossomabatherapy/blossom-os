@@ -135,7 +135,7 @@ describe("Authorizations Pass 7 — /auth-workspace right rail is derived, not f
   });
 
   it("Ask Blossom entrypoint is a real link, not an inert input", () => {
-    expect(ws).toMatch(/to="\/ai-assistant\?context=authorizations"/);
+    expect(ws).toMatch(/to="\/ai\/assistant\?context=authorizations"/);
     // The old inert input placeholder must be gone.
     expect(ws).not.toMatch(/placeholder="Ask about an auth, PR risk, or blocker/);
   });
