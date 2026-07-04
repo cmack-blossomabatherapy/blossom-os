@@ -1776,6 +1776,7 @@ export type Database = {
           centralreach_provider_id: string | null
           centralreach_reference: Json | null
           centralreach_session_id: string | null
+          centralreach_sync_status: string
           client_id: string | null
           client_name: string | null
           completed_at: string | null
@@ -1802,6 +1803,7 @@ export type Database = {
           centralreach_provider_id?: string | null
           centralreach_reference?: Json | null
           centralreach_session_id?: string | null
+          centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
           completed_at?: string | null
@@ -1828,6 +1830,7 @@ export type Database = {
           centralreach_provider_id?: string | null
           centralreach_reference?: Json | null
           centralreach_session_id?: string | null
+          centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
           completed_at?: string | null
@@ -2011,6 +2014,9 @@ export type Database = {
           author_id: string | null
           bcba_id: string | null
           body: string
+          centralreach_client_id: string | null
+          centralreach_reference: string | null
+          centralreach_sync_status: string
           client_id: string | null
           client_name: string | null
           created_at: string
@@ -2023,6 +2029,9 @@ export type Database = {
           author_id?: string | null
           bcba_id?: string | null
           body: string
+          centralreach_client_id?: string | null
+          centralreach_reference?: string | null
+          centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
           created_at?: string
@@ -2035,6 +2044,9 @@ export type Database = {
           author_id?: string | null
           bcba_id?: string | null
           body?: string
+          centralreach_client_id?: string | null
+          centralreach_reference?: string | null
+          centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
           created_at?: string
@@ -2050,8 +2062,10 @@ export type Database = {
           barriers: string | null
           bcba_id: string | null
           caregiver_name: string | null
+          centralreach_client_id: string | null
           centralreach_reference: Json | null
           centralreach_session_id: string | null
+          centralreach_sync_status: string
           client_id: string | null
           client_name: string | null
           created_at: string
@@ -2070,8 +2084,10 @@ export type Database = {
           barriers?: string | null
           bcba_id?: string | null
           caregiver_name?: string | null
+          centralreach_client_id?: string | null
           centralreach_reference?: Json | null
           centralreach_session_id?: string | null
+          centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
           created_at?: string
@@ -2090,8 +2106,10 @@ export type Database = {
           barriers?: string | null
           bcba_id?: string | null
           caregiver_name?: string | null
+          centralreach_client_id?: string | null
           centralreach_reference?: Json | null
           centralreach_session_id?: string | null
+          centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
           created_at?: string
@@ -2240,8 +2258,10 @@ export type Database = {
         Row: {
           barriers: string | null
           bcba_id: string | null
+          centralreach_client_id: string | null
           centralreach_reference: Json | null
           centralreach_session_id: string | null
+          centralreach_sync_status: string
           client_id: string | null
           client_name: string | null
           created_at: string
@@ -2260,8 +2280,10 @@ export type Database = {
         Insert: {
           barriers?: string | null
           bcba_id?: string | null
+          centralreach_client_id?: string | null
           centralreach_reference?: Json | null
           centralreach_session_id?: string | null
+          centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
           created_at?: string
@@ -2280,8 +2302,10 @@ export type Database = {
         Update: {
           barriers?: string | null
           bcba_id?: string | null
+          centralreach_client_id?: string | null
           centralreach_reference?: Json | null
           centralreach_session_id?: string | null
+          centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
           created_at?: string
@@ -2306,6 +2330,7 @@ export type Database = {
           centralreach_authorization_id: string | null
           centralreach_client_id: string | null
           centralreach_reference: Json | null
+          centralreach_sync_status: string
           client_id: string | null
           client_name: string | null
           created_at: string
@@ -2326,6 +2351,7 @@ export type Database = {
           centralreach_authorization_id?: string | null
           centralreach_client_id?: string | null
           centralreach_reference?: Json | null
+          centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
           created_at?: string
@@ -2346,6 +2372,7 @@ export type Database = {
           centralreach_authorization_id?: string | null
           centralreach_client_id?: string | null
           centralreach_reference?: Json | null
+          centralreach_sync_status?: string
           client_id?: string | null
           client_name?: string | null
           created_at?: string
