@@ -55,7 +55,7 @@ export function useClinicalDirectorActions() {
       bcba_id: workItem.bcba_id,
       summary,
       payload,
-    });
+    } as never);
     if (workItem.source_type === "authorization" && workItem.source_record_id) {
       // Mirror into the existing authorization activity trail so QA/auth
       // history stays complete. Best-effort — do not block on failure.
@@ -94,7 +94,7 @@ export function useClinicalDirectorActions() {
     };
     const { data, error } = await supabase
       .from("clinical_work_items")
-      .insert(row)
+      .insert(row as never)
       .select("*")
       .single();
     if (error) throw error;
@@ -111,7 +111,7 @@ export function useClinicalDirectorActions() {
     const user = await currentUser();
     const { data, error } = await supabase
       .from("clinical_work_items")
-      .update({ ...updates, updated_by: user?.id ?? null })
+      .update({ ...updates, updated_by: user?.id ?? null } as never)
       .eq("id", id)
       .select("*")
       .single();
@@ -144,7 +144,7 @@ export function useClinicalDirectorActions() {
     if (!user) throw new Error("Not signed in");
     const { data, error } = await supabase
       .from("clinical_saved_views")
-      .insert({ user_id: user.id, name, filters, is_shared })
+      .insert({ user_id: user.id, name, filters, is_shared } as never)
       .select("*")
       .single();
     if (error) throw error;
