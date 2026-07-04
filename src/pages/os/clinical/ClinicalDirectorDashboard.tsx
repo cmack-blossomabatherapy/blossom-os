@@ -287,6 +287,41 @@ export default function ClinicalDirectorDashboard() {
             {crConnected ? "Uploaded data available · Sync pending" : "Not connected"}
           </div>
         </section>
+
+        <section className="rounded-lg border border-border bg-card">
+          <div className="border-b border-border px-4 py-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <ActivityIcon className="h-4 w-4" /> Recent clinical activity
+              <span className="text-xs text-muted-foreground font-normal">
+                ({openClinicalItems} open item{openClinicalItems === 1 ? "" : "s"})
+              </span>
+            </h2>
+          </div>
+          <div className="divide-y divide-border">
+            {clinical.loading && (
+              <div className="p-4 text-sm text-muted-foreground">Loading activity…</div>
+            )}
+            {!clinical.loading && clinical.activity.length === 0 && (
+              <div className="p-4 text-sm text-muted-foreground">
+                No clinical activity yet. Create a work item to start the audit trail.
+              </div>
+            )}
+            {clinical.activity.slice(0, 8).map((a) => (
+              <div key={a.id} className="flex items-center justify-between px-4 py-2 text-sm">
+                <div>
+                  <div className="font-medium">{a.summary ?? a.event_type}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {a.event_type} · {a.source_type ?? "clinical"}
+                    {a.actor_name ? ` · by ${a.actor_name}` : ""}
+                  </div>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(a.created_at).toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </OSShell>
   );
