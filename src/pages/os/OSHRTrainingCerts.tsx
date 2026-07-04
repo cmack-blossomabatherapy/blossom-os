@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { HRIntegrationStatusStrip } from "@/components/hr/HRIntegrationStatusStrip";
+import { HRMessageHistory } from "@/components/hr/HRMessageHistory";
 import {
   IntegrationReadinessPanel,
   ReadinessFilterChips,
@@ -477,6 +478,10 @@ export default function OSHRTrainingCerts() {
                                   metadata: { training_id: r.t.id, course_id: r.t.course_id, source: "training_reminder" },
                                 });
                                 toast({ title: res.status === "queued" ? "Reminder queued in Blossom OS" : "Could not queue reminder" });
+                                if (r.emp?.id) {
+                                  setSelectedEmployeeId(r.emp.id);
+                                  setMessageRefresh((n) => n + 1);
+                                }
                               }}
                               className="h-7 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors inline-flex items-center gap-1"
                             >
@@ -489,6 +494,15 @@ export default function OSHRTrainingCerts() {
                   </ul>
                 )}
               </Card>
+              {selectedEmployeeId && (
+                <div className="mt-3 rounded-2xl border border-border/70 bg-card p-3">
+                  <HRMessageHistory
+                    employeeId={selectedEmployeeId}
+                    refreshKey={messageRefresh}
+                    title="Recent HR messages for this employee"
+                  />
+                </div>
+              )}
             </section>
 
             {/* LEARNING JOURNEYS */}
