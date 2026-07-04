@@ -142,6 +142,14 @@ export interface UseRbtWorkflowResult {
   acknowledgeSession: (sessionId: string) => Promise<void>;
   markMessageRead: (messageId: string) => Promise<void>;
   markMessageComplete: (messageId: string) => Promise<void>;
+  resolveHelpRequest: (id: string, resolutionNote?: string) => Promise<void>;
+  metrics: {
+    pendingAcknowledgements: number;
+    unreadMessages: number;
+    openHelpRequests: number;
+    upcomingSupervisionCount: number;
+    pendingCentralReachSync: number;
+  };
   submitHelpRequest: (input: {
     category: string;
     urgency?: string;
