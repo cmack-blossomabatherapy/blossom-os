@@ -16918,6 +16918,60 @@ export type Database = {
         }
         Relationships: []
       }
+      state_daily_health_notes: {
+        Row: {
+          authorizations_status: string | null
+          blockers: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          id: string
+          intake_status: string | null
+          note_date: string
+          recruiting_status: string | null
+          scheduling_status: string | null
+          staffing_status: string | null
+          state_code: string
+          summary: string | null
+          updated_at: string
+          wins: string | null
+        }
+        Insert: {
+          authorizations_status?: string | null
+          blockers?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          intake_status?: string | null
+          note_date?: string
+          recruiting_status?: string | null
+          scheduling_status?: string | null
+          staffing_status?: string | null
+          state_code: string
+          summary?: string | null
+          updated_at?: string
+          wins?: string | null
+        }
+        Update: {
+          authorizations_status?: string | null
+          blockers?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          intake_status?: string | null
+          note_date?: string
+          recruiting_status?: string | null
+          scheduling_status?: string | null
+          staffing_status?: string | null
+          state_code?: string
+          summary?: string | null
+          updated_at?: string
+          wins?: string | null
+        }
+        Relationships: []
+      }
       state_department_handoffs: {
         Row: {
           authorization_id: string | null
