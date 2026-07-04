@@ -2010,7 +2010,10 @@ function HandoffQueue({
                         size="sm"
                         variant="outline"
                         disabled={busy}
-                        onClick={() => { setActiveEventId(ev.id); onCreatePartnerFromEvent(buildPartnerPrefill(ev)); }}
+                        onClick={() => {
+                          setActiveEventId(ev.id);
+                          onCreatePartnerFromEvent(buildPartnerPrefill(ev), ev.id);
+                        }}
                       >
                         <Plus className="h-3.5 w-3.5 mr-1" /> Create Partner
                       </Button>
