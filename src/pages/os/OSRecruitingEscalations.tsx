@@ -341,10 +341,10 @@ export default function OSRecruitingEscalations() {
     });
   }, [synthetic, liveEscalations, findCandidate]);
 
-  // Primary "base" the rest of the page reads from is the live set. When the
-  // table is empty (e.g. fresh tenant), fall back to synthetic so the page
-  // still demonstrates the operational shape.
-  const base = useMemo<Esc[]>(() => (liveBase.length > 0 ? liveBase : synthetic), [liveBase, synthetic]);
+  // Primary "base" the rest of the page reads from is the live persisted set
+  // only. Candidate-derived items live in `suggested` and render in their
+  // own clearly labeled section below — they never populate the live board.
+  const base = useMemo<Esc[]>(() => liveBase, [liveBase]);
 
   const defaults = useMemo(() => {
     const m: Record<string, StageKey> = {};
@@ -609,7 +609,43 @@ export default function OSRecruitingEscalations() {
           </section>
         )}
 
+        {/* Empty state when no live escalations exist */}
+        {!liveEscalationsLoading && liveBase.length === 0 && (
+          <section className="rounded-2xl bg-card border border-border/70 p-8 text-center">
+            <div className="mx-auto max-w-md">
+              <div className="mx-auto mb-3 inline-flex size-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+                <CheckCircle2 className="size-5" />
+              </div>
+              <h2 className="text-base font-semibold tracking-tight">No active recruiting escalations</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Escalations appear here once a candidate, staffing need, onboarding issue, background check, or orientation issue is escalated.
+              </p>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <button
+                  onClick={() => {
+                    void mutations.createEscalation(null as any, {
+                      title: "Candidate stalled",
+                      reason: "Manually created escalation",
+                      severity: "Medium",
+                      owner: "Unassigned",
+                    });
+                  }}
+                  className="h-8 px-3 rounded-lg text-xs bg-primary text-primary-foreground hover:opacity-90 transition inline-flex items-center gap-1"
+                >
+                  <Plus className="size-3" /> Create Escalation
+                </button>
+                {suggested.length > 0 && (
+                  <span className="text-[11px] text-muted-foreground">
+                    or review {suggested.length} suggested below
+                  </span>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Escalation board */}
+        {liveBase.length > 0 && (
         <section className="rounded-2xl bg-card border border-border/70 p-4">
           <div className="flex items-center justify-between mb-4 px-2">
             <div>
@@ -663,6 +699,7 @@ export default function OSRecruitingEscalations() {
             })}
           </div>
         </section>
+        )}
 
         {/* Staffing delays + Stall risk */}
         <section className="grid lg:grid-cols-2 gap-4">
