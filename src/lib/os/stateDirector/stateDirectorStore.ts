@@ -164,6 +164,16 @@ export const stateDirectorStore = {
       recomputeMetrics(s);
       created = esc;
     });
+    // Fire-and-forget Supabase persistence.
+    void sbInsertEscalation({
+      id: created!.id, state: created!.state, title: created!.title,
+      description: created!.description, department: created!.department,
+      assignedTo: created!.assignedTo, priority: created!.priority,
+      status: created!.status, dueAt: created!.dueAt, createdBy: created!.createdBy,
+      linkedClientId: created!.linkedClientId, linkedLeadId: created!.linkedLeadId,
+      linkedCandidateId: created!.linkedCandidateId,
+    });
+    void sbInsertActivity({ kind: "escalation_created", message: `Escalation opened — ${created!.title}`, actor: input.createdBy, state: created!.state, relatedType: "escalation", relatedId: created!.id });
     return created!;
   },
 
@@ -185,6 +195,13 @@ export const stateDirectorStore = {
       }
       recomputeMetrics(s);
     });
+    const rowPatch: Record<string, unknown> = {};
+    if (patch.status) rowPatch.status = patch.status;
+    if (patch.priority) rowPatch.priority = patch.priority;
+    if (patch.assignedTo !== undefined) rowPatch.assigned_to_name = patch.assignedTo;
+    if (patch.resolution !== undefined) rowPatch.resolution = patch.resolution;
+    if (patch.status === "resolved") rowPatch.resolved_at = nowIso();
+    if (Object.keys(rowPatch).length) void sbUpdateEscalationRow(id, rowPatch);
   },
 
   addEscalationNote(escId: string, body: string, author: string) {
@@ -196,6 +213,11 @@ export const stateDirectorStore = {
       s.escalations[i].updatedAt = nowIso();
       s.activity.unshift(record("note_added", `Note added — ${s.escalations[i].title}`, author, s.escalations[i].state, escId));
     });
+    // Best-effort Supabase persistence.
+    const parent = adapter.read().escalations.find((e) => e.id === escId);
+    if (parent && body.trim()) {
+      void sbInsertNote({ parentType: "escalation", parentId: escId, state: parent.state, body: body.trim(), author });
+    }
   },
 
   resolveEscalation(id: string, resolution: string, actor: string) {
@@ -240,6 +262,15 @@ export const stateDirectorStore = {
       recomputeMetrics(s);
       created = t;
     });
+    void sbInsertTask({
+      id: created!.id, state: created!.state, title: created!.title,
+      description: created!.description, department: created!.department,
+      owner: created!.owner, priority: created!.priority, dueAt: created!.dueAt,
+      createdBy: created!.createdBy, relatedEscalationId: created!.relatedEscalationId,
+      linkedClientId: created!.linkedClientId, linkedLeadId: created!.linkedLeadId,
+      linkedCandidateId: created!.linkedCandidateId,
+    });
+    void sbInsertActivity({ kind: "task_created", message: `Task created — ${created!.title}`, actor: input.createdBy, state: created!.state, relatedType: "task", relatedId: created!.id });
     return created!;
   },
 
@@ -260,6 +291,12 @@ export const stateDirectorStore = {
       }
       recomputeMetrics(s);
     });
+    const rowPatch: Record<string, unknown> = {};
+    if (patch.status) rowPatch.status = patch.status;
+    if (patch.priority) rowPatch.priority = patch.priority;
+    if (patch.owner !== undefined) rowPatch.assigned_to_name = patch.owner;
+    if (patch.status === "completed") rowPatch.completed_at = nowIso();
+    if (Object.keys(rowPatch).length) void sbUpdateTaskRow(id, rowPatch);
   },
 
   completeTask(id: string, actor: string) { this.updateTask(id, { status: "completed" }, actor); },
@@ -295,6 +332,16 @@ export const stateDirectorStore = {
       recomputeMetrics(s);
       created = esc;
     });
+    if (created) {
+      void sbInsertEscalation({
+        id: created.id, state: created.state, title: created.title,
+        description: created.description, department: created.department,
+        assignedTo: created.assignedTo, priority: created.priority,
+        status: created.status, dueAt: created.dueAt, createdBy: created.createdBy,
+      });
+      void sbUpdateTaskRow(id, { status: "escalated", escalated_at: nowIso(), related_escalation_id: created.id });
+      void sbInsertActivity({ kind: "task_escalated", message: `Task escalated — ${created.title}`, actor, state: created.state, relatedType: "escalation", relatedId: created.id });
+    }
     return created!;
   },
 
@@ -306,6 +353,10 @@ export const stateDirectorStore = {
       s.tasks[i].updatedAt = nowIso();
       s.activity.unshift(record("note_added", `Note added — ${s.tasks[i].title}`, author, s.tasks[i].state, taskId));
     });
+    const parent = adapter.read().tasks.find((t) => t.id === taskId);
+    if (parent && body.trim()) {
+      void sbInsertNote({ parentType: "task", parentId: taskId, state: parent.state, body: body.trim(), author });
+    }
   },
 };
 
