@@ -1649,10 +1649,16 @@ function HandoffQueue({
     let rows = events.map((e) => ({ ev: e, derived: deriveHandoffStatus(e, outreach, tasks) }));
     if (statusFilter !== "all") {
       rows = rows.filter((r) => {
-        if (statusFilter === "new") return r.derived === "New / Needs BD review" || r.derived === "Stale handoff";
-        if (statusFilter === "assigned") return r.derived === "Assigned";
-        if (statusFilter === "reviewed") return r.derived === "Reviewed";
-        return true;
+        switch (statusFilter) {
+          case "new":               return r.derived === "New / Needs BD review";
+          case "stale":             return r.derived === "Stale handoff";
+          case "assigned":          return r.derived === "Assigned";
+          case "linked":            return r.derived === "Linked / Outreach needed";
+          case "needs_followup":    return r.derived === "Needs follow-up plan";
+          case "followup_scheduled":return r.derived === "Follow-up scheduled";
+          case "reviewed":          return r.derived === "Reviewed";
+          default: return true;
+        }
       });
     }
     if (systemFilter !== "all") {
