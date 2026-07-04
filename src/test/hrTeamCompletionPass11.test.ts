@@ -5,7 +5,7 @@ import {
   isIntegrationReady, isClinicalRole,
   getHrReadinessBlockers, canMarkReadyForStart,
 } from "@/lib/hr/readiness";
-import { roleMenus } from "@/lib/os/roleMenus";
+import { ROLE_MENUS } from "@/lib/os/roleMenus";
 
 const root = process.cwd();
 const read = (p: string) => readFileSync(join(root, p), "utf8");
@@ -43,13 +43,14 @@ describe("Legacy HR admin routes redirect into canonical OS HR surface", () => {
 
 describe("HR menus stay clean (no duplicates, no Login Vault/NFC/AI links)", () => {
   for (const role of ["hr_team", "hr_lead"] as const) {
-    const paths = (roleMenus as any)[role].sections.flatMap((s: any) => s.items.map((i: any) => i.path)) as string[];
+    const menu = (ROLE_MENUS as any)[role];
+    const paths = menu.sections.flatMap((s: any) => s.items.map((i: any) => i.path)) as string[];
     it(`${role} menu excludes forbidden paths`, () => {
       const forbidden = ["/hr/reports", "/admin/hr/reports", "/user-logins-vault", "/admin/login-vault", "/nfc-badges"];
       for (const p of forbidden) expect(paths).not.toContain(p);
     });
     it(`${role} menu does not include AI/Operational Insights entries`, () => {
-      const labels = (roleMenus as any)[role].sections.flatMap((s: any) => s.items.map((i: any) => String(i.label))) as string[];
+      const labels = menu.sections.flatMap((s: any) => s.items.map((i: any) => String(i.label))) as string[];
       expect(labels.some((l) => /Ask Blossom|AI Assistant|Operational Insights/i.test(l))).toBe(false);
     });
     it(`${role} menu keeps unified /reports`, () => {
