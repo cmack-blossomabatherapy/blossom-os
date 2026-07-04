@@ -337,14 +337,40 @@ export default function BusinessDevelopmentDashboard() {
   const [partnerPrefill, setPartnerPrefill] = useState<PartnerForm | null>(null);
   const [outreachPrefill, setOutreachPrefill] = useState<{ subject?: string; notes?: string } | null>(null);
   const [taskPrefill, setTaskPrefill] = useState<{ title?: string; notes?: string } | null>(null);
+  // Pass 3: retain the source event id that spawned a Create Partner flow so
+  // we can auto-link the newly created company back to the handoff via
+  // bd_link_source_event_to_referral. Reviewed remains an intentional user
+  // action; we do NOT auto-mark the event reviewed here.
+  const [pendingSourceEventId, setPendingSourceEventId] = useState<string | null>(null);
 
   const partnerName = (id?: string | null) => partners.find((p) => p.id === id)?.company_name ?? "-";
 
   const handleAddPartner = async (input: Partial<ReferralCompany> & { company_name: string }) => {
     try {
-      await createCompany(input);
-      toast.success("Partner added");
+      const created = await createCompany(input);
+      const eventId = pendingSourceEventId;
+      if (eventId && created?.id) {
+        try {
+          const { error: linkErr } = await (supabase as unknown as {
+            rpc: (name: string, params: Record<string, unknown>) => Promise<{ error: Error | null }>;
+          }).rpc("bd_link_source_event_to_referral", {
+            _event_id: eventId,
+            _company_id: created.id,
+          });
+          if (linkErr) throw linkErr;
+          toast.success("Partner created and source handoff linked.");
+        } catch {
+          toast.warning(
+            "Partner created, but the source handoff could not be linked. Use Link to Existing Partner to finish the handoff.",
+          );
+        }
+      } else {
+        toast.success("Partner added");
+      }
+      setPendingSourceEventId(null);
       refreshPartners();
+      // Refresh source events so the linked handoff reflects the new partner.
+      window.dispatchEvent(new CustomEvent("bd:refresh-source-events"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to save partner");
     }
