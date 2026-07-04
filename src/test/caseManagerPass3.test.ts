@@ -82,21 +82,25 @@ describe("Case Manager Pass 3 — timeline, cleanup, menu", () => {
   });
 
   describe("Menu hygiene", () => {
-    it("Case Manager menu block does not include Phone System or AI Assistant", () => {
-      const blocks = [...menus.matchAll(/role:\s*"case_manager"[\s\S]*?menu:\s*\[([\s\S]*?)\n\s*\]/g)].map((m) => m[1]);
-      expect(blocks.length).toBeGreaterThan(0);
-      for (const b of blocks) {
-        expect(b).not.toMatch(/\/phone-system\b/);
-        expect(b).not.toMatch(/\/ai\/assistant\b/);
-        expect(b).not.toMatch(/Operational Insights/);
-        expect(b).not.toMatch(/\/case-manager\/reports\b/);
-      }
+    it("Case Manager menu block does not include Phone System, AI Assistant, or a CM-only reports page", () => {
+      const start = menus.indexOf("case_manager: {");
+      expect(start).toBeGreaterThan(-1);
+      const end = menus.indexOf("\n  /* ", start + 1);
+      const block = menus.slice(start, end === -1 ? undefined : end);
+      expect(block).not.toMatch(/\/phone-system\b/);
+      expect(block).not.toMatch(/\/ai\/assistant\b/);
+      expect(block).not.toMatch(/Operational Insights/);
+      expect(block).not.toMatch(/\/case-manager\/reports\b/);
     });
 
-    it("Case Manager menu points reports at the shared /reports", () => {
-      const blocks = [...menus.matchAll(/role:\s*"case_manager"[\s\S]*?menu:\s*\[([\s\S]*?)\n\s*\]/g)].map((m) => m[1]);
-      const anyReports = blocks.some((b) => /path:\s*"\/reports"/.test(b));
-      expect(anyReports).toBe(true);
+    it("Case Manager surfaces the shared /reports (via TRAINING_AND_RESOURCES)", () => {
+      const start = menus.indexOf("case_manager: {");
+      const end = menus.indexOf("\n  /* ", start + 1);
+      const block = menus.slice(start, end === -1 ? undefined : end);
+      expect(block).toMatch(/TRAINING_AND_RESOURCES/);
+      // The shared bundle exposes /reports
+      const shared = menus.match(/const\s+TRAINING_AND_RESOURCES[\s\S]*?\n\}\s*;?/);
+      expect(shared?.[0] ?? "").toMatch(/path:\s*"\/reports"/);
     });
   });
 
