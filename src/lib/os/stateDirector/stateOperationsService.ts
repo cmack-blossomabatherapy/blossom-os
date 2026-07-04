@@ -261,14 +261,13 @@ export async function deliverHandoff(input: {
     .from("state_department_handoffs")
     .insert({
       state_code: input.state,
-      from_department: input.fromDepartment,
+      from_role: input.fromDepartment,
       to_department: input.toDepartment,
-      subject: input.subject,
-      body: input.body ?? null,
+      title: input.subject,
+      description: input.body ?? null,
       priority: input.priority ?? "medium",
       status: "open",
       created_by: uid,
-      created_by_name: input.createdBy,
       related_escalation_id: input.relatedEscalationId ?? null,
       client_id: input.linkedClientId ?? null,
       lead_id: input.linkedLeadId ?? null,
