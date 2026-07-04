@@ -4,10 +4,14 @@ import { Link } from "react-router-dom";
 import {
   Stethoscope, UserCheck, Eye, FileCheck2, BarChart3, ClipboardCheck,
   AlertTriangle, ShieldCheck, Phone, Plug, ArrowUpRight, Users, FileText,
+  Plus, Activity as ActivityIcon,
 } from "lucide-react";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { daysUntil } from "@/data/authorizations";
+import { useClinicalDirectorData } from "@/hooks/useClinicalDirectorData";
+import { useClinicalDirectorActions } from "@/hooks/useClinicalDirectorActions";
+import { toast } from "sonner";
 
 const ACTIONS = [
   { label: "BCBA Oversight",         to: "/assigned-bcbas",         icon: UserCheck },
@@ -24,6 +28,30 @@ export default function ClinicalDirectorDashboard() {
   const [stateFilter, setStateFilter] = useState<string>("");
   const cr = useCentralReachOps({ stateFilter: stateFilter || null });
   const auths = useLiveAuthorizations();
+  const clinical = useClinicalDirectorData({ state: stateFilter || null });
+  const actions = useClinicalDirectorActions();
+  const [creating, setCreating] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftPriority, setDraftPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
+
+  async function handleCreate() {
+    if (!draftTitle.trim()) return;
+    try {
+      await actions.createWorkItem({
+        title: draftTitle.trim(),
+        source_type: "manual",
+        priority: draftPriority,
+        state: stateFilter || null,
+      });
+      setDraftTitle("");
+      setDraftPriority("normal");
+      setCreating(false);
+      await clinical.reload();
+      toast.success("Clinical work item created");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create work item");
+    }
+  }
 
   const states = useMemo(() => {
     const s = new Set<string>();
@@ -54,6 +82,10 @@ export default function ClinicalDirectorDashboard() {
     (a) => (a.missingRequirements?.length ?? 0) > 0,
   ).length;
 
+  const openClinicalItems = clinical.items.filter(
+    (i) => i.status !== "resolved" && i.status !== "archived",
+  ).length;
+
   const crConnected = cr.totalSessions > 0;
   const lastSession = useMemo(() => {
     let latest: string | null = null;
@@ -72,6 +104,7 @@ export default function ClinicalDirectorDashboard() {
     { label: "Progress reports due",  value: progressReportsDue,       hint: "next 30 days",        icon: BarChart3 },
     { label: "Open evaluations",      value: openEvaluations,          hint: "missing items",       icon: ClipboardCheck },
     { label: "Clinical escalations",  value: escalations,              hint: "needs attention",     icon: AlertTriangle },
+    { label: "Open clinical items",   value: openClinicalItems,        hint: "clinical_work_items", icon: ClipboardCheck },
     { label: "CentralReach sync",     value: crConnected ? "Data available" : "Not connected", hint: lastSession ? `Last session ${lastSession}` : "No CR data yet", icon: Plug, isText: true },
   ];
 
