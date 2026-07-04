@@ -868,8 +868,10 @@ type PartnerForm = {
 
 function PartnerDialog({ open, onOpenChange, onSave, initial, prefill }: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (p: Partial<ReferralCompany> & { company_name: string }) => Promise<void>; initial?: ReferralCompany; prefill?: Partial<PartnerForm> | null }) {
   const [form, setForm] = useState<PartnerForm>({ company_type: "Therapy Practice", relationship_stage: "New" });
-  // Sync with initial when dialog opens
-  useMemo(() => {
+  // Sync with initial/prefill when dialog opens. This is a side-effect on
+  // props changing, so useEffect is the correct hook (useMemo returns a value
+  // and should not schedule state updates).
+  useEffect(() => {
     if (open && initial) {
       setForm({
         company_name: initial.company_name,
