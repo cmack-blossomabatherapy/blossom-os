@@ -341,10 +341,10 @@ export default function OSRecruitingEscalations() {
     });
   }, [synthetic, liveEscalations, findCandidate]);
 
-  // Primary "base" the rest of the page reads from is the live set. When the
-  // table is empty (e.g. fresh tenant), fall back to synthetic so the page
-  // still demonstrates the operational shape.
-  const base = useMemo<Esc[]>(() => (liveBase.length > 0 ? liveBase : synthetic), [liveBase, synthetic]);
+  // Primary "base" the rest of the page reads from is the live persisted set
+  // only. Candidate-derived items live in `suggested` and render in their
+  // own clearly labeled section below — they never populate the live board.
+  const base = useMemo<Esc[]>(() => liveBase, [liveBase]);
 
   const defaults = useMemo(() => {
     const m: Record<string, StageKey> = {};
