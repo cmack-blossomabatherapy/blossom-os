@@ -26,8 +26,6 @@ import {
  * directly. Activity events are recorded automatically.
  */
 
-const KEY = "blossom.state_director.v1";
-
 /**
  * Persistence contract:
  *  - Signed-in users hit Supabase as the source of truth. On first mount we
@@ -39,15 +37,6 @@ const KEY = "blossom.state_director.v1";
  *    back to a seeded in-memory snapshot labelled as preview-only. This is
  *    NOT presented as live data anywhere in the UI.
  */
-
-function safeParse(raw: string | null): StateDirectorSnapshot | null {
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as StateDirectorSnapshot;
-    if (!parsed || !Array.isArray(parsed.escalations) || !Array.isArray(parsed.tasks)) return null;
-    return parsed;
-  } catch { return null; }
-}
 
 function createLocalStorageAdapter(): StateDirectorAdapter {
   const listeners = new Set<(s: StateDirectorSnapshot) => void>();
