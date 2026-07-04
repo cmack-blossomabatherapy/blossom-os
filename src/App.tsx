@@ -54,7 +54,6 @@ import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboar
 import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDashboard";
 import QaCancellationDashboard from "./pages/os/reports/QaCancellationDashboard";
 import HrPayrollCommandCenter from "./pages/os/reports/HrPayrollCommandCenter";
-import HrRecruitingPipelineDashboard from "./pages/os/reports/HrRecruitingPipelineDashboard";
 import HrEmployeeComplianceDashboard from "./pages/os/reports/HrEmployeeComplianceDashboard";
 import HrEmployeeOnboardingCommandCenter from "./pages/os/reports/HrEmployeeOnboardingCommandCenter";
 import HrBcbaProductivityDashboard from "./pages/os/reports/HrBcbaProductivityDashboard";
