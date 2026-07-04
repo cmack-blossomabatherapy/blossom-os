@@ -50,6 +50,7 @@ export interface BcbaActionTask {
   related_schedule_id: string | null;
   centralreach_client_id: string | null;
   centralreach_authorization_id: string | null;
+  centralreach_sync_status: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -68,6 +69,8 @@ export interface BcbaSupervisionLog {
   barriers: string | null;
   next_action: string | null;
   created_by: string | null;
+  centralreach_client_id: string | null;
+  centralreach_sync_status: string | null;
   created_at: string;
 }
 
@@ -86,6 +89,8 @@ export interface BcbaParentTrainingLog {
   next_session_plan: string | null;
   next_due_date: string | null;
   created_by: string | null;
+  centralreach_client_id: string | null;
+  centralreach_sync_status: string | null;
   created_at: string;
 }
 
@@ -101,6 +106,7 @@ export interface BcbaTreatmentPlanItem {
   qa_notes: string | null;
   document_links: string[];
   last_touched_at: string | null;
+  centralreach_sync_status: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -115,6 +121,8 @@ export interface BcbaClientNote {
   body: string;
   visibility: string;
   related_work_item_id: string | null;
+  centralreach_client_id: string | null;
+  centralreach_sync_status: string | null;
   created_at: string;
 }
 
@@ -199,6 +207,36 @@ export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Pass 3: Realtime — any insert/update/delete on the BCBA workflow tables
+  // triggers a refresh. RLS still filters what the current user sees.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`bcba-workflow-${clientId ?? clientName ?? centralreachClientId ?? "all"}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "bcba_action_tasks" },         () => { void refresh(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "bcba_supervision_logs" },     () => { void refresh(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "bcba_parent_training_logs" }, () => { void refresh(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "bcba_treatment_plan_items" }, () => { void refresh(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "bcba_client_notes" },         () => { void refresh(); })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [refresh, clientId, clientName, centralreachClientId]);
+
+  // Pass 3: derived workflow metrics for surfaces like the BCBA Productivity
+  // Report and workspace signals card.
+  const metrics = {
+    openTasks: tasks.filter((t) => t.status !== "completed").length,
+    blockedTasks: tasks.filter((t) => t.status === "blocked").length,
+    supervisionLogs30d: supervisionLogs.filter((s) => withinDays(s.occurred_at, 30)).length,
+    parentTrainingLogs30d: ptLogs.filter((p) => withinDays(p.occurred_at, 30)).length,
+    openPlanItems: planItems.filter((p) => p.status !== "complete" && p.status !== "completed").length,
+    pendingCentralReachSync:
+      tasks.filter((t) => (t.centralreach_sync_status ?? "pending_import") !== "synced").length +
+      supervisionLogs.filter((s) => (s.centralreach_sync_status ?? "pending_import") !== "synced").length +
+      ptLogs.filter((p) => (p.centralreach_sync_status ?? "pending_import") !== "synced").length,
+  };
 
   const uid = user?.id ?? null;
 
@@ -321,6 +359,7 @@ export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) 
     ptLogs,
     planItems,
     notes,
+    metrics,
     refresh,
     createTask,
     updateTask,
@@ -330,4 +369,11 @@ export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) 
     upsertPlanItem,
     addNote,
   };
+}
+
+function withinDays(iso: string | null | undefined, days: number): boolean {
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return false;
+  return Date.now() - t <= days * 86_400_000;
 }

@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import {
   useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList,
 } from "@/components/bcba/BcbaActionDialogs";
+import { BcbaCentralReachSummaryBadge } from "@/components/bcba/BcbaCentralReachBadge";
 
 const sevRing: Record<Severity, string> = {
   crit: "bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/30",
@@ -253,6 +254,10 @@ export default function OSBCBAWorkspace() {
             </div>
 
             <div className="flex flex-col items-start gap-1 md:items-end">
+              <BcbaCentralReachSummaryBadge
+                pendingCount={bcba.workflow.metrics.pendingCentralReachSync}
+                className="mb-1"
+              />
               <label className="text-xs uppercase tracking-widest text-muted-foreground">
                 {c.profileMatched ? "Caseload" : "Viewing as"}
               </label>
