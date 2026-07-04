@@ -4,6 +4,33 @@ import { Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
+ * Map known HR activity event types to professional, human-readable labels.
+ * Unknown types fall back to spaces + title-case.
+ */
+export function formatHrActivityEventType(eventType: string): string {
+  switch (eventType) {
+    case "ready_blocked":                return "Readiness blocked";
+    case "integration_readiness_updated":return "Integration readiness updated";
+    case "hr_message_queued":            return "Message queued";
+    case "orientation_scheduled":        return "Orientation scheduled";
+    case "orientation_rescheduled":      return "Orientation rescheduled";
+    case "orientation_no_show":          return "Orientation no-show";
+    case "orientation_attended":         return "Orientation attended";
+    case "candidate_ready_for_staffing": return "Candidate ready for staffing";
+    case "compliance_marked_ready":      return "Compliance marked ready";
+    case "case_note":                    return "Case note added";
+    case "request_note":                 return "Request note added";
+    case "training_reminder_queued":     return "Training reminder queued";
+    case "document_reminder_queued":     return "Document reminder queued";
+    case "integration_message_blocked":  return "Integration message blocked";
+    default:
+      return eventType
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+}
+
+/**
  * Compact recent HR activity list, backed by `hr_activity_events`.
  * Filters by any combination of employee_id, onboarding_id, or case_id.
  */
@@ -82,8 +109,11 @@ export function HRRecentActivity({
               <p className="text-[12.5px] font-medium tracking-tight truncate">{r.title}</p>
               <span className="text-[10.5px] text-muted-foreground shrink-0">{rel(r.created_at)}</span>
             </div>
-            <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground mt-0.5">{r.event_type.replace(/_/g, " ")}</p>
+            <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground mt-0.5">{formatHrActivityEventType(r.event_type)}</p>
             {r.description && <p className="text-[11.5px] text-muted-foreground mt-1 line-clamp-2">{r.description}</p>}
+            {r.created_by && (
+              <p className="text-[10px] text-muted-foreground/80 mt-0.5">By user ID {r.created_by.slice(0, 8)}…</p>
+            )}
           </div>
         ))}
       </div>
