@@ -229,14 +229,58 @@ export function useCaseManagerWorkspace() {
     [userId],
   );
 
+  // ---------- Shared patient/family operating timeline ----------
+  //
+  // Best-effort writer that appends to `public.client_timeline` when the
+  // Case Manager action is tied to a real client (uuid). Never throws — a
+  // failed timeline write must not roll back the main mutation. All Case
+  // Manager actions call this after the primary write succeeds.
+  //
+  // The `client_timeline` enum currently accepts: system | auth | staffing |
+  // schedule | qa | note | stage. Callers pass one of these.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const writeClientTimelineEvent = useCallback(
+    async (input: {
+      client_id: string | null | undefined;
+      event_type: "note" | "auth" | "staffing" | "schedule" | "qa" | "system" | "stage";
+      title: string;
+      body?: string | null;
+    }): Promise<void> => {
+      if (!input.client_id || !UUID_RE.test(input.client_id)) return;
+      try {
+        const description = input.body
+          ? `${input.title} — ${input.body}`
+          : input.title;
+        await sb.from("client_timeline").insert({
+          client_id: input.client_id,
+          event_type: input.event_type,
+          description: description.slice(0, 2000),
+          user_name: "Case Manager · Blossom OS",
+          created_by: userId ?? undefined,
+        } as any);
+      } catch (err) {
+        // Non-blocking: main action already succeeded.
+        // eslint-disable-next-line no-console
+        console.warn("[case-manager] client_timeline write failed", err);
+      }
+    },
+    [userId],
+  );
+
   const createNote = useCallback(
     async (input: Partial<CMNote> & { body: string }) => {
       const { data, error } = await sb.from("case_manager_notes").insert(withUser(input)).select().single();
       if (error) throw error;
+      await writeClientTimelineEvent({
+        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        event_type: "note",
+        title: (input as any).title ?? "Case Manager note",
+        body: input.body,
+      });
       await refresh();
       return data as CMNote;
     },
-    [refresh, withUser],
+    [refresh, withUser, writeClientTimelineEvent],
   );
 
   const updateNote = useCallback(
@@ -252,22 +296,36 @@ export function useCaseManagerWorkspace() {
     async (input: Partial<CMFollowUp> & { title: string }) => {
       const { data, error } = await sb.from("case_manager_follow_ups").insert(withUser(input)).select().single();
       if (error) throw error;
+      await writeClientTimelineEvent({
+        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        event_type: "note",
+        title: `Follow-up created: ${input.title}`,
+        body: (input as any).notes ?? null,
+      });
       await refresh();
       return data as CMFollowUp;
     },
-    [refresh, withUser],
+    [refresh, withUser, writeClientTimelineEvent],
   );
 
   const completeFollowUp = useCallback(
     async (id: string, completion_note?: string) => {
-      const { error } = await sb
+      const { data, error } = await sb
         .from("case_manager_follow_ups")
         .update({ status: "completed", completed_at: new Date().toISOString(), completion_note: completion_note ?? null, updated_by: userId })
-        .eq("id", id);
+        .eq("id", id)
+        .select()
+        .single();
       if (error) throw error;
+      await writeClientTimelineEvent({
+        client_id: (data as any)?.client_id ?? null,
+        event_type: "note",
+        title: `Follow-up completed: ${(data as any)?.title ?? "follow-up"}`,
+        body: completion_note ?? null,
+      });
       await refresh();
     },
-    [refresh, userId],
+    [refresh, userId, writeClientTimelineEvent],
   );
 
   const rescheduleFollowUp = useCallback(
@@ -287,20 +345,32 @@ export function useCaseManagerWorkspace() {
         .select()
         .single();
       if (error) throw error;
+      await writeClientTimelineEvent({
+        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        event_type: "note",
+        title: `Parent communication (${(input as any).channel ?? "logged"})`,
+        body: input.summary,
+      });
       await refresh();
       return data as CMCommunication;
     },
-    [refresh, withUser],
+    [refresh, withUser, writeClientTimelineEvent],
   );
 
   const createServiceIssue = useCallback(
     async (input: Partial<CMServiceIssue> & { title: string }) => {
       const { data, error } = await sb.from("case_manager_service_issues").insert(withUser(input)).select().single();
       if (error) throw error;
+      await writeClientTimelineEvent({
+        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        event_type: "note",
+        title: `Service issue: ${input.title}`,
+        body: (input as any).description ?? null,
+      });
       await refresh();
       return data as CMServiceIssue;
     },
-    [refresh, withUser],
+    [refresh, withUser, writeClientTimelineEvent],
   );
 
   const updateServiceIssue = useCallback(
@@ -315,18 +385,31 @@ export function useCaseManagerWorkspace() {
   const resolveServiceIssue = useCallback(
     async (id: string, resolution_note?: string) => {
       await updateServiceIssue(id, { status: "resolved", resolved_at: new Date().toISOString(), resolution_note: resolution_note ?? null });
+      const issue = serviceIssues.find((i) => i.id === id);
+      await writeClientTimelineEvent({
+        client_id: issue?.client_id ?? null,
+        event_type: "note",
+        title: `Service issue resolved: ${issue?.title ?? id}`,
+        body: resolution_note ?? null,
+      });
     },
-    [updateServiceIssue],
+    [updateServiceIssue, serviceIssues, writeClientTimelineEvent],
   );
 
   const createEscalation = useCallback(
     async (input: Partial<CMEscalation> & { reason: string }) => {
       const { data, error } = await sb.from("case_manager_escalations").insert(withUser(input)).select().single();
       if (error) throw error;
+      await writeClientTimelineEvent({
+        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        event_type: "note",
+        title: "Case Manager escalation",
+        body: input.reason,
+      });
       await refresh();
       return data as CMEscalation;
     },
-    [refresh, withUser],
+    [refresh, withUser, writeClientTimelineEvent],
   );
 
   const updateEscalation = useCallback(
@@ -341,18 +424,38 @@ export function useCaseManagerWorkspace() {
   const resolveEscalation = useCallback(
     async (id: string, resolution_note?: string) => {
       await updateEscalation(id, { status: "resolved", resolved_at: new Date().toISOString(), resolution_note: resolution_note ?? null });
+      const esc = escalations.find((e) => e.id === id);
+      await writeClientTimelineEvent({
+        client_id: esc?.client_id ?? null,
+        event_type: "note",
+        title: "Escalation resolved",
+        body: resolution_note ?? null,
+      });
     },
-    [updateEscalation],
+    [updateEscalation, escalations, writeClientTimelineEvent],
   );
 
   const createHandoff = useCallback(
     async (input: Partial<CMHandoff> & { title: string; to_department: string }) => {
       const { data, error } = await sb.from("case_manager_handoffs").insert(withUser(input)).select().single();
       if (error) throw error;
+      const dept = (input.to_department ?? "").toLowerCase();
+      const evType: "auth" | "staffing" | "schedule" | "qa" | "note" =
+          dept.includes("auth")     ? "auth"
+        : dept.includes("staff")    ? "staffing"
+        : dept.includes("schedul")  ? "schedule"
+        : dept.includes("qa")       ? "qa"
+        : "note";
+      await writeClientTimelineEvent({
+        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        event_type: evType,
+        title: `Handoff → ${input.to_department}: ${input.title}`,
+        body: (input as any).request_note ?? null,
+      });
       await refresh();
       return data as CMHandoff;
     },
-    [refresh, withUser],
+    [refresh, withUser, writeClientTimelineEvent],
   );
 
   const createCommunityResource = useCallback(
