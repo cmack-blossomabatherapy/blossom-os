@@ -709,7 +709,9 @@ export default function BusinessDevelopmentDashboard() {
           <SourceHandoffsPanel
             partners={visiblePartners}
             outreach={outreach}
-            onCreatePartnerFromEvent={(prefill) => {
+            tasks={tasks}
+            onCreatePartnerFromEvent={(prefill, eventId) => {
+              setPendingSourceEventId(eventId ?? null);
               setPartnerPrefill(prefill);
               setPartnerOpen(true);
             }}
@@ -729,7 +731,13 @@ export default function BusinessDevelopmentDashboard() {
 
       <PartnerDialog
         open={partnerOpen}
-        onOpenChange={(v) => { setPartnerOpen(v); if (!v) setPartnerPrefill(null); }}
+        onOpenChange={(v) => {
+          setPartnerOpen(v);
+          if (!v) {
+            setPartnerPrefill(null);
+            setPendingSourceEventId(null);
+          }
+        }}
         prefill={partnerPrefill ?? undefined}
         onSave={handleAddPartner}
       />
