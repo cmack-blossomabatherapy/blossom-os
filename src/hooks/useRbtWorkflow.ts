@@ -352,10 +352,10 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
 
   const resolveHelpRequest = useCallback(async (id: string, resolutionNote?: string) => {
     const nowIso = new Date().toISOString();
-    const patch: Record<string, unknown> = { status: "resolved", resolved_at: nowIso };
+    const patch: any = { status: "resolved", resolved_at: nowIso };
     if (resolutionNote) patch.resolution_note = resolutionNote;
-    await supabase.from("rbt_help_requests").update(patch).eq("id", id);
-    setHelpRequests((prev) => prev.map((h) => h.id === id ? { ...h, ...(patch as any) } : h));
+    await (supabase.from("rbt_help_requests") as any).update(patch).eq("id", id);
+    setHelpRequests((prev) => prev.map((h) => h.id === id ? { ...h, ...patch } : h));
   }, []);
 
   // Pass 3: realtime — refresh when the RBT's own rows change from any source
