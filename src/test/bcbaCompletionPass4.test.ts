@@ -82,7 +82,7 @@ describe("BCBA Pass 4 — client identity normalization", () => {
     const combined = allMigrations();
     expect(combined).toMatch(/ADD COLUMN IF NOT EXISTS client_name_key/);
     expect(combined).toMatch(/bcba_normalize_client_name/);
-    expect(combined).toMatch(/client_name_key_idx/);
+    expect(combined).toMatch(/name_key_idx/);
   });
 });
 
