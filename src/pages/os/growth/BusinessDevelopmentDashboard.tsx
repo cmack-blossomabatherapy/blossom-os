@@ -1823,9 +1823,13 @@ function HandoffQueue({
           <SelectTrigger className="h-8 w-44"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="new">New / Unreviewed</SelectItem>
+            <SelectItem value="new">New / Needs BD review</SelectItem>
             <SelectItem value="assigned">Assigned</SelectItem>
+            <SelectItem value="linked">Linked / Outreach needed</SelectItem>
+            <SelectItem value="needs_followup">Needs follow-up plan</SelectItem>
+            <SelectItem value="followup_scheduled">Follow-up scheduled</SelectItem>
             <SelectItem value="reviewed">Reviewed</SelectItem>
+            <SelectItem value="stale">Stale handoff</SelectItem>
           </SelectContent>
         </Select>
         <Select value={systemFilter} onValueChange={setSystemFilter}>
