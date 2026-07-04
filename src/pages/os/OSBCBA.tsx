@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle, CalendarClock, ChevronRight, FileSignature, Heart,
-  MessageSquare, NotebookPen, Sparkles, Stethoscope, UserCog, Users,
+  MessageSquare, NotebookPen, Stethoscope, UserCog, Users,
   CalendarDays, ClipboardCheck, ArrowRight, Baby, ShieldCheck, Loader2,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCentralReachOps, type ClientPairing } from "@/hooks/useCentralReachOps";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { cn } from "@/lib/utils";
+import { useBcbaActionDialogs, BcbaQuickActionBar, BcbaTaskList } from "@/components/bcba/BcbaActionDialogs";
 
 type Severity = "crit" | "warn" | "info";
 
@@ -154,6 +155,11 @@ export default function OSBCBA() {
     () => new Set(caseload.map((c) => c.clientName.toLowerCase())),
     [caseload]
   );
+  const bcba = useBcbaActionDialogs({
+    scope: { bcbaName: resolvedBcba },
+    clientOptions: caseload.map((c) => c.clientName),
+    defaultSourceArea: "caseload",
+  });
 
   // Auths for this BCBA — match by liveBcba mapping OR by client name in caseload.
   const myAuths = useMemo(() => {
