@@ -11,7 +11,7 @@ type Filter = "all" | "unread" | "actions" | "completed";
 function relatedLink(m: RbtMessage): { to: string; label: string } | null {
   if (m.related_session_id) return { to: `/rbt/schedule?session=${m.related_session_id}`, label: "Open session" };
   if (m.related_client_id) return { to: `/rbt/clients?client=${m.related_client_id}`, label: "Open client" };
-  if (m.related_training_module_id) return { to: `/rbt/training-academy?module=${m.related_training_module_id}`, label: "Open training" };
+  if ((m as any).related_training_module_id) return { to: `/rbt/training-academy?module=${(m as any).related_training_module_id}`, label: "Open training" };
   return null;
 }
 
