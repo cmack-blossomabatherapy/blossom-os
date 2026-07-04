@@ -1211,6 +1211,7 @@ function SourceHandoffsPanel({
         events={events}
         partners={partners}
         outreach={outreach}
+        tasks={tasks}
         loading={loading}
         error={error}
         refresh={refresh}
