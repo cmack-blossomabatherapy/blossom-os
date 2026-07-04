@@ -143,8 +143,50 @@ export default function ClinicalDirectorDashboard() {
             >
               <ArrowUpRight className="h-4 w-4" /> Go to Reports
             </Link>
+            <button
+              type="button"
+              onClick={() => setCreating((v) => !v)}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> New Work Item
+            </button>
           </div>
         </header>
+
+        {creating && (
+          <section className="rounded-lg border border-border bg-card p-4 space-y-3">
+            <div className="text-sm font-semibold">Create Clinical Work Item</div>
+            <div className="grid gap-2 sm:grid-cols-[1fr_160px_auto]">
+              <input
+                value={draftTitle}
+                onChange={(e) => setDraftTitle(e.target.value)}
+                placeholder="Title (e.g., Review supervision plan for Alex R.)"
+                className="rounded-md border border-border bg-background px-2 py-2 text-sm"
+              />
+              <select
+                value={draftPriority}
+                onChange={(e) => setDraftPriority(e.target.value as typeof draftPriority)}
+                className="rounded-md border border-border bg-background px-2 py-2 text-sm"
+              >
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={!draftTitle.trim()}
+                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                Create
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Manual items land as source_type=manual. Items linked to authorizations, supervision, or CentralReach also mirror into their existing activity trails.
+            </p>
+          </section>
+        )}
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {snapshot.map((s) => (
