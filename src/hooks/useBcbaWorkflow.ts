@@ -50,6 +50,7 @@ export interface BcbaActionTask {
   related_schedule_id: string | null;
   centralreach_client_id: string | null;
   centralreach_authorization_id: string | null;
+  centralreach_sync_status: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -68,6 +69,8 @@ export interface BcbaSupervisionLog {
   barriers: string | null;
   next_action: string | null;
   created_by: string | null;
+  centralreach_client_id: string | null;
+  centralreach_sync_status: string | null;
   created_at: string;
 }
 
@@ -86,6 +89,8 @@ export interface BcbaParentTrainingLog {
   next_session_plan: string | null;
   next_due_date: string | null;
   created_by: string | null;
+  centralreach_client_id: string | null;
+  centralreach_sync_status: string | null;
   created_at: string;
 }
 
@@ -101,6 +106,7 @@ export interface BcbaTreatmentPlanItem {
   qa_notes: string | null;
   document_links: string[];
   last_touched_at: string | null;
+  centralreach_sync_status: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -115,6 +121,8 @@ export interface BcbaClientNote {
   body: string;
   visibility: string;
   related_work_item_id: string | null;
+  centralreach_client_id: string | null;
+  centralreach_sync_status: string | null;
   created_at: string;
 }
 
