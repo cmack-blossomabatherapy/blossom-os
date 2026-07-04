@@ -604,7 +604,6 @@ function CategoryCard({ cat }: { cat: ReturnType<typeof visibleCategoriesForRole
   return (
     <Link
       to={`/reports?category=${cat.id}`}
-      onClick={(e) => { e.preventDefault(); /* scroll to category section in future */ }}
       className="group block"
     >
       <article className={cn(
