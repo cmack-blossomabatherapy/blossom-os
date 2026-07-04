@@ -942,7 +942,10 @@ function PartnerDialog({ open, onOpenChange, onSave, initial, prefill }: { open:
 function OutreachDialog({ open, onOpenChange, partners, onSave, defaultCompanyId, prefill }: { open: boolean; onOpenChange: (v: boolean) => void; partners: ReferralCompany[]; onSave: (o: { company_id: string; activity_type: string; outcome?: string | null; subject?: string; notes?: string; activity_date: string }) => Promise<void>; defaultCompanyId?: string; prefill?: { subject?: string; notes?: string } | null }) {
   const initial = { activity_type: "Email", outcome: "Sent Email" as string | null, date: new Date().toISOString().slice(0, 10) };
   const [form, setForm] = useState<{ company_id?: string; activity_type: string; outcome: string | null; subject?: string; notes?: string; date: string }>({ ...initial, company_id: defaultCompanyId });
-  useMemo(() => {
+  // Prefill company/subject/notes when the dialog opens. This is a side-effect
+  // (setForm) driven by prop changes, so useEffect is the correct hook —
+  // useMemo must remain pure.
+  useEffect(() => {
     if (open) setForm((f) => ({
       ...f,
       company_id: defaultCompanyId ?? f.company_id,
