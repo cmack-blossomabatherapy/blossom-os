@@ -18,28 +18,25 @@ import {
 /**
  * State Director operating store.
  *
- * Persistence: pluggable adapter. The default is a localStorage adapter that
- * hydrates from `stateDirectorSeed.ts` on first run — this keeps the UI real
- * and mutable inside Lovable preview with no Supabase dependency, while
- * leaving a clean swap point for a Supabase adapter later.
+ * Persistence contract (current truth — no localStorage):
+ *  - Operational tasks, escalations, notes, and activity are backed by
+ *    Supabase (`state_operational_*` tables). On first mount we hydrate the
+ *    in-memory cache from Supabase and subscribe to realtime updates so
+ *    every State Director sees the same live picture.
+ *  - Mutations write to Supabase (fire-and-forget with best-effort error
+ *    handling) and update the local cache synchronously so
+ *    `useSyncExternalStore` stays responsive. Local records and Supabase
+ *    rows share the same UUID.
+ *  - State profiles and metrics remain seeded until a real metrics source
+ *    is wired (see docs/state-director-functionality-pass-2-qa.md). The
+ *    dashboard surfaces this honestly and does not present seed KPIs as
+ *    live CentralReach data.
  *
  * All CRUD flows go through this module — no page mutates snapshot state
  * directly. Activity events are recorded automatically.
  */
 
-/**
- * Persistence contract:
- *  - Signed-in users hit Supabase as the source of truth. On first mount we
- *    hydrate the in-memory cache from state_operational_* tables and every
- *    subsequent mutation writes through to Supabase (fire-and-forget) while
- *    updating the local cache synchronously so `useSyncExternalStore` stays
- *    responsive.
- *  - When Supabase is unavailable (offline preview, unauthenticated) we fall
- *    back to a seeded in-memory snapshot labelled as preview-only. This is
- *    NOT presented as live data anywhere in the UI.
- */
-
-function createLocalStorageAdapter(): StateDirectorAdapter {
+function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
   const listeners = new Set<(s: StateDirectorSnapshot) => void>();
   let cache: StateDirectorSnapshot | null = null;
   let hydrated = false;
@@ -99,7 +96,7 @@ function createLocalStorageAdapter(): StateDirectorAdapter {
   return { read, write, subscribe };
 }
 
-let adapter: StateDirectorAdapter = createLocalStorageAdapter();
+let adapter: StateDirectorAdapter = createSupabaseBackedStateOperationsAdapter();
 
 /** Swap the persistence adapter (e.g. for a future Supabase implementation). */
 export function setStateDirectorAdapter(next: StateDirectorAdapter) { adapter = next; }
