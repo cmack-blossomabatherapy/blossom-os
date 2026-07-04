@@ -1979,15 +1979,14 @@ function HandoffQueue({
               .filter((d): d is string => !!d)
               .sort()[0];
             const suggestion =
-              derived === "New / Needs BD review" || derived === "Stale handoff"
-                ? "Create or link a partner"
-                : derived === "Assigned"
-                ? "Link to a partner"
-                : derived === "Linked / Outreach needed"
-                ? "Log outreach with linked partner"
-                : derived === "Needs follow-up plan"
-                ? "Create a follow-up task"
-                : "No further action";
+              derived === "New / Needs BD review"    ? "Create or link a partner"
+              : derived === "Stale handoff"          ? "Review and assign immediately"
+              : derived === "Assigned"               ? "Link to a partner"
+              : derived === "Linked / Outreach needed" ? "Log outreach with linked partner"
+              : derived === "Needs follow-up plan"   ? "Create a follow-up task"
+              : derived === "Follow-up scheduled"    ? "Work next scheduled follow-up"
+              : derived === "Reviewed"               ? "Reviewed"
+              : "No further action";
             return (
               <div
                 key={ev.id}
