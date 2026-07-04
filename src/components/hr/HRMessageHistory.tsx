@@ -29,6 +29,7 @@ interface MessageRow {
   route_status: Record<string, { status: string; reason?: string }> | null;
   scheduled_for: string | null;
   created_at: string;
+  created_by: string | null;
 }
 
 function fmt(iso: string) {
@@ -48,6 +49,37 @@ function channelLabel(ch: string): string {
   }
 }
 
+/**
+ * Human-readable label for a single route/channel status. Non-blocked
+ * statuses must NOT be labeled "queued".
+ */
+export function channelRouteStatusLabel(status: string | undefined | null): string {
+  switch ((status ?? "").toLowerCase()) {
+    case "queued":  return "Queued";
+    case "sent":    return "Sent";
+    case "failed":  return "Failed";
+    case "blocked": return "Blocked";
+    case "":
+    case "unknown": return "Unknown";
+    default:        return "Unknown";
+  }
+}
+
+function routeToneClass(status: string): string {
+  switch (status) {
+    case "sent":
+      return "border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10";
+    case "queued":
+      return "border-primary/30 text-primary bg-primary/10";
+    case "blocked":
+      return "border-amber-500/30 text-amber-700 dark:text-amber-400 bg-amber-500/10";
+    case "failed":
+      return "border-destructive/30 text-destructive bg-destructive/10";
+    default:
+      return "border-border/70 text-muted-foreground bg-muted";
+  }
+}
+
 export function HRMessageHistory({
   employeeId, caseId, limit = 10, refreshKey, className, title = "Message history",
 }: HRMessageHistoryProps) {
@@ -59,7 +91,7 @@ export function HRMessageHistory({
     async function load() {
       setLoading(true);
       let q: any = (supabase.from("hr_messages" as never) as any)
-        .select("id,employee_id,case_id,subject,body,channels,status,route_status,scheduled_for,created_at")
+        .select("id,employee_id,case_id,subject,body,channels,status,route_status,scheduled_for,created_at,created_by")
         .order("created_at", { ascending: false })
         .limit(limit);
       if (employeeId) q = q.eq("employee_id", employeeId);
@@ -83,7 +115,7 @@ export function HRMessageHistory({
         {loading ? (
           <p className="p-3 text-[12px] text-muted-foreground">Loading…</p>
         ) : rows.length === 0 ? (
-          <p className="p-3 text-[12px] text-muted-foreground">No messages recorded yet.</p>
+          <p className="p-3 text-[12px] text-muted-foreground">No HR messages recorded yet.</p>
         ) : rows.map((r) => {
           const rs = r.route_status ?? {};
           return (
@@ -103,26 +135,30 @@ export function HRMessageHistory({
               <p className="text-[11.5px] text-muted-foreground mt-1 line-clamp-2">{r.body}</p>
               <div className="mt-1.5 flex flex-wrap items-center gap-1">
                 {(r.channels ?? []).map((ch) => {
-                  const st = rs[ch]?.status ?? "unknown";
-                  const blocked = st === "blocked";
+                  const raw = (rs[ch]?.status ?? "").toLowerCase();
+                  const known = ["queued","sent","failed","blocked"].includes(raw) ? raw : "unknown";
+                  const reason = rs[ch]?.reason ?? "";
                   return (
                     <span
                       key={ch}
-                      title={rs[ch]?.reason ?? ""}
+                      title={reason}
                       className={cn(
                         "text-[10.5px] rounded-full border px-1.5 py-0.5",
-                        blocked
-                          ? "border-amber-500/30 text-amber-700 dark:text-amber-400 bg-amber-500/10"
-                          : "border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10",
+                        routeToneClass(known),
                       )}
                     >
-                      {channelLabel(ch)} {blocked ? "· blocked" : "· queued"}
+                      {channelLabel(ch)} · {channelRouteStatusLabel(known)}
+                      {(known === "blocked" || known === "failed") && reason
+                        ? ` — ${reason.length > 60 ? reason.slice(0, 57) + "…" : reason}`
+                        : ""}
                     </span>
                   );
                 })}
               </div>
               <p className="text-[10.5px] text-muted-foreground mt-1">
-                {fmt(r.created_at)}{r.scheduled_for ? ` · scheduled ${fmt(r.scheduled_for)}` : ""}
+                {fmt(r.created_at)}
+                {r.scheduled_for ? ` · scheduled ${fmt(r.scheduled_for)}` : ""}
+                {r.created_by ? ` · Created by user ID ${r.created_by.slice(0, 8)}…` : ""}
               </p>
             </div>
           );
