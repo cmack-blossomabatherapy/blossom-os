@@ -185,12 +185,13 @@ export async function updateEscalationRow(id: UUID, patch: Record<string, unknow
 }
 
 export async function insertNote(input: {
-  parentType: "task" | "escalation"; parentId: UUID; state: StateCode;
+  id?: UUID; parentType: "task" | "escalation"; parentId: UUID; state: StateCode;
   body: string; author: string;
 }) {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
   await supabase.from("state_operational_notes").insert({
+    id: input.id,
     state_code: input.state,
     parent_type: input.parentType,
     parent_id: input.parentId,
