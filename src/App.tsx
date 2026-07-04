@@ -54,7 +54,6 @@ import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboar
 import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDashboard";
 import QaCancellationDashboard from "./pages/os/reports/QaCancellationDashboard";
 import HrPayrollCommandCenter from "./pages/os/reports/HrPayrollCommandCenter";
-import HrRecruitingPipelineDashboard from "./pages/os/reports/HrRecruitingPipelineDashboard";
 import HrEmployeeComplianceDashboard from "./pages/os/reports/HrEmployeeComplianceDashboard";
 import HrEmployeeOnboardingCommandCenter from "./pages/os/reports/HrEmployeeOnboardingCommandCenter";
 import HrBcbaProductivityDashboard from "./pages/os/reports/HrBcbaProductivityDashboard";
@@ -820,7 +819,7 @@ const App = () => (
                   <Route path="/reports/qa-auth-utilization" element={<QaAuthUtilizationDashboard />} />
                   <Route path="/reports/qa-cancellation" element={<QaCancellationDashboard />} />
                   <Route path="/reports/hr-payroll-command" element={<HrPayrollCommandCenter />} />
-                  <Route path="/reports/hr-recruiting-pipeline" element={<HrRecruitingPipelineDashboard />} />
+                  <Route path="/reports/hr-recruiting-pipeline" element={<Navigate to="/reports?report=hr-recruiting-pipeline" replace />} />
                   <Route path="/reports/hr-employee-compliance" element={<HrEmployeeComplianceDashboard />} />
                   <Route path="/reports/hr-employee-onboarding" element={<HrEmployeeOnboardingCommandCenter />} />
                   <Route path="/reports/hr-bcba-productivity" element={<HrBcbaProductivityDashboard />} />

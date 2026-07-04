@@ -16,6 +16,7 @@ const REQUIRED_TABS = [
   "/recruiting/onboarding",
   "/recruiting/orientation",
   "/recruiting/staffing-needs",
+  "/recruiting/map",
   "/recruiting/follow-ups",
   "/recruiting/messages",
   "/recruiting/escalations",
