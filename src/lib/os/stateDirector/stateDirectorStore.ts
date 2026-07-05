@@ -167,6 +167,8 @@ export const stateDirectorStore = {
     state: StateCode; title: string; description?: string; department: Department;
     priority?: Priority; assignedTo?: string; dueAt?: string; createdBy: string;
     linkedClientId?: string; linkedLeadId?: string; linkedCandidateId?: string;
+    linkedAuthorizationId?: string; linkedSchedulingItemId?: string;
+    sourceModule?: string; metadata?: Record<string, unknown>;
   }) {
     let created: Escalation | null = null;
     mutate((s) => {
@@ -187,6 +189,10 @@ export const stateDirectorStore = {
         linkedClientId: input.linkedClientId,
         linkedLeadId: input.linkedLeadId,
         linkedCandidateId: input.linkedCandidateId,
+        linkedAuthorizationId: input.linkedAuthorizationId,
+        linkedSchedulingItemId: input.linkedSchedulingItemId,
+        sourceModule: input.sourceModule,
+        metadata: input.metadata,
       };
       s.escalations.unshift(esc);
       s.activity.unshift(record("escalation_created", `Escalation opened — ${esc.title}`, input.createdBy, esc.state, esc.id));
@@ -202,7 +208,10 @@ export const stateDirectorStore = {
       status: created!.status, dueAt: created!.dueAt, createdBy: created!.createdBy,
       linkedClientId: created!.linkedClientId, linkedLeadId: created!.linkedLeadId,
       linkedCandidateId: created!.linkedCandidateId,
-      sourceModule: "state_director_store",
+      linkedAuthorizationId: created!.linkedAuthorizationId,
+      linkedSchedulingItemId: created!.linkedSchedulingItemId,
+      sourceModule: created!.sourceModule ?? "state_director_store",
+      metadata: created!.metadata,
     });
     void sbInsertActivity({
       kind: "escalation_created",
@@ -211,6 +220,7 @@ export const stateDirectorStore = {
       state: created!.state,
       relatedType: "escalation",
       relatedId: created!.id,
+      metadata: created!.metadata,
     });
     return created!;
   },
@@ -273,6 +283,8 @@ export const stateDirectorStore = {
     owner?: string; priority?: Priority; dueAt?: string; createdBy: string;
     relatedEscalationId?: string;
     linkedClientId?: string; linkedLeadId?: string; linkedCandidateId?: string;
+    linkedAuthorizationId?: string; linkedSchedulingItemId?: string;
+    sourceModule?: string; metadata?: Record<string, unknown>;
   }) {
     let created: OpsTask | null = null;
     mutate((s) => {
@@ -294,6 +306,10 @@ export const stateDirectorStore = {
         linkedClientId: input.linkedClientId,
         linkedLeadId: input.linkedLeadId,
         linkedCandidateId: input.linkedCandidateId,
+        linkedAuthorizationId: input.linkedAuthorizationId,
+        linkedSchedulingItemId: input.linkedSchedulingItemId,
+        sourceModule: input.sourceModule,
+        metadata: input.metadata,
       };
       s.tasks.unshift(t);
       s.activity.unshift(record("task_created", `Task created — ${t.title}`, input.createdBy, t.state, t.id));
@@ -308,8 +324,11 @@ export const stateDirectorStore = {
       createdBy: created!.createdBy,
       linkedClientId: created!.linkedClientId, linkedLeadId: created!.linkedLeadId,
       linkedCandidateId: created!.linkedCandidateId,
+      linkedAuthorizationId: created!.linkedAuthorizationId,
+      linkedSchedulingItemId: created!.linkedSchedulingItemId,
       relatedEscalationId: created!.relatedEscalationId,
-      sourceModule: "state_director_store",
+      sourceModule: created!.sourceModule ?? "state_director_store",
+      metadata: created!.metadata,
     });
     void sbInsertActivity({
       kind: "task_created",
@@ -318,6 +337,7 @@ export const stateDirectorStore = {
       state: created!.state,
       relatedType: "task",
       relatedId: created!.id,
+      metadata: created!.metadata,
     });
     return created!;
   },

@@ -376,6 +376,7 @@ import IdentityDashboard from "./pages/admin/IdentityDashboard";
 import AutomatedEmailsPage from "./pages/admin/AutomatedEmails";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { BlockIntakeRoute } from "./components/auth/BlockIntakeRoute";
+import { PhoneSystemRoute } from "./components/auth/PhoneSystemRoute";
 import {
   RoleManagementPage, EmployeeDirectoryPage, UserLoginsVaultPage,
   NFCBadgeManagementPage, DeviceRequestsPage,
@@ -892,11 +893,11 @@ const App = () => (
                   <Route path="/ops/approved-authorizations" element={<Navigate to="/authorizations?stage=approved" replace />} />
                   <Route path="/ops/denials" element={<Navigate to="/authorizations?stage=denied" replace />} />
                  <Route path="/ops/scheduling" element={<Navigate to="/scheduling-workspace?bucket=coverage_risk" replace />} />
-                  <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><OSStaffingWorkspace /></PermissionRoute>} />
+                  <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator", "state_director", "assistant_state_director"]}><OSStaffingWorkspace /></PermissionRoute>} />
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
                   <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
                   <Route path="/ops/qa" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_director", "qa_specialist"]}><QAPhase6OpsPage /></PermissionRoute>} />
-                  <Route path="/ops/family-staffing-preferences" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><Navigate to="/ops/staffing?tab=preferences" replace /></PermissionRoute>} />
+                  <Route path="/ops/family-staffing-preferences" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator", "state_director", "assistant_state_director"]}><Navigate to="/ops/staffing?tab=preferences" replace /></PermissionRoute>} />
                   {/* Staffing reports always route through the unified Reports page */}
                   <Route path="/staffing/reports" element={<Navigate to="/reports" replace />} />
                   <Route path="/ops/staffing/reports" element={<Navigate to="/reports" replace />} />
@@ -922,16 +923,16 @@ const App = () => (
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/permissions" element={<AdminRoute><OSPermissions /></AdminRoute>} />
                   <Route path="/integrations" element={<AdminRoute><Integrations /></AdminRoute>} />
-                  <Route path="/phone" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneDashboard /></BlockIntakeRoute>} />
-                  <Route path="/phone/lookup" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneLookup /></BlockIntakeRoute>} />
-                  <Route path="/phone/shared" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneShared /></BlockIntakeRoute>} />
-                  <Route path="/phone/directory" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneDirectory /></BlockIntakeRoute>} />
-                  <Route path="/phone/requests" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneRequestList /></BlockIntakeRoute>} />
-                  <Route path="/phone/requests/new" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneRequestNew /></BlockIntakeRoute>} />
-                  <Route path="/phone/requests/:id" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneRequestDetail /></BlockIntakeRoute>} />
-                  <Route path="/phone/admin" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneAdmin /></BlockIntakeRoute>} />
+                  <Route path="/phone" element={<PhoneSystemRoute><PhoneDashboard /></PhoneSystemRoute>} />
+                  <Route path="/phone/lookup" element={<PhoneSystemRoute><PhoneLookup /></PhoneSystemRoute>} />
+                  <Route path="/phone/shared" element={<PhoneSystemRoute><PhoneShared /></PhoneSystemRoute>} />
+                  <Route path="/phone/directory" element={<PhoneSystemRoute><PhoneDirectory /></PhoneSystemRoute>} />
+                  <Route path="/phone/requests" element={<PhoneSystemRoute><PhoneRequestList /></PhoneSystemRoute>} />
+                  <Route path="/phone/requests/new" element={<PhoneSystemRoute><PhoneRequestNew /></PhoneSystemRoute>} />
+                  <Route path="/phone/requests/:id" element={<PhoneSystemRoute><PhoneRequestDetail /></PhoneSystemRoute>} />
+                  <Route path="/phone/admin" element={<PhoneSystemRoute><PhoneAdmin /></PhoneSystemRoute>} />
                   <Route path="/phone/ai-calls" element={<PhoneAfterHoursAI />} />
-                  <Route path="/phone/ai-calls/audit" element={<BlockIntakeRoute redirectTo="/phone/ai-calls"><PhoneAiCallAudit /></BlockIntakeRoute>} />
+                  <Route path="/phone/ai-calls/audit" element={<PhoneSystemRoute><PhoneAiCallAudit /></PhoneSystemRoute>} />
                   {/* Marketing Team — all /marketing/* routes wrap PermissionRoute with the shared MARKETING_ROLES model. */}
                   <Route path="/marketing-dashboard" element={<Navigate to="/marketing" replace />} />
                   <Route path="/marketing" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingDashboard /></PermissionRoute>} />

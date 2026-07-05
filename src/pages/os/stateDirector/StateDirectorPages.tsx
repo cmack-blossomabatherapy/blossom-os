@@ -104,6 +104,26 @@ const fmtDate = (iso?: string) => {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
+function LinkedRefBadges({ row }: { row: OpsTask | Escalation }) {
+  const refs: { label: string; value: string }[] = [];
+  if ((row as any).sourceModule) refs.push({ label: "src", value: String((row as any).sourceModule) });
+  if ((row as any).linkedLeadId) refs.push({ label: "lead", value: String((row as any).linkedLeadId).slice(0, 8) });
+  if ((row as any).linkedClientId) refs.push({ label: "client", value: String((row as any).linkedClientId).slice(0, 8) });
+  if ((row as any).linkedCandidateId) refs.push({ label: "cand", value: String((row as any).linkedCandidateId).slice(0, 8) });
+  if ((row as any).linkedAuthorizationId) refs.push({ label: "auth", value: String((row as any).linkedAuthorizationId).slice(0, 8) });
+  if ((row as any).linkedSchedulingItemId) refs.push({ label: "sched", value: String((row as any).linkedSchedulingItemId).slice(0, 8) });
+  if (!refs.length) return null;
+  return (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {refs.map((r) => (
+        <span key={r.label + r.value} className="text-[10px] uppercase tracking-wide bg-muted/60 text-muted-foreground rounded px-1.5 py-0.5">
+          {r.label}: {r.value}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /* --------------------------------- layout --------------------------------- */
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -734,7 +754,7 @@ export function StateOperationsPage() {
       </SectionCard>
 
       <Card className="p-4 rounded-2xl border-border/60 bg-muted/20 text-xs text-muted-foreground">
-        Viewing as <span className="font-medium">{String(role).replace(/_/g, " ")}</span>{assigned ? ` · state ${assigned}` : ""} · Tasks, escalations, and notes persist to Blossom Cloud · CentralReach context: not connected yet — internal ops records will link to CentralReach client context once the connector is live.
+        Viewing as <span className="font-medium">{String(role).replace(/_/g, " ")}</span>{assigned ? ` · state ${assigned}` : ""} · Tasks, escalations, and notes persist to Blossom Cloud · CentralReach context: not connected yet · CentralReach integration status: not connected — internal ops records will link to CentralReach client context once the connector is live.
       </Card>
 
       <CreateEscalationDialog open={escOpen} onOpenChange={setEscOpen} defaultState={stateFilter === "all" ? undefined : stateFilter} />
@@ -811,7 +831,10 @@ export function StateEscalationsPage() {
               {rows.map((e) => (
                 <tr key={e.id} className="border-t border-border/60 hover:bg-muted/30 cursor-pointer" onClick={() => setActive(e)}>
                   <td className="px-4 py-3 font-medium">{e.state}</td>
-                  <td className="px-4 py-3">{e.title}</td>
+                  <td className="px-4 py-3">
+                    <div>{e.title}</div>
+                    <LinkedRefBadges row={e} />
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{e.department}</td>
                   <td className="px-4 py-3 text-muted-foreground">{e.assignedTo ?? "—"}</td>
                   <td className="px-4 py-3"><Badge variant="outline" className={toneForPriority(e.priority)}>{e.priority}</Badge></td>
@@ -906,7 +929,10 @@ export function OperationalTasksPage() {
               {rows.map((t) => (
                 <tr key={t.id} className="border-t border-border/60 hover:bg-muted/30 cursor-pointer" onClick={() => setActive(t)}>
                   <td className="px-4 py-3 font-medium">{t.state}</td>
-                  <td className="px-4 py-3">{t.title}</td>
+                  <td className="px-4 py-3">
+                    <div>{t.title}</div>
+                    <LinkedRefBadges row={t} />
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{t.department}</td>
                   <td className="px-4 py-3 text-muted-foreground">{t.owner ?? "—"}</td>
                   <td className="px-4 py-3"><Badge variant="outline" className={toneForPriority(t.priority)}>{t.priority}</Badge></td>

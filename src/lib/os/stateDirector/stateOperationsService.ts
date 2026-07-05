@@ -123,7 +123,9 @@ export async function insertTask(input: {
   department: Department; owner?: string; priority?: Priority;
   dueAt?: string; createdBy: string; relatedEscalationId?: string;
   linkedClientId?: string; linkedLeadId?: string; linkedCandidateId?: string;
+  linkedAuthorizationId?: string; linkedSchedulingItemId?: string;
   sourceModule?: string;
+  metadata?: Record<string, unknown>;
 }) {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
@@ -143,9 +145,12 @@ export async function insertTask(input: {
     lead_id: input.linkedLeadId,
     client_id: input.linkedClientId,
     candidate_id: input.linkedCandidateId,
+    authorization_id: input.linkedAuthorizationId,
+    scheduling_item_id: input.linkedSchedulingItemId,
     source_module: input.sourceModule,
+    metadata: input.metadata,
     centralreach_sync_status: "not_connected",
-  });
+  } as any);
 }
 
 export async function updateTaskRow(id: UUID, patch: Record<string, unknown>) {
@@ -157,7 +162,9 @@ export async function insertEscalation(input: {
   department: Department; assignedTo?: string; priority?: Priority;
   status?: EscalationStatus; dueAt?: string; createdBy: string;
   linkedClientId?: string; linkedLeadId?: string; linkedCandidateId?: string;
+  linkedAuthorizationId?: string; linkedSchedulingItemId?: string;
   sourceModule?: string;
+  metadata?: Record<string, unknown>;
 }) {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
@@ -176,8 +183,12 @@ export async function insertEscalation(input: {
     lead_id: input.linkedLeadId,
     client_id: input.linkedClientId,
     candidate_id: input.linkedCandidateId,
+    authorization_id: input.linkedAuthorizationId,
+    scheduling_item_id: input.linkedSchedulingItemId,
+    source_module: input.sourceModule,
+    metadata: input.metadata,
     centralreach_sync_status: "not_connected",
-  });
+  } as any);
 }
 
 export async function updateEscalationRow(id: UUID, patch: Record<string, unknown>) {
@@ -204,6 +215,7 @@ export async function insertNote(input: {
 export async function insertActivity(input: {
   kind: ActivityKind; message: string; actor: string;
   state?: StateCode; relatedType?: "task" | "escalation" | "note"; relatedId?: UUID;
+  metadata?: Record<string, unknown>;
 }) {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
@@ -215,7 +227,8 @@ export async function insertActivity(input: {
     actor_name: input.actor,
     related_type: input.relatedType ?? null,
     related_id: input.relatedId ?? null,
-  });
+    metadata: input.metadata ?? null,
+  } as any);
 }
 
 /* ------------------------------ pass 3 ----------------------------------- */
@@ -254,6 +267,10 @@ export async function deliverHandoff(input: {
   linkedClientId?: string;
   linkedLeadId?: string;
   linkedCandidateId?: string;
+  linkedAuthorizationId?: string;
+  linkedSchedulingItemId?: string;
+  sourceModule?: string;
+  metadata?: Record<string, unknown>;
   relatedEscalationId?: string;
 }) {
   const { data: userData } = await supabase.auth.getUser();
@@ -275,8 +292,12 @@ export async function deliverHandoff(input: {
       client_id: input.linkedClientId ?? null,
       lead_id: input.linkedLeadId ?? null,
       candidate_id: input.linkedCandidateId ?? null,
+      authorization_id: input.linkedAuthorizationId ?? null,
+      scheduling_item_id: input.linkedSchedulingItemId ?? null,
+      source_module: input.sourceModule ?? null,
+      metadata: input.metadata ?? null,
       centralreach_sync_status: "not_connected",
-    })
+    } as any)
     .select("id")
     .maybeSingle();
 
@@ -293,7 +314,10 @@ export async function deliverHandoff(input: {
     linkedClientId: input.linkedClientId,
     linkedLeadId: input.linkedLeadId,
     linkedCandidateId: input.linkedCandidateId,
-    sourceModule: "state_handoff",
+    linkedAuthorizationId: input.linkedAuthorizationId,
+    linkedSchedulingItemId: input.linkedSchedulingItemId,
+    sourceModule: input.sourceModule ?? "state_handoff",
+    metadata: input.metadata,
   });
 
   // 3) Activity feed entry so directors see the routing happen live.
@@ -304,6 +328,7 @@ export async function deliverHandoff(input: {
     state: input.state,
     relatedType: "task",
     relatedId: (handoff as any)?.id,
+    metadata: input.metadata,
   });
 
   return handoff;

@@ -17064,6 +17064,7 @@ export type Database = {
           related_escalation_id: string | null
           related_task_id: string | null
           scheduling_item_id: string | null
+          source_module: string | null
           state_code: string
           status: string
           title: string
@@ -17089,6 +17090,7 @@ export type Database = {
           related_escalation_id?: string | null
           related_task_id?: string | null
           scheduling_item_id?: string | null
+          source_module?: string | null
           state_code: string
           status?: string
           title: string
@@ -17114,6 +17116,7 @@ export type Database = {
           related_escalation_id?: string | null
           related_task_id?: string | null
           scheduling_item_id?: string | null
+          source_module?: string | null
           state_code?: string
           status?: string
           title?: string
@@ -17205,6 +17208,7 @@ export type Database = {
           resolution: string | null
           resolved_at: string | null
           scheduling_item_id: string | null
+          source_module: string | null
           state_code: string
           status: string
           title: string
@@ -17235,6 +17239,7 @@ export type Database = {
           resolution?: string | null
           resolved_at?: string | null
           scheduling_item_id?: string | null
+          source_module?: string | null
           state_code: string
           status?: string
           title: string
@@ -17265,6 +17270,7 @@ export type Database = {
           resolution?: string | null
           resolved_at?: string | null
           scheduling_item_id?: string | null
+          source_module?: string | null
           state_code?: string
           status?: string
           title?: string
