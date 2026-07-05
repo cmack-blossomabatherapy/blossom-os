@@ -722,26 +722,43 @@ export default function OSAuthWorkspace() {
           ) : (
             <ul className="space-y-3">
               {visible.map((a) => (
-                <AuthWorkCard
-                  key={a.id}
-                  auth={a}
-                  selected={selected.has(a.id)}
-                  onToggleSelect={() => toggleSel(a.id)}
-                  onOpen={() => setOpenId(a.id)}
-                  onAction={(kind) => {
-                    const o = buildOverlay(a);
-                    if (kind === "submit") return runActionAndRefresh(() => actions.submitAuth(o));
-                    if (kind === "request_pr") return runActionAndRefresh(() => actions.requestPR(o, { dueInDays: 3 }));
-                    if (kind === "send_qa") return runActionAndRefresh(() => actions.sendToQA(o));
-                    if (kind === "escalate") return runActionAndRefresh(() => actions.escalate(o));
-                    if (kind === "review_denial") return runActionAndRefresh(() => actions.reviewDenial(o));
-                    if (kind === "resolve_docs") return runActionAndRefresh(() => actions.resolveDocs(o));
-                    if (kind === "mark_reviewed") return runActionAndRefresh(() => actions.markReviewed(o));
-                    if (kind === "note") {
-                      setNoteForId(a.id);
-                    }
-                  }}
-                />
+                <li key={a.id} className="relative group">
+                  <AuthWorkCard
+                    auth={a}
+                    selected={selected.has(a.id)}
+                    onToggleSelect={() => toggleSel(a.id)}
+                    onOpen={() => setOpenId(a.id)}
+                    onAction={(kind) => {
+                      const o = buildOverlay(a);
+                      if (kind === "submit") return runActionAndRefresh(() => actions.submitAuth(o));
+                      if (kind === "request_pr") return runActionAndRefresh(() => actions.requestPR(o, { dueInDays: 3 }));
+                      if (kind === "send_qa") return runActionAndRefresh(() => actions.sendToQA(o));
+                      if (kind === "escalate") return runActionAndRefresh(() => actions.escalate(o));
+                      if (kind === "review_denial") return runActionAndRefresh(() => actions.reviewDenial(o));
+                      if (kind === "resolve_docs") return runActionAndRefresh(() => actions.resolveDocs(o));
+                      if (kind === "mark_reviewed") return runActionAndRefresh(() => actions.markReviewed(o));
+                      if (kind === "note") {
+                        setNoteForId(a.id);
+                      }
+                    }}
+                  />
+                  <div className="absolute right-3 top-3 opacity-70 group-hover:opacity-100 transition-opacity">
+                    <SendToStateSupportButton
+                      fromDepartment="Authorizations"
+                      linkedAuthorizationId={String(a.id)}
+                      linkedClientId={(a as any).clientId ? String((a as any).clientId) : undefined}
+                      defaultTitle={`Authorization support: ${(a as any).clientName ?? a.id}`}
+                      defaultDescription={`State: ${(a as any).state ?? ""} · Payer: ${(a as any).payer ?? ""} · Stage: ${(a as any).stage ?? ""} · Blocker: ${(a as any).blocker ?? "n/a"}`}
+                      defaultPriority="high"
+                      sourceModule="authorizations"
+                      metadata={{ authorizationId: a.id, clientName: (a as any).clientName, state: (a as any).state, payer: (a as any).payer, stage: (a as any).stage }}
+                      buttonLabel="State Support"
+                      variant="ghost"
+                      size="sm"
+                      className="text-[10px] h-6 px-1.5"
+                    />
+                  </div>
+                </li>
               ))}
             </ul>
           )}
