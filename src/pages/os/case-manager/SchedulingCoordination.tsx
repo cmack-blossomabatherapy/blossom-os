@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Send, ShieldAlert, CalendarClock, Flame } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
+import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { CMPage, Pill, priorityTone, statusTone, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export default function SchedulingCoordinationPage() {
   const w = useCaseManagerWorkspace();
+  const cr = useCentralReachOps();
   const [requestOpen, setRequestOpen] = useState(false);
   const [issueOpen, setIssueOpen] = useState(false);
   const [followUpOpen, setFollowUpOpen] = useState(false);
@@ -18,6 +20,17 @@ export default function SchedulingCoordinationPage() {
   const openScheduling = w.openHandoffs.filter((h) => h.to_department === "scheduling" || h.handoff_type === "scheduling_update");
   const schedIssues = w.openServiceIssues.filter((i) => i.issue_type === "scheduling" || i.owner_department === "scheduling");
   const schedFollowUps = w.followUps.filter((f) => f.status === "open" && f.category === "scheduling");
+
+  const matchScheduling = (clientName: string | null) => {
+    if (!clientName) return { pairing: null as any, risk: null as any };
+    const needle = clientName.toLowerCase().trim();
+    let pairing: any = null;
+    for (const p of cr.pairingsByClient.values()) {
+      if (p.clientName.toLowerCase().trim() === needle) { pairing = p; break; }
+    }
+    const risk = cr.coverageRisks.find((r) => r.clientName.toLowerCase().trim() === needle) ?? null;
+    return { pairing, risk };
+  };
 
   return (
     <CMPage
@@ -39,6 +52,62 @@ export default function SchedulingCoordinationPage() {
         <div className="rounded-2xl border border-white/70 bg-white/80 p-4"><p className="text-[11px] text-muted-foreground">Assigned families</p><p className="mt-1 text-[22px] font-semibold">{w.assignments.length}</p></div>
         <div className="rounded-2xl border border-white/70 bg-white/80 p-4"><p className="text-[11px] text-muted-foreground">Open scheduling requests</p><p className="mt-1 text-[22px] font-semibold">{openScheduling.length}</p></div>
         <div className="rounded-2xl border border-white/70 bg-white/80 p-4"><p className="text-[11px] text-muted-foreground">Scheduling issues</p><p className="mt-1 text-[22px] font-semibold">{schedIssues.length}</p></div>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-white/70 bg-white/80 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] font-semibold">Live scheduling & CentralReach visibility</p>
+          <span className="text-[10.5px] text-muted-foreground">Source: CentralReach billable sessions import. Read-only. Scheduling executes.</span>
+        </div>
+        <div className="mt-2 overflow-x-auto">
+          <table className="w-full text-[12px]">
+            <thead className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
+              <tr className="border-b border-border/60">
+                <th className="py-2 pr-3 text-left">Family</th>
+                <th className="py-2 pr-3 text-left">RBT</th>
+                <th className="py-2 pr-3 text-left">BCBA</th>
+                <th className="py-2 pr-3 text-left">Hrs / 7d</th>
+                <th className="py-2 pr-3 text-left">Hrs / 30d</th>
+                <th className="py-2 pr-3 text-left">Last session</th>
+                <th className="py-2 pr-3 text-left">Cancels 30d</th>
+                <th className="py-2 pr-3 text-left">Coverage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {w.assignments.length === 0 && (
+                <tr><td colSpan={8} className="py-3 text-muted-foreground">No assigned families.</td></tr>
+              )}
+              {w.assignments.map((a) => {
+                const { pairing, risk } = matchScheduling(a.client_name);
+                return (
+                  <tr key={a.id} className="border-b border-border/40 last:border-b-0">
+                    <td className="py-2 pr-3">
+                      <p className="font-medium">{a.client_name ?? "—"}</p>
+                      <p className="text-[10.5px] text-muted-foreground">{a.state ?? ""}</p>
+                    </td>
+                    {pairing ? (
+                      <>
+                        <td className="py-2 pr-3">{pairing.rbtName ?? "—"}</td>
+                        <td className="py-2 pr-3">{pairing.bcbaName ?? "—"}</td>
+                        <td className="py-2 pr-3">{pairing.rbtHoursLast7d.toFixed(1)}</td>
+                        <td className="py-2 pr-3">{pairing.rbtHoursLast30d.toFixed(1)}</td>
+                        <td className="py-2 pr-3">{pairing.lastRbtSessionDate ? new Date(pairing.lastRbtSessionDate).toLocaleDateString() : "—"}</td>
+                        <td className="py-2 pr-3">{pairing.cancellationsLast30d}</td>
+                        <td className="py-2 pr-3">
+                          {risk ? (
+                            <Pill tone={risk.level === "uncovered" ? "alert" : risk.level === "at_risk" ? "amber" : "calm"}>{risk.level.replace("_", " ")}</Pill>
+                          ) : <Pill tone="calm">covered</Pill>}
+                        </td>
+                      </>
+                    ) : (
+                      <td colSpan={7} className="py-2 pr-3 text-muted-foreground">No CentralReach session data for this family in the last 60 days.</td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
