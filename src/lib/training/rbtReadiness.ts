@@ -252,7 +252,7 @@ function signed(...ids: string[]): Record<string, SignoffItem["status"]> {
 // Production reads MUST use useReadinessTrainees() which pulls
 // from public.rbt_readiness_records and returns an empty list when
 // no rows exist rather than falling back to seed fixtures.
-const SEED_TRAINEES_DEV_ONLY: RBTTrainee[] = [
+const SEED_TRAINEES_DEV_ONLY_DEV_ONLY: RBTTrainee[] = [
   {
     id: "t-1", name: "Aaliyah Brooks", state: "GA", clinic: "Atlanta · Buckhead",
     certification: "In Progress", experienceBucket: "Not Certified",
@@ -353,7 +353,7 @@ function subscribe(cb: () => void) {
 
 function mergedTrainees(): RBTTrainee[] {
   const o = readOverrides();
-  return SEED_TRAINEES.map((t) => {
+  return SEED_TRAINEES_DEV_ONLY.map((t) => {
     const patch = o[t.id];
     if (!patch) return t;
     return {
@@ -381,7 +381,7 @@ function getSnapshot(): RBTTrainee[] {
 
 /** Hook — reactive trainee list shared across the app. */
 export function useTrainees(): RBTTrainee[] {
-  return useSyncExternalStore(subscribe, getSnapshot, () => SEED_TRAINEES);
+  return useSyncExternalStore(subscribe, getSnapshot, () => SEED_TRAINEES_DEV_ONLY);
 }
 
 /** Read-only snapshot for non-React consumers. */
@@ -397,7 +397,7 @@ export const RBT_TRAINEES: RBTTrainee[] = new Proxy([] as RBTTrainee[], {
 
 function patchTrainee(id: string, patch: Partial<RBTTrainee>) {
   const o = readOverrides();
-  const seed = SEED_TRAINEES.find((t) => t.id === id);
+  const seed = SEED_TRAINEES_DEV_ONLY.find((t) => t.id === id);
   if (!seed) return;
   const merged = { ...(o[id] ?? {}), ...patch };
   if (patch.signoffs) merged.signoffs = { ...(o[id]?.signoffs ?? {}), ...patch.signoffs };
