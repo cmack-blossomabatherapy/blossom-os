@@ -14142,6 +14142,129 @@ export type Database = {
           },
         ]
       }
+      rbt_readiness_records: {
+        Row: {
+          bcba: string | null
+          certification: string
+          clinic: string | null
+          created_at: string
+          current_module_id: string | null
+          current_phase_index: number
+          documentation_reviewer: string | null
+          employee_id: string | null
+          experience_bucket: string
+          flags: Json
+          id: string
+          lead_rbt_trainer: string | null
+          module_progress: Json
+          next_required_action: string | null
+          path_id: string
+          path_overridden: boolean
+          ready: boolean
+          signoffs: Json
+          start_date: string | null
+          state: string | null
+          status: string
+          trainee_name: string
+          training_admin: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          bcba?: string | null
+          certification?: string
+          clinic?: string | null
+          created_at?: string
+          current_module_id?: string | null
+          current_phase_index?: number
+          documentation_reviewer?: string | null
+          employee_id?: string | null
+          experience_bucket?: string
+          flags?: Json
+          id?: string
+          lead_rbt_trainer?: string | null
+          module_progress?: Json
+          next_required_action?: string | null
+          path_id?: string
+          path_overridden?: boolean
+          ready?: boolean
+          signoffs?: Json
+          start_date?: string | null
+          state?: string | null
+          status?: string
+          trainee_name: string
+          training_admin?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          bcba?: string | null
+          certification?: string
+          clinic?: string | null
+          created_at?: string
+          current_module_id?: string | null
+          current_phase_index?: number
+          documentation_reviewer?: string | null
+          employee_id?: string | null
+          experience_bucket?: string
+          flags?: Json
+          id?: string
+          lead_rbt_trainer?: string | null
+          module_progress?: Json
+          next_required_action?: string | null
+          path_id?: string
+          path_overridden?: boolean
+          ready?: boolean
+          signoffs?: Json
+          start_date?: string | null
+          state?: string | null
+          status?: string
+          trainee_name?: string
+          training_admin?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      rbt_resource_prefs: {
+        Row: {
+          bookmarked: boolean
+          completed: boolean
+          created_at: string
+          id: string
+          last_viewed_at: string | null
+          notes: string | null
+          resource_id: string
+          updated_at: string
+          user_id: string
+          viewed: boolean
+        }
+        Insert: {
+          bookmarked?: boolean
+          completed?: boolean
+          created_at?: string
+          id?: string
+          last_viewed_at?: string | null
+          notes?: string | null
+          resource_id: string
+          updated_at?: string
+          user_id: string
+          viewed?: boolean
+        }
+        Update: {
+          bookmarked?: boolean
+          completed?: boolean
+          created_at?: string
+          id?: string
+          last_viewed_at?: string | null
+          notes?: string | null
+          resource_id?: string
+          updated_at?: string
+          user_id?: string
+          viewed?: boolean
+        }
+        Relationships: []
+      }
       rbt_session_support_logs: {
         Row: {
           centralreach_reference: string | null
