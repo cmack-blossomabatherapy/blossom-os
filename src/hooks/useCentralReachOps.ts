@@ -170,7 +170,7 @@ export function useCentralReachOps(opts: { stateFilter?: string | null } = {}): 
   return { ...derived, lastSyncedAt, refresh };
 }
 
-function derive(rows: CRSessionRow[], loading: boolean, error: string | null): CentralReachOps {
+function derive(rows: CRSessionRow[], loading: boolean, error: string | null): Omit<CentralReachOps, "lastSyncedAt" | "refresh"> {
   const now = Date.now();
   const start7 = now - 7 * 86_400_000;
   const start30 = now - 30 * 86_400_000;
