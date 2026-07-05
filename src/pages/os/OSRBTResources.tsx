@@ -329,6 +329,7 @@ export default function OSRBTResources() {
         </div>
       </main>
     </div>
+    </OSShell>
   );
 }
 
