@@ -453,3 +453,92 @@ export function updateAssignment(
 ) {
   patchTrainee(id, { [who]: value } as Partial<RBTTrainee>);
 }
+
+// ---------- Supabase-backed production reader ----------
+
+interface ReadinessRow {
+  id: string;
+  user_id: string | null;
+  trainee_name: string;
+  state: string | null;
+  clinic: string | null;
+  certification: string;
+  experience_bucket: string;
+  start_date: string | null;
+  path_id: string;
+  path_overridden: boolean;
+  current_phase_index: number;
+  current_module_id: string | null;
+  lead_rbt_trainer: string | null;
+  bcba: string | null;
+  training_admin: string | null;
+  documentation_reviewer: string | null;
+  signoffs: Record<string, SignoffItem["status"]> | null;
+  module_progress: RBTTrainee["moduleProgress"] | null;
+  flags: RBTTrainee["flags"] | null;
+}
+
+function rowToTrainee(row: ReadinessRow): RBTTrainee {
+  return {
+    id: row.id,
+    name: row.trainee_name,
+    state: row.state ?? "",
+    clinic: row.clinic ?? undefined,
+    certification: (row.certification as CertificationStatus) ?? "Not Certified",
+    experienceBucket: (row.experience_bucket as ExperienceBucket) ?? "Not Certified",
+    startDate: row.start_date ?? new Date().toISOString().slice(0, 10),
+    pathId: (row.path_id as RBTPathId) ?? "certified_no_experience",
+    pathOverridden: !!row.path_overridden,
+    currentPhaseIndex: row.current_phase_index ?? 0,
+    currentModuleId: row.current_module_id ?? "",
+    leadRbtTrainer: row.lead_rbt_trainer,
+    bcba: row.bcba,
+    trainingAdmin: row.training_admin,
+    documentationReviewer: row.documentation_reviewer,
+    signoffs: row.signoffs ?? {},
+    moduleProgress: row.module_progress ?? undefined,
+    flags: row.flags ?? undefined,
+  };
+}
+
+/**
+ * Real-data hook for the RBT Readiness Board.
+ * Reads from public.rbt_readiness_records via Supabase.
+ * Returns { trainees, loading, empty } — empty is TRUE when the query
+ * succeeded but returned zero rows. Consumers should render an empty
+ * setup state in that case rather than falling back to seed fixtures.
+ */
+export function useReadinessTrainees(): {
+  trainees: RBTTrainee[];
+  loading: boolean;
+  empty: boolean;
+  error: string | null;
+} {
+  const [state, setState] = useState<{ trainees: RBTTrainee[]; loading: boolean; empty: boolean; error: string | null }>(
+    { trainees: [], loading: true, empty: false, error: null },
+  );
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("rbt_readiness_records")
+          .select("*")
+          .order("updated_at", { ascending: false });
+        if (cancelled) return;
+        if (error) {
+          setState({ trainees: [], loading: false, empty: true, error: error.message });
+          return;
+        }
+        const rows = (data ?? []) as ReadinessRow[];
+        const trainees = rows.map(rowToTrainee);
+        setState({ trainees, loading: false, empty: trainees.length === 0, error: null });
+      } catch (e) {
+        if (cancelled) return;
+        setState({ trainees: [], loading: false, empty: true, error: (e as Error).message });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return state;
+}
