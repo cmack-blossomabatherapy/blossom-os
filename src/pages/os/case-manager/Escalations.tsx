@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Flame, Plus, CheckCircle2, Undo2, CalendarClock, ShieldAlert } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
-import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familyOptions, familyMap } from "./_shared";
+import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,8 +24,8 @@ export default function EscalationsPage() {
   const [followUpId, setFollowUpId] = useState<string | null>(null);
   const [issueId, setIssueId] = useState<string | null>(null);
 
-  const options = familyOptions(w.assignments);
-  const fam = familyMap(w.assignments);
+  const options = familySelectOptions(w.assignments);
+  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
   const escById = (id: string | null) => w.escalations.find((e) => e.id === id);
 
   const rows = w.escalations.filter((e) => {
@@ -84,7 +84,7 @@ export default function EscalationsPage() {
 
       <FormDialog open={addOpen} onOpenChange={setAddOpen} title="New escalation" submitLabel="Create"
         fields={[
-          { key: "client_name", label: "Family / client", type: "select", options },
+          { key: "family", label: "Family / client", type: "select", options },
           { key: "reason", label: "Reason", required: true },
           { key: "summary", label: "Summary", type: "textarea" },
           { key: "escalation_type", label: "Type", type: "select", options: TYPES, defaultValue: "family_dissatisfaction" },
@@ -93,7 +93,7 @@ export default function EscalationsPage() {
           { key: "escalated_to_role", label: "Escalated to role" },
           { key: "parent_communication_needed", label: "Parent communication needed", type: "checkbox" },
         ]}
-        onSubmit={async (v) => { const cid = v.client_name ? fam.get(v.client_name) ?? null : null; await w.createEscalation({ ...v, client_id: cid, client_name: v.client_name || null, status: "open" } as any); toast.success("Escalation created"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createEscalation({ ...rest, ...familyContext(pickFamily(v)), status: "open" } as any); toast.success("Escalation created"); }}
       />
       {editId && (
         <FormDialog open={!!editId} onOpenChange={(o) => !o && setEditId(null)} title="Edit escalation" submitLabel="Save"
