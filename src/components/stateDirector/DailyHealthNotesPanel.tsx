@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { HeartPulse, Save } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useStateDailyHealthNotes, type StateDailyHealthNote } from "@/hooks/useStateDailyHealthNotes";
+import { useOSRole } from "@/contexts/OSRoleContext";
 
 interface Props {
   stateCode: string;
@@ -26,6 +27,7 @@ function statusInput(label: string, value: string, onChange: (v: string) => void
 export function DailyHealthNotesPanel({ stateCode, actor, canEdit = true }: Props) {
   const { toast } = useToast();
   const { notes, loading, error, upsertToday } = useStateDailyHealthNotes(stateCode);
+  const { role, activeState } = useOSRole();
 
   const today = new Date().toISOString().slice(0, 10);
   const todaysNote = useMemo(() => notes.find((n) => n.note_date === today), [notes, today]);
@@ -41,7 +43,7 @@ export function DailyHealthNotesPanel({ stateCode, actor, canEdit = true }: Prop
   const [saving, setSaving] = useState(false);
 
   // Keep local form in sync when today's note arrives via realtime.
-  useMemo(() => {
+  useEffect(() => {
     if (todaysNote) {
       setSummary(todaysNote.summary ?? "");
       setWins(todaysNote.wins ?? "");
@@ -54,7 +56,21 @@ export function DailyHealthNotesPanel({ stateCode, actor, canEdit = true }: Prop
     }
   }, [todaysNote?.id]);
 
+  // State scoping: a state-scoped user can only write for their pinned state.
+  // Leadership (no activeState) may write for any state they open.
+  const stateScopedRoles = new Set<string>([
+    "state_director", "assistant_state_director",
+    "intake_coordinator", "intake_lead",
+  ]);
+  const isStateScoped = stateScopedRoles.has(String(role));
+  const writable =
+    canEdit && (!isStateScoped || (activeState && String(activeState).toUpperCase() === stateCode.toUpperCase()));
+
   const save = async () => {
+    if (!writable) {
+      toast({ title: "Read-only state", description: `You cannot edit ${stateCode} — outside your pinned state.`, variant: "destructive" });
+      return;
+    }
     setSaving(true);
     const { error: err } = await upsertToday({
       summary, wins, blockers,
@@ -76,7 +92,7 @@ export function DailyHealthNotesPanel({ stateCode, actor, canEdit = true }: Prop
         {error && <span className="text-[11px] text-destructive">Unable to sync</span>}
       </div>
 
-      {canEdit && (
+      {writable && (
         <div className="space-y-3">
           <div className="space-y-1">
             <Label>Today's summary</Label>
