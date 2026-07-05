@@ -470,7 +470,7 @@ export default function OSBCBAClients() {
                       onParentTraining={() => bcba.openParentTraining(activeRow.client.clientName)}
                       onPlanItem={() => bcba.openPlanItem(activeRow.client.clientName)}
                     />
-                    <BcbaClientTimeline scope={{}} className="mt-4" />
+                    <BcbaClientTimeline scope={{ clientName: activeClient ?? undefined, broad: false, limit: 100 }} className="mt-4" />
                   </div>
                 </Section>
 

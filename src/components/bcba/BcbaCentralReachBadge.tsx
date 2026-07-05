@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { CloudOff, CloudUpload, RefreshCw, CheckCircle2 } from "lucide-react";
+import { CloudOff, CloudUpload, RefreshCw, CheckCircle2, Eye, Hand, MinusCircle, Send, XCircle } from "lucide-react";
 
 /**
  * Honest CentralReach sync status pill for BCBA workflow records.
@@ -20,6 +20,12 @@ export function BcbaCentralReachBadge({
     error:           { label: "CentralReach: sync error",       icon: CloudOff,     tone: "bg-red-50 text-red-700 border-red-200" },
     not_configured:  { label: "CentralReach: not connected",    icon: CloudOff,     tone: "bg-slate-100 text-slate-600 border-slate-200" },
     pending_import:  { label: "CentralReach: pending import",   icon: CloudUpload,  tone: "bg-amber-50 text-amber-800 border-amber-200" },
+    pending_review:  { label: "CentralReach: needs review",     icon: Eye,          tone: "bg-amber-50 text-amber-800 border-amber-200" },
+    ready_for_api:   { label: "CentralReach: ready for future API", icon: CloudUpload, tone: "bg-sky-50 text-sky-700 border-sky-200" },
+    manual_update_required: { label: "CentralReach: manual update required", icon: Hand, tone: "bg-orange-50 text-orange-800 border-orange-200" },
+    not_applicable:  { label: "CentralReach: not applicable",   icon: MinusCircle,  tone: "bg-slate-100 text-slate-600 border-slate-200" },
+    sent:            { label: "CentralReach: sent",             icon: Send,         tone: "bg-blue-50 text-blue-700 border-blue-200" },
+    failed:          { label: "CentralReach: failed",           icon: XCircle,      tone: "bg-red-50 text-red-700 border-red-200" },
   };
   const v = map[s] ?? map.pending_import;
   const Icon = v.icon;
@@ -46,7 +52,7 @@ export function BcbaCentralReachSummaryBadge({
     return (
       <Badge variant="outline" className={`gap-1 border bg-emerald-50 text-emerald-700 border-emerald-200 ${className ?? ""}`}>
         <CheckCircle2 className="h-3 w-3" aria-hidden />
-        <span className="text-[11px] font-medium">All records ready for CentralReach import</span>
+        <span className="text-[11px] font-medium">No pending CentralReach review</span>
       </Badge>
     );
   }
@@ -54,7 +60,7 @@ export function BcbaCentralReachSummaryBadge({
     <Badge variant="outline" className={`gap-1 border bg-amber-50 text-amber-800 border-amber-200 ${className ?? ""}`}>
       <CloudUpload className="h-3 w-3" aria-hidden />
       <span className="text-[11px] font-medium">
-        {pendingCount} record{pendingCount === 1 ? "" : "s"} pending CentralReach import
+        {pendingCount} record{pendingCount === 1 ? "" : "s"} pending CentralReach review
       </span>
     </Badge>
   );

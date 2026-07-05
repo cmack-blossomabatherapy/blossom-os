@@ -542,7 +542,7 @@ export default function OSBCBAScheduling() {
                 onSupervision={() => bcba.openSupervision()}
                 onParentTraining={() => bcba.openParentTraining()}
               />
-              <BcbaClientTimeline scope={{}} className="mt-4" />
+              <BcbaClientTimeline title="Recent BCBA activity" scope={{ broad: true, limit: 60 }} className="mt-4" />
             </div>
             <BcbaTaskList
               tasks={bcba.workflow.tasks.filter((t) => t.status !== "completed" && t.source_area === "scheduling").slice(0, 6)}

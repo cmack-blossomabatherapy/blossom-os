@@ -528,7 +528,7 @@ export default function OSBCBAWorkspace() {
               onParentTraining={() => bcba.openParentTraining()}
               onPlanItem={() => bcba.openPlanItem()}
             />
-            <BcbaClientTimeline scope={{}} className="mt-4" />
+            <BcbaClientTimeline title="Recent BCBA activity" scope={{ broad: true, limit: 60 }} className="mt-4" />
             <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
               <Quick to="/bcba/clients" icon={Users} label="Open caseload" />
               <Quick to="/bcba/authorizations" icon={FileSignature} label="View PRs" />

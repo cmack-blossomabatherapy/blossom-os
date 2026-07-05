@@ -592,7 +592,7 @@ export default function OSBCBA() {
                 onParentTraining={() => bcba.openParentTraining()}
                 onPlanItem={() => bcba.openPlanItem()}
               />
-              <BcbaClientTimeline scope={{}} className="mt-4" />
+              <BcbaClientTimeline title="Recent BCBA activity" scope={{ broad: true, limit: 60 }} className="mt-4" />
             </div>
           </Card>
         </section>
