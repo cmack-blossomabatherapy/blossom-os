@@ -221,8 +221,8 @@ export default function OSHRWorkspace() {
             <Link to="/hr/orientation-queue" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
               <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.75} /> Orientation
             </Link>
-            <Link to="/hr/training-academy" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
-              <BookOpen className="h-3.5 w-3.5" strokeWidth={1.75} /> Training
+            <Link to="/hr/training-center" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
+              <BookOpen className="h-3.5 w-3.5" strokeWidth={1.75} /> Training Management
             </Link>
             <Link to="/hr/requests" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
               <Inbox className="h-3.5 w-3.5" strokeWidth={1.75} /> Requests
@@ -299,7 +299,8 @@ export default function OSHRWorkspace() {
               <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Quick links</h3>
               <nav className="space-y-1">
                 {[
-                  { label: "Training Academy",   to: "/hr/training-academy" },
+                  { label: "Training Management", to: "/hr/training-center" },
+                  { label: "Learner Academy",     to: "/academy" },
                   { label: "Resource Library",   to: "/hr/team-resources" },
                   { label: "HR Requests",        to: "/hr/requests" },
                   { label: "Messages & Updates", to: "/hr/messages" },
@@ -712,7 +713,7 @@ function TodayList({ data }: { data: Data }) {
     {
       label: "Training overdue",
       count: data.trainings.filter((t) => t.status !== "completed" && t.due_date && daysUntil(t.due_date) < 0).length,
-      to: "/hr/training-academy",
+      to: "/hr/training-center",
       tone: "crit",
     },
     {
