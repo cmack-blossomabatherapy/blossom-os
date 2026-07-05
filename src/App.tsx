@@ -893,11 +893,11 @@ const App = () => (
                   <Route path="/ops/approved-authorizations" element={<Navigate to="/authorizations?stage=approved" replace />} />
                   <Route path="/ops/denials" element={<Navigate to="/authorizations?stage=denied" replace />} />
                  <Route path="/ops/scheduling" element={<Navigate to="/scheduling-workspace?bucket=coverage_risk" replace />} />
-                  <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><OSStaffingWorkspace /></PermissionRoute>} />
+                  <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator", "state_director", "assistant_state_director"]}><OSStaffingWorkspace /></PermissionRoute>} />
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
                   <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
                   <Route path="/ops/qa" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_director", "qa_specialist"]}><QAPhase6OpsPage /></PermissionRoute>} />
-                  <Route path="/ops/family-staffing-preferences" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator"]}><Navigate to="/ops/staffing?tab=preferences" replace /></PermissionRoute>} />
+                  <Route path="/ops/family-staffing-preferences" element={<PermissionRoute allowedRoles={["admin", "staffing", "staffing_lead", "staffing_coordinator", "state_director", "assistant_state_director"]}><Navigate to="/ops/staffing?tab=preferences" replace /></PermissionRoute>} />
                   {/* Staffing reports always route through the unified Reports page */}
                   <Route path="/staffing/reports" element={<Navigate to="/reports" replace />} />
                   <Route path="/ops/staffing/reports" element={<Navigate to="/reports" replace />} />
