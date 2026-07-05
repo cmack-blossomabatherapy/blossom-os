@@ -72,7 +72,7 @@ export default function AuthorizationsVisibilityPage() {
 
       <FormDialog open={requestOpen} onOpenChange={setRequestOpen} title="Request authorization update" submitLabel="Send"
         fields={[
-          { key: "client_name", label: "Family / client", type: "select", options },
+          { key: "family", label: "Family / client", type: "select", options },
           { key: "title", label: "Title", required: true },
           { key: "request_note", label: "Details", type: "textarea", required: true },
           { key: "priority", label: "Priority", type: "select", options: ["low","normal","high","urgent"], defaultValue: "normal" },
