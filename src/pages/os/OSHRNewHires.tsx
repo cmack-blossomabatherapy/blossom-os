@@ -285,7 +285,7 @@ export default function OSHRNewHires() {
             <Link to="/hr/orientation-queue" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.75} /> Orientation
             </Link>
-            <Link to="/hr/training-academy" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/hr/training-center" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <BookOpen className="h-3.5 w-3.5" strokeWidth={1.75} /> Assign training
             </Link>
           </div>
@@ -464,7 +464,8 @@ export default function OSHRNewHires() {
                 {[
                   { label: "HR Workspace",     to: "/hr/workspace" },
                   { label: "Orientation queue",to: "/hr/orientation-queue" },
-                  { label: "Training Academy", to: "/hr/training-academy" },
+                  { label: "Training Management", to: "/hr/training-center" },
+                  { label: "Learner Academy", to: "/academy" },
                   { label: "Compliance & docs",to: "/hr/compliance" },
                   { label: "Employee support", to: "/hr/employee-support" },
                 ].map((l) => (
@@ -841,7 +842,7 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
           <div className="pt-2 grid grid-cols-2 gap-2">
             <ActionBtn icon={MessageSquare} label="Message" to="/hr/messages" />
             <ActionBtn icon={CalendarPlus} label="Orientation" to="/hr/orientation-queue" />
-            <ActionBtn icon={BookOpen} label="Assign training" to="/hr/training-academy" />
+            <ActionBtn icon={BookOpen} label="Assign training" to="/hr/training-center" />
             <ActionBtn icon={FileText} label="Add note" onClick={async () => {
               const note = window.prompt(`Add HR note for ${item.name}:`, "");
               if (!note) return;
