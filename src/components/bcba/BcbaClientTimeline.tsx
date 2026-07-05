@@ -50,6 +50,7 @@ export function BcbaClientTimeline({
   className?: string;
 }) {
   const wf = useBcbaWorkflow(scope);
+  const isBroad = scope?.broad === true && !scope?.clientId && !scope?.clientName && !scope?.centralreachClientId;
   const [kindFilter, setKindFilter] = useState<BcbaTimelineKind | "all">("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -100,7 +101,10 @@ export function BcbaClientTimeline({
     <section className={cn("rounded-2xl border border-border/70 bg-card p-5 space-y-4", className)}>
       <header className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h3 className="text-base font-semibold tracking-tight">{title}</h3>
+          <h3 className="text-base font-semibold tracking-tight">
+            {title}
+            {isBroad && <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">(broad view)</span>}
+          </h3>
           <p className="text-xs text-muted-foreground">
             {wf.loading ? "Loading activity…" : `${items.length} event${items.length === 1 ? "" : "s"}`}
           </p>
