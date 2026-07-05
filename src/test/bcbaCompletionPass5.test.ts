@@ -170,12 +170,13 @@ describe("BCBA Pass 5 - reports stay canonical + no mojibake in new files", () =
       path.join(COMP_DIR, "BcbaClientTimeline.tsx"),
       path.join(COMP_DIR, "BcbaCentralReachBadge.tsx"),
       HOOK,
-      __filename,
     ];
+    const bad1 = String.fromCharCode(0x00e2);
+    const bad2 = String.fromCharCode(0x00c2);
     for (const t of targets) {
       const src = readFileSync(t, "utf8");
-      expect(src, `${t} contains mojibake 'â'`).not.toMatch(/\u00e2/);
-      expect(src, `${t} contains mojibake 'Â'`).not.toMatch(/\u00c2/);
+      expect(src.includes(bad1), `${t} contains mojibake byte 0xE2`).toBe(false);
+      expect(src.includes(bad2), `${t} contains mojibake byte 0xC2`).toBe(false);
     }
   });
 });
