@@ -201,8 +201,9 @@ function ReadinessBanner({ ready }: { ready: boolean }) {
   );
 }
 
-function NextActionCard({ module: m }: { module: RBTModule }) {
+function NextActionCard({ module: m, trackId }: { module: RBTModule; trackId: RBTPathId }) {
   const resume = m.status === "in_progress";
+  const runtimeHref = `/academy/path/rbt/module/${encodeURIComponent(m.id)}?track=${encodeURIComponent(trackId)}`;
   return (
     <section className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/[0.08] via-card to-card p-5 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_12px_32px_-16px_oklch(0.2_0.02_260/0.12)]">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -219,12 +220,12 @@ function NextActionCard({ module: m }: { module: RBTModule }) {
         <div className="mt-3"><ProgressBar value={m.progress} /></div>
       )}
       <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          type="button"
+        <Link
+          to={runtimeHref}
           className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90"
         >
           {resume ? "Resume" : "Start"} <ArrowRight className="size-4" />
-        </button>
+        </Link>
         <span className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border/70 bg-secondary px-3 text-xs font-medium text-secondary-foreground">
           <TypeIcon type={m.type} className="size-3.5" /> {m.type}
         </span>
@@ -301,7 +302,7 @@ function Tabs({ value, onChange }: { value: TabKey; onChange: (v: TabKey) => voi
   );
 }
 
-function JourneyTab({ path }: { path: RBTPath }) {
+function JourneyTab({ path, trackId }: { path: RBTPath; trackId: RBTPathId }) {
   return (
     <section className="space-y-5">
       {path.phases.map((phase, idx) => {
@@ -323,7 +324,7 @@ function JourneyTab({ path }: { path: RBTPath }) {
             <ol className="relative mt-4 space-y-2">
               <span aria-hidden className="absolute left-[19px] top-2 bottom-2 w-px bg-border/70" />
               {phase.modules.map((m, i) => (
-                <ModuleRow key={m.id} module={m} index={i + 1} />
+                <ModuleRow key={m.id} module={m} index={i + 1} trackId={trackId} />
               ))}
             </ol>
           </div>
@@ -333,7 +334,7 @@ function JourneyTab({ path }: { path: RBTPath }) {
   );
 }
 
-function ModuleRow({ module: m, index }: { module: RBTModule; index: number }) {
+function ModuleRow({ module: m, index, trackId }: { module: RBTModule; index: number; trackId: RBTPathId }) {
   const dotCls =
     m.status === "completed" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
     : m.status === "in_progress" ? "border-primary/40 bg-primary/10 text-primary"
@@ -345,6 +346,7 @@ function ModuleRow({ module: m, index }: { module: RBTModule; index: number }) {
     : m.status === "locked" ? "Locked"
     : "Not started";
   const isLocked = m.status === "locked";
+  const runtimeHref = `/academy/path/rbt/module/${encodeURIComponent(m.id)}?track=${encodeURIComponent(trackId)}`;
   return (
     <li className="relative pl-10">
       <span className={cn("absolute left-2 top-3 grid size-6 place-items-center rounded-full border bg-card", dotCls)}>
@@ -377,13 +379,13 @@ function ModuleRow({ module: m, index }: { module: RBTModule; index: number }) {
             <ModuleResources moduleId={m.id} />
           </div>
           {!isLocked && (
-            <button
-              type="button"
+            <Link
+              to={runtimeHref}
               className="hidden shrink-0 items-center gap-1 rounded-lg border border-border/70 bg-secondary px-2.5 py-1.5 text-xs font-medium text-secondary-foreground transition hover:bg-muted sm:inline-flex"
             >
               {m.status === "completed" ? "Review" : m.status === "in_progress" ? "Resume" : "Start"}
               <ChevronRight className="size-3" />
-            </button>
+            </Link>
           )}
         </div>
       </div>
