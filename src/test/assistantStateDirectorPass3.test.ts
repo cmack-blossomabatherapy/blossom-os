@@ -81,7 +81,7 @@ describe("Assistant State Director — Pass 3 hardening", () => {
       const src = read(file);
       expect(src, `${file} missing row-level SendToStateSupportButton`).toMatch(/SendToStateSupportButton/);
       expect(src, `${file} row-level button missing linked id (${rx})`).toMatch(rx);
-      expect(src, `${file} row-level button missing sourceModule`).toMatch(/sourceModule:/);
+      expect(src, `${file} row-level button missing sourceModule`).toMatch(/sourceModule=/);
     }
   });
 
