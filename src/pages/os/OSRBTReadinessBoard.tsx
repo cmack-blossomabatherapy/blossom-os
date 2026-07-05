@@ -8,7 +8,7 @@ import {
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import {
-  useTrainees, summarize, READINESS_TONE,
+  useReadinessTrainees, summarize, READINESS_TONE,
   type ReadinessStatus,
 } from "@/lib/training/rbtReadiness";
 import { CompetencyPanel } from "@/components/training/CompetencyPanel";
@@ -28,7 +28,7 @@ const STATUS_ORDER: ReadinessStatus[] = [
 const STATE_CHIPS = ["All", "GA", "NC", "TN", "VA", "MD"] as const;
 
 export default function OSRBTReadinessBoard() {
-  const trainees = useTrainees();
+  const { trainees, loading, empty } = useReadinessTrainees();
   const [query, setQuery] = useState("");
   const [state, setState] = useState<(typeof STATE_CHIPS)[number]>("All");
   const [status, setStatus] = useState<ReadinessStatus | "All">("All");
@@ -176,7 +176,18 @@ export default function OSRBTReadinessBoard() {
         </div>
 
         <div className="space-y-3">
-          {rows.length === 0 ? (
+          {loading ? (
+            <div className="rounded-2xl border border-dashed border-border/70 bg-card p-10 text-center text-sm text-muted-foreground">
+              Loading readiness records…
+            </div>
+          ) : empty ? (
+            <div className="rounded-2xl border border-dashed border-border/70 bg-card p-10 text-center">
+              <p className="text-sm font-medium text-foreground">No RBT readiness records yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Once trainees are enrolled in the RBT track, real readiness data will populate this board.
+              </p>
+            </div>
+          ) : rows.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border/70 bg-card p-10 text-center text-sm text-muted-foreground">
               No trainees match the current filters.
             </div>
