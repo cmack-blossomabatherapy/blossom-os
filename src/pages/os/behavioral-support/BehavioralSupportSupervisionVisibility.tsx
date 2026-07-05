@@ -148,7 +148,7 @@ export default function BehavioralSupportSupervisionVisibility() {
               client_name: escalateFor.clientName,
               state: escalateFor.state,
               bcba_name: escalateFor.bcbaName,
-              centralreach_reference_id: escalateFor.clientId ?? null,
+              centralreach_reference_id: escalateFor.centralreachClientId ?? null,
               escalation_type: escalateFor.riskFlags.includes("service_instability") ? "service_instability" : "supervision_gap",
               severity: "medium",
               description,
