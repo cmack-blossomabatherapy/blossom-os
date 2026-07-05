@@ -258,6 +258,21 @@ function OpenCasesTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
                     >
                       Open case -&gt;
                     </button>
+                    <span onClick={(e) => e.stopPropagation()} className="inline-block ml-2 align-middle">
+                      <SendToStateSupportButton
+                        fromDepartment="Staffing"
+                        linkedClientId={String(n.client.id)}
+                        defaultTitle={`Staffing support: ${n.client.childName}`}
+                        defaultDescription={`State: ${n.client.state} · Hours needed: ${n.requiredHours} · Days waiting: ${n.daysWaiting}d · BCBA: ${n.client.bcba ?? "unassigned"}`}
+                        defaultPriority={n.priority === "High" ? "high" : "medium"}
+                        sourceModule="staffing"
+                        metadata={{ clientName: n.client.childName, state: n.client.state, hoursNeeded: n.requiredHours, daysWaiting: n.daysWaiting, priority: n.priority }}
+                        buttonLabel="State Support"
+                        variant="ghost"
+                        size="sm"
+                        className="text-[11px] h-6 px-1.5"
+                      />
+                    </span>
                   </Td>
                 </tr>
               ))}
