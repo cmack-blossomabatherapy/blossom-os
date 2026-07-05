@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { HeartHandshake, Plus, MessageSquare, CalendarClock, ShieldAlert, Flame, CalendarDays, Users, ShieldCheck } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import { useStaffingWorkspace } from "@/hooks/useStaffingWorkspace";
 import { CMPage, Pill, FilterBar, FormDialog, DataCard, RowActions } from "./_shared";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,6 +13,9 @@ const STATES = ["GA","NC","TN","VA","MD","FL","TX"];
 
 export default function AssignedFamiliesPage() {
   const w = useCaseManagerWorkspace();
+  const auth = useLiveAuthorizations();
+  const cr = useCentralReachOps();
+  const staffing = useStaffingWorkspace();
   const [q, setQ] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [logCommForId, setLogCommForId] = useState<string | null>(null);
@@ -29,6 +35,24 @@ export default function AssignedFamiliesPage() {
   const forCtx = (id: string | null) => {
     const a = w.assignments.find((x) => x.id === id);
     return a ? { client_id: a.client_id, client_name: a.client_name, state: a.state } : {};
+  };
+
+  // Best-effort per-family live operating signals. All lookups are
+  // read-only — Case Manager surfaces status, other departments execute.
+  const liveFor = (clientId: string | null, clientName: string | null) => {
+    const needle = (clientName ?? "").toLowerCase().trim();
+    const authLive = needle ? auth.items.find((x) => (x.clientName ?? "").toLowerCase().trim() === needle) : null;
+    let pairing: any = null;
+    if (needle) {
+      for (const p of cr.pairingsByClient.values()) {
+        if (p.clientName.toLowerCase().trim() === needle) { pairing = p; break; }
+      }
+    }
+    const risk = needle ? cr.coverageRisks.find((r) => r.clientName.toLowerCase().trim() === needle) : null;
+    const assignedRbts = clientId
+      ? staffing.matches.filter((m) => m.client_id === clientId && m.status === "Assigned").length
+      : 0;
+    return { authLive, pairing, risk, assignedRbts };
   };
 
   return (
@@ -54,6 +78,7 @@ export default function AssignedFamiliesPage() {
           const openIssues = recs.serviceIssues.filter((s) => !["resolved","closed"].includes(s.status)).length;
           const openEsc = recs.escalations.filter((e) => !["resolved","closed"].includes(e.status)).length;
           const openHo = recs.handoffs.filter((h) => !["resolved","closed"].includes(h.status)).length;
+          const live = liveFor(a.client_id, a.client_name);
           return (
             <div key={a.id} className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-[0_8px_24px_-18px_hsl(330_40%_45%/0.18)] backdrop-blur">
               <div className="flex items-start justify-between gap-2">
@@ -64,6 +89,15 @@ export default function AssignedFamiliesPage() {
                     <Pill tone={a.is_primary ? "warm" : "cool"}>{a.is_primary ? "Primary" : "Secondary"}</Pill>
                     {a.centralreach_client_id && <Pill tone="cool">CR · {a.centralreach_client_id}</Pill>}
                     {a.centralreach_sync_status && <Pill tone="violet">{a.centralreach_sync_status}</Pill>}
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    {live.authLive ? (
+                      <Pill tone={live.authLive.riskLevel === "High" ? "alert" : live.authLive.riskLevel === "Medium" ? "amber" : "calm"}>Auth: {live.authLive.stage}</Pill>
+                    ) : <Pill tone="cool">Auth: no live record</Pill>}
+                    {live.pairing?.bcbaName && <Pill tone="cool">BCBA: {live.pairing.bcbaName}</Pill>}
+                    {live.pairing?.rbtName && <Pill tone="cool">RBT: {live.pairing.rbtName}</Pill>}
+                    {!live.pairing?.rbtName && live.assignedRbts > 0 && <Pill tone="cool">{live.assignedRbts} assigned</Pill>}
+                    {live.risk && <Pill tone={live.risk.level === "uncovered" ? "alert" : "amber"}>Coverage: {live.risk.level.replace("_", " ")}</Pill>}
                   </div>
                 </div>
               </div>
