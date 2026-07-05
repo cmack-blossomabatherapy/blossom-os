@@ -376,7 +376,7 @@ export default function OSHRTrainingCerts() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <HeaderBtn icon={UserPlus} to="/hr/training-academy">Assign training</HeaderBtn>
+            <HeaderBtn icon={UserPlus} to="/hr/training-center">Assign training</HeaderBtn>
             <HeaderBtn icon={Workflow} to="/training/manage">Create journey</HeaderBtn>
             <HeaderBtn icon={BookOpen} to="/training/manage">Create module</HeaderBtn>
             <HeaderBtn icon={ShieldCheck} to="/hr/compliance">Manage certifications</HeaderBtn>
@@ -514,8 +514,8 @@ export default function OSHRTrainingCerts() {
                   <h2 className="text-base font-medium tracking-tight">HR learning journeys</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">Operational journeys for the HR Team — anchored on the HR Admin Assistant track.</p>
                 </div>
-                <Link to="/hr/training-academy" className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-                  Open academy <ArrowRight className="h-3 w-3" strokeWidth={1.75} />
+                <Link to="/academy" className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+                  Open learner academy <ArrowRight className="h-3 w-3" strokeWidth={1.75} />
                 </Link>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
@@ -555,7 +555,7 @@ export default function OSHRTrainingCerts() {
                         <span>
                           {liveStats ? `${liveStats.modules} modules · ${liveStats.learners} learners` : `${g.items.length} modules planned`}
                         </span>
-                        <Link to="/hr/training-academy" className="inline-flex items-center gap-1 text-foreground hover:text-primary transition-colors">
+                        <Link to="/hr/training-center" className="inline-flex items-center gap-1 text-foreground hover:text-primary transition-colors">
                           Open <ChevronRight className="h-3 w-3" />
                         </Link>
                       </div>
@@ -733,11 +733,12 @@ export default function OSHRTrainingCerts() {
               <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Quick links</h3>
               <nav className="space-y-1">
                 {[
-                  { label: "Training Academy", to: "/hr/training-academy", icon: GraduationCap },
+                  { label: "Learner Academy", to: "/academy", icon: GraduationCap },
+                  { label: "Training Management", to: "/hr/training-center", icon: Workflow },
                   { label: "New Hires", to: "/hr/new-hires", icon: UserPlus },
                   { label: "Employee Support", to: "/hr/employee-support", icon: Users },
                   { label: "Compliance & Documents", to: "/hr/compliance", icon: ShieldCheck },
-                  { label: "Resource Library", to: "/resources", icon: BookOpen },
+                  { label: "Resource Library", to: "/resource-library", icon: BookOpen },
                 ].map(l => (
                   <Link key={l.label} to={l.to} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[13px] hover:bg-muted transition-colors">
                     <span className="inline-flex items-center gap-2">
