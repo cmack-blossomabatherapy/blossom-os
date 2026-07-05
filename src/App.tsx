@@ -813,15 +813,15 @@ const App = () => (
                   <Route path="/reports" element={<ReportsHome />} />
                   <Route path="/reports/catalog" element={<Navigate to="/reports" replace />} />
                   <Route path="/reports/landing" element={<Navigate to="/reports" replace />} />
-                  <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
-                  <Route path="/reports/qa-supervision-pt" element={<QaSupervisionPtDashboard />} />
-                  <Route path="/reports/qa-auth-utilization" element={<QaAuthUtilizationDashboard />} />
-                  <Route path="/reports/qa-cancellation" element={<QaCancellationDashboard />} />
-                  <Route path="/reports/hr-payroll-command" element={<HrPayrollCommandCenter />} />
+                  <Route path="/reports/bcba-performance" element={<ReportRoleGuard reportId="bcba-performance"><OSReportBcbaPerformance /></ReportRoleGuard>} />
+                  <Route path="/reports/qa-supervision-pt" element={<ReportRoleGuard reportId="qa-supervision-pt"><QaSupervisionPtDashboard /></ReportRoleGuard>} />
+                  <Route path="/reports/qa-auth-utilization" element={<ReportRoleGuard reportId="qa-auth-utilization"><QaAuthUtilizationDashboard /></ReportRoleGuard>} />
+                  <Route path="/reports/qa-cancellation" element={<ReportRoleGuard reportId="qa-cancellation"><QaCancellationDashboard /></ReportRoleGuard>} />
+                  <Route path="/reports/hr-payroll-command" element={<ReportRoleGuard reportId="hr-payroll-command"><HrPayrollCommandCenter /></ReportRoleGuard>} />
                   <Route path="/reports/hr-recruiting-pipeline" element={<Navigate to="/reports?report=hr-recruiting-pipeline" replace />} />
-                  <Route path="/reports/hr-employee-compliance" element={<HrEmployeeComplianceDashboard />} />
-                  <Route path="/reports/hr-employee-onboarding" element={<HrEmployeeOnboardingCommandCenter />} />
-                  <Route path="/reports/hr-bcba-productivity" element={<HrBcbaProductivityDashboard />} />
+                  <Route path="/reports/hr-employee-compliance" element={<ReportRoleGuard reportId="hr-employee-compliance"><HrEmployeeComplianceDashboard /></ReportRoleGuard>} />
+                  <Route path="/reports/hr-employee-onboarding" element={<ReportRoleGuard reportId="hr-employee-onboarding"><HrEmployeeOnboardingCommandCenter /></ReportRoleGuard>} />
+                  <Route path="/reports/hr-bcba-productivity" element={<ReportRoleGuard reportId="hr-bcba-productivity"><HrBcbaProductivityDashboard /></ReportRoleGuard>} />
                  <Route path="/reports/bcba-productivity-report" element={<BcbaProductivityReport />} />
                  <Route path="/reports/bcba-productivity-report-v3" element={<BcbaProductivityReportV3 />} />
                   <Route path="/reports/cancellation-command-center" element={<CancellationCommandCenter />} />
