@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Send, ShieldAlert, CalendarClock, Flame } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
-import { CMPage, Pill, priorityTone, statusTone, FormDialog, familyOptions, familyMap } from "./_shared";
+import { CMPage, Pill, priorityTone, statusTone, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -12,8 +12,8 @@ export default function StaffingCoordinationPage() {
   const [followUpOpen, setFollowUpOpen] = useState(false);
   const [escalateOpen, setEscalateOpen] = useState(false);
 
-  const options = familyOptions(w.assignments);
-  const fam = familyMap(w.assignments);
+  const options = familySelectOptions(w.assignments);
+  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
 
   const openStaffing = w.openHandoffs.filter((h) => h.to_department === "staffing" || h.handoff_type === "staffing_update");
   const staffIssues = w.openServiceIssues.filter((i) => i.issue_type === "staffing" || i.owner_department === "staffing");
@@ -69,40 +69,40 @@ export default function StaffingCoordinationPage() {
 
       <FormDialog open={requestOpen} onOpenChange={setRequestOpen} title="Request staffing update" submitLabel="Send"
         fields={[
-          { key: "client_name", label: "Family / client", type: "select", options },
+          { key: "family", label: "Family / client", type: "select", options },
           { key: "title", label: "Title", required: true },
           { key: "request_note", label: "Details", type: "textarea", required: true },
           { key: "priority", label: "Priority", type: "select", options: ["low","normal","high","urgent"], defaultValue: "normal" },
         ]}
-        onSubmit={async (v) => { const cid = v.client_name ? fam.get(v.client_name) ?? null : null; await w.requestStaffingUpdate({ ...v, client_id: cid, client_name: v.client_name || null } as any); toast.success("Sent to Staffing"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.requestStaffingUpdate({ ...rest, ...familyContext(pickFamily(v)) } as any); toast.success("Sent to Staffing"); }}
       />
       <FormDialog open={issueOpen} onOpenChange={setIssueOpen} title="Log family staffing concern" submitLabel="Log"
         fields={[
-          { key: "client_name", label: "Family / client", type: "select", options },
+          { key: "family", label: "Family / client", type: "select", options },
           { key: "title", label: "Title", required: true },
           { key: "description", label: "Description", type: "textarea" },
           { key: "severity", label: "Severity", type: "select", options: ["low","medium","high","urgent"], defaultValue: "medium" },
           { key: "parent_impact", label: "Parent impact" },
         ]}
-        onSubmit={async (v) => { const cid = v.client_name ? fam.get(v.client_name) ?? null : null; await w.createServiceIssue({ ...v, client_id: cid, client_name: v.client_name || null, issue_type: "staffing", owner_department: "staffing", status: "open" } as any); toast.success("Issue logged"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createServiceIssue({ ...rest, ...familyContext(pickFamily(v)), issue_type: "staffing", owner_department: "staffing", status: "open" } as any); toast.success("Issue logged"); }}
       />
       <FormDialog open={followUpOpen} onOpenChange={setFollowUpOpen} title="Staffing follow-up" submitLabel="Create"
         fields={[
-          { key: "client_name", label: "Family / client", type: "select", options },
+          { key: "family", label: "Family / client", type: "select", options },
           { key: "title", label: "Title", required: true },
           { key: "priority", label: "Priority", type: "select", options: ["low","normal","high","urgent"], defaultValue: "normal" },
           { key: "due_at", label: "Due", type: "datetime" },
         ]}
-        onSubmit={async (v) => { const cid = v.client_name ? fam.get(v.client_name) ?? null : null; await w.createFollowUp({ ...v, client_id: cid, client_name: v.client_name || null, category: "staffing", status: "open", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any); toast.success("Follow-up created"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createFollowUp({ ...rest, ...familyContext(pickFamily(v)), category: "staffing", status: "open", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any); toast.success("Follow-up created"); }}
       />
       <FormDialog open={escalateOpen} onOpenChange={setEscalateOpen} title="Escalate staffing issue" submitLabel="Escalate"
         fields={[
-          { key: "client_name", label: "Family / client", type: "select", options },
+          { key: "family", label: "Family / client", type: "select", options },
           { key: "reason", label: "Reason", required: true },
           { key: "summary", label: "Summary", type: "textarea" },
           { key: "severity", label: "Severity", type: "select", options: ["low","medium","high","urgent"], defaultValue: "high" },
         ]}
-        onSubmit={async (v) => { const cid = v.client_name ? fam.get(v.client_name) ?? null : null; await w.createEscalation({ ...v, client_id: cid, client_name: v.client_name || null, escalation_type: "staffing_concern", owner_department: "staffing", status: "open" } as any); toast.success("Escalated"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createEscalation({ ...rest, ...familyContext(pickFamily(v)), escalation_type: "staffing_concern", owner_department: "staffing", status: "open" } as any); toast.success("Escalated"); }}
       />
     </CMPage>
   );
