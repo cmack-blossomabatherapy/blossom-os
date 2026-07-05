@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MessageSquare, Plus, Search, Phone, Mail, Voicemail, Users, ArrowDown, ArrowUp } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
-import { CMPage, Pill, FilterBar, FormDialog, familyOptions, familyMap } from "./_shared";
+import { CMPage, Pill, FilterBar, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,8 +26,8 @@ export default function ParentCommunicationPage() {
   const [needsFollowUp, setNeedsFollowUp] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
 
-  const fam = familyMap(w.assignments);
-  const options = familyOptions(w.assignments);
+  const options = familySelectOptions(w.assignments);
+  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
 
   const rows = w.communications.filter((c) => {
     if (channel !== "all" && c.channel !== channel) return false;
@@ -75,11 +75,12 @@ export default function ParentCommunicationPage() {
                 <Pill tone={c.direction === "inbound" ? "warm" : c.direction === "outbound" ? "calm" : "violet"}><span className="inline-flex items-center gap-1">{c.direction === "inbound" ? <ArrowDown className="h-2.5 w-2.5" /> : c.direction === "outbound" ? <ArrowUp className="h-2.5 w-2.5" /> : null} {c.direction}</span></Pill>
                 {c.sentiment && <Pill tone={c.sentiment === "upset" ? "alert" : c.sentiment === "concerned" ? "amber" : "calm"}>{c.sentiment}</Pill>}
                 {c.needs_followup && <Pill tone="amber">Follow-up needed{c.followup_at ? ` · ${new Date(c.followup_at).toLocaleDateString()}` : ""}</Pill>}
+                {(c as any).follow_up_id && <Pill tone="cool">Linked follow-up</Pill>}
                 {c.outcome && <span className="text-[10.5px] text-muted-foreground">Outcome: {c.outcome}</span>}
               </div>
               {c.needs_followup && (
                 <div className="mt-2">
-                  <Button size="sm" variant="ghost" onClick={async () => { await w.updateCommunication(c.id, { needs_followup: false }); toast.success("Marked resolved"); }}>Mark follow-up resolved</Button>
+                  <Button size="sm" variant="ghost" onClick={async () => { await w.resolveCommunicationFollowUp(c.id); toast.success("Marked resolved"); }}>Mark follow-up resolved</Button>
                 </div>
               )}
             </div>
@@ -94,7 +95,7 @@ export default function ParentCommunicationPage() {
         open={addOpen} onOpenChange={setAddOpen}
         title="Log parent communication" submitLabel="Log"
         fields={[
-          { key: "client_name", label: "Family / client", type: "select", options },
+          { key: "family", label: "Family / client", type: "select", options },
           { key: "channel", label: "Channel", type: "select", required: true, options: CHANNELS, defaultValue: "call" },
           { key: "direction", label: "Direction", type: "select", required: true, options: DIRECTIONS, defaultValue: "inbound" },
           { key: "contact_name", label: "Contact name" },
@@ -107,24 +108,17 @@ export default function ParentCommunicationPage() {
           { key: "create_followup", label: "Also create a follow-up task", type: "checkbox", defaultValue: true },
         ]}
         onSubmit={async (v) => {
-          const client_id = v.client_name ? fam.get(v.client_name) ?? null : null;
-          await w.logCommunication({
-            client_name: v.client_name || null, client_id,
+          const opt = pickFamily(v);
+          const ctx = familyContext(opt);
+          await w.logCommunicationWithFollowUp({
+            ...ctx,
             channel: v.channel, direction: v.direction,
             contact_name: v.contact_name || null, subject: v.subject || null,
             summary: v.summary, outcome: v.outcome || null, sentiment: v.sentiment || null,
             needs_followup: !!v.needs_followup,
             followup_at: v.followup_at ? new Date(v.followup_at).toISOString() : null,
-          } as any);
-          if (v.needs_followup && v.create_followup) {
-            await w.createFollowUp({
-              client_id, client_name: v.client_name || null,
-              title: v.subject || `Follow up with ${v.client_name ?? "family"}`,
-              category: "family_check_in", priority: "normal", status: "open",
-              due_at: v.followup_at ? new Date(v.followup_at).toISOString() : null,
-              description: v.summary,
-            } as any);
-          }
+            create_followup: !!v.create_followup,
+          });
           toast.success("Communication logged");
         }}
       />
