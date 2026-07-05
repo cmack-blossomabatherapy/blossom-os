@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Heart, Plus, CheckCircle2, Flame, ShieldAlert, CalendarClock } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
-import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familyOptions, familyMap } from "./_shared";
+import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,8 +20,8 @@ export default function FamilySupportPage() {
   const [issueFrom, setIssueFrom] = useState<string | null>(null);
   const [escalationFrom, setEscalationFrom] = useState<string | null>(null);
 
-  const options = familyOptions(w.assignments);
-  const fam = familyMap(w.assignments);
+  const options = familySelectOptions(w.assignments);
+  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
   const noteById = (id: string | null) => w.notes.find((n) => n.id === id);
 
   const rows = w.notes.filter((n) => {
@@ -82,7 +82,7 @@ export default function FamilySupportPage() {
         open={addOpen} onOpenChange={setAddOpen}
         title="Add case note" submitLabel="Add note"
         fields={[
-          { key: "client_name", label: "Family / client", type: "select", options },
+          { key: "family", label: "Family / client", type: "select", options },
           { key: "note_type", label: "Type", type: "select", options: NOTE_TYPES, defaultValue: "family_check_in" },
           { key: "title", label: "Title" },
           { key: "body", label: "Note", type: "textarea", required: true },
@@ -91,9 +91,9 @@ export default function FamilySupportPage() {
           { key: "due_at", label: "Due", type: "date" },
         ]}
         onSubmit={async (v) => {
-          const client_id = v.client_name ? fam.get(v.client_name) ?? null : null;
+          const ctx = familyContext(pickFamily(v));
           await w.createNote({
-            client_name: v.client_name || null, client_id,
+            ...ctx,
             note_type: v.note_type || "general", title: v.title || null,
             body: v.body, priority: v.priority || null, status: v.status || "open",
             due_at: v.due_at ? new Date(v.due_at).toISOString() : null,
