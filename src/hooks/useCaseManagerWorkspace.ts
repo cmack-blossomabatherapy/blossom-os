@@ -249,13 +249,13 @@ export function useCaseManagerWorkspace() {
       if (!input.client_id || !UUID_RE.test(input.client_id)) return;
       try {
         const description = input.body
-          ? `${input.title} — ${input.body}`
+          ? `${input.title} - ${input.body}`
           : input.title;
         await sb.from("client_timeline").insert({
           client_id: input.client_id,
           event_type: input.event_type,
           description: description.slice(0, 2000),
-          user_name: "Case Manager · Blossom OS",
+          user_name: "Case Manager - Blossom OS",
           created_by: userId ?? undefined,
         } as any);
       } catch (err) {
@@ -449,7 +449,7 @@ export function useCaseManagerWorkspace() {
       await writeClientTimelineEvent({
         client_id: (data as any)?.client_id ?? input.client_id ?? null,
         event_type: evType,
-        title: `Handoff → ${input.to_department}: ${input.title}`,
+        title: `Handoff -> ${input.to_department}: ${input.title}`,
         body: (input as any).request_note ?? null,
       });
       await refresh();
@@ -479,6 +479,87 @@ export function useCaseManagerWorkspace() {
       await refresh();
     },
     [refresh],
+  );
+
+  /**
+   * Log a parent communication and, when the caller asks for a follow-up
+   * task, create it AND link the two rows together. The link lives in
+   * two columns added by the Pass 4 migration:
+   *   - case_manager_communications.follow_up_id
+   *   - case_manager_follow_ups.source_communication_id
+   *
+   * This makes resolveCommunicationFollowUp() below able to close the
+   * linked follow-up in the same click, so the two states never drift.
+   */
+  const logCommunicationWithFollowUp = useCallback(
+    async (input: Partial<CMCommunication> & {
+      summary: string;
+      create_followup?: boolean;
+    }): Promise<CMCommunication> => {
+      const { create_followup, ...commInput } = input;
+      const comm = await logCommunication(commInput);
+      if (input.needs_followup && create_followup) {
+        const fu = await createFollowUp({
+          client_id: comm.client_id ?? null,
+          client_name: comm.client_name ?? null,
+          title: comm.subject || `Follow up with ${comm.client_name ?? "family"}`,
+          category: "family_check_in",
+          priority: "normal",
+          status: "open",
+          due_at: comm.followup_at ?? null,
+          description: comm.summary,
+          // Durable link back to the communication that spawned the follow-up.
+          source_communication_id: comm.id,
+        } as any);
+        // Link forward: stamp the communication with the follow-up id.
+        await sb.from("case_manager_communications")
+          .update({ follow_up_id: (fu as any).id })
+          .eq("id", comm.id);
+        await refresh();
+      }
+      return comm;
+    },
+    [logCommunication, createFollowUp, refresh],
+  );
+
+  /**
+   * Resolve a communication's "needs follow-up" flag AND close the linked
+   * follow-up (if there is one) in a single click. Writes a timeline event
+   * so the client history reflects both sides of the resolution.
+   */
+  const resolveCommunicationFollowUp = useCallback(
+    async (communicationId: string, resolution_note?: string): Promise<void> => {
+      const comm = communications.find((c) => c.id === communicationId);
+      const linkedFollowUpId = (comm as any)?.follow_up_id as string | null | undefined;
+      // 1) Flip needs_followup off (source of truth on the comm row).
+      const { error: commErr } = await sb
+        .from("case_manager_communications")
+        .update({ needs_followup: false })
+        .eq("id", communicationId);
+      if (commErr) throw commErr;
+      // 2) Close the linked follow-up if still open.
+      if (linkedFollowUpId) {
+        const linked = followUps.find((f) => f.id === linkedFollowUpId);
+        if (linked && !["completed", "resolved", "closed"].includes(linked.status)) {
+          await sb.from("case_manager_follow_ups")
+            .update({
+              status: "completed",
+              completed_at: new Date().toISOString(),
+              completion_note: resolution_note ?? "Resolved via linked parent communication",
+              updated_by: userId,
+            })
+            .eq("id", linkedFollowUpId);
+        }
+      }
+      await writeClientTimelineEvent({
+        client_id: comm?.client_id ?? null,
+        event_type: "note",
+        title: "Parent communication follow-up resolved",
+        body: resolution_note ?? comm?.subject ?? null,
+      });
+      await refresh();
+    },
+    [communications, followUps, userId, writeClientTimelineEvent, refresh],
   );
 
   const createAssignment = useCallback(
@@ -677,6 +758,8 @@ export function useCaseManagerWorkspace() {
     updateFollowUp,
     logCommunication,
     updateCommunication,
+    logCommunicationWithFollowUp,
+    resolveCommunicationFollowUp,
     createServiceIssue,
     updateServiceIssue,
     resolveServiceIssue,
