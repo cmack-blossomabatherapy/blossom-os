@@ -530,7 +530,7 @@ export function useReadinessTrainees(): {
           setState({ trainees: [], loading: false, empty: true, error: error.message });
           return;
         }
-        const rows = (data ?? []) as ReadinessRow[];
+        const rows = (data ?? []) as unknown as ReadinessRow[];
         const trainees = rows.map(rowToTrainee);
         setState({ trainees, loading: false, empty: trainees.length === 0, error: null });
       } catch (e) {
