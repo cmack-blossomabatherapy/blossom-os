@@ -115,13 +115,13 @@ export default function OSRBTTrainingAcademy() {
           <ChevronRight className="size-5 shrink-0 text-primary transition group-hover:translate-x-0.5" />
         </Link>
 
-        {stats.nextModule && <NextActionCard module={stats.nextModule} />}
+        {stats.nextModule && <NextActionCard module={stats.nextModule} trackId={assignedId} />}
 
         <Ownership />
 
         <Tabs value={tab} onChange={setTab} />
 
-        {tab === "journey" && <JourneyTab path={path} />}
+        {tab === "journey" && <JourneyTab path={path} trackId={assignedId} />}
         {tab === "resources" && (
           <ResourcesTab isAdmin={isAdmin} path={path} currentModule={stats.nextModule ?? null} />
         )}
