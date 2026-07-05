@@ -85,6 +85,8 @@ export interface CentralReachOps {
     rbtCount: number;
     bcbaCount: number;
   };
+  lastSyncedAt: string | null;
+  refresh: () => void;
 }
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
