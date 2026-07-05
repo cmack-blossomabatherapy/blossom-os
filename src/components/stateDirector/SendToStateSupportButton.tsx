@@ -24,6 +24,13 @@ interface Props {
   linkedClientId?: string;
   linkedLeadId?: string;
   linkedCandidateId?: string;
+  linkedAuthorizationId?: string;
+  linkedSchedulingItemId?: string;
+  defaultTitle?: string;
+  defaultDescription?: string;
+  defaultPriority?: Priority;
+  sourceModule?: string;
+  metadata?: Record<string, unknown>;
   buttonLabel?: string;
   variant?: React.ComponentProps<typeof Button>["variant"];
   size?: React.ComponentProps<typeof Button>["size"];
@@ -42,23 +49,40 @@ const DEPARTMENTS: Department[] = [
  * readiness fields.
  */
 export function SendToStateSupportButton(props: Props) {
-  const { fromDepartment, defaultKind = "task", buttonLabel = "Send to State Support" } = props;
+  const {
+    fromDepartment, defaultKind = "task",
+    buttonLabel = "Send to State Support",
+    defaultTitle = "", defaultDescription = "", defaultPriority = "medium",
+    sourceModule, metadata,
+  } = props;
   const { activeState, role } = useOSRole();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<Kind>(defaultKind);
   const [state, setState] = useState<StateCode>((activeState as StateCode) || "GA");
   const [toDepartment, setToDepartment] = useState<Department>("Operations");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<Priority>("medium");
+  const [title, setTitle] = useState(defaultTitle);
+  const [description, setDescription] = useState(defaultDescription);
+  const [priority, setPriority] = useState<Priority>(defaultPriority);
   const [submitting, setSubmitting] = useState(false);
 
   const actor = String(role || "Operator").replace(/_/g, " ");
 
   const reset = () => {
-    setTitle(""); setDescription(""); setPriority("medium");
+    setTitle(defaultTitle); setDescription(defaultDescription); setPriority(defaultPriority);
     setKind(defaultKind); setToDepartment("Operations");
+  };
+
+  const linked = {
+    linkedClientId: props.linkedClientId,
+    linkedLeadId: props.linkedLeadId,
+    linkedCandidateId: props.linkedCandidateId,
+    linkedAuthorizationId: props.linkedAuthorizationId,
+    linkedSchedulingItemId: props.linkedSchedulingItemId,
+  };
+  const meta = {
+    sourceModule: sourceModule ?? fromDepartment.toLowerCase(),
+    metadata,
   };
 
   const submit = async () => {
@@ -72,18 +96,14 @@ export function SendToStateSupportButton(props: Props) {
         stateDirectorStore.createTask({
           state, title: title.trim(), description: description.trim() || undefined,
           department: fromDepartment, priority, createdBy: actor,
-          linkedClientId: props.linkedClientId,
-          linkedLeadId: props.linkedLeadId,
-          linkedCandidateId: props.linkedCandidateId,
+          ...linked, ...meta,
         });
         toast({ title: "Sent to State Support", description: "Task queued for the State Director." });
       } else if (kind === "escalation") {
         stateDirectorStore.createEscalation({
           state, title: title.trim(), description: description.trim() || undefined,
           department: fromDepartment, priority, createdBy: actor,
-          linkedClientId: props.linkedClientId,
-          linkedLeadId: props.linkedLeadId,
-          linkedCandidateId: props.linkedCandidateId,
+          ...linked, ...meta,
         });
         toast({ title: "Escalation opened", description: "State Director has been notified." });
       } else {
@@ -91,9 +111,7 @@ export function SendToStateSupportButton(props: Props) {
           state, fromDepartment, toDepartment,
           subject: title.trim(), body: description.trim() || undefined,
           priority, createdBy: actor,
-          linkedClientId: props.linkedClientId,
-          linkedLeadId: props.linkedLeadId,
-          linkedCandidateId: props.linkedCandidateId,
+          ...linked, ...meta,
         });
         toast({ title: "Handoff delivered", description: `Routed to ${toDepartment}.` });
       }
