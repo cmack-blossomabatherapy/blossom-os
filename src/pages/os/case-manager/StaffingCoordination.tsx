@@ -31,9 +31,13 @@ export default function StaffingCoordinationPage() {
       if (clientId && p.client_id) return p.client_id === clientId;
       return clientName ? (p.client_name ?? "").toLowerCase().trim() === (clientName ?? "").toLowerCase().trim() : false;
     });
-    const pairing = clientName
-      ? cr.clientPairings.find((c) => c.clientName.toLowerCase().trim() === clientName.toLowerCase().trim()) ?? null
-      : null;
+    let pairing: import("@/hooks/useCentralReachOps").ClientPairing | null = null;
+    if (clientName) {
+      const needle = clientName.toLowerCase().trim();
+      for (const p of cr.pairingsByClient.values()) {
+        if (p.clientName.toLowerCase().trim() === needle) { pairing = p; break; }
+      }
+    }
     const assignedRbts = [
       ...matches.filter((m) => m.status === "Assigned").map((m) => m.rbt_name),
       ...(pairing?.rbtName ? [pairing.rbtName] : []),
