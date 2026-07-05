@@ -437,7 +437,7 @@ export default function OSHRTrainingAcademy() {
                   { label: "Review overdue onboarding training", to: "/hr/training-certifications" },
                   { label: "Complete incomplete HR journeys",    to: "/hr/new-hires" },
                   { label: "Renew certifications expiring soon", to: "/hr/compliance" },
-                  { label: "Audit most-assigned modules",        to: "/hr/training-academy" },
+                  { label: "Audit most-assigned modules",        to: "/hr/training-center" },
                   { label: "Check onboarding readiness",         to: "/hr/new-hires" },
                 ].map((p) => (
                   <Link key={p.label} to={p.to} className="block w-full text-left rounded-lg px-2 py-1.5 text-[12.5px] text-muted-foreground hover:bg-card hover:text-foreground transition-colors">
