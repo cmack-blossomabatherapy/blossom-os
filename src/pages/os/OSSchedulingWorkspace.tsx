@@ -225,13 +225,30 @@ export default function OSSchedulingWorkspace() {
                   <EmptyState label="No coverage cases match your filters." />
                 )}
                 {filtered.map(({ c, b }) => (
-                  <QueueCard
-                    key={c.id}
-                    client={c}
-                    bucket={b}
-                    active={c.id === selectedId}
-                    onSelect={() => selectClient(c.id)}
-                  />
+                  <div key={c.id} className="relative">
+                    <QueueCard
+                      client={c}
+                      bucket={b}
+                      active={c.id === selectedId}
+                      onSelect={() => selectClient(c.id)}
+                    />
+                    <div className="absolute right-8 top-2">
+                      <SendToStateSupportButton
+                        fromDepartment="Scheduling"
+                        linkedClientId={String(c.id)}
+                        linkedSchedulingItemId={String(c.id)}
+                        defaultTitle={`Scheduling support: ${c.childName}`}
+                        defaultDescription={`State: ${c.state} · Risk: ${b.replace(/_/g," ")} · BCBA: ${c.bcba ?? "unassigned"} · Waiting: ${c.daysInStage}d`}
+                        defaultPriority={b === "coverage_risk" ? "high" : "medium"}
+                        sourceModule="scheduling"
+                        metadata={{ clientName: c.childName, state: c.state, bucket: b, currentOwner: c.bcba, authStatus: c.authStatus }}
+                        buttonLabel="State"
+                        variant="ghost"
+                        size="sm"
+                        className="text-[10px] h-6 px-1.5"
+                      />
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
