@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { CalendarClock, Plus, CheckCircle2, RotateCcw, Undo2 } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
-import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familyOptions, familyMap } from "./_shared";
+import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,8 +19,8 @@ export default function ProgressFollowUpsPage() {
   const [completeId, setCompleteId] = useState<string | null>(null);
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
 
-  const options = familyOptions(w.assignments);
-  const fam = familyMap(w.assignments);
+  const options = familySelectOptions(w.assignments);
+  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
 
   const now = Date.now();
   const startToday = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }, []);
@@ -114,7 +114,7 @@ export default function ProgressFollowUpsPage() {
         open={addOpen} onOpenChange={setAddOpen}
         title="New follow-up" submitLabel="Create"
         fields={[
-          { key: "client_name", label: "Family / client", type: "select", options },
+          { key: "family", label: "Family / client", type: "select", options },
           { key: "title", label: "Title", required: true },
           { key: "description", label: "Details", type: "textarea" },
           { key: "category", label: "Category", type: "select", options: CATEGORIES, defaultValue: "family_check_in" },
@@ -122,8 +122,8 @@ export default function ProgressFollowUpsPage() {
           { key: "due_at", label: "Due", type: "datetime" },
         ]}
         onSubmit={async (v) => {
-          const client_id = v.client_name ? fam.get(v.client_name) ?? null : null;
-          await w.createFollowUp({ ...v, client_id, status: "open", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any);
+          const { family: _f, ...rest } = v;
+          await w.createFollowUp({ ...rest, ...familyContext(pickFamily(v)), status: "open", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any);
           toast.success("Follow-up created");
         }}
       />
