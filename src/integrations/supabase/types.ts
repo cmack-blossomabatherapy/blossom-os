@@ -3135,6 +3135,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           direction: string
+          follow_up_id: string | null
           followup_at: string | null
           id: string
           linked_escalation_id: string | null
@@ -3162,6 +3163,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           direction?: string
+          follow_up_id?: string | null
           followup_at?: string | null
           id?: string
           linked_escalation_id?: string | null
@@ -3189,6 +3191,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           direction?: string
+          follow_up_id?: string | null
           followup_at?: string | null
           id?: string
           linked_escalation_id?: string | null
@@ -3205,7 +3208,15 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "case_manager_communications_follow_up_id_fkey"
+            columns: ["follow_up_id"]
+            isOneToOne: false
+            referencedRelation: "case_manager_follow_ups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       case_manager_community_resources: {
         Row: {
@@ -3378,6 +3389,7 @@ export type Database = {
           metadata: Json
           priority: string
           recurring_cadence: string | null
+          source_communication_id: string | null
           state: string | null
           status: string
           title: string
@@ -3404,6 +3416,7 @@ export type Database = {
           metadata?: Json
           priority?: string
           recurring_cadence?: string | null
+          source_communication_id?: string | null
           state?: string | null
           status?: string
           title: string
@@ -3430,13 +3443,22 @@ export type Database = {
           metadata?: Json
           priority?: string
           recurring_cadence?: string | null
+          source_communication_id?: string | null
           state?: string | null
           status?: string
           title?: string
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "case_manager_follow_ups_source_communication_id_fkey"
+            columns: ["source_communication_id"]
+            isOneToOne: false
+            referencedRelation: "case_manager_communications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       case_manager_handoffs: {
         Row: {
