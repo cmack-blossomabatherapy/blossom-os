@@ -2461,6 +2461,57 @@ export type Database = {
         }
         Relationships: []
       }
+      bcba_workflow_activity_events: {
+        Row: {
+          actor_id: string | null
+          bcba_id: string | null
+          centralreach_client_id: string | null
+          centralreach_sync_status: string | null
+          client_id: string | null
+          client_name: string | null
+          client_name_key: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          source_record_id: string | null
+          source_table: string
+          summary: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          bcba_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          client_name_key?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          source_record_id?: string | null
+          source_table: string
+          summary?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          bcba_id?: string | null
+          centralreach_client_id?: string | null
+          centralreach_sync_status?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          client_name_key?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          source_record_id?: string | null
+          source_table?: string
+          summary?: string | null
+        }
+        Relationships: []
+      }
       bd_territories: {
         Row: {
           boundary_geojson: Json | null
