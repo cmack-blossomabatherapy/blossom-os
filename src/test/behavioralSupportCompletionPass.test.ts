@@ -175,3 +175,105 @@ describe("Behavioral Support pass 2 hardening", () => {
     expect(ids).toContain("bcba-productivity-report-v3");
   });
 });
+
+describe("Behavioral Support pass 3 — case workflow, plan edit, task activity, no reload", () => {
+  const pagesDir = "src/pages/os/behavioral-support";
+  const dash = read(`${pagesDir}/BehavioralSupportDashboard.tsx`);
+  const plans = read(`${pagesDir}/BehavioralSupportPlans.tsx`);
+  const escalations = read(`${pagesDir}/BehavioralSupportEscalations.tsx`);
+  const supervision = read(`${pagesDir}/BehavioralSupportSupervisionVisibility.tsx`);
+  const dialogs = read(`${pagesDir}/_dialogs.tsx`);
+  const hook = read(`${pagesDir}/useBehavioralSupportData.ts`);
+
+  it("Dashboard exposes a New Case action and imports the case dialog", () => {
+    expect(dash).toMatch(/New Case/);
+    expect(dash).toMatch(/BehavioralSupportCaseDialog/);
+  });
+
+  it("Dashboard calls createCase to persist new cases", () => {
+    expect(dash).toMatch(/bs\.createCase\(/);
+  });
+
+  it("Dashboard renders a case detail drawer / CaseDetailDrawer component", () => {
+    expect(dash).toMatch(/CaseDetailDrawer/);
+  });
+
+  it("BehavioralSupportCaseDialog is defined and captures the required case fields", () => {
+    expect(dialogs).toMatch(/export function BehavioralSupportCaseDialog/);
+    for (const field of [
+      "client_name",
+      "state",
+      "bcba_name",
+      "rbt_name",
+      "severity",
+      "source_system",
+      "centralreach_client_id",
+      "primary_concern",
+      "initial_note",
+    ]) {
+      expect(dialogs, `case dialog missing ${field}`).toMatch(new RegExp(field));
+    }
+  });
+
+  it("Plans page has an Edit plan control and calls updatePlan", () => {
+    expect(plans).toMatch(/Edit plan/);
+    expect(plans).toMatch(/bs\.updatePlan\(/);
+  });
+
+  it("useBehavioralSupportData.updatePlanTask logs activity with task_updated / task_completed / task_reopened / task_blocked", () => {
+    expect(hook).toMatch(/const updatePlanTask/);
+    expect(hook).toMatch(/task_updated/);
+    expect(hook).toMatch(/task_completed/);
+    expect(hook).toMatch(/task_reopened/);
+    expect(hook).toMatch(/task_blocked/);
+    // The updatePlanTask body must reach logActivity
+    const body = hook.split(/const updatePlanTask\s*=\s*useCallback\(/)[1]?.split(/\n\s*const\s+create/)[0] ?? "";
+    expect(body).toMatch(/logActivity\(/);
+  });
+
+  it("SupervisionVisibility no longer calls window.location.reload", () => {
+    expect(supervision).not.toMatch(/window\.location\.reload/);
+    expect(supervision).toMatch(/cr\.refresh\(\)/);
+  });
+
+  it("Supervision Visibility surfaces CentralReach source note and flagged counts", () => {
+    expect(supervision).toMatch(/CentralReach-derived/);
+    expect(supervision).toMatch(/Flagged clients:/);
+  });
+
+  it("Escalations page renders a detail drawer", () => {
+    expect(escalations).toMatch(/EscalationDetailDrawer/);
+  });
+
+  it("Follow-up dialog captures follow-up type, priority, due date, and notes", () => {
+    const fu = dialogs.split(/export function BehavioralSupportFollowupDialog/)[1] ?? "";
+    expect(fu).toMatch(/Follow-up type/);
+    expect(fu).toMatch(/Priority/);
+    expect(fu).toMatch(/bs-fu-due/);
+    expect(fu).toMatch(/bs-fu-notes/);
+  });
+
+  it("Follow-up complete dialog supports outcome, resolved, next-step, next-date, and note", () => {
+    const done = dialogs.split(/export function BehavioralSupportFollowupCompleteDialog/)[1]?.split(/export function/)[0] ?? "";
+    expect(done).toMatch(/Outcome/);
+    expect(done).toMatch(/Resolved/);
+    expect(done).toMatch(/Next step needed/);
+    expect(done).toMatch(/nextFollowupDueAt/);
+  });
+
+  it("Reports remain unified at /reports and no behavioral-support/reports route exists", () => {
+    const app = read("src/App.tsx");
+    expect(app).toMatch(/path="\/reports"/);
+    expect(app).not.toContain('path="/behavioral-support/reports"');
+    const menu = ROLE_MENUS.behavioral_support!;
+    const paths = menu.sections.flatMap((s) => s.items.map((i) => i.path));
+    expect(paths).not.toContain("/behavioral-support/reports");
+  });
+
+  it("No behavioral support page uses browser prompt()", () => {
+    for (const file of [dash, plans, escalations, supervision, dialogs]) {
+      const stripped = file.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+      expect(stripped).not.toMatch(/\bprompt\s*\(/);
+    }
+  });
+});
