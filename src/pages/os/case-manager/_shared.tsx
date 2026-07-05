@@ -102,7 +102,13 @@ export type FieldDef = {
   key: string;
   label: string;
   type?: "text" | "textarea" | "select" | "date" | "datetime" | "checkbox";
-  options?: string[];
+  /**
+   * Select options. Either a plain string list (legacy behavior — value === label)
+   * or a `{ value, label }` list where `value` is the durable identifier that
+   * gets submitted. Case Manager family selects use the object form so we
+   * submit a stable client_id / assignment_id, not a display name.
+   */
+  options?: Array<string | { value: string; label: string }>;
   required?: boolean;
   placeholder?: string;
   defaultValue?: any;
@@ -162,7 +168,12 @@ export function FormDialog({
               ) : f.type === "select" ? (
                 <Select value={values[f.key] ?? ""} onValueChange={(v) => setValues({ ...values, [f.key]: v })}>
                   <SelectTrigger><SelectValue placeholder={f.placeholder ?? "Select…"} /></SelectTrigger>
-                  <SelectContent>{(f.options ?? []).map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {(f.options ?? []).map((o) => {
+                      const opt = typeof o === "string" ? { value: o, label: o } : o;
+                      return <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>;
+                    })}
+                  </SelectContent>
                 </Select>
               ) : f.type === "checkbox" ? (
                 <div className="flex items-center gap-2">
@@ -194,16 +205,71 @@ export function FilterBar({ children }: { children: React.ReactNode }) {
   return <div className="mb-3 flex flex-wrap items-center gap-2">{children}</div>;
 }
 
-/* ------------ Family option list helper ------------ */
+/* ------------ Family option list helper ------------
+ *
+ * Every Case Manager form that picks a family must use a durable identifier
+ * as the select value (client_id when present, otherwise assignment.id) so
+ * duplicate family names never route work to the wrong client.
+ */
 
-export function familyOptions(assignments: { client_id: string | null; client_name: string | null }[]) {
-  return assignments.filter((a) => a.client_name).map((a) => a.client_name as string);
+export type CMAssignmentLike = {
+  id: string;
+  client_id: string | null;
+  client_name: string | null;
+  state: string | null;
+  centralreach_client_id?: string | null;
+};
+
+export type CMFamilyOption = {
+  value: string;              // client_id if present, else assignment id
+  label: string;              // "Smith Family - NC - CR 12345"
+  client_id: string | null;
+  client_name: string | null;
+  state: string | null;
+  assignment_id: string;
+  centralreach_client_id: string | null;
+};
+
+export function familySelectOptions(assignments: CMAssignmentLike[]): CMFamilyOption[] {
+  return assignments
+    .filter((a) => a.client_name)
+    .map((a) => {
+      const value = a.client_id ?? a.id;
+      const parts = [a.client_name as string];
+      if (a.state) parts.push(a.state);
+      if (a.centralreach_client_id) parts.push(`CR ${a.centralreach_client_id}`);
+      return {
+        value,
+        label: parts.join(" - "),
+        client_id: a.client_id,
+        client_name: a.client_name,
+        state: a.state,
+        assignment_id: a.id,
+        centralreach_client_id: a.centralreach_client_id ?? null,
+      };
+    });
 }
 
-export function familyMap(assignments: { client_id: string | null; client_name: string | null }[]) {
-  const map = new Map<string, string | null>();
-  assignments.forEach((a) => { if (a.client_name) map.set(a.client_name, a.client_id); });
-  return map;
+export function familyOptionByValue(
+  assignments: CMAssignmentLike[],
+  value: string | null | undefined,
+): CMFamilyOption | null {
+  if (!value) return null;
+  return familySelectOptions(assignments).find((o) => o.value === value) ?? null;
+}
+
+/**
+ * Spread this onto the payload of any Case Manager write that carries client
+ * identity so we always store the durable client_id (when known) alongside a
+ * display-friendly client_name and state. Never sends the raw option value as
+ * client_name.
+ */
+export function familyContext(opt: CMFamilyOption | null | undefined) {
+  return {
+    client_id: opt?.client_id ?? null,
+    client_name: opt?.client_name ?? null,
+    state: opt?.state ?? null,
+  };
 }
 
 /* ------------ Data table ------------ */
