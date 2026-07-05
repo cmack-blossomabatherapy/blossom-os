@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ShieldAlert, Plus, CheckCircle2, Send, CalendarClock, Flame } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
-import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familyOptions, familyMap } from "./_shared";
+import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,8 +25,8 @@ export default function ServiceIssuesPage() {
   const [escalateId, setEscalateId] = useState<string | null>(null);
   const [handoffId, setHandoffId] = useState<string | null>(null);
 
-  const options = familyOptions(w.assignments);
-  const fam = familyMap(w.assignments);
+  const options = familySelectOptions(w.assignments);
+  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
   const issueById = (id: string | null) => w.serviceIssues.find((s) => s.id === id);
 
   const rows = w.serviceIssues.filter((i) => {
@@ -79,7 +79,7 @@ export default function ServiceIssuesPage() {
 
       <FormDialog open={addOpen} onOpenChange={setAddOpen} title="New service issue" submitLabel="Create"
         fields={[
-          { key: "client_name", label: "Family / client", type: "select", options },
+          { key: "family", label: "Family / client", type: "select", options },
           { key: "title", label: "Title", required: true },
           { key: "description", label: "Description", type: "textarea" },
           { key: "issue_type", label: "Type", type: "select", options: TYPES, defaultValue: "scheduling" },
@@ -88,7 +88,7 @@ export default function ServiceIssuesPage() {
           { key: "parent_impact", label: "Parent impact" },
           { key: "due_at", label: "Due", type: "datetime" },
         ]}
-        onSubmit={async (v) => { const cid = v.client_name ? fam.get(v.client_name) ?? null : null; await w.createServiceIssue({ ...v, client_id: cid, client_name: v.client_name || null, status: "open", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any); toast.success("Issue created"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createServiceIssue({ ...rest, ...familyContext(pickFamily(v)), status: "open", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any); toast.success("Issue created"); }}
       />
       {editId && (
         <FormDialog open={!!editId} onOpenChange={(o) => !o && setEditId(null)} title="Edit issue" submitLabel="Save"
