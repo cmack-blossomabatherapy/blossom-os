@@ -38,7 +38,6 @@ describe("Business Development — Completion Pass 5 (Reports hardening)", () =>
       "bd-source-handoff",
       "bd-provider-relationships",
       "bd-community-relationships",
-      "bcba-productivity-report",
       "bcba-productivity-report-v3",
       "cancellation-command-center",
     ]) {
