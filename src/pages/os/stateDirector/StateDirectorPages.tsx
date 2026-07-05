@@ -104,6 +104,26 @@ const fmtDate = (iso?: string) => {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
+function LinkedRefBadges({ row }: { row: OpsTask | Escalation }) {
+  const refs: { label: string; value: string }[] = [];
+  if ((row as any).sourceModule) refs.push({ label: "src", value: String((row as any).sourceModule) });
+  if ((row as any).linkedLeadId) refs.push({ label: "lead", value: String((row as any).linkedLeadId).slice(0, 8) });
+  if ((row as any).linkedClientId) refs.push({ label: "client", value: String((row as any).linkedClientId).slice(0, 8) });
+  if ((row as any).linkedCandidateId) refs.push({ label: "cand", value: String((row as any).linkedCandidateId).slice(0, 8) });
+  if ((row as any).linkedAuthorizationId) refs.push({ label: "auth", value: String((row as any).linkedAuthorizationId).slice(0, 8) });
+  if ((row as any).linkedSchedulingItemId) refs.push({ label: "sched", value: String((row as any).linkedSchedulingItemId).slice(0, 8) });
+  if (!refs.length) return null;
+  return (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {refs.map((r) => (
+        <span key={r.label + r.value} className="text-[10px] uppercase tracking-wide bg-muted/60 text-muted-foreground rounded px-1.5 py-0.5">
+          {r.label}: {r.value}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /* --------------------------------- layout --------------------------------- */
 
 function Shell({ children }: { children: React.ReactNode }) {
