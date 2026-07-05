@@ -754,7 +754,7 @@ export function StateOperationsPage() {
       </SectionCard>
 
       <Card className="p-4 rounded-2xl border-border/60 bg-muted/20 text-xs text-muted-foreground">
-        Viewing as <span className="font-medium">{String(role).replace(/_/g, " ")}</span>{assigned ? ` · state ${assigned}` : ""} · Tasks, escalations, and notes persist to Blossom Cloud · CentralReach integration status: not connected yet — internal ops records will link to CentralReach client context once the connector is live.
+        Viewing as <span className="font-medium">{String(role).replace(/_/g, " ")}</span>{assigned ? ` · state ${assigned}` : ""} · Tasks, escalations, and notes persist to Blossom Cloud · CentralReach context: not connected yet · CentralReach integration status: not connected — internal ops records will link to CentralReach client context once the connector is live.
       </Card>
 
       <CreateEscalationDialog open={escOpen} onOpenChange={setEscOpen} defaultState={stateFilter === "all" ? undefined : stateFilter} />
