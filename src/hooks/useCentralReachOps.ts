@@ -116,6 +116,9 @@ export function useCentralReachOps(opts: { stateFilter?: string | null } = {}): 
   const [rows, setRows] = useState<CRSessionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const refresh = useMemo(() => () => setNonce((n) => n + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -151,16 +154,20 @@ export function useCentralReachOps(opts: { stateFilter?: string | null } = {}): 
       } catch (e: unknown) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load operational data");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLastSyncedAt(new Date().toISOString());
+          setLoading(false);
+        }
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [stateFilter]);
+  }, [stateFilter, nonce]);
 
-  return useMemo(() => derive(rows, loading, error), [rows, loading, error]);
+  const derived = useMemo(() => derive(rows, loading, error), [rows, loading, error]);
+  return { ...derived, lastSyncedAt, refresh };
 }
 
 function derive(rows: CRSessionRow[], loading: boolean, error: string | null): CentralReachOps {
