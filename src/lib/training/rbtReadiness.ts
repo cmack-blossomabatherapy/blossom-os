@@ -252,7 +252,7 @@ function signed(...ids: string[]): Record<string, SignoffItem["status"]> {
 // Production reads MUST use useReadinessTrainees() which pulls
 // from public.rbt_readiness_records and returns an empty list when
 // no rows exist rather than falling back to seed fixtures.
-const SEED_TRAINEES_DEV_ONLY_DEV_ONLY: RBTTrainee[] = [
+const SEED_TRAINEES_DEV_ONLY: RBTTrainee[] = [
   {
     id: "t-1", name: "Aaliyah Brooks", state: "GA", clinic: "Atlanta · Buckhead",
     certification: "In Progress", experienceBucket: "Not Certified",
