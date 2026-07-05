@@ -831,7 +831,10 @@ export function StateEscalationsPage() {
               {rows.map((e) => (
                 <tr key={e.id} className="border-t border-border/60 hover:bg-muted/30 cursor-pointer" onClick={() => setActive(e)}>
                   <td className="px-4 py-3 font-medium">{e.state}</td>
-                  <td className="px-4 py-3">{e.title}</td>
+                  <td className="px-4 py-3">
+                    <div>{e.title}</div>
+                    <LinkedRefBadges row={e} />
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{e.department}</td>
                   <td className="px-4 py-3 text-muted-foreground">{e.assignedTo ?? "—"}</td>
                   <td className="px-4 py-3"><Badge variant="outline" className={toneForPriority(e.priority)}>{e.priority}</Badge></td>
@@ -926,7 +929,10 @@ export function OperationalTasksPage() {
               {rows.map((t) => (
                 <tr key={t.id} className="border-t border-border/60 hover:bg-muted/30 cursor-pointer" onClick={() => setActive(t)}>
                   <td className="px-4 py-3 font-medium">{t.state}</td>
-                  <td className="px-4 py-3">{t.title}</td>
+                  <td className="px-4 py-3">
+                    <div>{t.title}</div>
+                    <LinkedRefBadges row={t} />
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{t.department}</td>
                   <td className="px-4 py-3 text-muted-foreground">{t.owner ?? "—"}</td>
                   <td className="px-4 py-3"><Badge variant="outline" className={toneForPriority(t.priority)}>{t.priority}</Badge></td>
