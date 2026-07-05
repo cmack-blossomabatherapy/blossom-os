@@ -96,6 +96,10 @@ export interface Escalation {
   linkedClientId?: string;
   linkedLeadId?: string;
   linkedCandidateId?: string;
+  linkedAuthorizationId?: string;
+  linkedSchedulingItemId?: string;
+  sourceModule?: string;
+  metadata?: Record<string, unknown>;
   notes: EscalationNote[];
   resolution?: string;
   centralreachSyncStatus?: string;
@@ -118,6 +122,10 @@ export interface OpsTask {
   linkedClientId?: string;
   linkedLeadId?: string;
   linkedCandidateId?: string;
+  linkedAuthorizationId?: string;
+  linkedSchedulingItemId?: string;
+  sourceModule?: string;
+  metadata?: Record<string, unknown>;
   notes: EscalationNote[];
   completedAt?: string;
   centralreachSyncStatus?: string;
