@@ -482,6 +482,19 @@ export default function IntakeDashboard() {
                   <Link to="/authorizations" className="text-[11px] text-primary hover:underline">→ Authorizations</Link>
                   <Link to="/ops/scheduling" className="text-[11px] text-primary hover:underline">→ Scheduling</Link>
                   <Link to="/qa-team" className="text-[11px] text-primary hover:underline">→ Clinical</Link>
+                  <SendToStateSupportButton
+                    fromDepartment="Intake"
+                    linkedLeadId={String(lead.id)}
+                    defaultTitle={`Intake support: ${lead.childName ?? "lead"}`}
+                    defaultDescription={`State: ${lead.state ?? ""} · Owner: ${lead.owner ?? "Unassigned"} · Next: handoff readiness review.`}
+                    defaultPriority="medium"
+                    sourceModule="intake"
+                    metadata={{ leadName: lead.childName, state: lead.state, owner: lead.owner, stage: (lead as any).stage, insurance: (lead as any).insurance }}
+                    buttonLabel="State Support"
+                    variant="ghost"
+                    size="sm"
+                    className="text-[11px] h-6 px-1.5"
+                  />
                 </div>
               </article>
             ))}
