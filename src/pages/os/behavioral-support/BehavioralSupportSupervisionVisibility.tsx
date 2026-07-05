@@ -41,7 +41,7 @@ export default function BehavioralSupportSupervisionVisibility() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => window.location.reload()} className="text-xs border border-border rounded-md px-2.5 py-1.5 flex items-center gap-1.5">
+            <button onClick={() => cr.refresh()} className="text-xs border border-border rounded-md px-2.5 py-1.5 flex items-center gap-1.5">
               <RefreshCw className={`h-3.5 w-3.5 ${cr.loading ? "animate-spin" : ""}`} /> Refresh
             </button>
             <Link to="/reports" className="text-xs border border-border rounded-md px-2.5 py-1.5 flex items-center gap-1.5">
@@ -49,6 +49,19 @@ export default function BehavioralSupportSupervisionVisibility() {
             </Link>
           </div>
         </header>
+
+        <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span>
+            Source: CentralReach-derived session data (not live API sync).
+          </span>
+          {cr.lastSyncedAt && (
+            <span>Last synced {new Date(cr.lastSyncedAt).toLocaleString()}</span>
+          )}
+          <span>Flagged clients: <strong className="text-foreground">{signals.filter((s) => s.riskFlags.length > 0).length}</strong></span>
+          <span>No recent BCBA supervision: <strong className="text-foreground">{signals.filter((s) => s.riskFlags.includes("no_recent_bcba_supervision")).length}</strong></span>
+          <span>Service instability: <strong className="text-foreground">{signals.filter((s) => s.riskFlags.includes("service_instability")).length}</strong></span>
+          <span>Uncovered / at-risk coverage: <strong className="text-foreground">{signals.filter((s) => s.riskFlags.includes("uncovered") || s.riskFlags.includes("at_risk_coverage")).length}</strong></span>
+        </div>
 
         <div className="flex flex-wrap gap-2 text-xs">
           <label className="flex items-center gap-1.5">
@@ -135,10 +148,18 @@ export default function BehavioralSupportSupervisionVisibility() {
               client_name: escalateFor.clientName,
               state: escalateFor.state,
               bcba_name: escalateFor.bcbaName,
+              centralreach_reference_id: escalateFor.centralreachClientId ?? null,
               escalation_type: escalateFor.riskFlags.includes("service_instability") ? "service_instability" : "supervision_gap",
               severity: "medium",
               description,
               status: "new",
+            });
+            await bs.addNote({
+              case_id: null,
+              escalation_id: null,
+              plan_id: null,
+              title: `CentralReach supervision signal → ${escalateFor.clientName}`,
+              body: `Flags: ${escalateFor.riskFlags.join(", ")}`,
             });
           }}
         />
@@ -146,15 +167,25 @@ export default function BehavioralSupportSupervisionVisibility() {
           open={!!followupFor}
           onOpenChange={(v) => !v && setFollowupFor(null)}
           clientName={followupFor?.clientName}
-          onSubmit={async ({ due_at }) => {
+          onSubmit={async ({ due_at, followup_type, priority, assigned_to_name, notes }) => {
             if (!followupFor) return;
             await bs.createFollowup({
               client_name: followupFor.clientName,
-              followup_type: "bcba_checkin",
-              priority: "medium",
+              followup_type,
+              priority,
+              assigned_to_name: assigned_to_name ?? null,
               due_at,
               status: "open",
             });
+            if (notes) {
+              await bs.addNote({
+                case_id: null,
+                escalation_id: null,
+                plan_id: null,
+                title: `Follow-up notes for ${followupFor.clientName}`,
+                body: notes,
+              });
+            }
           }}
         />
       </div>

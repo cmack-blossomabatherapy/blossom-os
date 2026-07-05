@@ -115,8 +115,15 @@ function Section({ title, items, bs, tone, hideComplete }: {
         open={!!completeFor}
         onOpenChange={(v) => !v && setCompleteFor(null)}
         clientName={completeFor?.client_name}
-        onSubmit={async (outcome) => {
-          if (completeFor) await bs.completeFollowup(completeFor.id, outcome);
+        onSubmit={async ({ outcome, resolved, nextStepNeeded, nextFollowupDueAt, note }) => {
+          if (completeFor) {
+            await bs.completeFollowup(completeFor.id, {
+              outcome,
+              resolved,
+              nextFollowupDueAt: nextStepNeeded ? nextFollowupDueAt : null,
+              note,
+            });
+          }
         }}
       />
     </section>

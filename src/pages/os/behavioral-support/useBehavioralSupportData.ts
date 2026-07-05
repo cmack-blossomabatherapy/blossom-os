@@ -225,7 +225,14 @@ export function useBehavioralSupportData() {
           .update(patch as never)
           .eq("id", id);
         if (err) throw err;
-        await logActivity({ plan_id: id, activity_type: "status_change", title: "Plan updated" });
+        const patchedFields = Object.keys(patch);
+        const isStatusChange = Object.prototype.hasOwnProperty.call(patch, "plan_status");
+        await logActivity({
+          plan_id: id,
+          activity_type: isStatusChange ? "plan_status_change" : "plan_updated",
+          title: isStatusChange && patch.plan_status ? `Plan status → ${patch.plan_status}` : "Plan updated",
+          metadata: { patch_fields: patchedFields, patch } as Record<string, unknown>,
+        });
         toast.success("Plan updated");
         await load();
       } catch (err) {
@@ -264,17 +271,50 @@ export function useBehavioralSupportData() {
   const updatePlanTask = useCallback(
     async (id: string, patch: Partial<BSPlanTask>) => {
       try {
+        // Read the current task row so we know old status, plan/case context,
+        // and can log meaningful activity metadata (task_updated /
+        // task_completed / task_reopened / task_blocked).
+        const { data: prev } = await supabase
+          .from("behavioral_support_plan_tasks")
+          .select("id, plan_id, case_id, status, task_title")
+          .eq("id", id)
+          .maybeSingle();
+        const oldStatus = (prev?.status ?? null) as BSPlanTask["status"] | null;
+        const newStatus = (patch.status ?? null) as BSPlanTask["status"] | null;
         const { error: err } = await supabase
           .from("behavioral_support_plan_tasks")
           .update(patch as never)
           .eq("id", id);
         if (err) throw err;
+        let activity_type = "task_updated";
+        if (newStatus && newStatus !== oldStatus) {
+          if (newStatus === "completed") activity_type = "task_completed";
+          else if (newStatus === "blocked") activity_type = "task_blocked";
+          else if (oldStatus === "completed") activity_type = "task_reopened";
+        }
+        const title = prev?.task_title
+          ? `Task ${activity_type.replace("task_", "").replace(/_/g, " ")}: ${prev.task_title}`
+          : `Task ${activity_type.replace("task_", "").replace(/_/g, " ")}`;
+        await logActivity({
+          plan_id: prev?.plan_id ?? null,
+          case_id: prev?.case_id ?? null,
+          activity_type,
+          title,
+          metadata: {
+            task_id: id,
+            plan_id: prev?.plan_id ?? null,
+            case_id: prev?.case_id ?? null,
+            old_status: oldStatus,
+            new_status: newStatus,
+            patch_fields: Object.keys(patch),
+          } as Record<string, unknown>,
+        });
         await load();
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Update failed");
       }
     },
-    [load],
+    [load, logActivity],
   );
 
   const createFollowup = useCallback(
@@ -305,23 +345,116 @@ export function useBehavioralSupportData() {
   );
 
   const completeFollowup = useCallback(
-    async (id: string, outcome: string) => {
+    async (
+      id: string,
+      arg:
+        | string
+        | {
+            outcome: string;
+            resolved?: boolean;
+            nextFollowupDueAt?: string | null;
+            note?: string | null;
+          },
+    ) => {
+      const opts = typeof arg === "string" ? { outcome: arg } : arg;
       try {
+        const { data: prev } = await supabase
+          .from("behavioral_support_followups")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
         const { error: err } = await supabase
           .from("behavioral_support_followups")
-          .update({ status: "completed", completed_at: new Date().toISOString(), outcome } as never)
+          .update({
+            status: "completed",
+            completed_at: new Date().toISOString(),
+            outcome: opts.outcome,
+          } as never)
           .eq("id", id);
         if (err) throw err;
         await logActivity({
           followup_id: id,
+          case_id: prev?.case_id ?? null,
+          escalation_id: prev?.escalation_id ?? null,
           activity_type: "followup_completed",
-          title: `Follow-up completed`,
-          body: outcome,
+          title: "Follow-up completed",
+          body: opts.outcome,
+          metadata: {
+            resolved: opts.resolved ?? null,
+            note: opts.note ?? null,
+            next_followup_due_at: opts.nextFollowupDueAt ?? null,
+          } as Record<string, unknown>,
         });
+        if (opts.nextFollowupDueAt && prev) {
+          const { data: nxt } = await supabase
+            .from("behavioral_support_followups")
+            .insert({
+              client_name: prev.client_name,
+              client_id: prev.client_id,
+              case_id: prev.case_id,
+              escalation_id: prev.escalation_id,
+              followup_type: prev.followup_type,
+              priority: prev.priority,
+              status: "open",
+              due_at: opts.nextFollowupDueAt,
+            } as never)
+            .select("id")
+            .single();
+          await logActivity({
+            followup_id: nxt?.id ?? null,
+            case_id: prev.case_id ?? null,
+            escalation_id: prev.escalation_id ?? null,
+            activity_type: "followup_created",
+            title: `Next follow-up scheduled: ${prev.client_name}`,
+            metadata: { from_followup_id: id } as Record<string, unknown>,
+          });
+        }
         toast.success("Follow-up completed");
         await load();
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to complete");
+      }
+    },
+    [load, logActivity],
+  );
+
+  const updateCase = useCallback(
+    async (id: string, patch: Partial<BSCase>) => {
+      try {
+        const { error: err } = await supabase
+          .from("behavioral_support_cases")
+          .update(patch as never)
+          .eq("id", id);
+        if (err) throw err;
+        const isStatusChange = Object.prototype.hasOwnProperty.call(patch, "status");
+        await logActivity({
+          case_id: id,
+          activity_type: isStatusChange ? "case_status_change" : "case_updated",
+          title: isStatusChange && patch.status ? `Case status → ${patch.status}` : "Case updated",
+          metadata: { patch_fields: Object.keys(patch), patch } as Record<string, unknown>,
+        });
+        toast.success("Case updated");
+        await load();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Update failed");
+      }
+    },
+    [load, logActivity],
+  );
+
+  const archiveCase = useCallback(
+    async (id: string) => {
+      try {
+        const { error: err } = await supabase
+          .from("behavioral_support_cases")
+          .update({ status: "archived" } as never)
+          .eq("id", id);
+        if (err) throw err;
+        await logActivity({ case_id: id, activity_type: "case_archived", title: "Case archived" });
+        toast.success("Case archived");
+        await load();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to archive");
       }
     },
     [load, logActivity],
@@ -372,6 +505,8 @@ export function useBehavioralSupportData() {
     error,
     refresh: load,
     createCase,
+    updateCase,
+    archiveCase,
     createEscalation,
     updateEscalation,
     createPlan,
