@@ -290,7 +290,7 @@ export function useBehavioralSupportData() {
         if (newStatus && newStatus !== oldStatus) {
           if (newStatus === "completed") activity_type = "task_completed";
           else if (newStatus === "blocked") activity_type = "task_blocked";
-          else if (oldStatus === "completed" && newStatus !== "completed") activity_type = "task_reopened";
+          else if (oldStatus === "completed") activity_type = "task_reopened";
         }
         const title = prev?.task_title
           ? `Task ${activity_type.replace("task_", "").replace(/_/g, " ")}: ${prev.task_title}`
