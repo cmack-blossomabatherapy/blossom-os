@@ -60,6 +60,7 @@ import HrBcbaProductivityDashboard from "./pages/os/reports/HrBcbaProductivityDa
 import BcbaProductivityReport from "./pages/os/reports/BcbaProductivityReport";
 import BcbaProductivityReportV3 from "./pages/os/reports/BcbaProductivityReportV3";
 import CancellationCommandCenter from "./pages/os/reports/CancellationCommandCenter";
+import { ReportRoleGuard } from "./components/reports/ReportRoleGuard";
 import OSMvpPage from "./pages/os/mvp/OSMvpPage";
 import ExpiringAuthorizations from "./pages/os/operations/ExpiringAuthorizations";
 import MissingDocs from "./pages/os/operations/MissingDocs";
