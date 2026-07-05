@@ -1,7 +1,8 @@
 // RBT readiness gates — used by the Readiness Board and consumed by Scheduling.
 // Mock/static for now; the shape is what a backend would populate.
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   RBT_PATHS,
   type RBTPath,
@@ -247,7 +248,11 @@ function signed(...ids: string[]): Record<string, SignoffItem["status"]> {
   }, {});
 }
 
-const SEED_TRAINEES: RBTTrainee[] = [
+// Retained ONLY as a development seed for local storybook/tests.
+// Production reads MUST use useReadinessTrainees() which pulls
+// from public.rbt_readiness_records and returns an empty list when
+// no rows exist rather than falling back to seed fixtures.
+const SEED_TRAINEES_DEV_ONLY: RBTTrainee[] = [
   {
     id: "t-1", name: "Aaliyah Brooks", state: "GA", clinic: "Atlanta · Buckhead",
     certification: "In Progress", experienceBucket: "Not Certified",
@@ -348,7 +353,7 @@ function subscribe(cb: () => void) {
 
 function mergedTrainees(): RBTTrainee[] {
   const o = readOverrides();
-  return SEED_TRAINEES.map((t) => {
+  return SEED_TRAINEES_DEV_ONLY.map((t) => {
     const patch = o[t.id];
     if (!patch) return t;
     return {
@@ -376,7 +381,7 @@ function getSnapshot(): RBTTrainee[] {
 
 /** Hook — reactive trainee list shared across the app. */
 export function useTrainees(): RBTTrainee[] {
-  return useSyncExternalStore(subscribe, getSnapshot, () => SEED_TRAINEES);
+  return useSyncExternalStore(subscribe, getSnapshot, () => SEED_TRAINEES_DEV_ONLY);
 }
 
 /** Read-only snapshot for non-React consumers. */
@@ -392,7 +397,7 @@ export const RBT_TRAINEES: RBTTrainee[] = new Proxy([] as RBTTrainee[], {
 
 function patchTrainee(id: string, patch: Partial<RBTTrainee>) {
   const o = readOverrides();
-  const seed = SEED_TRAINEES.find((t) => t.id === id);
+  const seed = SEED_TRAINEES_DEV_ONLY.find((t) => t.id === id);
   if (!seed) return;
   const merged = { ...(o[id] ?? {}), ...patch };
   if (patch.signoffs) merged.signoffs = { ...(o[id]?.signoffs ?? {}), ...patch.signoffs };
@@ -447,4 +452,93 @@ export function updateAssignment(
   value: string | null,
 ) {
   patchTrainee(id, { [who]: value } as Partial<RBTTrainee>);
+}
+
+// ---------- Supabase-backed production reader ----------
+
+interface ReadinessRow {
+  id: string;
+  user_id: string | null;
+  trainee_name: string;
+  state: string | null;
+  clinic: string | null;
+  certification: string;
+  experience_bucket: string;
+  start_date: string | null;
+  path_id: string;
+  path_overridden: boolean;
+  current_phase_index: number;
+  current_module_id: string | null;
+  lead_rbt_trainer: string | null;
+  bcba: string | null;
+  training_admin: string | null;
+  documentation_reviewer: string | null;
+  signoffs: Record<string, SignoffItem["status"]> | null;
+  module_progress: RBTTrainee["moduleProgress"] | null;
+  flags: RBTTrainee["flags"] | null;
+}
+
+function rowToTrainee(row: ReadinessRow): RBTTrainee {
+  return {
+    id: row.id,
+    name: row.trainee_name,
+    state: row.state ?? "",
+    clinic: row.clinic ?? undefined,
+    certification: (row.certification as CertificationStatus) ?? "Not Certified",
+    experienceBucket: (row.experience_bucket as ExperienceBucket) ?? "Not Certified",
+    startDate: row.start_date ?? new Date().toISOString().slice(0, 10),
+    pathId: (row.path_id as RBTPathId) ?? "certified_no_experience",
+    pathOverridden: !!row.path_overridden,
+    currentPhaseIndex: row.current_phase_index ?? 0,
+    currentModuleId: row.current_module_id ?? "",
+    leadRbtTrainer: row.lead_rbt_trainer,
+    bcba: row.bcba,
+    trainingAdmin: row.training_admin,
+    documentationReviewer: row.documentation_reviewer,
+    signoffs: row.signoffs ?? {},
+    moduleProgress: row.module_progress ?? undefined,
+    flags: row.flags ?? undefined,
+  };
+}
+
+/**
+ * Real-data hook for the RBT Readiness Board.
+ * Reads from public.rbt_readiness_records via Supabase.
+ * Returns { trainees, loading, empty } — empty is TRUE when the query
+ * succeeded but returned zero rows. Consumers should render an empty
+ * setup state in that case rather than falling back to seed fixtures.
+ */
+export function useReadinessTrainees(): {
+  trainees: RBTTrainee[];
+  loading: boolean;
+  empty: boolean;
+  error: string | null;
+} {
+  const [state, setState] = useState<{ trainees: RBTTrainee[]; loading: boolean; empty: boolean; error: string | null }>(
+    { trainees: [], loading: true, empty: false, error: null },
+  );
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("rbt_readiness_records")
+          .select("*")
+          .order("updated_at", { ascending: false });
+        if (cancelled) return;
+        if (error) {
+          setState({ trainees: [], loading: false, empty: true, error: error.message });
+          return;
+        }
+        const rows = (data ?? []) as unknown as ReadinessRow[];
+        const trainees = rows.map(rowToTrainee);
+        setState({ trainees, loading: false, empty: trainees.length === 0, error: null });
+      } catch (e) {
+        if (cancelled) return;
+        setState({ trainees: [], loading: false, empty: true, error: (e as Error).message });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return state;
 }
