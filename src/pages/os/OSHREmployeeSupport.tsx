@@ -433,7 +433,8 @@ export default function OSHREmployeeSupport() {
                   { label: "HR Workspace",      to: "/hr/workspace" },
                   { label: "New Hires",         to: "/hr/new-hires" },
                   { label: "Orientation queue", to: "/hr/orientation-queue" },
-                  { label: "Training Academy",  to: "/hr/training-academy" },
+                  { label: "Training Management", to: "/hr/training-center" },
+                  { label: "Learner Academy",   to: "/academy" },
                   { label: "HR Requests",       to: "/hr/requests" },
                 ].map((l) => (
                   <Link key={l.to} to={l.to} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[13px] hover:bg-muted transition-colors">
