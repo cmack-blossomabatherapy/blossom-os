@@ -182,6 +182,8 @@ export default function OSSchedulingWorkspace() {
           </div>
         </header>
 
+        <StateDirectorSnapshotBanner ownerDepartment="Scheduling" sourceModule="scheduling_workspace" />
+
         {/* 3-panel layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* LEFT — Staffing Queue */}
