@@ -679,7 +679,10 @@ export function StateOperationsPage() {
         assigned={assigned}
       />
 
-      <SectionCard title="State health" description={isLeadership ? "All states in scope." : "Your assigned state."}>
+      <SectionCard
+        title="State health"
+        description={(isLeadership ? "All states in scope." : "Your assigned state.") + " · Source: Seed fallback · Updated: sample"}
+      >
         <div className="overflow-x-auto -mx-2">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
