@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Send, ShieldAlert, CalendarClock, Flame } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
-import { CMPage, Pill, priorityTone, statusTone, FormDialog, familySelectOptions, familyOptionByValue, familyContext, findAuthorizationForAssignment, SourceStatusChip } from "./_shared";
+import { CMPage, Pill, FormDialog, SourceStatusChip } from "./_shared";
+import { priorityTone, statusTone, familySelectOptions, familyOptionByValue, familyContext, findAuthorizationForAssignment, stringValue, dateTimeIsoOrNull, type CMFormValues } from "./_utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -15,7 +16,7 @@ export default function AuthorizationsVisibilityPage() {
   const [escalateOpen, setEscalateOpen] = useState(false);
 
   const options = familySelectOptions(w.assignments);
-  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
+  const pickFamily = (v: CMFormValues) => familyOptionByValue(w.assignments, stringValue(v.family));
 
   const openAuth = w.openHandoffs.filter((h) => h.to_department === "authorizations" || h.handoff_type === "authorization_update");
   const authIssues = w.openServiceIssues.filter((i) => i.issue_type === "authorization" || i.owner_department === "authorizations");
@@ -136,7 +137,7 @@ export default function AuthorizationsVisibilityPage() {
           { key: "request_note", label: "Details", type: "textarea", required: true },
           { key: "priority", label: "Priority", type: "select", options: ["low","normal","high","urgent"], defaultValue: "normal" },
         ]}
-        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.requestAuthorizationUpdate({ ...rest, ...familyContext(pickFamily(v)) } as any); toast.success("Sent to Authorizations"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.requestAuthorizationUpdate({ ...rest, ...familyContext(pickFamily(v)) } as unknown as Parameters<typeof w.requestAuthorizationUpdate>[0]); toast.success("Sent to Authorizations"); }}
       />
       <FormDialog open={issueOpen} onOpenChange={setIssueOpen} title="Flag authorization concern" submitLabel="Log"
         fields={[
@@ -145,7 +146,7 @@ export default function AuthorizationsVisibilityPage() {
           { key: "description", label: "Description", type: "textarea" },
           { key: "severity", label: "Severity", type: "select", options: ["low","medium","high","urgent"], defaultValue: "medium" },
         ]}
-        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createServiceIssue({ ...rest, ...familyContext(pickFamily(v)), issue_type: "authorization", owner_department: "authorizations", status: "open" } as any); toast.success("Issue logged"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createServiceIssue({ ...rest, ...familyContext(pickFamily(v)), issue_type: "authorization", owner_department: "authorizations", status: "open" } as unknown as Parameters<typeof w.createServiceIssue>[0]); toast.success("Issue logged"); }}
       />
       <FormDialog open={followUpOpen} onOpenChange={setFollowUpOpen} title="Authorization follow-up" submitLabel="Create"
         fields={[
@@ -154,7 +155,7 @@ export default function AuthorizationsVisibilityPage() {
           { key: "priority", label: "Priority", type: "select", options: ["low","normal","high","urgent"], defaultValue: "normal" },
           { key: "due_at", label: "Due", type: "datetime" },
         ]}
-        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createFollowUp({ ...rest, ...familyContext(pickFamily(v)), category: "authorization", status: "open", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any); toast.success("Follow-up created"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createFollowUp({ ...rest, ...familyContext(pickFamily(v)), category: "authorization", status: "open", due_at: dateTimeIsoOrNull(v.due_at) } as unknown as Parameters<typeof w.createFollowUp>[0]); toast.success("Follow-up created"); }}
       />
       <FormDialog open={escalateOpen} onOpenChange={setEscalateOpen} title="Escalate auth risk" submitLabel="Escalate"
         fields={[
@@ -163,7 +164,7 @@ export default function AuthorizationsVisibilityPage() {
           { key: "summary", label: "Summary", type: "textarea" },
           { key: "severity", label: "Severity", type: "select", options: ["low","medium","high","urgent"], defaultValue: "high" },
         ]}
-        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createEscalation({ ...rest, ...familyContext(pickFamily(v)), escalation_type: "authorization_risk", owner_department: "authorizations", status: "open" } as any); toast.success("Escalated"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createEscalation({ ...rest, ...familyContext(pickFamily(v)), escalation_type: "authorization_risk", owner_department: "authorizations", status: "open" } as unknown as Parameters<typeof w.createEscalation>[0]); toast.success("Escalated"); }}
       />
     </CMPage>
   );
