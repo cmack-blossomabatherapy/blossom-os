@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,25 @@ import {
   type CentralReachOutboxRow,
 } from "@/lib/os/stateDirector/stateOperationsService";
 import type { StateCode } from "@/lib/os/stateDirector/types";
+
+/* ---------------------------------------------------------------------------
+ * Cross-component reload signal. When a task/escalation detail creates a new
+ * CentralReach readiness item, it calls `bumpCentralReachReadiness()` and any
+ * mounted panel refreshes its data. This is intentionally tiny — no store,
+ * no context — because the readiness panel and the action button always
+ * live inside the same State Operations page.
+ * ------------------------------------------------------------------------- */
+let readinessVersion = 0;
+const readinessListeners = new Set<() => void>();
+export function bumpCentralReachReadiness() {
+  readinessVersion += 1;
+  readinessListeners.forEach((l) => l());
+}
+function subscribeReadiness(cb: () => void) {
+  readinessListeners.add(cb);
+  return () => { readinessListeners.delete(cb); };
+}
+function getReadinessVersion() { return readinessVersion; }
 
 /**
  * State Operations CentralReach readiness/outbox panel.
@@ -22,6 +41,7 @@ export function CentralReachReadinessPanel({
 }: { stateFilter: StateCode | "all" }) {
   const [rows, setRows] = useState<CentralReachOutboxRow[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const version = useSyncExternalStore(subscribeReadiness, getReadinessVersion, getReadinessVersion);
 
   async function refresh() {
     setLoading(true);
@@ -30,13 +50,22 @@ export function CentralReachReadinessPanel({
     setLoading(false);
   }
 
-  useEffect(() => { void refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [stateFilter]);
+  useEffect(() => { void refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [stateFilter, version]);
+
+  const openCount = (rows ?? []).filter((r) => r.syncStatus !== "synced").length;
 
   return (
     <Card className="p-5 rounded-2xl border-border/60">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
-          <div className="text-sm font-semibold text-foreground">CentralReach Readiness</div>
+          <div className="text-sm font-semibold text-foreground flex items-center gap-2">
+            CentralReach Readiness
+            {rows ? (
+              <Badge variant="outline" className="text-[10px] uppercase tracking-wider bg-muted/40">
+                {openCount} open
+              </Badge>
+            ) : null}
+          </div>
           <div className="text-xs text-muted-foreground mt-0.5">
             Live CentralReach API is <b className="text-foreground">not connected</b> yet.
             This queue tracks state work waiting for mapping or manual updates.
