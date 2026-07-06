@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   RBT_PATHS, RBT_OWNERSHIP, pathStats,
@@ -43,7 +44,33 @@ export default function OSRBTTrainingAcademy() {
   const name = firstName((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0]);
   const isAdmin = roles.some((r) => TRAINING_ADMIN_ROLES.includes(r as never));
 
-  const [assignedId, setAssignedId] = useState<RBTPathId>("certified_no_experience");
+  // The signed-in RBT's assigned path is read from public.rbt_readiness_records.
+  // Admins get a preview control below to switch paths without changing anyone
+  // else's assignment. Regular RBTs cannot change their own assigned path here.
+  const [assignedPath, setAssignedPath] = useState<{ id: RBTPathId; source: "readiness" | "default" | "preview" }>(
+    { id: "certified_no_experience", source: "default" },
+  );
+  const [previewId, setPreviewId] = useState<RBTPathId | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user?.id) return;
+      const { data, error } = await supabase
+        .from("rbt_readiness_records")
+        .select("path_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled || error || !data) return;
+      if (data.path_id) {
+        setAssignedPath({ id: data.path_id as RBTPathId, source: "readiness" });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  const assignedId: RBTPathId =
+    isAdmin && previewId ? previewId : assignedPath.id;
   const [tab, setTab] = useState<TabKey>("journey");
 
   const path = useMemo(
@@ -77,8 +104,24 @@ export default function OSRBTTrainingAcademy() {
           </p>
 
           <div className="mt-5">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Your path</p>
-            <TrackSelector value={assignedId} onChange={setAssignedId} />
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {isAdmin ? "Admin preview - assigned path" : "Your assigned path"}
+            </p>
+            {isAdmin ? (
+              <>
+                <TrackSelector value={assignedId} onChange={(v) => setPreviewId(v)} />
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Preview only. Change a learner's official path from the Readiness Board.
+                </p>
+              </>
+            ) : (
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-[12px]">
+                <span className="font-medium text-foreground">{path.label}</span>
+                <span className="text-muted-foreground">
+                  {assignedPath.source === "readiness" ? "assigned by your trainer" : "default"}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-4">
