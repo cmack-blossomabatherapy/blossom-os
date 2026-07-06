@@ -143,10 +143,8 @@ import IntegrationIngestAdminPage from "./pages/admin/IntegrationIngest";
 import JourneyHub from "./pages/hr/JourneyHub";
 import JourneyDrive from "./pages/hr/JourneyDrive";
 import LeadershipDashboard from "./pages/LeadershipDashboard";
-import CeoDashboardV2 from "./pages/CeoDashboardV2";
-import CeoDashboardV2Logic from "./pages/CeoDashboardV2Logic";
-import CeoDashboardV2Insights from "./pages/CeoDashboardV2Insights";
-import CeoDashboardV2RevenueLeaks from "./pages/CeoDashboardV2RevenueLeaks";
+// Legacy CEO/BCBA performance dashboard components are retired — the canonical report
+// now lives at /reports/bcba-performance and legacy URLs redirect there.
 import ClinicDashboard from "./pages/ClinicDashboard";
 import OSAuthorizations from "./pages/os/OSAuthorizations";
 import OperationsAcademy from "./pages/blossom/OperationsAcademy";
@@ -551,11 +549,6 @@ function RoleDashboardRedirect() {
     : intelligenceFallback;
 
   return <Navigate to={allowedRoute} replace />;
-}
-
-function LegacyBcbaDashboardRedirect({ to }: { to: string }) {
-  const { search } = useLocation();
-  return <Navigate to={`${to}${search}`} replace />;
 }
 
 function OSCommandCenterRouter() {
