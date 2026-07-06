@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Flame, Plus, CheckCircle2, Undo2, CalendarClock, ShieldAlert } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
-import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
+import { CMPage, Pill, FilterBar, FormDialog } from "./_shared";
+import { priorityTone, statusTone, familySelectOptions, familyOptionByValue, familyContext, stringValue, dateTimeIsoOrNull, type CMFormValues } from "./_utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,7 +26,7 @@ export default function EscalationsPage() {
   const [issueId, setIssueId] = useState<string | null>(null);
 
   const options = familySelectOptions(w.assignments);
-  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
+  const pickFamily = (v: CMFormValues) => familyOptionByValue(w.assignments, stringValue(v.family));
   const escById = (id: string | null) => w.escalations.find((e) => e.id === id);
 
   const rows = w.escalations.filter((e) => {
@@ -72,7 +73,7 @@ export default function EscalationsPage() {
               {!["resolved","closed"].includes(e.status) ? (
                 <Button size="sm" variant="outline" onClick={() => setResolveId(e.id)}><CheckCircle2 className="mr-1 h-3 w-3" /> Resolve</Button>
               ) : (
-                <Button size="sm" variant="ghost" onClick={async () => { await w.updateEscalation(e.id, { status: "open", resolved_at: null } as any); toast.success("Reopened"); }}><Undo2 className="mr-1 h-3 w-3" /> Reopen</Button>
+                <Button size="sm" variant="ghost" onClick={async () => { await w.updateEscalation(e.id, { status: "open", resolved_at: null }); toast.success("Reopened"); }}><Undo2 className="mr-1 h-3 w-3" /> Reopen</Button>
               )}
               <Button size="sm" variant="ghost" onClick={() => setEditId(e.id)}>Edit</Button>
               <Button size="sm" variant="ghost" onClick={() => setFollowUpId(e.id)}><CalendarClock className="mr-1 h-3 w-3" /> Follow-up</Button>
@@ -93,11 +94,11 @@ export default function EscalationsPage() {
           { key: "escalated_to_role", label: "Escalated to role" },
           { key: "parent_communication_needed", label: "Parent communication needed", type: "checkbox" },
         ]}
-        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createEscalation({ ...rest, ...familyContext(pickFamily(v)), status: "open" } as any); toast.success("Escalation created"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createEscalation({ ...rest, ...familyContext(pickFamily(v)), status: "open" } as unknown as Parameters<typeof w.createEscalation>[0]); toast.success("Escalation created"); }}
       />
       {editId && (
         <FormDialog open={!!editId} onOpenChange={(o) => !o && setEditId(null)} title="Edit escalation" submitLabel="Save"
-          initial={escById(editId) as any}
+          initial={escById(editId) as unknown as CMFormValues}
           fields={[
             { key: "reason", label: "Reason", required: true },
             { key: "summary", label: "Summary", type: "textarea" },
@@ -106,12 +107,12 @@ export default function EscalationsPage() {
             { key: "owner_department", label: "Owner department", type: "select", options: DEPTS },
             { key: "escalated_to_role", label: "Escalated to role" },
           ]}
-          onSubmit={async (v) => { if (!editId) return; await w.updateEscalation(editId, v as any); toast.success("Updated"); }}
+          onSubmit={async (v) => { if (!editId) return; await w.updateEscalation(editId, v as unknown as Parameters<typeof w.updateEscalation>[1]); toast.success("Updated"); }}
         />
       )}
       <FormDialog open={!!resolveId} onOpenChange={(o) => !o && setResolveId(null)} title="Resolve escalation" submitLabel="Resolve"
         fields={[{ key: "resolution_note", label: "Resolution note", type: "textarea", required: true }]}
-        onSubmit={async (v) => { if (!resolveId) return; await w.resolveEscalation(resolveId, v.resolution_note); toast.success("Resolved"); }}
+        onSubmit={async (v) => { if (!resolveId) return; await w.resolveEscalation(resolveId, stringValue(v.resolution_note)); toast.success("Resolved"); }}
       />
       <FormDialog open={!!followUpId} onOpenChange={(o) => !o && setFollowUpId(null)} title="Follow-up from escalation" submitLabel="Create"
         fields={[
@@ -119,7 +120,7 @@ export default function EscalationsPage() {
           { key: "priority", label: "Priority", type: "select", options: ["low","normal","high","urgent"], defaultValue: "high" },
           { key: "due_at", label: "Due", type: "datetime" },
         ]}
-        onSubmit={async (v) => { const e = escById(followUpId); await w.createFollowUp({ client_id: e?.client_id ?? null, client_name: e?.client_name ?? null, title: v.title, priority: v.priority, status: "open", category: "other", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any); toast.success("Follow-up created"); }}
+        onSubmit={async (v) => { const e = escById(followUpId); await w.createFollowUp({ client_id: e?.client_id ?? null, client_name: e?.client_name ?? null, title: stringValue(v.title), priority: stringValue(v.priority), status: "open", category: "other", due_at: dateTimeIsoOrNull(v.due_at) }); toast.success("Follow-up created"); }}
       />
       <FormDialog open={!!issueId} onOpenChange={(o) => !o && setIssueId(null)} title="Link a service issue" submitLabel="Create"
         fields={[
@@ -128,7 +129,7 @@ export default function EscalationsPage() {
           { key: "issue_type", label: "Type", type: "select", options: ["scheduling","staffing","authorization","clinical","billing","other"], defaultValue: "clinical" },
           { key: "severity", label: "Severity", type: "select", options: SEVERITIES, defaultValue: "high" },
         ]}
-        onSubmit={async (v) => { const e = escById(issueId); await w.createServiceIssue({ client_id: e?.client_id ?? null, client_name: e?.client_name ?? null, ...v, status: "open", owner_department: e?.owner_department ?? null } as any); toast.success("Linked issue created"); }}
+        onSubmit={async (v) => { const e = escById(issueId); await w.createServiceIssue({ client_id: e?.client_id ?? null, client_name: e?.client_name ?? null, ...v, status: "open", owner_department: e?.owner_department ?? null } as unknown as Parameters<typeof w.createServiceIssue>[0]); toast.success("Linked issue created"); }}
       />
     </CMPage>
   );
