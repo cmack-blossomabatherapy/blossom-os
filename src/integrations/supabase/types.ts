@@ -12856,6 +12856,137 @@ export type Database = {
         }
         Relationships: []
       }
+      operations_work_item_events: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          event_type: string
+          id: string
+          message: string | null
+          metadata: Json
+          work_item_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          message?: string | null
+          metadata?: Json
+          work_item_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string | null
+          metadata?: Json
+          work_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operations_work_item_events_work_item_id_fkey"
+            columns: ["work_item_id"]
+            isOneToOne: false
+            referencedRelation: "operations_work_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operations_work_items: {
+        Row: {
+          assigned_role: string | null
+          created_at: string
+          created_by: string | null
+          department: string
+          description: string | null
+          due_date: string | null
+          escalated_at: string | null
+          escalation_level: number | null
+          escalation_reason: string | null
+          id: string
+          metadata: Json
+          owner_id: string | null
+          owner_name: string | null
+          priority: string
+          related_lead_id: string | null
+          related_patient_id: string | null
+          related_user_id: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          snoozed_until: string | null
+          source_system: string | null
+          state: string | null
+          status: string
+          tags: string[]
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_role?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          description?: string | null
+          due_date?: string | null
+          escalated_at?: string | null
+          escalation_level?: number | null
+          escalation_reason?: string | null
+          id?: string
+          metadata?: Json
+          owner_id?: string | null
+          owner_name?: string | null
+          priority?: string
+          related_lead_id?: string | null
+          related_patient_id?: string | null
+          related_user_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          snoozed_until?: string | null
+          source_system?: string | null
+          state?: string | null
+          status?: string
+          tags?: string[]
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_role?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          description?: string | null
+          due_date?: string | null
+          escalated_at?: string | null
+          escalation_level?: number | null
+          escalation_reason?: string | null
+          id?: string
+          metadata?: Json
+          owner_id?: string | null
+          owner_name?: string | null
+          priority?: string
+          related_lead_id?: string | null
+          related_patient_id?: string | null
+          related_user_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          snoozed_until?: string | null
+          source_system?: string | null
+          state?: string | null
+          status?: string
+          tags?: string[]
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       org_chart_nodes: {
         Row: {
           accent_color: string | null
