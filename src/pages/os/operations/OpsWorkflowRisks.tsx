@@ -265,6 +265,9 @@ export default function OpsWorkflowRisks() {
         </div>
       </section>
 
+      {/* 1b. Persistent operations work items */}
+      <WorkQueueSignalsCard />
+
       {/* 2. Risk summary tiles */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
