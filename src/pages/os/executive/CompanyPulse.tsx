@@ -4,6 +4,7 @@ import { ExecPage, ExecCard, HealthPill, AIPrompt, type HealthTone } from "./_sh
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
+import { ActionItemsPanel } from "@/components/executive/ActionItemsPanel";
 import { cn } from "@/lib/utils";
 
 type Direction = "up" | "down" | "flat";
@@ -485,6 +486,7 @@ export default function CompanyPulse() {
           <AIPrompt label="Suggest weekly priorities" prompt="Suggest 3 weekly leadership priorities based on Blossom's current company pulse." />
         </div>
       </ExecCard>
+      <ActionItemsPanel sourcePage="executive/pulse" />
     </ExecPage>
   );
 }

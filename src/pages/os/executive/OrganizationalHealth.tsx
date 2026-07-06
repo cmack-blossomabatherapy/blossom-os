@@ -4,6 +4,7 @@ import { ExecPage, ExecCard, HealthPill, AIPrompt, type HealthTone } from "./_sh
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import { ActionItemsPanel } from "@/components/executive/ActionItemsPanel";
 
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
@@ -539,6 +540,7 @@ export default function OrganizationalHealth() {
           <AIPrompt label="Forecast growth absorption" prompt="Forecast Blossom's ability to absorb continued growth based on current organizational health." />
         </div>
       </ExecCard>
+      <ActionItemsPanel sourcePage="executive/organizational-health" />
     </ExecPage>
   );
 }

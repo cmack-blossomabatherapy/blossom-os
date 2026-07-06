@@ -7,6 +7,7 @@ import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { useAuth } from "@/contexts/AuthContext";
 import { ActionItemsPanel } from "@/components/executive/ActionItemsPanel";
+import { IntegrationReadinessCard } from "@/components/executive/IntegrationReadinessCard";
 import { cn } from "@/lib/utils";
 
 const STATES = [
@@ -356,6 +357,7 @@ export default function ExecutiveOverview() {
 
       {/* ─── Leadership Action Items — persisted to executive_work_items ─ */}
       <ActionItemsPanel sourcePage="executive_overview" />
+      <IntegrationReadinessCard />
     </ExecPage>
   );
 }

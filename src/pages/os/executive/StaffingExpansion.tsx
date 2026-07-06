@@ -4,6 +4,7 @@ import { ExecPage, ExecCard, HealthPill, AIPrompt, type HealthTone } from "./_sh
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import { ActionItemsPanel } from "@/components/executive/ActionItemsPanel";
 
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
@@ -469,6 +470,7 @@ export default function StaffingExpansion() {
           <AIPrompt label="Draft staffing briefing" prompt="Draft a brief leadership note summarizing Blossom's current staffing stability, expansion readiness, and recommended actions." />
         </div>
       </ExecCard>
+      <ActionItemsPanel sourcePage="executive/staffing-expansion" />
     </ExecPage>
   );
 }

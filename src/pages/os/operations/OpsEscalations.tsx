@@ -23,6 +23,7 @@ import {
   Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LeadershipEscalationsPanel } from "@/components/executive/LeadershipEscalationsPanel";
 
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
@@ -688,6 +689,9 @@ export default function OpsEscalations() {
             </div>
           </div>
         </OpsCard>
+
+        {/* 11. Persisted leadership escalations — logged by leadership */}
+        <LeadershipEscalationsPanel />
       </div>
     </OpsPage>
   );
