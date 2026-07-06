@@ -34,10 +34,10 @@ export function WorkQueueSignalsCard({ compact = false }: { compact?: boolean })
   }, [items, compact]);
 
   const tiles = [
-    { id: "open", label: "Open", value: stats.open.length, icon: ListChecks, to: "/work-queue", tone: "neutral" as const },
+    { id: "open", label: "Open", value: stats.open.length, icon: ListChecks, to: "/work-queue?status=active", tone: "neutral" as const },
     { id: "esc", label: "Escalated", value: stats.escalated.length, icon: AlertTriangle, to: "/work-queue/escalations", tone: stats.escalated.length > 0 ? "risk" as const : "neutral" as const },
-    { id: "urg", label: "High / Urgent", value: stats.urgent.length, icon: Flame, to: "/work-queue", tone: stats.urgent.length > 0 ? "attention" as const : "neutral" as const },
-    { id: "over", label: "Overdue", value: stats.overdue.length, icon: Inbox, to: "/work-queue", tone: stats.overdue.length > 0 ? "attention" as const : "neutral" as const },
+    { id: "urg", label: "High / Urgent", value: stats.urgent.length, icon: Flame, to: "/work-queue?priority=urgent", tone: stats.urgent.length > 0 ? "attention" as const : "neutral" as const },
+    { id: "over", label: "Overdue", value: stats.overdue.length, icon: Inbox, to: "/work-queue?view=overdue", tone: stats.overdue.length > 0 ? "attention" as const : "neutral" as const },
   ];
 
   return (
