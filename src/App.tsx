@@ -697,7 +697,7 @@ const App = () => (
                   <Route path="/hr/messages" element={<OSHRMessages />} />
                   <Route path="/hr/team-resources" element={<OSHRResources />} />
                   <Route path="/billing-finance" element={<OSBillingFinance />} />
-                  <Route path="/qa-team" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_team", "qa_director", "qa_specialist", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQATeam /></PermissionRoute>} />
+                  <Route path="/qa-team" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQATeam /></PermissionRoute>} />
                   <Route path="/qa-workspace" element={<OSQAWorkspace />} />
                   <Route path="/qa-queue" element={<OSQAQueue />} />
                   <Route path="/qa/board" element={<OSQAReviewBoard />} />
