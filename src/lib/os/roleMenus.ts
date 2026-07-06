@@ -101,6 +101,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Department Health",     path: "/operations/department-health", icon: Activity },
           { label: "Escalations",           path: "/operations/escalations",       icon: AlertTriangle },
           { label: "System Requests",       path: "/system/request-intake",        icon: Inbox },
+          { label: "Org Chart",             path: "/org-chart",                    icon: Users },
           { label: "Phone System",          path: "/phone",                        icon: Phone },
         ],
       },
@@ -122,6 +123,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Work Queue",            path: "/work-queue",                  icon: ClipboardList },
           { label: "Escalation Center",     path: "/work-queue/escalations",      icon: Flame },
           { label: "System Requests",       path: "/system/request-intake",       icon: Inbox },
+          { label: "Org Chart",             path: "/org-chart",                   icon: Users },
           { label: "Phone System",          path: "/phone",                       icon: Phone },
         ],
       },
@@ -447,6 +449,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       {
         id: "hr_people", label: "People & Access", items: [
           { label: "User Management",             path: "/user-management",             icon: Users },
+          { label: "Org Chart",                   path: "/org-chart",                   icon: Users },
           { label: "Device Requests",             path: "/device-requests",             icon: Wrench },
           { label: "Device Inventory",            path: "/device-inventory",            icon: Wrench },
         ],
