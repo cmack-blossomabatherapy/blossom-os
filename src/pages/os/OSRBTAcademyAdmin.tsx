@@ -529,7 +529,14 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
         <SectionTitle>Required signoffs</SectionTitle>
         <ul className="space-y-1.5">
           {s.requiredSignoffs.map(({ item, status }) => (
-            <SignoffRow key={item.id} item={item} status={status} traineeId={t.id} isAdmin={isAdmin} />
+            <SignoffRow
+              key={item.id}
+              item={item}
+              status={status}
+              traineeId={t.id}
+              currentSignoffs={t.signoffs}
+              isAdmin={isAdmin}
+            />
           ))}
         </ul>
       </section>
@@ -625,8 +632,9 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
   );
 }
 
-function SignoffRow({ item, status, traineeId, isAdmin }: {
-  item: SignoffItem; status: SignoffItem["status"]; traineeId: string; isAdmin: boolean;
+function SignoffRow({ item, status, traineeId, currentSignoffs, isAdmin }: {
+  item: SignoffItem; status: SignoffItem["status"]; traineeId: string;
+  currentSignoffs: Record<string, SignoffItem["status"]>; isAdmin: boolean;
 }) {
   const signed = status === "signed";
   return (
@@ -647,7 +655,7 @@ function SignoffRow({ item, status, traineeId, isAdmin }: {
       </div>
       <button
         type="button" disabled={!isAdmin}
-        onClick={() => void recordSignoffRow(traineeId, item.id, signed ? "pending" : "signed", {})}
+        onClick={() => void recordSignoffRow(traineeId, item.id, signed ? "pending" : "signed", currentSignoffs)}
         className={cn(
           "shrink-0 rounded-md border px-2 py-1 text-[11px] font-medium transition disabled:opacity-50",
           signed ? "border-border/70 bg-card text-muted-foreground hover:bg-muted"
