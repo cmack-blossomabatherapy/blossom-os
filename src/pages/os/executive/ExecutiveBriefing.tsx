@@ -5,6 +5,7 @@ import { ExecPage, ExecCard, AIPrompt, HealthPill, type HealthTone } from "./_sh
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import { ActionItemsPanel } from "@/components/executive/ActionItemsPanel";
 import { cn } from "@/lib/utils";
 
 type Direction = "improved" | "stable" | "slowing" | "escalating" | "watch";
@@ -389,6 +390,7 @@ export default function ExecutiveBriefing() {
           </a>
         </div>
       </ExecCard>
+      <ActionItemsPanel sourcePage="executive/briefing" />
     </ExecPage>
   );
 }
