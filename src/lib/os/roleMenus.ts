@@ -719,7 +719,10 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
 /** Fallback for any role without an explicit menu definition. */
 export const DEFAULT_ROLE_MENU: RoleMenu = {
   sections: [
-    { id: "core", label: "Core", items: [DASHBOARD_ITEM] },
+    { id: "core", label: "Core", items: [
+      DASHBOARD_ITEM,
+      { label: "Org Chart", path: "/org-chart", icon: Users },
+    ] },
     TRAINING_AND_RESOURCES,
   ],
 };
