@@ -7,6 +7,7 @@ import {
   isUuid,
   pickLinkedRef,
 } from "@/lib/os/stateDirector/linkedRef";
+import { OPERATIONS_AND_STATE_ROUTE_ROLES } from "@/lib/os/operationsRoles";
 
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
 
@@ -149,15 +150,19 @@ describe("Assistant State Director — Pass 4 hardening", () => {
   /* -------------------------- route consistency -------------------------- */
 
   it("state-scoped routes are guarded and consistent with the assistant menu", () => {
-    const routesToCheck: [string, RegExp][] = [
-      ["/state-operations", /assistant_state_director/],
-      ["/ops/tasks", /assistant_state_director/],
-      ["/ops/state-escalations", /assistant_state_director/],
-    ];
-    for (const [p, rx] of routesToCheck) {
+    // The route line may allow assistant_state_director either as an
+    // inline literal or via the shared OPERATIONS_AND_STATE_ROUTE_ROLES
+    // constant. Both are valid; the constant must itself include the role.
+    expect(OPERATIONS_AND_STATE_ROUTE_ROLES).toContain("assistant_state_director");
+    for (const p of ["/state-operations", "/ops/tasks", "/ops/state-escalations"]) {
       const line = app.split("\n").find((l) => l.includes('path="' + p + '"'));
       expect(line, `route ${p} not found`).toBeTruthy();
-      expect(line!, `${p} guard should include assistant_state_director`).toMatch(rx);
+      const allowsInline = /assistant_state_director/.test(line!);
+      const allowsViaConst = /OPERATIONS_AND_STATE_ROUTE_ROLES/.test(line!);
+      expect(
+        allowsInline || allowsViaConst,
+        `${p} guard must include assistant_state_director (inline or via OPERATIONS_AND_STATE_ROUTE_ROLES)`,
+      ).toBe(true);
     }
   });
 

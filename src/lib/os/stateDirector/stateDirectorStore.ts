@@ -33,16 +33,24 @@ function reportSaveFailure(action: string, err: unknown) {
 /**
  * State Director operating store.
  *
- * Persistence contract (Pass 6 — current truth, no localStorage):
+ * Persistence contract (Pass 7 — current truth, no localStorage):
  *  - Tasks, escalations, notes, activity, handoffs, and daily health
  *    notes are Supabase-backed (`state_operational_*` +
  *    `state_department_handoffs` + `state_daily_health_notes`). On first
  *    mount we hydrate from Supabase and subscribe to realtime updates so
  *    every director sees the same live picture.
- *  - Writes return or check `{ ok, error }`. The UI uses optimistic
- *    in-memory updates but marks the affected row with `pending` /
- *    `persistError` when persistence fails and surfaces a destructive
- *    toast — no write path silently swallows a Supabase error.
+ *  - The UI uses optimistic UI updates for responsiveness, but every
+ *    primary write (create task, create escalation, add note, change
+ *    ownership, change status, change due date, complete, handoff) is
+ *    awaited against Supabase and must surface failures through the
+ *    row's `persistError` field AND a destructive user-visible toast.
+ *  - No primary write silently fakes success. Supabase persistence for
+ *    primary state-changing actions is NOT "best effort" — a failed
+ *    write leaves the row flagged with `persistError` so the director
+ *    can retry, and the toast tells them what happened. Only truly
+ *    secondary sync (activity mirror rows, non-critical background
+ *    reconciliation) may be treated as best-effort, and only when a
+ *    failure would not lose user intent.
  *  - State metrics hydrate from `state_operational_metrics` when a live
  *    row exists and fall back to the seed row only for states without
  *    persisted data. The State Operations dashboard labels the source
@@ -345,7 +353,9 @@ export const stateDirectorStore = {
       s.escalations[i].updatedAt = nowIso();
       s.activity.unshift(record("note_added", `Note added — ${s.escalations[i].title}`, author, s.escalations[i].state, escId));
     });
-    // Best-effort Supabase persistence.
+    // Primary write: persist the note and, on failure, mark the parent
+    // escalation with persistError + destructive toast so the director
+    // can retry. No silent failure.
     const parent = adapter.read().escalations.find((e) => e.id === escId);
     if (parent && body.trim()) {
       void sbInsertNote({

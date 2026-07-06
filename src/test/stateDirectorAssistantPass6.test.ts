@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { ROLE_MENUS } from "@/lib/os/roleMenus";
+import { OPERATIONS_AND_STATE_ROUTE_ROLES } from "@/lib/os/operationsRoles";
 
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
 
@@ -30,6 +31,7 @@ describe("State Director Assistant — Pass 6 final hardening", () => {
   });
 
   it("Assistant direct routes are PermissionRoute-guarded and allow assistant_state_director", () => {
+    expect(OPERATIONS_AND_STATE_ROUTE_ROLES).toContain("assistant_state_director");
     for (const p of [
       "/state-operations", "/ops/tasks", "/ops/state-escalations",
       "/ops/staffing", "/authorizations", "/intake/dashboard",
@@ -38,7 +40,12 @@ describe("State Director Assistant — Pass 6 final hardening", () => {
       const line = app.split("\n").find((l) => l.includes('path="' + p + '"'));
       expect(line, `route ${p} missing`).toBeTruthy();
       expect(line!).toMatch(/PermissionRoute/);
-      expect(line!).toMatch(/assistant_state_director/);
+      const allowsInline = /assistant_state_director/.test(line!);
+      const allowsViaConst = /OPERATIONS_AND_STATE_ROUTE_ROLES/.test(line!);
+      expect(
+        allowsInline || allowsViaConst,
+        `${p} should allow assistant_state_director (inline or via OPERATIONS_AND_STATE_ROUTE_ROLES)`,
+      ).toBe(true);
     }
   });
 

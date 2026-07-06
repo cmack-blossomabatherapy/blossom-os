@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { ROLE_MENUS } from "@/lib/os/roleMenus";
+import { OPERATIONS_AND_STATE_ROUTE_ROLES } from "@/lib/os/operationsRoles";
 
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
 
@@ -53,6 +54,7 @@ describe("State Director Assistant — Pass 5 hardening", () => {
   });
 
   it("assistant direct-target routes are guarded and allow assistant_state_director", () => {
+    expect(OPERATIONS_AND_STATE_ROUTE_ROLES).toContain("assistant_state_director");
     for (const p of [
       "/scheduling-workspace",
       "/authorizations",
@@ -66,7 +68,12 @@ describe("State Director Assistant — Pass 5 hardening", () => {
       const line = app.split("\n").find((l) => l.includes('path="' + p + '"'));
       expect(line, `route ${p} not found`).toBeTruthy();
       expect(line!, `${p} should be wrapped by PermissionRoute`).toMatch(/PermissionRoute/);
-      expect(line!, `${p} should allow assistant_state_director`).toMatch(/assistant_state_director/);
+      const allowsInline = /assistant_state_director/.test(line!);
+      const allowsViaConst = /OPERATIONS_AND_STATE_ROUTE_ROLES/.test(line!);
+      expect(
+        allowsInline || allowsViaConst,
+        `${p} should allow assistant_state_director (inline or via OPERATIONS_AND_STATE_ROUTE_ROLES)`,
+      ).toBe(true);
     }
     // /ops/scheduling stays as a redirect target
     const opsSched = app.split("\n").find((l) => l.includes('path="/ops/scheduling"'));
