@@ -185,6 +185,33 @@ export async function upsertStateMetric(input: Partial<LiveStateMetric> & { code
   return { ok: !error, error: error?.message };
 }
 
+/**
+ * Bulk ingest helper for future CentralReach / importer jobs. Callers
+ * pass a normalized StateMetricInput per state; every row is written with
+ * an explicit source (never "seed") and a fresh source_updated_at. This
+ * is the single documented upsert path for automated metric writers so
+ * they never have to touch the UI store directly.
+ */
+export type StateMetricInput = Partial<LiveStateMetric> & {
+  code: StateCode;
+  source: Exclude<StateMetricSource, "seed">;
+};
+
+export async function ingestStateMetrics(rows: StateMetricInput[]): Promise<{ ok: boolean; written: number; failures: Array<{ code: StateCode; error: string }> }> {
+  const failures: Array<{ code: StateCode; error: string }> = [];
+  let written = 0;
+  for (const r of rows) {
+    // Guard: importers must never claim "seed" as their source. Seed is
+    // reserved for the calm placeholder rows the UI ships without any
+    // persisted metrics row.
+    const source: StateMetricSource = r.source ?? "manual";
+    const res = await upsertStateMetric({ ...r, source });
+    if (res.ok) written += 1;
+    else failures.push({ code: r.code, error: res.error ?? "unknown" });
+  }
+  return { ok: failures.length === 0, written, failures };
+}
+
 export async function loadStateOperationsSnapshot(): Promise<StateOperationsSnapshot | null> {
   try {
     const [t, e, n, a] = await Promise.all([

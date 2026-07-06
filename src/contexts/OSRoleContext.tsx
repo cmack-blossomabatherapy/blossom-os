@@ -90,6 +90,15 @@ interface OSRoleContextValue {
   setActiveHat: (id: string) => void;
   /** Multi-hat: active department from the current hat, if any. */
   activeDepartment: string | null;
+  /**
+   * Profile-assigned state code for state-scoped roles. Null when the
+   * signed-in user has no profiles.state row. UI uses this to show the
+   * "assigned state required" setup state instead of silently defaulting
+   * to another state.
+   */
+  profileState: OSState | null;
+  /** True when the current role is state-scoped and profileState is set. */
+  hasAssignedState: boolean;
 }
 
 const OSRoleContext = createContext<OSRoleContextValue | null>(null);
@@ -232,7 +241,9 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
     activeHat,
     setActiveHat,
     activeDepartment: activeHat?.departmentKey ?? null,
-  }), [role, effectiveState, setRole, setActiveState, hats, activeHat, setActiveHat]);
+    profileState,
+    hasAssignedState: Boolean(profileState),
+  }), [role, effectiveState, setRole, setActiveState, hats, activeHat, setActiveHat, profileState]);
 
   return <OSRoleContext.Provider value={value}>{children}</OSRoleContext.Provider>;
 }
