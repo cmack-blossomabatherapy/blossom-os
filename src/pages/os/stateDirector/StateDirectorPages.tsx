@@ -1039,7 +1039,7 @@ function ManualMetricsDialog({
       cancellationRisk: source.cancellationRisk,
       agingBlockers: source.agingBlockers,
     });
-  }, [code, source?.updatedAt ?? ""] as never);
+  }, [code]);
 
   const setNum = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: Number(e.target.value) || 0 }));
