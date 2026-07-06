@@ -4,6 +4,8 @@ import { ExecPage, ExecCard, HealthPill, AIPrompt, type HealthTone } from "./_sh
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import { LogDecisionCard } from "@/components/executive/LogDecisionCard";
+import { ActionItemsPanel } from "@/components/executive/ActionItemsPanel";
 
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
