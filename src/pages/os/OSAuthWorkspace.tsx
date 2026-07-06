@@ -588,7 +588,14 @@ export default function OSAuthWorkspace() {
           <SendToStateSupportButton fromDepartment="Authorizations" />
         </div>
       </header>
-      <StateDirectorSnapshotBanner ownerDepartment="Authorizations" sourceModule="auth_workspace" />
+      <StateDirectorSnapshotBanner
+        ownerDepartment="Authorizations"
+        sourceModule="auth_workspace"
+        openBlockers={liveItems.length}
+        topRisks={[
+          liveItems.length ? `${liveItems.length} live authorizations in queue` : "Snapshot counts not connected yet",
+        ]}
+      />
 
       {/* live data status banner */}
       {(loading || error || (!liveItems.length && !loading)) && (

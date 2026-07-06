@@ -182,7 +182,11 @@ export default function OSSchedulingWorkspace() {
           </div>
         </header>
 
-        <StateDirectorSnapshotBanner ownerDepartment="Scheduling" sourceModule="scheduling_workspace" />
+        <StateDirectorSnapshotBanner
+          ownerDepartment="Scheduling"
+          sourceModule="scheduling_workspace"
+          topRisks={["Snapshot counts not connected yet"]}
+        />
 
         {/* 3-panel layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
