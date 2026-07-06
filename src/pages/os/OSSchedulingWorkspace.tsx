@@ -185,7 +185,13 @@ export default function OSSchedulingWorkspace() {
         <StateDirectorSnapshotBanner
           ownerDepartment="Scheduling"
           sourceModule="scheduling_workspace"
-          topRisks={["Snapshot counts not connected yet"]}
+          openBlockers={counts.needs_rbt + counts.coverage_risk + (cr.counts.uncoveredClients ?? 0)}
+          overdueCount={cr.counts.atRiskClients ?? 0}
+          topRisks={[
+            counts.needs_rbt ? `${counts.needs_rbt} needs RBT` : "",
+            counts.coverage_risk ? `${counts.coverage_risk} coverage risks` : "",
+            (cr.counts.uncoveredClients ?? 0) ? `${cr.counts.uncoveredClients} uncovered (CR)` : "",
+          ].filter(Boolean)}
         />
 
         {/* 3-panel layout */}

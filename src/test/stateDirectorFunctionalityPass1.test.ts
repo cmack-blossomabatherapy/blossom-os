@@ -1,6 +1,29 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+
+// Pass 6: mock the Supabase-backed persistence service so store CRUD unit
+// tests exercise the optimistic in-memory contract without hitting real
+// RLS-protected tables (which would emit expected but noisy stderr).
+vi.mock("@/lib/os/stateDirector/stateOperationsService", () => {
+  const ok = async () => ({ ok: true as const });
+  const okId = async () => ({ ok: true as const, id: "mock-id" });
+  return {
+    loadStateOperationsSnapshot: async () => null,
+    subscribeStateOperationsRealtime: () => () => {},
+    loadStateMetrics: async () => null,
+    upsertStateMetric: ok,
+    ingestStateMetrics: async () => ({ ok: true, written: 0, failures: [] }),
+    insertTask: ok,
+    updateTaskRow: ok,
+    insertEscalation: ok,
+    updateEscalationRow: ok,
+    insertNote: okId,
+    insertActivity: ok,
+    deliverHandoff: async () => ({ ok: true, handoffId: "mock-handoff", taskId: "mock-task" }),
+  };
+});
+
 import { stateDirectorStore } from "@/lib/os/stateDirector/stateDirectorStore";
 
 const readFile = (p: string) => fs.readFileSync(path.resolve(process.cwd(), p), "utf8");

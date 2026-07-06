@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   MapPin, AlertTriangle, ListTodo, Plus, Search, Filter, X,
   Activity, Users, Briefcase, ShieldCheck, Calendar, Stethoscope, Phone,
-  Flame, ArrowUpRight, Check, RotateCw, Sparkles,
+  Flame, ArrowUpRight, Check, RotateCw, Sparkles, Gauge,
   type LucideIcon,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
@@ -25,7 +25,11 @@ import {
   type Escalation, type OpsTask, type Priority, type Department, type StateCode,
   type EscalationStatus, type TaskStatus,
 } from "@/lib/os/stateDirector/stateDirectorStore";
+import { refreshStateMetrics } from "@/lib/os/stateDirector/stateDirectorStore";
+import { upsertStateMetric } from "@/lib/os/stateDirector/stateOperationsService";
+import { toast } from "sonner";
 import { StateOpsCentralReachSummaryBadge } from "@/components/stateDirector/StateOpsCentralReachBadge";
+import { CentralReachReadinessPanel } from "@/components/stateDirector/CentralReachReadinessPanel";
 import { DailyHealthNotesPanel } from "@/components/stateDirector/DailyHealthNotesPanel";
 import { LinkedContextPanel } from "@/components/stateDirector/LinkedContextPanel";
 import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
@@ -658,6 +662,12 @@ export function StateOperationsPage() {
   const { role, activeState } = useOSRole();
   const { profiles, isLeadership, isStateScoped, hasAssignedState, assigned } = useAvailableStates();
   const isAssistant = role === "assistant_state_director";
+  // Manual metrics editing is limited to leadership/admin + primary State Director.
+  // Assistant State Director never gets the editor.
+  const canEditMetrics =
+    !isAssistant &&
+    (isLeadership || role === "state_director" || role === "super_admin");
+  const [metricsOpen, setMetricsOpen] = useState(false);
   // State-scoped roles never get "all". If assigned exists we pin to it,
   // otherwise the setup notice below takes over and no queries fire.
   const initialState: StateCode | "all" = isLeadership
@@ -746,6 +756,11 @@ export function StateOperationsPage() {
             <StateSelector value={stateFilter} onChange={setStateFilter} />
             <Button size="sm" variant="outline" onClick={() => setTaskOpen(true)}><Plus className="h-4 w-4 mr-1.5" />Task</Button>
             <Button size="sm" onClick={() => setEscOpen(true)}><AlertTriangle className="h-4 w-4 mr-1.5" />Escalation</Button>
+            {canEditMetrics ? (
+              <Button size="sm" variant="outline" onClick={() => setMetricsOpen(true)}>
+                <Gauge className="h-4 w-4 mr-1.5" />Update Metrics
+              </Button>
+            ) : null}
             <SendToStateSupportButton
               fromDepartment="Operations"
               defaultKind="handoff"
@@ -784,6 +799,8 @@ export function StateOperationsPage() {
       </p>
 
       <StateOpsCentralReachSummaryBadge pendingCount={pendingCrCount} />
+
+      <CentralReachReadinessPanel stateFilter={stateFilter} />
 
       <StateOperationsDailyHealthSlot
         stateFilter={stateFilter}
@@ -941,11 +958,223 @@ export function StateOperationsPage() {
       <CreateTaskDialog open={taskOpen} onOpenChange={setTaskOpen} defaultState={stateFilter === "all" ? undefined : stateFilter} />
       {activeEsc ? <EscalationDetail esc={activeEsc} onClose={() => setActiveEsc(null)} /> : null}
       {activeTask ? <TaskDetail task={activeTask} onClose={() => setActiveTask(null)} /> : null}
+      {canEditMetrics ? (
+        <ManualMetricsDialog
+          open={metricsOpen}
+          onOpenChange={setMetricsOpen}
+          profiles={view.profiles}
+          isLeadership={isLeadership}
+          assigned={assigned}
+          stateFilter={stateFilter}
+          metrics={view.metrics}
+        />
+      ) : null}
     </Shell>
   );
 }
 
 /* ------------------------- 2. State Escalations --------------------------- */
+
+/* ----------------- Manual metrics editor (Pass 6) ------------------------ */
+
+function ManualMetricsDialog({
+  open, onOpenChange, profiles, isLeadership, assigned, stateFilter, metrics,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  profiles: { code: StateCode; name: string }[];
+  isLeadership: boolean;
+  assigned?: StateCode;
+  stateFilter: StateCode | "all";
+  metrics: Array<{
+    code: StateCode; healthScore: number; healthLabel: string;
+    activeClients: number; authorizedHours: number; scheduledHours: number;
+    deliveredHours: number; staffingGaps: number; intakePipeline: number;
+    authsExpiring30d: number; clinicalRisks: number; recruitingNeeds: number;
+    cancellationRisk: number; openEscalations: number; openTasks: number;
+    agingBlockers: number;
+  }>;
+}) {
+  // Choose an initial state:
+  //  - State-scoped director → pin to their assigned state.
+  //  - Leadership → default to the active filter if a single state is chosen,
+  //    otherwise force an explicit pick.
+  const initialCode: StateCode | "" = assigned
+    ? assigned
+    : stateFilter !== "all"
+      ? (stateFilter as StateCode)
+      : "";
+  const [code, setCode] = useState<StateCode | "">(initialCode);
+  const source = metrics.find((m) => m.code === code);
+  const [form, setForm] = useState({
+    healthScore: 80,
+    healthLabel: "Stable",
+    activeClients: 0,
+    authorizedHours: 0,
+    scheduledHours: 0,
+    deliveredHours: 0,
+    staffingGaps: 0,
+    intakePipeline: 0,
+    authsExpiring30d: 0,
+    clinicalRisks: 0,
+    recruitingNeeds: 0,
+    cancellationRisk: 0,
+    agingBlockers: 0,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Sync form when the selected state changes so directors edit real values.
+  useEffect(() => {
+    if (!source) return;
+    setForm({
+      healthScore: source.healthScore ?? 0,
+      healthLabel: source.healthLabel ?? "Stable",
+      activeClients: source.activeClients,
+      authorizedHours: source.authorizedHours,
+      scheduledHours: source.scheduledHours,
+      deliveredHours: source.deliveredHours,
+      staffingGaps: source.staffingGaps,
+      intakePipeline: source.intakePipeline,
+      authsExpiring30d: source.authsExpiring30d,
+      clinicalRisks: source.clinicalRisks,
+      recruitingNeeds: source.recruitingNeeds,
+      cancellationRisk: source.cancellationRisk,
+      agingBlockers: source.agingBlockers,
+    });
+  }, [code]);
+
+  const setNum = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [k]: Number(e.target.value) || 0 }));
+
+  async function onSave() {
+    setError(null);
+    if (!code) {
+      setError("Select a state before saving.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await upsertStateMetric({
+        code,
+        source: "manual",
+        healthScore: form.healthScore,
+        healthLabel: form.healthLabel,
+        activeClients: form.activeClients,
+        authorizedHours: form.authorizedHours,
+        scheduledHours: form.scheduledHours,
+        deliveredHours: form.deliveredHours,
+        staffingGaps: form.staffingGaps,
+        intakePipeline: form.intakePipeline,
+        authsExpiring30d: form.authsExpiring30d,
+        clinicalRisks: form.clinicalRisks,
+        recruitingNeeds: form.recruitingNeeds,
+        cancellationRisk: form.cancellationRisk,
+        agingBlockers: form.agingBlockers,
+      });
+      if (!res.ok) {
+        setError(res.error ?? "Save failed");
+        toast.error("State metrics did not save", { description: res.error ?? "Unknown error" });
+        return;
+      }
+      await refreshStateMetrics();
+      toast.success(`State metrics saved for ${code}`);
+      onOpenChange(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unexpected error";
+      setError(message);
+      toast.error("State metrics did not save", { description: message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const openEscalations = source?.openEscalations ?? 0;
+  const openTasks = source?.openTasks ?? 0;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Update state metrics</DialogTitle>
+          <DialogDescription>
+            Manually update state health metrics. Saved rows are tagged{" "}
+            <b>manual</b> and surface in State Operations as live values.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">State</label>
+              {assigned ? (
+                <Input value={assigned} disabled className="mt-1" />
+              ) : (
+                <Select value={code} onValueChange={(v) => setCode(v as StateCode)}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select a state" /></SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((p) => (
+                      <SelectItem key={p.code} value={p.code}>{p.name} ({p.code})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Health label</label>
+              <Select value={form.healthLabel} onValueChange={(v) => setForm((f) => ({ ...f, healthLabel: v }))}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["Healthy", "Stable", "Watch", "Risk", "Critical"].map((l) => (
+                    <SelectItem key={l} value={l}>{l}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <MetricField label="Health score (0-100)" value={form.healthScore} onChange={setNum("healthScore")} />
+            <MetricField label="Active clients" value={form.activeClients} onChange={setNum("activeClients")} />
+            <MetricField label="Authorized hrs" value={form.authorizedHours} onChange={setNum("authorizedHours")} />
+            <MetricField label="Scheduled hrs" value={form.scheduledHours} onChange={setNum("scheduledHours")} />
+            <MetricField label="Delivered hrs" value={form.deliveredHours} onChange={setNum("deliveredHours")} />
+            <MetricField label="Staffing gaps" value={form.staffingGaps} onChange={setNum("staffingGaps")} />
+            <MetricField label="Intake pipeline" value={form.intakePipeline} onChange={setNum("intakePipeline")} />
+            <MetricField label="Auths < 30d" value={form.authsExpiring30d} onChange={setNum("authsExpiring30d")} />
+            <MetricField label="Clinical risks" value={form.clinicalRisks} onChange={setNum("clinicalRisks")} />
+            <MetricField label="Recruiting needs" value={form.recruitingNeeds} onChange={setNum("recruitingNeeds")} />
+            <MetricField label="Cancellation risk" value={form.cancellationRisk} onChange={setNum("cancellationRisk")} />
+            <MetricField label="Aging blockers" value={form.agingBlockers} onChange={setNum("agingBlockers")} />
+          </div>
+          <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            Derived from operational data (read-only): open escalations{" "}
+            <b className="text-foreground">{openEscalations}</b> · open tasks{" "}
+            <b className="text-foreground">{openTasks}</b>
+          </div>
+          {error ? (
+            <div className="text-xs text-red-600">{error}</div>
+          ) : null}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+          <Button onClick={onSave} disabled={saving || !code}>
+            {saving ? "Saving…" : "Save metrics"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MetricField({
+  label, value, onChange,
+}: { label: string; value: number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <Input type="number" value={value} onChange={onChange} className="mt-1" />
+    </div>
+  );
+}
 
 export function StateEscalationsPage() {
   const { isLeadership, isStateScoped, hasAssignedState, assigned, profiles } = useAvailableStates();

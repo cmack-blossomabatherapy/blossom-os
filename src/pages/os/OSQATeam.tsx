@@ -348,7 +348,13 @@ export default function OSQATeam() {
         <StateDirectorSnapshotBanner
           ownerDepartment="QA"
           sourceModule="qa_team"
-          topRisks={["Snapshot counts not connected yet"]}
+          openBlockers={data.counts.needsReview + data.counts.missingInfo}
+          overdueCount={data.counts.overdue}
+          topRisks={[
+            data.counts.needsReview ? `${data.counts.needsReview} needs QA review` : "",
+            data.counts.overdue ? `${data.counts.overdue} overdue` : "",
+            data.counts.escalations ? `${data.counts.escalations} escalations` : "",
+          ].filter(Boolean)}
         />
 
         {/* PRIORITY CARDS */}
