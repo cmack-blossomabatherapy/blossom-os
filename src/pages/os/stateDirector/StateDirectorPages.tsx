@@ -553,6 +553,22 @@ function TaskDetail({ task, onClose }: { task: OpsTask; onClose: () => void }) {
           <Button variant="outline" onClick={() => { stateDirectorStore.completeTask(task.id, actor); onClose(); }}>
             <Check className="h-4 w-4 mr-1.5" /> Complete
           </Button>
+          <SendToStateSupportButton
+            fromDepartment={task.department}
+            defaultKind="handoff"
+            buttonLabel="Send Handoff From Task"
+            defaultTitle={task.title}
+            defaultDescription={task.description ?? ""}
+            defaultPriority={task.priority}
+            defaultState={task.state}
+            linkedClientId={task.linkedClientId}
+            linkedLeadId={task.linkedLeadId}
+            linkedCandidateId={task.linkedCandidateId}
+            linkedAuthorizationId={task.linkedAuthorizationId}
+            linkedSchedulingItemId={task.linkedSchedulingItemId}
+            sourceModule="state_task_detail"
+            metadata={{ relatedTaskId: task.id, relatedEscalationId: task.relatedEscalationId }}
+          />
           <Button onClick={() => { save(); onClose(); }}>Save changes</Button>
         </DialogFooter>
       </DialogContent>
