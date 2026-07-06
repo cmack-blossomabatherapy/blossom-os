@@ -3,7 +3,7 @@ import { Send, ShieldAlert, CalendarClock, Flame } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
 import { useStaffingWorkspace } from "@/hooks/useStaffingWorkspace";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
-import { CMPage, Pill, priorityTone, statusTone, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
+import { CMPage, Pill, priorityTone, statusTone, FormDialog, familySelectOptions, familyOptionByValue, familyContext, findStaffingForAssignment, findCentralReachPairingForAssignment, SourceStatusChip } from "./_shared";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -23,28 +23,15 @@ export default function StaffingCoordinationPage() {
   const staffIssues = w.openServiceIssues.filter((i) => i.issue_type === "staffing" || i.owner_department === "staffing");
   const staffFollowUps = w.followUps.filter((f) => f.status === "open" && f.category === "staffing");
 
-  const matchStaffing = (clientId: string | null, clientName: string | null) => {
-    const matches = clientId
-      ? staffing.matches.filter((m) => m.client_id === clientId)
-      : [];
-    const prefs = staffing.preferences.filter((p) => {
-      if (clientId && p.client_id) return p.client_id === clientId;
-      return clientName ? (p.client_name ?? "").toLowerCase().trim() === (clientName ?? "").toLowerCase().trim() : false;
-    });
-    let pairing: import("@/hooks/useCentralReachOps").ClientPairing | null = null;
-    if (clientName) {
-      const needle = clientName.toLowerCase().trim();
-      for (const p of cr.pairingsByClient.values()) {
-        if (p.clientName.toLowerCase().trim() === needle) { pairing = p; break; }
-      }
-    }
-    const assignedRbts = [
-      ...matches.filter((m) => m.status === "Assigned").map((m) => m.rbt_name),
+  const matchStaffing = (assignment: typeof w.assignments[number]) => {
+    const { matches, preferences: prefs } = findStaffingForAssignment(staffing, assignment);
+    const pairing = findCentralReachPairingForAssignment(cr, assignment);
+    const assignedRbts = Array.from(new Set([
+      ...matches.filter((m) => m.status === "Assigned").map((m) => m.rbt_name).filter(Boolean) as string[],
       ...(pairing?.rbtName ? [pairing.rbtName] : []),
-    ];
-    const dedup = Array.from(new Set(assignedRbts));
+    ]));
     const pending = matches.filter((m) => m.status === "Pending" || m.status === "Suggested").length;
-    return { matches, prefs, pairing, assignedRbts: dedup, pending };
+    return { matches, prefs, pairing, assignedRbts, pending };
   };
 
   return (
@@ -72,7 +59,11 @@ export default function StaffingCoordinationPage() {
       <div className="mt-4 rounded-2xl border border-white/70 bg-white/80 p-4">
         <div className="flex items-center justify-between">
           <p className="text-[13px] font-semibold">Live staffing status per assigned family</p>
-          <span className="text-[10.5px] text-muted-foreground">Source: staffing matches, family preferences, and CentralReach pairings. Read-only.</span>
+          <div className="flex items-center gap-2">
+            <SourceStatusChip label="Staffing" loading={staffing.loading} error={staffing.error} />
+            <SourceStatusChip label="CentralReach" loading={cr.loading} error={cr.error} />
+            <span className="text-[10.5px] text-muted-foreground">Source: staffing matches, family preferences, and CentralReach pairings. Read-only.</span>
+          </div>
         </div>
         <div className="mt-2 overflow-x-auto">
           <table className="w-full text-[12px]">
@@ -91,7 +82,7 @@ export default function StaffingCoordinationPage() {
                 <tr><td colSpan={6} className="py-3 text-muted-foreground">No assigned families.</td></tr>
               )}
               {w.assignments.map((a) => {
-                const live = matchStaffing(a.client_id, a.client_name);
+                const live = matchStaffing(a);
                 const noSignal = !live.pairing && live.matches.length === 0 && live.prefs.length === 0;
                 return (
                   <tr key={a.id} className="border-b border-border/40 last:border-b-0">

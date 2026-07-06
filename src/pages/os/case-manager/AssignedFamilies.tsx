@@ -4,7 +4,7 @@ import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { useStaffingWorkspace } from "@/hooks/useStaffingWorkspace";
-import { CMPage, Pill, FilterBar, FormDialog, DataCard, RowActions } from "./_shared";
+import { CMPage, Pill, FilterBar, FormDialog, findAuthorizationForAssignment, findCentralReachPairingForAssignment, findCentralReachCoverageRiskForAssignment, findStaffingForAssignment, SourceStatusChip } from "./_shared";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -37,21 +37,14 @@ export default function AssignedFamiliesPage() {
     return a ? { client_id: a.client_id, client_name: a.client_name, state: a.state } : {};
   };
 
-  // Best-effort per-family live operating signals. All lookups are
-  // read-only — Case Manager surfaces status, other departments execute.
-  const liveFor = (clientId: string | null, clientName: string | null) => {
-    const needle = (clientName ?? "").toLowerCase().trim();
-    const authLive = needle ? auth.items.find((x) => (x.clientName ?? "").toLowerCase().trim() === needle) : null;
-    let pairing: any = null;
-    if (needle) {
-      for (const p of cr.pairingsByClient.values()) {
-        if (p.clientName.toLowerCase().trim() === needle) { pairing = p; break; }
-      }
-    }
-    const risk = needle ? cr.coverageRisks.find((r) => r.clientName.toLowerCase().trim() === needle) : null;
-    const assignedRbts = clientId
-      ? staffing.matches.filter((m) => m.client_id === clientId && m.status === "Assigned").length
-      : 0;
+  // Durable per-family live operating signals — helpers prefer client_id
+  // and CentralReach client id before falling back to normalized name.
+  const liveFor = (assignment: typeof w.assignments[number]) => {
+    const authLive = findAuthorizationForAssignment(auth, assignment);
+    const pairing = findCentralReachPairingForAssignment(cr, assignment);
+    const risk = findCentralReachCoverageRiskForAssignment(cr, assignment);
+    const staffingMatches = findStaffingForAssignment(staffing, assignment).matches;
+    const assignedRbts = staffingMatches.filter((m) => m.status === "Assigned").length;
     return { authLive, pairing, risk, assignedRbts };
   };
 
@@ -68,6 +61,11 @@ export default function AssignedFamiliesPage() {
       <FilterBar>
         <Input placeholder="Search families…" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-xs" />
         <span className="text-[11px] text-muted-foreground">{rows.length} of {w.assignments.length}</span>
+        <span className="flex items-center gap-1.5">
+          <SourceStatusChip label="Authorizations" loading={auth.loading} error={auth.error} />
+          <SourceStatusChip label="CentralReach" loading={cr.loading} error={cr.error} />
+          <SourceStatusChip label="Staffing" loading={staffing.loading} error={staffing.error} />
+        </span>
       </FilterBar>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -78,7 +76,7 @@ export default function AssignedFamiliesPage() {
           const openIssues = recs.serviceIssues.filter((s) => !["resolved","closed"].includes(s.status)).length;
           const openEsc = recs.escalations.filter((e) => !["resolved","closed"].includes(e.status)).length;
           const openHo = recs.handoffs.filter((h) => !["resolved","closed"].includes(h.status)).length;
-          const live = liveFor(a.client_id, a.client_name);
+          const live = liveFor(a);
           return (
             <div key={a.id} className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-[0_8px_24px_-18px_hsl(330_40%_45%/0.18)] backdrop-blur">
               <div className="flex items-start justify-between gap-2">

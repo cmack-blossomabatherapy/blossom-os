@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Send, ShieldAlert, CalendarClock, Flame } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
-import { CMPage, Pill, priorityTone, statusTone, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
+import { CMPage, Pill, priorityTone, statusTone, FormDialog, familySelectOptions, familyOptionByValue, familyContext, findCentralReachPairingForAssignment, findCentralReachCoverageRiskForAssignment, SourceStatusChip } from "./_shared";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -21,16 +21,6 @@ export default function SchedulingCoordinationPage() {
   const schedIssues = w.openServiceIssues.filter((i) => i.issue_type === "scheduling" || i.owner_department === "scheduling");
   const schedFollowUps = w.followUps.filter((f) => f.status === "open" && f.category === "scheduling");
 
-  const matchScheduling = (clientName: string | null) => {
-    if (!clientName) return { pairing: null as any, risk: null as any };
-    const needle = clientName.toLowerCase().trim();
-    let pairing: any = null;
-    for (const p of cr.pairingsByClient.values()) {
-      if (p.clientName.toLowerCase().trim() === needle) { pairing = p; break; }
-    }
-    const risk = cr.coverageRisks.find((r) => r.clientName.toLowerCase().trim() === needle) ?? null;
-    return { pairing, risk };
-  };
 
   return (
     <CMPage
@@ -57,7 +47,10 @@ export default function SchedulingCoordinationPage() {
       <div className="mt-4 rounded-2xl border border-white/70 bg-white/80 p-4">
         <div className="flex items-center justify-between">
           <p className="text-[13px] font-semibold">Live scheduling & CentralReach visibility</p>
-          <span className="text-[10.5px] text-muted-foreground">Source: CentralReach billable sessions import. Read-only. Scheduling executes.</span>
+          <div className="flex items-center gap-2">
+            <SourceStatusChip label="CentralReach" loading={cr.loading} error={cr.error} />
+            <span className="text-[10.5px] text-muted-foreground">Source: CentralReach billable sessions import. Read-only. Scheduling executes.</span>
+          </div>
         </div>
         <div className="mt-2 overflow-x-auto">
           <table className="w-full text-[12px]">
@@ -78,7 +71,8 @@ export default function SchedulingCoordinationPage() {
                 <tr><td colSpan={8} className="py-3 text-muted-foreground">No assigned families.</td></tr>
               )}
               {w.assignments.map((a) => {
-                const { pairing, risk } = matchScheduling(a.client_name);
+                const pairing = findCentralReachPairingForAssignment(cr, a);
+                const risk = findCentralReachCoverageRiskForAssignment(cr, a);
                 return (
                   <tr key={a.id} className="border-b border-border/40 last:border-b-0">
                     <td className="py-2 pr-3">

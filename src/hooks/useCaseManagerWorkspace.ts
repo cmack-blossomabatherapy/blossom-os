@@ -65,6 +65,12 @@ export type CMFollowUp = {
   completed_at: string | null;
   completion_note: string | null;
   recurring_cadence: string | null;
+  /**
+   * Set when this follow-up was auto-created from a Parent
+   * Communication row. Lets `resolveCommunicationFollowUp`
+   * close both records in one click.
+   */
+  source_communication_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -84,6 +90,13 @@ export type CMCommunication = {
   followup_at: string | null;
   source_system: string | null;
   occurred_at: string;
+  /**
+   * Set when a linked follow-up task was created for this
+   * communication (via logCommunicationWithFollowUp). Used to
+   * render the "Linked follow-up" pill and to close both rows
+   * from resolveCommunicationFollowUp.
+   */
+  follow_up_id: string | null;
   created_at: string;
 };
 
@@ -510,11 +523,21 @@ export function useCaseManagerWorkspace() {
           description: comm.summary,
           // Durable link back to the communication that spawned the follow-up.
           source_communication_id: comm.id,
-        } as any);
+        });
         // Link forward: stamp the communication with the follow-up id.
-        await sb.from("case_manager_communications")
-          .update({ follow_up_id: (fu as any).id })
+        // If this fails the two rows would drift, so surface the error
+        // instead of silently swallowing it. `logCommunication` already
+        // refreshed once; `createFollowUp` refreshed again — so we only
+        // refresh one more time when the linkage write succeeds.
+        const { error: linkErr } = await sb
+          .from("case_manager_communications")
+          .update({ follow_up_id: fu.id })
           .eq("id", comm.id);
+        if (linkErr) {
+          throw new Error(
+            `Communication logged and follow-up created, but linking them failed: ${linkErr.message ?? linkErr}`,
+          );
+        }
         await refresh();
       }
       return comm;
@@ -530,7 +553,7 @@ export function useCaseManagerWorkspace() {
   const resolveCommunicationFollowUp = useCallback(
     async (communicationId: string, resolution_note?: string): Promise<void> => {
       const comm = communications.find((c) => c.id === communicationId);
-      const linkedFollowUpId = (comm as any)?.follow_up_id as string | null | undefined;
+      const linkedFollowUpId = comm?.follow_up_id ?? null;
       // 1) Flip needs_followup off (source of truth on the comm row).
       const { error: commErr } = await sb
         .from("case_manager_communications")
