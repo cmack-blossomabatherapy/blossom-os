@@ -661,6 +661,12 @@ export function StateOperationsPage() {
   const { role, activeState } = useOSRole();
   const { profiles, isLeadership, isStateScoped, hasAssignedState, assigned } = useAvailableStates();
   const isAssistant = role === "assistant_state_director";
+  // Manual metrics editing is limited to leadership/admin + primary State Director.
+  // Assistant State Director never gets the editor.
+  const canEditMetrics =
+    !isAssistant &&
+    (isLeadership || role === "state_director" || role === "super_admin");
+  const [metricsOpen, setMetricsOpen] = useState(false);
   // State-scoped roles never get "all". If assigned exists we pin to it,
   // otherwise the setup notice below takes over and no queries fire.
   const initialState: StateCode | "all" = isLeadership
@@ -749,6 +755,11 @@ export function StateOperationsPage() {
             <StateSelector value={stateFilter} onChange={setStateFilter} />
             <Button size="sm" variant="outline" onClick={() => setTaskOpen(true)}><Plus className="h-4 w-4 mr-1.5" />Task</Button>
             <Button size="sm" onClick={() => setEscOpen(true)}><AlertTriangle className="h-4 w-4 mr-1.5" />Escalation</Button>
+            {canEditMetrics ? (
+              <Button size="sm" variant="outline" onClick={() => setMetricsOpen(true)}>
+                <Gauge className="h-4 w-4 mr-1.5" />Update Metrics
+              </Button>
+            ) : null}
             <SendToStateSupportButton
               fromDepartment="Operations"
               defaultKind="handoff"
@@ -944,6 +955,17 @@ export function StateOperationsPage() {
       <CreateTaskDialog open={taskOpen} onOpenChange={setTaskOpen} defaultState={stateFilter === "all" ? undefined : stateFilter} />
       {activeEsc ? <EscalationDetail esc={activeEsc} onClose={() => setActiveEsc(null)} /> : null}
       {activeTask ? <TaskDetail task={activeTask} onClose={() => setActiveTask(null)} /> : null}
+      {canEditMetrics ? (
+        <ManualMetricsDialog
+          open={metricsOpen}
+          onOpenChange={setMetricsOpen}
+          profiles={view.profiles}
+          isLeadership={isLeadership}
+          assigned={assigned}
+          stateFilter={stateFilter}
+          metrics={view.metrics}
+        />
+      ) : null}
     </Shell>
   );
 }
