@@ -138,7 +138,6 @@ export default function OSEvaluations() {
 
   return (
     <OSShell>
-        <ClinicalDirectorSection sourceType="evaluation" title="Clinical Director workflow" />
         {isClinicalDirector && selectedEmployee && (
           <ClinicalDirectorSection
             sourceType="evaluation"
@@ -151,6 +150,7 @@ export default function OSEvaluations() {
               status: selectedEmployee.status,
               reviewer: null,
               dueDate: selectedEmployee.next_review_date,
+              centralReachClientId: null,
             }}
           />
         )}
@@ -158,11 +158,13 @@ export default function OSEvaluations() {
         <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[hsl(265_70%_70%/0.25)] blur-3xl" />
         <div className="relative">
           <Badge variant="secondary" className="rounded-full bg-white/80 text-[10px] font-semibold uppercase tracking-[0.16em] text-[hsl(265_70%_45%)]">
-            State Director · {activeState}
+            {isClinicalDirector ? "Clinical Director" : "State Director"} · {activeState}
           </Badge>
           <h1 className="mt-3 text-[28px] font-semibold tracking-tight md:text-[32px]">Evaluations</h1>
           <p className="mt-1 max-w-2xl text-[13.5px] text-muted-foreground">
-            Performance reviews for clinical and operational staff — overdue, upcoming, in progress, and completed.
+            {isClinicalDirector
+              ? "Clinical evaluations for BCBAs and RBTs — supervision readiness, clinical performance, and follow-ups."
+              : "Performance reviews for clinical and operational staff — overdue, upcoming, in progress, and completed."}
           </p>
         </div>
       </header>

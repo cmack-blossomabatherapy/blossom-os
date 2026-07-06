@@ -125,8 +125,9 @@ export function ClinicalWorkItemPanel(props: ClinicalWorkItemPanelProps) {
     const name = (ownerDrafts[id] ?? "").trim();
     if (!name) return;
     try {
-      // owner user id is optional — clinical work items store both.
-      await actions.assignOwner(id, "", name);
+      // owner user id is optional — normalize blank to null so the UUID column
+      // does not receive an empty string. Real UUID linking comes later.
+      await actions.assignOwner(id, null, name);
       setOwnerDrafts((m) => ({ ...m, [id]: "" }));
       await data.reload();
       toast.success(`Assigned to ${name}`);
@@ -136,6 +137,15 @@ export function ClinicalWorkItemPanel(props: ClinicalWorkItemPanelProps) {
   async function changePriorityFor(id: string, p: ClinicalPriority) {
     try { await actions.changePriority(id, p); await data.reload(); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Could not update priority"); }
+  }
+
+  async function changeDueDateFor(id: string, value: string) {
+    try {
+      const iso = value ? new Date(value).toISOString() : null;
+      await actions.changeDueDate(id, iso);
+      await data.reload();
+      toast.success(iso ? "Due date updated" : "Due date cleared");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not update due date"); }
   }
 
   return (
@@ -155,8 +165,8 @@ export function ClinicalWorkItemPanel(props: ClinicalWorkItemPanelProps) {
           <Link2 className="h-3 w-3" /> CentralReach linked ({String(centralReachId)})
         </div>
       ) : sourceType !== "manual" && (
-        <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] text-amber-700">
-          <AlertTriangle className="h-3 w-3" /> No CentralReach client id · sync pending
+        <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[11px] text-slate-600">
+          <Link2 className="h-3 w-3" /> CentralReach link pending
         </div>
       )}
 
@@ -251,6 +261,15 @@ export function ClinicalWorkItemPanel(props: ClinicalWorkItemPanelProps) {
                 >
                   <UserPlus className="h-3 w-3" /> Assign
                 </button>
+                <label className="inline-flex items-center gap-1 text-[11px] text-slate-500" title="Edit due date">
+                  <CalendarClock className="h-3 w-3" />
+                  <input
+                    type="date"
+                    value={it.due_at ? it.due_at.slice(0, 10) : ""}
+                    onChange={(e) => changeDueDateFor(it.id, e.target.value)}
+                    className="rounded border border-slate-200 px-1 py-0.5 text-[11px]"
+                  />
+                </label>
               </div>
               <div className="flex flex-wrap gap-1.5 items-start">
                 <textarea
