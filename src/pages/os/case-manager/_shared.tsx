@@ -1,0 +1,238 @@
+import React, { useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import { Loader2, AlertCircle, Inbox } from "lucide-react";
+import { OSShell } from "../OSShell";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import type { FieldDef, CMFormValues } from "./_utils";
+
+/**
+ * Case Manager shared COMPONENTS ONLY. Utility/pure functions live in
+ * `./_utils.ts` so this file stays Fast-Refresh clean.
+ */
+
+/* ------------ Page shell ------------ */
+
+export function CMPage({
+  eyebrow, title, description, actions, loading, error, empty, children,
+}: {
+  eyebrow: string;
+  title: string;
+  description?: string;
+  actions?: React.ReactNode;
+  loading?: boolean;
+  error?: string | null;
+  empty?: { icon?: LucideIcon; title: string; hint?: string } | null;
+  children: React.ReactNode;
+}) {
+  return (
+    <OSShell>
+      <header className="os-rise relative overflow-hidden rounded-3xl border border-white/60 bg-gradient-to-br from-[hsl(330_100%_98%)] via-white to-[hsl(265_100%_98%)] p-6 md:p-8 shadow-[0_18px_50px_-30px_hsl(330_40%_50%/0.25)]">
+        <div className="pointer-events-none absolute -right-16 -top-20 h-60 w-60 rounded-full bg-[hsl(330_100%_92%)]/60 blur-3xl" />
+        <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[hsl(330_70%_55%)]">{eyebrow}</p>
+            <h1 className="mt-1.5 text-[24px] md:text-[30px] font-semibold tracking-tight">{title}</h1>
+            {description && <p className="mt-1 text-[13px] text-muted-foreground max-w-2xl">{description}</p>}
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+        </div>
+        {error && (
+          <p className="relative mt-4 rounded-xl border border-[hsl(10_85%_88%)] bg-[hsl(10_85%_98%)] px-3 py-2 text-[12px] text-[hsl(10_75%_40%)] inline-flex items-center gap-2">
+            <AlertCircle className="h-3.5 w-3.5" /> {error}
+          </p>
+        )}
+      </header>
+      <div className="mt-6">
+        {loading ? (
+          <div className="flex items-center justify-center rounded-2xl border border-dashed border-border/60 bg-white/60 p-10 text-[13px] text-muted-foreground">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+          </div>
+        ) : empty ? (
+          <div className="flex flex-col items-center rounded-2xl border border-dashed border-border/60 bg-white/60 p-10 text-center">
+            {React.createElement(empty.icon ?? Inbox, { className: "mb-2 h-5 w-5 text-muted-foreground" })}
+            <p className="text-[13px] font-medium">{empty.title}</p>
+            {empty.hint && <p className="mt-1 text-[11.5px] text-muted-foreground max-w-md">{empty.hint}</p>}
+          </div>
+        ) : (
+          children
+        )}
+      </div>
+    </OSShell>
+  );
+}
+
+/* ------------ Pill ------------ */
+
+export function Pill({ children, tone = "calm" }: { children: React.ReactNode; tone?: "calm"|"warm"|"cool"|"amber"|"alert"|"violet" }) {
+  const map: Record<string,string> = {
+    warm:  "bg-[hsl(330_100%_96%)] text-[hsl(330_60%_45%)] border-[hsl(330_85%_90%)]",
+    cool:  "bg-[hsl(210_100%_96%)] text-[hsl(210_70%_42%)] border-[hsl(210_85%_88%)]",
+    calm:  "bg-[hsl(160_50%_94%)] text-[hsl(165_55%_32%)] border-[hsl(160_50%_85%)]",
+    amber: "bg-[hsl(38_100%_94%)] text-[hsl(28_85%_40%)] border-[hsl(38_85%_85%)]",
+    alert: "bg-[hsl(10_85%_96%)] text-[hsl(10_75%_45%)] border-[hsl(10_85%_88%)]",
+    violet:"bg-[hsl(265_100%_97%)] text-[hsl(265_60%_50%)] border-[hsl(265_85%_90%)]",
+  };
+  return <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium ${map[tone]}`}>{children}</span>;
+}
+
+/* ------------ Generic form dialog ------------ */
+
+function messageFromError(err: unknown): string {
+  if (err && typeof err === "object" && "message" in err) {
+    const m = (err as { message?: unknown }).message;
+    if (typeof m === "string") return m;
+  }
+  return "Save failed";
+}
+
+export function FormDialog({
+  open, onOpenChange, title, description, fields, initial, submitLabel = "Save",
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  title: string;
+  description?: string;
+  fields: FieldDef[];
+  initial?: CMFormValues;
+  submitLabel?: string;
+  onSubmit: (values: CMFormValues) => Promise<void> | void;
+}) {
+  const initialValues = useMemo(() => {
+    const v: CMFormValues = {};
+    fields.forEach((f) => { v[f.key] = initial?.[f.key] ?? f.defaultValue ?? (f.type === "checkbox" ? false : ""); });
+    return v;
+  }, [fields, initial]);
+  const [values, setValues] = useState<CMFormValues>(initialValues);
+  const [busy, setBusy] = useState(false);
+
+  React.useEffect(() => { if (open) setValues(initialValues); }, [open, initialValues]);
+
+  const strAt = (k: string): string => {
+    const v = values[k];
+    return typeof v === "string" ? v : v == null ? "" : String(v);
+  };
+
+  const submit = async () => {
+    for (const f of fields) {
+      if (f.required && !values[f.key]) { toast.error(`${f.label} is required`); return; }
+    }
+    setBusy(true);
+    try {
+      await onSubmit(values);
+      onOpenChange(false);
+    } catch (err: unknown) {
+      toast.error(messageFromError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description && <DialogDescription>{description}</DialogDescription>}
+        </DialogHeader>
+        <div className="grid gap-3 py-2 max-h-[60vh] overflow-y-auto">
+          {fields.map((f) => (
+            <div key={f.key} className="grid gap-1.5">
+              <Label htmlFor={f.key} className="text-[12px]">{f.label}{f.required ? " *" : ""}</Label>
+              {f.type === "textarea" ? (
+                <Textarea id={f.key} value={strAt(f.key)} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} placeholder={f.placeholder} />
+              ) : f.type === "select" ? (
+                <Select value={strAt(f.key)} onValueChange={(v) => setValues({ ...values, [f.key]: v })}>
+                  <SelectTrigger><SelectValue placeholder={f.placeholder ?? "Select…"} /></SelectTrigger>
+                  <SelectContent>
+                    {(f.options ?? []).map((o) => {
+                      const opt = typeof o === "string" ? { value: o, label: o } : o;
+                      return <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+              ) : f.type === "checkbox" ? (
+                <div className="flex items-center gap-2">
+                  <Checkbox id={f.key} checked={!!values[f.key]} onCheckedChange={(c) => setValues({ ...values, [f.key]: !!c })} />
+                  <Label htmlFor={f.key} className="text-[12px] text-muted-foreground">{f.placeholder ?? "Yes"}</Label>
+                </div>
+              ) : f.type === "date" ? (
+                <Input id={f.key} type="date" value={strAt(f.key)} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
+              ) : f.type === "datetime" ? (
+                <Input id={f.key} type="datetime-local" value={strAt(f.key)} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
+              ) : (
+                <Input id={f.key} value={strAt(f.key)} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} placeholder={f.placeholder} />
+              )}
+            </div>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
+          <Button onClick={submit} disabled={busy}>{busy ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Saving…</> : submitLabel}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------ Filter bar ------------ */
+
+export function FilterBar({ children }: { children: React.ReactNode }) {
+  return <div className="mb-3 flex flex-wrap items-center gap-2">{children}</div>;
+}
+
+/* ------------ Source status chip ------------ */
+
+export function SourceStatusChip({
+  label, loading, error,
+}: { label: string; loading?: boolean; error?: string | null }) {
+  if (loading) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(210_50%_85%)] bg-[hsl(210_100%_98%)] px-2 py-0.5 text-[10.5px] font-medium text-[hsl(210_60%_40%)]">
+        <Loader2 className="h-2.5 w-2.5 animate-spin" /> {label} data loading
+      </span>
+    );
+  }
+  if (error) {
+    return (
+      <span
+        title={error}
+        className="inline-flex items-center gap-1 rounded-full border border-[hsl(38_85%_85%)] bg-[hsl(38_100%_96%)] px-2 py-0.5 text-[10.5px] font-medium text-[hsl(28_75%_40%)]"
+      >
+        <AlertCircle className="h-2.5 w-2.5" /> {label} data unavailable
+      </span>
+    );
+  }
+  return null;
+}
+
+/* ------------ Data table ------------ */
+
+export function DataCard({ title, count, children }: { title?: string; count?: number; children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/70 bg-white/80 shadow-[0_8px_24px_-18px_hsl(265_50%_40%/0.16)] backdrop-blur-md">
+      {title && (
+        <div className="flex items-center justify-between border-b border-border/60 px-4 py-2.5">
+          <p className="text-[13px] font-semibold tracking-tight">{title}</p>
+          {typeof count === "number" && <span className="text-[11px] text-muted-foreground">{count}</span>}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+export function RowActions({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-wrap items-center gap-1.5">{children}</div>;
+}
