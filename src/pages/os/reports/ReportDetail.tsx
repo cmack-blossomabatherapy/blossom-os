@@ -141,7 +141,7 @@ export default function ReportDetail() {
           {["This month", "All states", "All payors", "All BCBAs"].map(c => (
             <button key={c} className="rounded-full border border-border/60 bg-secondary/40 px-2.5 py-1 text-[11.5px] font-medium text-foreground hover:bg-secondary/60">{c}</button>
           ))}
-          <span className="ml-auto text-[11px] text-muted-foreground">Showing live mock data · drilldowns enabled</span>
+          <span className="ml-auto text-[11px] text-muted-foreground">Live report shell · connect source data to populate</span>
         </section>
       )}
 

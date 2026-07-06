@@ -24,6 +24,7 @@ import {
   readSavedReportsV3, deleteSavedReportV3, type BcbaSavedReportV3,
 } from "@/lib/os/bcbaProductivityV3/store";
 import { useAuthorizationReportMetrics } from "@/hooks/useAuthorizationReportMetrics";
+import { useRbtReportSummaries } from "@/hooks/useRbtReportSummaries";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
@@ -40,16 +41,31 @@ export default function ReportsHome() {
     setSearchParams(next, { replace: true });
   }
   const authReportMetrics = useAuthorizationReportMetrics();
-  // Overlay live Authorizations KPI previews so report cards never render
-  // the catalog's bare "-" placeholders for those three reports.
+  const rbtSummaries = useRbtReportSummaries();
+  // Overlay live KPI previews so report cards never render the catalog's
+  // bare "-" placeholders. Authorizations metrics + per-user RBT summaries
+  // are merged in here — everything else falls back to the catalog values.
   const reportsWithLive = useMemo(() => {
-    const overrides = authReportMetrics.byReportId;
+    const authOverrides = authReportMetrics.byReportId;
+    const rbtSummary = rbtSummaries.summaries;
     return reports.map((r) => {
-      const live = overrides[r.id];
-      if (!live) return r;
-      return { ...r, kpiPreviews: live };
+      const authLive = authOverrides[r.id];
+      if (authLive) return { ...r, kpiPreviews: authLive };
+      const rbtLive = (rbtSummary as Record<string, { primary: string; secondary?: string } | undefined>)[r.id];
+      if (rbtLive) {
+        return {
+          ...r,
+          kpiPreviews: [
+            { label: r.kpiPreviews?.[0]?.label ?? "Value", value: rbtLive.primary, trend: "neutral" as const },
+            ...(rbtLive.secondary
+              ? [{ label: r.kpiPreviews?.[1]?.label ?? "Detail", value: rbtLive.secondary, trend: "neutral" as const }]
+              : []),
+          ],
+        };
+      }
+      return r;
     });
-  }, [reports, authReportMetrics.byReportId]);
+  }, [reports, authReportMetrics.byReportId, rbtSummaries.summaries]);
   const categories = useMemo(() => visibleCategoriesForRole(role), [role]);
   // When a ?category=xxx is set, prioritize that category to the top.
   const categoriesOrdered = useMemo(() => {
