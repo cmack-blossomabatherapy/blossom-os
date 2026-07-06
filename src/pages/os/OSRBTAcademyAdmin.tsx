@@ -733,6 +733,26 @@ function EmptyState() {
     </div>
   );
 }
+function LoadingState() {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-card p-10 text-center text-sm text-muted-foreground">
+      <ClipboardCheck className="mx-auto mb-3 size-5 text-muted-foreground animate-pulse" />
+      Loading readiness records…
+    </div>
+  );
+}
+function EmptySetupState() {
+  return (
+    <div className="rounded-2xl border border-dashed border-border/70 bg-card p-10 text-center text-sm text-muted-foreground">
+      <Sparkles className="mx-auto mb-3 size-5 text-primary" />
+      <p className="text-foreground font-medium">No RBT readiness records yet</p>
+      <p className="mt-1 text-xs">
+        As RBTs are added to the Academy, their readiness records will appear here.
+        Records live in <code className="rounded bg-muted px-1 py-0.5 text-[10px]">rbt_readiness_records</code>.
+      </p>
+    </div>
+  );
+}
 function Mini({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
   return (
     <div className="flex items-center gap-1.5">
