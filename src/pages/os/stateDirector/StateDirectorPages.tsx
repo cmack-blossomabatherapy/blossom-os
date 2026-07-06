@@ -605,6 +605,13 @@ export function StateOperationsPage() {
             <StateSelector value={stateFilter} onChange={setStateFilter} />
             <Button size="sm" variant="outline" onClick={() => setTaskOpen(true)}><Plus className="h-4 w-4 mr-1.5" />Task</Button>
             <Button size="sm" onClick={() => setEscOpen(true)}><AlertTriangle className="h-4 w-4 mr-1.5" />Escalation</Button>
+            <SendToStateSupportButton
+              fromDepartment="Operations"
+              defaultKind="handoff"
+              buttonLabel="Department Handoff"
+              defaultState={stateFilter === "all" ? undefined : (stateFilter as StateCode)}
+              sourceModule="state_operations_dashboard"
+            />
           </div>
         }
       />
