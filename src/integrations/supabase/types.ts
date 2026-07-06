@@ -12448,6 +12448,65 @@ export type Database = {
         }
         Relationships: []
       }
+      org_chart_nodes: {
+        Row: {
+          accent_color: string | null
+          avatar_url: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          email: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          position_x: number
+          position_y: number
+          sort_order: number
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          position_x?: number
+          position_y?: number
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          position_x?: number
+          position_y?: number
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_chart_nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "org_chart_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payer_requirements: {
         Row: {
           active: boolean
@@ -19332,6 +19391,7 @@ export type Database = {
       }
       can_act_on_bd_source_events: { Args: { _uid: string }; Returns: boolean }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
+      can_edit_org_chart: { Args: { _user_id: string }; Returns: boolean }
       can_manage_bcba_productivity_uploads: {
         Args: { _user_id: string }
         Returns: boolean
