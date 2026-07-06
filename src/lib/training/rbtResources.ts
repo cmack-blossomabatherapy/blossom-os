@@ -1,8 +1,14 @@
 // RBT Training Academy — resources system.
-// Starter resources are seeded in code; admin edits are persisted to localStorage,
-// so a backend can be added later without changing consumer code.
+// Source of truth is public.rbt_resources (Supabase). STARTER_RBT_RESOURCES is
+// kept as an offline fallback and as a one-time bootstrap for empty databases.
+// localStorage is only a temporary cache/fallback until Supabase is reachable.
+//
+// CentralReach integration contract: rbt_resources rows carry centralreach_id,
+// source_system, source_updated_at, sync_status, and sync_error so a future
+// sync job can upsert without changing the consumer API.
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import type { RBTPathId } from "./rbtAcademy";
 
 export type RBTResourceType =
