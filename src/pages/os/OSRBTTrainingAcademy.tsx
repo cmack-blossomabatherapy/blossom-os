@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   RBT_PATHS, RBT_OWNERSHIP, pathStats,
@@ -48,6 +49,26 @@ export default function OSRBTTrainingAcademy() {
   // cannot change their own assigned path from this page.
   const [previewId, setPreviewId] = useState<RBTPathId | null>(null);
   const [tab, setTab] = useState<TabKey>("journey");
+
+  // Lightweight assignedPath source tracker for the header badge
+  // ("assigned by your trainer" vs "default"). The durable per-user
+  // progress + module status is merged inside useMyRbtAcademyProgress,
+  // which owns the full readiness + runtime read.
+  const [assignedPath, setAssignedPath] = useState<{ source: "readiness" | "default" }>({ source: "default" });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from("rbt_readiness_records")
+        .select("path_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled || !data?.path_id) return;
+      setAssignedPath({ source: "readiness" });
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // Durable, per-user merged progress: readiness + academy_runtime_progress
   // overlaid on the static RBT_PATHS shape.
@@ -118,7 +139,9 @@ export default function OSRBTTrainingAcademy() {
               <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-[12px]">
                 <span className="font-medium text-foreground">{path.label}</span>
                 <span className="text-muted-foreground">
-                  {merged.assignedSource === "readiness" ? "assigned by your trainer" : "default"}
+                  {assignedPath.source === "readiness" || merged.assignedSource === "readiness"
+                    ? "assigned by your trainer"
+                    : "default"}
                 </span>
               </div>
             )}
