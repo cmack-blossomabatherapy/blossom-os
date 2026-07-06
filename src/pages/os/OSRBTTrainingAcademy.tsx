@@ -118,7 +118,7 @@ export default function OSRBTTrainingAcademy() {
               <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-[12px]">
                 <span className="font-medium text-foreground">{path.label}</span>
                 <span className="text-muted-foreground">
-                  {assignedPath.source === "readiness" ? "assigned by your trainer" : "default"}
+                  {merged.assignedSource === "readiness" ? "assigned by your trainer" : "default"}
                 </span>
               </div>
             )}
