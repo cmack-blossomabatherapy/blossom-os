@@ -649,6 +649,9 @@ export function StateOperationsPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-6">
+        <div className="col-span-full -mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+          Seed fallback metrics
+        </div>
         <KPI label="State health"        value={rollup.health || "—"} tone={rollup.health >= 85 ? "ok" : rollup.health >= 70 ? "warn" : "danger"} />
         <KPI label="Active clients"      value={rollup.activeClients} tone="info" />
         <KPI label="Authorized hrs"      value={rollup.authorizedHours} tone="muted" />
@@ -662,6 +665,11 @@ export function StateOperationsPage() {
         <KPI label="Open escalations"    value={rollup.openEscalations} tone={rollup.openEscalations > 3 ? "danger" : "warn"} />
         <KPI label="Open tasks"          value={rollup.openTasks}       tone="info" />
       </div>
+      <p className="text-xs text-muted-foreground -mt-2">
+        Tasks, escalations, notes, handoffs, and daily health notes are live.
+        State health metrics above are sample fallback values until a live
+        state metrics source is connected.
+      </p>
 
       <StateOpsCentralReachSummaryBadge pendingCount={pendingCrCount} />
 
