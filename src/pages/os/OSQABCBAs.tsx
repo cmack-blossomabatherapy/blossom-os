@@ -360,7 +360,6 @@ export default function OSQABCBAs() {
   return (
     <OSShell>
       <div className="mx-auto w-full max-w-[1500px] px-4 md:px-8 pb-24 pt-6 md:pt-10 space-y-6">
-        <ClinicalDirectorSection sourceType="bcba" title="Clinical Director workflow" />
         {/* HEADER */}
         <header>
           <div className="flex items-start justify-between flex-wrap gap-4">
