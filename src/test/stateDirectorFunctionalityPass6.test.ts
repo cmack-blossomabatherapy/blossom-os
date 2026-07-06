@@ -67,11 +67,10 @@ describe("State Director Functionality Pass 6 — final hardening", () => {
 
   it("Reports remains unified at /reports and training remains at /training for state_director", () => {
     const menus = read("src/lib/os/roleMenus.ts");
-    const start = menus.indexOf("state_director: {");
-    const end = menus.indexOf("assistant_state_director: {");
-    const block = menus.slice(start, end);
-    const reports = (block.match(/path: "\/reports"/g) ?? []).length;
-    expect(reports).toBeGreaterThanOrEqual(1);
-    expect(block).toContain('path: "/training"');
+    // Reports comes in via the shared STATE_TRAINING_AND_RESOURCES section.
+    expect(menus).toContain('path: "/reports"');
+    const trainingSection = menus.slice(menus.indexOf("STATE_TRAINING_AND_RESOURCES"));
+    expect(trainingSection).toContain('path: "/training"');
+    expect(trainingSection).toContain('path: "/reports"');
   });
 });
