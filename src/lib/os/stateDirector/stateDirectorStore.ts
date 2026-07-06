@@ -33,25 +33,26 @@ function reportSaveFailure(action: string, err: unknown) {
 /**
  * State Director operating store.
  *
- * Persistence contract (Pass 5+ current truth — no localStorage):
- *  - Operational tasks, escalations, notes, and activity are backed by
- *    Supabase (`state_operational_*` tables). On first mount we hydrate the
- *    in-memory cache from Supabase and subscribe to realtime updates so
- *    every State Director sees the same live picture.
- *  - Mutations update the local cache synchronously (optimistic UI) so
- *    `useSyncExternalStore` stays responsive, then await the Supabase
- *    write and inspect its structured `{ ok, error }` result. When a
- *    primary state-support write fails, the affected row is marked with
- *    `persistError` and a destructive toast surfaces the real failure —
- *    no primary write silently fakes success. Local records and Supabase
- *    rows share the same UUID.
- *  - State profiles and metrics remain seeded until a real metrics source
- *    is wired (see docs/state-director-functionality-pass-2-qa.md). The
- *    dashboard surfaces this honestly and does not present seed KPIs as
- *    live CentralReach data.
- *
- * All CRUD flows go through this module — no page mutates snapshot state
- * directly. Activity events are recorded automatically.
+ * Persistence contract (Pass 6 — current truth, no localStorage):
+ *  - Tasks, escalations, notes, activity, handoffs, and daily health
+ *    notes are Supabase-backed (`state_operational_*` +
+ *    `state_department_handoffs` + `state_daily_health_notes`). On first
+ *    mount we hydrate from Supabase and subscribe to realtime updates so
+ *    every director sees the same live picture.
+ *  - Writes return or check `{ ok, error }`. The UI uses optimistic
+ *    in-memory updates but marks the affected row with `pending` /
+ *    `persistError` when persistence fails and surfaces a destructive
+ *    toast — no write path silently swallows a Supabase error.
+ *  - State metrics hydrate from `state_operational_metrics` when a live
+ *    row exists and fall back to the seed row only for states without
+ *    persisted data. The State Operations dashboard labels the source
+ *    (live / manual / integration / seed) honestly and never presents
+ *    seed values as CentralReach truth.
+ *  - CentralReach sync is NOT connected yet. Tasks, escalations, and
+ *    handoffs are tagged with `centralreach_sync_status` (default
+ *    `not_connected`) so a future integration has a clean hook, and
+ *    unmapped work is tracked in the `state_centralreach_outbox`
+ *    readiness table.
  */
 
 function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
