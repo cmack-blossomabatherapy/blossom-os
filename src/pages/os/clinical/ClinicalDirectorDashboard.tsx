@@ -32,6 +32,26 @@ export default function ClinicalDirectorDashboard() {
   const [creating, setCreating] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftPriority, setDraftPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
+  const [savedViews, setSavedViews] = useState<Array<{ id: string; name: string; filters: Record<string, unknown> }>>([]);
+  const [viewName, setViewName] = useState("");
+
+  useMemo(() => {
+    // load saved views once on mount
+    void (async () => {
+      try { setSavedViews((await actions.listSavedViews()) as never); } catch { /* noop */ }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function saveCurrentView() {
+    if (!viewName.trim()) return;
+    try {
+      await actions.saveView(viewName.trim(), { stateFilter });
+      setSavedViews((await actions.listSavedViews()) as never);
+      setViewName("");
+      toast.success("Saved view");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not save view"); }
+  }
 
   async function handleCreate() {
     if (!draftTitle.trim()) return;
@@ -217,6 +237,45 @@ export default function ClinicalDirectorDashboard() {
               </Link>
             ))}
           </div>
+        </section>
+
+        <section className="rounded-lg border border-border bg-card p-4 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Saved views</h2>
+            <div className="flex items-center gap-2">
+              <input
+                value={viewName}
+                onChange={(e) => setViewName(e.target.value)}
+                placeholder="Name this view…"
+                className="rounded-md border border-border bg-background px-2 py-1 text-sm"
+              />
+              <button
+                onClick={saveCurrentView}
+                className="rounded-md bg-primary px-3 py-1 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >Save view</button>
+            </div>
+          </div>
+          {savedViews.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No saved views yet. Persist your current filters into clinical_saved_views.</p>
+          ) : (
+            <ul className="flex flex-wrap gap-1.5">
+              {savedViews.map((v) => (
+                <li key={v.id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
+                  <button
+                    onClick={() => {
+                      const f = v.filters as { stateFilter?: string };
+                      setStateFilter(f.stateFilter ?? "");
+                    }}
+                  >{v.name}</button>
+                  <button
+                    onClick={async () => { await actions.deleteSavedView(v.id); setSavedViews((s) => s.filter((x) => x.id !== v.id)); }}
+                    className="text-muted-foreground hover:text-destructive"
+                    title="Delete"
+                  >×</button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="grid gap-4 lg:grid-cols-2">
