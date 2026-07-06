@@ -426,6 +426,9 @@ export default function OpsCommandCenter() {
         </div>
       </section>
 
+      {/* 1b. Persistent Work Queue signals */}
+      <WorkQueueSignalsCard />
+
       {/* 2. Live Operations Pulse */}
       <OpsCard title="Live operations pulse" hint="Last few hours · derived from live data">
         {pulse.length === 0 ? (
