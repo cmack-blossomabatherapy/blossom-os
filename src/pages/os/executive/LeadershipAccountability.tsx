@@ -4,6 +4,8 @@ import { ExecPage, ExecCard, HealthPill, AIPrompt, type HealthTone } from "./_sh
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import { LogDecisionCard } from "@/components/executive/LogDecisionCard";
+import { ActionItemsPanel } from "@/components/executive/ActionItemsPanel";
 
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
@@ -506,6 +508,10 @@ export default function LeadershipAccountability() {
           <AIPrompt label="Draft leadership note" prompt="Draft a brief, supportive leadership note summarizing where coordination support is most needed across Blossom this week." />
         </div>
       </ExecCard>
+
+      {/* Persisted leadership decisions + action items */}
+      <LogDecisionCard />
+      <ActionItemsPanel sourcePage="executive_leadership_accountability" title="Accountability action items" />
     </ExecPage>
   );
 }

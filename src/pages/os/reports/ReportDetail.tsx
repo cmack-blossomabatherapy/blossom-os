@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import {
   REPORTS, REPORT_CATEGORIES, readFavorites, toggleFavorite, pushRecent, visibleReportsForRole,
 } from "@/lib/os/reportsCatalog";
+import { markReportOpened } from "@/hooks/useSharedSavedViews";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { MetricCard } from "@/components/reports/MetricCard";
 import { ReportFunnel } from "@/components/reports/ReportFunnel";
@@ -57,7 +58,13 @@ export default function ReportDetail() {
     return visibleReportsForRole(role).filter(r => r.category === report.category && r.id !== report.id).slice(0, 3);
   }, [report, role]);
 
-  useEffect(() => { if (canViewReport && report) pushRecent(report.id); }, [canViewReport, report]);
+  useEffect(() => {
+    if (canViewReport && report) {
+      pushRecent(report.id);
+      // Persist recent to Supabase for the signed-in user; no-op if signed out.
+      void markReportOpened(report.id);
+    }
+  }, [canViewReport, report]);
 
   if (!report || !cat || !canViewReport) {
     return (

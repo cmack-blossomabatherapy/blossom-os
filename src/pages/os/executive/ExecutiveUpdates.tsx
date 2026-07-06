@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, Pin, Sparkles } from "lucide-react";
 import { ExecPage, ExecCard, HealthPill, AIPrompt, ActionPill, type HealthTone } from "./_shared";
+import { PublishUpdateCard } from "@/components/executive/PublishUpdateCard";
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
@@ -511,18 +512,8 @@ export default function ExecutiveUpdates() {
         </div>
       </ExecCard>
 
-      {/* Section 9 — Quick executive actions */}
-      <ExecCard title="Quick executive actions" hint="Minimal · executive-focused">
-        <div className="flex flex-wrap gap-1.5">
-          <ActionPill label="Create Executive Update" toastMessage="Executive update draft started" />
-          <ActionPill label="Send Organization-Wide Message" toastMessage="Organization-wide message draft started" />
-          <ActionPill label="Publish Leadership Priority" toastMessage="Leadership priority drafted for publication" />
-          <ActionPill label="Launch Operational Rollout" toastMessage="New operational rollout drafted" />
-          <ActionPill label="Create Staffing Alert" toastMessage="Staffing alert drafted" />
-          <ActionPill label="Publish Training Initiative" toastMessage="Training initiative drafted" />
-          <ActionPill label="Schedule Leadership Briefing" toastMessage="Leadership briefing scheduled" />
-        </div>
-      </ExecCard>
+      {/* Section 9 — Publish a real executive update (persisted) */}
+      <PublishUpdateCard />
     </ExecPage>
   );
 }
