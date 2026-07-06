@@ -65,6 +65,12 @@ export type CMFollowUp = {
   completed_at: string | null;
   completion_note: string | null;
   recurring_cadence: string | null;
+  /**
+   * Set when this follow-up was auto-created from a Parent
+   * Communication row. Lets `resolveCommunicationFollowUp`
+   * close both records in one click.
+   */
+  source_communication_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -84,6 +90,13 @@ export type CMCommunication = {
   followup_at: string | null;
   source_system: string | null;
   occurred_at: string;
+  /**
+   * Set when a linked follow-up task was created for this
+   * communication (via logCommunicationWithFollowUp). Used to
+   * render the "Linked follow-up" pill and to close both rows
+   * from resolveCommunicationFollowUp.
+   */
+  follow_up_id: string | null;
   created_at: string;
 };
 
