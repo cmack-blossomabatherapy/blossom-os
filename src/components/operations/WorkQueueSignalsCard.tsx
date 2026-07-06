@@ -18,15 +18,16 @@ import { cn } from "@/lib/utils";
 export function WorkQueueSignalsCard({ compact = false }: { compact?: boolean }) {
   const { items, loading } = useWorkQueue();
 
+  const CLOSED = new Set(["resolved", "closed", "ignored"]);
   const stats = useMemo(() => {
-    const open = items.filter((i) => i.status === "open" || i.status === "in_progress");
+    const open = items.filter((i) => i.status === "open" || i.status === "in_progress" || i.status === "new");
     const escalated = items.filter((i) => i.status === "escalated" || i.escalatedAt);
     const urgent = items.filter((i) => i.priority === "urgent" || i.priority === "high");
     const overdue = items.filter(
-      (i) => i.dueDate && new Date(i.dueDate) < new Date() && i.status !== "completed" && i.status !== "resolved",
+      (i) => i.dueDate && new Date(i.dueDate) < new Date() && !CLOSED.has(i.status),
     );
     const recent = [...items]
-      .filter((i) => i.status !== "completed" && i.status !== "resolved")
+      .filter((i) => !CLOSED.has(i.status))
       .sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
       .slice(0, compact ? 3 : 5);
     return { open, escalated, urgent, overdue, recent };
@@ -43,15 +44,15 @@ export function WorkQueueSignalsCard({ compact = false }: { compact?: boolean })
     <OpsCard
       title="Operations work queue"
       hint="Persistent · shared across leadership"
-      action={
+    >
+      <div className="mb-3 flex justify-end">
         <Link
           to="/work-queue"
           className="inline-flex items-center gap-1 rounded-full border border-border/60 px-2.5 py-1 text-[11.5px] text-muted-foreground hover:border-border hover:text-foreground"
         >
           Open queue <ArrowRight className="h-3 w-3" />
         </Link>
-      }
-    >
+      </div>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         {tiles.map((t) => {
           const Icon = t.icon;
@@ -103,9 +104,9 @@ export function WorkQueueSignalsCard({ compact = false }: { compact?: boolean })
                   </div>
                   <span
                     className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10.5px] uppercase tracking-wider", {
-                      "bg-rose-500/10 text-rose-600 dark:text-rose-400": i.status === "escalated",
-                      "bg-amber-500/10 text-amber-600 dark:text-amber-400": i.status === "in_progress",
-                      "bg-muted text-muted-foreground": i.status === "open" || i.status === "snoozed",
+                      "bg-rose-500/10 text-rose-600 dark:text-rose-400": i.status === "escalated" || i.status === "blocked",
+                      "bg-amber-500/10 text-amber-600 dark:text-amber-400": i.status === "in_progress" || i.status === "waiting",
+                      "bg-muted text-muted-foreground": i.status === "open" || i.status === "new",
                     })}
                   >
                     {i.status.replace("_", " ")}
