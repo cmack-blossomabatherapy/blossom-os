@@ -14,6 +14,20 @@ import {
   insertNote as sbInsertNote,
   insertActivity as sbInsertActivity,
 } from "./stateOperationsService";
+import { toast } from "@/hooks/use-toast";
+
+function reportSaveFailure(action: string, err: unknown) {
+  const message = err instanceof Error ? err.message : String(err ?? "Unknown error");
+  // eslint-disable-next-line no-console
+  console.error(`[stateDirectorStore] ${action} failed:`, err);
+  try {
+    toast({
+      title: `Save failed — ${action}`,
+      description: message,
+      variant: "destructive",
+    });
+  } catch { /* toast not mounted (SSR/tests) */ }
+}
 
 /**
  * State Director operating store.
@@ -60,7 +74,7 @@ function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
         };
         cache = next;
         listeners.forEach((fn) => fn(next));
-      }).catch(() => { /* ignore */ });
+      }).catch((err) => reportSaveFailure("hydrate state ops", err));
       // Pass 3: realtime — any change to state ops tables triggers a
       // rehydrate so all directors see the same live picture.
       if (typeof window !== "undefined") {
@@ -76,7 +90,7 @@ function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
             };
             cache = next;
             listeners.forEach((fn) => fn(next));
-          }).catch(() => { /* ignore */ });
+          }).catch((err) => reportSaveFailure("refresh state ops", err));
         });
       }
     }
