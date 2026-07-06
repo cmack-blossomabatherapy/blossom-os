@@ -224,7 +224,17 @@ export default function IntakeDashboard() {
         { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
-      <StateDirectorSnapshotBanner ownerDepartment="Intake" sourceModule="intake_dashboard" />
+      <StateDirectorSnapshotBanner
+        ownerDepartment="Intake"
+        sourceModule="intake_dashboard"
+        overdueCount={counts.missing}
+        openBlockers={counts.followUps}
+        topRisks={[
+          counts.missing ? `${counts.missing} packet follow-up` : null,
+          counts.awaiting ? `${counts.awaiting} awaiting VOB` : null,
+          counts.inPipeline ? `${counts.inPipeline} open pipeline` : null,
+        ].filter(Boolean) as string[]}
+      />
       {/* Intake Pulse */}
       <section>
         <SectionHeader icon={Zap} tone="primary" title="Intake Pulse" subtitle="Live snapshot of where families are right now — tap a tile to drill in." />
