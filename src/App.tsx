@@ -15,6 +15,7 @@ import { ROLE_HOME } from "@/lib/os/roleHome";
 import { Loader2 } from "lucide-react";
 import LeadIdRedirect from "./components/leads/LeadIdRedirect";
 import MapslyHub from "./pages/os/mapsly/MapslyHub";
+import OrgChartPage from "./pages/os/org/OrgChartPage";
 import MileageCenter from "./pages/os/mapsly/MileageCenter";
 import BDTerritories from "./pages/os/mapsly/BDTerritories";
 import RecruitingMap from "./pages/os/mapsly/RecruitingMap";
@@ -729,6 +730,34 @@ const App = () => (
                   {/* Case Manager role */}
                   <Route path="/case-manager" element={<OSCaseManager />} />
                   <Route path="/clinical-director" element={<ClinicalDirectorDashboard />} />
+                  {/* Live Org Chart — HR + admins can edit; Exec/Ops Leadership + HR + Super Admin can view */}
+                  <Route
+                    path="/org-chart"
+                    element={
+                      <PermissionRoute
+                        allowedRoles={[
+                          "super_admin",
+                          "admin",
+                          "systems_admin",
+                          "executive_leadership",
+                          "exec",
+                          "executive",
+                          "coo",
+                          "operations_leadership",
+                          "ops_manager",
+                          "operations_manager",
+                          "director_of_operations",
+                          "hr_team",
+                          "hr",
+                          "hr_lead",
+                          "hr_manager",
+                          "hr_admin",
+                        ]}
+                      >
+                        <OrgChartPage />
+                      </PermissionRoute>
+                    }
+                  />
                   <Route path="/behavioral-support" element={<BehavioralSupportDashboard />} />
                   <Route path="/behavioral-support/crisis-support" element={<BehavioralSupportCrisisSupport />} />
                   <Route path="/behavioral-support/escalations" element={<BehavioralSupportEscalations />} />
