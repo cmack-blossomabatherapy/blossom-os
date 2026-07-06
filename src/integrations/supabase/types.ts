@@ -17171,22 +17171,27 @@ export type Database = {
       state_department_handoffs: {
         Row: {
           authorization_id: string | null
+          authorization_ref: string | null
           candidate_id: string | null
+          candidate_ref: string | null
           centralreach_reference_id: string | null
           centralreach_sync_status: string
           client_id: string | null
+          client_ref: string | null
           created_at: string
           created_by: string | null
           description: string | null
           from_role: string | null
           id: string
           lead_id: string | null
+          lead_ref: string | null
           metadata: Json
           priority: string
           provider_id: string | null
           related_escalation_id: string | null
           related_task_id: string | null
           scheduling_item_id: string | null
+          scheduling_item_ref: string | null
           source_module: string | null
           state_code: string
           status: string
@@ -17197,22 +17202,27 @@ export type Database = {
         }
         Insert: {
           authorization_id?: string | null
+          authorization_ref?: string | null
           candidate_id?: string | null
+          candidate_ref?: string | null
           centralreach_reference_id?: string | null
           centralreach_sync_status?: string
           client_id?: string | null
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           from_role?: string | null
           id?: string
           lead_id?: string | null
+          lead_ref?: string | null
           metadata?: Json
           priority?: string
           provider_id?: string | null
           related_escalation_id?: string | null
           related_task_id?: string | null
           scheduling_item_id?: string | null
+          scheduling_item_ref?: string | null
           source_module?: string | null
           state_code: string
           status?: string
@@ -17223,22 +17233,27 @@ export type Database = {
         }
         Update: {
           authorization_id?: string | null
+          authorization_ref?: string | null
           candidate_id?: string | null
+          candidate_ref?: string | null
           centralreach_reference_id?: string | null
           centralreach_sync_status?: string
           client_id?: string | null
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           from_role?: string | null
           id?: string
           lead_id?: string | null
+          lead_ref?: string | null
           metadata?: Json
           priority?: string
           provider_id?: string | null
           related_escalation_id?: string | null
           related_task_id?: string | null
           scheduling_item_id?: string | null
+          scheduling_item_ref?: string | null
           source_module?: string | null
           state_code?: string
           status?: string
@@ -17311,11 +17326,14 @@ export type Database = {
           assigned_to_name: string | null
           assigned_to_user_id: string | null
           authorization_id: string | null
+          authorization_ref: string | null
           candidate_id: string | null
+          candidate_ref: string | null
           category: string | null
           centralreach_reference_id: string | null
           centralreach_sync_status: string
           client_id: string | null
+          client_ref: string | null
           created_at: string
           created_by: string | null
           created_by_name: string | null
@@ -17325,12 +17343,14 @@ export type Database = {
           external_source: string | null
           id: string
           lead_id: string | null
+          lead_ref: string | null
           metadata: Json
           priority: string
           provider_id: string | null
           resolution: string | null
           resolved_at: string | null
           scheduling_item_id: string | null
+          scheduling_item_ref: string | null
           source_module: string | null
           state_code: string
           status: string
@@ -17342,11 +17362,14 @@ export type Database = {
           assigned_to_name?: string | null
           assigned_to_user_id?: string | null
           authorization_id?: string | null
+          authorization_ref?: string | null
           candidate_id?: string | null
+          candidate_ref?: string | null
           category?: string | null
           centralreach_reference_id?: string | null
           centralreach_sync_status?: string
           client_id?: string | null
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           created_by_name?: string | null
@@ -17356,12 +17379,14 @@ export type Database = {
           external_source?: string | null
           id?: string
           lead_id?: string | null
+          lead_ref?: string | null
           metadata?: Json
           priority?: string
           provider_id?: string | null
           resolution?: string | null
           resolved_at?: string | null
           scheduling_item_id?: string | null
+          scheduling_item_ref?: string | null
           source_module?: string | null
           state_code: string
           status?: string
@@ -17373,11 +17398,14 @@ export type Database = {
           assigned_to_name?: string | null
           assigned_to_user_id?: string | null
           authorization_id?: string | null
+          authorization_ref?: string | null
           candidate_id?: string | null
+          candidate_ref?: string | null
           category?: string | null
           centralreach_reference_id?: string | null
           centralreach_sync_status?: string
           client_id?: string | null
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           created_by_name?: string | null
@@ -17387,12 +17415,14 @@ export type Database = {
           external_source?: string | null
           id?: string
           lead_id?: string | null
+          lead_ref?: string | null
           metadata?: Json
           priority?: string
           provider_id?: string | null
           resolution?: string | null
           resolved_at?: string | null
           scheduling_item_id?: string | null
+          scheduling_item_ref?: string | null
           source_module?: string | null
           state_code?: string
           status?: string
@@ -17443,11 +17473,14 @@ export type Database = {
           assigned_to_name: string | null
           assigned_to_user_id: string | null
           authorization_id: string | null
+          authorization_ref: string | null
           candidate_id: string | null
+          candidate_ref: string | null
           category: string | null
           centralreach_reference_id: string | null
           centralreach_sync_status: string
           client_id: string | null
+          client_ref: string | null
           completed_at: string | null
           created_at: string
           created_by: string | null
@@ -17459,6 +17492,7 @@ export type Database = {
           external_source: string | null
           id: string
           lead_id: string | null
+          lead_ref: string | null
           metadata: Json
           owner_role: string | null
           owner_user_id: string | null
@@ -17466,6 +17500,7 @@ export type Database = {
           provider_id: string | null
           related_escalation_id: string | null
           scheduling_item_id: string | null
+          scheduling_item_ref: string | null
           source_module: string | null
           state_code: string
           status: string
@@ -17477,11 +17512,14 @@ export type Database = {
           assigned_to_name?: string | null
           assigned_to_user_id?: string | null
           authorization_id?: string | null
+          authorization_ref?: string | null
           candidate_id?: string | null
+          candidate_ref?: string | null
           category?: string | null
           centralreach_reference_id?: string | null
           centralreach_sync_status?: string
           client_id?: string | null
+          client_ref?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -17493,6 +17531,7 @@ export type Database = {
           external_source?: string | null
           id?: string
           lead_id?: string | null
+          lead_ref?: string | null
           metadata?: Json
           owner_role?: string | null
           owner_user_id?: string | null
@@ -17500,6 +17539,7 @@ export type Database = {
           provider_id?: string | null
           related_escalation_id?: string | null
           scheduling_item_id?: string | null
+          scheduling_item_ref?: string | null
           source_module?: string | null
           state_code: string
           status?: string
@@ -17511,11 +17551,14 @@ export type Database = {
           assigned_to_name?: string | null
           assigned_to_user_id?: string | null
           authorization_id?: string | null
+          authorization_ref?: string | null
           candidate_id?: string | null
+          candidate_ref?: string | null
           category?: string | null
           centralreach_reference_id?: string | null
           centralreach_sync_status?: string
           client_id?: string | null
+          client_ref?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -17527,6 +17570,7 @@ export type Database = {
           external_source?: string | null
           id?: string
           lead_id?: string | null
+          lead_ref?: string | null
           metadata?: Json
           owner_role?: string | null
           owner_user_id?: string | null
@@ -17534,6 +17578,7 @@ export type Database = {
           provider_id?: string | null
           related_escalation_id?: string | null
           scheduling_item_id?: string | null
+          scheduling_item_ref?: string | null
           source_module?: string | null
           state_code?: string
           status?: string
