@@ -1072,8 +1072,45 @@ export default function Integrations() {
   }, []);
 
   const list = useMemo(() => {
-    return INTEGRATIONS.map((i) => ({ ...i, enabled: enabledMap[i.id] ?? i.enabled }));
-  }, [enabledMap]);
+    // Overlay honest live status from integration_connections when present.
+    // Falls back to the static registry status for integrations that don't
+    // yet have a live connection row.
+    const liveByIntegration = new Map<string, IntegrationConnectionRow>();
+    for (const c of connections) {
+      if (c.environment === "production" || !liveByIntegration.has(c.integration_id)) {
+        liveByIntegration.set(c.integration_id, c);
+      }
+    }
+    return INTEGRATIONS.map((i) => {
+      const live = liveByIntegration.get(i.id);
+      let status: IntegrationStatus = i.status;
+      let enabled = enabledMap[i.id] ?? i.enabled;
+      if (live) {
+        enabled = live.enabled;
+        switch (live.status) {
+          case "connected":
+            status = "connected";
+            break;
+          case "error":
+            status = "error";
+            break;
+          case "needs_attention":
+            status = "reauth";
+            break;
+          case "not_configured":
+            status = "disconnected";
+            break;
+          case "syncing":
+            status = "syncing";
+            break;
+          default:
+            // keep static status
+            break;
+        }
+      }
+      return { ...i, enabled, status };
+    });
+  }, [enabledMap, connections]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
