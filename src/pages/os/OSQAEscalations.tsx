@@ -415,6 +415,25 @@ function EscalationSlideout({ e, onClose, onChanged, sourceSystem }: { e: Escala
             </Link>
             <QAActionsPanel auth={e.auth} sourceSystem={sourceSystem} onChanged={onChanged} />
           </div>
+
+          <ClinicalDirectorSection
+            sourceType="authorization"
+            sourceRecordId={e.auth.id}
+            clientId={e.auth.clientId}
+            clientName={e.auth.clientName}
+            bcbaName={e.bcba}
+            state={e.auth.state}
+            defaultTitle={`Clinical escalation: ${e.auth.clientName}`}
+            defaultPriority="high"
+            metadata={{
+              type: e.type,
+              level: e.level,
+              reason: e.reason,
+              daysOverdue: e.daysOverdue,
+              daysToExpire: e.daysToExpire,
+              blockedBy: e.blockedBy,
+            }}
+          />
         </div>
       </aside>
     </div>
