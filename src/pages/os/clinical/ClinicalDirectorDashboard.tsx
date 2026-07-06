@@ -259,21 +259,35 @@ export default function ClinicalDirectorDashboard() {
             <p className="text-xs text-muted-foreground">No saved views yet. Persist your current filters into clinical_saved_views.</p>
           ) : (
             <ul className="flex flex-wrap gap-1.5">
-              {savedViews.map((v) => (
-                <li key={v.id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
-                  <button
-                    onClick={() => {
-                      const f = v.filters as { stateFilter?: string };
-                      setStateFilter(f.stateFilter ?? "");
-                    }}
-                  >{v.name}</button>
-                  <button
-                    onClick={async () => { await actions.deleteSavedView(v.id); setSavedViews((s) => s.filter((x) => x.id !== v.id)); }}
-                    className="text-muted-foreground hover:text-destructive"
-                    title="Delete"
-                  >×</button>
-                </li>
-              ))}
+              {savedViews.map((v) => {
+                const f = v.filters as { stateFilter?: string };
+                const summary = f.stateFilter ? `state: ${f.stateFilter}` : "all states";
+                return (
+                  <li key={v.id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
+                    <button
+                      title={`Apply — ${summary}`}
+                      onClick={() => setStateFilter(f.stateFilter ?? "")}
+                    >
+                      {v.name}
+                      <span className="ml-1 text-muted-foreground">({summary})</span>
+                    </button>
+                    <button
+                      title="Update saved view with current filters"
+                      onClick={async () => {
+                        await actions.updateSavedView(v.id, { filters: { stateFilter } });
+                        setSavedViews((await actions.listSavedViews()) as never);
+                        toast.success("Saved view updated");
+                      }}
+                      className="text-muted-foreground hover:text-foreground"
+                    >↻</button>
+                    <button
+                      onClick={async () => { await actions.deleteSavedView(v.id); setSavedViews((s) => s.filter((x) => x.id !== v.id)); }}
+                      className="text-muted-foreground hover:text-destructive"
+                      title="Delete"
+                    >×</button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
