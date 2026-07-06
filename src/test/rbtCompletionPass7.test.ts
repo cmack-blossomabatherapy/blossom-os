@@ -120,8 +120,6 @@ describe("RBT Pass 7 - durable progress truth + shared reports integration + run
     const app = read("src/App.tsx");
     // The training journey lives at /training for State Director / Assistant SD.
     expect(app).toMatch(/path="\/training"/);
-    expect(fs.existsSync(path.join(process.cwd(), "src/pages/os/OSTrainingJourney.tsx"))
-      || fs.existsSync(path.join(process.cwd(), "src/pages/os/training/StateDirectorTraining.tsx"))
-      || fs.existsSync(path.join(process.cwd(), "src/pages/os/OSStateDirectorTraining.tsx"))).toBeTruthy();
+    expect(fs.existsSync(path.join(process.cwd(), "src/pages/os/OSTraining.tsx"))).toBeTruthy();
   });
 });
