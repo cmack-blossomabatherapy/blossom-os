@@ -3,6 +3,7 @@ import { OpsPage, OpsCard, HealthPill, EmptyRow, AIPrompt, type HealthTone } fro
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import { WorkQueueSignalsCard } from "@/components/operations/WorkQueueSignalsCard";
 import { daysUntil } from "@/data/authorizations";
 import { Sparkles, ArrowRight, TrendingUp, TrendingDown, AlertTriangle, GitBranch, Activity, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -263,6 +264,9 @@ export default function OpsWorkflowRisks() {
           </div>
         </div>
       </section>
+
+      {/* 1b. Persistent operations work items */}
+      <WorkQueueSignalsCard />
 
       {/* 2. Risk summary tiles */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

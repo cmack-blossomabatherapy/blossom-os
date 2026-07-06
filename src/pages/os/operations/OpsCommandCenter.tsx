@@ -12,6 +12,8 @@ import { OpsPage, OpsCard, HealthPill, EmptyRow, ActionPill, type HealthTone } f
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import { WorkQueueSignalsCard } from "@/components/operations/WorkQueueSignalsCard";
+import { SystemRequestsPanel } from "@/components/executive/SystemRequestsPanel";
 import { daysUntil, type AuthStage } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -424,6 +426,9 @@ export default function OpsCommandCenter() {
         </div>
       </section>
 
+      {/* 1b. Persistent Work Queue signals */}
+      <WorkQueueSignalsCard />
+
       {/* 2. Live Operations Pulse */}
       <OpsCard title="Live operations pulse" hint="Last few hours · derived from live data">
         {pulse.length === 0 ? (
@@ -727,6 +732,9 @@ export default function OpsCommandCenter() {
           ))}
         </div>
       </OpsCard>
+
+      {/* System requests intake */}
+      <SystemRequestsPanel />
 
       {/* Quick nav */}
       <div className="grid gap-3 md:grid-cols-3">
