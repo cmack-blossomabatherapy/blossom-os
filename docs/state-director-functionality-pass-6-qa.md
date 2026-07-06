@@ -1,3 +1,79 @@
+
+---
+
+## Pass 7 addendum — verification repair
+
+Pass 6 shipped the product changes correctly, but three route tests were
+brittle: they asserted the literal string `assistant_state_director`
+appeared on the same JSX line as the route, which broke as soon as those
+routes were switched to the shared `OPERATIONS_AND_STATE_ROUTE_ROLES`
+constant. Pass 7 repairs the verification layer without changing product
+behavior.
+
+### Fixed in Pass 7
+
+- `src/test/assistantStateDirectorPass4.test.ts`,
+  `src/test/stateDirectorAssistantPass5.test.ts`,
+  `src/test/stateDirectorAssistantPass6.test.ts` — route checks now accept
+  either an inline `assistant_state_director` literal OR a spread of the
+  shared `OPERATIONS_AND_STATE_ROUTE_ROLES` constant, and separately assert
+  the constant itself contains `assistant_state_director`. The tests still
+  fail if Assistant State Director is removed from the actual allow list.
+- New `src/test/operationsRoleConstants.test.ts` — guards the shape of
+  `OPERATIONS_LEADERSHIP_ROUTE_ROLES` and `OPERATIONS_AND_STATE_ROUTE_ROLES`
+  so unrelated roles (`rbt`, `bcba`, `marketing`, `hr`, `payroll`) can
+  never be silently added to state-scoped ops surfaces.
+- `src/lib/os/stateDirector/stateDirectorStore.ts` — persistence-contract
+  doc block rewritten to state plainly: optimistic UI is allowed, but
+  every primary write is awaited, failures surface through `persistError`
+  and a destructive toast, and no primary write silently fakes success.
+  The misleading `Best-effort Supabase persistence.` inline comment on
+  the note-add path was replaced with an accurate comment.
+
+### Preserved product decisions
+
+- Assistant State Director is still not in `PhoneSystemRoute` ALLOWED.
+- No role-specific Reports pages were added. `/reports` remains the only
+  canonical Reports route (verified by the assistant menu test:
+  exactly one `/reports` entry and no `/state-director/reports` /
+  `/assistant-state-director/reports` routes).
+- State Director retains full `/phone` access (Pass 5 correction stands).
+- Training academy, State Director journey, and Super Admin behavior
+  untouched.
+
+### Validation commands (Pass 7)
+
+```
+bun run build
+bunx vitest run \
+  src/test/stateDirectorAssistantPass6.test.ts \
+  src/test/stateDirectorAssistantPass5.test.ts \
+  src/test/assistantStateDirectorPass4.test.ts \
+  src/test/assistantStateDirectorPass3.test.ts \
+  src/test/stateDirectorFunctionalityPass6.test.ts \
+  src/test/stateDirectorFunctionalityPass5.test.ts \
+  src/test/stateDirectorFunctionalityPass4.test.ts \
+  src/test/stateDirectorFunctionalityPass1.test.ts \
+  src/test/operationsRoleConstants.test.ts
+```
+
+### Results
+
+- Production build: PASS.
+- Targeted vitest run: **9 files, 83 tests, 83 passed, 0 failed**.
+  - `stateDirectorFunctionalityPass1` — 11 passed
+  - `stateDirectorFunctionalityPass4` — 8 passed
+  - `stateDirectorFunctionalityPass5` — 9 passed
+  - `stateDirectorFunctionalityPass6` — 7 passed
+  - `assistantStateDirectorPass3` — 11 passed
+  - `assistantStateDirectorPass4` — 12 passed
+  - `stateDirectorAssistantPass5` — 9 passed
+  - `stateDirectorAssistantPass6` — 13 passed
+  - `operationsRoleConstants` — 3 passed
+
+Assistant State Director is now at a real 100% readiness point for
+route/menu/page verification, state scoping, shared reports, and
+CentralReach-ready workflow structure.
 # State Director Functionality — Pass 6 QA
 
 ## Summary
