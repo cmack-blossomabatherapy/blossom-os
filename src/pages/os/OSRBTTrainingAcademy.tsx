@@ -313,6 +313,44 @@ function OwnerCard({ icon: Icon, role, name, note }: { icon: React.ComponentType
   );
 }
 
+function UnassignedSetupState({ name }: { name: string }) {
+  return (
+    <div className="mx-auto w-full max-w-2xl space-y-4 px-4 pb-24 pt-10 md:px-6">
+      <div className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/5 via-card to-card p-8 text-center shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
+        <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-border/70 bg-muted">
+          <GraduationCap className="size-6 text-primary" />
+        </div>
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
+          Welcome, {name}.
+        </h1>
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+          Your RBT training path has not been assigned yet. Once your trainer
+          or the Training Admin picks the right path for you, this page will
+          show your live journey, modules, and readiness.
+        </p>
+        <p className="mx-auto mt-3 max-w-md text-xs text-muted-foreground">
+          Please contact your Lead RBT Trainer or the Training Admin to have a
+          path assigned.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <Link
+            to="/rbt/help"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+          >
+            <LifeBuoy className="size-4" /> Ask for help
+          </Link>
+          <Link
+            to="/rbt"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border/70 bg-secondary px-4 text-sm font-medium text-secondary-foreground transition hover:bg-muted"
+          >
+            Back to RBT
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Tabs({ value, onChange }: { value: TabKey; onChange: (v: TabKey) => void }) {
   const tabs: { v: TabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { v: "journey",   label: "Journey",   icon: GraduationCap },
