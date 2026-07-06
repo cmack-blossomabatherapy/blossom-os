@@ -629,6 +629,11 @@ export default function OSBCBAParentTraining() {
                   </div>
                 </PanelSection>
               </div>
+              <BcbaClientTimeline
+                title="Client activity"
+                scope={{ clientName: activeRow.client.clientName, broad: false, limit: 100 }}
+                className="mt-6"
+              />
             </>
           )}
         </SheetContent>

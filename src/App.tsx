@@ -143,10 +143,8 @@ import IntegrationIngestAdminPage from "./pages/admin/IntegrationIngest";
 import JourneyHub from "./pages/hr/JourneyHub";
 import JourneyDrive from "./pages/hr/JourneyDrive";
 import LeadershipDashboard from "./pages/LeadershipDashboard";
-import CeoDashboardV2 from "./pages/CeoDashboardV2";
-import CeoDashboardV2Logic from "./pages/CeoDashboardV2Logic";
-import CeoDashboardV2Insights from "./pages/CeoDashboardV2Insights";
-import CeoDashboardV2RevenueLeaks from "./pages/CeoDashboardV2RevenueLeaks";
+// Legacy CEO/BCBA performance dashboard components are retired — the canonical report
+// now lives at /reports/bcba-performance and legacy URLs redirect there.
 import ClinicDashboard from "./pages/ClinicDashboard";
 import OSAuthorizations from "./pages/os/OSAuthorizations";
 import OperationsAcademy from "./pages/blossom/OperationsAcademy";
@@ -551,11 +549,6 @@ function RoleDashboardRedirect() {
     : intelligenceFallback;
 
   return <Navigate to={allowedRoute} replace />;
-}
-
-function LegacyBcbaDashboardRedirect({ to }: { to: string }) {
-  const { search } = useLocation();
-  return <Navigate to={`${to}${search}`} replace />;
 }
 
 function OSCommandCenterRouter() {
@@ -1068,14 +1061,15 @@ const App = () => (
                   <Route path="/intelligence/reports" element={<Navigate to="/reports" replace />} />
                   <Route path="/intelligence/assistant" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><AssistantAnalytics /></PermissionRoute>} />
                   <Route path="/leadership-dashboard" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
-                  <Route path="/bcba-performance-dashboard" element={<PermissionRoute allowedRoles={["admin", "exec"]}><CeoDashboardV2 /></PermissionRoute>} />
-                  <Route path="/bcba-performance-dashboard/logic" element={<PermissionRoute allowedRoles={["admin", "exec"]}><CeoDashboardV2Logic /></PermissionRoute>} />
-                  <Route path="/bcba-performance-dashboard/insights" element={<PermissionRoute allowedRoles={["admin", "exec"]}><CeoDashboardV2Insights /></PermissionRoute>} />
-                  <Route path="/bcba-performance-dashboard/revenue-leaks" element={<PermissionRoute allowedRoles={["admin", "exec"]}><CeoDashboardV2RevenueLeaks /></PermissionRoute>} />
-                  <Route path="/ceo-dashboard-v2" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard" />} />
-                  <Route path="/ceo-dashboard-v2/logic" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/logic" />} />
-                  <Route path="/ceo-dashboard-v2/insights" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/insights" />} />
-                  <Route path="/ceo-dashboard-v2/revenue-leaks" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/revenue-leaks" />} />
+                  {/* Canonical BCBA performance report lives under /reports/bcba-performance. All legacy dashboard URLs redirect there. */}
+                  <Route path="/bcba-performance-dashboard" element={<Navigate to="/reports/bcba-performance" replace />} />
+                  <Route path="/bcba-performance-dashboard/logic" element={<Navigate to="/reports/bcba-performance?view=logic" replace />} />
+                  <Route path="/bcba-performance-dashboard/insights" element={<Navigate to="/reports/bcba-performance?view=insights" replace />} />
+                  <Route path="/bcba-performance-dashboard/revenue-leaks" element={<Navigate to="/reports/bcba-performance?view=revenue-leaks" replace />} />
+                  <Route path="/ceo-dashboard-v2" element={<Navigate to="/reports/bcba-performance" replace />} />
+                  <Route path="/ceo-dashboard-v2/logic" element={<Navigate to="/reports/bcba-performance?view=logic" replace />} />
+                  <Route path="/ceo-dashboard-v2/insights" element={<Navigate to="/reports/bcba-performance?view=insights" replace />} />
+                  <Route path="/ceo-dashboard-v2/revenue-leaks" element={<Navigate to="/reports/bcba-performance?view=revenue-leaks" replace />} />
                   {LegacyDashboardRedirects}
                   <Route path="/clinic-dashboard" element={<PermissionRoute permission="dashboard.view"><ClinicDashboard /></PermissionRoute>} />
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />

@@ -569,6 +569,13 @@ export default function OSBCBAWorkspace() {
           ) : (
             <p className="mt-6 text-sm text-muted-foreground">No live data found for this client.</p>
           )}
+          {activeClient ? (
+            <BcbaClientTimeline
+              title="Client activity"
+              scope={{ clientName: activeClient, broad: false, limit: 100 }}
+              className="mt-6"
+            />
+          ) : null}
         </SheetContent>
       </Sheet>
       {bcba.dialogs}
