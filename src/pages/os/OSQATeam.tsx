@@ -345,6 +345,8 @@ export default function OSQATeam() {
           </div>
         </header>
 
+        <StateDirectorSnapshotBanner ownerDepartment="QA" sourceModule="qa_team" />
+
         {/* PRIORITY CARDS */}
         <section>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
