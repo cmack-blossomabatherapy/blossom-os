@@ -684,6 +684,27 @@ function EscalationDetail({ esc, onClose }: { esc: Escalation; onClose: () => vo
             sourceModule="state_escalation_detail"
             metadata={{ relatedEscalationId: esc.id }}
           />
+          <SendToCentralReachReadinessButton
+            sourceType="escalation"
+            row={{
+              id: esc.id,
+              state: esc.state,
+              title: esc.title,
+              description: esc.description,
+              department: esc.department,
+              priority: esc.priority,
+              status: esc.status,
+              dueAt: esc.dueAt,
+              sourceModule: esc.sourceModule ?? "state_escalation_detail",
+              linkedClientId: esc.linkedClientId,
+              linkedLeadId: esc.linkedLeadId,
+              linkedCandidateId: esc.linkedCandidateId,
+              linkedAuthorizationId: esc.linkedAuthorizationId,
+              linkedSchedulingItemId: esc.linkedSchedulingItemId,
+              metadata: esc.metadata,
+            }}
+            extraOwner={{ assignedTo: esc.assignedTo }}
+          />
           <Button onClick={() => { save(); onClose(); }}>Save changes</Button>
         </DialogFooter>
       </DialogContent>
@@ -774,6 +795,27 @@ function TaskDetail({ task, onClose }: { task: OpsTask; onClose: () => void }) {
             linkedSchedulingItemId={task.linkedSchedulingItemId}
             sourceModule="state_task_detail"
             metadata={{ relatedTaskId: task.id, relatedEscalationId: task.relatedEscalationId }}
+          />
+          <SendToCentralReachReadinessButton
+            sourceType="task"
+            row={{
+              id: task.id,
+              state: task.state,
+              title: task.title,
+              description: task.description,
+              department: task.department,
+              priority: task.priority,
+              status: task.status,
+              dueAt: task.dueAt,
+              sourceModule: task.sourceModule ?? "state_task_detail",
+              linkedClientId: task.linkedClientId,
+              linkedLeadId: task.linkedLeadId,
+              linkedCandidateId: task.linkedCandidateId,
+              linkedAuthorizationId: task.linkedAuthorizationId,
+              linkedSchedulingItemId: task.linkedSchedulingItemId,
+              metadata: task.metadata,
+            }}
+            extraOwner={{ owner: task.owner }}
           />
           <Button onClick={() => { save(); onClose(); }}>Save changes</Button>
         </DialogFooter>
