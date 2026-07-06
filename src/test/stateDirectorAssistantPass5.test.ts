@@ -11,9 +11,14 @@ describe("State Director Assistant — Pass 5 hardening", () => {
   const svc = read("src/lib/os/stateDirector/stateOperationsService.ts");
   const button = read("src/components/stateDirector/SendToStateSupportButton.tsx");
 
-  it("PhoneSystemRoute excludes both state_director and assistant_state_director", () => {
-    expect(phoneGuard).not.toMatch(/"state_director"/);
-    expect(phoneGuard).not.toMatch(/"assistant_state_director"/);
+  it("PhoneSystemRoute allows state_director but excludes assistant_state_director", () => {
+    // Updated for State Director Pass 5: state_director regained full
+    // Phone System access. Assistant State Director remains blocked.
+    const allowedMatch = phoneGuard.match(/const\s+ALLOWED\s*=\s*new\s+Set<string>\(\[([\s\S]*?)\]\)/);
+    expect(allowedMatch).toBeTruthy();
+    const body = allowedMatch![1];
+    expect(body).toMatch(/"state_director"/);
+    expect(body).not.toMatch(/"assistant_state_director"/);
   });
 
   it("full /phone routes are wrapped by PhoneSystemRoute; /phone/ai-calls uses IntakeAiCallsRoute", () => {

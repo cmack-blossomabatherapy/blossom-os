@@ -5,10 +5,13 @@ import { resolve } from "node:path";
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
 describe("State Director Functionality Pass 4", () => {
-  it("PhoneSystemRoute excludes both state_director and assistant_state_director (Pass 5 tightening)", () => {
+  it("PhoneSystemRoute allows state_director and excludes assistant_state_director (Pass 5 State Director correction)", () => {
     const src = read("src/components/auth/PhoneSystemRoute.tsx");
-    expect(src).not.toMatch(/"state_director"/);
-    expect(src).not.toMatch(/"assistant_state_director"/);
+    const allowedMatch = src.match(/const\s+ALLOWED\s*=\s*new\s+Set<string>\(\[([\s\S]*?)\]\)/);
+    expect(allowedMatch).toBeTruthy();
+    const body = allowedMatch![1];
+    expect(body).toMatch(/"state_director"/);
+    expect(body).not.toMatch(/"assistant_state_director"/);
     expect(src).toMatch(/marketing/);
     expect(src).toMatch(/\bhr\b/);
   });
