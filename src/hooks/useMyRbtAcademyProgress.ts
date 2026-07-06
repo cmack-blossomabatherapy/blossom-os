@@ -66,19 +66,43 @@ export function mergeRbtPathProgress(
     module_id: string;
     status?: string | null;
     elapsed_seconds?: number | null;
+    track_id?: string | null;
   }>,
+  activeTrackId?: string | null,
 ): RBTPath {
   const runtimeBySource = new Map<string, {
     status: string;
     elapsed: number;
   }>();
-  for (const r of runtimeRows) {
-    const key = r.source_module_id || r.module_id;
-    if (!key) continue;
+  // Track-safe merge:
+  //   - If activeTrackId is provided, ONLY rows whose track_id matches the
+  //     active track can populate a module's runtime state.
+  //   - Rows with a null/legacy track_id are used as a fallback ONLY when
+  //     no track-specific row exists for that same module key.
+  //   - Rows whose track_id belongs to a different RBT path are ignored.
+  const put = (key: string, r: { status?: string | null; elapsed_seconds?: number | null }) => {
     runtimeBySource.set(key, {
-      status: (r.status ?? "not_started"),
+      status: r.status ?? "not_started",
       elapsed: Number(r.elapsed_seconds ?? 0),
     });
+  };
+  if (activeTrackId) {
+    for (const r of runtimeRows) {
+      const key = r.source_module_id || r.module_id;
+      if (!key) continue;
+      if (r.track_id === activeTrackId) put(key, r);
+    }
+    for (const r of runtimeRows) {
+      const key = r.source_module_id || r.module_id;
+      if (!key) continue;
+      if ((r.track_id ?? null) === null && !runtimeBySource.has(key)) put(key, r);
+    }
+  } else {
+    for (const r of runtimeRows) {
+      const key = r.source_module_id || r.module_id;
+      if (!key) continue;
+      put(key, r);
+    }
   }
 
   const readinessMap = readinessModuleProgress ?? {};
@@ -201,7 +225,7 @@ export function useMyRbtAcademyProgress(opts: Options = {}): MergedRbtProgress {
     }
 
     const base = RBT_PATHS.find((p) => p.id === assignedPathId) ?? RBT_PATHS[0];
-    const path = mergeRbtPathProgress(base, readinessModuleProgress, runtimeRows);
+    const path = mergeRbtPathProgress(base, readinessModuleProgress, runtimeRows, assignedPathId);
     return {
       state: "ready",
       assignedSource,
