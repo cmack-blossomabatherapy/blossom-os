@@ -12,6 +12,8 @@ import { OpsPage, OpsCard, HealthPill, EmptyRow, ActionPill, type HealthTone } f
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import { WorkQueueSignalsCard } from "@/components/operations/WorkQueueSignalsCard";
+import { SystemRequestsPanel } from "@/components/executive/SystemRequestsPanel";
 import { daysUntil, type AuthStage } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
