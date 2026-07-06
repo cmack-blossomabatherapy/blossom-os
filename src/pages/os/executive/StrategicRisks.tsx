@@ -605,6 +605,10 @@ export default function StrategicRisks() {
           <AIPrompt label="Draft leadership briefing" prompt="Draft a brief leadership note summarizing these strategic risks and recommended actions." />
         </div>
       </ExecCard>
+
+      {/* Persisted risk log + action items */}
+      <LogRiskCard />
+      <ActionItemsPanel sourcePage="executive_strategic_risks" title="Related leadership action items" />
     </ExecPage>
   );
 }
