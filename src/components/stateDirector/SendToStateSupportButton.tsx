@@ -29,6 +29,11 @@ interface Props {
   defaultTitle?: string;
   defaultDescription?: string;
   defaultPriority?: Priority;
+  /**
+   * Preferred state for this row (e.g. the client/authorization's state).
+   * Overrides the actor's active state when present.
+   */
+  defaultState?: StateCode;
   sourceModule?: string;
   metadata?: Record<string, unknown>;
   buttonLabel?: string;
@@ -43,6 +48,15 @@ const DEPARTMENTS: Department[] = [
 ];
 
 /**
+ * Roles that are pinned to a single operational state. They cannot
+ * create support work outside that state.
+ */
+const STATE_SCOPED_ROLES = new Set<string>([
+  "state_director",
+  "assistant_state_director",
+]);
+
+/**
  * Small dialog that lets a department workspace push work into the
  * State Support queue as either a task, escalation, or cross-department
  * handoff. Every record persists to Supabase and includes CentralReach
@@ -53,13 +67,15 @@ export function SendToStateSupportButton(props: Props) {
     fromDepartment, defaultKind = "task",
     buttonLabel = "Send to State Support",
     defaultTitle = "", defaultDescription = "", defaultPriority = "medium",
-    sourceModule, metadata,
+    defaultState, sourceModule, metadata,
   } = props;
   const { activeState, role } = useOSRole();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<Kind>(defaultKind);
-  const [state, setState] = useState<StateCode>((activeState as StateCode) || "GA");
+  const initialState: StateCode =
+    (defaultState as StateCode) || (activeState as StateCode) || "";
+  const [state, setState] = useState<StateCode>(initialState);
   const [toDepartment, setToDepartment] = useState<Department>("Operations");
   const [title, setTitle] = useState(defaultTitle);
   const [description, setDescription] = useState(defaultDescription);
@@ -67,9 +83,12 @@ export function SendToStateSupportButton(props: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   const actor = String(role || "Operator").replace(/_/g, " ");
+  const isStateScoped = STATE_SCOPED_ROLES.has(String(role));
+  const pinnedState = isStateScoped ? (activeState as StateCode | undefined) : undefined;
 
   const reset = () => {
     setTitle(defaultTitle); setDescription(defaultDescription); setPriority(defaultPriority);
+    setState(initialState);
     setKind(defaultKind); setToDepartment("Operations");
   };
 
@@ -90,25 +109,63 @@ export function SendToStateSupportButton(props: Props) {
       toast({ title: "Add a title", description: "State support needs a short summary." });
       return;
     }
+    // State scoping: state directors and assistants can only create in
+    // their own state. Missing state → require the user to pick one.
+    let effectiveState = (state || "").trim().toUpperCase() as StateCode;
+    if (isStateScoped && pinnedState) {
+      if (effectiveState && effectiveState !== pinnedState) {
+        toast({
+          title: "State mismatch",
+          description: `You can only send support work in your assigned state (${pinnedState}).`,
+          variant: "destructive",
+        });
+        return;
+      }
+      effectiveState = pinnedState;
+    }
+    if (!effectiveState) {
+      toast({
+        title: "Pick a state",
+        description: "State could not be inferred — please select the state this belongs to.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       if (kind === "task") {
-        stateDirectorStore.createTask({
-          state, title: title.trim(), description: description.trim() || undefined,
+        const res = await stateDirectorStore.createTask({
+          state: effectiveState, title: title.trim(), description: description.trim() || undefined,
           department: fromDepartment, priority, createdBy: actor,
           ...linked, ...meta,
         });
+        if (!res.ok) {
+          toast({
+            title: "Could not save task",
+            description: res.error ?? "Database rejected the task. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
         toast({ title: "Sent to State Support", description: "Task queued for the State Director." });
       } else if (kind === "escalation") {
-        stateDirectorStore.createEscalation({
-          state, title: title.trim(), description: description.trim() || undefined,
+        const res = await stateDirectorStore.createEscalation({
+          state: effectiveState, title: title.trim(), description: description.trim() || undefined,
           department: fromDepartment, priority, createdBy: actor,
           ...linked, ...meta,
         });
+        if (!res.ok) {
+          toast({
+            title: "Could not open escalation",
+            description: res.error ?? "Database rejected the escalation.",
+            variant: "destructive",
+          });
+          return;
+        }
         toast({ title: "Escalation opened", description: "State Director has been notified." });
       } else {
         await deliverHandoff({
-          state, fromDepartment, toDepartment,
+          state: effectiveState, fromDepartment, toDepartment,
           subject: title.trim(), body: description.trim() || undefined,
           priority, createdBy: actor,
           ...linked, ...meta,
@@ -177,7 +234,16 @@ export function SendToStateSupportButton(props: Props) {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>State</Label>
-                <Input value={state} onChange={(e) => setState(e.target.value.toUpperCase())} maxLength={4} />
+                <Input
+                  value={state}
+                  onChange={(e) => setState(e.target.value.toUpperCase() as StateCode)}
+                  maxLength={4}
+                  disabled={Boolean(isStateScoped && pinnedState)}
+                  placeholder="GA"
+                />
+                {isStateScoped && pinnedState ? (
+                  <p className="text-[10px] text-muted-foreground">Locked to your assigned state.</p>
+                ) : null}
               </div>
               {kind === "handoff" ? (
                 <div className="space-y-1">
@@ -202,7 +268,7 @@ export function SendToStateSupportButton(props: Props) {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)} disabled={submitting}>Cancel</Button>
-            <Button onClick={submit} disabled={submitting}>{submitting ? "Sending…" : "Send"}</Button>
+            <Button onClick={submit} disabled={submitting}>{submitting ? "Sending..." : "Send"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
