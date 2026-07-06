@@ -891,16 +891,44 @@ function ClinicalDirectorEscalationCenter() {
       </div>
       {savedViews.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
-          {savedViews.map((v) => (
-            <span key={v.id} className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[11px]">
-              {v.name}
-              <button
-                onClick={async () => { await actions.deleteSavedView(v.id); setSavedViews((s) => s.filter((x) => x.id !== v.id)); }}
-                className="text-slate-500 hover:text-destructive"
-                title="Delete saved view"
-              >×</button>
-            </span>
-          ))}
+          {savedViews.map((v) => {
+            const f = v.filters as { statusFilter?: string; priorityFilter?: string; sourceFilter?: string; dueSoon?: boolean };
+            const parts: string[] = [];
+            if (f.statusFilter) parts.push(`status:${f.statusFilter}`);
+            if (f.priorityFilter) parts.push(`priority:${f.priorityFilter}`);
+            if (f.sourceFilter) parts.push(`source:${f.sourceFilter}`);
+            if (f.dueSoon) parts.push("due≤7d");
+            const summary = parts.length ? parts.join(" · ") : "no filters";
+            return (
+              <span key={v.id} className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[11px]">
+                <button
+                  title={`Apply — ${summary}`}
+                  onClick={() => {
+                    setStatusFilter(f.statusFilter ?? "");
+                    setPriorityFilter(f.priorityFilter ?? "");
+                    setSourceFilter(f.sourceFilter ?? "");
+                    setDueSoon(!!f.dueSoon);
+                  }}
+                >
+                  {v.name}
+                  <span className="ml-1 text-slate-500">({summary})</span>
+                </button>
+                <button
+                  title="Update saved view with current filters"
+                  onClick={async () => {
+                    await actions.updateSavedView(v.id, { filters: { statusFilter, priorityFilter, sourceFilter, dueSoon } });
+                    setSavedViews((await actions.listSavedViews()) as never);
+                  }}
+                  className="text-slate-500 hover:text-foreground"
+                >↻</button>
+                <button
+                  onClick={async () => { await actions.deleteSavedView(v.id); setSavedViews((s) => s.filter((x) => x.id !== v.id)); }}
+                  className="text-slate-500 hover:text-destructive"
+                  title="Delete saved view"
+                >×</button>
+              </span>
+            );
+          })}
         </div>
       )}
       <ul className="divide-y divide-slate-100">
