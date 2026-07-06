@@ -462,6 +462,22 @@ function EscalationDetail({ esc, onClose }: { esc: Escalation; onClose: () => vo
           {esc.status === "resolved"
             ? <Button variant="outline" onClick={() => { stateDirectorStore.reopenEscalation(esc.id, actor); onClose(); }}>Reopen</Button>
             : <Button variant="outline" onClick={() => { stateDirectorStore.resolveEscalation(esc.id, resolution, actor); onClose(); }}>Mark resolved</Button>}
+          <SendToStateSupportButton
+            fromDepartment={esc.department}
+            defaultKind="handoff"
+            buttonLabel="Send Handoff From Escalation"
+            defaultTitle={esc.title}
+            defaultDescription={esc.description ?? esc.resolution ?? ""}
+            defaultPriority={esc.priority}
+            defaultState={esc.state}
+            linkedClientId={esc.linkedClientId}
+            linkedLeadId={esc.linkedLeadId}
+            linkedCandidateId={esc.linkedCandidateId}
+            linkedAuthorizationId={esc.linkedAuthorizationId}
+            linkedSchedulingItemId={esc.linkedSchedulingItemId}
+            sourceModule="state_escalation_detail"
+            metadata={{ relatedEscalationId: esc.id }}
+          />
           <Button onClick={() => { save(); onClose(); }}>Save changes</Button>
         </DialogFooter>
       </DialogContent>
