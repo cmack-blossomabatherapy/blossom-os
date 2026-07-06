@@ -911,6 +911,22 @@ function PRSlideout({ auth: a, onClose, onChanged, sourceSystem }: { auth: Autho
             </Link>
             <QAActionsPanel auth={a} variant="progress" sourceSystem={sourceSystem} onChanged={onChanged} />
           </section>
+
+          <ClinicalDirectorSection
+            sourceType="authorization"
+            sourceRecordId={a.id}
+            clientId={a.clientId}
+            clientName={a.clientName}
+            bcbaName={a.coordinator}
+            state={a.state}
+            defaultTitle={`Progress report follow-up: ${a.clientName}`}
+            metadata={{
+              stage: a.stage,
+              expirationDate: a.expirationDate,
+              missingRequirements: a.missingRequirements,
+              progressReportStatus: prStatus(a),
+            }}
+          />
         </div>
       </aside>
     </div>
