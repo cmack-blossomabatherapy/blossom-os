@@ -94,6 +94,97 @@ export interface StateOperationsSnapshot {
   activity: ActivityEvent[];
 }
 
+export type StateMetricSource = "live" | "manual" | "integration" | "seed";
+
+export interface LiveStateMetric {
+  code: StateCode;
+  name: string | null;
+  healthScore: number | null;
+  healthLabel: string | null;
+  activeClients: number;
+  authorizedHours: number;
+  scheduledHours: number;
+  deliveredHours: number;
+  staffingGaps: number;
+  intakePipeline: number;
+  authsExpiring30d: number;
+  clinicalRisks: number;
+  recruitingNeeds: number;
+  cancellationRisk: number;
+  openEscalations: number;
+  openTasks: number;
+  agingBlockers: number;
+  source: StateMetricSource;
+  sourceUpdatedAt: string | null;
+  updatedAt: string;
+}
+
+/**
+ * Loads persisted per-state metrics. Returns `null` on failure so the
+ * store can gracefully fall back to seed values.
+ */
+export async function loadStateMetrics(): Promise<LiveStateMetric[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from("state_operational_metrics")
+      .select("*")
+      .order("state_code", { ascending: true });
+    if (error || !data) return null;
+    return (data as any[]).map((r) => ({
+      code: r.state_code as StateCode,
+      name: r.state_name ?? null,
+      healthScore: r.health_score ?? null,
+      healthLabel: r.health_label ?? null,
+      activeClients: Number(r.active_clients ?? 0),
+      authorizedHours: Number(r.authorized_hours ?? 0),
+      scheduledHours: Number(r.scheduled_hours ?? 0),
+      deliveredHours: Number(r.delivered_hours ?? 0),
+      staffingGaps: Number(r.staffing_gaps ?? 0),
+      intakePipeline: Number(r.intake_pipeline ?? 0),
+      authsExpiring30d: Number(r.auths_expiring_30d ?? 0),
+      clinicalRisks: Number(r.clinical_risks ?? 0),
+      recruitingNeeds: Number(r.recruiting_needs ?? 0),
+      cancellationRisk: Number(r.cancellation_risk ?? 0),
+      openEscalations: Number(r.open_escalations ?? 0),
+      openTasks: Number(r.open_tasks ?? 0),
+      agingBlockers: Number(r.aging_blockers ?? 0),
+      source: ((r.source ?? "manual") as StateMetricSource),
+      sourceUpdatedAt: r.source_updated_at ?? null,
+      updatedAt: r.updated_at,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+export async function upsertStateMetric(input: Partial<LiveStateMetric> & { code: StateCode; source?: StateMetricSource }): Promise<{ ok: boolean; error?: string }> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id ?? null;
+  const { error } = await supabase.from("state_operational_metrics").upsert({
+    state_code: input.code,
+    state_name: input.name ?? null,
+    health_score: input.healthScore ?? null,
+    health_label: input.healthLabel ?? null,
+    active_clients: input.activeClients ?? 0,
+    authorized_hours: input.authorizedHours ?? 0,
+    scheduled_hours: input.scheduledHours ?? 0,
+    delivered_hours: input.deliveredHours ?? 0,
+    staffing_gaps: input.staffingGaps ?? 0,
+    intake_pipeline: input.intakePipeline ?? 0,
+    auths_expiring_30d: input.authsExpiring30d ?? 0,
+    clinical_risks: input.clinicalRisks ?? 0,
+    recruiting_needs: input.recruitingNeeds ?? 0,
+    cancellation_risk: input.cancellationRisk ?? 0,
+    open_escalations: input.openEscalations ?? 0,
+    open_tasks: input.openTasks ?? 0,
+    aging_blockers: input.agingBlockers ?? 0,
+    source: input.source ?? "manual",
+    source_updated_at: new Date().toISOString(),
+    updated_by: uid,
+  } as any, { onConflict: "state_code" });
+  return { ok: !error, error: error?.message };
+}
+
 export async function loadStateOperationsSnapshot(): Promise<StateOperationsSnapshot | null> {
   try {
     const [t, e, n, a] = await Promise.all([
