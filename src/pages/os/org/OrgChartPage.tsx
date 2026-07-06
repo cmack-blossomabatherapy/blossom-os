@@ -142,7 +142,7 @@ function InnerOrgChart() {
 
   // Persist drag positions on drag-stop
   const handleNodesChange = useCallback(
-    (changes: NodeChange[]) => {
+    (changes: NodeChange<Node<OrgNodeData>>[]) => {
       onNodesChange(changes);
       if (!isEditor) return;
       for (const c of changes) {
