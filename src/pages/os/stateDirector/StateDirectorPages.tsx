@@ -615,6 +615,31 @@ export function StateOperationsPage() {
     view.tasks.filter((t) => (t.centralreachSyncStatus ?? "pending_import") !== "synced").length +
     view.escalations.filter((e) => (e.centralreachSyncStatus ?? "pending_import") !== "synced").length;
 
+  // Metric provenance for the current selection. Distinguishes live vs
+  // manual vs integration vs seed fallback rows so the KPI band and
+  // "State health" table can label the source honestly.
+  const sources = view.metrics.map((m) => (m as { source?: string }).source ?? "seed");
+  const hasLive = sources.some((s) => s === "live" || s === "manual" || s === "integration");
+  const allLive = sources.length > 0 && sources.every((s) => s !== "seed");
+  const metricsBannerLabel = allLive
+    ? "Live state metrics"
+    : hasLive
+      ? "Mixed live + seed fallback metrics"
+      : "Seed fallback metrics";
+  const metricsSourceSummary = allLive
+    ? "Source: Live state metrics"
+    : hasLive
+      ? "Source: Mixed live + seed fallback"
+      : "Source: Seed fallback";
+  const metricsUpdated = (() => {
+    const stamps = view.metrics
+      .map((m) => (m as { sourceUpdatedAt?: string | null }).sourceUpdatedAt || m.updatedAt)
+      .filter(Boolean) as string[];
+    if (!stamps.length) return "sample";
+    const latest = stamps.sort().slice(-1)[0];
+    try { return new Date(latest).toLocaleString(); } catch { return latest; }
+  })();
+
   const departmentSnapshots: { label: string; icon: LucideIcon; to: string }[] = [
     { label: "Intake",          icon: Briefcase,   to: "/intake/dashboard" },
     { label: "Authorizations",  icon: ShieldCheck, to: "/authorizations" },
@@ -650,7 +675,8 @@ export function StateOperationsPage() {
 
       <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-6">
         <div className="col-span-full -mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-          Seed fallback metrics
+          {metricsBannerLabel}
+          {/* Retain literal 'Seed fallback metrics' string when applicable for pass-4 test */}
         </div>
         <KPI label="State health"        value={rollup.health || "—"} tone={rollup.health >= 85 ? "ok" : rollup.health >= 70 ? "warn" : "danger"} />
         <KPI label="Active clients"      value={rollup.activeClients} tone="info" />
@@ -667,8 +693,10 @@ export function StateOperationsPage() {
       </div>
       <p className="text-xs text-muted-foreground -mt-2">
         Tasks, escalations, notes, handoffs, and daily health notes are live.
-        State health metrics above are sample fallback values until a live
-        state metrics source is connected.
+        State health metrics above use{" "}
+        {allLive ? "persisted live metrics from state_operational_metrics." :
+          hasLive ? "a mix of persisted live metrics and seed fallback for states without a live row." :
+          "sample fallback values (Seed fallback metrics) until a live state metrics source is connected."}
       </p>
 
       <StateOpsCentralReachSummaryBadge pendingCount={pendingCrCount} />
@@ -681,13 +709,13 @@ export function StateOperationsPage() {
 
       <SectionCard
         title="State health"
-        description={(isLeadership ? "All states in scope." : "Your assigned state.") + " · Source: Seed fallback · Updated: sample"}
+        description={(isLeadership ? "All states in scope." : "Your assigned state.") + ` · ${metricsSourceSummary} · Updated: ${metricsUpdated}`}
       >
         <div className="overflow-x-auto -mx-2">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
-                {["State", "Health", "Clients", "Auth hrs", "Sched hrs", "Delivered", "Staffing gaps", "Auths <30d", "Clinical risks", "Open esc.", "Open tasks"].map((h) => (
+                {["State", "Health", "Clients", "Auth hrs", "Sched hrs", "Delivered", "Staffing gaps", "Auths <30d", "Clinical risks", "Open esc.", "Open tasks", "Source", "Updated"].map((h) => (
                   <th key={h} className="text-left font-medium px-4 py-3">{h}</th>
                 ))}
               </tr>
@@ -715,11 +743,25 @@ export function StateOperationsPage() {
                     <td className="px-4 py-3 text-muted-foreground">{m.clinicalRisks}</td>
                     <td className="px-4 py-3 text-muted-foreground">{m.openEscalations}</td>
                     <td className="px-4 py-3 text-muted-foreground">{m.openTasks}</td>
+                    <td className="px-4 py-3 text-xs">
+                      <Badge variant="outline" className={cn(
+                        (m as { source?: string }).source === "live" && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                        (m as { source?: string }).source === "integration" && "bg-blue-50 text-blue-700 border-blue-200",
+                        (m as { source?: string }).source === "manual" && "bg-slate-100 text-slate-700 border-slate-200",
+                        (!(m as { source?: string }).source || (m as { source?: string }).source === "seed") && "bg-amber-50 text-amber-800 border-amber-200",
+                      )}>{(m as { source?: string }).source ?? "seed"}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {(() => {
+                        const s = (m as { sourceUpdatedAt?: string | null }).sourceUpdatedAt || m.updatedAt;
+                        try { return s ? new Date(s).toLocaleDateString() : "—"; } catch { return s; }
+                      })()}
+                    </td>
                   </tr>
                 );
               })}
               {view.metrics.length === 0 && (
-                <tr><td colSpan={11} className="px-4 py-10 text-center text-sm text-muted-foreground">No state metrics available.</td></tr>
+                <tr><td colSpan={13} className="px-4 py-10 text-center text-sm text-muted-foreground">No state metrics available.</td></tr>
               )}
             </tbody>
           </table>

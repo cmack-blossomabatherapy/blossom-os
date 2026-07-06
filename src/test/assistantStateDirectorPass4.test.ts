@@ -50,9 +50,12 @@ describe("Assistant State Director — Pass 4 hardening", () => {
 
   /* ---------------------------- phone guard ------------------------------ */
 
-  it("PhoneSystemRoute excludes state_director and assistant_state_director", () => {
-    expect(phoneGuard).not.toMatch(/assistant_state_director/);
-    expect(phoneGuard).not.toMatch(/\bstate_director\b/);
+  it("PhoneSystemRoute allows state_director but excludes assistant_state_director", () => {
+    const allowedMatch = phoneGuard.match(/const\s+ALLOWED\s*=\s*new\s+Set<string>\(\[([\s\S]*?)\]\)/);
+    expect(allowedMatch, "ALLOWED set not found in PhoneSystemRoute").toBeTruthy();
+    const body = allowedMatch![1];
+    expect(body).toMatch(/"state_director"/);
+    expect(body).not.toMatch(/"assistant_state_director"/);
     expect(phoneGuard).toMatch(/hr/);
     expect(phoneGuard).toMatch(/marketing/);
     expect(phoneGuard).toMatch(/exec/);

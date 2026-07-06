@@ -17657,6 +17657,87 @@ export type Database = {
         }
         Relationships: []
       }
+      state_operational_metrics: {
+        Row: {
+          active_clients: number
+          aging_blockers: number
+          authorized_hours: number
+          auths_expiring_30d: number
+          cancellation_risk: number
+          clinical_risks: number
+          created_at: string
+          created_by: string | null
+          delivered_hours: number
+          health_label: string | null
+          health_score: number | null
+          id: string
+          intake_pipeline: number
+          open_escalations: number
+          open_tasks: number
+          recruiting_needs: number
+          scheduled_hours: number
+          source: string
+          source_updated_at: string | null
+          staffing_gaps: number
+          state_code: string
+          state_name: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active_clients?: number
+          aging_blockers?: number
+          authorized_hours?: number
+          auths_expiring_30d?: number
+          cancellation_risk?: number
+          clinical_risks?: number
+          created_at?: string
+          created_by?: string | null
+          delivered_hours?: number
+          health_label?: string | null
+          health_score?: number | null
+          id?: string
+          intake_pipeline?: number
+          open_escalations?: number
+          open_tasks?: number
+          recruiting_needs?: number
+          scheduled_hours?: number
+          source?: string
+          source_updated_at?: string | null
+          staffing_gaps?: number
+          state_code: string
+          state_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active_clients?: number
+          aging_blockers?: number
+          authorized_hours?: number
+          auths_expiring_30d?: number
+          cancellation_risk?: number
+          clinical_risks?: number
+          created_at?: string
+          created_by?: string | null
+          delivered_hours?: number
+          health_label?: string | null
+          health_score?: number | null
+          id?: string
+          intake_pipeline?: number
+          open_escalations?: number
+          open_tasks?: number
+          recruiting_needs?: number
+          scheduled_hours?: number
+          source?: string
+          source_updated_at?: string | null
+          staffing_gaps?: number
+          state_code?: string
+          state_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       state_operational_notes: {
         Row: {
           body: string

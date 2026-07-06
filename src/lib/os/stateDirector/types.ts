@@ -71,6 +71,9 @@ export interface StateMetrics {
   openTasks: number;
   agingBlockers: number;
   updatedAt: string;
+  /** Provenance label — where the metric row came from. */
+  source?: "live" | "manual" | "integration" | "seed";
+  sourceUpdatedAt?: string | null;
 }
 
 export interface EscalationNote {

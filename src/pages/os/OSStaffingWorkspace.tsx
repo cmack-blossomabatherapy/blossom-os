@@ -108,7 +108,11 @@ export default function OSStaffingWorkspace() {
           </div>
         </header>
 
-        <StateDirectorSnapshotBanner ownerDepartment="Staffing" sourceModule="staffing_workspace" />
+        <StateDirectorSnapshotBanner
+          ownerDepartment="Staffing"
+          sourceModule="staffing_workspace"
+          topRisks={["Snapshot counts not connected yet"]}
+        />
 
         {/* Tab bar */}
         <div className="flex flex-wrap gap-1.5 border-b border-border/60 pb-2">

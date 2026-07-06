@@ -345,7 +345,11 @@ export default function OSQATeam() {
           </div>
         </header>
 
-        <StateDirectorSnapshotBanner ownerDepartment="QA" sourceModule="qa_team" />
+        <StateDirectorSnapshotBanner
+          ownerDepartment="QA"
+          sourceModule="qa_team"
+          topRisks={["Snapshot counts not connected yet"]}
+        />
 
         {/* PRIORITY CARDS */}
         <section>

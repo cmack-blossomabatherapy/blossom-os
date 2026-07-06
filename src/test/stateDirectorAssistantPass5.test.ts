@@ -11,9 +11,14 @@ describe("State Director Assistant — Pass 5 hardening", () => {
   const svc = read("src/lib/os/stateDirector/stateOperationsService.ts");
   const button = read("src/components/stateDirector/SendToStateSupportButton.tsx");
 
-  it("PhoneSystemRoute excludes both state_director and assistant_state_director", () => {
-    expect(phoneGuard).not.toMatch(/"state_director"/);
-    expect(phoneGuard).not.toMatch(/"assistant_state_director"/);
+  it("PhoneSystemRoute allows state_director but excludes assistant_state_director", () => {
+    // Updated for State Director Pass 5: state_director regained full
+    // Phone System access. Assistant State Director remains blocked.
+    const allowedMatch = phoneGuard.match(/const\s+ALLOWED\s*=\s*new\s+Set<string>\(\[([\s\S]*?)\]\)/);
+    expect(allowedMatch).toBeTruthy();
+    const body = allowedMatch![1];
+    expect(body).toMatch(/"state_director"/);
+    expect(body).not.toMatch(/"assistant_state_director"/);
   });
 
   it("full /phone routes are wrapped by PhoneSystemRoute; /phone/ai-calls uses IntakeAiCallsRoute", () => {
@@ -24,9 +29,11 @@ describe("State Director Assistant — Pass 5 hardening", () => {
     expect(app).toMatch(/path="\/phone\/ai-calls".*IntakeAiCallsRoute/);
   });
 
-  it("state_director menu no longer exposes /phone; assistant menu still doesn't", () => {
+  it("state_director menu includes /phone (Pass 5 correction); assistant menu still does not", () => {
+    // State Director Pass 5 restored /phone to the State Director menu
+    // so State Directors can reach the full Phone System from the shell.
     const sd = ROLE_MENUS.state_director!.sections.flatMap((s) => s.items.map((i) => i.path));
-    expect(sd).not.toContain("/phone");
+    expect(sd).toContain("/phone");
     const asd = ROLE_MENUS.assistant_state_director!.sections.flatMap((s) => s.items.map((i) => i.path));
     expect(asd).not.toContain("/phone");
   });
