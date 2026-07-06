@@ -87,6 +87,24 @@ export default function OSStaffingWorkspace() {
     setParams(next, { replace: true });
   };
 
+  // Pass 6: derive real snapshot counts from existing page data so the
+  // State Director banner shows useful blockers/top-risks, not placeholders.
+  const { clients } = useClients();
+  const { matches } = useStaffingWorkspace();
+  const needs = useMemo(() => getClientStaffingNeeds(clients), [clients]);
+  const proposedMatches = useMemo(
+    () => matches.filter((m) => m.status === "proposed").length,
+    [matches],
+  );
+  const staffingTopRisks = useMemo(() => {
+    const risks: string[] = [];
+    if (needs.length) risks.push(`${needs.length} open staffing needs`);
+    if (proposedMatches) risks.push(`${proposedMatches} matches awaiting decision`);
+    const noRbt = clients.filter((c) => !c.rbt && c.stage !== "Discharged").length;
+    if (noRbt) risks.push(`${noRbt} clients without an RBT`);
+    return risks.length ? risks : ["No live staffing risks"];
+  }, [needs, proposedMatches, clients]);
+
   return (
     <OSShell>
       <div className="px-6 lg:px-10 py-8 max-w-[1500px] mx-auto space-y-6">
@@ -111,7 +129,9 @@ export default function OSStaffingWorkspace() {
         <StateDirectorSnapshotBanner
           ownerDepartment="Staffing"
           sourceModule="staffing_workspace"
-          topRisks={["Snapshot counts not connected yet"]}
+          openBlockers={needs.length}
+          overdueCount={proposedMatches}
+          topRisks={staffingTopRisks}
         />
 
         {/* Tab bar */}
