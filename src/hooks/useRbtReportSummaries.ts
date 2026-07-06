@@ -76,7 +76,7 @@ export function useRbtReportSummaries(): RbtReportSummaries {
 
         const [runtime, readiness, prefs, sessions, help, supervision] = await Promise.all([
           (supabase.from("academy_runtime_progress" as any) as any)
-            .select("status, module_id, source_module_id, journey_slug, sync_status, elapsed_seconds")
+            .select("status, module_id, source_module_id, journey_slug, sync_status, elapsed_seconds, track_id")
             .eq("user_id", uid)
             .eq("journey_slug", "rbt"),
           supabase
@@ -110,7 +110,15 @@ export function useRbtReportSummaries(): RbtReportSummaries {
         const pathId = (readinessRow?.path_id as RBTPathId | undefined) ?? null;
         const basePath = pathId ? (RBT_PATHS.find((p) => p.id === pathId) ?? null) : null;
         if (basePath) {
-          const merged = mergeRbtPathProgress(basePath, readinessRow?.module_progress ?? null, runtimeRows);
+          // Track-safe: only runtime rows for the assigned path (or legacy
+          // null-track rows as fallback) contribute to this learner's
+          // training progress KPI. Progress from other RBT paths is ignored.
+          const merged = mergeRbtPathProgress(
+            basePath,
+            readinessRow?.module_progress ?? null,
+            runtimeRows,
+            pathId,
+          );
           const allModules = merged.phases.flatMap((ph) => ph.modules);
           const completed = allModules.filter((m) => m.status === "completed").length;
           const total = allModules.length;
