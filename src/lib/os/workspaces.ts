@@ -443,7 +443,7 @@ export const LEGACY_GROUPS: { title: string; items: LegacyLink[] }[] = [
     title: "Legacy Dashboards",
     items: [
       { label: "CEO & Leadership", path: "/leadership-dashboard" },
-      { label: "BCBA Performance", path: "/bcba-performance-dashboard" },
+      { label: "BCBA Performance", path: "/reports/bcba-performance" },
       { label: "Clinic Dashboard", path: "/clinic-dashboard" },
       { label: "Intake (Legacy)", path: "/intake" },
       { label: "Authorizations (Legacy)", path: "/authorizations" },
