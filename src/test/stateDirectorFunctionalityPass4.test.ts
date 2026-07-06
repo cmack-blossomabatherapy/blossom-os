@@ -5,10 +5,12 @@ import { resolve } from "node:path";
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
 describe("State Director Functionality Pass 4", () => {
-  it("PhoneSystemRoute allows state_director but NOT assistant_state_director", () => {
+  it("PhoneSystemRoute excludes both state_director and assistant_state_director (Pass 5 tightening)", () => {
     const src = read("src/components/auth/PhoneSystemRoute.tsx");
-    expect(src).toMatch(/"state_director"/);
+    expect(src).not.toMatch(/"state_director"/);
     expect(src).not.toMatch(/"assistant_state_director"/);
+    expect(src).toMatch(/marketing/);
+    expect(src).toMatch(/\bhr\b/);
   });
 
   it("IntakeAiCallsRoute guards /phone/ai-calls", () => {

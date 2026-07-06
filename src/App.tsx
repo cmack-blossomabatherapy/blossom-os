@@ -659,7 +659,7 @@ const App = () => (
                   {/* Pass 3 — /scheduling-team is no longer a distinct product surface.
                      The canonical Scheduling dashboard is /scheduling. */}
                   <Route path="/scheduling-team" element={<Navigate to="/scheduling" replace />} />
-                  <Route path="/scheduling-workspace" element={<OSSchedulingWorkspace />} />
+                  <Route path="/scheduling-workspace" element={<PermissionRoute allowedRoles={["admin", "scheduling", "scheduling_team", "scheduling_lead", "scheduling_coordinator", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSSchedulingWorkspace /></PermissionRoute>} />
                   {/* Pass 2 — /staffing is no longer the source of truth.
                      Canonical staffing workspace is /ops/staffing. Redirect to
                      the Open Cases tab. */}
@@ -697,7 +697,7 @@ const App = () => (
                   <Route path="/hr/messages" element={<OSHRMessages />} />
                   <Route path="/hr/team-resources" element={<OSHRResources />} />
                   <Route path="/billing-finance" element={<OSBillingFinance />} />
-                  <Route path="/qa-team" element={<OSQATeam />} />
+                  <Route path="/qa-team" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_team", "qa_director", "qa_specialist", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQATeam /></PermissionRoute>} />
                   <Route path="/qa-workspace" element={<OSQAWorkspace />} />
                   <Route path="/qa-queue" element={<OSQAQueue />} />
                   <Route path="/qa/board" element={<OSQAReviewBoard />} />
@@ -784,7 +784,7 @@ const App = () => (
                   <Route path="/intake/leads" element={<Navigate to="/leads" replace />} />
                   <Route path="/intake/vob-decision" element={<Navigate to="/vob-decision-center" replace />} />
                   <Route path="/intake/authorizations" element={<OSIntakeAuthorizations />} />
-                  <Route path="/authorizations" element={<AuthorizationsRouter />} />
+                  <Route path="/authorizations" element={<PermissionRoute allowedRoles={["admin", "authorization_coordinator", "authorization_manager", "authorization_team", "authorizations", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "qa", "qa_director", "qa_specialist", "bcba", "clinical_director"]}><AuthorizationsRouter /></PermissionRoute>} />
                   <Route path="/authorizations/handoff" element={<OSAuthHandoff />} />
                   <Route path="/scheduling" element={<OSScheduling />} />
                   <Route path="/scheduling/board" element={<OSSchedulingBoard />} />
@@ -964,7 +964,7 @@ const App = () => (
                       </PermissionRoute>
                     }
                   />
-                  <Route path="/intake/dashboard" element={<IntakeWorkspaceLanding />} />
+                  <Route path="/intake/dashboard" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><IntakeWorkspaceLanding /></PermissionRoute>} />
                   <Route path="/intake/lead-to-active" element={<LeadToActivePipeline />} />
                   <Route path="/intake/referral-queue" element={<ReferralQueue />} />
                   <Route path="/intake/tasks" element={<IntakeTasks />} />

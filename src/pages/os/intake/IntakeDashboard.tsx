@@ -487,6 +487,7 @@ export default function IntakeDashboard() {
                   <SendToStateSupportButton
                     fromDepartment="Intake"
                     linkedLeadId={String(lead.id)}
+                    defaultState={lead.state || undefined}
                     defaultTitle={`Intake support: ${lead.childName ?? "lead"}`}
                     defaultDescription={`State: ${lead.state ?? ""} · Owner: ${lead.owner ?? "Unassigned"} · Next: handoff readiness review.`}
                     defaultPriority="medium"

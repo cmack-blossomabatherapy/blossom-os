@@ -7,6 +7,9 @@ import { useOSRole } from "@/contexts/OSRoleContext";
  * listed below can reach these pages by direct URL. Everyone else is
  * bounced to the safe fallback (default: their home / intake ai-calls).
  *
+ * State Director and Assistant State Director are intentionally NOT in
+ * this allow list — those role menus do not surface /phone.
+ *
  * Intake's limited /phone/ai-calls surface is NOT wrapped by this guard.
  */
 const ALLOWED = new Set<string>([
@@ -20,9 +23,6 @@ const ALLOWED = new Set<string>([
   // Marketing
   "marketing", "marketing_team", "marketing_director", "marketing_manager",
   "marketing_admin", "marketing_growth_lead",
-  // State Director (menu exposes /phone). Assistant State Director is
-  // intentionally NOT included — that menu does not surface phone.
-  "state_director",
 ]);
 
 export function PhoneSystemRoute({

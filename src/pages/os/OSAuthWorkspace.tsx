@@ -749,6 +749,7 @@ export default function OSAuthWorkspace() {
                       fromDepartment="Authorizations"
                       linkedAuthorizationId={String(a.id)}
                       linkedClientId={(a as any).clientId ? String((a as any).clientId) : undefined}
+                      defaultState={(a as any).state || undefined}
                       defaultTitle={`Authorization support: ${(a as any).clientName ?? a.id}`}
                       defaultDescription={`State: ${(a as any).state ?? ""} · Payer: ${(a as any).payer ?? ""} · Stage: ${(a as any).stage ?? ""} · Blocker: ${(a as any).blocker ?? "n/a"}`}
                       defaultPriority="high"
