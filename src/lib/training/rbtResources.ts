@@ -527,7 +527,11 @@ export async function addResource(input: Omit<RBTResource, "id" | "seeded" | "up
 }
 
 export async function updateResource(id: string, patch: Partial<RBTResource>): Promise<void> {
-  const patchRow: Record<string, unknown> = {};
+  const patchRow: Partial<{
+    title: string; type: string; url: string | null; description: string | null;
+    body: string | null; module_ids: string[]; minutes: number | null;
+    category: string | null; tags: string[]; required: boolean; tracks: string[];
+  }> = {};
   if (patch.title !== undefined) patchRow.title = patch.title;
   if (patch.type !== undefined) patchRow.type = patch.type;
   if (patch.url !== undefined) patchRow.url = patch.url ?? null;
@@ -539,7 +543,7 @@ export async function updateResource(id: string, patch: Partial<RBTResource>): P
   if (patch.tags !== undefined) patchRow.tags = patch.tags ?? [];
   if (patch.required !== undefined) patchRow.required = patch.required;
   if (patch.tracks !== undefined) patchRow.tracks = (patch.tracks ?? []) as string[];
-  const { error } = await supabase.from("rbt_resources").update(patchRow).eq("id", id);
+  const { error } = await supabase.from("rbt_resources").update(patchRow as never).eq("id", id);
   if (error) throw error;
   await refreshFromSupabase();
 }
