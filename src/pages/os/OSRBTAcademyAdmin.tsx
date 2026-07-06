@@ -14,7 +14,7 @@ import {
   useReadinessTrainees, summarize, READINESS_TONE, EXPERIENCE_BUCKETS,
   CERTIFICATION_STATUSES,
   assignPathRow, recordSignoffRow, markBlockedRow,
-  setNeedsCoachingRow, updateAssignmentRow,
+  setNeedsCoachingRow, updateAssignmentRow, addCoachingNoteRow,
   type RBTTrainee, type ReadinessStatus, type ExperienceBucket,
   type CertificationStatus,
 } from "@/lib/training/rbtReadiness";
@@ -354,7 +354,7 @@ function OverviewTab({ trainee: t, summary: s, isAdmin }: {
                 key={p.id} disabled={!isAdmin}
                 onClick={() => {
                   if (!confirm(`Reassign ${t.name} to "${p.label}"?\n\nThis resets signoff progress.`)) return;
-                  assignPath(t.id, p.id as RBTPathId, { override: true });
+                  void assignPathRow(t.id, p.id as RBTPathId, { override: true });
                 }}
                 className={cn(
                   "rounded-xl border p-2.5 text-left text-xs transition",
@@ -389,13 +389,13 @@ function OverviewTab({ trainee: t, summary: s, isAdmin }: {
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           <Assign icon={Compass} label="Lead RBT Trainer" value={t.leadRbtTrainer}
-            editing={editAssign} onChange={(v) => updateAssignment(t.id, "leadRbtTrainer", v)} />
+            editing={editAssign} onChange={(v) => void updateAssignmentRow(t.id, "leadRbtTrainer", v)} />
           <Assign icon={UserCircle2} label="BCBA" value={t.bcba}
-            editing={editAssign} onChange={(v) => updateAssignment(t.id, "bcba", v)} />
+            editing={editAssign} onChange={(v) => void updateAssignmentRow(t.id, "bcba", v)} />
           <Assign icon={ClipboardCheck} label="Training Admin" value={t.trainingAdmin}
-            editing={editAssign} onChange={(v) => updateAssignment(t.id, "trainingAdmin", v)} />
+            editing={editAssign} onChange={(v) => void updateAssignmentRow(t.id, "trainingAdmin", v)} />
           <Assign icon={FileText} label="Documentation Reviewer" value={t.documentationReviewer}
-            editing={editAssign} onChange={(v) => updateAssignment(t.id, "documentationReviewer", v)} />
+            editing={editAssign} onChange={(v) => void updateAssignmentRow(t.id, "documentationReviewer", v)} />
         </div>
       </section>
 
@@ -542,7 +542,7 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
             type="checkbox"
             disabled={!isAdmin}
             checked={!!t.flags?.needsCoaching}
-            onChange={(e) => setNeedsCoaching(t.id, e.target.checked)}
+            onChange={(e) => void setNeedsCoachingRow(t.id, e.target.checked, t.flags)}
           />
         </label>
         <div className="mt-3 space-y-2">
@@ -565,7 +565,7 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
           <button
             type="button" disabled={!isAdmin || !noteText.trim()}
             onClick={() => {
-              addCoachingNote(t.id, { author: "You", authorRole: noteRole, text: noteText.trim() });
+              void addCoachingNoteRow(t.id, t.flags, t.coachingNotes, { author: "You", authorRole: noteRole, text: noteText.trim() });
               setNoteText("");
             }}
             className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
@@ -597,7 +597,7 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
             </p>
             <button
               type="button" disabled={!isAdmin}
-              onClick={() => markBlocked(t.id, null)}
+              onClick={() => void markBlockedRow(t.id, null, t.flags)}
               className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-card px-2.5 py-1 text-xs font-medium hover:bg-muted disabled:opacity-50"
             >
               <CheckCircle2 className="size-3.5" /> Clear block
@@ -613,7 +613,7 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
             />
             <button
               type="button" disabled={!isAdmin || !blockReason.trim()}
-              onClick={() => markBlocked(t.id, blockReason.trim())}
+              onClick={() => void markBlockedRow(t.id, blockReason.trim(), t.flags)}
               className="inline-flex items-center gap-1 rounded-lg bg-destructive px-2.5 py-1 text-xs font-medium text-destructive-foreground transition hover:opacity-90 disabled:opacity-50"
             >
               <Ban className="size-3.5" /> Mark blocked
@@ -647,7 +647,7 @@ function SignoffRow({ item, status, traineeId, isAdmin }: {
       </div>
       <button
         type="button" disabled={!isAdmin}
-        onClick={() => recordSignoff(traineeId, item.id, signed ? "pending" : "signed")}
+        onClick={() => void recordSignoffRow(traineeId, item.id, signed ? "pending" : "signed", {})}
         className={cn(
           "shrink-0 rounded-md border px-2 py-1 text-[11px] font-medium transition disabled:opacity-50",
           signed ? "border-border/70 bg-card text-muted-foreground hover:bg-muted"
