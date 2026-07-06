@@ -18564,6 +18564,105 @@ export type Database = {
         }
         Relationships: []
       }
+      system_issues: {
+        Row: {
+          area: string | null
+          created_at: string
+          description: string | null
+          id: string
+          notes: string | null
+          owner_id: string | null
+          owner_name: string | null
+          priority: string
+          reported_by_id: string | null
+          reported_by_name: string | null
+          resolved_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          area?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          priority?: string
+          reported_by_id?: string | null
+          reported_by_name?: string | null
+          resolved_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          area?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          priority?: string
+          reported_by_id?: string | null
+          reported_by_name?: string | null
+          resolved_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      system_workflows: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_source: string | null
+          department: string | null
+          future_module: string | null
+          id: string
+          name: string
+          notes: string | null
+          owner_id: string | null
+          owner_name: string | null
+          priority: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_source?: string | null
+          department?: string | null
+          future_module?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          priority?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_source?: string | null
+          department?: string | null
+          future_module?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          priority?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       time_clock_punches: {
         Row: {
           clinic: string | null
