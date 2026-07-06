@@ -62,16 +62,13 @@ export function useRbtReportSummaries(): RbtReportSummaries {
         const uid = userData.user?.id;
         if (!uid) { if (!cancelled) setState((s) => ({ ...s, loading: false })); return; }
 
-        const [runtime, readiness, prefs, help, sessions, supervision] = await Promise.all([
+        const [runtime, readiness, prefs] = await Promise.all([
           (supabase.from("academy_runtime_progress" as any) as any)
             .select("status, module_id, journey_slug")
             .eq("user_id", uid)
             .eq("journey_slug", "rbt"),
           supabase.from("rbt_readiness_records").select("*").eq("user_id", uid).maybeSingle(),
           supabase.from("rbt_resource_prefs").select("status, resource_id").eq("user_id", uid),
-          supabase.from("rbt_help_requests").select("id, status").eq("requester_user_id", uid),
-          supabase.from("rbt_sessions").select("id, status, scheduled_start").eq("rbt_user_id", uid).gte("scheduled_start", new Date().toISOString()),
-          supabase.from("rbt_supervision").select("id, status").eq("rbt_user_id", uid),
         ]);
 
         if (cancelled) return;
@@ -111,36 +108,11 @@ export function useRbtReportSummaries(): RbtReportSummaries {
           };
         }
 
-        // Help
-        const helpRows = (help.data ?? []) as any[];
-        if (helpRows.length > 0) {
-          const open = helpRows.filter((h) => h.status !== "resolved" && h.status !== "closed").length;
-          summaries["rbt-help-requests"] = {
-            key: "rbt-help-requests",
-            primary: `${open}`,
-            secondary: `${open} open of ${helpRows.length}`,
-          };
-        }
-
-        // Sessions upcoming
-        const sessionRows = (sessions.data ?? []) as any[];
-        if (sessionRows.length > 0) {
-          summaries["rbt-sessions-attendance"] = {
-            key: "rbt-sessions-attendance",
-            primary: `${sessionRows.length}`,
-            secondary: "upcoming sessions",
-          };
-        }
-
-        // Supervision
-        const supRows = (supervision.data ?? []) as any[];
-        if (supRows.length > 0) {
-          summaries["rbt-my-supervision"] = {
-            key: "rbt-my-supervision",
-            primary: `${supRows.length}`,
-            secondary: "supervision events",
-          };
-        }
+        // rbt-help-requests, rbt-sessions-attendance, rbt-my-supervision are
+        // scoped by rbt_employee_id in Supabase, not auth.uid(). Consumers
+        // that also mount `useRbtWorkflow()` can enrich these keys with the
+        // employee-scoped counts; this hook keeps them as empty rather than
+        // guessing.
 
         // CentralReach sync — count of pending runtime rows and sessions with
         // sync_status other than "synced".
