@@ -93,7 +93,7 @@ export default function OSStaffingWorkspace() {
   const { matches } = useStaffingWorkspace();
   const needs = useMemo(() => getClientStaffingNeeds(clients), [clients]);
   const proposedMatches = useMemo(
-    () => matches.filter((m) => m.status === "proposed").length,
+    () => matches.filter((m) => m.status === "Suggested" || m.status === "Pending").length,
     [matches],
   );
   const staffingTopRisks = useMemo(() => {
