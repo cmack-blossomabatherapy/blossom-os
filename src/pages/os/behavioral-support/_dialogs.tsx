@@ -434,7 +434,7 @@ export function BehavioralSupportCaseDialog(props: BaseProps & {
   const [rbt, setRbt] = useState("");
   const [severity, setSeverity] = useState<BSSeverity>("medium");
   const [status, setStatus] = useState<BSCaseStatus>("open");
-  const [source, setSource] = useState("internal");
+  const [source, setSource] = useState("manual");
   const [crId, setCrId] = useState("");
   const [concern, setConcern] = useState("");
   const [note, setNote] = useState("");
@@ -442,7 +442,7 @@ export function BehavioralSupportCaseDialog(props: BaseProps & {
   useEffect(() => {
     if (props.open) {
       setClientName(""); setState(""); setBcba(""); setRbt(""); setSeverity("medium");
-      setStatus("open"); setSource("internal"); setCrId(""); setConcern(""); setNote(""); setBusy(false);
+      setStatus("open"); setSource("manual"); setCrId(""); setConcern(""); setNote(""); setBusy(false);
     }
   }, [props.open]);
   return (
@@ -467,9 +467,14 @@ export function BehavioralSupportCaseDialog(props: BaseProps & {
             <div className="space-y-1.5">
               <Label htmlFor="bs-case-source">Source system</Label>
               <select id="bs-case-source" value={source} onChange={(e) => setSource(e.target.value)} className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm h-9">
-                <option value="internal">Internal</option>
+                <option value="manual">Manual entry</option>
                 <option value="centralreach">CentralReach</option>
-                <option value="monday">Monday</option>
+                <option value="phone">Phone call</option>
+                <option value="intake">Intake</option>
+                <option value="qa">QA</option>
+                <option value="case_manager">Case Manager</option>
+                <option value="bcba">BCBA</option>
+                <option value="rbt">RBT</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -521,13 +526,15 @@ export function BehavioralSupportCaseDialog(props: BaseProps & {
             onClick={async () => {
               setBusy(true);
               try {
+                const ALLOWED_SOURCES = ["manual","centralreach","phone","intake","qa","case_manager","bcba","rbt","other"];
+                const safeSource = ALLOWED_SOURCES.includes(source) ? source : "manual";
                 await props.onSubmit({
                   client_name: clientName.trim(),
                   state: state.trim() || null,
                   bcba_name: bcba.trim() || null,
                   rbt_name: rbt.trim() || null,
                   severity, status,
-                  source_system: source,
+                  source_system: safeSource,
                   centralreach_client_id: crId.trim() || null,
                   primary_concern: concern.trim() || null,
                   initial_note: note.trim() || null,
