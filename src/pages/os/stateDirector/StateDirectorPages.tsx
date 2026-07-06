@@ -28,6 +28,7 @@ import {
 import { StateOpsCentralReachSummaryBadge } from "@/components/stateDirector/StateOpsCentralReachBadge";
 import { DailyHealthNotesPanel } from "@/components/stateDirector/DailyHealthNotesPanel";
 import { LinkedContextPanel } from "@/components/stateDirector/LinkedContextPanel";
+import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
 
 /* --------------------------------- helpers -------------------------------- */
 
