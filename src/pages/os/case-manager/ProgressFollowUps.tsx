@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { CalendarClock, Plus, CheckCircle2, RotateCcw, Undo2 } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
-import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
+import { CMPage, Pill, FilterBar, FormDialog } from "./_shared";
+import { priorityTone, statusTone, familySelectOptions, familyOptionByValue, familyContext, stringValue, dateTimeIsoOrNull, type CMFormValues } from "./_utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,7 +21,7 @@ export default function ProgressFollowUpsPage() {
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
 
   const options = familySelectOptions(w.assignments);
-  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
+  const pickFamily = (v: CMFormValues) => familyOptionByValue(w.assignments, stringValue(v.family));
 
   const now = Date.now();
   const startToday = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }, []);
@@ -101,7 +102,7 @@ export default function ProgressFollowUpsPage() {
                       <Button size="sm" variant="ghost" onClick={() => setRescheduleId(f.id)}><RotateCcw className="mr-1 h-3 w-3" /> Reschedule</Button>
                     </>
                   ) : (
-                    <Button size="sm" variant="ghost" onClick={async () => { await w.updateFollowUp(f.id, { status: "open", completed_at: null } as any); toast.success("Reopened"); }}><Undo2 className="mr-1 h-3 w-3" /> Reopen</Button>
+                    <Button size="sm" variant="ghost" onClick={async () => { await w.updateFollowUp(f.id, { status: "open", completed_at: null }); toast.success("Reopened"); }}><Undo2 className="mr-1 h-3 w-3" /> Reopen</Button>
                   )}
                 </div>
               </div>
@@ -123,7 +124,7 @@ export default function ProgressFollowUpsPage() {
         ]}
         onSubmit={async (v) => {
           const { family: _f, ...rest } = v;
-          await w.createFollowUp({ ...rest, ...familyContext(pickFamily(v)), status: "open", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any);
+          await w.createFollowUp({ ...rest, ...familyContext(pickFamily(v)), status: "open", due_at: dateTimeIsoOrNull(v.due_at) } as unknown as Parameters<typeof w.createFollowUp>[0]);
           toast.success("Follow-up created");
         }}
       />
@@ -131,13 +132,13 @@ export default function ProgressFollowUpsPage() {
         open={!!completeId} onOpenChange={(o) => !o && setCompleteId(null)}
         title="Complete follow-up" submitLabel="Mark complete"
         fields={[{ key: "completion_note", label: "Completion note", type: "textarea" }]}
-        onSubmit={async (v) => { if (!completeId) return; await w.completeFollowUp(completeId, v.completion_note || undefined); toast.success("Completed"); }}
+        onSubmit={async (v) => { if (!completeId) return; await w.completeFollowUp(completeId, stringValue(v.completion_note) || undefined); toast.success("Completed"); }}
       />
       <FormDialog
         open={!!rescheduleId} onOpenChange={(o) => !o && setRescheduleId(null)}
         title="Reschedule follow-up" submitLabel="Reschedule"
         fields={[{ key: "due_at", label: "New due", type: "datetime", required: true }]}
-        onSubmit={async (v) => { if (!rescheduleId) return; await w.rescheduleFollowUp(rescheduleId, new Date(v.due_at).toISOString()); toast.success("Rescheduled"); }}
+        onSubmit={async (v) => { if (!rescheduleId) return; const iso = dateTimeIsoOrNull(v.due_at); if (!iso) return; await w.rescheduleFollowUp(rescheduleId, iso); toast.success("Rescheduled"); }}
       />
     </CMPage>
   );

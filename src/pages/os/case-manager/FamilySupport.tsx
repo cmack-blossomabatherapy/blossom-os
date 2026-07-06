@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Heart, Plus, CheckCircle2, Flame, ShieldAlert, CalendarClock } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
-import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
+import { CMPage, Pill, FilterBar, FormDialog } from "./_shared";
+import { priorityTone, statusTone, familySelectOptions, familyOptionByValue, familyContext, stringValue, stringOrNull, dateTimeIsoOrNull, type CMFormValues } from "./_utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,7 +22,7 @@ export default function FamilySupportPage() {
   const [escalationFrom, setEscalationFrom] = useState<string | null>(null);
 
   const options = familySelectOptions(w.assignments);
-  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
+  const pickFamily = (v: CMFormValues) => familyOptionByValue(w.assignments, stringValue(v.family));
   const noteById = (id: string | null) => w.notes.find((n) => n.id === id);
 
   const rows = w.notes.filter((n) => {
@@ -94,10 +95,10 @@ export default function FamilySupportPage() {
           const ctx = familyContext(pickFamily(v));
           await w.createNote({
             ...ctx,
-            note_type: v.note_type || "general", title: v.title || null,
-            body: v.body, priority: v.priority || null, status: v.status || "open",
-            due_at: v.due_at ? new Date(v.due_at).toISOString() : null,
-          } as any);
+            note_type: stringValue(v.note_type) || "general", title: stringOrNull(v.title),
+            body: stringValue(v.body), priority: stringOrNull(v.priority), status: stringValue(v.status) || "open",
+            due_at: dateTimeIsoOrNull(v.due_at),
+          });
           toast.success("Note added");
         }}
       />
@@ -107,7 +108,7 @@ export default function FamilySupportPage() {
         fields={[{ key: "resolution_note", label: "Resolution", type: "textarea", required: true }]}
         onSubmit={async (v) => {
           if (!resolveId) return;
-          await w.updateNote(resolveId, { status: "resolved", resolved_at: new Date().toISOString(), resolution_note: v.resolution_note } as any);
+          await w.updateNote(resolveId, { status: "resolved", resolved_at: new Date().toISOString(), resolution_note: stringValue(v.resolution_note) });
           toast.success("Resolved");
         }}
       />
@@ -121,7 +122,7 @@ export default function FamilySupportPage() {
         ]}
         onSubmit={async (v) => {
           const n = noteById(followUpFrom);
-          await w.createFollowUp({ client_id: n?.client_id ?? null, client_name: n?.client_name ?? null, title: v.title, description: n?.body, priority: v.priority, status: "open", category: "family_check_in", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any);
+          await w.createFollowUp({ client_id: n?.client_id ?? null, client_name: n?.client_name ?? null, title: stringValue(v.title), description: n?.body, priority: stringValue(v.priority), status: "open", category: "family_check_in", due_at: dateTimeIsoOrNull(v.due_at) });
           toast.success("Follow-up created");
         }}
       />
@@ -136,7 +137,7 @@ export default function FamilySupportPage() {
         ]}
         onSubmit={async (v) => {
           const n = noteById(issueFrom);
-          await w.createServiceIssue({ client_id: n?.client_id ?? null, client_name: n?.client_name ?? null, title: v.title, description: n?.body, issue_type: v.issue_type, severity: v.severity, status: "open", owner_department: v.owner_department || null } as any);
+          await w.createServiceIssue({ client_id: n?.client_id ?? null, client_name: n?.client_name ?? null, title: stringValue(v.title), description: n?.body, issue_type: stringValue(v.issue_type), severity: stringValue(v.severity), status: "open", owner_department: stringOrNull(v.owner_department) });
           toast.success("Issue logged");
         }}
       />
@@ -150,7 +151,7 @@ export default function FamilySupportPage() {
         ]}
         onSubmit={async (v) => {
           const n = noteById(escalationFrom);
-          await w.createEscalation({ client_id: n?.client_id ?? null, client_name: n?.client_name ?? null, reason: v.reason, summary: n?.body, escalation_type: v.escalation_type, severity: v.severity, status: "open" } as any);
+          await w.createEscalation({ client_id: n?.client_id ?? null, client_name: n?.client_name ?? null, reason: stringValue(v.reason), summary: n?.body, escalation_type: stringValue(v.escalation_type), severity: stringValue(v.severity), status: "open" });
           toast.success("Escalation created");
         }}
       />

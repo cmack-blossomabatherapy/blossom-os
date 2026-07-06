@@ -172,11 +172,28 @@ export type CMCommunityResource = {
   created_at: string;
 };
 
-// Loose supabase client to avoid stale Database types
+// Loose supabase client wrapper — avoids stale Database types without
+// falling back to `any`. Each call returns a chainable builder that is
+// PromiseLike<{data,error}>, so `await sb.from(...).select().eq(...)`
+// still yields the standard supabase result shape.
+type CMSupabaseResult<T = unknown> = { data: T | null; error: { message?: string } | null };
+interface CMSupabaseBuilder<T = unknown> extends PromiseLike<CMSupabaseResult<T>> {
+  select(cols?: string): CMSupabaseBuilder<T>;
+  insert(v: unknown): CMSupabaseBuilder<T>;
+  update(v: unknown): CMSupabaseBuilder<T>;
+  eq(col: string, val: unknown): CMSupabaseBuilder<T>;
+  order(col: string, opts?: { ascending?: boolean; nullsFirst?: boolean }): CMSupabaseBuilder<T>;
+  limit(n: number): CMSupabaseBuilder<T>;
+  single(): Promise<CMSupabaseResult<T>>;
+}
 const sb = supabase as unknown as {
   auth: typeof supabase.auth;
-  from: (table: string) => any;
+  from: <T = unknown>(table: string) => CMSupabaseBuilder<T>;
 };
+
+// Module-scoped so it's referentially stable and doesn't need to appear
+// in `useCallback` dependency arrays.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function useCaseManagerWorkspace() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -234,7 +251,7 @@ export function useCaseManagerWorkspace() {
   // ---------- Mutations ----------
 
   const withUser = useCallback(
-    <T extends Record<string, any>>(row: T): T => ({
+    <T extends Record<string, unknown>>(row: T): T => ({
       ...row,
       case_manager_user_id: row.case_manager_user_id ?? userId ?? undefined,
       created_by: userId ?? undefined,
@@ -251,7 +268,6 @@ export function useCaseManagerWorkspace() {
   //
   // The `client_timeline` enum currently accepts: system | auth | staffing |
   // schedule | qa | note | stage. Callers pass one of these.
-  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const writeClientTimelineEvent = useCallback(
     async (input: {
       client_id: string | null | undefined;
@@ -270,10 +286,9 @@ export function useCaseManagerWorkspace() {
           description: description.slice(0, 2000),
           user_name: "Case Manager - Blossom OS",
           created_by: userId ?? undefined,
-        } as any);
+        });
       } catch (err) {
         // Non-blocking: main action already succeeded.
-        // eslint-disable-next-line no-console
         console.warn("[case-manager] client_timeline write failed", err);
       }
     },
@@ -282,12 +297,12 @@ export function useCaseManagerWorkspace() {
 
   const createNote = useCallback(
     async (input: Partial<CMNote> & { body: string }) => {
-      const { data, error } = await sb.from("case_manager_notes").insert(withUser(input)).select().single();
+      const { data, error } = await sb.from<CMNote>("case_manager_notes").insert(withUser(input)).select().single();
       if (error) throw error;
       await writeClientTimelineEvent({
-        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        client_id: data?.client_id ?? input.client_id ?? null,
         event_type: "note",
-        title: (input as any).title ?? "Case Manager note",
+        title: input.title ?? "Case Manager note",
         body: input.body,
       });
       await refresh();
@@ -307,13 +322,13 @@ export function useCaseManagerWorkspace() {
 
   const createFollowUp = useCallback(
     async (input: Partial<CMFollowUp> & { title: string }) => {
-      const { data, error } = await sb.from("case_manager_follow_ups").insert(withUser(input)).select().single();
+      const { data, error } = await sb.from<CMFollowUp>("case_manager_follow_ups").insert(withUser(input)).select().single();
       if (error) throw error;
       await writeClientTimelineEvent({
-        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        client_id: data?.client_id ?? input.client_id ?? null,
         event_type: "note",
         title: `Follow-up created: ${input.title}`,
-        body: (input as any).notes ?? null,
+        body: input.description ?? null,
       });
       await refresh();
       return data as CMFollowUp;
@@ -324,16 +339,16 @@ export function useCaseManagerWorkspace() {
   const completeFollowUp = useCallback(
     async (id: string, completion_note?: string) => {
       const { data, error } = await sb
-        .from("case_manager_follow_ups")
+        .from<CMFollowUp>("case_manager_follow_ups")
         .update({ status: "completed", completed_at: new Date().toISOString(), completion_note: completion_note ?? null, updated_by: userId })
         .eq("id", id)
         .select()
         .single();
       if (error) throw error;
       await writeClientTimelineEvent({
-        client_id: (data as any)?.client_id ?? null,
+        client_id: data?.client_id ?? null,
         event_type: "note",
-        title: `Follow-up completed: ${(data as any)?.title ?? "follow-up"}`,
+        title: `Follow-up completed: ${data?.title ?? "follow-up"}`,
         body: completion_note ?? null,
       });
       await refresh();
@@ -353,15 +368,15 @@ export function useCaseManagerWorkspace() {
   const logCommunication = useCallback(
     async (input: Partial<CMCommunication> & { summary: string }) => {
       const { data, error } = await sb
-        .from("case_manager_communications")
+        .from<CMCommunication>("case_manager_communications")
         .insert(withUser({ occurred_at: input.occurred_at ?? new Date().toISOString(), ...input }))
         .select()
         .single();
       if (error) throw error;
       await writeClientTimelineEvent({
-        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        client_id: data?.client_id ?? input.client_id ?? null,
         event_type: "note",
-        title: `Parent communication (${(input as any).channel ?? "logged"})`,
+        title: `Parent communication (${input.channel ?? "logged"})`,
         body: input.summary,
       });
       await refresh();
@@ -372,13 +387,13 @@ export function useCaseManagerWorkspace() {
 
   const createServiceIssue = useCallback(
     async (input: Partial<CMServiceIssue> & { title: string }) => {
-      const { data, error } = await sb.from("case_manager_service_issues").insert(withUser(input)).select().single();
+      const { data, error } = await sb.from<CMServiceIssue>("case_manager_service_issues").insert(withUser(input)).select().single();
       if (error) throw error;
       await writeClientTimelineEvent({
-        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        client_id: data?.client_id ?? input.client_id ?? null,
         event_type: "note",
         title: `Service issue: ${input.title}`,
-        body: (input as any).description ?? null,
+        body: input.description ?? null,
       });
       await refresh();
       return data as CMServiceIssue;
@@ -411,10 +426,10 @@ export function useCaseManagerWorkspace() {
 
   const createEscalation = useCallback(
     async (input: Partial<CMEscalation> & { reason: string }) => {
-      const { data, error } = await sb.from("case_manager_escalations").insert(withUser(input)).select().single();
+      const { data, error } = await sb.from<CMEscalation>("case_manager_escalations").insert(withUser(input)).select().single();
       if (error) throw error;
       await writeClientTimelineEvent({
-        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        client_id: data?.client_id ?? input.client_id ?? null,
         event_type: "note",
         title: "Case Manager escalation",
         body: input.reason,
@@ -450,7 +465,7 @@ export function useCaseManagerWorkspace() {
 
   const createHandoff = useCallback(
     async (input: Partial<CMHandoff> & { title: string; to_department: string }) => {
-      const { data, error } = await sb.from("case_manager_handoffs").insert(withUser(input)).select().single();
+      const { data, error } = await sb.from<CMHandoff>("case_manager_handoffs").insert(withUser(input)).select().single();
       if (error) throw error;
       const dept = (input.to_department ?? "").toLowerCase();
       const evType: "auth" | "staffing" | "schedule" | "qa" | "note" =
@@ -460,10 +475,10 @@ export function useCaseManagerWorkspace() {
         : dept.includes("qa")       ? "qa"
         : "note";
       await writeClientTimelineEvent({
-        client_id: (data as any)?.client_id ?? input.client_id ?? null,
+        client_id: data?.client_id ?? input.client_id ?? null,
         event_type: evType,
         title: `Handoff -> ${input.to_department}: ${input.title}`,
-        body: (input as any).request_note ?? null,
+        body: input.request_note ?? null,
       });
       await refresh();
       return data as CMHandoff;
@@ -663,7 +678,7 @@ export function useCaseManagerWorkspace() {
           priority: input.priority ?? "normal",
           status: "open",
           ...input,
-        } as any);
+        });
       },
     [createHandoff],
   );

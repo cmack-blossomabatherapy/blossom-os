@@ -4,7 +4,8 @@ import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { useStaffingWorkspace } from "@/hooks/useStaffingWorkspace";
-import { CMPage, Pill, FilterBar, FormDialog, findAuthorizationForAssignment, findCentralReachPairingForAssignment, findCentralReachCoverageRiskForAssignment, findStaffingForAssignment, SourceStatusChip } from "./_shared";
+import { CMPage, Pill, FilterBar, FormDialog, SourceStatusChip } from "./_shared";
+import { findAuthorizationForAssignment, findCentralReachPairingForAssignment, findCentralReachCoverageRiskForAssignment, findStaffingForAssignment, stringValue, stringOrNull, booleanValue, dateTimeIsoOrNull } from "./_utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -128,7 +129,7 @@ export default function AssignedFamiliesPage() {
           { key: "is_primary_str", label: "Assignment", type: "select", options: ["Primary","Secondary"], defaultValue: "Primary" },
         ]}
         onSubmit={async (v) => {
-          await w.createAssignment({ client_name: v.client_name, state: v.state || null, centralreach_client_id: v.centralreach_client_id || null, is_primary: v.is_primary_str !== "Secondary" });
+          await w.createAssignment({ client_name: stringValue(v.client_name), state: stringOrNull(v.state), centralreach_client_id: stringOrNull(v.centralreach_client_id), is_primary: stringValue(v.is_primary_str) !== "Secondary" });
           toast.success("Family added");
         }}
       />
@@ -148,7 +149,7 @@ export default function AssignedFamiliesPage() {
         ]}
         onSubmit={async (v) => {
           const ctx = forCtx(logCommForId);
-          await w.logCommunication({ ...ctx, ...v, needs_followup: !!v.needs_followup } as any);
+          await w.logCommunication({ ...ctx, ...v, needs_followup: booleanValue(v.needs_followup) } as unknown as Parameters<typeof w.logCommunication>[0]);
           toast.success("Communication logged");
         }}
       />
@@ -165,7 +166,7 @@ export default function AssignedFamiliesPage() {
         ]}
         onSubmit={async (v) => {
           const ctx = forCtx(followUpForId);
-          await w.createFollowUp({ ...ctx, ...v, status: "open", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any);
+          await w.createFollowUp({ ...ctx, ...v, status: "open", due_at: dateTimeIsoOrNull(v.due_at) } as unknown as Parameters<typeof w.createFollowUp>[0]);
           toast.success("Follow-up created");
         }}
       />
@@ -183,7 +184,7 @@ export default function AssignedFamiliesPage() {
         ]}
         onSubmit={async (v) => {
           const ctx = forCtx(issueForId);
-          await w.createServiceIssue({ ...ctx, ...v, status: "open" } as any);
+          await w.createServiceIssue({ ...ctx, ...v, status: "open" } as unknown as Parameters<typeof w.createServiceIssue>[0]);
           toast.success("Service issue logged");
         }}
       />
@@ -201,7 +202,7 @@ export default function AssignedFamiliesPage() {
         ]}
         onSubmit={async (v) => {
           const ctx = forCtx(escalationForId);
-          await w.createEscalation({ ...ctx, ...v, status: "open" } as any);
+          await w.createEscalation({ ...ctx, ...v, status: "open" } as unknown as Parameters<typeof w.createEscalation>[0]);
           toast.success("Escalation created");
         }}
       />
@@ -221,7 +222,7 @@ export default function AssignedFamiliesPage() {
           ]}
           onSubmit={async (v) => {
             const ctx = forCtx(r.id);
-            await r.fn({ ...ctx, ...v } as any);
+            await r.fn({ ...ctx, ...v } as unknown as Parameters<typeof r.fn>[0]);
             toast.success("Request sent");
           }}
         />

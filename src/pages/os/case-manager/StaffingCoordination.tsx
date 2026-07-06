@@ -3,7 +3,8 @@ import { Send, ShieldAlert, CalendarClock, Flame } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
 import { useStaffingWorkspace } from "@/hooks/useStaffingWorkspace";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
-import { CMPage, Pill, priorityTone, statusTone, FormDialog, familySelectOptions, familyOptionByValue, familyContext, findStaffingForAssignment, findCentralReachPairingForAssignment, SourceStatusChip } from "./_shared";
+import { CMPage, Pill, FormDialog, SourceStatusChip } from "./_shared";
+import { priorityTone, statusTone, familySelectOptions, familyOptionByValue, familyContext, findStaffingForAssignment, findCentralReachPairingForAssignment, stringValue, dateTimeIsoOrNull, type CMFormValues } from "./_utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -17,7 +18,7 @@ export default function StaffingCoordinationPage() {
   const [escalateOpen, setEscalateOpen] = useState(false);
 
   const options = familySelectOptions(w.assignments);
-  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
+  const pickFamily = (v: CMFormValues) => familyOptionByValue(w.assignments, stringValue(v.family));
 
   const openStaffing = w.openHandoffs.filter((h) => h.to_department === "staffing" || h.handoff_type === "staffing_update");
   const staffIssues = w.openServiceIssues.filter((i) => i.issue_type === "staffing" || i.owner_department === "staffing");
@@ -143,7 +144,7 @@ export default function StaffingCoordinationPage() {
           { key: "request_note", label: "Details", type: "textarea", required: true },
           { key: "priority", label: "Priority", type: "select", options: ["low","normal","high","urgent"], defaultValue: "normal" },
         ]}
-        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.requestStaffingUpdate({ ...rest, ...familyContext(pickFamily(v)) } as any); toast.success("Sent to Staffing"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.requestStaffingUpdate({ ...rest, ...familyContext(pickFamily(v)) } as unknown as Parameters<typeof w.requestStaffingUpdate>[0]); toast.success("Sent to Staffing"); }}
       />
       <FormDialog open={issueOpen} onOpenChange={setIssueOpen} title="Log family staffing concern" submitLabel="Log"
         fields={[
@@ -153,7 +154,7 @@ export default function StaffingCoordinationPage() {
           { key: "severity", label: "Severity", type: "select", options: ["low","medium","high","urgent"], defaultValue: "medium" },
           { key: "parent_impact", label: "Parent impact" },
         ]}
-        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createServiceIssue({ ...rest, ...familyContext(pickFamily(v)), issue_type: "staffing", owner_department: "staffing", status: "open" } as any); toast.success("Issue logged"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createServiceIssue({ ...rest, ...familyContext(pickFamily(v)), issue_type: "staffing", owner_department: "staffing", status: "open" } as unknown as Parameters<typeof w.createServiceIssue>[0]); toast.success("Issue logged"); }}
       />
       <FormDialog open={followUpOpen} onOpenChange={setFollowUpOpen} title="Staffing follow-up" submitLabel="Create"
         fields={[
@@ -162,7 +163,7 @@ export default function StaffingCoordinationPage() {
           { key: "priority", label: "Priority", type: "select", options: ["low","normal","high","urgent"], defaultValue: "normal" },
           { key: "due_at", label: "Due", type: "datetime" },
         ]}
-        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createFollowUp({ ...rest, ...familyContext(pickFamily(v)), category: "staffing", status: "open", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any); toast.success("Follow-up created"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createFollowUp({ ...rest, ...familyContext(pickFamily(v)), category: "staffing", status: "open", due_at: dateTimeIsoOrNull(v.due_at) } as unknown as Parameters<typeof w.createFollowUp>[0]); toast.success("Follow-up created"); }}
       />
       <FormDialog open={escalateOpen} onOpenChange={setEscalateOpen} title="Escalate staffing issue" submitLabel="Escalate"
         fields={[
@@ -171,7 +172,7 @@ export default function StaffingCoordinationPage() {
           { key: "summary", label: "Summary", type: "textarea" },
           { key: "severity", label: "Severity", type: "select", options: ["low","medium","high","urgent"], defaultValue: "high" },
         ]}
-        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createEscalation({ ...rest, ...familyContext(pickFamily(v)), escalation_type: "staffing_concern", owner_department: "staffing", status: "open" } as any); toast.success("Escalated"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createEscalation({ ...rest, ...familyContext(pickFamily(v)), escalation_type: "staffing_concern", owner_department: "staffing", status: "open" } as unknown as Parameters<typeof w.createEscalation>[0]); toast.success("Escalated"); }}
       />
     </CMPage>
   );

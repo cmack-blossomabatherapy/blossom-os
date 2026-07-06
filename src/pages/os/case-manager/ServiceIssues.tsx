@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ShieldAlert, Plus, CheckCircle2, Send, CalendarClock, Flame } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
-import { CMPage, Pill, priorityTone, statusTone, FilterBar, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
+import { CMPage, Pill, FilterBar, FormDialog } from "./_shared";
+import { priorityTone, statusTone, familySelectOptions, familyOptionByValue, familyContext, stringValue, dateTimeIsoOrNull, type CMFormValues } from "./_utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,7 +27,7 @@ export default function ServiceIssuesPage() {
   const [handoffId, setHandoffId] = useState<string | null>(null);
 
   const options = familySelectOptions(w.assignments);
-  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
+  const pickFamily = (v: CMFormValues) => familyOptionByValue(w.assignments, stringValue(v.family));
   const issueById = (id: string | null) => w.serviceIssues.find((s) => s.id === id);
 
   const rows = w.serviceIssues.filter((i) => {
@@ -88,11 +89,11 @@ export default function ServiceIssuesPage() {
           { key: "parent_impact", label: "Parent impact" },
           { key: "due_at", label: "Due", type: "datetime" },
         ]}
-        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createServiceIssue({ ...rest, ...familyContext(pickFamily(v)), status: "open", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any); toast.success("Issue created"); }}
+        onSubmit={async (v) => { const { family: _f, ...rest } = v; await w.createServiceIssue({ ...rest, ...familyContext(pickFamily(v)), status: "open", due_at: dateTimeIsoOrNull(v.due_at) } as unknown as Parameters<typeof w.createServiceIssue>[0]); toast.success("Issue created"); }}
       />
       {editId && (
         <FormDialog open={!!editId} onOpenChange={(o) => !o && setEditId(null)} title="Edit issue" submitLabel="Save"
-          initial={issueById(editId) as any}
+          initial={issueById(editId) as unknown as CMFormValues}
           fields={[
             { key: "title", label: "Title", required: true },
             { key: "description", label: "Description", type: "textarea" },
@@ -101,12 +102,12 @@ export default function ServiceIssuesPage() {
             { key: "owner_department", label: "Owner department", type: "select", options: DEPTS },
             { key: "parent_impact", label: "Parent impact" },
           ]}
-          onSubmit={async (v) => { if (!editId) return; await w.updateServiceIssue(editId, v as any); toast.success("Updated"); }}
+          onSubmit={async (v) => { if (!editId) return; await w.updateServiceIssue(editId, v as unknown as Parameters<typeof w.updateServiceIssue>[1]); toast.success("Updated"); }}
         />
       )}
       <FormDialog open={!!resolveId} onOpenChange={(o) => !o && setResolveId(null)} title="Resolve issue" submitLabel="Resolve"
         fields={[{ key: "resolution_note", label: "Resolution note", type: "textarea", required: true }]}
-        onSubmit={async (v) => { if (!resolveId) return; await w.resolveServiceIssue(resolveId, v.resolution_note); toast.success("Resolved"); }}
+        onSubmit={async (v) => { if (!resolveId) return; await w.resolveServiceIssue(resolveId, stringValue(v.resolution_note)); toast.success("Resolved"); }}
       />
       <FormDialog open={!!followUpId} onOpenChange={(o) => !o && setFollowUpId(null)} title="Follow-up from issue" submitLabel="Create"
         fields={[
@@ -114,7 +115,7 @@ export default function ServiceIssuesPage() {
           { key: "priority", label: "Priority", type: "select", options: ["low","normal","high","urgent"], defaultValue: "normal" },
           { key: "due_at", label: "Due", type: "datetime" },
         ]}
-        onSubmit={async (v) => { const i = issueById(followUpId); await w.createFollowUp({ client_id: i?.client_id ?? null, client_name: i?.client_name ?? null, title: v.title, priority: v.priority, status: "open", category: i?.issue_type ?? "other", due_at: v.due_at ? new Date(v.due_at).toISOString() : null } as any); toast.success("Follow-up created"); }}
+        onSubmit={async (v) => { const i = issueById(followUpId); await w.createFollowUp({ client_id: i?.client_id ?? null, client_name: i?.client_name ?? null, title: stringValue(v.title), priority: stringValue(v.priority), status: "open", category: i?.issue_type ?? "other", due_at: dateTimeIsoOrNull(v.due_at) }); toast.success("Follow-up created"); }}
       />
       <FormDialog open={!!escalateId} onOpenChange={(o) => !o && setEscalateId(null)} title="Escalate issue" submitLabel="Escalate"
         fields={[
@@ -122,7 +123,7 @@ export default function ServiceIssuesPage() {
           { key: "summary", label: "Summary", type: "textarea" },
           { key: "severity", label: "Severity", type: "select", options: SEVERITIES, defaultValue: "high" },
         ]}
-        onSubmit={async (v) => { const i = issueById(escalateId); await w.createEscalation({ client_id: i?.client_id ?? null, client_name: i?.client_name ?? null, reason: v.reason, summary: v.summary, severity: v.severity, status: "open", escalation_type: "service_gap", owner_department: i?.owner_department ?? null } as any); toast.success("Escalated"); }}
+        onSubmit={async (v) => { const i = issueById(escalateId); await w.createEscalation({ client_id: i?.client_id ?? null, client_name: i?.client_name ?? null, reason: stringValue(v.reason), summary: stringValue(v.summary), severity: stringValue(v.severity), status: "open", escalation_type: "service_gap", owner_department: i?.owner_department ?? null }); toast.success("Escalated"); }}
       />
       <FormDialog open={!!handoffId} onOpenChange={(o) => !o && setHandoffId(null)} title="Handoff to owner department" submitLabel="Send"
         fields={[
@@ -131,7 +132,7 @@ export default function ServiceIssuesPage() {
           { key: "request_note", label: "Details", type: "textarea", required: true },
           { key: "priority", label: "Priority", type: "select", options: ["low","normal","high","urgent"], defaultValue: "normal" },
         ]}
-        onSubmit={async (v) => { const i = issueById(handoffId); await w.createHandoff({ client_id: i?.client_id ?? null, client_name: i?.client_name ?? null, handoff_type: "service_issue", status: "open", ...v } as any); toast.success("Handoff sent"); }}
+        onSubmit={async (v) => { const i = issueById(handoffId); await w.createHandoff({ client_id: i?.client_id ?? null, client_name: i?.client_name ?? null, handoff_type: "service_issue", status: "open", ...v } as unknown as Parameters<typeof w.createHandoff>[0]); toast.success("Handoff sent"); }}
       />
     </CMPage>
   );

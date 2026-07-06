@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import { Loader2, AlertCircle, Inbox } from "lucide-react";
 import { OSShell } from "../OSShell";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,12 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import type { FieldDef, CMFormValues } from "./_utils";
+
+/**
+ * Case Manager shared COMPONENTS ONLY. Utility/pure functions live in
+ * `./_utils.ts` so this file stays Fast-Refresh clean.
+ */
 
 /* ------------ Page shell ------------ */
 
@@ -25,7 +32,7 @@ export function CMPage({
   actions?: React.ReactNode;
   loading?: boolean;
   error?: string | null;
-  empty?: { icon?: any; title: string; hint?: string } | null;
+  empty?: { icon?: LucideIcon; title: string; hint?: string } | null;
   children: React.ReactNode;
 }) {
   return (
@@ -53,7 +60,7 @@ export function CMPage({
           </div>
         ) : empty ? (
           <div className="flex flex-col items-center rounded-2xl border border-dashed border-border/60 bg-white/60 p-10 text-center">
-            {(empty.icon ?? Inbox) && React.createElement(empty.icon ?? Inbox, { className: "mb-2 h-5 w-5 text-muted-foreground" })}
+            {React.createElement(empty.icon ?? Inbox, { className: "mb-2 h-5 w-5 text-muted-foreground" })}
             <p className="text-[13px] font-medium">{empty.title}</p>
             {empty.hint && <p className="mt-1 text-[11.5px] text-muted-foreground max-w-md">{empty.hint}</p>}
           </div>
@@ -79,40 +86,15 @@ export function Pill({ children, tone = "calm" }: { children: React.ReactNode; t
   return <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium ${map[tone]}`}>{children}</span>;
 }
 
-export function priorityTone(p?: string | null) {
-  if (!p) return "calm" as const;
-  const lower = p.toLowerCase();
-  if (lower === "urgent" || lower === "critical") return "alert" as const;
-  if (lower === "high") return "amber" as const;
-  if (lower === "low") return "calm" as const;
-  return "cool" as const;
-}
-
-export function statusTone(s?: string | null) {
-  const lower = (s ?? "").toLowerCase();
-  if (["resolved","closed","completed","done"].includes(lower)) return "calm" as const;
-  if (["overdue","urgent"].includes(lower)) return "alert" as const;
-  if (["waiting","in_progress","in progress"].includes(lower)) return "amber" as const;
-  return "cool" as const;
-}
-
 /* ------------ Generic form dialog ------------ */
 
-export type FieldDef = {
-  key: string;
-  label: string;
-  type?: "text" | "textarea" | "select" | "date" | "datetime" | "checkbox";
-  /**
-   * Select options. Either a plain string list (legacy behavior — value === label)
-   * or a `{ value, label }` list where `value` is the durable identifier that
-   * gets submitted. Case Manager family selects use the object form so we
-   * submit a stable client_id / assignment_id, not a display name.
-   */
-  options?: Array<string | { value: string; label: string }>;
-  required?: boolean;
-  placeholder?: string;
-  defaultValue?: any;
-};
+function messageFromError(err: unknown): string {
+  if (err && typeof err === "object" && "message" in err) {
+    const m = (err as { message?: unknown }).message;
+    if (typeof m === "string") return m;
+  }
+  return "Save failed";
+}
 
 export function FormDialog({
   open, onOpenChange, title, description, fields, initial, submitLabel = "Save",
@@ -123,19 +105,24 @@ export function FormDialog({
   title: string;
   description?: string;
   fields: FieldDef[];
-  initial?: Record<string, any>;
+  initial?: CMFormValues;
   submitLabel?: string;
-  onSubmit: (values: Record<string, any>) => Promise<void> | void;
+  onSubmit: (values: CMFormValues) => Promise<void> | void;
 }) {
   const initialValues = useMemo(() => {
-    const v: Record<string, any> = {};
+    const v: CMFormValues = {};
     fields.forEach((f) => { v[f.key] = initial?.[f.key] ?? f.defaultValue ?? (f.type === "checkbox" ? false : ""); });
     return v;
   }, [fields, initial]);
-  const [values, setValues] = useState<Record<string, any>>(initialValues);
+  const [values, setValues] = useState<CMFormValues>(initialValues);
   const [busy, setBusy] = useState(false);
 
   React.useEffect(() => { if (open) setValues(initialValues); }, [open, initialValues]);
+
+  const strAt = (k: string): string => {
+    const v = values[k];
+    return typeof v === "string" ? v : v == null ? "" : String(v);
+  };
 
   const submit = async () => {
     for (const f of fields) {
@@ -145,8 +132,8 @@ export function FormDialog({
     try {
       await onSubmit(values);
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err?.message ?? "Save failed");
+    } catch (err: unknown) {
+      toast.error(messageFromError(err));
     } finally {
       setBusy(false);
     }
@@ -164,9 +151,9 @@ export function FormDialog({
             <div key={f.key} className="grid gap-1.5">
               <Label htmlFor={f.key} className="text-[12px]">{f.label}{f.required ? " *" : ""}</Label>
               {f.type === "textarea" ? (
-                <Textarea id={f.key} value={values[f.key] ?? ""} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} placeholder={f.placeholder} />
+                <Textarea id={f.key} value={strAt(f.key)} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} placeholder={f.placeholder} />
               ) : f.type === "select" ? (
-                <Select value={values[f.key] ?? ""} onValueChange={(v) => setValues({ ...values, [f.key]: v })}>
+                <Select value={strAt(f.key)} onValueChange={(v) => setValues({ ...values, [f.key]: v })}>
                   <SelectTrigger><SelectValue placeholder={f.placeholder ?? "Select…"} /></SelectTrigger>
                   <SelectContent>
                     {(f.options ?? []).map((o) => {
@@ -181,11 +168,11 @@ export function FormDialog({
                   <Label htmlFor={f.key} className="text-[12px] text-muted-foreground">{f.placeholder ?? "Yes"}</Label>
                 </div>
               ) : f.type === "date" ? (
-                <Input id={f.key} type="date" value={values[f.key] ?? ""} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
+                <Input id={f.key} type="date" value={strAt(f.key)} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
               ) : f.type === "datetime" ? (
-                <Input id={f.key} type="datetime-local" value={values[f.key] ?? ""} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
+                <Input id={f.key} type="datetime-local" value={strAt(f.key)} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
               ) : (
-                <Input id={f.key} value={values[f.key] ?? ""} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} placeholder={f.placeholder} />
+                <Input id={f.key} value={strAt(f.key)} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} placeholder={f.placeholder} />
               )}
             </div>
           ))}
@@ -205,219 +192,7 @@ export function FilterBar({ children }: { children: React.ReactNode }) {
   return <div className="mb-3 flex flex-wrap items-center gap-2">{children}</div>;
 }
 
-/* ------------ Family option list helper ------------
- *
- * Every Case Manager form that picks a family must use a durable identifier
- * as the select value (client_id when present, otherwise assignment.id) so
- * duplicate family names never route work to the wrong client.
- */
-
-export type CMAssignmentLike = {
-  id: string;
-  client_id: string | null;
-  client_name: string | null;
-  state: string | null;
-  centralreach_client_id?: string | null;
-};
-
-export type CMFamilyOption = {
-  value: string;              // client_id if present, else assignment id
-  label: string;              // "Smith Family - NC - CR 12345"
-  client_id: string | null;
-  client_name: string | null;
-  state: string | null;
-  assignment_id: string;
-  centralreach_client_id: string | null;
-};
-
-export function familySelectOptions(assignments: CMAssignmentLike[]): CMFamilyOption[] {
-  return assignments
-    .filter((a) => a.client_name)
-    .map((a) => {
-      const value = a.client_id ?? a.id;
-      const parts = [a.client_name as string];
-      if (a.state) parts.push(a.state);
-      if (a.centralreach_client_id) parts.push(`CR ${a.centralreach_client_id}`);
-      return {
-        value,
-        label: parts.join(" - "),
-        client_id: a.client_id,
-        client_name: a.client_name,
-        state: a.state,
-        assignment_id: a.id,
-        centralreach_client_id: a.centralreach_client_id ?? null,
-      };
-    });
-}
-
-export function familyOptionByValue(
-  assignments: CMAssignmentLike[],
-  value: string | null | undefined,
-): CMFamilyOption | null {
-  if (!value) return null;
-  return familySelectOptions(assignments).find((o) => o.value === value) ?? null;
-}
-
-/**
- * Spread this onto the payload of any Case Manager write that carries client
- * identity so we always store the durable client_id (when known) alongside a
- * display-friendly client_name and state. Never sends the raw option value as
- * client_name.
- */
-export function familyContext(opt: CMFamilyOption | null | undefined) {
-  return {
-    client_id: opt?.client_id ?? null,
-    client_name: opt?.client_name ?? null,
-    state: opt?.state ?? null,
-  };
-}
-
-/* ============================================================
- * Case Manager durable client matching
- * ------------------------------------------------------------
- * Real Blossom data has duplicate patient names, nicknames,
- * middle initials, CentralReach formatting differences, and
- * Monday-imported names that don't always match Blossom client
- * rows. We must NEVER trust `client_name` as the primary join.
- *
- * The rule for every Case Manager live-status lookup is:
- *   1. Match by Blossom OS `client_id` (uuid) when available.
- *   2. Match by `centralreach_client_id` when available.
- *   3. Match by normalized client name as a LAST fallback.
- *
- * These helpers centralize that policy so no Case Manager page
- * ships name-first matching to production.
- * ============================================================ */
-
-export type CaseManagerClientMatchKeys = {
-  clientId: string | null;
-  centralReachClientId: string | null;
-  normalizedClientName: string | null;
-};
-
-export function normalizeClientName(v: string | null | undefined): string | null {
-  if (!v) return null;
-  const n = String(v)
-    .toLowerCase()
-    .replace(/[.,]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return n.length ? n : null;
-}
-
-export function matchKeysForAssignment(a: CMAssignmentLike): CaseManagerClientMatchKeys {
-  return {
-    clientId: a.client_id ?? null,
-    centralReachClientId: a.centralreach_client_id ?? null,
-    normalizedClientName: normalizeClientName(a.client_name),
-  };
-}
-
-/**
- * Find the live authorization record for a Case Manager assignment.
- * Prefers CentralReach client id (via `auth.metaById`), then falls
- * back to normalized clientName. Returns null when nothing matches.
- */
-export function findAuthorizationForAssignment<
-  T extends { id: string; clientName?: string | null },
->(
-  auth: {
-    items: T[];
-    metaById?: Map<string, { centralreachClientId: string | null }>;
-  },
-  assignment: CMAssignmentLike,
-): T | null {
-  const keys = matchKeysForAssignment(assignment);
-  // 1) CentralReach client id via overlay meta.
-  if (keys.centralReachClientId && auth.metaById) {
-    for (const item of auth.items) {
-      const meta = auth.metaById.get(item.id);
-      if (meta?.centralreachClientId && meta.centralreachClientId === keys.centralReachClientId) {
-        return item;
-      }
-    }
-  }
-  // 2) Normalized-name fallback.
-  if (keys.normalizedClientName) {
-    for (const item of auth.items) {
-      if (normalizeClientName(item.clientName as string | null) === keys.normalizedClientName) {
-        return item;
-      }
-    }
-  }
-  return null;
-}
-
-/**
- * CentralReach `bcba_billable_sessions` currently has no durable CR
- * client id, so we prefer any future CR id on the pairing when it's
- * available and always fall back to normalized name. The name
- * matching lives HERE, not in the Case Manager pages.
- */
-export function findCentralReachPairingForAssignment<T extends { clientName: string; centralReachClientId?: string | null }>(
-  cr: { pairingsByClient: Map<string, T> },
-  assignment: CMAssignmentLike,
-): T | null {
-  const keys = matchKeysForAssignment(assignment);
-  if (keys.centralReachClientId) {
-    for (const p of cr.pairingsByClient.values()) {
-      if (p.centralReachClientId && p.centralReachClientId === keys.centralReachClientId) return p;
-    }
-  }
-  if (!keys.normalizedClientName) return null;
-  for (const p of cr.pairingsByClient.values()) {
-    if (normalizeClientName(p.clientName) === keys.normalizedClientName) return p;
-  }
-  return null;
-}
-
-export function findCentralReachCoverageRiskForAssignment<T extends { clientName: string; centralReachClientId?: string | null }>(
-  cr: { coverageRisks: T[] },
-  assignment: CMAssignmentLike,
-): T | null {
-  const keys = matchKeysForAssignment(assignment);
-  if (keys.centralReachClientId) {
-    const cr1 = cr.coverageRisks.find((r) => r.centralReachClientId && r.centralReachClientId === keys.centralReachClientId);
-    if (cr1) return cr1;
-  }
-  if (!keys.normalizedClientName) return null;
-  return cr.coverageRisks.find((r) => normalizeClientName(r.clientName) === keys.normalizedClientName) ?? null;
-}
-
-/**
- * Prefer `client_id` for both staffing matches and family preferences.
- * Only fall back to normalized name when the row has no client_id.
- */
-export function findStaffingForAssignment<
-  M extends { client_id: string | null; client_name?: string | null; status?: string; rbt_name?: string | null },
-  P extends { client_id: string | null; client_name: string | null },
->(
-  staffing: { matches: M[]; preferences: P[] },
-  assignment: CMAssignmentLike,
-) {
-  const keys = matchKeysForAssignment(assignment);
-  const matches = staffing.matches.filter((m) => {
-    if (keys.clientId && m.client_id) return m.client_id === keys.clientId;
-    if (!m.client_id && keys.normalizedClientName) {
-      return normalizeClientName(m.client_name ?? null) === keys.normalizedClientName;
-    }
-    return false;
-  });
-  const preferences = staffing.preferences.filter((p) => {
-    if (keys.clientId && p.client_id) return p.client_id === keys.clientId;
-    if (!p.client_id && keys.normalizedClientName) {
-      return normalizeClientName(p.client_name) === keys.normalizedClientName;
-    }
-    return false;
-  });
-  return { matches, preferences };
-}
-
-/* ============================================================
- * Source status chip — small non-blocking indicator that a
- * downstream live-data hook is still loading or failed. Never
- * blocks the Case Manager page.
- * ============================================================ */
+/* ------------ Source status chip ------------ */
 
 export function SourceStatusChip({
   label, loading, error,
