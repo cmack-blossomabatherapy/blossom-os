@@ -118,21 +118,54 @@ center.
 - Systems section now contains: Integrations, Automated Emails, System Settings (single source per item).
 - System Tools no longer duplicates Integrations or System Settings; added BCBA Productivity Uploads and kept Workflow Inventory, Request Intake, Issue Tracker.
 
-## Pass 1B / 1C — planned scope (NOT this pass)
+## Pass 1B — System Tools DB-backed (DONE)
 
-Pass 1B — System Tools become DB-backed:
-- Migrations for `system_workflows` and `system_issues` (Request Intake already
-  persists via `executive_work_items` with `category="system_request"`).
-- RLS: any authenticated user may submit; only Super Admin / leadership may
-  triage/edit. Audit tables optional.
-- Rewrite `WorkflowInventoryPage` and `IssueTrackerPage` as real CRUD workspaces
-  with search/filter/status/owner and audit trails.
+- Migration created `public.system_workflows` and `public.system_issues` with
+  grants, RLS, triggers, and indexes.
+  - `system_workflows`: authenticated read; admin/super_admin write.
+  - `system_issues`: any authenticated user may submit; admin/super_admin
+    triage/edit/delete.
+- `src/hooks/useSystemTools.ts` provides `useSystemWorkflows()` and
+  `useSystemIssues()` CRUD hooks.
+- `WorkflowInventoryPage` and `IssueTrackerPage` rewritten in
+  `src/pages/os/system-tools/SystemToolsPages.tsx` as real DB-backed workspaces
+  with search, add/edit/delete dialogs, admin gating, and a "Report issue"
+  submit dialog available to all authenticated users.
+- `RequestIntakePage` unchanged — already persists via `executive_work_items`
+  with `category="system_request"`.
 
-Pass 1C — Integrations admin control center:
-- `/admin/integrations` becomes a read-only Super Admin command center
-  surfacing catalog + connections + last sync/error/webhook for every listed
-  integration with honest statuses (no fake successes).
-- Add `docs/super-admin-integrations-readiness.md` snapshot table.
+## Pass 1C — Integrations control center (DONE)
+
+- `/admin/integrations` reads live from `integration_catalog`,
+  `integration_connections`, `integration_sync_runs`,
+  `integration_webhook_events`, and `integration_oauth_connections` via
+  `src/lib/os/integrations/backend.ts`.
+- Header status bar shows honest live counts (configured / connected /
+  needs attention / recent sync failures / webhook events / M365 users) with
+  a Refresh button and calm empty states — "Integration backend ready — no
+  live connections yet" when nothing is configured.
+- Per-integration cards now overlay live `integration_connections.status`
+  onto the static registry entry, so "connected / reauth / error / syncing /
+  disconnected" reflects reality; static status only fills in when no live
+  connection row exists. `enabled` also mirrors the live connection row when
+  present.
+- Read-only admin view (Pass 1 scope). No credential entry, no OAuth
+  connect/disconnect from this page in this pass — those flows remain in
+  their existing dedicated surfaces and the underlying Edge Functions.
+
+### Manual QA checklist (Pass 1C)
+
+- [ ] Sign in as Super Admin → `/admin/integrations` header shows
+      "Integration backend ready — no live connections yet" **or** the real
+      "N of M connected" count.
+- [ ] Refresh button reloads catalog / connections / sync runs / webhook
+      events without page reload.
+- [ ] When a live `integration_connections` row exists, the matching card's
+      status pill reflects the live status (not the static registry value).
+- [ ] When no live row exists, the card falls back to the static registry
+      status — no fake "connected" states.
+- [ ] "Needs attention" and "Recent sync failures" tiles are non-zero only
+      when the underlying tables actually contain matching rows.
 
 ## Manual QA checklist (Pass 1A)
 
