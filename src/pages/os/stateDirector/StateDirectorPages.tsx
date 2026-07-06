@@ -45,6 +45,10 @@ const LEADERSHIP_ROLES = new Set<string>([
   "ops_manager", "director_of_operations", "coo", "admin",
 ]);
 
+const STATE_SCOPED_ROLES = new Set<string>([
+  "state_director", "assistant_state_director",
+]);
+
 function useActor() {
   const { role } = useOSRole();
   return role === "state_director" ? "State Director"
@@ -71,11 +75,24 @@ function StateOperationsDailyHealthSlot({
 }
 
 function useAvailableStates() {
-  const { role, activeState } = useOSRole();
+  const { role, activeState, profileState, hasAssignedState } = useOSRole();
   const snap = useStateDirectorSnapshot();
   const isLeadership = LEADERSHIP_ROLES.has(String(role));
-  const assigned = (activeState as StateCode | undefined) ?? undefined;
-  return { profiles: snap.profiles, isLeadership, assigned };
+  const isStateScoped = STATE_SCOPED_ROLES.has(String(role));
+  // For state-scoped roles, "assigned" must come from the profile, not
+  // from the transient activeState selector. If there is no profile
+  // state we do NOT silently fall through to activeState — the page
+  // renders the "assigned state required" setup notice instead.
+  const assigned: StateCode | undefined = isStateScoped
+    ? ((profileState ?? undefined) as StateCode | undefined)
+    : ((activeState as StateCode | undefined) ?? undefined);
+  return {
+    profiles: snap.profiles,
+    isLeadership,
+    isStateScoped,
+    hasAssignedState: isStateScoped ? hasAssignedState : true,
+    assigned,
+  };
 }
 
 function toneForPriority(p: Priority) {
@@ -136,6 +153,33 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AssignedStateRequired({ page }: { page: string }) {
+  return (
+    <Shell>
+      <Card className="p-8 rounded-2xl border-border/60 max-w-2xl">
+        <div className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+          <MapPin className="h-3.5 w-3.5" /> Assigned state required
+        </div>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          {page} needs an assigned state
+        </h1>
+        <p className="text-sm text-muted-foreground mt-2">
+          Your account is a state-scoped role but does not have an
+          assigned state on file. Ask an admin to set your state in
+          User Management (profile.state). Until then, {page} will
+          not show operational data — this prevents accidentally
+          browsing another state's records.
+        </p>
+        <p className="text-xs text-muted-foreground mt-3">
+          Assistant State Director and State Director always operate
+          inside a single assigned state — there is no "All states"
+          view for these roles.
+        </p>
+      </Card>
+    </Shell>
+  );
+}
+
 function PageHeader({
   eyebrow, title, subtitle, icon: Icon, actions,
 }: {
@@ -189,8 +233,15 @@ function SectionCard({
 }
 
 function StateSelector({ value, onChange }: { value: StateCode | "all"; onChange: (v: StateCode | "all") => void }) {
-  const { profiles, isLeadership, assigned } = useAvailableStates();
-  const options: (StateCode | "all")[] = isLeadership ? ["all", ...profiles.map((p) => p.code)] : (assigned ? [assigned] : profiles.map((p) => p.code));
+  const { profiles, isLeadership, isStateScoped, assigned } = useAvailableStates();
+  // State-scoped roles (state_director, assistant_state_director) never
+  // see "All states" — even in View As Role, the UI pins them to their
+  // assigned state and blocks cross-state browsing.
+  const options: (StateCode | "all")[] = isLeadership
+    ? ["all", ...profiles.map((p) => p.code)]
+    : isStateScoped
+      ? (assigned ? [assigned] : [])
+      : profiles.map((p) => p.code);
   return (
     <Select value={value} onValueChange={(v) => onChange(v as StateCode | "all")}>
       <SelectTrigger className="h-9 w-[180px]"><SelectValue placeholder="Filter by state" /></SelectTrigger>
@@ -200,6 +251,9 @@ function StateSelector({ value, onChange }: { value: StateCode | "all"; onChange
             {o === "all" ? "All states" : profiles.find((p) => p.code === o)?.name ?? o}
           </SelectItem>
         ))}
+        {options.length === 0 ? (
+          <div className="px-2 py-3 text-xs text-muted-foreground">Assigned state required</div>
+        ) : null}
       </SelectContent>
     </Select>
   );
@@ -211,8 +265,13 @@ function CreateEscalationDialog({
   open, onOpenChange, defaultState, relatedTaskId,
 }: { open: boolean; onOpenChange: (v: boolean) => void; defaultState?: StateCode; relatedTaskId?: string }) {
   const actor = useActor();
-  const { profiles } = useAvailableStates();
-  const [state, setState] = useState<StateCode>(defaultState ?? profiles[0]?.code ?? "GA");
+  const { profiles, isStateScoped, assigned } = useAvailableStates();
+  const allowedProfiles = isStateScoped
+    ? profiles.filter((p) => p.code === assigned)
+    : profiles;
+  const [state, setState] = useState<StateCode>(
+    (isStateScoped && assigned) ? assigned : (defaultState ?? profiles[0]?.code ?? "GA"),
+  );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [department, setDepartment] = useState<Department>("Operations");
@@ -220,7 +279,10 @@ function CreateEscalationDialog({
   const [assignedTo, setAssignedTo] = useState("");
   const [dueAt, setDueAt] = useState("");
 
-  useEffect(() => { if (defaultState) setState(defaultState); }, [defaultState]);
+  useEffect(() => {
+    if (isStateScoped && assigned) { setState(assigned); return; }
+    if (defaultState) setState(defaultState);
+  }, [defaultState, isStateScoped, assigned]);
 
   function submit() {
     if (!title.trim()) return;
@@ -245,12 +307,15 @@ function CreateEscalationDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-muted-foreground">State</label>
-              <Select value={state} onValueChange={(v) => setState(v)}>
+              <Select value={state} onValueChange={(v) => setState(v)} disabled={isStateScoped}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {profiles.map((p) => <SelectItem key={p.code} value={p.code}>{p.name}</SelectItem>)}
+                  {allowedProfiles.map((p) => <SelectItem key={p.code} value={p.code}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {isStateScoped ? (
+                <p className="text-[10px] text-muted-foreground">Locked to your assigned state.</p>
+              ) : null}
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Department owner</label>
@@ -302,8 +367,13 @@ function CreateTaskDialog({
   open, onOpenChange, defaultState, relatedEscalationId,
 }: { open: boolean; onOpenChange: (v: boolean) => void; defaultState?: StateCode; relatedEscalationId?: string }) {
   const actor = useActor();
-  const { profiles } = useAvailableStates();
-  const [state, setState] = useState<StateCode>(defaultState ?? profiles[0]?.code ?? "GA");
+  const { profiles, isStateScoped, assigned } = useAvailableStates();
+  const allowedProfiles = isStateScoped
+    ? profiles.filter((p) => p.code === assigned)
+    : profiles;
+  const [state, setState] = useState<StateCode>(
+    (isStateScoped && assigned) ? assigned : (defaultState ?? profiles[0]?.code ?? "GA"),
+  );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [department, setDepartment] = useState<Department>("Operations");
@@ -311,7 +381,10 @@ function CreateTaskDialog({
   const [priority, setPriority] = useState<Priority>("medium");
   const [dueAt, setDueAt] = useState("");
 
-  useEffect(() => { if (defaultState) setState(defaultState); }, [defaultState]);
+  useEffect(() => {
+    if (isStateScoped && assigned) { setState(assigned); return; }
+    if (defaultState) setState(defaultState);
+  }, [defaultState, isStateScoped, assigned]);
 
   function submit() {
     if (!title.trim()) return;
@@ -335,10 +408,13 @@ function CreateTaskDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-muted-foreground">State</label>
-              <Select value={state} onValueChange={(v) => setState(v)}>
+              <Select value={state} onValueChange={(v) => setState(v)} disabled={isStateScoped}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>{profiles.map((p) => <SelectItem key={p.code} value={p.code}>{p.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{allowedProfiles.map((p) => <SelectItem key={p.code} value={p.code}>{p.name}</SelectItem>)}</SelectContent>
               </Select>
+              {isStateScoped ? (
+                <p className="text-[10px] text-muted-foreground">Locked to your assigned state.</p>
+              ) : null}
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Department</label>
@@ -580,9 +656,15 @@ function TaskDetail({ task, onClose }: { task: OpsTask; onClose: () => void }) {
 
 export function StateOperationsPage() {
   const { role, activeState } = useOSRole();
-  const { profiles, isLeadership, assigned } = useAvailableStates();
+  const { profiles, isLeadership, isStateScoped, hasAssignedState, assigned } = useAvailableStates();
   const isAssistant = role === "assistant_state_director";
-  const initialState: StateCode | "all" = isLeadership ? "all" : (assigned ?? profiles[0]?.code ?? "GA");
+  // State-scoped roles never get "all". If assigned exists we pin to it,
+  // otherwise the setup notice below takes over and no queries fire.
+  const initialState: StateCode | "all" = isLeadership
+    ? "all"
+    : isStateScoped
+      ? (assigned ?? ("GA" as StateCode))
+      : (assigned ?? profiles[0]?.code ?? "GA");
   const [stateFilter, setStateFilter] = useState<StateCode | "all">(initialState);
   const view = useStateDirectorView(stateFilter);
   const [escOpen, setEscOpen] = useState(false);
@@ -647,6 +729,8 @@ export function StateOperationsPage() {
     { label: "Scheduling",      icon: Calendar,    to: "/ops/scheduling" },
     { label: "QA / Clinical",   icon: Stethoscope, to: "/qa-team" },
   ];
+
+  if (isStateScoped && !hasAssignedState) return <AssignedStateRequired page="State Operations" />;
 
   return (
     <Shell>
@@ -864,8 +948,12 @@ export function StateOperationsPage() {
 /* ------------------------- 2. State Escalations --------------------------- */
 
 export function StateEscalationsPage() {
-  const { isLeadership, assigned, profiles } = useAvailableStates();
-  const initialState: StateCode | "all" = isLeadership ? "all" : (assigned ?? profiles[0]?.code ?? "GA");
+  const { isLeadership, isStateScoped, hasAssignedState, assigned, profiles } = useAvailableStates();
+  const initialState: StateCode | "all" = isLeadership
+    ? "all"
+    : isStateScoped
+      ? (assigned ?? ("GA" as StateCode))
+      : (assigned ?? profiles[0]?.code ?? "GA");
   const [stateFilter, setStateFilter] = useState<StateCode | "all">(initialState);
   const [status, setStatus] = useState<EscalationStatus | "all">("all");
   const [priority, setPriority] = useState<Priority | "all">("all");
@@ -878,6 +966,8 @@ export function StateEscalationsPage() {
     .filter((e) => (status === "all" ? true : e.status === status))
     .filter((e) => (priority === "all" ? true : e.priority === priority))
     .filter((e) => q ? [e.title, e.department, e.assignedTo, e.createdBy, e.state].some((f) => (f ?? "").toLowerCase().includes(q.toLowerCase())) : true);
+
+  if (isStateScoped && !hasAssignedState) return <AssignedStateRequired page="State Escalations" />;
 
   return (
     <Shell>
@@ -956,8 +1046,12 @@ export function StateEscalationsPage() {
 /* --------------------------- 3. Operational Tasks ------------------------- */
 
 export function OperationalTasksPage() {
-  const { isLeadership, assigned, profiles } = useAvailableStates();
-  const initialState: StateCode | "all" = isLeadership ? "all" : (assigned ?? profiles[0]?.code ?? "GA");
+  const { isLeadership, isStateScoped, hasAssignedState, assigned, profiles } = useAvailableStates();
+  const initialState: StateCode | "all" = isLeadership
+    ? "all"
+    : isStateScoped
+      ? (assigned ?? ("GA" as StateCode))
+      : (assigned ?? profiles[0]?.code ?? "GA");
   const [stateFilter, setStateFilter] = useState<StateCode | "all">(initialState);
   const [status, setStatus] = useState<TaskStatus | "all">("all");
   const [priority, setPriority] = useState<Priority | "all">("all");
@@ -973,6 +1067,8 @@ export function OperationalTasksPage() {
     .filter((t) => (priority === "all" ? true : t.priority === priority))
     .filter((t) => (overdueOnly ? (t.dueAt ? new Date(t.dueAt).getTime() < now && t.status !== "completed" : false) : true))
     .filter((t) => q ? [t.title, t.department, t.owner, t.createdBy, t.state].some((f) => (f ?? "").toLowerCase().includes(q.toLowerCase())) : true);
+
+  if (isStateScoped && !hasAssignedState) return <AssignedStateRequired page="Operational Tasks" />;
 
   return (
     <Shell>

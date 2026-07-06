@@ -7,10 +7,14 @@ import { useOSRole } from "@/contexts/OSRoleContext";
  * listed below can reach these pages by direct URL. Everyone else is
  * bounced to the safe fallback (default: their home / intake ai-calls).
  *
- * State Director IS allowed (Pass 5 State Director correction): the
- * State Director role needs direct-URL access to the full Phone System
- * for cross-department coordination. Assistant State Director remains
- * intentionally NOT allowed.
+ * Product rule (State Director Assistant Pass 6):
+ *   - Full Phone System = super_admin / admin / systems_admin, executive
+ *     leadership (exec/CEO/COO/DOO/Ops leadership), HR roles, and
+ *     Marketing roles.
+ *   - State Director is intentionally allowed by prior product decision
+ *     for cross-department coordination.
+ *   - Assistant State Director is intentionally NOT allowed. The
+ *     Assistant role uses the limited /phone/ai-calls surface only.
  *
  * Intake's limited /phone/ai-calls surface is NOT wrapped by this guard.
  */

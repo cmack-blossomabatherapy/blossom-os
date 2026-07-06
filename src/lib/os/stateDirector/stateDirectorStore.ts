@@ -33,14 +33,17 @@ function reportSaveFailure(action: string, err: unknown) {
 /**
  * State Director operating store.
  *
- * Persistence contract (current truth — no localStorage):
+ * Persistence contract (Pass 5+ current truth — no localStorage):
  *  - Operational tasks, escalations, notes, and activity are backed by
  *    Supabase (`state_operational_*` tables). On first mount we hydrate the
  *    in-memory cache from Supabase and subscribe to realtime updates so
  *    every State Director sees the same live picture.
- *  - Mutations write to Supabase (fire-and-forget with best-effort error
- *    handling) and update the local cache synchronously so
- *    `useSyncExternalStore` stays responsive. Local records and Supabase
+ *  - Mutations update the local cache synchronously (optimistic UI) so
+ *    `useSyncExternalStore` stays responsive, then await the Supabase
+ *    write and inspect its structured `{ ok, error }` result. When a
+ *    primary state-support write fails, the affected row is marked with
+ *    `persistError` and a destructive toast surfaces the real failure —
+ *    no primary write silently fakes success. Local records and Supabase
  *    rows share the same UUID.
  *  - State profiles and metrics remain seeded until a real metrics source
  *    is wired (see docs/state-director-functionality-pass-2-qa.md). The
