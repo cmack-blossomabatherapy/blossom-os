@@ -504,7 +504,9 @@ export const stateDirectorStore = {
         relatedType: "escalation",
         relatedId: created.id,
         metadata: created.metadata,
-      }).catch((err) => reportSaveFailure("log task escalated activity", err));
+      })
+        .then((r) => { if (!r.ok) reportSaveFailure("log task escalated activity", r.error ?? "Unknown error"); })
+        .catch((err) => reportSaveFailure("log task escalated activity", err));
     }
     return created!;
   },
