@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Send, ShieldAlert, CalendarClock, Flame } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
-import { CMPage, Pill, priorityTone, statusTone, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
+import { CMPage, Pill, priorityTone, statusTone, FormDialog, familySelectOptions, familyOptionByValue, familyContext, findAuthorizationForAssignment, SourceStatusChip } from "./_shared";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -21,14 +21,8 @@ export default function AuthorizationsVisibilityPage() {
   const authIssues = w.openServiceIssues.filter((i) => i.issue_type === "authorization" || i.owner_department === "authorizations");
   const authFollowUps = w.followUps.filter((f) => f.status === "open" && f.category === "authorization");
 
-  // Best-effort match by (case-insensitive) client name into the shared
-  // authorization read model. Case Manager sees this as read-only status;
-  // Authorizations still owns execution.
-  const matchAuth = (clientName: string | null) => {
-    if (!clientName) return null;
-    const n = clientName.toLowerCase().trim();
-    return auth.items.find((a) => (a.clientName ?? "").toLowerCase().trim() === n) ?? null;
-  };
+  // Durable matching first (see _shared.tsx). Case Manager sees this as
+  // read-only status; Authorizations still owns execution.
 
   return (
     <CMPage
@@ -55,7 +49,10 @@ export default function AuthorizationsVisibilityPage() {
       <div className="mt-4 rounded-2xl border border-white/70 bg-white/80 p-4">
         <div className="flex items-center justify-between">
           <p className="text-[13px] font-semibold">Live authorization status per assigned family</p>
-          <span className="text-[10.5px] text-muted-foreground">Source: authorization operational records. Read-only. Authorizations owns execution.</span>
+          <div className="flex items-center gap-2">
+            <SourceStatusChip label="Authorizations" loading={auth.loading} error={auth.error} />
+            <span className="text-[10.5px] text-muted-foreground">Source: authorization operational records. Read-only. Authorizations owns execution.</span>
+          </div>
         </div>
         <div className="mt-2 overflow-x-auto">
           <table className="w-full text-[12px]">
@@ -75,7 +72,7 @@ export default function AuthorizationsVisibilityPage() {
                 <tr><td colSpan={7} className="py-3 text-muted-foreground">No assigned families.</td></tr>
               )}
               {w.assignments.map((a) => {
-                const live = matchAuth(a.client_name);
+                const live = findAuthorizationForAssignment(auth, a);
                 return (
                   <tr key={a.id} className="border-b border-border/40 last:border-b-0">
                     <td className="py-2 pr-3">
