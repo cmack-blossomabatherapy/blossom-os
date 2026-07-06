@@ -124,8 +124,25 @@ export function useClinicalDirectorActions() {
     const merged = [base.notes, note].filter(Boolean).join("\n\n---\n");
     return patch(id, { notes: merged }, "note_added", "Added clinical note");
   };
-  const assignOwner = (id: string, ownerUserId: string, ownerName: string) =>
-    patch(id, { owner_user_id: ownerUserId, owner_name: ownerName }, "owner_assigned", `Assigned to ${ownerName}`);
+  const assignOwner = (id: string, ownerUserId: string | null | undefined, ownerName: string) => {
+    // owner_user_id is a UUID column — normalize blank/undefined to null so
+    // Supabase does not receive an empty string that would fail as invalid uuid.
+    const uuid =
+      typeof ownerUserId === "string" && ownerUserId.trim().length > 0
+        ? ownerUserId.trim()
+        : null;
+    return patch(
+      id,
+      { owner_user_id: uuid, owner_name: ownerName },
+      "owner_assigned",
+      `Assigned to ${ownerName}`,
+    );
+  };
+  const changeDueDate = (id: string, dueAt: string | null) => {
+    const value = dueAt && dueAt.trim().length > 0 ? dueAt : null;
+    const label = value ? `Due date set to ${new Date(value).toLocaleDateString()}` : "Due date cleared";
+    return patch(id, { due_at: value }, "due_changed", label);
+  };
   const changePriority = (id: string, priority: ClinicalPriority) =>
     patch(id, { priority }, "priority_changed", `Priority set to ${priority}`);
   const markReviewed = (id: string) =>
@@ -180,7 +197,7 @@ export function useClinicalDirectorActions() {
   }, []);
 
   return {
-    createWorkItem, addNote, assignOwner, changePriority,
+    createWorkItem, addNote, assignOwner, changePriority, changeDueDate,
     markReviewed, escalate, resolve, reopen, archive,
     saveView, listSavedViews, updateSavedView, deleteSavedView,
   };
