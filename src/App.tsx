@@ -925,7 +925,7 @@ const App = () => (
                   <Route path="/phone/requests/new" element={<PhoneSystemRoute><PhoneRequestNew /></PhoneSystemRoute>} />
                   <Route path="/phone/requests/:id" element={<PhoneSystemRoute><PhoneRequestDetail /></PhoneSystemRoute>} />
                   <Route path="/phone/admin" element={<PhoneSystemRoute><PhoneAdmin /></PhoneSystemRoute>} />
-                  <Route path="/phone/ai-calls" element={<PhoneAfterHoursAI />} />
+                  <Route path="/phone/ai-calls" element={<IntakeAiCallsRoute><PhoneAfterHoursAI /></IntakeAiCallsRoute>} />
                   <Route path="/phone/ai-calls/audit" element={<PhoneSystemRoute><PhoneAiCallAudit /></PhoneSystemRoute>} />
                   {/* Marketing Team — all /marketing/* routes wrap PermissionRoute with the shared MARKETING_ROLES model. */}
                   <Route path="/marketing-dashboard" element={<Navigate to="/marketing" replace />} />
