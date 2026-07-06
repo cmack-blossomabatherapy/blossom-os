@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import type { LucideIcon } from "lucide-react";
 import {
   HeartHandshake, MessageSquare, CalendarDays, ShieldCheck,
   Users, Flame, Activity, ChevronRight, ArrowUpRight, Heart, UserCheck, Bell,
@@ -22,7 +23,7 @@ const TONE: Record<string, string> = {
   amber:  "from-[hsl(40_100%_94%)] to-[hsl(28_100%_95%)] text-[hsl(28_85%_45%)]",
 };
 
-const QUICK_ACTIONS: { label: string; icon: any; to: string }[] = [
+const QUICK_ACTIONS: { label: string; icon: LucideIcon; to: string }[] = [
   { label: "Log follow-up",       icon: PlusCircle,     to: "/case-manager/follow-ups" },
   { label: "Assigned families",   icon: HeartHandshake, to: "/case-manager/families" },
   { label: "Review escalations",  icon: Flame,          to: "/case-manager/escalations" },
@@ -79,7 +80,7 @@ function SectionHeader({ title, hint, action, actionTo }: { title: string; hint?
   );
 }
 
-function EmptyBlock({ icon: Icon, title, hint }: { icon: any; title: string; hint?: string }) {
+function EmptyBlock({ icon: Icon, title, hint }: { icon: LucideIcon; title: string; hint?: string }) {
   return (
     <div className="col-span-full flex flex-col items-center rounded-2xl border border-dashed border-border/60 bg-white/60 p-6 text-center">
       <Icon className="mb-2 h-5 w-5 text-muted-foreground" />
