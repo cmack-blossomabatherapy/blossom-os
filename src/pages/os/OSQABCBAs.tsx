@@ -1075,6 +1075,21 @@ function BCBASlideout({
               <Row icon={History} label="Latest activity" value={b.lastActivity} />
             </Card>
           </section>
+
+          <ClinicalDirectorSection
+            sourceType="bcba"
+            sourceRecordId={b.id}
+            bcbaName={b.name}
+            state={b.state}
+            defaultTitle={`BCBA oversight: ${b.name}`}
+            metadata={{
+              activeClients: b.activeClients,
+              overdueProgressReports: b.prOverdue,
+              treatmentPlansAwaiting: b.tpAwaiting,
+              escalations: b.escalations,
+              states: b.states,
+            }}
+          />
         </div>
       </aside>
     </>

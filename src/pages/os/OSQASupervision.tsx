@@ -1036,6 +1036,24 @@ function SupSlideout({ r, onClose, onChanged, sourceSystem }: { r: SupRow; onClo
               </Card>
             </section>
           )}
+
+          <ClinicalDirectorSection
+            sourceType="supervision"
+            sourceRecordId={r.auth?.id ?? r.id}
+            clientId={r.auth?.clientId ?? null}
+            clientName={r.clientName}
+            bcbaName={r.bcba}
+            state={r.state}
+            defaultTitle={`Supervision follow-up: ${r.clientName}`}
+            metadata={{
+              lastBcbaSession: r.lastBcbaSession,
+              daysSinceSupervision: r.daysSinceSup,
+              blockers: r.blockerSummary,
+              rbts: r.rbts,
+              missingDocumentation: r.supDocMissing,
+              expirationDays: r.expirationDays,
+            }}
+          />
         </div>
       </aside>
     </>

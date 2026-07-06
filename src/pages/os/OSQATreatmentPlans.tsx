@@ -931,6 +931,22 @@ function TPSlideout({ auth: a, onClose, onChanged, sourceSystem }: { auth: Autho
             </Link>
             <QAActionsPanel auth={a} variant="treatment-plan" sourceSystem={sourceSystem} onChanged={onChanged} />
           </section>
+
+          <ClinicalDirectorSection
+            sourceType="authorization"
+            sourceRecordId={a.id}
+            clientId={a.clientId}
+            clientName={a.clientName}
+            bcbaName={a.coordinator}
+            state={a.state}
+            defaultTitle={`Treatment plan review: ${a.clientName}`}
+            metadata={{
+              stage: a.stage,
+              treatmentPlanReceived: a.treatmentPlanReceived,
+              missingRequirements: a.missingRequirements,
+              expirationDate: a.expirationDate,
+            }}
+          />
         </div>
       </aside>
     </div>
