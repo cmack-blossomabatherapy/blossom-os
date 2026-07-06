@@ -742,6 +742,84 @@ export type Database = {
           },
         ]
       }
+      academy_runtime_progress: {
+        Row: {
+          centralreach_id: string | null
+          checklist_state: Json
+          completed_at: string | null
+          created_at: string
+          elapsed_seconds: number
+          employee_id: string | null
+          id: string
+          journey_slug: string
+          last_active_at: string | null
+          module_id: string
+          quiz_attempts: Json
+          reflection_text: string | null
+          source_kind: string | null
+          source_module_id: string | null
+          source_system: string
+          source_updated_at: string | null
+          started_at: string | null
+          status: string
+          sync_error: string | null
+          sync_status: string
+          track_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          centralreach_id?: string | null
+          checklist_state?: Json
+          completed_at?: string | null
+          created_at?: string
+          elapsed_seconds?: number
+          employee_id?: string | null
+          id?: string
+          journey_slug: string
+          last_active_at?: string | null
+          module_id: string
+          quiz_attempts?: Json
+          reflection_text?: string | null
+          source_kind?: string | null
+          source_module_id?: string | null
+          source_system?: string
+          source_updated_at?: string | null
+          started_at?: string | null
+          status?: string
+          sync_error?: string | null
+          sync_status?: string
+          track_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          centralreach_id?: string | null
+          checklist_state?: Json
+          completed_at?: string | null
+          created_at?: string
+          elapsed_seconds?: number
+          employee_id?: string | null
+          id?: string
+          journey_slug?: string
+          last_active_at?: string | null
+          module_id?: string
+          quiz_attempts?: Json
+          reflection_text?: string | null
+          source_kind?: string | null
+          source_module_id?: string | null
+          source_system?: string
+          source_updated_at?: string | null
+          started_at?: string | null
+          status?: string
+          sync_error?: string | null
+          sync_status?: string
+          track_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       academy_shadow_sessions: {
         Row: {
           created_at: string
