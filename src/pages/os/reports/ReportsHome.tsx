@@ -25,6 +25,7 @@ import {
 } from "@/lib/os/bcbaProductivityV3/store";
 import { useAuthorizationReportMetrics } from "@/hooks/useAuthorizationReportMetrics";
 import { useRbtReportSummaries } from "@/hooks/useRbtReportSummaries";
+import { listRecentReports } from "@/hooks/useSharedSavedViews";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
@@ -116,6 +117,16 @@ export default function ReportsHome() {
 
   const [cancelSaved, setCancelSaved] = useState<CancellationSavedReport[]>([]);
   const [savedV3, setSavedV3] = useState<BcbaSavedReportV3[]>([]);
+  const [supabaseRecentIds, setSupabaseRecentIds] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    void listRecentReports(15).then((ids) => {
+      if (!cancelled) setSupabaseRecentIds(ids);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   useEffect(() => {
     setCancelSaved(readCancellationSavedReports());
     setSavedV3(readSavedReportsV3());
@@ -141,7 +152,18 @@ export default function ReportsHome() {
 
   // Recently viewed = real recent IDs only (no padding with featured — keeps it honest).
   const recent = useMemo(() => {
-    const recentIds = readRecent();
+    // Merge Supabase-persisted recents (per-user, cross-device) with the
+    // legacy localStorage list. Supabase order wins, local fills gaps.
+    const local = readRecent();
+    const merged: string[] = [];
+    const seenIds = new Set<string>();
+    for (const id of [...supabaseRecentIds, ...local]) {
+      if (!seenIds.has(id)) {
+        merged.push(id);
+        seenIds.add(id);
+      }
+    }
+    const recentIds = merged;
     const ordered: ReportDef[] = [];
     const seen = new Set<string>();
     for (const id of recentIds) {
@@ -149,7 +171,7 @@ export default function ReportsHome() {
       if (r && !seen.has(r.id)) { ordered.push(r); seen.add(r.id); }
     }
     return ordered;
-  }, [reports]);
+  }, [reports, supabaseRecentIds]);
 
   // Blossom AI · Today — surface insights from reports generated today.
   const todaysGenerated = useMemo(() => {
