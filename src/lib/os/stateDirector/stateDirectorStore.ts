@@ -13,6 +13,7 @@ import {
   updateEscalationRow as sbUpdateEscalationRow,
   insertNote as sbInsertNote,
   insertActivity as sbInsertActivity,
+  loadStateMetrics as sbLoadStateMetrics,
 } from "./stateOperationsService";
 import { toast } from "@/hooks/use-toast";
 
@@ -58,7 +59,13 @@ function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
   const read = (): StateDirectorSnapshot => {
     if (cache) return cache;
     if (typeof window === "undefined") return STATE_DIRECTOR_SEED;
-    cache = STATE_DIRECTOR_SEED;
+    // Seed = calm placeholder. Mark every seed metric explicitly so the
+    // UI can distinguish it from real persisted rows.
+    const seedMetrics: typeof STATE_DIRECTOR_SEED.metrics = {} as never;
+    for (const [code, m] of Object.entries(STATE_DIRECTOR_SEED.metrics)) {
+      seedMetrics[code as StateCode] = { ...m, source: m.source ?? "seed" };
+    }
+    cache = { ...STATE_DIRECTOR_SEED, metrics: seedMetrics };
     // Kick off async Supabase hydration once; the seed acts only as a
     // calm placeholder until real data lands.
     if (!hydrated) {
@@ -75,6 +82,41 @@ function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
         cache = next;
         listeners.forEach((fn) => fn(next));
       }).catch((err) => reportSaveFailure("hydrate state ops", err));
+      // Live persisted metrics — merge on top of the seed so a state
+      // with a real row uses it, and a state with no row keeps the seed
+      // fallback (tagged source="seed"). This makes the mixed-source
+      // header in State Operations honest.
+      void sbLoadStateMetrics().then((rows) => {
+        if (!rows) return;
+        const base = cache ?? STATE_DIRECTOR_SEED;
+        const nextMetrics = { ...base.metrics };
+        for (const r of rows) {
+          nextMetrics[r.code] = {
+            code: r.code,
+            healthScore: r.healthScore ?? 0,
+            healthLabel: (r.healthLabel ?? "Stable") as never,
+            activeClients: r.activeClients,
+            authorizedHours: r.authorizedHours,
+            scheduledHours: r.scheduledHours,
+            deliveredHours: r.deliveredHours,
+            staffingGaps: r.staffingGaps,
+            intakePipeline: r.intakePipeline,
+            authsExpiring30d: r.authsExpiring30d,
+            clinicalRisks: r.clinicalRisks,
+            recruitingNeeds: r.recruitingNeeds,
+            cancellationRisk: r.cancellationRisk,
+            openEscalations: r.openEscalations,
+            openTasks: r.openTasks,
+            agingBlockers: r.agingBlockers,
+            updatedAt: r.updatedAt,
+            source: r.source,
+            sourceUpdatedAt: r.sourceUpdatedAt ?? null,
+          };
+        }
+        const next: StateDirectorSnapshot = { ...base, metrics: nextMetrics };
+        cache = next;
+        listeners.forEach((fn) => fn(next));
+      }).catch((err) => reportSaveFailure("hydrate state metrics", err));
       // Pass 3: realtime — any change to state ops tables triggers a
       // rehydrate so all directors see the same live picture.
       if (typeof window !== "undefined") {
