@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Activity, AlertTriangle, CheckCircle2, ClipboardList, Inbox,
   ListTodo, Plus, Sparkles, Workflow, X,
@@ -186,11 +186,16 @@ function EscalateDialog({ item, onEscalate }: {
 
 export default function WorkQueuePage() {
   const wq = useWorkQueue();
-  const [view, setView] = useState<"all" | "my" | "department" | "escalations" | "overdue">("all");
+  const [searchParams] = useSearchParams();
+  const initialView = (searchParams.get("view") as "all" | "my" | "department" | "escalations" | "overdue" | null) ?? "all";
+  const initialPriority = (searchParams.get("priority") as WorkItemPriority | "all" | null) ?? "all";
+  const initialStatus = (searchParams.get("status") as WorkItemStatus | "all" | "active" | null) ?? "active";
+  const initialDept = (searchParams.get("department") as WorkDepartment | "all" | null) ?? "all";
+  const [view, setView] = useState<"all" | "my" | "department" | "escalations" | "overdue">(initialView);
   const [search, setSearch] = useState("");
-  const [department, setDepartment] = useState<WorkDepartment | "all">("all");
-  const [priority, setPriority] = useState<WorkItemPriority | "all">("all");
-  const [status, setStatus] = useState<WorkItemStatus | "all" | "active">("active");
+  const [department, setDepartment] = useState<WorkDepartment | "all">(initialDept);
+  const [priority, setPriority] = useState<WorkItemPriority | "all">(initialPriority);
+  const [status, setStatus] = useState<WorkItemStatus | "all" | "active">(initialStatus);
   const [type, setType] = useState<WorkItemType | "all">("all");
   const [selected, setSelected] = useState<WorkItem | null>(null);
 

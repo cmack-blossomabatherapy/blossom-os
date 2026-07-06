@@ -14,6 +14,7 @@ import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { WorkQueueSignalsCard } from "@/components/operations/WorkQueueSignalsCard";
 import { SystemRequestsPanel } from "@/components/executive/SystemRequestsPanel";
+import { IntegrationReadinessCard } from "@/components/executive/IntegrationReadinessCard";
 import { daysUntil, type AuthStage } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -735,6 +736,9 @@ export default function OpsCommandCenter() {
 
       {/* System requests intake */}
       <SystemRequestsPanel />
+
+      {/* Integration readiness snapshot */}
+      <IntegrationReadinessCard title="Operational integration readiness" />
 
       {/* Quick nav */}
       <div className="grid gap-3 md:grid-cols-3">
