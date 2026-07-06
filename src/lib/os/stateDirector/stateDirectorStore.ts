@@ -584,6 +584,54 @@ export const stateDirectorStore = {
   },
 };
 
+/**
+ * Re-hydrates persisted state metrics from Supabase and merges them over
+ * the current in-memory snapshot. States without a live row keep the
+ * seed fallback (tagged `source="seed"`). Notifies subscribers so the
+ * State Operations dashboard reflects the new values without a full
+ * page reload.
+ */
+export async function refreshStateMetrics(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const rows = await sbLoadStateMetrics();
+    if (!rows) return { ok: false, error: "Could not load state metrics" };
+    const current = adapter.read();
+    const nextMetrics = { ...current.metrics };
+    for (const r of rows) {
+      nextMetrics[r.code] = {
+        code: r.code,
+        healthScore: r.healthScore ?? 0,
+        healthLabel: (r.healthLabel ?? "Stable") as never,
+        activeClients: r.activeClients,
+        authorizedHours: r.authorizedHours,
+        scheduledHours: r.scheduledHours,
+        deliveredHours: r.deliveredHours,
+        staffingGaps: r.staffingGaps,
+        intakePipeline: r.intakePipeline,
+        authsExpiring30d: r.authsExpiring30d,
+        clinicalRisks: r.clinicalRisks,
+        recruitingNeeds: r.recruitingNeeds,
+        cancellationRisk: r.cancellationRisk,
+        openEscalations: r.openEscalations,
+        openTasks: r.openTasks,
+        agingBlockers: r.agingBlockers,
+        updatedAt: r.updatedAt,
+        source: r.source,
+        sourceUpdatedAt: r.sourceUpdatedAt ?? null,
+      };
+    }
+    adapter.write({ ...current, metrics: nextMetrics });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "refresh failed" };
+  }
+}
+
+/** Small hook wrapper — returns a stable refresh function. */
+export function useRefreshStateMetrics() {
+  return refreshStateMetrics;
+}
+
 /* --------------------------------- hooks ---------------------------------- */
 
 export function useStateDirectorSnapshot(): StateDirectorSnapshot {
