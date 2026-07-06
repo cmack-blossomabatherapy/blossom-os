@@ -265,6 +265,7 @@ function OpenCasesTab({ setTab }: { setTab: (t: StaffingTab) => void }) {
                       <SendToStateSupportButton
                         fromDepartment="Staffing"
                         linkedClientId={String(n.client.id)}
+                        defaultState={n.client.state || undefined}
                         defaultTitle={`Staffing support: ${n.client.childName}`}
                         defaultDescription={`State: ${n.client.state} · Hours needed: ${n.requiredHours} · Days waiting: ${n.daysWaiting}d · BCBA: ${n.client.bcba ?? "unassigned"}`}
                         defaultPriority={n.priority === "High" ? "high" : "medium"}

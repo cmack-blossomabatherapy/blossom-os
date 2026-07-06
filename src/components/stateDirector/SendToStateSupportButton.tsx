@@ -164,12 +164,20 @@ export function SendToStateSupportButton(props: Props) {
         }
         toast({ title: "Escalation opened", description: "State Director has been notified." });
       } else {
-        await deliverHandoff({
+        const res = await deliverHandoff({
           state: effectiveState, fromDepartment, toDepartment,
           subject: title.trim(), body: description.trim() || undefined,
           priority, createdBy: actor,
           ...linked, ...meta,
         });
+        if (!res.ok) {
+          toast({
+            title: "Could not deliver handoff",
+            description: res.error ?? "Handoff or companion task failed to save.",
+            variant: "destructive",
+          });
+          return;
+        }
         toast({ title: "Handoff delivered", description: `Routed to ${toDepartment}.` });
       }
       reset();

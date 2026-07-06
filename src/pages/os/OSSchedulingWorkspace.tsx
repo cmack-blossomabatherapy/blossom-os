@@ -240,6 +240,7 @@ export default function OSSchedulingWorkspace() {
                         fromDepartment="Scheduling"
                         linkedClientId={String(c.id)}
                         linkedSchedulingItemId={String(c.id)}
+                        defaultState={c.state || undefined}
                         defaultTitle={`Scheduling support: ${c.childName}`}
                         defaultDescription={`State: ${c.state} · Risk: ${b.replace(/_/g," ")} · BCBA: ${c.bcba ?? "unassigned"} · Waiting: ${c.daysInStage}d`}
                         defaultPriority={b === "coverage_risk" ? "high" : "medium"}

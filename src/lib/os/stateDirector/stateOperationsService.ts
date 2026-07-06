@@ -288,6 +288,13 @@ export function subscribeStateOperationsRealtime(cb: () => void): () => void {
  * creates a companion `state_operational_tasks` row scoped to the receiving
  * department so it shows up in that department's operational task queue.
  */
+export interface DeliverHandoffResult {
+  ok: boolean;
+  error?: string;
+  handoffId?: string;
+  taskId?: string;
+}
+
 export async function deliverHandoff(input: {
   state: StateCode;
   fromDepartment: Department;
@@ -304,7 +311,8 @@ export async function deliverHandoff(input: {
   sourceModule?: string;
   metadata?: Record<string, unknown>;
   relatedEscalationId?: string;
-}) {
+}): Promise<DeliverHandoffResult> {
+  try {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
 
@@ -340,13 +348,13 @@ export async function deliverHandoff(input: {
     .select("id")
     .maybeSingle();
   if (handoffError) {
-    throw new Error(handoffError.message);
+    return { ok: false, error: handoffError.message };
   }
   const handoffId: string | undefined = handoff?.id;
 
   // 2) Companion operational task in the receiving department so it lands
   //    in that department's queue instead of getting lost in a handoff table.
-  const taskResult = await insertTask({
+  const taskResult = await insertTaskReturningId({
     state: input.state,
     title: `[Handoff from ${input.fromDepartment}] ${input.subject}`,
     description: input.body,
@@ -363,7 +371,7 @@ export async function deliverHandoff(input: {
     metadata: input.metadata,
   });
   if (!taskResult.ok) {
-    throw new Error(taskResult.error ?? "Handoff task could not be created");
+    return { ok: false, error: taskResult.error ?? "Handoff task could not be created", handoffId };
   }
 
   // 3) Activity feed entry so directors see the routing happen live.
@@ -379,5 +387,44 @@ export async function deliverHandoff(input: {
     metadata: input.metadata,
   });
 
-  return handoff;
+    return { ok: true, handoffId, taskId: taskResult.id };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Unexpected handoff failure" };
+  }
+}
+
+// Internal helper mirrors insertTask but also returns the new task id so
+// deliverHandoff can propagate it to callers.
+async function insertTaskReturningId(input: Parameters<typeof insertTask>[0]): Promise<{ ok: boolean; error?: string; id?: string }> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id ?? null;
+  const lead   = normalizeLinkedRef(input.linkedLeadId);
+  const client = normalizeLinkedRef(input.linkedClientId);
+  const cand   = normalizeLinkedRef(input.linkedCandidateId);
+  const auth   = normalizeLinkedRef(input.linkedAuthorizationId);
+  const sched  = normalizeLinkedRef(input.linkedSchedulingItemId);
+  const relEsc = normalizeLinkedRef(input.relatedEscalationId);
+  const { data, error } = await supabase.from("state_operational_tasks").insert({
+    id: input.id,
+    state_code: input.state,
+    title: input.title,
+    description: input.description,
+    department: input.department,
+    assigned_to_name: input.owner,
+    priority: input.priority ?? "medium",
+    status: "open",
+    due_at: input.dueAt,
+    created_by: uid,
+    created_by_name: input.createdBy,
+    related_escalation_id: relEsc.uuid,
+    lead_id: lead.uuid, lead_ref: lead.ref,
+    client_id: client.uuid, client_ref: client.ref,
+    candidate_id: cand.uuid, candidate_ref: cand.ref,
+    authorization_id: auth.uuid, authorization_ref: auth.ref,
+    scheduling_item_id: sched.uuid, scheduling_item_ref: sched.ref,
+    source_module: input.sourceModule,
+    metadata: input.metadata,
+    centralreach_sync_status: "not_connected",
+  } as any).select("id").maybeSingle();
+  return { ok: !error, error: error?.message, id: (data as any)?.id };
 }
