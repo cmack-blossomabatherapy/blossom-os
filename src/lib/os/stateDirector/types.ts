@@ -103,6 +103,10 @@ export interface Escalation {
   notes: EscalationNote[];
   resolution?: string;
   centralreachSyncStatus?: string;
+  /** True while the row is optimistic and not yet persisted to Supabase. */
+  pending?: boolean;
+  /** Set when the last persistence attempt failed. */
+  persistError?: string;
 }
 
 export interface OpsTask {
@@ -129,6 +133,10 @@ export interface OpsTask {
   notes: EscalationNote[];
   completedAt?: string;
   centralreachSyncStatus?: string;
+  /** True while the row is optimistic and not yet persisted to Supabase. */
+  pending?: boolean;
+  /** Set when the last persistence attempt failed. */
+  persistError?: string;
 }
 
 export type ActivityKind =
