@@ -275,9 +275,16 @@ export const stateDirectorStore = {
     if (patch.resolution !== undefined) rowPatch.resolution = patch.resolution;
     if (patch.status === "resolved") rowPatch.resolved_at = nowIso();
     if (Object.keys(rowPatch).length) {
-      void sbUpdateEscalationRow(id, rowPatch).catch((err) =>
-        reportSaveFailure("update escalation", err),
-      );
+      void sbUpdateEscalationRow(id, rowPatch)
+        .then((r) => {
+          if (r.ok) return;
+          reportSaveFailure("update escalation", r.error ?? "Unknown error");
+          mutate((s) => {
+            const i = s.escalations.findIndex((e) => e.id === id);
+            if (i >= 0) s.escalations[i] = { ...s.escalations[i], persistError: r.error ?? "Could not save update" };
+          });
+        })
+        .catch((err) => reportSaveFailure("update escalation", err));
     }
   },
 
@@ -296,7 +303,16 @@ export const stateDirectorStore = {
       void sbInsertNote({
         id: parent.notes[0]?.id, parentType: "escalation", parentId: escId,
         state: parent.state, body: body.trim(), author,
-      }).catch((err) => reportSaveFailure("add escalation note", err));
+      })
+        .then((r) => {
+          if (r.ok) return;
+          reportSaveFailure("add escalation note", r.error ?? "Unknown error");
+          mutate((s) => {
+            const i = s.escalations.findIndex((e) => e.id === escId);
+            if (i >= 0) s.escalations[i] = { ...s.escalations[i], persistError: r.error ?? "Note did not save" };
+          });
+        })
+        .catch((err) => reportSaveFailure("add escalation note", err));
     }
   },
 
@@ -409,9 +425,16 @@ export const stateDirectorStore = {
     if (patch.owner !== undefined) rowPatch.assigned_to_name = patch.owner;
     if (patch.status === "completed") rowPatch.completed_at = nowIso();
     if (Object.keys(rowPatch).length) {
-      void sbUpdateTaskRow(id, rowPatch).catch((err) =>
-        reportSaveFailure("update task", err),
-      );
+      void sbUpdateTaskRow(id, rowPatch)
+        .then((r) => {
+          if (r.ok) return;
+          reportSaveFailure("update task", r.error ?? "Unknown error");
+          mutate((s) => {
+            const i = s.tasks.findIndex((t) => t.id === id);
+            if (i >= 0) s.tasks[i] = { ...s.tasks[i], persistError: r.error ?? "Could not save update" };
+          });
+        })
+        .catch((err) => reportSaveFailure("update task", err));
     }
   },
 
@@ -495,7 +518,16 @@ export const stateDirectorStore = {
       void sbInsertNote({
         id: parent.notes[0]?.id, parentType: "task", parentId: taskId,
         state: parent.state, body: body.trim(), author,
-      }).catch((err) => reportSaveFailure("add task note", err));
+      })
+        .then((r) => {
+          if (r.ok) return;
+          reportSaveFailure("add task note", r.error ?? "Unknown error");
+          mutate((s) => {
+            const i = s.tasks.findIndex((t) => t.id === taskId);
+            if (i >= 0) s.tasks[i] = { ...s.tasks[i], persistError: r.error ?? "Note did not save" };
+          });
+        })
+        .catch((err) => reportSaveFailure("add task note", err));
     }
   },
 };
