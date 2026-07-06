@@ -733,6 +733,9 @@ export default function OpsCommandCenter() {
         </div>
       </OpsCard>
 
+      {/* System requests intake */}
+      <SystemRequestsPanel />
+
       {/* Quick nav */}
       <div className="grid gap-3 md:grid-cols-3">
         <Link to="/operations" className="group rounded-2xl border border-border/70 bg-card p-4 transition hover:-translate-y-0.5 hover:border-border">
