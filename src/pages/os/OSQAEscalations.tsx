@@ -791,3 +791,133 @@ export default function OSQAEscalations() {
     </OSShell>
   );
 }
+
+/**
+ * Clinical Director-only escalation center. Combines the derived QA escalation
+ * rows already shown on this page with escalated/urgent clinical_work_items
+ * (which flow in from every other Clinical Director page). Also exposes the
+ * saved-view UI backed by clinical_saved_views.
+ */
+function ClinicalDirectorEscalationCenter() {
+  const ctx = useOSRoleSafe();
+  const data = useClinicalDirectorData({});
+  const actions = useClinicalDirectorActions();
+  const [savedViews, setSavedViews] = useState<Array<{ id: string; name: string; filters: Record<string, unknown> }>>([]);
+  const [viewName, setViewName] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [priorityFilter, setPriorityFilter] = useState<string>("");
+  const [sourceFilter, setSourceFilter] = useState<string>("");
+  const [dueSoon, setDueSoon] = useState(false);
+
+  useEffect(() => {
+    if (!ctx || ctx.role !== "clinical_director") return;
+    void (async () => {
+      try {
+        const rows = await actions.listSavedViews();
+        setSavedViews(rows as never);
+      } catch { /* non-blocking */ }
+    })();
+  }, [ctx, actions]);
+
+  if (!ctx || ctx.role !== "clinical_director") return null;
+
+  const items = data.items.filter((i) => {
+    if (statusFilter && i.status !== statusFilter) return false;
+    if (priorityFilter && i.priority !== priorityFilter) return false;
+    if (sourceFilter && i.source_type !== sourceFilter) return false;
+    if (dueSoon) {
+      if (!i.due_at) return false;
+      const days = (new Date(i.due_at).getTime() - Date.now()) / 86_400_000;
+      if (days > 7) return false;
+    }
+    return true;
+  });
+  const escalatedOrUrgent = items.filter(
+    (i) => i.status === "escalated" || i.priority === "urgent" || i.priority === "high"
+      || (i.due_at && new Date(i.due_at) < new Date()),
+  );
+
+  async function saveCurrent() {
+    if (!viewName.trim()) return;
+    try {
+      await actions.saveView(viewName.trim(), {
+        statusFilter, priorityFilter, sourceFilter, dueSoon,
+      });
+      const rows = await actions.listSavedViews();
+      setSavedViews(rows as never);
+      setViewName("");
+    } catch { /* non-blocking */ }
+  }
+
+  return (
+    <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <header className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold">Clinical Director escalation center</h2>
+        <span className="text-xs text-muted-foreground">{escalatedOrUrgent.length} escalated / urgent · {items.length} total clinical items</span>
+      </header>
+      <div className="flex flex-wrap gap-2 mb-3">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded border border-slate-200 px-2 py-1 text-xs">
+          <option value="">All statuses</option>
+          <option value="open">Open</option>
+          <option value="escalated">Escalated</option>
+          <option value="reviewed">Reviewed</option>
+          <option value="resolved">Resolved</option>
+        </select>
+        <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="rounded border border-slate-200 px-2 py-1 text-xs">
+          <option value="">All priorities</option>
+          <option value="urgent">Urgent</option>
+          <option value="high">High</option>
+          <option value="normal">Normal</option>
+          <option value="low">Low</option>
+        </select>
+        <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="rounded border border-slate-200 px-2 py-1 text-xs">
+          <option value="">All source types</option>
+          <option value="authorization">Authorization</option>
+          <option value="supervision">Supervision</option>
+          <option value="bcba">BCBA</option>
+          <option value="evaluation">Evaluation</option>
+          <option value="manual">Manual</option>
+        </select>
+        <label className="text-xs inline-flex items-center gap-1">
+          <input type="checkbox" checked={dueSoon} onChange={(e) => setDueSoon(e.target.checked)} /> Due within 7d / overdue
+        </label>
+        <input
+          value={viewName}
+          onChange={(e) => setViewName(e.target.value)}
+          placeholder="Save current view as…"
+          className="ml-auto rounded border border-slate-200 px-2 py-1 text-xs"
+        />
+        <button onClick={saveCurrent} className="rounded bg-slate-100 hover:bg-slate-200 px-2 py-1 text-xs">Save view</button>
+      </div>
+      {savedViews.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {savedViews.map((v) => (
+            <span key={v.id} className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[11px]">
+              {v.name}
+              <button
+                onClick={async () => { await actions.deleteSavedView(v.id); setSavedViews((s) => s.filter((x) => x.id !== v.id)); }}
+                className="text-slate-500 hover:text-destructive"
+                title="Delete saved view"
+              >×</button>
+            </span>
+          ))}
+        </div>
+      )}
+      <ul className="divide-y divide-slate-100">
+        {escalatedOrUrgent.slice(0, 10).map((i) => (
+          <li key={i.id} className="py-2 text-sm flex items-center justify-between">
+            <div className="min-w-0">
+              <div className="truncate font-medium">{i.title}</div>
+              <div className="text-xs text-muted-foreground">
+                {i.source_type}{i.client_name ? ` · ${i.client_name}` : ""}{i.bcba_name ? ` · ${i.bcba_name}` : ""} · {i.priority} · {i.status}
+              </div>
+            </div>
+          </li>
+        ))}
+        {escalatedOrUrgent.length === 0 && (
+          <li className="py-3 text-xs text-muted-foreground">No escalated or urgent clinical work items.</li>
+        )}
+      </ul>
+    </section>
+  );
+}
