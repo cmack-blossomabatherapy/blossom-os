@@ -101,7 +101,7 @@ async function upsertRuntimeRow(
       .from("academy_runtime_progress")
       .update(patch)
       .eq("id", (existing as any).id);
-    return { ...existing, ...patch } as any;
+    return { ...(existing as any), ...patch };
   }
   const insert = {
     user_id: userId,
