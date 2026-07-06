@@ -11,9 +11,10 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { RBT_PATHS, type RBTPathId, type SignoffItem } from "@/lib/training/rbtAcademy";
 import {
-  useTrainees, summarize, READINESS_TONE, EXPERIENCE_BUCKETS,
-  CERTIFICATION_STATUSES, assignPath, recordSignoff, markBlocked,
-  setNeedsCoaching, addCoachingNote, updateAssignment,
+  useReadinessTrainees, summarize, READINESS_TONE, EXPERIENCE_BUCKETS,
+  CERTIFICATION_STATUSES,
+  assignPathRow, recordSignoffRow, markBlockedRow,
+  setNeedsCoachingRow, updateAssignmentRow,
   type RBTTrainee, type ReadinessStatus, type ExperienceBucket,
   type CertificationStatus,
 } from "@/lib/training/rbtReadiness";
@@ -37,7 +38,7 @@ const STATE_CHIPS = ["All", "GA", "NC", "TN", "VA", "MD"] as const;
 export default function OSRBTAcademyAdmin() {
   const { roles } = useAuth();
   const isAdmin = roles.some((r) => ADMIN_ROLES.has(r));
-  const trainees = useTrainees();
+  const { trainees, loading, empty } = useReadinessTrainees();
 
   const [query, setQuery] = useState("");
   const [state, setState] = useState<(typeof STATE_CHIPS)[number]>("All");
@@ -152,7 +153,11 @@ export default function OSRBTAcademyAdmin() {
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="space-y-2">
-            {rows.length === 0 ? (
+            {loading ? (
+              <LoadingState />
+            ) : empty ? (
+              <EmptySetupState />
+            ) : rows.length === 0 ? (
               <EmptyState />
             ) : rows.map(({ t, s }) => (
               <button
