@@ -266,7 +266,11 @@ export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) 
     setLoading(true);
     setError(null);
     try {
-      const hasScope = !!(clientId || centralreachClientId || clientNameKey);
+      // A bcbaName/bcbaId also counts as scope: BCBA-role surfaces pass only
+      // `{ bcbaName }` and expect their own workload (previously satisfied by
+      // an implicit broad fetch). Treating it as scope restores those lists
+      // without opening a leadership-wide fetch to unscoped callers.
+      const hasScope = !!(clientId || centralreachClientId || clientNameKey || bcbaId || scope.bcbaName);
       // Client-detail surfaces should pass `broad: false`. Only fetch broadly
       // when the caller opts in explicitly with `broad: true`. Absent both a
       // client scope AND an explicit broad flag we return empty rather than
@@ -327,7 +331,7 @@ export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) 
     } finally {
       setLoading(false);
     }
-  }, [applyScope, applyDate, broad, clientId, centralreachClientId, clientNameKey, rowLimit, statusesKey]);
+  }, [applyScope, applyDate, broad, clientId, centralreachClientId, clientNameKey, bcbaId, scope.bcbaName, rowLimit, statusesKey]);
 
   useEffect(() => {
     void refresh();
