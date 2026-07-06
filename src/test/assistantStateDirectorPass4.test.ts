@@ -96,7 +96,7 @@ describe("Assistant State Director — Pass 4 hardening", () => {
       "linkedAuthorizationId", "linkedSchedulingItemId",
       "sourceModule", "metadata", "centralreachSyncStatus",
     ]) {
-      const rx = new RegExp(field);
+      const rx = new RegExp(field, "g");
       expect(svc.match(rx)?.length ?? 0, `service does not hydrate ${field}`).toBeGreaterThanOrEqual(2);
     }
   });
@@ -129,7 +129,7 @@ describe("Assistant State Director — Pass 4 hardening", () => {
     // Mojibake / friendly text cleanup.
     expect(button).not.toContain("Sending…");
     expect(button).toMatch(/Sending\.\.\./);
-    expect(button).toMatch(/CentralReach is not connected yet/);
+    expect(button).toMatch(/CentralReach sync is not connected yet/);
   });
 
   /* --------------------- linked context UI panel ------------------------- */
