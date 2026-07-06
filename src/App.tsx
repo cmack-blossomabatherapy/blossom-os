@@ -15,6 +15,7 @@ import { ROLE_HOME } from "@/lib/os/roleHome";
 import { Loader2 } from "lucide-react";
 import LeadIdRedirect from "./components/leads/LeadIdRedirect";
 import MapslyHub from "./pages/os/mapsly/MapslyHub";
+import OrgChartPage from "./pages/os/org/OrgChartPage";
 import MileageCenter from "./pages/os/mapsly/MileageCenter";
 import BDTerritories from "./pages/os/mapsly/BDTerritories";
 import RecruitingMap from "./pages/os/mapsly/RecruitingMap";
