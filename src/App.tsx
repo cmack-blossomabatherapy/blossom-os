@@ -234,7 +234,7 @@ import BehavioralSupportFollowUps from "./pages/os/behavioral-support/Behavioral
 import BehavioralSupportSupervisionVisibility from "./pages/os/behavioral-support/BehavioralSupportSupervisionVisibility";
 import BehavioralSupportEvaluations from "./pages/os/behavioral-support/BehavioralSupportEvaluations";
 import {
-  CMTrainingAcademy, CMAssignedFamilies, CMParentCommunication, CMFamilySupport,
+  CMAssignedFamilies, CMParentCommunication, CMFamilySupport,
   CMProgressFollowUps, CMSchedulingCoordination, CMAuthorizationsVisibility,
   CMStaffingCoordination, CMServiceIssues, CMEscalations, CMCommunityReferrals,
 } from "./pages/os/case-manager/pages";
