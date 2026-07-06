@@ -41,6 +41,7 @@ export type OSRole =
   | "systems_admin"
   | "executive"
   | "coo"
+  | "ceo"
   | "director_of_operations"
   | "operations_manager"
   | "marketing_growth_lead"
