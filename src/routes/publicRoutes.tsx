@@ -7,6 +7,7 @@ import MfaVerify from "@/pages/MfaVerify";
 import PublicEvalFormPage from "@/pages/os/evaluations/PublicFormPage";
 import NfcPublicProfile from "@/pages/nfc/NfcPublicProfile";
 import MobilePermissions from "@/pages/MobilePermissions";
+import OAuthConsent from "@/pages/OAuthConsent";
 
 /**
  * Public and auth routes — no auth required, except /mobile/permissions
@@ -25,5 +26,13 @@ export const PublicRoutes = (
     <Route path="/evaluations/form/:token" element={<PublicEvalFormPage />} />
     <Route path="/nfc/:code" element={<NfcPublicProfile />} />
     <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
+    {/* Managed OAuth 2.1 consent screen used by MCP client authorization flows.
+        Supabase redirects the user here with ?authorization_id=... to approve
+        or deny an OAuth client. Wrapped in ProtectedRoute so an unauthenticated
+        visitor is bounced through /auth and returned to this exact URL. */}
+    <Route
+      path="/.lovable/oauth/consent"
+      element={<ProtectedRoute><OAuthConsent /></ProtectedRoute>}
+    />
   </>
 );
