@@ -435,6 +435,7 @@ function EscalationSlideout({ e, onClose, onChanged, sourceSystem }: { e: Escala
               daysOverdue: e.daysOverdue,
               daysToExpire: e.daysToExpire,
               blockedBy: e.blockedBy,
+              centralReachClientId: e.auth.clientId ?? null,
             }}
           />
         </div>

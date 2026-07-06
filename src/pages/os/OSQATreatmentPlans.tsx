@@ -944,6 +944,7 @@ function TPSlideout({ auth: a, onClose, onChanged, sourceSystem }: { auth: Autho
               treatmentPlanReceived: a.treatmentPlanReceived,
               missingRequirements: a.missingRequirements,
               expirationDate: a.expirationDate,
+              centralReachClientId: a.clientId ?? null,
             }}
           />
         </div>

@@ -924,6 +924,7 @@ function PRSlideout({ auth: a, onClose, onChanged, sourceSystem }: { auth: Autho
               expirationDate: a.expirationDate,
               missingRequirements: a.missingRequirements,
               progressReportStatus: prStatus(a),
+              centralReachClientId: a.clientId ?? null,
             }}
           />
         </div>

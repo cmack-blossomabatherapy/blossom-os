@@ -1051,6 +1051,7 @@ function SupSlideout({ r, onClose, onChanged, sourceSystem }: { r: SupRow; onClo
               rbts: r.rbts,
               missingDocumentation: r.supDocMissing,
               expirationDays: r.expirationDays,
+              centralReachClientId: r.auth?.clientId ?? null,
             }}
           />
         </div>

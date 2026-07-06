@@ -1087,6 +1087,7 @@ function BCBASlideout({
               treatmentPlansAwaiting: b.tpAwaiting,
               escalations: b.escalations,
               states: b.states,
+              centralReachClientId: null,
             }}
           />
         </div>
