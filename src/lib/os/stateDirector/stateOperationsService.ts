@@ -561,3 +561,99 @@ async function insertTaskReturningId(input: Parameters<typeof insertTask>[0]): P
   } as any).select("id").maybeSingle();
   return { ok: !error, error: error?.message, id: (data as any)?.id };
 }
+
+/* ---------------- CentralReach readiness / outbox (Pass 6) --------------- */
+
+export type CentralReachOutboxSourceType =
+  | "task" | "escalation" | "handoff" | "daily_health_note" | "manual_metric" | "other";
+export type CentralReachOutboxActionType =
+  | "needs_mapping" | "manual_update_required" | "ready_for_sync" | "blocked_missing_cr_id" | "other";
+export type CentralReachOutboxSyncStatus =
+  | "not_connected" | "pending" | "synced" | "error";
+
+export interface CentralReachOutboxRow {
+  id: string;
+  stateCode: StateCode;
+  sourceType: CentralReachOutboxSourceType;
+  sourceId: string | null;
+  centralreachObjectType: string | null;
+  centralreachExternalId: string | null;
+  actionType: CentralReachOutboxActionType;
+  syncStatus: CentralReachOutboxSyncStatus;
+  payload: Record<string, unknown>;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function fromOutboxRow(r: any): CentralReachOutboxRow {
+  return {
+    id: r.id,
+    stateCode: r.state_code as StateCode,
+    sourceType: r.source_type as CentralReachOutboxSourceType,
+    sourceId: r.source_id ?? null,
+    centralreachObjectType: r.centralreach_object_type ?? null,
+    centralreachExternalId: r.centralreach_external_id ?? null,
+    actionType: r.action_type as CentralReachOutboxActionType,
+    syncStatus: r.sync_status as CentralReachOutboxSyncStatus,
+    payload: (r.payload ?? {}) as Record<string, unknown>,
+    errorMessage: r.error_message ?? null,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+export async function loadStateCentralReachOutbox(
+  state?: StateCode,
+): Promise<CentralReachOutboxRow[] | null> {
+  try {
+    let q = supabase.from("state_centralreach_outbox").select("*").order("created_at", { ascending: false }).limit(200);
+    if (state) q = q.eq("state_code", state);
+    const { data, error } = await q;
+    if (error || !data) return null;
+    return (data as any[]).map(fromOutboxRow);
+  } catch {
+    return null;
+  }
+}
+
+export async function createStateCentralReachOutboxItem(input: {
+  stateCode: StateCode;
+  sourceType: CentralReachOutboxSourceType;
+  sourceId?: string | null;
+  centralreachObjectType?: string | null;
+  centralreachExternalId?: string | null;
+  actionType: CentralReachOutboxActionType;
+  syncStatus?: CentralReachOutboxSyncStatus;
+  payload?: Record<string, unknown>;
+  errorMessage?: string | null;
+}): Promise<{ ok: boolean; error?: string; id?: string }> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id ?? null;
+  const { data, error } = await supabase.from("state_centralreach_outbox").insert({
+    state_code: input.stateCode,
+    source_type: input.sourceType,
+    source_id: input.sourceId ?? null,
+    centralreach_object_type: input.centralreachObjectType ?? null,
+    centralreach_external_id: input.centralreachExternalId ?? null,
+    action_type: input.actionType,
+    sync_status: input.syncStatus ?? "not_connected",
+    payload: input.payload ?? {},
+    error_message: input.errorMessage ?? null,
+    created_by: uid,
+  } as any).select("id").maybeSingle();
+  return { ok: !error, error: error?.message, id: (data as any)?.id };
+}
+
+export async function updateStateCentralReachOutboxStatus(
+  id: string,
+  patch: { syncStatus?: CentralReachOutboxSyncStatus; actionType?: CentralReachOutboxActionType; errorMessage?: string | null; centralreachExternalId?: string | null },
+): Promise<{ ok: boolean; error?: string }> {
+  const row: Record<string, unknown> = {};
+  if (patch.syncStatus) row.sync_status = patch.syncStatus;
+  if (patch.actionType) row.action_type = patch.actionType;
+  if (patch.errorMessage !== undefined) row.error_message = patch.errorMessage;
+  if (patch.centralreachExternalId !== undefined) row.centralreach_external_id = patch.centralreachExternalId;
+  const { error } = await supabase.from("state_centralreach_outbox").update(row as any).eq("id", id);
+  return { ok: !error, error: error?.message };
+}
