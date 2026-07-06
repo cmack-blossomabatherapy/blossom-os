@@ -34,12 +34,17 @@ export default function ReportDetail() {
   const { role } = useOSRole();
   const report = useMemo(() => REPORTS.find(r => r.id === reportId), [reportId]);
   const cat = report ? REPORT_CATEGORIES.find(c => c.id === report.category)! : null;
+  const visibleReportIds = useMemo(
+    () => new Set(visibleReportsForRole(role).map(r => r.id)),
+    [role],
+  );
+  const canViewReport = !!report && visibleReportIds.has(report.id);
   // If this report is meant to open a filtered detail view directly, redirect.
   useEffect(() => {
-    if (report?.drilldownPath) {
+    if (canViewReport && report?.drilldownPath) {
       navigate(report.drilldownPath, { replace: true });
     }
-  }, [report, navigate]);
+  }, [canViewReport, report, navigate]);
   const [favs, setFavs] = useState<string[]>(() => readFavorites());
   const favored = report ? favs.includes(report.id) : false;
   const isSd = !!report && SD_REPORT_IDS.has(report.id);
@@ -52,9 +57,9 @@ export default function ReportDetail() {
     return visibleReportsForRole(role).filter(r => r.category === report.category && r.id !== report.id).slice(0, 3);
   }, [report, role]);
 
-  useEffect(() => { if (report) pushRecent(report.id); }, [report]);
+  useEffect(() => { if (canViewReport && report) pushRecent(report.id); }, [canViewReport, report]);
 
-  if (!report || !cat) {
+  if (!report || !cat || !canViewReport) {
     return (
       <OSShell>
         <div className="os-card flex flex-col items-center justify-center py-20 text-center">
