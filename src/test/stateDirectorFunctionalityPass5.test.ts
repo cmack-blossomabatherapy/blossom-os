@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { ROLE_MENUS } from "@/lib/os/roleMenus";
 
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
@@ -75,10 +76,9 @@ describe("State Director Functionality Pass 5 — hardening", () => {
   });
 
   it("state_director menu keeps a single /reports and /training remains at /training", () => {
-    const menu = read("src/lib/os/roleMenus.ts");
-    const sdBlock = menu.match(/state_director:\s*\{[\s\S]*?\},?\s*(?:assistant_state_director|bcba|rbt|clinical_director|super_admin|admin|hr|marketing|intake|scheduling|authorizations|qa_team|leadership|executive|case_manager|};?)/)?.[0] ?? menu;
-    const reports = (sdBlock.match(/"\/reports"/g) ?? []).length;
-    expect(reports).toBeGreaterThanOrEqual(1);
-    expect(sdBlock).toMatch(/"\/training"/);
+    const items = ROLE_MENUS.state_director!.sections.flatMap((s) => s.items.map((i) => i.path));
+    const reports = items.filter((p) => p === "/reports");
+    expect(reports.length).toBe(1);
+    expect(items).toContain("/training");
   });
 });
