@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { MessageSquare, Plus, Search, Phone, Mail, Voicemail, Users, ArrowDown, ArrowUp } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
-import { CMPage, Pill, FilterBar, FormDialog, familySelectOptions, familyOptionByValue, familyContext } from "./_shared";
+import { CMPage, Pill, FilterBar, FormDialog } from "./_shared";
+import { familySelectOptions, familyOptionByValue, familyContext, stringValue, stringOrNull, booleanValue, dateTimeIsoOrNull, type CMFormValues } from "./_utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,7 +28,7 @@ export default function ParentCommunicationPage() {
   const [addOpen, setAddOpen] = useState(false);
 
   const options = familySelectOptions(w.assignments);
-  const pickFamily = (v: any) => familyOptionByValue(w.assignments, v?.family);
+  const pickFamily = (v: CMFormValues) => familyOptionByValue(w.assignments, stringValue(v.family));
 
   const rows = w.communications.filter((c) => {
     if (channel !== "all" && c.channel !== channel) return false;
@@ -75,7 +76,7 @@ export default function ParentCommunicationPage() {
                 <Pill tone={c.direction === "inbound" ? "warm" : c.direction === "outbound" ? "calm" : "violet"}><span className="inline-flex items-center gap-1">{c.direction === "inbound" ? <ArrowDown className="h-2.5 w-2.5" /> : c.direction === "outbound" ? <ArrowUp className="h-2.5 w-2.5" /> : null} {c.direction}</span></Pill>
                 {c.sentiment && <Pill tone={c.sentiment === "upset" ? "alert" : c.sentiment === "concerned" ? "amber" : "calm"}>{c.sentiment}</Pill>}
                 {c.needs_followup && <Pill tone="amber">Follow-up needed{c.followup_at ? ` · ${new Date(c.followup_at).toLocaleDateString()}` : ""}</Pill>}
-                {(c as any).follow_up_id && <Pill tone="cool">Linked follow-up</Pill>}
+                {c.follow_up_id && <Pill tone="cool">Linked follow-up</Pill>}
                 {c.outcome && <span className="text-[10.5px] text-muted-foreground">Outcome: {c.outcome}</span>}
               </div>
               {c.needs_followup && (
@@ -112,12 +113,12 @@ export default function ParentCommunicationPage() {
           const ctx = familyContext(opt);
           await w.logCommunicationWithFollowUp({
             ...ctx,
-            channel: v.channel, direction: v.direction,
-            contact_name: v.contact_name || null, subject: v.subject || null,
-            summary: v.summary, outcome: v.outcome || null, sentiment: v.sentiment || null,
-            needs_followup: !!v.needs_followup,
-            followup_at: v.followup_at ? new Date(v.followup_at).toISOString() : null,
-            create_followup: !!v.create_followup,
+            channel: stringValue(v.channel), direction: stringValue(v.direction),
+            contact_name: stringOrNull(v.contact_name), subject: stringOrNull(v.subject),
+            summary: stringValue(v.summary), outcome: stringOrNull(v.outcome), sentiment: stringOrNull(v.sentiment),
+            needs_followup: booleanValue(v.needs_followup),
+            followup_at: dateTimeIsoOrNull(v.followup_at),
+            create_followup: booleanValue(v.create_followup),
           });
           toast.success("Communication logged");
         }}
