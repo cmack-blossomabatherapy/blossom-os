@@ -19349,6 +19349,7 @@ export type Database = {
         Returns: boolean
       }
       can_view_clinical_work: { Args: { _user_id: string }; Returns: boolean }
+      can_write_scheduling_ops: { Args: { _user_id: string }; Returns: boolean }
       classify_eval_role: { Args: { _job_title: string }; Returns: string }
       compute_profile_completion: {
         Args: { emp: Database["public"]["Tables"]["employees"]["Row"] }
