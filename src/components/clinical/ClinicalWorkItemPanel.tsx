@@ -165,8 +165,8 @@ export function ClinicalWorkItemPanel(props: ClinicalWorkItemPanelProps) {
           <Link2 className="h-3 w-3" /> CentralReach linked ({String(centralReachId)})
         </div>
       ) : sourceType !== "manual" && (
-        <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] text-amber-700">
-          <AlertTriangle className="h-3 w-3" /> No CentralReach client id · sync pending
+        <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[11px] text-slate-600">
+          <Link2 className="h-3 w-3" /> CentralReach link pending
         </div>
       )}
 
