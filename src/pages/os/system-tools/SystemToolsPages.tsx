@@ -146,15 +146,7 @@ export function RequestIntakePage() {
         actions={<Button size="sm"><Plus className="h-4 w-4 mr-1.5" />Submit request</Button>}
       />
       <ActionRow actions={["Submit request", "Categorize request", "Assign owner", "Set priority", "Update status", "Mark resolved"]} />
-      <DataTable
-        columns={["Request", "Category", "Submitted by", "Owner", "Priority", "Status", "Submitted"]}
-        rows={[
-          ["Add weekly staffing digest", "Improvement", "Devon Ross", "Operations", <StatusBadge status="Medium" />, <StatusBadge status="Triage" />, "Today"],
-          ["Bug — vault PIN does not clear on lock", "Bug", "Lauren Brewer", "Engineering", <StatusBadge status="High" />, <StatusBadge status="In Progress" />, "Yesterday"],
-          ["Access — Case Manager needs Evaluations", "Access", "Sasha Long", "Admin", <StatusBadge status="Medium" />, <StatusBadge status="Resolved" />, "3 days ago"],
-          ["New module — Outreach pipeline", "Module idea", "Growth Lead", "Product", <StatusBadge status="Low" />, <StatusBadge status="Open" />, "1 week ago"],
-        ]}
-      />
+      <SystemRequestsPanel />
     </Shell>
   );
 }
