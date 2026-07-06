@@ -87,7 +87,7 @@ export async function createExecutiveWorkItem(
   const payload = { ...input, created_by: uid, updated_by: uid };
   const { data, error } = await supabase
     .from("executive_work_items")
-    .insert(payload)
+    .insert(payload as never)
     .select("*")
     .single();
   if (error) throw error;
@@ -111,7 +111,7 @@ export async function updateExecutiveWorkItem(
   }
   const { data, error } = await supabase
     .from("executive_work_items")
-    .update(payload)
+    .update(payload as never)
     .eq("id", id)
     .select("*")
     .single();
@@ -150,7 +150,7 @@ export async function createExecutiveDecision(
   const uid = await currentUserId();
   const { data, error } = await supabase
     .from("executive_decisions")
-    .insert({ ...input, created_by: uid, updated_by: uid })
+    .insert({ ...input, created_by: uid, updated_by: uid } as never)
     .select("*")
     .single();
   if (error) throw error;
@@ -188,7 +188,7 @@ export async function createExecutiveRisk(input: {
   const uid = await currentUserId();
   const { data, error } = await supabase
     .from("executive_risks")
-    .insert({ ...input, created_by: uid, updated_by: uid })
+    .insert({ ...input, created_by: uid, updated_by: uid } as never)
     .select("*")
     .single();
   if (error) throw error;
@@ -233,7 +233,7 @@ export async function createExecutiveUpdate(input: {
   };
   const { data, error } = await supabase
     .from("executive_updates")
-    .insert(payload)
+    .insert(payload as never)
     .select("*")
     .single();
   if (error) throw error;
@@ -254,7 +254,7 @@ export async function createExecutiveBriefing(input: {
   const uid = await currentUserId();
   const { data, error } = await supabase
     .from("executive_briefings")
-    .insert({ ...input, created_by: uid })
+    .insert({ ...input, created_by: uid } as never)
     .select("*")
     .single();
   if (error) throw error;
@@ -278,7 +278,7 @@ export async function captureExecutiveKpiSnapshot(input: {
   const uid = await currentUserId();
   const { data, error } = await supabase
     .from("executive_kpi_snapshots")
-    .insert({ ...input, captured_by: uid })
+    .insert({ ...input, captured_by: uid } as never)
     .select("*")
     .single();
   if (error) throw error;
@@ -303,7 +303,7 @@ export async function logExecutiveActivity(input: {
     entity_id: input.entity_id ?? null,
     summary: input.summary ?? null,
     metadata: input.metadata ?? {},
-  });
+  } as never);
 }
 
 export async function listRecentExecutiveActivity(limit = 25) {
