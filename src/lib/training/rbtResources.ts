@@ -344,89 +344,158 @@ export function iconForType(type: RBTResourceType): string {
   }
 }
 
-// ---------- Store (localStorage, with React hook) ----------
+// ---------- Supabase-backed store ----------
+//
+// The store keeps two pieces of state:
+//   - visible: RBTResource[]              (non-hidden rows shown to consumers)
+//   - hiddenSeedIds: string[]             (seeded row ids currently hidden)
+// Local cache in localStorage is only used to render immediately while the
+// live Supabase fetch resolves. Writes always hit Supabase; on success the
+// cache is refreshed from the latest Supabase snapshot.
 
-const STORAGE_KEY = "blossom.rbt.resources.v1";
+const CACHE_KEY = "blossom.rbt.resources.cache.v2";
 
-type StoredShape = {
-  // Resources added by admins.
-  custom: RBTResource[];
-  // Edits applied on top of seeded resources, keyed by id.
-  overrides: Record<string, Partial<RBTResource>>;
-  // IDs of seeded resources the admin chose to hide.
-  hiddenSeedIds: string[];
-};
+type StoreState = { resources: RBTResource[]; hiddenSeedIds: string[]; hydrated: boolean };
 
-function emptyStore(): StoredShape {
-  return { custom: [], overrides: {}, hiddenSeedIds: [] };
-}
-
-function readStore(): StoredShape {
-  if (typeof window === "undefined") return emptyStore();
+function readCache(): StoreState {
+  if (typeof window === "undefined") return { resources: STARTER_RBT_RESOURCES, hiddenSeedIds: [], hydrated: false };
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return emptyStore();
-    const parsed = JSON.parse(raw);
-    return { ...emptyStore(), ...parsed };
+    const raw = window.localStorage.getItem(CACHE_KEY);
+    if (!raw) return { resources: STARTER_RBT_RESOURCES, hiddenSeedIds: [], hydrated: false };
+    const parsed = JSON.parse(raw) as { resources: RBTResource[]; hiddenSeedIds: string[] };
+    return { resources: parsed.resources ?? STARTER_RBT_RESOURCES, hiddenSeedIds: parsed.hiddenSeedIds ?? [], hydrated: false };
   } catch {
-    return emptyStore();
+    return { resources: STARTER_RBT_RESOURCES, hiddenSeedIds: [], hydrated: false };
   }
 }
 
+let state: StoreState = readCache();
 const listeners = new Set<() => void>();
 function emit() { listeners.forEach((l) => l()); }
-
-function writeStore(next: StoredShape) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+function subscribe(cb: () => void) {
+  listeners.add(cb);
+  return () => { listeners.delete(cb); };
+}
+function setState(next: Partial<StoreState>) {
+  state = { ...state, ...next };
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({ resources: state.resources, hiddenSeedIds: state.hiddenSeedIds }),
+      );
+    } catch { /* quota / private mode — cache is best-effort */ }
+  }
   emit();
 }
 
-function subscribe(cb: () => void) {
-  listeners.add(cb);
-  const onStorage = (e: StorageEvent) => { if (e.key === STORAGE_KEY) cb(); };
-  window.addEventListener("storage", onStorage);
-  return () => {
-    listeners.delete(cb);
-    window.removeEventListener("storage", onStorage);
+function rowToResource(row: Record<string, unknown>): RBTResource {
+  return {
+    id: String(row.id),
+    title: String(row.title ?? ""),
+    type: (row.type as RBTResourceType) ?? "SOP",
+    url: (row.url as string | null) ?? undefined,
+    description: (row.description as string | null) ?? undefined,
+    body: (row.body as string | null) ?? undefined,
+    moduleIds: (row.module_ids as string[] | null) ?? [],
+    minutes: (row.minutes as number | null) ?? undefined,
+    category: (row.category as RBTResourceCategoryId | null) ?? undefined,
+    tags: (row.tags as string[] | null) ?? undefined,
+    required: Boolean(row.required),
+    tracks: ((row.tracks as string[] | null) ?? undefined) as RBTPathId[] | undefined,
+    seeded: Boolean(row.seeded),
+    updatedAt: (row.updated_at as string | null) ?? undefined,
   };
 }
 
-function buildResources(store: StoredShape): RBTResource[] {
-  const seeded = STARTER_RBT_RESOURCES
-    .filter((r) => !store.hiddenSeedIds.includes(r.id))
-    .map((r) => ({ ...r, ...(store.overrides[r.id] ?? {}) }));
-  return [...seeded, ...store.custom];
+function resourceToRow(r: RBTResource, extras: { is_hidden?: boolean; created_by?: string | null } = {}) {
+  return {
+    id: r.id,
+    title: r.title,
+    type: r.type,
+    url: r.url ?? null,
+    description: r.description ?? null,
+    body: r.body ?? null,
+    module_ids: r.moduleIds ?? [],
+    minutes: r.minutes ?? null,
+    category: r.category ?? null,
+    tags: r.tags ?? [],
+    required: r.required ?? false,
+    tracks: (r.tracks ?? []) as string[],
+    seeded: r.seeded ?? false,
+    is_hidden: extras.is_hidden ?? false,
+    created_by: extras.created_by ?? null,
+  };
 }
 
-let cache: { store: StoredShape; resources: RBTResource[] } | null = null;
-function getSnapshot(): RBTResource[] {
-  const store = readStore();
-  if (!cache || cache.store !== store) {
-    // Compare by stringification — store reads return new objects.
-    const sig = JSON.stringify(store);
-    if (!cache || JSON.stringify(cache.store) !== sig) {
-      cache = { store, resources: buildResources(store) };
-    }
-  }
-  return cache.resources;
+let hydrationPromise: Promise<void> | null = null;
+let seedAttempted = false;
+
+async function currentUserId(): Promise<string | null> {
+  try { const { data } = await supabase.auth.getUser(); return data.user?.id ?? null; }
+  catch { return null; }
 }
+
+async function seedStarterIfEmpty() {
+  if (seedAttempted) return;
+  seedAttempted = true;
+  try {
+    const { count, error } = await supabase
+      .from("rbt_resources")
+      .select("id", { count: "exact", head: true });
+    if (error || (count ?? 0) > 0) return;
+    const uid = await currentUserId();
+    const rows = STARTER_RBT_RESOURCES.map((r) =>
+      resourceToRow({ ...r, seeded: true }, { is_hidden: false, created_by: uid }),
+    );
+    await supabase.from("rbt_resources").upsert(rows, { onConflict: "id" });
+  } catch { /* ignore — cache still renders starter */ }
+}
+
+async function refreshFromSupabase(): Promise<void> {
+  const { data, error } = await supabase
+    .from("rbt_resources")
+    .select("*")
+    .order("category", { ascending: true })
+    .order("title", { ascending: true });
+  if (error || !data) return;
+  const rows = data as unknown as Array<Record<string, unknown>>;
+  const visible = rows.filter((r) => !r.is_hidden).map(rowToResource);
+  const hidden = rows.filter((r) => Boolean(r.is_hidden)).map((r) => String(r.id));
+  setState({ resources: visible, hiddenSeedIds: hidden, hydrated: true });
+}
+
+export async function hydrateRBTResourcesFromSupabase(): Promise<void> {
+  if (hydrationPromise) return hydrationPromise;
+  hydrationPromise = (async () => {
+    try {
+      await refreshFromSupabase();
+      // If Supabase came back empty, try to seed once with STARTER_RBT_RESOURCES,
+      // then re-fetch. If seeding is blocked by RLS the cache still renders.
+      if (state.hydrated && state.resources.length === 0) {
+        await seedStarterIfEmpty();
+        await refreshFromSupabase();
+      }
+    } catch { /* offline — starter cache remains */ }
+  })();
+  return hydrationPromise;
+}
+
+function getSnapshot(): RBTResource[] { return state.resources; }
+function getHiddenSnapshot(): string[] { return state.hiddenSeedIds; }
 
 export function useRBTResources(): RBTResource[] {
-  return useSyncExternalStore(subscribe, getSnapshot, () => STARTER_RBT_RESOURCES);
+  const value = useSyncExternalStore(subscribe, getSnapshot, () => STARTER_RBT_RESOURCES);
+  useEffect(() => { void hydrateRBTResourcesFromSupabase(); }, []);
+  return value;
 }
 
-// Returns the IDs of seeded resources currently hidden by an admin.
-let hiddenCache: { sig: string; value: string[] } | null = null;
-function hiddenSnapshot(): string[] {
-  const store = readStore();
-  const sig = JSON.stringify(store.hiddenSeedIds);
-  if (!hiddenCache || hiddenCache.sig !== sig) hiddenCache = { sig, value: store.hiddenSeedIds };
-  return hiddenCache.value;
-}
 export function useHiddenSeedIds(): string[] {
-  return useSyncExternalStore(subscribe, hiddenSnapshot, () => []);
+  const value = useSyncExternalStore(subscribe, getHiddenSnapshot, () => []);
+  useEffect(() => { void hydrateRBTResourcesFromSupabase(); }, []);
+  return value;
 }
+
 export function getSeededResourceById(id: string): RBTResource | undefined {
   return STARTER_RBT_RESOURCES.find((r) => r.id === id);
 }
@@ -435,61 +504,61 @@ export function getResourcesForModule(all: RBTResource[], moduleId: string): RBT
   return all.filter((r) => r.moduleIds.includes(moduleId));
 }
 
-// ---------- Admin mutations ----------
+// ---------- Admin mutations (Supabase-backed) ----------
 
 function nextId() {
   return `rsrc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export function addResource(input: Omit<RBTResource, "id" | "seeded" | "updatedAt">) {
-  const store = readStore();
+export async function addResource(input: Omit<RBTResource, "id" | "seeded" | "updatedAt">): Promise<RBTResource> {
+  const uid = await currentUserId();
   const resource: RBTResource = {
     ...input,
     id: nextId(),
     seeded: false,
     updatedAt: new Date().toISOString(),
   };
-  writeStore({ ...store, custom: [...store.custom, resource] });
+  const { error } = await supabase
+    .from("rbt_resources")
+    .insert(resourceToRow(resource, { is_hidden: false, created_by: uid }));
+  if (error) throw error;
+  await refreshFromSupabase();
   return resource;
 }
 
-export function updateResource(id: string, patch: Partial<RBTResource>) {
-  const store = readStore();
-  const seeded = STARTER_RBT_RESOURCES.find((r) => r.id === id);
-  if (seeded) {
-    writeStore({
-      ...store,
-      overrides: {
-        ...store.overrides,
-        [id]: { ...(store.overrides[id] ?? {}), ...patch, updatedAt: new Date().toISOString() },
-      },
-    });
-    return;
-  }
-  writeStore({
-    ...store,
-    custom: store.custom.map((r) =>
-      r.id === id ? { ...r, ...patch, updatedAt: new Date().toISOString() } : r,
-    ),
-  });
+export async function updateResource(id: string, patch: Partial<RBTResource>): Promise<void> {
+  const patchRow: Record<string, unknown> = {};
+  if (patch.title !== undefined) patchRow.title = patch.title;
+  if (patch.type !== undefined) patchRow.type = patch.type;
+  if (patch.url !== undefined) patchRow.url = patch.url ?? null;
+  if (patch.description !== undefined) patchRow.description = patch.description ?? null;
+  if (patch.body !== undefined) patchRow.body = patch.body ?? null;
+  if (patch.moduleIds !== undefined) patchRow.module_ids = patch.moduleIds;
+  if (patch.minutes !== undefined) patchRow.minutes = patch.minutes ?? null;
+  if (patch.category !== undefined) patchRow.category = patch.category ?? null;
+  if (patch.tags !== undefined) patchRow.tags = patch.tags ?? [];
+  if (patch.required !== undefined) patchRow.required = patch.required;
+  if (patch.tracks !== undefined) patchRow.tracks = (patch.tracks ?? []) as string[];
+  const { error } = await supabase.from("rbt_resources").update(patchRow).eq("id", id);
+  if (error) throw error;
+  await refreshFromSupabase();
 }
 
-export function removeResource(id: string) {
-  const store = readStore();
+export async function removeResource(id: string): Promise<void> {
   const seeded = STARTER_RBT_RESOURCES.find((r) => r.id === id);
   if (seeded) {
-    if (store.hiddenSeedIds.includes(id)) return;
-    writeStore({ ...store, hiddenSeedIds: [...store.hiddenSeedIds, id] });
-    return;
+    // Hide seeded rows rather than deleting them so they can be restored.
+    const { error } = await supabase.from("rbt_resources").update({ is_hidden: true }).eq("id", id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from("rbt_resources").delete().eq("id", id);
+    if (error) throw error;
   }
-  writeStore({ ...store, custom: store.custom.filter((r) => r.id !== id) });
+  await refreshFromSupabase();
 }
 
-export function restoreSeededResource(id: string) {
-  const store = readStore();
-  writeStore({
-    ...store,
-    hiddenSeedIds: store.hiddenSeedIds.filter((x) => x !== id),
-    overrides: Object.fromEntries(Object.entries(store.overrides).filter(([k]) => k !== id)),
-  });
+export async function restoreSeededResource(id: string): Promise<void> {
+  const { error } = await supabase.from("rbt_resources").update({ is_hidden: false }).eq("id", id);
+  if (error) throw error;
+  await refreshFromSupabase();
 }
