@@ -19,6 +19,7 @@ import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 import { cn } from "@/lib/utils";
 import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
+import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
 import {
   callParent,
   sendLeadEmail,
