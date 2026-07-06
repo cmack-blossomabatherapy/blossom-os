@@ -3,6 +3,7 @@ import type {
   Escalation, OpsTask, EscalationNote, Priority, Department, StateCode,
   EscalationStatus, TaskStatus, ActivityEvent, ActivityKind,
 } from "./types";
+import { normalizeLinkedRef, pickLinkedRef } from "./linkedRef";
 
 /**
  * Supabase-backed persistence for the State Operations workflow.
@@ -33,9 +34,13 @@ function fromTaskRow(r: any): OpsTask {
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     relatedEscalationId: r.related_escalation_id ?? undefined,
-    linkedClientId: r.client_id ?? undefined,
-    linkedLeadId: r.lead_id ?? undefined,
-    linkedCandidateId: r.candidate_id ?? undefined,
+    linkedClientId: pickLinkedRef(r.client_ref, r.client_id),
+    linkedLeadId: pickLinkedRef(r.lead_ref, r.lead_id),
+    linkedCandidateId: pickLinkedRef(r.candidate_ref, r.candidate_id),
+    linkedAuthorizationId: pickLinkedRef(r.authorization_ref, r.authorization_id),
+    linkedSchedulingItemId: pickLinkedRef(r.scheduling_item_ref, r.scheduling_item_id),
+    sourceModule: r.source_module ?? undefined,
+    metadata: r.metadata ?? undefined,
     notes: [],
     completedAt: r.completed_at ?? undefined,
     centralreachSyncStatus: r.centralreach_sync_status ?? undefined,
@@ -56,9 +61,13 @@ function fromEscRow(r: any): Escalation {
     createdBy: r.created_by_name ?? "System",
     createdAt: r.created_at,
     updatedAt: r.updated_at,
-    linkedClientId: r.client_id ?? undefined,
-    linkedLeadId: r.lead_id ?? undefined,
-    linkedCandidateId: r.candidate_id ?? undefined,
+    linkedClientId: pickLinkedRef(r.client_ref, r.client_id),
+    linkedLeadId: pickLinkedRef(r.lead_ref, r.lead_id),
+    linkedCandidateId: pickLinkedRef(r.candidate_ref, r.candidate_id),
+    linkedAuthorizationId: pickLinkedRef(r.authorization_ref, r.authorization_id),
+    linkedSchedulingItemId: pickLinkedRef(r.scheduling_item_ref, r.scheduling_item_id),
+    sourceModule: r.source_module ?? undefined,
+    metadata: r.metadata ?? undefined,
     resolution: r.resolution ?? undefined,
     notes: [],
     centralreachSyncStatus: r.centralreach_sync_status ?? undefined,
@@ -126,10 +135,16 @@ export async function insertTask(input: {
   linkedAuthorizationId?: string; linkedSchedulingItemId?: string;
   sourceModule?: string;
   metadata?: Record<string, unknown>;
-}) {
+}): Promise<{ ok: boolean; error?: string }> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
-  await supabase.from("state_operational_tasks").insert({
+  const lead   = normalizeLinkedRef(input.linkedLeadId);
+  const client = normalizeLinkedRef(input.linkedClientId);
+  const cand   = normalizeLinkedRef(input.linkedCandidateId);
+  const auth   = normalizeLinkedRef(input.linkedAuthorizationId);
+  const sched  = normalizeLinkedRef(input.linkedSchedulingItemId);
+  const relEsc = normalizeLinkedRef(input.relatedEscalationId);
+  const { error } = await supabase.from("state_operational_tasks").insert({
     id: input.id,
     state_code: input.state,
     title: input.title,
@@ -141,16 +156,22 @@ export async function insertTask(input: {
     due_at: input.dueAt,
     created_by: uid,
     created_by_name: input.createdBy,
-    related_escalation_id: input.relatedEscalationId,
-    lead_id: input.linkedLeadId,
-    client_id: input.linkedClientId,
-    candidate_id: input.linkedCandidateId,
-    authorization_id: input.linkedAuthorizationId,
-    scheduling_item_id: input.linkedSchedulingItemId,
+    related_escalation_id: relEsc.uuid,
+    lead_id: lead.uuid,
+    lead_ref: lead.ref,
+    client_id: client.uuid,
+    client_ref: client.ref,
+    candidate_id: cand.uuid,
+    candidate_ref: cand.ref,
+    authorization_id: auth.uuid,
+    authorization_ref: auth.ref,
+    scheduling_item_id: sched.uuid,
+    scheduling_item_ref: sched.ref,
     source_module: input.sourceModule,
     metadata: input.metadata,
     centralreach_sync_status: "not_connected",
   } as any);
+  return { ok: !error, error: error?.message };
 }
 
 export async function updateTaskRow(id: UUID, patch: Record<string, unknown>) {
@@ -165,10 +186,15 @@ export async function insertEscalation(input: {
   linkedAuthorizationId?: string; linkedSchedulingItemId?: string;
   sourceModule?: string;
   metadata?: Record<string, unknown>;
-}) {
+}): Promise<{ ok: boolean; error?: string }> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
-  await supabase.from("state_operational_escalations").insert({
+  const lead   = normalizeLinkedRef(input.linkedLeadId);
+  const client = normalizeLinkedRef(input.linkedClientId);
+  const cand   = normalizeLinkedRef(input.linkedCandidateId);
+  const auth   = normalizeLinkedRef(input.linkedAuthorizationId);
+  const sched  = normalizeLinkedRef(input.linkedSchedulingItemId);
+  const { error } = await supabase.from("state_operational_escalations").insert({
     id: input.id,
     state_code: input.state,
     title: input.title,
@@ -180,15 +206,21 @@ export async function insertEscalation(input: {
     due_at: input.dueAt,
     created_by: uid,
     created_by_name: input.createdBy,
-    lead_id: input.linkedLeadId,
-    client_id: input.linkedClientId,
-    candidate_id: input.linkedCandidateId,
-    authorization_id: input.linkedAuthorizationId,
-    scheduling_item_id: input.linkedSchedulingItemId,
+    lead_id: lead.uuid,
+    lead_ref: lead.ref,
+    client_id: client.uuid,
+    client_ref: client.ref,
+    candidate_id: cand.uuid,
+    candidate_ref: cand.ref,
+    authorization_id: auth.uuid,
+    authorization_ref: auth.ref,
+    scheduling_item_id: sched.uuid,
+    scheduling_item_ref: sched.ref,
     source_module: input.sourceModule,
     metadata: input.metadata,
     centralreach_sync_status: "not_connected",
   } as any);
+  return { ok: !error, error: error?.message };
 }
 
 export async function updateEscalationRow(id: UUID, patch: Record<string, unknown>) {
@@ -276,8 +308,15 @@ export async function deliverHandoff(input: {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
 
+  const lead   = normalizeLinkedRef(input.linkedLeadId);
+  const client = normalizeLinkedRef(input.linkedClientId);
+  const cand   = normalizeLinkedRef(input.linkedCandidateId);
+  const auth   = normalizeLinkedRef(input.linkedAuthorizationId);
+  const sched  = normalizeLinkedRef(input.linkedSchedulingItemId);
+  const relEsc = normalizeLinkedRef(input.relatedEscalationId);
+
   // 1) Write the canonical handoff record.
-  const { data: handoff } = await supabase
+  const { data: handoff, error: handoffError } = await supabase
     .from("state_department_handoffs")
     .insert({
       state_code: input.state,
@@ -288,22 +327,25 @@ export async function deliverHandoff(input: {
       priority: input.priority ?? "medium",
       status: "open",
       created_by: uid,
-      related_escalation_id: input.relatedEscalationId ?? null,
-      client_id: input.linkedClientId ?? null,
-      lead_id: input.linkedLeadId ?? null,
-      candidate_id: input.linkedCandidateId ?? null,
-      authorization_id: input.linkedAuthorizationId ?? null,
-      scheduling_item_id: input.linkedSchedulingItemId ?? null,
+      related_escalation_id: relEsc.uuid,
+      client_id: client.uuid, client_ref: client.ref,
+      lead_id: lead.uuid, lead_ref: lead.ref,
+      candidate_id: cand.uuid, candidate_ref: cand.ref,
+      authorization_id: auth.uuid, authorization_ref: auth.ref,
+      scheduling_item_id: sched.uuid, scheduling_item_ref: sched.ref,
       source_module: input.sourceModule ?? null,
       metadata: input.metadata ?? null,
       centralreach_sync_status: "not_connected",
     } as any)
     .select("id")
     .maybeSingle();
+  if (handoffError) {
+    throw new Error(handoffError.message);
+  }
 
   // 2) Companion operational task in the receiving department so it lands
   //    in that department's queue instead of getting lost in a handoff table.
-  await insertTask({
+  const taskResult = await insertTask({
     state: input.state,
     title: `[Handoff from ${input.fromDepartment}] ${input.subject}`,
     description: input.body,
@@ -319,6 +361,9 @@ export async function deliverHandoff(input: {
     sourceModule: input.sourceModule ?? "state_handoff",
     metadata: input.metadata,
   });
+  if (!taskResult.ok) {
+    throw new Error(taskResult.error ?? "Handoff task could not be created");
+  }
 
   // 3) Activity feed entry so directors see the routing happen live.
   await insertActivity({

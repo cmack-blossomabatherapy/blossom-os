@@ -85,8 +85,8 @@ describe("State Director — Functionality Pass 1", () => {
       stateDirectorStore.reset();
     });
 
-    it("creates, updates, notes, and resolves an escalation", () => {
-      const e = stateDirectorStore.createEscalation({
+    it("creates, updates, notes, and resolves an escalation", async () => {
+      const { item: e } = await stateDirectorStore.createEscalation({
         state: "GA", title: "QA test escalation", department: "Operations",
         priority: "high", createdBy: "tester",
       });
@@ -106,9 +106,9 @@ describe("State Director — Functionality Pass 1", () => {
       expect(stateDirectorStore.snapshot().escalations.find((x) => x.id === e.id)?.status).toBe("open");
     });
 
-    it("creates, completes, and escalates a task with activity events", () => {
+    it("creates, completes, and escalates a task with activity events", async () => {
       const before = stateDirectorStore.snapshot().activity.length;
-      const t = stateDirectorStore.createTask({
+      const { item: t } = await stateDirectorStore.createTask({
         state: "VA", title: "Follow up with payer", department: "Authorizations",
         priority: "high", createdBy: "tester",
       });
@@ -117,7 +117,7 @@ describe("State Director — Functionality Pass 1", () => {
       stateDirectorStore.completeTask(t.id, "tester");
       expect(stateDirectorStore.snapshot().tasks.find((x) => x.id === t.id)?.status).toBe("completed");
 
-      const t2 = stateDirectorStore.createTask({
+      const { item: t2 } = await stateDirectorStore.createTask({
         state: "VA", title: "Escalate me", department: "Staffing",
         priority: "medium", createdBy: "tester",
       });
@@ -129,11 +129,11 @@ describe("State Director — Functionality Pass 1", () => {
       expect(snap.activity.length).toBeGreaterThan(before);
     });
 
-    it("persists new escalations per state and records activity", () => {
+    it("persists new escalations per state and records activity", async () => {
       stateDirectorStore.reset();
       const beforeEsc = stateDirectorStore.snapshot().escalations.filter((e) => e.state === "GA").length;
       const beforeActivity = stateDirectorStore.snapshot().activity.length;
-      stateDirectorStore.createEscalation({
+      await stateDirectorStore.createEscalation({
         state: "GA", title: "Counts", department: "Operations", createdBy: "tester",
       });
       const snap = stateDirectorStore.snapshot();

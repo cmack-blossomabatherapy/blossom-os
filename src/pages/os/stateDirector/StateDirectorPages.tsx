@@ -27,6 +27,7 @@ import {
 } from "@/lib/os/stateDirector/stateDirectorStore";
 import { StateOpsCentralReachSummaryBadge } from "@/components/stateDirector/StateOpsCentralReachBadge";
 import { DailyHealthNotesPanel } from "@/components/stateDirector/DailyHealthNotesPanel";
+import { LinkedContextPanel } from "@/components/stateDirector/LinkedContextPanel";
 
 /* --------------------------------- helpers -------------------------------- */
 
@@ -409,6 +410,7 @@ function EscalationDetail({ esc, onClose }: { esc: Escalation; onClose: () => vo
         </DialogHeader>
         <div className="space-y-4">
           {esc.description ? <p className="text-sm text-muted-foreground">{esc.description}</p> : null}
+          <LinkedContextPanel row={esc} />
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-muted-foreground">Status</label>
@@ -486,6 +488,7 @@ function TaskDetail({ task, onClose }: { task: OpsTask; onClose: () => void }) {
         </DialogHeader>
         <div className="space-y-4">
           {task.description ? <p className="text-sm text-muted-foreground">{task.description}</p> : null}
+          <LinkedContextPanel row={task} />
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-muted-foreground">Status</label>

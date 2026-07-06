@@ -163,13 +163,13 @@ export const stateDirectorStore = {
 
   /* ------------------------------- escalations ---------------------------- */
 
-  createEscalation(input: {
+  async createEscalation(input: {
     state: StateCode; title: string; description?: string; department: Department;
     priority?: Priority; assignedTo?: string; dueAt?: string; createdBy: string;
     linkedClientId?: string; linkedLeadId?: string; linkedCandidateId?: string;
     linkedAuthorizationId?: string; linkedSchedulingItemId?: string;
     sourceModule?: string; metadata?: Record<string, unknown>;
-  }) {
+  }): Promise<{ ok: boolean; error?: string; item: Escalation }> {
     let created: Escalation | null = null;
     mutate((s) => {
       const esc: Escalation = {
@@ -193,14 +193,14 @@ export const stateDirectorStore = {
         linkedSchedulingItemId: input.linkedSchedulingItemId,
         sourceModule: input.sourceModule,
         metadata: input.metadata,
+        pending: true,
       };
       s.escalations.unshift(esc);
       s.activity.unshift(record("escalation_created", `Escalation opened — ${esc.title}`, input.createdBy, esc.state, esc.id));
       recomputeMetrics(s);
       created = esc;
     });
-    // Fire-and-forget Supabase persistence.
-    void sbInsertEscalation({
+    const result = await sbInsertEscalation({
       id: created!.id,
       state: created!.state, title: created!.title,
       description: created!.description, department: created!.department,
@@ -213,16 +213,27 @@ export const stateDirectorStore = {
       sourceModule: created!.sourceModule ?? "state_director_store",
       metadata: created!.metadata,
     });
-    void sbInsertActivity({
-      kind: "escalation_created",
-      message: `Escalation opened — ${created!.title}`,
-      actor: input.createdBy,
-      state: created!.state,
-      relatedType: "escalation",
-      relatedId: created!.id,
-      metadata: created!.metadata,
+    mutate((s) => {
+      const i = s.escalations.findIndex((e) => e.id === created!.id);
+      if (i < 0) return;
+      s.escalations[i] = {
+        ...s.escalations[i],
+        pending: !result.ok,
+        persistError: result.ok ? undefined : (result.error ?? "Could not save escalation"),
+      };
     });
-    return created!;
+    if (result.ok) {
+      void sbInsertActivity({
+        kind: "escalation_created",
+        message: `Escalation opened — ${created!.title}`,
+        actor: input.createdBy,
+        state: created!.state,
+        relatedType: "escalation",
+        relatedId: created!.id,
+        metadata: created!.metadata,
+      });
+    }
+    return { ok: result.ok, error: result.error, item: created! };
   },
 
   updateEscalation(id: string, patch: Partial<Omit<Escalation, "id" | "createdAt" | "notes">>, actor: string) {
@@ -278,14 +289,14 @@ export const stateDirectorStore = {
 
   /* ---------------------------------- tasks ------------------------------- */
 
-  createTask(input: {
+  async createTask(input: {
     state: StateCode; title: string; description?: string; department: Department;
     owner?: string; priority?: Priority; dueAt?: string; createdBy: string;
     relatedEscalationId?: string;
     linkedClientId?: string; linkedLeadId?: string; linkedCandidateId?: string;
     linkedAuthorizationId?: string; linkedSchedulingItemId?: string;
     sourceModule?: string; metadata?: Record<string, unknown>;
-  }) {
+  }): Promise<{ ok: boolean; error?: string; item: OpsTask }> {
     let created: OpsTask | null = null;
     mutate((s) => {
       const t: OpsTask = {
@@ -310,13 +321,14 @@ export const stateDirectorStore = {
         linkedSchedulingItemId: input.linkedSchedulingItemId,
         sourceModule: input.sourceModule,
         metadata: input.metadata,
+        pending: true,
       };
       s.tasks.unshift(t);
       s.activity.unshift(record("task_created", `Task created — ${t.title}`, input.createdBy, t.state, t.id));
       recomputeMetrics(s);
       created = t;
     });
-    void sbInsertTask({
+    const result = await sbInsertTask({
       id: created!.id,
       state: created!.state, title: created!.title,
       description: created!.description, department: created!.department,
@@ -330,16 +342,27 @@ export const stateDirectorStore = {
       sourceModule: created!.sourceModule ?? "state_director_store",
       metadata: created!.metadata,
     });
-    void sbInsertActivity({
-      kind: "task_created",
-      message: `Task created — ${created!.title}`,
-      actor: input.createdBy,
-      state: created!.state,
-      relatedType: "task",
-      relatedId: created!.id,
-      metadata: created!.metadata,
+    mutate((s) => {
+      const i = s.tasks.findIndex((t) => t.id === created!.id);
+      if (i < 0) return;
+      s.tasks[i] = {
+        ...s.tasks[i],
+        pending: !result.ok,
+        persistError: result.ok ? undefined : (result.error ?? "Could not save task"),
+      };
     });
-    return created!;
+    if (result.ok) {
+      void sbInsertActivity({
+        kind: "task_created",
+        message: `Task created — ${created!.title}`,
+        actor: input.createdBy,
+        state: created!.state,
+        relatedType: "task",
+        relatedId: created!.id,
+        metadata: created!.metadata,
+      });
+    }
+    return { ok: result.ok, error: result.error, item: created! };
   },
 
   updateTask(id: string, patch: Partial<Omit<OpsTask, "id" | "createdAt" | "notes">>, actor: string) {
@@ -393,6 +416,11 @@ export const stateDirectorStore = {
         linkedClientId: t.linkedClientId,
         linkedLeadId: t.linkedLeadId,
         linkedCandidateId: t.linkedCandidateId,
+        linkedAuthorizationId: t.linkedAuthorizationId,
+        linkedSchedulingItemId: t.linkedSchedulingItemId,
+        sourceModule: t.sourceModule,
+        metadata: t.metadata,
+        centralreachSyncStatus: t.centralreachSyncStatus,
       };
       s.escalations.unshift(esc);
       s.tasks[i] = { ...t, status: "escalated", relatedEscalationId: esc.id, updatedAt: nowIso() };
@@ -410,7 +438,10 @@ export const stateDirectorStore = {
         linkedClientId: created.linkedClientId,
         linkedLeadId: created.linkedLeadId,
         linkedCandidateId: created.linkedCandidateId,
-        sourceModule: "state_director_store",
+        linkedAuthorizationId: created.linkedAuthorizationId,
+        linkedSchedulingItemId: created.linkedSchedulingItemId,
+        sourceModule: created.sourceModule ?? "state_director_store",
+        metadata: created.metadata,
       });
       void sbInsertActivity({
         kind: "task_escalated",
@@ -419,6 +450,7 @@ export const stateDirectorStore = {
         state: created.state,
         relatedType: "escalation",
         relatedId: created.id,
+        metadata: created.metadata,
       });
     }
     return created!;
