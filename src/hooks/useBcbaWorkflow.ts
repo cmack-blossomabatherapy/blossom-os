@@ -331,7 +331,7 @@ export function useBcbaWorkflow(scopeInput?: BcbaWorkflowScope | string | null) 
     } finally {
       setLoading(false);
     }
-  }, [applyScope, applyDate, broad, clientId, centralreachClientId, clientNameKey, rowLimit, statusesKey]);
+  }, [applyScope, applyDate, broad, clientId, centralreachClientId, clientNameKey, bcbaId, scope.bcbaName, rowLimit, statusesKey]);
 
   useEffect(() => {
     void refresh();
