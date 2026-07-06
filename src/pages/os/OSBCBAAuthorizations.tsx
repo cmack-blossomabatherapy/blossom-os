@@ -672,6 +672,11 @@ export default function OSBCBAAuthorizations() {
                   </div>
                 </PanelSection>
               </div>
+              <BcbaClientTimeline
+                title="Client activity"
+                scope={{ clientName: activeRow.a.clientName, broad: false, limit: 100 }}
+                className="mt-6"
+              />
             </>
           )}
         </SheetContent>
