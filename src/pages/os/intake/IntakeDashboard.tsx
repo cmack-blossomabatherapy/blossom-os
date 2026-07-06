@@ -224,6 +224,7 @@ export default function IntakeDashboard() {
         { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
+      <StateDirectorSnapshotBanner ownerDepartment="Intake" sourceModule="intake_dashboard" />
       {/* Intake Pulse */}
       <section>
         <SectionHeader icon={Zap} tone="primary" title="Intake Pulse" subtitle="Live snapshot of where families are right now — tap a tile to drill in." />
