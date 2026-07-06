@@ -479,6 +479,10 @@ interface ReadinessRow {
 }
 
 function rowToTrainee(row: ReadinessRow): RBTTrainee {
+  const flagsAny = (row.flags ?? {}) as Record<string, unknown> & RBTTrainee["flags"];
+  const coachingNotes = Array.isArray((flagsAny as { coachingNotes?: unknown }).coachingNotes)
+    ? ((flagsAny as { coachingNotes: CoachingNote[] }).coachingNotes)
+    : undefined;
   return {
     id: row.id,
     name: row.trainee_name,
@@ -498,6 +502,7 @@ function rowToTrainee(row: ReadinessRow): RBTTrainee {
     signoffs: row.signoffs ?? {},
     moduleProgress: row.module_progress ?? undefined,
     flags: row.flags ?? undefined,
+    coachingNotes,
   };
 }
 
