@@ -597,6 +597,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/authorizations",
     "/ops/scheduling",
     "/qa-team",
+    "/phone",
     "/training",
     "/resource-library",
     "/reports",
