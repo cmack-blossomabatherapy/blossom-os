@@ -318,13 +318,15 @@ export function matchKeysForAssignment(a: CMAssignmentLike): CaseManagerClientMa
  * Prefers CentralReach client id (via `auth.metaById`), then falls
  * back to normalized clientName. Returns null when nothing matches.
  */
-export function findAuthorizationForAssignment(
+export function findAuthorizationForAssignment<
+  T extends { id: string; clientName?: string | null },
+>(
   auth: {
-    items: Array<{ id: string; clientName?: string | null } & Record<string, unknown>>;
+    items: T[];
     metaById?: Map<string, { centralreachClientId: string | null }>;
   },
   assignment: CMAssignmentLike,
-) {
+): T | null {
   const keys = matchKeysForAssignment(assignment);
   // 1) CentralReach client id via overlay meta.
   if (keys.centralReachClientId && auth.metaById) {
