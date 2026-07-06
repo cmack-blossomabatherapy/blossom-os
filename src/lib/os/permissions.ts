@@ -41,6 +41,7 @@ export type OSRole =
   | "systems_admin"
   | "executive"
   | "coo"
+  | "ceo"
   | "director_of_operations"
   | "operations_manager"
   | "marketing_growth_lead"
@@ -537,6 +538,7 @@ const ROLE_ALIASES: Record<
   systems_admin: "super_admin",
   executive: "executive_leadership",
   coo: "executive_leadership",
+  ceo: "executive_leadership",
   director_of_operations: "operations_leadership",
   operations_manager: "operations_leadership",
   marketing_growth_lead: "marketing_team",

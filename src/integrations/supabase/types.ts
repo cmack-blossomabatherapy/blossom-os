@@ -8592,6 +8592,414 @@ export type Database = {
           },
         ]
       }
+      executive_activity_log: {
+        Row: {
+          action: string
+          actor_name: string | null
+          actor_user_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          metadata: Json
+          summary: string | null
+        }
+        Insert: {
+          action: string
+          actor_name?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json
+          summary?: string | null
+        }
+        Update: {
+          action?: string
+          actor_name?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json
+          summary?: string | null
+        }
+        Relationships: []
+      }
+      executive_briefings: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          id: string
+          metadata: Json
+          period_end: string | null
+          period_start: string | null
+          state_code: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          id?: string
+          metadata?: Json
+          period_end?: string | null
+          period_start?: string | null
+          state_code?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          id?: string
+          metadata?: Json
+          period_end?: string | null
+          period_start?: string | null
+          state_code?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      executive_decisions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          decision_body: string | null
+          decision_date: string
+          department: string | null
+          id: string
+          metadata: Json
+          owner_user_id: string | null
+          related_route: string | null
+          state_code: string | null
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          decision_body?: string | null
+          decision_date?: string
+          department?: string | null
+          id?: string
+          metadata?: Json
+          owner_user_id?: string | null
+          related_route?: string | null
+          state_code?: string | null
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          decision_body?: string | null
+          decision_date?: string
+          department?: string | null
+          id?: string
+          metadata?: Json
+          owner_user_id?: string | null
+          related_route?: string | null
+          state_code?: string | null
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      executive_kpi_snapshots: {
+        Row: {
+          captured_by: string | null
+          created_at: string
+          department: string | null
+          id: string
+          metadata: Json
+          metric_key: string
+          metric_label: string | null
+          metric_value: number | null
+          period_end: string | null
+          period_start: string | null
+          source: string | null
+          state_code: string | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          captured_by?: string | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          metadata?: Json
+          metric_key: string
+          metric_label?: string | null
+          metric_value?: number | null
+          period_end?: string | null
+          period_start?: string | null
+          source?: string | null
+          state_code?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          captured_by?: string | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          metadata?: Json
+          metric_key?: string
+          metric_label?: string | null
+          metric_value?: number | null
+          period_end?: string | null
+          period_start?: string | null
+          source?: string | null
+          state_code?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      executive_risks: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          likelihood: string
+          metadata: Json
+          mitigation_plan: string | null
+          owner_user_id: string | null
+          severity: string
+          state_code: string | null
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          likelihood?: string
+          metadata?: Json
+          mitigation_plan?: string | null
+          owner_user_id?: string | null
+          severity?: string
+          state_code?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          likelihood?: string
+          metadata?: Json
+          mitigation_plan?: string | null
+          owner_user_id?: string | null
+          severity?: string
+          state_code?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      executive_saved_views: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          is_default: boolean
+          is_favorite: boolean
+          last_used_at: string | null
+          metadata: Json
+          name: string
+          scope: string
+          scope_key: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          is_default?: boolean
+          is_favorite?: boolean
+          last_used_at?: string | null
+          metadata?: Json
+          name: string
+          scope: string
+          scope_key?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          is_default?: boolean
+          is_favorite?: boolean
+          last_used_at?: string | null
+          metadata?: Json
+          name?: string
+          scope?: string
+          scope_key?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      executive_updates: {
+        Row: {
+          audience: string
+          body: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          id: string
+          metadata: Json
+          pinned: boolean
+          published_at: string | null
+          state_code: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          id?: string
+          metadata?: Json
+          pinned?: boolean
+          published_at?: string | null
+          state_code?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          id?: string
+          metadata?: Json
+          pinned?: boolean
+          published_at?: string | null
+          state_code?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      executive_work_items: {
+        Row: {
+          category: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          metadata: Json
+          owner_name: string | null
+          owner_user_id: string | null
+          priority: string
+          related_record_id: string | null
+          related_record_type: string | null
+          related_route: string | null
+          source_page: string | null
+          source_system: string | null
+          state_code: string | null
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          metadata?: Json
+          owner_name?: string | null
+          owner_user_id?: string | null
+          priority?: string
+          related_record_id?: string | null
+          related_record_type?: string | null
+          related_route?: string | null
+          source_page?: string | null
+          source_system?: string | null
+          state_code?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          metadata?: Json
+          owner_name?: string | null
+          owner_user_id?: string | null
+          priority?: string
+          related_record_id?: string | null
+          related_record_type?: string | null
+          related_route?: string | null
+          source_page?: string | null
+          source_system?: string | null
+          state_code?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       external_identity_links: {
         Row: {
           blossom_id: string | null
@@ -17058,6 +17466,30 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_report_recents: {
+        Row: {
+          id: string
+          metadata: Json
+          opened_at: string
+          report_key: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          metadata?: Json
+          opened_at?: string
+          report_key: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          metadata?: Json
+          opened_at?: string
+          report_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sop_documents: {
         Row: {
           created_at: string
@@ -19582,6 +20014,7 @@ export type Database = {
       is_cm_oversight: { Args: never; Returns: boolean }
       is_employee_self: { Args: { _employee_id: string }; Returns: boolean }
       is_hr_operator: { Args: { _user_id: string }; Returns: boolean }
+      is_leadership: { Args: { _user_id: string }; Returns: boolean }
       is_marketing_user: { Args: { _uid: string }; Returns: boolean }
       is_platform_admin: { Args: { _uid: string }; Returns: boolean }
       is_vault_admin: { Args: { _user_id: string }; Returns: boolean }
