@@ -151,9 +151,37 @@ export function useClinicalDirectorActions() {
     return data;
   }, [currentUser]);
 
+  const listSavedViews = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("clinical_saved_views")
+      .select("*")
+      .order("updated_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  }, []);
+
+  const updateSavedView = useCallback(async (
+    id: string,
+    patch: { name?: string; filters?: Record<string, unknown>; is_shared?: boolean },
+  ) => {
+    const { data, error } = await supabase
+      .from("clinical_saved_views")
+      .update(patch as never)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return data;
+  }, []);
+
+  const deleteSavedView = useCallback(async (id: string) => {
+    const { error } = await supabase.from("clinical_saved_views").delete().eq("id", id);
+    if (error) throw error;
+  }, []);
+
   return {
     createWorkItem, addNote, assignOwner, changePriority,
     markReviewed, escalate, resolve, reopen, archive,
-    saveView,
+    saveView, listSavedViews, updateSavedView, deleteSavedView,
   };
 }
