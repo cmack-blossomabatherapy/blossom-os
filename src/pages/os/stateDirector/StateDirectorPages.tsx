@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   MapPin, AlertTriangle, ListTodo, Plus, Search, Filter, X,
   Activity, Users, Briefcase, ShieldCheck, Calendar, Stethoscope, Phone,
-  Flame, ArrowUpRight, Check, RotateCw, Sparkles,
+  Flame, ArrowUpRight, Check, RotateCw, Sparkles, Gauge,
   type LucideIcon,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
@@ -25,6 +25,9 @@ import {
   type Escalation, type OpsTask, type Priority, type Department, type StateCode,
   type EscalationStatus, type TaskStatus,
 } from "@/lib/os/stateDirector/stateDirectorStore";
+import { refreshStateMetrics } from "@/lib/os/stateDirector/stateDirectorStore";
+import { upsertStateMetric } from "@/lib/os/stateDirector/stateOperationsService";
+import { toast } from "sonner";
 import { StateOpsCentralReachSummaryBadge } from "@/components/stateDirector/StateOpsCentralReachBadge";
 import { DailyHealthNotesPanel } from "@/components/stateDirector/DailyHealthNotesPanel";
 import { LinkedContextPanel } from "@/components/stateDirector/LinkedContextPanel";
