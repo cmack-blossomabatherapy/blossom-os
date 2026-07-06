@@ -8,6 +8,9 @@
  * cache is NOT the source of truth — a full refresh always re-hydrates
  * from Supabase.
  *
+ * Cache is keyed by (journeySlug, trackId, moduleId) so the same
+ * moduleId under different tracks/journeys never collides.
+ *
  * academyData modules continue to use `academyData.getProgress` and
  * `markTrainingStarted` / `markTrainingComplete`.
  */
@@ -33,9 +36,20 @@ export interface AcademyRuntimeRecord {
   lastActiveAt?: string;
 }
 
-const CACHE_KEY = "blossom.academy.runtime.cache.v2";
+const CACHE_KEY = "blossom.academy.runtime.cache.v3";
 
 type Store = Record<string, AcademyRuntimeRecord>;
+
+/**
+ * Stable cache key. `journeySlug + trackId + moduleId` so the same
+ * moduleId under different tracks/journeys does not collide. Callers
+ * without a track pass `null` — normalized to the string "default".
+ */
+export function runtimeKey(moduleId: string, ctx?: Partial<RuntimeContext> | null): string {
+  const journey = ctx?.journeySlug || "academy";
+  const track = ctx?.trackId || "default";
+  return `${journey}::${track}::${moduleId}`;
+}
 
 function readCache(): Store {
   if (typeof window === "undefined") return {};
@@ -76,6 +90,11 @@ function rowToRecord(row: any): AcademyRuntimeRecord {
   };
 }
 
+/**
+ * Fetch the single row that matches (user_id, journey_slug, track_id, module_id).
+ * We filter by track_id explicitly (including NULL) so multiple tracks in the
+ * same journey never return an ambiguous row.
+ */
 async function fetchRuntimeRow(userId: string, moduleId: string, ctx?: RuntimeContext) {
   try {
     let q = supabase
@@ -84,8 +103,17 @@ async function fetchRuntimeRow(userId: string, moduleId: string, ctx?: RuntimeCo
       .eq("user_id", userId)
       .eq("module_id", moduleId);
     if (ctx?.journeySlug) q = q.eq("journey_slug", ctx.journeySlug);
-    const { data } = await q.maybeSingle();
-    return data ?? null;
+    if (ctx && "trackId" in ctx) {
+      if (ctx.trackId == null || ctx.trackId === "") {
+        q = q.is("track_id", null);
+      } else {
+        q = q.eq("track_id", ctx.trackId);
+      }
+    }
+    // Use limit(1) instead of maybeSingle so leftover legacy rows never throw.
+    const { data } = await q.order("updated_at", { ascending: false }).limit(1);
+    const rows = (data ?? []) as any[];
+    return rows[0] ?? null;
   } catch { return null; }
 }
 
@@ -123,8 +151,7 @@ async function upsertRuntimeRow(
 }
 
 /**
- * Hydrate cache for a given (moduleId, ctx) from Supabase. Safe to call
- * repeatedly; no-op if hydration already produced a record.
+ * Hydrate cache for a given (moduleId, ctx) from Supabase.
  */
 export async function hydrateRuntime(moduleId: string, ctx: RuntimeContext): Promise<AcademyRuntimeRecord | null> {
   const uid = await currentUserId();
@@ -132,27 +159,27 @@ export async function hydrateRuntime(moduleId: string, ctx: RuntimeContext): Pro
   const row = await fetchRuntimeRow(uid, moduleId, ctx);
   if (!row) return null;
   const rec = rowToRecord(row);
-  writeCache({ ...memory, [moduleId]: rec });
+  writeCache({ ...memory, [runtimeKey(moduleId, ctx)]: rec });
   return rec;
 }
 
-function pushLocal(moduleId: string, rec: AcademyRuntimeRecord) {
-  writeCache({ ...memory, [moduleId]: rec });
+function pushLocal(moduleId: string, ctx: RuntimeContext | undefined, rec: AcademyRuntimeRecord) {
+  writeCache({ ...memory, [runtimeKey(moduleId, ctx)]: rec });
 }
 
-export function getRuntimeRecord(moduleId: string): AcademyRuntimeRecord {
-  return memory[moduleId] ?? {
+export function getRuntimeRecord(moduleId: string, ctx?: RuntimeContext): AcademyRuntimeRecord {
+  return memory[runtimeKey(moduleId, ctx)] ?? {
     moduleId, status: "not_started", elapsedSeconds: 0,
   };
 }
 
-export function getRuntimeStatus(moduleId: string): AcademyRuntimeStatus {
-  return getRuntimeRecord(moduleId).status;
+export function getRuntimeStatus(moduleId: string, ctx?: RuntimeContext): AcademyRuntimeStatus {
+  return getRuntimeRecord(moduleId, ctx).status;
 }
 
 export async function startRuntime(moduleId: string, ctx: RuntimeContext) {
   const now = new Date().toISOString();
-  const prev = getRuntimeRecord(moduleId);
+  const prev = getRuntimeRecord(moduleId, ctx);
   if (prev.status === "completed") return;
   const next: AcademyRuntimeRecord = {
     ...prev,
@@ -161,7 +188,7 @@ export async function startRuntime(moduleId: string, ctx: RuntimeContext) {
     startedAt: prev.startedAt ?? now,
     lastActiveAt: now,
   };
-  pushLocal(moduleId, next);
+  pushLocal(moduleId, ctx, next);
   const uid = await currentUserId();
   if (uid) {
     await upsertRuntimeRow(uid, moduleId, ctx, {
@@ -181,23 +208,23 @@ export async function startRuntime(moduleId: string, ctx: RuntimeContext) {
   }
 }
 
-/**
- * Increment elapsed time in the local cache. Callers throttle Supabase
- * persistence with `persistRuntimeElapsed` — we do not write on every tick.
- */
-export function tickRuntime(moduleId: string, deltaSeconds: number) {
-  const prev = getRuntimeRecord(moduleId);
+export function tickRuntime(moduleId: string, deltaSecondsOrCtx: number | RuntimeContext, maybeCtx?: RuntimeContext) {
+  // Backwards compat: legacy callers passed (moduleId, deltaSeconds). New
+  // callers can pass (moduleId, deltaSeconds, ctx) or (moduleId, ctx, delta) —
+  // we accept both because ctx is optional in the on-disk cache lookup.
+  const delta = typeof deltaSecondsOrCtx === "number" ? deltaSecondsOrCtx : 0;
+  const ctx = typeof deltaSecondsOrCtx === "number" ? maybeCtx : deltaSecondsOrCtx;
+  const prev = getRuntimeRecord(moduleId, ctx);
   if (prev.status !== "in_progress") return;
-  pushLocal(moduleId, {
+  pushLocal(moduleId, ctx, {
     ...prev,
-    elapsedSeconds: prev.elapsedSeconds + Math.max(0, Math.floor(deltaSeconds)),
+    elapsedSeconds: prev.elapsedSeconds + Math.max(0, Math.floor(delta)),
     lastActiveAt: new Date().toISOString(),
   });
 }
 
-/** Persist the current cached elapsed value to Supabase (throttled by caller). */
 export async function persistRuntimeElapsed(moduleId: string, ctx: RuntimeContext) {
-  const rec = getRuntimeRecord(moduleId);
+  const rec = getRuntimeRecord(moduleId, ctx);
   const uid = await currentUserId();
   if (!uid) return;
   await upsertRuntimeRow(uid, moduleId, ctx, {
@@ -210,7 +237,7 @@ export async function persistRuntimeElapsed(moduleId: string, ctx: RuntimeContex
 
 export async function completeRuntime(moduleId: string, ctx: RuntimeContext) {
   const now = new Date().toISOString();
-  const prev = getRuntimeRecord(moduleId);
+  const prev = getRuntimeRecord(moduleId, ctx);
   const next: AcademyRuntimeRecord = {
     ...prev,
     moduleId,
@@ -219,7 +246,7 @@ export async function completeRuntime(moduleId: string, ctx: RuntimeContext) {
     completedAt: now,
     lastActiveAt: now,
   };
-  pushLocal(moduleId, next);
+  pushLocal(moduleId, ctx, next);
   const uid = await currentUserId();
   if (uid) {
     await upsertRuntimeRow(uid, moduleId, ctx, {
@@ -243,8 +270,9 @@ export async function completeRuntime(moduleId: string, ctx: RuntimeContext) {
 }
 
 export async function resetRuntime(moduleId: string, ctx?: RuntimeContext) {
-  if (memory[moduleId]) {
-    const next = { ...memory }; delete next[moduleId]; writeCache(next);
+  const key = runtimeKey(moduleId, ctx);
+  if (memory[key]) {
+    const next = { ...memory }; delete next[key]; writeCache(next);
   }
   const uid = await currentUserId();
   if (!uid || !ctx) return;
@@ -264,10 +292,10 @@ export function useRuntimeRecord(moduleId: string, ctx?: RuntimeContext): Academ
       if (cancelled || !uid) return;
       const row = await fetchRuntimeRow(uid, moduleId, ctx);
       if (cancelled || !row) return;
-      pushLocal(moduleId, rowToRecord(row));
+      pushLocal(moduleId, ctx, rowToRecord(row));
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleId, ctx?.journeySlug, ctx?.trackId, ctx?.sourceModuleId, ctx?.sourceKind]);
-  return store[moduleId] ?? { moduleId, status: "not_started", elapsedSeconds: 0 };
+  return store[runtimeKey(moduleId, ctx)] ?? { moduleId, status: "not_started", elapsedSeconds: 0 };
 }
