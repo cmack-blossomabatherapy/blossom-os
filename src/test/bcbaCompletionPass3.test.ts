@@ -4,11 +4,22 @@ import path from "node:path";
 
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
 
+// Optimization: scan only BCBA-related migrations rather than joining every migration file.
+function readBcbaMigrations(): string {
+  const dir = "supabase/migrations";
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".sql"));
+  const parts: string[] = [];
+  for (const f of files) {
+    const p = path.join(dir, f);
+    const src = fs.readFileSync(p, "utf8");
+    if (/bcba_|BCBA/.test(src)) parts.push(src);
+  }
+  return parts.join("\n");
+}
+
 describe("BCBA Pass 3 — consolidated hardening", () => {
   it("migration adds centralreach_sync_status to all five BCBA workflow tables", () => {
-    const dir = "supabase/migrations";
-    const files = fs.readdirSync(dir).filter((f) => f.endsWith(".sql"));
-    const combined = files.map((f) => fs.readFileSync(path.join(dir, f), "utf8")).join("\n");
+    const combined = readBcbaMigrations();
     for (const t of [
       "bcba_action_tasks",
       "bcba_supervision_logs",
@@ -54,9 +65,7 @@ describe("BCBA Pass 3 — consolidated hardening", () => {
   });
 
   it("BCBA workflow RLS remains scoped (Pass 2 policies still in place)", () => {
-    const dir = "supabase/migrations";
-    const files = fs.readdirSync(dir).filter((f) => f.endsWith(".sql"));
-    const combined = files.map((f) => fs.readFileSync(path.join(dir, f), "utf8")).join("\n");
+    const combined = readBcbaMigrations();
     expect(combined).toMatch(/bcba_workflow_leadership_can_read/);
     expect(combined).toMatch(/BCBA action tasks scoped read/);
   });
