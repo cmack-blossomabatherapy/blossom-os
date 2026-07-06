@@ -10,12 +10,12 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   RBT_PATHS, RBT_OWNERSHIP, pathStats,
   type RBTPath, type RBTPathId, type RBTModule, type ModuleType, type SignoffItem,
 } from "@/lib/training/rbtAcademy";
+import { useMyRbtAcademyProgress } from "@/hooks/useMyRbtAcademyProgress";
 import {
   useRBTResources, getResourcesForModule, addResource, updateResource,
   removeResource, RBT_RESOURCE_TYPES,
@@ -44,40 +44,40 @@ export default function OSRBTTrainingAcademy() {
   const name = firstName((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0]);
   const isAdmin = roles.some((r) => TRAINING_ADMIN_ROLES.includes(r as never));
 
-  // The signed-in RBT's assigned path is read from public.rbt_readiness_records.
-  // Admins get a preview control below to switch paths without changing anyone
-  // else's assignment. Regular RBTs cannot change their own assigned path here.
-  const [assignedPath, setAssignedPath] = useState<{ id: RBTPathId; source: "readiness" | "default" | "preview" }>(
-    { id: "certified_no_experience", source: "default" },
-  );
+  // Admin preview override for the path selector below. Regular RBTs
+  // cannot change their own assigned path from this page.
   const [previewId, setPreviewId] = useState<RBTPathId | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!user?.id) return;
-      const { data, error } = await supabase
-        .from("rbt_readiness_records")
-        .select("path_id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (cancelled || error || !data) return;
-      if (data.path_id) {
-        setAssignedPath({ id: data.path_id as RBTPathId, source: "readiness" });
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [user?.id]);
-
-  const assignedId: RBTPathId =
-    isAdmin && previewId ? previewId : assignedPath.id;
   const [tab, setTab] = useState<TabKey>("journey");
 
-  const path = useMemo(
-    () => RBT_PATHS.find((p) => p.id === assignedId) ?? RBT_PATHS[0],
-    [assignedId],
-  );
-  const stats = useMemo(() => pathStats(path), [path]);
+  // Durable, per-user merged progress: readiness + academy_runtime_progress
+  // overlaid on the static RBT_PATHS shape.
+  const merged = useMyRbtAcademyProgress({ previewPathId: previewId, isAdmin });
+
+  // Setup state for regular RBTs with no readiness assignment yet.
+  if (merged.state === "unassigned") {
+    return (
+      <OSShell>
+        <UnassignedSetupState name={name} />
+      </OSShell>
+    );
+  }
+
+  // Loading — render a soft skeleton rather than fake numbers.
+  if (merged.state === "loading" || !merged.path || !merged.stats) {
+    return (
+      <OSShell>
+        <div className="mx-auto w-full max-w-4xl space-y-4 px-4 pb-24 pt-8 md:px-6">
+          <div className="h-6 w-40 animate-pulse rounded-full bg-muted" />
+          <div className="h-40 animate-pulse rounded-2xl bg-muted" />
+          <div className="h-24 animate-pulse rounded-2xl bg-muted" />
+        </div>
+      </OSShell>
+    );
+  }
+
+  const path = merged.path;
+  const stats = merged.stats;
+  const assignedId = merged.assignedPathId as RBTPathId;
 
   return (
     <OSShell>
