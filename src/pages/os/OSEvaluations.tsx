@@ -48,11 +48,13 @@ function daysFromNow(date: string | null) {
 
 export default function OSEvaluations() {
   const { activeState, role } = useOSRole();
+  const isClinicalDirector = role === "clinical_director";
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "overdue" | "upcoming" | "in_progress" | "complete">("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -72,7 +74,7 @@ export default function OSEvaluations() {
           .limit(2000),
       ]);
       if (!alive) return;
-      const isClinicalOnly = role === "qa_team" || role === "bcba";
+      const isClinicalOnly = role === "qa_team" || role === "bcba" || role === "clinical_director";
       const filtered = (ed ?? []).filter((e: EmployeeRow) => {
         if (activeState && e.state !== activeState) return false;
         if (isClinicalOnly) {
@@ -135,6 +137,21 @@ export default function OSEvaluations() {
   return (
     <OSShell>
         <ClinicalDirectorSection sourceType="evaluation" title="Clinical Director workflow" />
+        {isClinicalDirector && selectedEmployee && (
+          <ClinicalDirectorSection
+            sourceType="evaluation"
+            sourceRecordId={selectedEmployee.id}
+            bcbaName={`${selectedEmployee.first_name} ${selectedEmployee.last_name}`}
+            state={selectedEmployee.state}
+            defaultTitle={`Clinical evaluation follow-up: ${selectedEmployee.first_name} ${selectedEmployee.last_name}`}
+            metadata={{
+              role: selectedEmployee.job_title,
+              status: selectedEmployee.status,
+              reviewer: null,
+              dueDate: selectedEmployee.next_review_date,
+            }}
+          />
+        )}
       <header className="os-rise relative overflow-hidden rounded-[28px] border border-white/70 bg-gradient-to-br from-[hsl(265_100%_98%)] via-white to-[hsl(220_100%_98%)] p-7 shadow-[0_30px_70px_-40px_hsl(265_60%_50%/0.4)]">
         <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[hsl(265_70%_70%/0.25)] blur-3xl" />
         <div className="relative">
