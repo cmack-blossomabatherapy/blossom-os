@@ -134,6 +134,8 @@ export default function OSEvaluations() {
     });
   }, [enriched, search, filter]);
 
+  const selectedEmployee = selectedId ? employees.find((e) => e.id === selectedId) ?? null : null;
+
   return (
     <OSShell>
         <ClinicalDirectorSection sourceType="evaluation" title="Clinical Director workflow" />
