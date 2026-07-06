@@ -3,6 +3,7 @@ import { OpsPage, OpsCard, HealthPill, EmptyRow, AIPrompt, type HealthTone } fro
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
+import { WorkQueueSignalsCard } from "@/components/operations/WorkQueueSignalsCard";
 import { daysUntil } from "@/data/authorizations";
 import { Sparkles, ArrowRight, TrendingUp, TrendingDown, AlertTriangle, GitBranch, Activity, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
