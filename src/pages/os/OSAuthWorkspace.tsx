@@ -23,6 +23,7 @@ import {
 } from "@/components/authorizations/AuthorizationActionUI";
 import { AuthPromptDialog } from "@/components/authorizations/AuthPromptDialog";
 import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
+import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
 import {
   useAuthorizationActions,
   type EnsureOverlayInput,
@@ -587,6 +588,7 @@ export default function OSAuthWorkspace() {
           <SendToStateSupportButton fromDepartment="Authorizations" />
         </div>
       </header>
+      <StateDirectorSnapshotBanner ownerDepartment="Authorizations" sourceModule="auth_workspace" />
 
       {/* live data status banner */}
       {(loading || error || (!liveItems.length && !loading)) && (
