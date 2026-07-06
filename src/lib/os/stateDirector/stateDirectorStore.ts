@@ -245,7 +245,9 @@ export const stateDirectorStore = {
         relatedType: "escalation",
         relatedId: created!.id,
         metadata: created!.metadata,
-      });
+      })
+        .then((r) => { if (!r.ok) reportSaveFailure("log escalation created", r.error ?? "Unknown error"); })
+        .catch((err) => reportSaveFailure("log escalation created", err));
     }
     return { ok: result.ok, error: result.error, item: created! };
   },
@@ -397,7 +399,9 @@ export const stateDirectorStore = {
         relatedType: "task",
         relatedId: created!.id,
         metadata: created!.metadata,
-      });
+      })
+        .then((r) => { if (!r.ok) reportSaveFailure("log task created", r.error ?? "Unknown error"); })
+        .catch((err) => reportSaveFailure("log task created", err));
     }
     return { ok: result.ok, error: result.error, item: created! };
   },
