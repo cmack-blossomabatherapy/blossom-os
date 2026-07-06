@@ -508,6 +508,10 @@ export default function LeadershipAccountability() {
           <AIPrompt label="Draft leadership note" prompt="Draft a brief, supportive leadership note summarizing where coordination support is most needed across Blossom this week." />
         </div>
       </ExecCard>
+
+      {/* Persisted leadership decisions + action items */}
+      <LogDecisionCard />
+      <ActionItemsPanel sourcePage="executive_leadership_accountability" title="Accountability action items" />
     </ExecPage>
   );
 }
