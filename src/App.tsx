@@ -705,7 +705,10 @@ const App = () => (
                   <Route path="/qa/board" element={<OSQAReviewBoard />} />
                   <Route path="/qa-clients" element={<OSQAClients />} />
                   <Route path="/authorization-reviews" element={<OSQAAuthReviews />} />
-                  <Route path="/progress-reports" element={<OSQAProgressReports />} />
+                  {/* Progress Reports: canonical destination is the Reports hub. The
+                      /progress-reports URL stays as a backward-compatible redirect and
+                      the working page is deep-linked at /reports/progress-reports. */}
+                  <Route path="/progress-reports" element={<Navigate to="/reports/progress-reports" replace />} />
                   <Route path="/treatment-plan-reviews" element={<OSQATreatmentPlans />} />
                   <Route path="/missing-information" element={<OSQAMissingInfo />} />
                   <Route path="/expiring-items" element={<OSQAExpiring />} />
@@ -853,6 +856,7 @@ const App = () => (
                  <Route path="/reports/bcba-productivity-report" element={<BcbaProductivityReport />} />
                  <Route path="/reports/bcba-productivity-report-v3" element={<BcbaProductivityReportV3 />} />
                   <Route path="/reports/cancellation-command-center" element={<CancellationCommandCenter />} />
+                  <Route path="/reports/progress-reports" element={<OSQAProgressReports />} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
                   <Route path="/reports/ai/new" element={<Navigate to="/reports" replace />} />
