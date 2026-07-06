@@ -7,11 +7,18 @@
  * here as pure data + pure functions so the same rules can drive the
  * learner banner, the admin panel, and readiness gating.
  *
- * Storage: localStorage keyed per-trainee. Shaped so a Supabase swap is
- * trivial (record → row, single JSON column for tasks).
+ * Storage: source of truth is public.rbt_competency_records. localStorage
+ * is used only as a fast local cache and offline fallback until the
+ * Supabase snapshot resolves. Reads and writes hit Supabase and refresh
+ * the cache on success. Consumers keep the useCompetencyRecord API.
+ *
+ * CentralReach integration contract: rows carry centralreach_id,
+ * source_system, source_updated_at, sync_status, and sync_error so a
+ * future CentralReach sync can upsert without any consumer changes.
  */
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 // ─────────────────────────── Tasks ───────────────────────────
 
