@@ -14,6 +14,20 @@ import {
   insertNote as sbInsertNote,
   insertActivity as sbInsertActivity,
 } from "./stateOperationsService";
+import { toast } from "@/hooks/use-toast";
+
+function reportSaveFailure(action: string, err: unknown) {
+  const message = err instanceof Error ? err.message : String(err ?? "Unknown error");
+  // eslint-disable-next-line no-console
+  console.error(`[stateDirectorStore] ${action} failed:`, err);
+  try {
+    toast({
+      title: `Save failed — ${action}`,
+      description: message,
+      variant: "destructive",
+    });
+  } catch { /* toast not mounted (SSR/tests) */ }
+}
 
 /**
  * State Director operating store.
@@ -60,7 +74,7 @@ function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
         };
         cache = next;
         listeners.forEach((fn) => fn(next));
-      }).catch(() => { /* ignore */ });
+      }).catch((err) => reportSaveFailure("hydrate state ops", err));
       // Pass 3: realtime — any change to state ops tables triggers a
       // rehydrate so all directors see the same live picture.
       if (typeof window !== "undefined") {
@@ -76,7 +90,7 @@ function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
             };
             cache = next;
             listeners.forEach((fn) => fn(next));
-          }).catch(() => { /* ignore */ });
+          }).catch((err) => reportSaveFailure("refresh state ops", err));
         });
       }
     }
@@ -260,7 +274,11 @@ export const stateDirectorStore = {
     if (patch.assignedTo !== undefined) rowPatch.assigned_to_name = patch.assignedTo;
     if (patch.resolution !== undefined) rowPatch.resolution = patch.resolution;
     if (patch.status === "resolved") rowPatch.resolved_at = nowIso();
-    if (Object.keys(rowPatch).length) void sbUpdateEscalationRow(id, rowPatch);
+    if (Object.keys(rowPatch).length) {
+      void sbUpdateEscalationRow(id, rowPatch).catch((err) =>
+        reportSaveFailure("update escalation", err),
+      );
+    }
   },
 
   addEscalationNote(escId: string, body: string, author: string) {
@@ -275,7 +293,10 @@ export const stateDirectorStore = {
     // Best-effort Supabase persistence.
     const parent = adapter.read().escalations.find((e) => e.id === escId);
     if (parent && body.trim()) {
-      void sbInsertNote({ id: parent.notes[0]?.id, parentType: "escalation", parentId: escId, state: parent.state, body: body.trim(), author });
+      void sbInsertNote({
+        id: parent.notes[0]?.id, parentType: "escalation", parentId: escId,
+        state: parent.state, body: body.trim(), author,
+      }).catch((err) => reportSaveFailure("add escalation note", err));
     }
   },
 
@@ -387,7 +408,11 @@ export const stateDirectorStore = {
     if (patch.priority) rowPatch.priority = patch.priority;
     if (patch.owner !== undefined) rowPatch.assigned_to_name = patch.owner;
     if (patch.status === "completed") rowPatch.completed_at = nowIso();
-    if (Object.keys(rowPatch).length) void sbUpdateTaskRow(id, rowPatch);
+    if (Object.keys(rowPatch).length) {
+      void sbUpdateTaskRow(id, rowPatch).catch((err) =>
+        reportSaveFailure("update task", err),
+      );
+    }
   },
 
   completeTask(id: string, actor: string) { this.updateTask(id, { status: "completed" }, actor); },
@@ -442,7 +467,8 @@ export const stateDirectorStore = {
         linkedSchedulingItemId: created.linkedSchedulingItemId,
         sourceModule: created.sourceModule ?? "state_director_store",
         metadata: created.metadata,
-      });
+      }).then((r) => { if (!r.ok) reportSaveFailure("escalate task", r.error); })
+        .catch((err) => reportSaveFailure("escalate task", err));
       void sbInsertActivity({
         kind: "task_escalated",
         message: `Task escalated — ${created.title}`,
@@ -451,7 +477,7 @@ export const stateDirectorStore = {
         relatedType: "escalation",
         relatedId: created.id,
         metadata: created.metadata,
-      });
+      }).catch((err) => reportSaveFailure("log task escalated activity", err));
     }
     return created!;
   },
@@ -466,7 +492,10 @@ export const stateDirectorStore = {
     });
     const parent = adapter.read().tasks.find((t) => t.id === taskId);
     if (parent && body.trim()) {
-      void sbInsertNote({ id: parent.notes[0]?.id, parentType: "task", parentId: taskId, state: parent.state, body: body.trim(), author });
+      void sbInsertNote({
+        id: parent.notes[0]?.id, parentType: "task", parentId: taskId,
+        state: parent.state, body: body.trim(), author,
+      }).catch((err) => reportSaveFailure("add task note", err));
     }
   },
 };

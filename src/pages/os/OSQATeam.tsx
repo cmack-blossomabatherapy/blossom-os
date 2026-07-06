@@ -6,6 +6,7 @@ import {
   ExternalLink, MessageSquare, FileSignature, ScrollText, Clock, Brain, X,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
+import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { QAActionsPanel } from "@/components/qa/QAActionsPanel";
@@ -343,6 +344,8 @@ export default function OSQATeam() {
             )}
           </div>
         </header>
+
+        <StateDirectorSnapshotBanner ownerDepartment="QA" sourceModule="qa_team" />
 
         {/* PRIORITY CARDS */}
         <section>

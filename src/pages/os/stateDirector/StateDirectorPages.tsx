@@ -28,6 +28,7 @@ import {
 import { StateOpsCentralReachSummaryBadge } from "@/components/stateDirector/StateOpsCentralReachBadge";
 import { DailyHealthNotesPanel } from "@/components/stateDirector/DailyHealthNotesPanel";
 import { LinkedContextPanel } from "@/components/stateDirector/LinkedContextPanel";
+import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
 
 /* --------------------------------- helpers -------------------------------- */
 
@@ -461,6 +462,22 @@ function EscalationDetail({ esc, onClose }: { esc: Escalation; onClose: () => vo
           {esc.status === "resolved"
             ? <Button variant="outline" onClick={() => { stateDirectorStore.reopenEscalation(esc.id, actor); onClose(); }}>Reopen</Button>
             : <Button variant="outline" onClick={() => { stateDirectorStore.resolveEscalation(esc.id, resolution, actor); onClose(); }}>Mark resolved</Button>}
+          <SendToStateSupportButton
+            fromDepartment={esc.department}
+            defaultKind="handoff"
+            buttonLabel="Send Handoff From Escalation"
+            defaultTitle={esc.title}
+            defaultDescription={esc.description ?? esc.resolution ?? ""}
+            defaultPriority={esc.priority}
+            defaultState={esc.state}
+            linkedClientId={esc.linkedClientId}
+            linkedLeadId={esc.linkedLeadId}
+            linkedCandidateId={esc.linkedCandidateId}
+            linkedAuthorizationId={esc.linkedAuthorizationId}
+            linkedSchedulingItemId={esc.linkedSchedulingItemId}
+            sourceModule="state_escalation_detail"
+            metadata={{ relatedEscalationId: esc.id }}
+          />
           <Button onClick={() => { save(); onClose(); }}>Save changes</Button>
         </DialogFooter>
       </DialogContent>
@@ -536,6 +553,22 @@ function TaskDetail({ task, onClose }: { task: OpsTask; onClose: () => void }) {
           <Button variant="outline" onClick={() => { stateDirectorStore.completeTask(task.id, actor); onClose(); }}>
             <Check className="h-4 w-4 mr-1.5" /> Complete
           </Button>
+          <SendToStateSupportButton
+            fromDepartment={task.department}
+            defaultKind="handoff"
+            buttonLabel="Send Handoff From Task"
+            defaultTitle={task.title}
+            defaultDescription={task.description ?? ""}
+            defaultPriority={task.priority}
+            defaultState={task.state}
+            linkedClientId={task.linkedClientId}
+            linkedLeadId={task.linkedLeadId}
+            linkedCandidateId={task.linkedCandidateId}
+            linkedAuthorizationId={task.linkedAuthorizationId}
+            linkedSchedulingItemId={task.linkedSchedulingItemId}
+            sourceModule="state_task_detail"
+            metadata={{ relatedTaskId: task.id, relatedEscalationId: task.relatedEscalationId }}
+          />
           <Button onClick={() => { save(); onClose(); }}>Save changes</Button>
         </DialogFooter>
       </DialogContent>
@@ -604,11 +637,21 @@ export function StateOperationsPage() {
             <StateSelector value={stateFilter} onChange={setStateFilter} />
             <Button size="sm" variant="outline" onClick={() => setTaskOpen(true)}><Plus className="h-4 w-4 mr-1.5" />Task</Button>
             <Button size="sm" onClick={() => setEscOpen(true)}><AlertTriangle className="h-4 w-4 mr-1.5" />Escalation</Button>
+            <SendToStateSupportButton
+              fromDepartment="Operations"
+              defaultKind="handoff"
+              buttonLabel="Department Handoff"
+              defaultState={stateFilter === "all" ? undefined : (stateFilter as StateCode)}
+              sourceModule="state_operations_dashboard"
+            />
           </div>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-6">
+        <div className="col-span-full -mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+          Seed fallback metrics
+        </div>
         <KPI label="State health"        value={rollup.health || "—"} tone={rollup.health >= 85 ? "ok" : rollup.health >= 70 ? "warn" : "danger"} />
         <KPI label="Active clients"      value={rollup.activeClients} tone="info" />
         <KPI label="Authorized hrs"      value={rollup.authorizedHours} tone="muted" />
@@ -622,6 +665,11 @@ export function StateOperationsPage() {
         <KPI label="Open escalations"    value={rollup.openEscalations} tone={rollup.openEscalations > 3 ? "danger" : "warn"} />
         <KPI label="Open tasks"          value={rollup.openTasks}       tone="info" />
       </div>
+      <p className="text-xs text-muted-foreground -mt-2">
+        Tasks, escalations, notes, handoffs, and daily health notes are live.
+        State health metrics above are sample fallback values until a live
+        state metrics source is connected.
+      </p>
 
       <StateOpsCentralReachSummaryBadge pendingCount={pendingCrCount} />
 
@@ -631,7 +679,10 @@ export function StateOperationsPage() {
         assigned={assigned}
       />
 
-      <SectionCard title="State health" description={isLeadership ? "All states in scope." : "Your assigned state."}>
+      <SectionCard
+        title="State health"
+        description={(isLeadership ? "All states in scope." : "Your assigned state.") + " · Source: Seed fallback · Updated: sample"}
+      >
         <div className="overflow-x-auto -mx-2">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">

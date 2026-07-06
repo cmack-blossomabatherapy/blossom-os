@@ -246,7 +246,7 @@ export async function insertNote(input: {
 
 export async function insertActivity(input: {
   kind: ActivityKind; message: string; actor: string;
-  state?: StateCode; relatedType?: "task" | "escalation" | "note"; relatedId?: UUID;
+  state?: StateCode; relatedType?: "task" | "escalation" | "note" | "handoff"; relatedId?: UUID;
   metadata?: Record<string, unknown>;
 }) {
   const { data: userData } = await supabase.auth.getUser();
@@ -342,6 +342,7 @@ export async function deliverHandoff(input: {
   if (handoffError) {
     throw new Error(handoffError.message);
   }
+  const handoffId: string | undefined = handoff?.id;
 
   // 2) Companion operational task in the receiving department so it lands
   //    in that department's queue instead of getting lost in a handoff table.
@@ -366,13 +367,15 @@ export async function deliverHandoff(input: {
   }
 
   // 3) Activity feed entry so directors see the routing happen live.
+  //    The handoff id points at state_department_handoffs — never mislabel
+  //    as a task id.
   await insertActivity({
     kind: "handoff",
     message: `${input.fromDepartment} → ${input.toDepartment}: ${input.subject}`,
     actor: input.createdBy,
     state: input.state,
-    relatedType: "task",
-    relatedId: (handoff as any)?.id,
+    relatedType: "handoff",
+    relatedId: handoffId,
     metadata: input.metadata,
   });
 

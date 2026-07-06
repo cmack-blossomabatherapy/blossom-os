@@ -17,6 +17,7 @@ import {
 import { SchedulingOverlayWarning } from "@/components/scheduling/SchedulingOverlayWarning";
 import { useSchedulingActions } from "@/hooks/useSchedulingActions";
 import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
+import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
 
 const RBT_TARGET_HOURS = 32;
 
@@ -180,6 +181,8 @@ export default function OSSchedulingWorkspace() {
             <Chip label="RBTs w/ Capacity" value={availableRbts} tone="success" loading={cr.loading} />
           </div>
         </header>
+
+        <StateDirectorSnapshotBanner ownerDepartment="Scheduling" sourceModule="scheduling_workspace" />
 
         {/* 3-panel layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">

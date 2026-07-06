@@ -32,6 +32,7 @@ import { applyPreferenceScoring, type PreferenceScoringResult } from "@/lib/os/s
 import { CaseDetailDrawer } from "@/components/staffing/CaseDetailDrawer";
 import { ProposeMatchDialog } from "@/components/staffing/ProposeMatchDialog";
 import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
+import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
 import type { Client } from "@/data/clients";
 
 /* --------------------- structured match fit helper --------------------- */
@@ -106,6 +107,8 @@ export default function OSStaffingWorkspace() {
             </Button>
           </div>
         </header>
+
+        <StateDirectorSnapshotBanner ownerDepartment="Staffing" sourceModule="staffing_workspace" />
 
         {/* Tab bar */}
         <div className="flex flex-wrap gap-1.5 border-b border-border/60 pb-2">
