@@ -46,7 +46,9 @@ describe("Assistant State Director — Pass 3 hardening", () => {
   it("PhoneSystemRoute does not allow assistant_state_director", () => {
     const guard = read("src/components/auth/PhoneSystemRoute.tsx");
     expect(guard).not.toMatch(/assistant_state_director/);
-    expect(guard).not.toMatch(/state_director/);
+    // State Director IS allowed (Pass 5 correction). Assert it is a
+    // real member of the ALLOWED set, not just a comment mention.
+    expect(guard).toMatch(/"state_director"/);
     expect(guard).toMatch(/hr/);
     expect(guard).toMatch(/marketing/);
   });
