@@ -12,9 +12,14 @@ import { normalizeLinkedRef, pickLinkedRef } from "./linkedRef";
  * created by the 2026-07-04 State Operations migration and protected
  * with RLS that scopes non-leadership users to their profile state.
  *
- * All functions are best-effort: callers (e.g. stateDirectorStore) can
- * fire-and-forget while still updating their in-memory cache, so the UI
- * remains responsive whether or not the user has database access.
+ * Persistence contract (State Director Pass 5):
+ *   - `insertTask` / `insertEscalation` / `insertNote` / `insertActivity`
+ *     / `updateTaskRow` / `updateEscalationRow` / `deliverHandoff` all
+ *     return { ok, error } so callers can surface real database failures.
+ *   - The store (stateDirectorStore) keeps optimistic in-memory state so
+ *     the UI stays responsive, but marks affected rows with
+ *     `persistError` and toasts the failure when a write does not land.
+ *   - No write path silently swallows a Supabase error anymore.
  */
 
 type UUID = string;
@@ -174,8 +179,12 @@ export async function insertTask(input: {
   return { ok: !error, error: error?.message };
 }
 
-export async function updateTaskRow(id: UUID, patch: Record<string, unknown>) {
-  await supabase.from("state_operational_tasks").update(patch as any).eq("id", id);
+export async function updateTaskRow(
+  id: UUID,
+  patch: Record<string, unknown>,
+): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.from("state_operational_tasks").update(patch as any).eq("id", id);
+  return { ok: !error, error: error?.message };
 }
 
 export async function insertEscalation(input: {
@@ -223,17 +232,21 @@ export async function insertEscalation(input: {
   return { ok: !error, error: error?.message };
 }
 
-export async function updateEscalationRow(id: UUID, patch: Record<string, unknown>) {
-  await supabase.from("state_operational_escalations").update(patch as any).eq("id", id);
+export async function updateEscalationRow(
+  id: UUID,
+  patch: Record<string, unknown>,
+): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.from("state_operational_escalations").update(patch as any).eq("id", id);
+  return { ok: !error, error: error?.message };
 }
 
 export async function insertNote(input: {
   id?: UUID; parentType: "task" | "escalation"; parentId: UUID; state: StateCode;
   body: string; author: string;
-}) {
+}): Promise<{ ok: boolean; error?: string; id?: string }> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
-  await supabase.from("state_operational_notes").insert({
+  const { data, error } = await supabase.from("state_operational_notes").insert({
     id: input.id,
     state_code: input.state,
     parent_type: input.parentType,
@@ -241,17 +254,18 @@ export async function insertNote(input: {
     body: input.body,
     created_by: uid,
     created_by_name: input.author,
-  });
+  } as any).select("id").maybeSingle();
+  return { ok: !error, error: error?.message, id: (data as any)?.id };
 }
 
 export async function insertActivity(input: {
   kind: ActivityKind; message: string; actor: string;
   state?: StateCode; relatedType?: "task" | "escalation" | "note" | "handoff"; relatedId?: UUID;
   metadata?: Record<string, unknown>;
-}) {
+}): Promise<{ ok: boolean; error?: string }> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
-  await supabase.from("state_operational_activity").insert({
+  const { error } = await supabase.from("state_operational_activity").insert({
     state_code: input.state ?? null,
     event_kind: input.kind,
     message: input.message,
@@ -261,6 +275,7 @@ export async function insertActivity(input: {
     related_id: input.relatedId ?? null,
     metadata: input.metadata ?? null,
   } as any);
+  return { ok: !error, error: error?.message };
 }
 
 /* ------------------------------ pass 3 ----------------------------------- */
