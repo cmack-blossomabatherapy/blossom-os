@@ -479,6 +479,10 @@ interface ReadinessRow {
 }
 
 function rowToTrainee(row: ReadinessRow): RBTTrainee {
+  const flagsAny = (row.flags ?? {}) as Record<string, unknown> & RBTTrainee["flags"];
+  const coachingNotes = Array.isArray((flagsAny as { coachingNotes?: unknown }).coachingNotes)
+    ? ((flagsAny as { coachingNotes: CoachingNote[] }).coachingNotes)
+    : undefined;
   return {
     id: row.id,
     name: row.trainee_name,
@@ -498,6 +502,7 @@ function rowToTrainee(row: ReadinessRow): RBTTrainee {
     signoffs: row.signoffs ?? {},
     moduleProgress: row.module_progress ?? undefined,
     flags: row.flags ?? undefined,
+    coachingNotes,
   };
 }
 
@@ -541,4 +546,83 @@ export function useReadinessTrainees(): {
     return () => { cancelled = true; };
   }, []);
   return state;
+}
+// ---------- Supabase-backed production mutations ----------
+//
+// These operate directly on public.rbt_readiness_records. The RBT Academy
+// Command Center uses these instead of the localStorage-backed mutation
+// helpers above (which remain only for dev/test seed workflows).
+
+async function updateReadinessRow(id: string, patch: Record<string, unknown>) {
+  const { error } = await supabase
+    .from("rbt_readiness_records")
+    .update(patch as never)
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function assignPathRow(id: string, pathId: RBTPathId, opts?: { override?: boolean }) {
+  await updateReadinessRow(id, {
+    path_id: pathId,
+    path_overridden: opts?.override ?? true,
+    current_phase_index: 0,
+    signoffs: {},
+  });
+}
+
+export async function recordSignoffRow(
+  id: string, signoffId: string, status: SignoffItem["status"],
+  currentSignoffs: Record<string, SignoffItem["status"]>,
+) {
+  await updateReadinessRow(id, {
+    signoffs: { ...currentSignoffs, [signoffId]: status },
+  });
+}
+
+export async function markBlockedRow(id: string, reason: string | null, currentFlags: RBTTrainee["flags"]) {
+  await updateReadinessRow(id, {
+    flags: { ...(currentFlags ?? {}), blocked: reason ? { reason } : null },
+  });
+}
+
+export async function setNeedsCoachingRow(id: string, value: boolean, currentFlags: RBTTrainee["flags"]) {
+  await updateReadinessRow(id, {
+    flags: { ...(currentFlags ?? {}), needsCoaching: value },
+  });
+}
+
+export async function updateAssignmentRow(
+  id: string,
+  who: "leadRbtTrainer" | "bcba" | "trainingAdmin" | "documentationReviewer",
+  value: string | null,
+) {
+  const columnMap: Record<typeof who, string> = {
+    leadRbtTrainer: "lead_rbt_trainer",
+    bcba: "bcba",
+    trainingAdmin: "training_admin",
+    documentationReviewer: "documentation_reviewer",
+  } as const;
+  await updateReadinessRow(id, { [columnMap[who]]: value });
+}
+
+/**
+ * Coaching notes are stored inside the row's `flags.coachingNotes` JSON array
+ * (no dedicated column yet). rowToTrainee reads them back into RBTTrainee.
+ */
+export async function addCoachingNoteRow(
+  id: string,
+  currentFlags: RBTTrainee["flags"] | (Record<string, unknown> & RBTTrainee["flags"]),
+  currentNotes: CoachingNote[] | undefined,
+  note: Omit<CoachingNote, "id" | "createdAt">,
+) {
+  const nextNote: CoachingNote = {
+    ...note,
+    id: `cn-${Date.now().toString(36)}`,
+    createdAt: new Date().toISOString(),
+  };
+  const flags = {
+    ...(currentFlags ?? {}),
+    coachingNotes: [...(currentNotes ?? []), nextNote],
+  };
+  await updateReadinessRow(id, { flags });
 }

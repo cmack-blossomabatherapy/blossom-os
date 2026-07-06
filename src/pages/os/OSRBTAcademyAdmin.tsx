@@ -11,9 +11,10 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { RBT_PATHS, type RBTPathId, type SignoffItem } from "@/lib/training/rbtAcademy";
 import {
-  useTrainees, summarize, READINESS_TONE, EXPERIENCE_BUCKETS,
-  CERTIFICATION_STATUSES, assignPath, recordSignoff, markBlocked,
-  setNeedsCoaching, addCoachingNote, updateAssignment,
+  useReadinessTrainees, summarize, READINESS_TONE, EXPERIENCE_BUCKETS,
+  CERTIFICATION_STATUSES,
+  assignPathRow, recordSignoffRow, markBlockedRow,
+  setNeedsCoachingRow, updateAssignmentRow, addCoachingNoteRow,
   type RBTTrainee, type ReadinessStatus, type ExperienceBucket,
   type CertificationStatus,
 } from "@/lib/training/rbtReadiness";
@@ -37,7 +38,7 @@ const STATE_CHIPS = ["All", "GA", "NC", "TN", "VA", "MD"] as const;
 export default function OSRBTAcademyAdmin() {
   const { roles } = useAuth();
   const isAdmin = roles.some((r) => ADMIN_ROLES.has(r));
-  const trainees = useTrainees();
+  const { trainees, loading, empty } = useReadinessTrainees();
 
   const [query, setQuery] = useState("");
   const [state, setState] = useState<(typeof STATE_CHIPS)[number]>("All");
@@ -152,7 +153,11 @@ export default function OSRBTAcademyAdmin() {
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="space-y-2">
-            {rows.length === 0 ? (
+            {loading ? (
+              <LoadingState />
+            ) : empty ? (
+              <EmptySetupState />
+            ) : rows.length === 0 ? (
               <EmptyState />
             ) : rows.map(({ t, s }) => (
               <button
@@ -349,7 +354,7 @@ function OverviewTab({ trainee: t, summary: s, isAdmin }: {
                 key={p.id} disabled={!isAdmin}
                 onClick={() => {
                   if (!confirm(`Reassign ${t.name} to "${p.label}"?\n\nThis resets signoff progress.`)) return;
-                  assignPath(t.id, p.id as RBTPathId, { override: true });
+                  void assignPathRow(t.id, p.id as RBTPathId, { override: true });
                 }}
                 className={cn(
                   "rounded-xl border p-2.5 text-left text-xs transition",
@@ -384,13 +389,13 @@ function OverviewTab({ trainee: t, summary: s, isAdmin }: {
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           <Assign icon={Compass} label="Lead RBT Trainer" value={t.leadRbtTrainer}
-            editing={editAssign} onChange={(v) => updateAssignment(t.id, "leadRbtTrainer", v)} />
+            editing={editAssign} onChange={(v) => void updateAssignmentRow(t.id, "leadRbtTrainer", v)} />
           <Assign icon={UserCircle2} label="BCBA" value={t.bcba}
-            editing={editAssign} onChange={(v) => updateAssignment(t.id, "bcba", v)} />
+            editing={editAssign} onChange={(v) => void updateAssignmentRow(t.id, "bcba", v)} />
           <Assign icon={ClipboardCheck} label="Training Admin" value={t.trainingAdmin}
-            editing={editAssign} onChange={(v) => updateAssignment(t.id, "trainingAdmin", v)} />
+            editing={editAssign} onChange={(v) => void updateAssignmentRow(t.id, "trainingAdmin", v)} />
           <Assign icon={FileText} label="Documentation Reviewer" value={t.documentationReviewer}
-            editing={editAssign} onChange={(v) => updateAssignment(t.id, "documentationReviewer", v)} />
+            editing={editAssign} onChange={(v) => void updateAssignmentRow(t.id, "documentationReviewer", v)} />
         </div>
       </section>
 
@@ -524,7 +529,14 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
         <SectionTitle>Required signoffs</SectionTitle>
         <ul className="space-y-1.5">
           {s.requiredSignoffs.map(({ item, status }) => (
-            <SignoffRow key={item.id} item={item} status={status} traineeId={t.id} isAdmin={isAdmin} />
+            <SignoffRow
+              key={item.id}
+              item={item}
+              status={status}
+              traineeId={t.id}
+              currentSignoffs={t.signoffs}
+              isAdmin={isAdmin}
+            />
           ))}
         </ul>
       </section>
@@ -537,7 +549,7 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
             type="checkbox"
             disabled={!isAdmin}
             checked={!!t.flags?.needsCoaching}
-            onChange={(e) => setNeedsCoaching(t.id, e.target.checked)}
+            onChange={(e) => void setNeedsCoachingRow(t.id, e.target.checked, t.flags)}
           />
         </label>
         <div className="mt-3 space-y-2">
@@ -560,7 +572,7 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
           <button
             type="button" disabled={!isAdmin || !noteText.trim()}
             onClick={() => {
-              addCoachingNote(t.id, { author: "You", authorRole: noteRole, text: noteText.trim() });
+              void addCoachingNoteRow(t.id, t.flags, t.coachingNotes, { author: "You", authorRole: noteRole, text: noteText.trim() });
               setNoteText("");
             }}
             className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
@@ -592,7 +604,7 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
             </p>
             <button
               type="button" disabled={!isAdmin}
-              onClick={() => markBlocked(t.id, null)}
+              onClick={() => void markBlockedRow(t.id, null, t.flags)}
               className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-card px-2.5 py-1 text-xs font-medium hover:bg-muted disabled:opacity-50"
             >
               <CheckCircle2 className="size-3.5" /> Clear block
@@ -608,7 +620,7 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
             />
             <button
               type="button" disabled={!isAdmin || !blockReason.trim()}
-              onClick={() => markBlocked(t.id, blockReason.trim())}
+              onClick={() => void markBlockedRow(t.id, blockReason.trim(), t.flags)}
               className="inline-flex items-center gap-1 rounded-lg bg-destructive px-2.5 py-1 text-xs font-medium text-destructive-foreground transition hover:opacity-90 disabled:opacity-50"
             >
               <Ban className="size-3.5" /> Mark blocked
@@ -620,8 +632,9 @@ function ActionsTab({ trainee: t, summary: s, isAdmin }: {
   );
 }
 
-function SignoffRow({ item, status, traineeId, isAdmin }: {
-  item: SignoffItem; status: SignoffItem["status"]; traineeId: string; isAdmin: boolean;
+function SignoffRow({ item, status, traineeId, currentSignoffs, isAdmin }: {
+  item: SignoffItem; status: SignoffItem["status"]; traineeId: string;
+  currentSignoffs: Record<string, SignoffItem["status"]>; isAdmin: boolean;
 }) {
   const signed = status === "signed";
   return (
@@ -642,7 +655,7 @@ function SignoffRow({ item, status, traineeId, isAdmin }: {
       </div>
       <button
         type="button" disabled={!isAdmin}
-        onClick={() => recordSignoff(traineeId, item.id, signed ? "pending" : "signed")}
+        onClick={() => void recordSignoffRow(traineeId, item.id, signed ? "pending" : "signed", currentSignoffs)}
         className={cn(
           "shrink-0 rounded-md border px-2 py-1 text-[11px] font-medium transition disabled:opacity-50",
           signed ? "border-border/70 bg-card text-muted-foreground hover:bg-muted"
@@ -717,6 +730,26 @@ function EmptyState() {
     <div className="rounded-2xl border border-dashed border-border/70 bg-card p-10 text-center text-sm text-muted-foreground">
       <ListChecks className="mx-auto mb-3 size-5 text-muted-foreground" />
       No trainees match these filters.
+    </div>
+  );
+}
+function LoadingState() {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-card p-10 text-center text-sm text-muted-foreground">
+      <ClipboardCheck className="mx-auto mb-3 size-5 text-muted-foreground animate-pulse" />
+      Loading readiness records…
+    </div>
+  );
+}
+function EmptySetupState() {
+  return (
+    <div className="rounded-2xl border border-dashed border-border/70 bg-card p-10 text-center text-sm text-muted-foreground">
+      <Sparkles className="mx-auto mb-3 size-5 text-primary" />
+      <p className="text-foreground font-medium">No RBT readiness records yet</p>
+      <p className="mt-1 text-xs">
+        As RBTs are added to the Academy, their readiness records will appear here.
+        Records live in <code className="rounded bg-muted px-1 py-0.5 text-[10px]">rbt_readiness_records</code>.
+      </p>
     </div>
   );
 }

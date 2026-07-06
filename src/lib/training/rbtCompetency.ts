@@ -7,11 +7,18 @@
  * here as pure data + pure functions so the same rules can drive the
  * learner banner, the admin panel, and readiness gating.
  *
- * Storage: localStorage keyed per-trainee. Shaped so a Supabase swap is
- * trivial (record → row, single JSON column for tasks).
+ * Storage: source of truth is public.rbt_competency_records. localStorage
+ * is used only as a fast local cache and offline fallback until the
+ * Supabase snapshot resolves. Reads and writes hit Supabase and refresh
+ * the cache on success. Consumers keep the useCompetencyRecord API.
+ *
+ * CentralReach integration contract: rows carry centralreach_id,
+ * source_system, source_updated_at, sync_status, and sync_error so a
+ * future CentralReach sync can upsert without any consumer changes.
  */
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 // ─────────────────────────── Tasks ───────────────────────────
 
@@ -263,6 +270,7 @@ function serverSnapshot(): Store { return {}; }
 /** Reactive hook — returns the record for a trainee, or a fresh empty record. */
 export function useCompetencyRecord(traineeId: string, trackId: string): RBTCompetencyRecord {
   const store = useSyncExternalStore(subscribe, getSnapshotStore, serverSnapshot);
+  useEffect(() => { void hydrateCompetencyFromSupabase(traineeId, trackId); }, [traineeId, trackId]);
   return store[traineeId] ?? emptyCompetencyRecord(traineeId, trackId);
 }
 
@@ -275,6 +283,81 @@ function patch(traineeId: string, trackId: string, fn: (r: RBTCompetencyRecord) 
   const current = store[traineeId] ?? emptyCompetencyRecord(traineeId, trackId);
   const next = { ...fn(current), updatedAt: new Date().toISOString() };
   writeStore({ ...store, [traineeId]: next });
+  // Fire-and-forget Supabase persistence — cache is authoritative for UI.
+  void persistCompetencyRecord(next);
+}
+
+// ─────────────────────────── Supabase persistence ───────────────────────────
+
+async function currentUserId(): Promise<string | null> {
+  try { const { data } = await supabase.auth.getUser(); return data.user?.id ?? null; }
+  catch { return null; }
+}
+
+function recordToRow(r: RBTCompetencyRecord, userId: string | null) {
+  const withClientTaskIds = r.tasks
+    .filter((t) => t.assessmentType === "With Client")
+    .map((t) => String(t.number));
+  return {
+    trainee_id: r.traineeId,
+    user_id: userId,
+    track_id: r.trackId,
+    task_status: r.tasks as unknown as Record<string, unknown>,
+    with_client_task_ids: withClientTaskIds,
+    responsible_assessor: r.responsible as unknown as Record<string, unknown>,
+    assistant_assessor: (r.assistant ?? null) as unknown as Record<string, unknown> | null,
+    forty_hour_completed_at: r.fortyHourCompletedAt ?? null,
+    certification_target_date: r.certificationApplicationTargetDate ?? null,
+    final_attestation_at: r.finalAttestationAt ?? null,
+    assessor_name: r.responsible.name || null,
+    assessor_role: r.responsible.credential || null,
+    completed_at: r.finalAttestationAt ?? null,
+  };
+}
+
+function rowToRecord(row: Record<string, unknown>): RBTCompetencyRecord {
+  const tasks = Array.isArray(row.task_status)
+    ? (row.task_status as CompetencyTaskRecord[])
+    : COMPETENCY_TASKS.map((t) => ({ number: t.number, status: "Not Started" as CompetencyTaskStatus }));
+  return {
+    traineeId: String(row.trainee_id),
+    trackId: String(row.track_id),
+    fortyHourCompletedAt: (row.forty_hour_completed_at as string | null) ?? undefined,
+    certificationApplicationTargetDate: (row.certification_target_date as string | null) ?? undefined,
+    finalAttestationAt: (row.final_attestation_at as string | null) ?? undefined,
+    responsible: (row.responsible_assessor as unknown as CompetencyAssessor) ?? emptyResponsible(),
+    assistant: (row.assistant_assessor as unknown as CompetencyAssistantAssessor | null) ?? undefined,
+    tasks,
+    updatedAt: (row.updated_at as string | null) ?? undefined,
+  };
+}
+
+const hydrated = new Set<string>();
+export async function hydrateCompetencyFromSupabase(traineeId: string, trackId: string): Promise<void> {
+  const key = `${traineeId}::${trackId}`;
+  if (hydrated.has(key)) return;
+  hydrated.add(key);
+  try {
+    const { data, error } = await supabase
+      .from("rbt_competency_records")
+      .select("*")
+      .eq("trainee_id", traineeId)
+      .eq("track_id", trackId)
+      .maybeSingle();
+    if (error || !data) return;
+    const record = rowToRecord(data as unknown as Record<string, unknown>);
+    const store = readStore();
+    writeStore({ ...store, [traineeId]: record });
+  } catch { /* offline — cache remains */ }
+}
+
+async function persistCompetencyRecord(r: RBTCompetencyRecord): Promise<void> {
+  try {
+    const uid = await currentUserId();
+    await supabase
+      .from("rbt_competency_records")
+      .upsert(recordToRow(r, uid) as never, { onConflict: "trainee_id,track_id" });
+  } catch { /* offline — cache is authoritative for now */ }
 }
 
 export function updateCompetencyTask(

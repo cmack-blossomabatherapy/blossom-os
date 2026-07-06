@@ -13899,6 +13899,78 @@ export type Database = {
           },
         ]
       }
+      rbt_competency_records: {
+        Row: {
+          assessor_name: string | null
+          assessor_role: string | null
+          assistant_assessor: Json | null
+          centralreach_id: string | null
+          certification_target_date: string | null
+          completed_at: string | null
+          created_at: string
+          final_attestation_at: string | null
+          forty_hour_completed_at: string | null
+          id: string
+          responsible_assessor: Json
+          source_system: string
+          source_updated_at: string | null
+          sync_error: string | null
+          sync_status: string
+          task_status: Json
+          track_id: string
+          trainee_id: string
+          updated_at: string
+          user_id: string | null
+          with_client_task_ids: string[]
+        }
+        Insert: {
+          assessor_name?: string | null
+          assessor_role?: string | null
+          assistant_assessor?: Json | null
+          centralreach_id?: string | null
+          certification_target_date?: string | null
+          completed_at?: string | null
+          created_at?: string
+          final_attestation_at?: string | null
+          forty_hour_completed_at?: string | null
+          id?: string
+          responsible_assessor?: Json
+          source_system?: string
+          source_updated_at?: string | null
+          sync_error?: string | null
+          sync_status?: string
+          task_status?: Json
+          track_id: string
+          trainee_id: string
+          updated_at?: string
+          user_id?: string | null
+          with_client_task_ids?: string[]
+        }
+        Update: {
+          assessor_name?: string | null
+          assessor_role?: string | null
+          assistant_assessor?: Json | null
+          centralreach_id?: string | null
+          certification_target_date?: string | null
+          completed_at?: string | null
+          created_at?: string
+          final_attestation_at?: string | null
+          forty_hour_completed_at?: string | null
+          id?: string
+          responsible_assessor?: Json
+          source_system?: string
+          source_updated_at?: string | null
+          sync_error?: string | null
+          sync_status?: string
+          task_status?: Json
+          track_id?: string
+          trainee_id?: string
+          updated_at?: string
+          user_id?: string | null
+          with_client_task_ids?: string[]
+        }
+        Relationships: []
+      }
       rbt_help_requests: {
         Row: {
           category: string
@@ -14262,6 +14334,81 @@ export type Database = {
           updated_at?: string
           user_id?: string
           viewed?: boolean
+        }
+        Relationships: []
+      }
+      rbt_resources: {
+        Row: {
+          body: string | null
+          category: string | null
+          centralreach_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_hidden: boolean
+          minutes: number | null
+          module_ids: string[]
+          required: boolean
+          seeded: boolean
+          source_system: string
+          source_updated_at: string | null
+          sync_error: string | null
+          sync_status: string
+          tags: string[]
+          title: string
+          tracks: string[]
+          type: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          body?: string | null
+          category?: string | null
+          centralreach_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id: string
+          is_hidden?: boolean
+          minutes?: number | null
+          module_ids?: string[]
+          required?: boolean
+          seeded?: boolean
+          source_system?: string
+          source_updated_at?: string | null
+          sync_error?: string | null
+          sync_status?: string
+          tags?: string[]
+          title: string
+          tracks?: string[]
+          type: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          body?: string | null
+          category?: string | null
+          centralreach_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_hidden?: boolean
+          minutes?: number | null
+          module_ids?: string[]
+          required?: boolean
+          seeded?: boolean
+          source_system?: string
+          source_updated_at?: string | null
+          sync_error?: string | null
+          sync_status?: string
+          tags?: string[]
+          title?: string
+          tracks?: string[]
+          type?: string
+          updated_at?: string
+          url?: string | null
         }
         Relationships: []
       }
