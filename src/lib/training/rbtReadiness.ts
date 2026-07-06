@@ -604,3 +604,25 @@ export async function updateAssignmentRow(
   } as const;
   await updateReadinessRow(id, { [columnMap[who]]: value });
 }
+
+/**
+ * Coaching notes are stored inside the row's `flags.coachingNotes` JSON array
+ * (no dedicated column yet). rowToTrainee reads them back into RBTTrainee.
+ */
+export async function addCoachingNoteRow(
+  id: string,
+  currentFlags: RBTTrainee["flags"] | (Record<string, unknown> & RBTTrainee["flags"]),
+  currentNotes: CoachingNote[] | undefined,
+  note: Omit<CoachingNote, "id" | "createdAt">,
+) {
+  const nextNote: CoachingNote = {
+    ...note,
+    id: `cn-${Date.now().toString(36)}`,
+    createdAt: new Date().toISOString(),
+  };
+  const flags = {
+    ...(currentFlags ?? {}),
+    coachingNotes: [...(currentNotes ?? []), nextNote],
+  };
+  await updateReadinessRow(id, { flags });
+}
