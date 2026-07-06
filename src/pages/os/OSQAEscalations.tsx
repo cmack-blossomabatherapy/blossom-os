@@ -593,7 +593,6 @@ export default function OSQAEscalations() {
   return (
     <OSShell>
       <div className="px-6 md:px-10 py-8 max-w-[1400px] mx-auto">
-        <ClinicalDirectorSection sourceType="manual" title="Clinical Director workflow" />
         <ClinicalDirectorEscalationCenter />
         {/* Header */}
         <header className="flex items-start justify-between gap-6 flex-wrap">
