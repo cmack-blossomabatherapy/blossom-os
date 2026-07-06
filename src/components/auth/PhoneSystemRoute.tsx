@@ -20,6 +20,9 @@ const ALLOWED = new Set<string>([
   // Marketing
   "marketing", "marketing_team", "marketing_director", "marketing_manager",
   "marketing_admin", "marketing_growth_lead",
+  // State Director (menu exposes /phone). Assistant State Director is
+  // intentionally NOT included — that menu does not surface phone.
+  "state_director",
 ]);
 
 export function PhoneSystemRoute({
