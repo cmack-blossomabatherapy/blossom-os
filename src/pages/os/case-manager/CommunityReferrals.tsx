@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Globe2, Plus, Archive, Search } from "lucide-react";
 import { useCaseManagerWorkspace } from "@/hooks/useCaseManagerWorkspace";
 import { CMPage, Pill, FilterBar, FormDialog } from "./_shared";
+import type { CMFormValues } from "./_utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -80,11 +81,11 @@ export default function CommunityReferralsPage() {
           { key: "description", label: "Description", type: "textarea" },
           { key: "notes", label: "Notes", type: "textarea" },
         ]}
-        onSubmit={async (v) => { await w.createCommunityResource({ ...v, active: true } as any); toast.success("Resource added"); }}
+        onSubmit={async (v) => { await w.createCommunityResource({ ...v, active: true } as unknown as Parameters<typeof w.createCommunityResource>[0]); toast.success("Resource added"); }}
       />
       {editId && (
         <FormDialog open={!!editId} onOpenChange={(o) => !o && setEditId(null)} title="Edit resource" submitLabel="Save"
-          initial={resourceById(editId) as any}
+          initial={resourceById(editId) as unknown as CMFormValues}
           fields={[
             { key: "name", label: "Resource name", required: true },
             { key: "category", label: "Category", type: "select", options: CATEGORIES },
@@ -97,7 +98,7 @@ export default function CommunityReferralsPage() {
             { key: "description", label: "Description", type: "textarea" },
             { key: "notes", label: "Notes", type: "textarea" },
           ]}
-          onSubmit={async (v) => { if (!editId) return; await w.updateCommunityResource(editId, v as any); toast.success("Saved"); }}
+          onSubmit={async (v) => { if (!editId) return; await w.updateCommunityResource(editId, v as unknown as Parameters<typeof w.updateCommunityResource>[1]); toast.success("Saved"); }}
         />
       )}
     </CMPage>
