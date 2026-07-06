@@ -17,6 +17,7 @@ import {
 import { SchedulingOverlayWarning } from "@/components/scheduling/SchedulingOverlayWarning";
 import { useSchedulingActions } from "@/hooks/useSchedulingActions";
 import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
+import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
 
 const RBT_TARGET_HOURS = 32;
 
