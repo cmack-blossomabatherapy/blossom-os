@@ -29,6 +29,7 @@ import { refreshStateMetrics } from "@/lib/os/stateDirector/stateDirectorStore";
 import { upsertStateMetric } from "@/lib/os/stateDirector/stateOperationsService";
 import { toast } from "sonner";
 import { StateOpsCentralReachSummaryBadge } from "@/components/stateDirector/StateOpsCentralReachBadge";
+import { CentralReachReadinessPanel } from "@/components/stateDirector/CentralReachReadinessPanel";
 import { DailyHealthNotesPanel } from "@/components/stateDirector/DailyHealthNotesPanel";
 import { LinkedContextPanel } from "@/components/stateDirector/LinkedContextPanel";
 import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
@@ -798,6 +799,8 @@ export function StateOperationsPage() {
       </p>
 
       <StateOpsCentralReachSummaryBadge pendingCount={pendingCrCount} />
+
+      <CentralReachReadinessPanel stateFilter={stateFilter} />
 
       <StateOperationsDailyHealthSlot
         stateFilter={stateFilter}
