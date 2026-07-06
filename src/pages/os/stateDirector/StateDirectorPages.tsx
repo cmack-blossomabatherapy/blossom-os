@@ -30,6 +30,8 @@ import { upsertStateMetric } from "@/lib/os/stateDirector/stateOperationsService
 import { toast } from "sonner";
 import { StateOpsCentralReachSummaryBadge } from "@/components/stateDirector/StateOpsCentralReachBadge";
 import { CentralReachReadinessPanel } from "@/components/stateDirector/CentralReachReadinessPanel";
+import { bumpCentralReachReadiness } from "@/components/stateDirector/CentralReachReadinessPanel";
+import { createStateCentralReachOutboxItem } from "@/lib/os/stateDirector/stateOperationsService";
 import { DailyHealthNotesPanel } from "@/components/stateDirector/DailyHealthNotesPanel";
 import { LinkedContextPanel } from "@/components/stateDirector/LinkedContextPanel";
 import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
@@ -52,6 +54,130 @@ const LEADERSHIP_ROLES = new Set<string>([
 const STATE_SCOPED_ROLES = new Set<string>([
   "state_director", "assistant_state_director",
 ]);
+
+/* ---------- CentralReach readiness action (task/escalation detail) --------- */
+
+type CrEligible = {
+  id: string;
+  state: StateCode;
+  title: string;
+  description?: string;
+  department: Department;
+  priority: Priority;
+  status: string;
+  dueAt?: string;
+  sourceModule?: string;
+  linkedClientId?: string;
+  linkedLeadId?: string;
+  linkedCandidateId?: string;
+  linkedAuthorizationId?: string;
+  linkedSchedulingItemId?: string;
+  metadata?: Record<string, unknown>;
+};
+
+function inferCrObjectType(row: CrEligible): string {
+  if (row.linkedClientId) return "client";
+  if (row.linkedAuthorizationId) return "authorization";
+  if (row.linkedSchedulingItemId) return "schedule";
+  if (row.linkedLeadId) return "lead";
+  if (row.linkedCandidateId) return "candidate";
+  return "unknown";
+}
+
+function inferCrExternalId(row: CrEligible): string | null {
+  const md = row.metadata ?? {};
+  const candidates = [
+    (md as any).centralreachExternalId,
+    (md as any).centralreach_external_id,
+    (md as any).crExternalId,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) return c.trim();
+  }
+  return null;
+}
+
+function inferCrActionType(row: CrEligible): "needs_mapping" | "blocked_missing_cr_id" {
+  const hasLinkedContext =
+    !!row.linkedClientId || !!row.linkedAuthorizationId ||
+    !!row.linkedSchedulingItemId || !!row.linkedLeadId || !!row.linkedCandidateId;
+  return hasLinkedContext ? "needs_mapping" : "blocked_missing_cr_id";
+}
+
+function SendToCentralReachReadinessButton({
+  row, sourceType, extraOwner,
+}: {
+  row: CrEligible;
+  sourceType: "task" | "escalation";
+  extraOwner?: { owner?: string; assignedTo?: string };
+}) {
+  const { role, profileState } = useOSRole();
+  const [sending, setSending] = useState(false);
+  const isStateScoped = STATE_SCOPED_ROLES.has(String(role));
+  const isLeadership = LEADERSHIP_ROLES.has(String(role));
+  const canRole =
+    isLeadership || isStateScoped || role === "super_admin";
+  const stateMismatch =
+    isStateScoped && profileState && String(profileState) !== String(row.state);
+  const disabled = !canRole || Boolean(stateMismatch) || sending;
+  const tooltip = !canRole
+    ? "You do not have permission to queue CentralReach readiness work."
+    : stateMismatch
+      ? "You can only queue CentralReach readiness work for your assigned state."
+      : "Creates a readiness queue item for future CentralReach mapping. This does not send anything to CentralReach yet.";
+
+  async function onClick() {
+    setSending(true);
+    const payload: Record<string, unknown> = {
+      title: row.title,
+      description: row.description,
+      department: row.department,
+      priority: row.priority,
+      status: row.status,
+      dueAt: row.dueAt,
+      sourceModule: row.sourceModule,
+      linkedClientId: row.linkedClientId,
+      linkedLeadId: row.linkedLeadId,
+      linkedCandidateId: row.linkedCandidateId,
+      linkedAuthorizationId: row.linkedAuthorizationId,
+      linkedSchedulingItemId: row.linkedSchedulingItemId,
+      metadata: row.metadata,
+      ...(extraOwner ?? {}),
+    };
+    const res = await createStateCentralReachOutboxItem({
+      stateCode: row.state,
+      sourceType,
+      sourceId: row.id,
+      centralreachObjectType: inferCrObjectType(row),
+      centralreachExternalId: inferCrExternalId(row),
+      actionType: inferCrActionType(row),
+      payload,
+    });
+    setSending(false);
+    if (res.ok) {
+      toast.success("CentralReach readiness item created", {
+        description: "This is queued for mapping. Nothing was sent to CentralReach yet.",
+      });
+      bumpCentralReachReadiness();
+    } else {
+      toast.error("Could not create CentralReach readiness item", {
+        description: res.error ?? "Unknown error",
+      });
+    }
+  }
+
+  return (
+    <Button
+      variant="outline"
+      disabled={disabled}
+      onClick={onClick}
+      title={tooltip}
+    >
+      <Sparkles className="h-4 w-4 mr-1.5" />
+      {sending ? "Queuing..." : "Send to CentralReach readiness"}
+    </Button>
+  );
+}
 
 function useActor() {
   const { role } = useOSRole();
