@@ -17398,6 +17398,54 @@ export type Database = {
         }
         Relationships: []
       }
+      state_centralreach_outbox: {
+        Row: {
+          action_type: string
+          centralreach_external_id: string | null
+          centralreach_object_type: string | null
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          id: string
+          payload: Json
+          source_id: string | null
+          source_type: string
+          state_code: string
+          sync_status: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          centralreach_external_id?: string | null
+          centralreach_object_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          source_id?: string | null
+          source_type: string
+          state_code: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          centralreach_external_id?: string | null
+          centralreach_object_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          source_id?: string | null
+          source_type?: string
+          state_code?: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       state_daily_health_notes: {
         Row: {
           authorizations_status: string | null
