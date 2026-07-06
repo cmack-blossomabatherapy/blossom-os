@@ -736,7 +736,10 @@ const App = () => (
                   <Route path="/behavioral-support/follow-ups" element={<BehavioralSupportFollowUps />} />
                   <Route path="/behavioral-support/supervision-visibility" element={<BehavioralSupportSupervisionVisibility />} />
                   <Route path="/behavioral-support/evaluations" element={<BehavioralSupportEvaluations />} />
-                  <Route path="/case-manager/training" element={<CMTrainingAcademy />} />
+                  {/* Case Manager training goes to the shared /academy destination
+                      (matches TRAINING_AND_RESOURCES menu). CMTrainingAcademy remains
+                      exported for legacy use but is no longer routed as a role page. */}
+                  <Route path="/case-manager/training" element={<Navigate to="/academy" replace />} />
                   <Route path="/case-manager/families" element={<CMAssignedFamilies />} />
                   <Route path="/case-manager/communication" element={<CMParentCommunication />} />
                   <Route path="/case-manager/family-support" element={<CMFamilySupport />} />
