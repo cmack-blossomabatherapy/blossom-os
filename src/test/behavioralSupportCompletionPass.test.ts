@@ -277,3 +277,65 @@ describe("Behavioral Support pass 3 — case workflow, plan edit, task activity,
     }
   });
 });
+
+describe("Behavioral Support final hardening pass — source_system + encoding", () => {
+  const pagesDir = "src/pages/os/behavioral-support";
+  const dialogs = read(`${pagesDir}/_dialogs.tsx`);
+  const caseDialog =
+    dialogs.split(/export function BehavioralSupportCaseDialog/)[1]?.split(/export function/)[0] ?? "";
+
+  const ALLOWED_SOURCES = [
+    "manual",
+    "centralreach",
+    "phone",
+    "intake",
+    "qa",
+    "case_manager",
+    "bcba",
+    "rbt",
+    "other",
+  ];
+
+  it("BehavioralSupportCaseDialog does not include the invalid 'internal' source", () => {
+    expect(caseDialog).not.toMatch(/value="internal"/);
+    expect(caseDialog).not.toMatch(/useState\("internal"\)/);
+  });
+
+  it("BehavioralSupportCaseDialog does not include the invalid 'monday' source", () => {
+    expect(caseDialog).not.toMatch(/value="monday"/i);
+  });
+
+  it("BehavioralSupportCaseDialog defaults source_system to 'manual'", () => {
+    expect(caseDialog).toMatch(/useState\("manual"\)/);
+  });
+
+  it("BehavioralSupportCaseDialog exposes every allowed source_system value", () => {
+    for (const v of ALLOWED_SOURCES) {
+      expect(caseDialog, `missing source option ${v}`).toMatch(new RegExp(`value="${v}"`));
+    }
+  });
+
+  it("BehavioralSupportCaseDialog constrains submitted source_system to allowed values", () => {
+    expect(caseDialog).toMatch(/ALLOWED_SOURCES/);
+    for (const v of ALLOWED_SOURCES) {
+      expect(caseDialog).toMatch(new RegExp(`"${v}"`));
+    }
+  });
+
+  it("Behavioral Support files contain no broken encoded UI characters", () => {
+    const broken = ["â€”", "â€¢", "â†’", "âœ•"];
+    const files = [
+      "BehavioralSupportDashboard.tsx",
+      "BehavioralSupportPlans.tsx",
+      "BehavioralSupportSupervisionVisibility.tsx",
+      "useBehavioralSupportData.ts",
+      "_dialogs.tsx",
+    ];
+    for (const f of files) {
+      const src = read(`${pagesDir}/${f}`);
+      for (const b of broken) {
+        expect(src, `${f} contains broken sequence ${b}`).not.toContain(b);
+      }
+    }
+  });
+});
