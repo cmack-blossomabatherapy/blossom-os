@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Activity, AlertTriangle, CheckCircle2, ClipboardList, Inbox,
   ListTodo, Plus, Sparkles, Workflow, X,
