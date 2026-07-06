@@ -29,9 +29,11 @@ describe("State Director Assistant — Pass 5 hardening", () => {
     expect(app).toMatch(/path="\/phone\/ai-calls".*IntakeAiCallsRoute/);
   });
 
-  it("state_director menu no longer exposes /phone; assistant menu still doesn't", () => {
+  it("state_director menu includes /phone (Pass 5 correction); assistant menu still does not", () => {
+    // State Director Pass 5 restored /phone to the State Director menu
+    // so State Directors can reach the full Phone System from the shell.
     const sd = ROLE_MENUS.state_director!.sections.flatMap((s) => s.items.map((i) => i.path));
-    expect(sd).not.toContain("/phone");
+    expect(sd).toContain("/phone");
     const asd = ROLE_MENUS.assistant_state_director!.sections.flatMap((s) => s.items.map((i) => i.path));
     expect(asd).not.toContain("/phone");
   });
