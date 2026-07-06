@@ -12,7 +12,8 @@ import { RBT_PATHS, type RBTModule, type RBTPath, type RBTPhase, type RBTPathId 
 import { getRbtModuleContent } from "@/lib/training/rbtModuleContent";
 import { BCBA_MODULES, type BCBAModule } from "@/lib/training/bcbaAcademy";
 import {
-  useRuntimeRecord, startRuntime, tickRuntime, completeRuntime,
+  useRuntimeRecord, startRuntime, tickRuntime, completeRuntime, persistRuntimeElapsed,
+  type RuntimeContext,
 } from "@/lib/academy/runtimeStore";
 import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
 import { getTrainingPath } from "@/lib/academy/trainingPaths";
@@ -22,9 +23,9 @@ import { getTrainingPath } from "@/lib/academy/trainingPaths";
  * Handles RBT and BCBA module ids (academyData modules continue to use
  * /training/:id, but if one lands here we redirect to that legacy runtime).
  *
- * Progress, timer, and completion are stored in localStorage via the
- * runtimeStore — a temporary client-side training progress bridge until
- * Supabase persistence is wired for these sources.
+ * Progress, timer, and completion are persisted through the runtimeStore
+ * which uses `public.academy_runtime_progress` in Supabase as the source
+ * of truth (local cache is a UI fallback only).
  */
 export default function TrainingModuleRuntime() {
   const { slug = "", moduleId = "" } = useParams();
@@ -46,19 +47,36 @@ export default function TrainingModuleRuntime() {
     return null;
   }, [parsed.kind, parsed.sourceModuleId]);
 
-  const record = useRuntimeRecord(decodedId);
+  const runtimeCtx: RuntimeContext = useMemo(() => ({
+    journeySlug: slug,
+    trackId: slug === "rbt" ? (rbtTrackId ?? "not_certified") : null,
+    sourceModuleId: parsed.sourceModuleId,
+    sourceKind: parsed.kind === "rbt" || parsed.kind === "bcba" ? parsed.kind : undefined,
+  }), [slug, rbtTrackId, parsed.kind, parsed.sourceModuleId]);
+  const record = useRuntimeRecord(decodedId, runtimeCtx);
   const tickRef = useRef<number | null>(null);
+  const persistRef = useRef<number>(0);
 
   useEffect(() => {
     if (record.status !== "in_progress") {
       if (tickRef.current) { window.clearInterval(tickRef.current); tickRef.current = null; }
       return;
     }
-    tickRef.current = window.setInterval(() => tickRuntime(decodedId, 1), 1000);
+    tickRef.current = window.setInterval(() => {
+      tickRuntime(decodedId, 1);
+      persistRef.current += 1;
+      // Persist elapsed to Supabase every 12s to avoid one write per tick.
+      if (persistRef.current >= 12) {
+        persistRef.current = 0;
+        void persistRuntimeElapsed(decodedId, runtimeCtx);
+      }
+    }, 1000);
     return () => {
       if (tickRef.current) { window.clearInterval(tickRef.current); tickRef.current = null; }
+      // Persist any remaining elapsed time on unmount.
+      void persistRuntimeElapsed(decodedId, runtimeCtx);
     };
-  }, [record.status, decodedId]);
+  }, [record.status, decodedId, runtimeCtx]);
 
   if (!ctx || !path) {
     return (
@@ -128,17 +146,17 @@ export default function TrainingModuleRuntime() {
 
         <div className="flex flex-col items-stretch gap-2 md:items-end">
           {status === "not_started" && (
-            <button onClick={() => startRuntime(decodedId)} className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 h-11 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90">
+            <button onClick={() => { void startRuntime(decodedId, runtimeCtx); }} className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 h-11 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90">
               <PlayCircle className="h-4 w-4" /> Start module
             </button>
           )}
           {status === "in_progress" && (
-            <button onClick={() => completeRuntime(decodedId)} className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 h-11 text-sm font-medium text-white shadow-sm transition hover:opacity-90">
+            <button onClick={() => { void completeRuntime(decodedId, runtimeCtx); }} className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 h-11 text-sm font-medium text-white shadow-sm transition hover:opacity-90">
               <CheckCircle2 className="h-4 w-4" /> Mark complete
             </button>
           )}
           {status === "completed" && (
-            <button onClick={() => startRuntime(decodedId)} className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 h-11 text-sm font-medium transition hover:bg-muted">
+            <button onClick={() => { void startRuntime(decodedId, runtimeCtx); }} className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 h-11 text-sm font-medium transition hover:bg-muted">
               <ArrowRight className="h-4 w-4" /> Review again
             </button>
           )}
