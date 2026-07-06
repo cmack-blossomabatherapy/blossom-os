@@ -272,6 +272,174 @@ export function familyContext(opt: CMFamilyOption | null | undefined) {
   };
 }
 
+/* ============================================================
+ * Case Manager durable client matching
+ * ------------------------------------------------------------
+ * Real Blossom data has duplicate patient names, nicknames,
+ * middle initials, CentralReach formatting differences, and
+ * Monday-imported names that don't always match Blossom client
+ * rows. We must NEVER trust `client_name` as the primary join.
+ *
+ * The rule for every Case Manager live-status lookup is:
+ *   1. Match by Blossom OS `client_id` (uuid) when available.
+ *   2. Match by `centralreach_client_id` when available.
+ *   3. Match by normalized client name as a LAST fallback.
+ *
+ * These helpers centralize that policy so no Case Manager page
+ * ships name-first matching to production.
+ * ============================================================ */
+
+export type CaseManagerClientMatchKeys = {
+  clientId: string | null;
+  centralReachClientId: string | null;
+  normalizedClientName: string | null;
+};
+
+export function normalizeClientName(v: string | null | undefined): string | null {
+  if (!v) return null;
+  const n = String(v)
+    .toLowerCase()
+    .replace(/[.,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return n.length ? n : null;
+}
+
+export function matchKeysForAssignment(a: CMAssignmentLike): CaseManagerClientMatchKeys {
+  return {
+    clientId: a.client_id ?? null,
+    centralReachClientId: a.centralreach_client_id ?? null,
+    normalizedClientName: normalizeClientName(a.client_name),
+  };
+}
+
+/**
+ * Find the live authorization record for a Case Manager assignment.
+ * Prefers CentralReach client id (via `auth.metaById`), then falls
+ * back to normalized clientName. Returns null when nothing matches.
+ */
+export function findAuthorizationForAssignment(
+  auth: {
+    items: Array<{ id: string; clientName?: string | null } & Record<string, unknown>>;
+    metaById?: Map<string, { centralreachClientId: string | null }>;
+  },
+  assignment: CMAssignmentLike,
+) {
+  const keys = matchKeysForAssignment(assignment);
+  // 1) CentralReach client id via overlay meta.
+  if (keys.centralReachClientId && auth.metaById) {
+    for (const item of auth.items) {
+      const meta = auth.metaById.get(item.id);
+      if (meta?.centralreachClientId && meta.centralreachClientId === keys.centralReachClientId) {
+        return item;
+      }
+    }
+  }
+  // 2) Normalized-name fallback.
+  if (keys.normalizedClientName) {
+    for (const item of auth.items) {
+      if (normalizeClientName(item.clientName as string | null) === keys.normalizedClientName) {
+        return item;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * CentralReach `bcba_billable_sessions` currently has no durable CR
+ * client id, so we prefer any future CR id on the pairing when it's
+ * available and always fall back to normalized name. The name
+ * matching lives HERE, not in the Case Manager pages.
+ */
+export function findCentralReachPairingForAssignment<T extends { clientName: string; centralReachClientId?: string | null }>(
+  cr: { pairingsByClient: Map<string, T> },
+  assignment: CMAssignmentLike,
+): T | null {
+  const keys = matchKeysForAssignment(assignment);
+  if (keys.centralReachClientId) {
+    for (const p of cr.pairingsByClient.values()) {
+      if (p.centralReachClientId && p.centralReachClientId === keys.centralReachClientId) return p;
+    }
+  }
+  if (!keys.normalizedClientName) return null;
+  for (const p of cr.pairingsByClient.values()) {
+    if (normalizeClientName(p.clientName) === keys.normalizedClientName) return p;
+  }
+  return null;
+}
+
+export function findCentralReachCoverageRiskForAssignment<T extends { clientName: string; centralReachClientId?: string | null }>(
+  cr: { coverageRisks: T[] },
+  assignment: CMAssignmentLike,
+): T | null {
+  const keys = matchKeysForAssignment(assignment);
+  if (keys.centralReachClientId) {
+    const cr1 = cr.coverageRisks.find((r) => r.centralReachClientId && r.centralReachClientId === keys.centralReachClientId);
+    if (cr1) return cr1;
+  }
+  if (!keys.normalizedClientName) return null;
+  return cr.coverageRisks.find((r) => normalizeClientName(r.clientName) === keys.normalizedClientName) ?? null;
+}
+
+/**
+ * Prefer `client_id` for both staffing matches and family preferences.
+ * Only fall back to normalized name when the row has no client_id.
+ */
+export function findStaffingForAssignment<
+  M extends { client_id: string | null; client_name?: string | null; status?: string; rbt_name?: string | null },
+  P extends { client_id: string | null; client_name: string | null },
+>(
+  staffing: { matches: M[]; preferences: P[] },
+  assignment: CMAssignmentLike,
+) {
+  const keys = matchKeysForAssignment(assignment);
+  const matches = staffing.matches.filter((m) => {
+    if (keys.clientId && m.client_id) return m.client_id === keys.clientId;
+    if (!m.client_id && keys.normalizedClientName) {
+      return normalizeClientName(m.client_name ?? null) === keys.normalizedClientName;
+    }
+    return false;
+  });
+  const preferences = staffing.preferences.filter((p) => {
+    if (keys.clientId && p.client_id) return p.client_id === keys.clientId;
+    if (!p.client_id && keys.normalizedClientName) {
+      return normalizeClientName(p.client_name) === keys.normalizedClientName;
+    }
+    return false;
+  });
+  return { matches, preferences };
+}
+
+/* ============================================================
+ * Source status chip — small non-blocking indicator that a
+ * downstream live-data hook is still loading or failed. Never
+ * blocks the Case Manager page.
+ * ============================================================ */
+
+export function SourceStatusChip({
+  label, loading, error,
+}: { label: string; loading?: boolean; error?: string | null }) {
+  if (loading) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(210_50%_85%)] bg-[hsl(210_100%_98%)] px-2 py-0.5 text-[10.5px] font-medium text-[hsl(210_60%_40%)]">
+        <Loader2 className="h-2.5 w-2.5 animate-spin" /> {label} data loading
+      </span>
+    );
+  }
+  if (error) {
+    return (
+      <span
+        title={error}
+        className="inline-flex items-center gap-1 rounded-full border border-[hsl(38_85%_85%)] bg-[hsl(38_100%_96%)] px-2 py-0.5 text-[10.5px] font-medium text-[hsl(28_75%_40%)]"
+      >
+        <AlertCircle className="h-2.5 w-2.5" /> {label} data unavailable
+      </span>
+    );
+  }
+  return null;
+}
+
 /* ------------ Data table ------------ */
 
 export function DataCard({ title, count, children }: { title?: string; count?: number; children: React.ReactNode }) {
