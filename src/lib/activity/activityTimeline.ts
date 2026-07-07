@@ -728,7 +728,7 @@ function activityFromMarketingEmail(row: MarketingEmailRow): ActivityEvent {
 export async function fetchActivityFeed(
   { limit = 300 }: { limit?: number } = {},
 ): Promise<ActivityEvent[]> {
-  const [srcRes, callRes, emailRes] = await Promise.all([
+  const [srcRes, callRes, emailRes, wiRes, wiEventRes] = await Promise.all([
     supabase
       .from("marketing_source_events")
       .select("*")
@@ -746,6 +746,16 @@ export async function fetchActivityFeed(
       .select("id, occurred_at, event_type, subject, recipient_email, list_name, campaign_id, lead_id")
       .order("occurred_at", { ascending: false })
       .limit(limit),
+    supabase
+      .from("operations_work_items")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("operations_work_item_events")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit),
   ]);
 
   const sourceEvents = ((srcRes.data ?? []) as MarketingSourceEventRow[])
@@ -757,13 +767,19 @@ export async function fetchActivityFeed(
   const emailEvents = ((emailRes.data ?? []) as unknown as MarketingEmailRow[]).map(
     activityFromMarketingEmail,
   );
-  const workEvents = listWorkItems().map(activityFromWorkItem);
+  const workItems = ((wiRes.data ?? []) as unknown as OperationsWorkItemRow[]).map(rowToWorkItem);
+  const workItemsById = new Map(workItems.map((w) => [w.id, w]));
+  const workEvents = workItems.map(activityFromWorkItem);
+  const workItemEvents = ((wiEventRes.data ?? []) as unknown as OperationsWorkItemEventRow[]).map(
+    (ev) => activityFromWorkItemEvent(ev, workItemsById.get(ev.work_item_id)),
+  );
 
   return sortActivityNewestFirst([
     ...sourceEvents,
     ...callEvents,
     ...emailEvents,
     ...workEvents,
+    ...workItemEvents,
   ]);
 }
 
@@ -810,12 +826,20 @@ export function useActivityFeed({ limit = 300 }: { limit?: number } = {}) {
         { event: "*", schema: "public", table: "marketing_email_events" },
         () => void load(),
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "operations_work_items" },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "operations_work_item_events" },
+        () => void load(),
+      )
       .subscribe();
-    const unsubWi = subscribeWorkItems(() => void load());
 
     return () => {
       cancelled = true;
-      unsubWi();
       void supabase.removeChannel(channel);
     };
   }, [limit]);
