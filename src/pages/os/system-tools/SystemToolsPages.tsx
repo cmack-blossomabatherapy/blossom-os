@@ -500,6 +500,16 @@ export function WorkflowInventoryPage() {
       {isAdmin ? (
         <SystemToolAuditPanel toolArea="workflow_inventory" />
       ) : null}
+
+      {selectedRow ? (
+        <WorkflowDialog
+          key={selectedRow.id}
+          open
+          onOpenChange={(o) => { if (!o) closeSelected(); }}
+          initial={selectedRow}
+          onSubmit={(patch) => update(selectedRow.id, patch)}
+        />
+      ) : null}
     </Shell>
   );
 }
