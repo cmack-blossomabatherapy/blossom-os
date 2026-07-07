@@ -1153,53 +1153,17 @@ export default function Integrations() {
     }
     return INTEGRATIONS.map((i) => {
       const live = liveByIntegration.get(i.id);
-      // Truthful default: unless the registry marks the integration as
-      // planned/maybe (coming_soon), any integration without a live
-      // integration_connections row is "Not connected" — never inherit a
-      // catalog default like "connected".
-      let status: IntegrationStatus =
-        i.status === "coming_soon" ? "coming_soon" : "disconnected";
-      let enabled = enabledMap[i.id] ?? i.enabled;
-      let lastSync: string | undefined = undefined;
-      if (live) {
-        enabled = live.enabled;
-        const hasSecrets = (live.secret_names?.length ?? 0) > 0;
-        const requiresSecrets =
-          live.credential_mode !== "none" && live.credential_mode !== "public";
-        const neverProbed = !live.last_tested_at && !live.last_success_at;
-        switch (live.status) {
-          case "connected":
-            status = neverProbed ? "probe_pending" : "connected";
-            break;
-          case "error":
-            status = "error";
-            break;
-          case "needs_attention":
-            status = "reauth";
-            break;
-          case "not_configured":
-            status = requiresSecrets && !hasSecrets
-              ? "credentials_required"
-              : "disconnected";
-            break;
-          case "syncing":
-            status = "syncing";
-            break;
-          case "pending":
-          case "probing":
-            status = "probe_pending";
-            break;
-          default:
-            status = "disconnected";
-            break;
-        }
-        if (requiresSecrets && !hasSecrets && status !== "error") {
-          status = "credentials_required";
-        }
-        if (live.last_success_at) {
-          lastSync = new Date(live.last_success_at).toLocaleString();
-        }
-      }
+      // Truthful overlay: the static registry can NEVER promote an integration
+      // to "connected" — only a live integration_connections row can. See
+      // deriveIntegrationStatus for full vocabulary + probe rules.
+      const status: IntegrationStatus = deriveIntegrationStatus(
+        live ?? null,
+        i.status === "coming_soon" ? "coming_soon" : "disconnected",
+      );
+      const enabled = live ? live.enabled : (enabledMap[i.id] ?? i.enabled);
+      const lastSync = live?.last_success_at
+        ? new Date(live.last_success_at).toLocaleString()
+        : undefined;
       return { ...i, enabled, status, lastSync };
     });
   }, [enabledMap, connections]);
