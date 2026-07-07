@@ -615,7 +615,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "BCBA Oversight",              path: "/assigned-bcbas",         icon: UserCheck },
           { label: "Supervision Health",          path: "/supervision-visibility", icon: Eye },
           { label: "Treatment Plan Reviews",      path: "/treatment-plan-reviews", icon: FileCheck2 },
-          { label: "Progress Reports",            path: "/reports",                icon: BarChart3 },
+          { label: "Progress Reports",            path: "/reports/progress-reports", icon: BarChart3 },
           { label: "Evaluations",                 path: "/evaluations",            icon: ClipboardCheck },
           { label: "Clinical Escalations",        path: "/escalations-followups",  icon: AlertTriangle },
           { label: "QA Dashboard",                path: "/qa-team",                icon: ShieldCheck },
