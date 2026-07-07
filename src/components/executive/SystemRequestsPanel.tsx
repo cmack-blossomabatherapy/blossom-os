@@ -292,6 +292,30 @@ function RequestDialog({
 }
 
 export function SystemRequestsPanel() {
+  return <SystemRequestsPanelInner />;
+}
+
+/**
+ * Header-friendly Submit Request button. Uses the same full-form dialog as
+ * the intake panel so admins and end users get identical intake surfaces.
+ */
+export function SubmitSystemRequestButton({
+  label = "Submit request", size = "sm",
+}: { label?: string; size?: "sm" | "default" }) {
+  const { create } = useSystemIssues();
+  return (
+    <RequestDialog
+      trigger={
+        <Button size={size}>
+          <Plus className="mr-1.5 h-4 w-4" /> {label}
+        </Button>
+      }
+      onSave={async (payload) => { await create(payload); }}
+    />
+  );
+}
+
+function SystemRequestsPanelInner() {
   const { rows, loading, create, update } = useSystemIssues();
   const { create: createWorkflow } = useSystemWorkflows();
   const { isAdmin, displayName } = useAuth();
