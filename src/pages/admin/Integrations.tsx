@@ -1167,7 +1167,7 @@ export default function Integrations() {
             i.status === "probe_pending"
           );
         case "errors":
-          return i.status === "error" || i.status === "reauth" || i.status === "delayed";
+          return i.status === "error" || i.status === "reauth";
         case "syncing":
           return i.status === "syncing";
         case "critical":
