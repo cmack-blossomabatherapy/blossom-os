@@ -427,23 +427,45 @@ function SystemRequestsPanelInner() {
   const convertToWorkflow = async (req: SystemIssue) => {
     setConvertingId(req.id);
     try {
-      await createWorkflow({
+      // Initial state for a newly-converted workflow:
+      //   status:   Planned   (needs scoping/build before it can be Active)
+      //   priority: mapped from the request priority
+      //   risk:     High when the request is urgent/high, else Medium
+      const initialRisk =
+        req.priority === "urgent" ? "High" :
+        req.priority === "high" ? "High" :
+        req.priority === "low" ? "Low" : "Medium";
+
+      const notesBlock = [
+        req.description ? `Description:\n${req.description}` : "",
+        req.impact ? `Impact:\n${req.impact}` : "",
+        req.desired_outcome ? `Desired outcome:\n${req.desired_outcome}` : "",
+        `Converted from system request "${req.title}" (${req.id.slice(0, 8)}) by ${displayName ?? "admin"} on ${new Date().toLocaleDateString()}.`,
+      ].filter(Boolean).join("\n\n");
+
+      const workflowId = await createWorkflow({
         name: req.title,
-        department: req.area ?? null,
+        department: req.affected_department ?? req.area ?? null,
         owner_name: req.owner_name ?? null,
         current_source: "System request",
         future_module: null,
         status: "Planned",
         priority: mapPriorityToWorkflow(req.priority),
-        notes: [
-          req.description ?? "",
-          `Converted from request "${req.title}" (${req.id.slice(0, 8)}) by ${displayName ?? "admin"} on ${new Date().toLocaleDateString()}.`,
-        ].filter(Boolean).join("\n\n"),
+        notes: notesBlock,
+        related_route: req.affected_route ?? null,
+        related_integration_id: req.related_integration_id ?? null,
+        risk_level: initialRisk,
       });
+
       await update(req.id, {
         status: "resolved",
         resolved_at: new Date().toISOString(),
-        notes: [req.notes ?? "", `Converted to workflow inventory item.`].filter(Boolean).join("\n"),
+        notes: [
+          req.notes ?? "",
+          workflowId
+            ? `Converted to workflow inventory item ${workflowId.slice(0, 8)}.`
+            : `Converted to workflow inventory item.`,
+        ].filter(Boolean).join("\n"),
       });
       void logSystemToolAction({
         tool_area: "request_intake",
@@ -451,8 +473,21 @@ function SystemRequestsPanelInner() {
         entity_table: "system_issues",
         entity_id: req.id,
         previous_value: { status: req.status },
-        new_value: { status: "resolved", target: "system_workflows" },
-        metadata: { title: req.title },
+        new_value: {
+          status: "resolved",
+          target: "system_workflows",
+          workflow_id: workflowId,
+          initial_workflow_status: "Planned",
+          initial_workflow_priority: mapPriorityToWorkflow(req.priority),
+          initial_workflow_risk: initialRisk,
+        },
+        metadata: {
+          title: req.title,
+          area: req.area,
+          affected_department: req.affected_department,
+          affected_route: req.affected_route,
+          related_integration_id: req.related_integration_id,
+        },
       });
       toast.success("Converted to workflow inventory item");
     } catch (err: any) {
