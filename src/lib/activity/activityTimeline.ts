@@ -10,7 +10,7 @@
  *   - `marketing_source_events`
  *   - `marketing_call_events`
  *   - `marketing_email_events`
- *   - Work Queue (live in-memory store, DB-backed pass pending)
+ *   - `operations_work_items` + `operations_work_item_events`
  *
  * `activityFromSourceEvent` remains a pure type helper for callers that
  * already have a normalized LeadSourceEvent shape. No production feed uses
@@ -41,7 +41,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { LeadSourceEvent } from "@/lib/leads/leadSourceEvents";
-import { listWorkItems, subscribeWorkItems } from "@/lib/workQueue/workQueueStore";
 import type { WorkItem } from "@/lib/workQueue/workQueueModel";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -507,26 +506,21 @@ export function groupActivityByDate(events: ActivityEvent[]): { label: string; e
 /* ---------------------------- Aggregated feed ---------------------------- */
 
 /**
- * Synchronous fallback feed. Contains only Work Queue activity that already
- * lives in a local subscription store. Production surfaces should prefer
- * `useActivityFeed()` / `fetchActivityFeed()`, which merge in database-backed
- * Marketing activity. No seeded mock events, no in-memory source-event store.
+ * Synchronous fallback feed. Production surfaces should always prefer the
+ * async `fetchActivityFeed()` / `useActivityFeed()` paths, which pull from
+ * Supabase. Kept as an empty-array stub for any legacy call sites so they
+ * never surface seeded/mock work queue items.
  */
 export function buildActivityFeed(): ActivityEvent[] {
-  const workEvents = listWorkItems().map(activityFromWorkItem);
-  return sortActivityNewestFirst(workEvents);
+  return [];
 }
 
 /**
- * Subscribe to changes in local subscription stores (work queue only) and
- * re-emit the sync feed. Kept for legacy callers.
+ * Legacy no-op subscription. The realtime Supabase subscription lives inside
+ * `useActivityFeed()`. This shim exists only so older callers do not crash.
  */
-export function subscribeActivityFeed(listener: (events: ActivityEvent[]) => void): () => void {
-  const push = () => listener(buildActivityFeed());
-  const unsubWi = subscribeWorkItems(() => push());
-  return () => {
-    unsubWi();
-  };
+export function subscribeActivityFeed(_listener: (events: ActivityEvent[]) => void): () => void {
+  return () => {};
 }
 
 /* ---------------------------- Database-backed feed ---------------------------- */
@@ -547,6 +541,116 @@ interface MarketingCallRow {
   call_category?: string | null;
   source_id?: string | null;
   campaign_id?: string | null;
+}
+
+interface OperationsWorkItemRow {
+  id: string;
+  title: string;
+  description: string | null;
+  type: string | null;
+  department: string | null;
+  owner_id: string | null;
+  owner_name: string | null;
+  assigned_role: string | null;
+  state: string | null;
+  priority: string | null;
+  status: string | null;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string | null;
+  escalated_at: string | null;
+  resolved_at: string | null;
+  snoozed_until: string | null;
+  related_lead_id: string | null;
+  related_patient_id: string | null;
+  related_user_id: string | null;
+  source_system: string | null;
+  tags: string[] | null;
+  escalation_reason: string | null;
+  escalation_level: number | null;
+  resolution_notes: string | null;
+  metadata: Record<string, unknown> | null;
+}
+
+interface OperationsWorkItemEventRow {
+  id: string;
+  work_item_id: string;
+  event_type: string;
+  message: string | null;
+  actor_id: string | null;
+  actor_name: string | null;
+  created_at: string;
+  metadata: Record<string, unknown> | null;
+}
+
+function rowToWorkItem(r: OperationsWorkItemRow): WorkItem {
+  return {
+    id: r.id,
+    title: r.title,
+    description: r.description ?? undefined,
+    type: (r.type as WorkItem["type"]) ?? "general_task",
+    department: (r.department as WorkItem["department"]) ?? "Operations Leadership",
+    ownerId: r.owner_id ?? undefined,
+    ownerName: r.owner_name ?? undefined,
+    assignedRole: r.assigned_role ?? undefined,
+    state: r.state ?? undefined,
+    priority: (r.priority as WorkItem["priority"]) ?? "normal",
+    status: (r.status as WorkItem["status"]) ?? "open",
+    dueDate: r.due_date ?? undefined,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at ?? undefined,
+    escalatedAt: r.escalated_at ?? undefined,
+    resolvedAt: r.resolved_at ?? undefined,
+    snoozedUntil: r.snoozed_until ?? undefined,
+    relatedLeadId: r.related_lead_id ?? undefined,
+    relatedPatientId: r.related_patient_id ?? undefined,
+    relatedUserId: r.related_user_id ?? undefined,
+    sourceSystem: r.source_system ?? undefined,
+    tags: r.tags ?? [],
+    escalationReason: r.escalation_reason ?? undefined,
+    escalationLevel: (r.escalation_level as WorkItem["escalationLevel"]) ?? undefined,
+    resolutionNotes: r.resolution_notes ?? undefined,
+    metadata: r.metadata ?? undefined,
+  };
+}
+
+const WORK_ITEM_EVENT_TITLES: Record<string, { title: (msg?: string | null) => string; type: ActivityEventType; severity: ActivitySeverity }> = {
+  work_item_created: { title: () => "Work item created", type: "work_item_created", severity: "info" },
+  work_item_updated: { title: () => "Work item updated", type: "work_item_updated", severity: "info" },
+  work_item_assigned: { title: () => "Work item assigned", type: "work_item_assigned", severity: "info" },
+  work_item_status_changed: { title: () => "Status changed", type: "work_item_updated", severity: "info" },
+  work_item_snoozed: { title: () => "Snoozed", type: "work_item_updated", severity: "info" },
+  work_item_escalated: { title: () => "Escalated", type: "work_item_escalated", severity: "warning" },
+  work_item_escalation_resolved: { title: () => "Escalation resolved", type: "work_item_escalation_resolved", severity: "success" },
+  work_item_completed: { title: () => "Completed", type: "work_item_completed", severity: "success" },
+  note_added: { title: () => "Note added", type: "note_added", severity: "info" },
+};
+
+function activityFromWorkItemEvent(
+  ev: OperationsWorkItemEventRow,
+  item?: WorkItem,
+): ActivityEvent {
+  const preset = WORK_ITEM_EVENT_TITLES[ev.event_type] ?? WORK_ITEM_EVENT_TITLES.work_item_updated;
+  const suffix = item?.title ? ` — ${item.title}` : "";
+  return normalizeActivityEvent({
+    id: `wie_${ev.id}`,
+    type: preset.type,
+    objectType: "task",
+    objectId: ev.work_item_id,
+    objectLabel: item?.title ?? item?.department,
+    relatedLeadId: item?.relatedLeadId,
+    relatedPatientId: item?.relatedPatientId,
+    relatedUserId: item?.relatedUserId,
+    actorUserId: ev.actor_id ?? undefined,
+    actorName: ev.actor_name ?? item?.ownerName,
+    actorRole: item?.department,
+    occurredAt: ev.created_at,
+    title: preset.title() + suffix,
+    summary: ev.message ?? undefined,
+    sourceSystem: item?.sourceSystem ?? "Work Queue",
+    severity: preset.severity,
+    metadata: ev.metadata ?? undefined,
+  });
 }
 
 interface MarketingEmailRow {
@@ -624,7 +728,7 @@ function activityFromMarketingEmail(row: MarketingEmailRow): ActivityEvent {
 export async function fetchActivityFeed(
   { limit = 300 }: { limit?: number } = {},
 ): Promise<ActivityEvent[]> {
-  const [srcRes, callRes, emailRes] = await Promise.all([
+  const [srcRes, callRes, emailRes, wiRes, wiEventRes] = await Promise.all([
     supabase
       .from("marketing_source_events")
       .select("*")
@@ -642,6 +746,16 @@ export async function fetchActivityFeed(
       .select("id, occurred_at, event_type, subject, recipient_email, list_name, campaign_id, lead_id")
       .order("occurred_at", { ascending: false })
       .limit(limit),
+    supabase
+      .from("operations_work_items")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("operations_work_item_events")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit),
   ]);
 
   const sourceEvents = ((srcRes.data ?? []) as MarketingSourceEventRow[])
@@ -653,13 +767,19 @@ export async function fetchActivityFeed(
   const emailEvents = ((emailRes.data ?? []) as unknown as MarketingEmailRow[]).map(
     activityFromMarketingEmail,
   );
-  const workEvents = listWorkItems().map(activityFromWorkItem);
+  const workItems = ((wiRes.data ?? []) as unknown as OperationsWorkItemRow[]).map(rowToWorkItem);
+  const workItemsById = new Map(workItems.map((w) => [w.id, w]));
+  const workEvents = workItems.map(activityFromWorkItem);
+  const workItemEvents = ((wiEventRes.data ?? []) as unknown as OperationsWorkItemEventRow[]).map(
+    (ev) => activityFromWorkItemEvent(ev, workItemsById.get(ev.work_item_id)),
+  );
 
   return sortActivityNewestFirst([
     ...sourceEvents,
     ...callEvents,
     ...emailEvents,
     ...workEvents,
+    ...workItemEvents,
   ]);
 }
 
@@ -706,12 +826,20 @@ export function useActivityFeed({ limit = 300 }: { limit?: number } = {}) {
         { event: "*", schema: "public", table: "marketing_email_events" },
         () => void load(),
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "operations_work_items" },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "operations_work_item_events" },
+        () => void load(),
+      )
       .subscribe();
-    const unsubWi = subscribeWorkItems(() => void load());
 
     return () => {
       cancelled = true;
-      unsubWi();
       void supabase.removeChannel(channel);
     };
   }, [limit]);
