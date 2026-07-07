@@ -278,6 +278,25 @@ const INTEGRATIONS: Integration[] = BLOSSOM_INTEGRATIONS
   .filter((i) => !i.internalOnly)
   .map(toIntegrationCard);
 
+/** Internal-only / legacy integrations (Make.com etc.), shown in a
+ *  collapsed section below so admins can still see them without
+ *  presenting them as current desired integrations. */
+const LEGACY_INTEGRATIONS: Integration[] = BLOSSOM_INTEGRATIONS
+  .filter((i) => i.internalOnly)
+  .map(toIntegrationCard);
+
+/** Named source-of-truth systems that Blossom OS depends on.
+ *  Order intentional — top-of-page overview for admins. */
+const SOURCE_OF_TRUTH_IDS = [
+  "centralreach",
+  "viventium",
+  "pandadoc",
+  "retell",
+  "ctm",
+  "leadtrap",
+  "apploi",
+] as const;
+
 // -----------------------------------------------------------------------------
 // Small UI atoms
 // -----------------------------------------------------------------------------
