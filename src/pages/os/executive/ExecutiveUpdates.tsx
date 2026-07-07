@@ -410,11 +410,6 @@ export default function ExecutiveUpdates() {
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <ActionPill
-                  label="Acknowledge"
-                  disabled
-                  title="Acknowledgement tracking coming soon"
-                />
-                <ActionPill
                   label="Copy link"
                   onClick={() => {
                     const url = `${window.location.origin}${window.location.pathname}#${encodeURIComponent(u.title)}`;
