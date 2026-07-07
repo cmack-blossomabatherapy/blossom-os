@@ -223,6 +223,7 @@ function WorkflowDialog({
   const [priority, setPriority] = useState(initial?.priority ?? "Medium");
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [relatedRoute, setRelatedRoute] = useState(initial?.related_route ?? "");
+  const [relatedIntegration, setRelatedIntegration] = useState(initial?.related_integration_id ?? "");
   const [riskLevel, setRiskLevel] = useState(initial?.risk_level ?? "");
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -243,6 +244,7 @@ function WorkflowDialog({
         status, priority,
         notes: notes || null,
         related_route: relatedRoute || null,
+        related_integration_id: relatedIntegration || null,
         risk_level: riskLevel || null,
       });
       setOpen(false);
@@ -298,6 +300,7 @@ function WorkflowDialog({
               </Select>
             </div>
           </div>
+          <div><Label>Related integration ID</Label><Input value={relatedIntegration ?? ""} onChange={(e) => setRelatedIntegration(e.target.value)} placeholder="e.g. retell, viventium, centralreach" /></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
