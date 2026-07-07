@@ -55,6 +55,9 @@ function EscalationRow({ item, onResolve }: { item: WorkItem; onResolve: (id: st
               <Link to={`/patient-journey?leadId=${item.relatedLeadId}`}>Open</Link>
             </Button>
           )}
+          <Button asChild size="sm" variant="ghost">
+            <Link to={`/work-queue?selected=${item.id}`}>Details</Link>
+          </Button>
           <Button size="sm" variant="outline" onClick={() => onResolve(item.id)}>Resolve</Button>
         </div>
       </td>
