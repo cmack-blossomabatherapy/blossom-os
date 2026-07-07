@@ -53,6 +53,46 @@ function mapPriorityToWorkflow(p: string): string {
   }
 }
 
+function initialRiskFromPriority(p: string): string {
+  if (p === "urgent" || p === "high") return "High";
+  if (p === "low") return "Low";
+  return "Medium";
+}
+
+interface WorkflowDraft {
+  name: string;
+  department: string | null;
+  owner_name: string | null;
+  current_source: string;
+  status: "Planned";
+  priority: string;
+  risk_level: string;
+  related_route: string | null;
+  related_integration_id: string | null;
+  notes: string;
+}
+
+function buildWorkflowDraftFromRequest(req: SystemIssue, actor: string): WorkflowDraft {
+  const notes = [
+    req.description ? `Description:\n${req.description}` : "",
+    req.impact ? `Impact:\n${req.impact}` : "",
+    req.desired_outcome ? `Desired outcome:\n${req.desired_outcome}` : "",
+    `Converted from system request "${req.title}" (${req.id.slice(0, 8)}) by ${actor} on ${new Date().toLocaleDateString()}.`,
+  ].filter(Boolean).join("\n\n");
+  return {
+    name: req.title,
+    department: req.affected_department ?? req.area ?? null,
+    owner_name: req.owner_name ?? null,
+    current_source: "System request",
+    status: "Planned",
+    priority: mapPriorityToWorkflow(req.priority),
+    risk_level: initialRiskFromPriority(req.priority),
+    related_route: req.affected_route ?? null,
+    related_integration_id: req.related_integration_id ?? null,
+    notes,
+  };
+}
+
 function mapPriorityToWorkItem(p: string): "low" | "normal" | "high" | "urgent" {
   if (p === "urgent" || p === "high" || p === "low" || p === "normal") return p;
   return "normal";
