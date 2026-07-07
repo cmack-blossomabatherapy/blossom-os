@@ -28,6 +28,7 @@ import {
   type WorkItemStatus, type WorkItemType,
 } from "@/lib/workQueue/workQueueModel";
 import { DueCell, KpiCard, PriorityBadge, RecommendedAction, StatusBadge, WorkItemMeta } from "./WorkQueueShared";
+import { WorkItemTimeline } from "@/components/workQueue/WorkItemTimeline";
 
 const DEPARTMENTS: (WorkDepartment | "all")[] = [
   "all", "Intake", "Marketing", "Business Development", "Authorizations",
@@ -191,6 +192,7 @@ export default function WorkQueuePage() {
   const initialPriority = (searchParams.get("priority") as WorkItemPriority | "all" | null) ?? "all";
   const initialStatus = (searchParams.get("status") as WorkItemStatus | "all" | "active" | null) ?? "active";
   const initialDept = (searchParams.get("department") as WorkDepartment | "all" | null) ?? "all";
+  const initialSelectedId = searchParams.get("selected");
   const [view, setView] = useState<"all" | "my" | "department" | "escalations" | "overdue">(initialView);
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState<WorkDepartment | "all">(initialDept);
@@ -216,6 +218,14 @@ export default function WorkQueuePage() {
     if (fresh && fresh !== selected) setSelected(fresh);
     if (!fresh) setSelected(null);
   }, [wq.items, selected]);
+
+  // Deep-link ?selected=<id> auto-selects the item once items load.
+  useEffect(() => {
+    if (!initialSelectedId || selected) return;
+    const match = wq.items.find((i) => i.id === initialSelectedId);
+    if (match) setSelected(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSelectedId, wq.items]);
 
   const kpi = useMemo(() => ({
     open: wq.items.filter((i) => !["resolved", "closed", "ignored"].includes(i.status)).length,
@@ -397,6 +407,10 @@ export default function WorkQueuePage() {
                       </Link>
                     </Button>
                   )}
+                </div>
+
+                <div className="pt-3 border-t border-border/60">
+                  <WorkItemTimeline workItemId={selected.id} />
                 </div>
               </div>
             ) : (

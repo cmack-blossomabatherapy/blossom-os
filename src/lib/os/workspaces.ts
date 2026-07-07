@@ -163,7 +163,7 @@ export const WORKSPACES: Workspace[] = [
       { label: "Workspace",         path: "/qa-workspace" },
       { label: "Clients",           path: "/qa-clients" },
       { label: "Treatment Plans",   path: "/treatment-plan-reviews" },
-      { label: "Progress Reports",  path: "/progress-reports" },
+      { label: "Progress Reports",  path: "/reports/progress-reports" },
       { label: "Missing Info",      path: "/missing-information" },
       { label: "Supervision",       path: "/supervision-visibility" },
       { label: "Messages",          path: "/qa-messages" },

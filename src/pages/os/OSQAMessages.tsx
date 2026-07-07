@@ -864,7 +864,7 @@ export default function OSQAMessages() {
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <CtxBtn icon={ExternalLink}  label="Open client"          to={`/qa-clients?client=${encodeURIComponent(active.client)}`} />
                     <CtxBtn icon={ClipboardList} label="Open authorization"   to={`/authorization-reviews?id=${encodeURIComponent(active.auth.id)}`} />
-                    <CtxBtn icon={FileText}      label="Open PR workflow"     to="/progress-reports" />
+                    <CtxBtn icon={FileText}      label="Open PR workflow"     to="/reports" />
                     <CtxBtn icon={ShieldAlert}   label="Open TP review"       to="/treatment-plan-reviews" />
                   </div>
                 </Card>
@@ -1192,7 +1192,7 @@ function ThreadSlideout({ t, onClose, onChanged, sourceSystem }: { t: Thread; on
             <div className="grid grid-cols-2 gap-2 pt-2">
               <CtxBtn icon={ExternalLink}  label="Open client"          to={`/qa-clients?client=${encodeURIComponent(t.client)}`} />
               <CtxBtn icon={ClipboardList} label="Open authorization"   to={`/authorization-reviews?id=${encodeURIComponent(t.auth.id)}`} />
-              <CtxBtn icon={FileText}      label="Open PR workflow"     to="/progress-reports" />
+              <CtxBtn icon={FileText}      label="Open PR workflow"     to="/reports" />
               <CtxBtn icon={ShieldAlert}   label="Open TP review"       to="/treatment-plan-reviews" />
             </div>
           </section>

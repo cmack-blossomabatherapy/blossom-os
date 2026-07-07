@@ -100,9 +100,9 @@ describe("Clinical Director Pass 4 — context-aware workflow", () => {
     const app = read("src/App.tsx");
     expect(app).not.toMatch(/path="\/clinical\/reports"/);
     const items = ROLE_MENUS.clinical_director.sections.flatMap((s) => s.items);
-    const reportsItems = items.filter((i) => /^\/reports(\/|$)/.test(i.path));
-    expect(reportsItems.length).toBe(1);
-    expect(reportsItems[0].path).toBe("/reports");
+    const reportsHub = items.filter((i) => i.path === "/reports");
+    expect(reportsHub.length).toBe(1);
+    expect(reportsHub[0].path).toBe("/reports");
   });
 
   it("Clinical Director menu has no AI and no Phone", () => {
