@@ -299,6 +299,13 @@ export const canAccessRouteForRoles = (pathname: string, roles: AppRole[]) => {
     return roles.length > 0;
   }
 
+  // Reports is the single canonical surface for every role. Report visibility
+  // inside the page is controlled by visibleReportsForRole / ReportRoleGuard,
+  // so we only gate that the user is authenticated here.
+  if (routeMatches(pathname, "/reports")) {
+    return roles.length > 0;
+  }
+
   const exceptions = getRoleNavigationExceptions(roles);
   const intelligenceOverrides = exceptions
     .map((e) => e.intelligenceItemPaths)

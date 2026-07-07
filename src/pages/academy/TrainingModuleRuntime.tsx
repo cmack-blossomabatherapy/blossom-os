@@ -63,7 +63,7 @@ export default function TrainingModuleRuntime() {
       return;
     }
     tickRef.current = window.setInterval(() => {
-      tickRuntime(decodedId, 1);
+      tickRuntime(decodedId, 1, runtimeCtx);
       persistRef.current += 1;
       // Persist elapsed to Supabase every 12s to avoid one write per tick.
       if (persistRef.current >= 12) {

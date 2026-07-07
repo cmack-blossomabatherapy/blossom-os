@@ -73,10 +73,11 @@ describe("navigationAccess", () => {
     expect(canAccessRouteForRoles("/admin/training-assign", ["training_admin"])).toBe(true);
   });
 
-  it("RBT stays blocked from clients/authorizations/payroll/admin/reports", () => {
-    for (const p of ["/clients", "/authorizations", "/payroll", "/admin", "/reports"]) {
+  it("RBT stays blocked from clients/authorizations/payroll/admin but allowed into /reports", () => {
+    for (const p of ["/clients", "/authorizations", "/payroll", "/admin", "/integrations", "/permissions"]) {
       expect(canAccessRouteForRoles(p, ["rbt"])).toBe(false);
     }
+    expect(canAccessRouteForRoles("/reports", ["rbt"])).toBe(true);
   });
 
   it("BCBA can access training/resources but not payroll/admin", () => {
