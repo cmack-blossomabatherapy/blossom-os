@@ -192,6 +192,7 @@ export default function WorkQueuePage() {
   const initialPriority = (searchParams.get("priority") as WorkItemPriority | "all" | null) ?? "all";
   const initialStatus = (searchParams.get("status") as WorkItemStatus | "all" | "active" | null) ?? "active";
   const initialDept = (searchParams.get("department") as WorkDepartment | "all" | null) ?? "all";
+  const initialSelectedId = searchParams.get("selected");
   const [view, setView] = useState<"all" | "my" | "department" | "escalations" | "overdue">(initialView);
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState<WorkDepartment | "all">(initialDept);
@@ -217,6 +218,14 @@ export default function WorkQueuePage() {
     if (fresh && fresh !== selected) setSelected(fresh);
     if (!fresh) setSelected(null);
   }, [wq.items, selected]);
+
+  // Deep-link ?selected=<id> auto-selects the item once items load.
+  useEffect(() => {
+    if (!initialSelectedId || selected) return;
+    const match = wq.items.find((i) => i.id === initialSelectedId);
+    if (match) setSelected(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSelectedId, wq.items]);
 
   const kpi = useMemo(() => ({
     open: wq.items.filter((i) => !["resolved", "closed", "ignored"].includes(i.status)).length,
