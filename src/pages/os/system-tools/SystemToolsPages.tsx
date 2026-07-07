@@ -580,20 +580,84 @@ export function IssueTrackerPage() {
   const { rows, loading, create, update, remove } = useSystemIssues();
   const { toast } = useToast();
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState(ALL_OPTION);
+  const [priorityFilter, setPriorityFilter] = useState(ALL_OPTION);
+  const [severityFilter, setSeverityFilter] = useState(ALL_OPTION);
+  const [areaFilter, setAreaFilter] = useState(ALL_OPTION);
+  const [resolveTarget, setResolveTarget] = useState<SystemIssue | null>(null);
+  const [resolveNotes, setResolveNotes] = useState("");
+
+  const areas = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.area).filter(Boolean))) as string[],
+    [rows],
+  );
 
   const filtered = useMemo(() => {
     const needle = q.toLowerCase();
-    if (!needle) return rows;
-    return rows.filter((r) =>
-      [r.title, r.area, r.description, r.owner_name, r.reported_by_name, r.notes]
-        .filter(Boolean).some((s) => String(s).toLowerCase().includes(needle)),
-    );
-  }, [rows, q]);
+    return rows.filter((r) => {
+      if (statusFilter !== ALL_OPTION && r.status !== statusFilter) return false;
+      if (priorityFilter !== ALL_OPTION && r.priority !== priorityFilter) return false;
+      if (severityFilter !== ALL_OPTION && (r.severity ?? "") !== severityFilter) return false;
+      if (areaFilter !== ALL_OPTION && (r.area ?? "") !== areaFilter) return false;
+      if (!needle) return true;
+      return [r.title, r.area, r.description, r.owner_name, r.reported_by_name, r.notes, r.related_route]
+        .filter(Boolean).some((s) => String(s).toLowerCase().includes(needle));
+    });
+  }, [rows, q, statusFilter, priorityFilter, severityFilter, areaFilter]);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this issue?")) return;
     try { await remove(id); }
     catch (e) { toast({ title: "Delete failed", description: (e as Error).message, variant: "destructive" }); }
+  }
+
+  async function quickStatus(r: SystemIssue, next: string, action: string) {
+    if (next === "Resolved") {
+      setResolveTarget(r);
+      setResolveNotes(r.resolution_notes ?? "");
+      return;
+    }
+    try {
+      await update(r.id, {
+        status: next,
+        resolved_at: null,
+      });
+      toast({ title: `Marked ${action}` });
+    } catch (e) {
+      toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
+    }
+  }
+
+  async function confirmResolve() {
+    if (!resolveTarget) return;
+    if (!resolveNotes.trim()) {
+      toast({ title: "Resolution notes are required", variant: "destructive" });
+      return;
+    }
+    try {
+      await update(resolveTarget.id, {
+        status: "Resolved",
+        resolution_notes: resolveNotes.trim(),
+        resolved_at: new Date().toISOString(),
+      });
+      setResolveTarget(null);
+      setResolveNotes("");
+      toast({ title: "Issue resolved" });
+    } catch (e) {
+      toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
+    }
+  }
+
+  async function convertRequestToIssue(r: SystemIssue) {
+    try {
+      await update(r.id, {
+        request_type: null,
+        status: r.status === "Open" ? "Triage" : r.status,
+      });
+      toast({ title: "Converted to tracked issue" });
+    } catch (e) {
+      toast({ title: "Convert failed", description: (e as Error).message, variant: "destructive" });
+    }
   }
 
   return (
@@ -611,8 +675,16 @@ export function IssueTrackerPage() {
           />
         }
       />
-      <SearchBar value={q} onChange={setQ} />
-      <TableShell columns={["Issue", "Area", "Reported by", "Owner", "Priority", "Status", "Notes", ""]}>
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchBar value={q} onChange={setQ} />
+        <SelectFilter label="Status" value={statusFilter} onChange={setStatusFilter} options={ISSUE_STATUSES} />
+        <SelectFilter label="Priority" value={priorityFilter} onChange={setPriorityFilter} options={PRIORITIES} />
+        <SelectFilter label="Severity" value={severityFilter} onChange={setSeverityFilter} options={SEVERITIES} />
+        {areas.length > 0 ? (
+          <SelectFilter label="Area" value={areaFilter} onChange={setAreaFilter} options={areas} />
+        ) : null}
+      </div>
+      <TableShell columns={["Issue", "Area", "Owner", "Priority", "Severity", "Status", "Related", ""]}>
         {loading ? (
           <EmptyRow span={8} label="Loading…" />
         ) : filtered.length === 0 ? (
@@ -621,14 +693,43 @@ export function IssueTrackerPage() {
           <tr key={r.id} className="border-t border-border/60 hover:bg-muted/30">
             <td className="px-4 py-3 font-medium">{r.title}</td>
             <td className="px-4 py-3 text-muted-foreground">{r.area ?? "—"}</td>
-            <td className="px-4 py-3 text-muted-foreground">{r.reported_by_name ?? "—"}</td>
             <td className="px-4 py-3 text-muted-foreground">{r.owner_name ?? "—"}</td>
             <td className="px-4 py-3"><StatusBadge status={r.priority} /></td>
+            <td className="px-4 py-3">{r.severity ? <StatusBadge status={r.severity} /> : <span className="text-muted-foreground">—</span>}</td>
             <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
-            <td className="px-4 py-3 text-muted-foreground max-w-[280px] truncate">{r.notes ?? "—"}</td>
+            <td className="px-4 py-3 text-muted-foreground text-xs">
+              {r.related_route ? (
+                <Link to={r.related_route} className="inline-flex items-center gap-1 hover:text-foreground">
+                  <ExternalLink className="h-3 w-3" />route
+                </Link>
+              ) : null}
+              {r.related_integration_id ? (
+                <Link to={`/admin/integrations?id=${r.related_integration_id}`} className="ml-2 inline-flex items-center gap-1 hover:text-foreground">
+                  <Plug className="h-3 w-3" />integration
+                </Link>
+              ) : null}
+              {!r.related_route && !r.related_integration_id ? "—" : null}
+            </td>
             <td className="px-4 py-3 text-right">
               {isAdmin ? (
                 <div className="flex items-center gap-1 justify-end">
+                  {r.status === "Open" ? (
+                    <QuickActionButton icon={PauseCircle} label="Triage" onClick={() => quickStatus(r, "Triage", "for triage")} />
+                  ) : null}
+                  {(r.status === "Open" || r.status === "Triage") ? (
+                    <QuickActionButton icon={Play} label="Start work" onClick={() => quickStatus(r, "In Progress", "in progress")} />
+                  ) : null}
+                  {r.status !== "Blocked" && r.status !== "Resolved" ? (
+                    <QuickActionButton icon={ShieldAlert} label="Mark blocked" tone="danger" onClick={() => quickStatus(r, "Blocked", "blocked")} />
+                  ) : null}
+                  {r.status !== "Resolved" ? (
+                    <QuickActionButton icon={CheckCircle2} label="Resolve" tone="success" onClick={() => quickStatus(r, "Resolved", "resolved")} />
+                  ) : (
+                    <QuickActionButton icon={RefreshCw} label="Reopen" onClick={() => quickStatus(r, "Open", "reopened")} />
+                  )}
+                  {r.request_type ? (
+                    <QuickActionButton icon={ArrowRightCircle} label="Convert to tracked issue" onClick={() => convertRequestToIssue(r)} />
+                  ) : null}
                   <AuditHistoryButton
                     toolArea="issue_tracker"
                     entityId={r.id}
@@ -651,6 +752,28 @@ export function IssueTrackerPage() {
       {isAdmin ? (
         <SystemToolAuditPanel toolArea="issue_tracker" />
       ) : null}
+
+      <Dialog open={!!resolveTarget} onOpenChange={(o) => { if (!o) { setResolveTarget(null); setResolveNotes(""); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Resolve: {resolveTarget?.title}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Resolution notes <span className="text-red-600">*</span></Label>
+              <Textarea
+                value={resolveNotes}
+                onChange={(e) => setResolveNotes(e.target.value)}
+                rows={5}
+                placeholder="What was done to resolve this? Link to fix, migration, or PR if applicable."
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">Required — the audit log captures who resolved and how.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setResolveTarget(null); setResolveNotes(""); }}>Cancel</Button>
+            <Button onClick={confirmResolve} disabled={!resolveNotes.trim()}>Resolve</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Shell>
   );
 }
