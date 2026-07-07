@@ -20,6 +20,12 @@ export interface SystemWorkflow {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  // Pass 4 - System Tools extensions
+  related_route?: string | null;
+  related_integration_id?: string | null;
+  risk_level?: string | null;
+  last_verified_at?: string | null;
+  verified_by?: string | null;
 }
 
 export interface SystemIssue {
@@ -48,6 +54,13 @@ export interface SystemIssue {
   owner_id?: string | null;
   reported_by_id?: string | null;
   metadata?: Record<string, unknown> | null;
+  // Pass 4 - Issue Tracker extensions
+  severity?: string | null;
+  reproduction_steps?: string | null;
+  resolution_notes?: string | null;
+  related_route?: string | null;
+  related_integration_id?: string | null;
+  closed_by?: string | null;
 }
 
 export interface SystemToolAuditLog {
