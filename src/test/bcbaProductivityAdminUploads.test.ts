@@ -18,10 +18,16 @@ describe("BCBA Productivity admin uploads — Sprint", () => {
   });
 
   it("Super Admin System Tools menu includes BCBA Productivity Uploads", () => {
-    const src = read("src/pages/os/OSShell.tsx");
+    // The canonical Super Admin menu is defined once in superAdminMenu.ts and
+    // consumed by both OSShell and AppSidebar — verify it there, not by
+    // scanning the shell file.
+    const src = read("src/lib/os/superAdminMenu.ts");
     expect(src).toMatch(/BCBA Productivity Uploads/);
     expect(src).toMatch(/system_tools/);
     expect(src).toMatch(/\/system\/bcba-productivity-uploads/);
+    // And both shells must consume the canonical source.
+    expect(read("src/pages/os/OSShell.tsx")).toMatch(/SUPER_ADMIN_MENU/);
+    expect(read("src/components/layout/AppSidebar.tsx")).toMatch(/SUPER_ADMIN_MENU/);
   });
 
   it("shared upload helper module exists with required exports", () => {
@@ -96,9 +102,17 @@ describe("BCBA Productivity admin uploads — Sprint", () => {
     expect(src).toMatch(/"\/reports"/);
   });
 
-  it("User Logins Vault and NFC Badge routes still exist", () => {
-    const src = read("src/pages/os/OSShell.tsx");
-    expect(src).toMatch(/\/user-logins-vault/);
-    expect(src).toMatch(/\/nfc-badges/);
+  it("User Logins Vault and NFC Badge redirects live in App.tsx and are NOT surfaced as standalone menu items", () => {
+    // Redirect targets must be preserved so old links keep working…
+    const app = read("src/App.tsx");
+    expect(app).toMatch(/path="\/user-logins-vault"[^>]*Navigate to="\/user-management"/);
+    expect(app).toMatch(/path="\/nfc-badges"[^>]*Navigate to="\/user-management"/);
+    // …but the canonical Super Admin menu must NOT expose them as top-level items;
+    // Login Vault + NFC Badge Management live inside User Management.
+    const menu = read("src/lib/os/superAdminMenu.ts");
+    expect(menu).not.toMatch(/\/user-logins-vault/);
+    expect(menu).not.toMatch(/\/nfc-badges/);
+    expect(menu).not.toMatch(/Login Vault/);
+    expect(menu).not.toMatch(/NFC Badge/);
   });
 });

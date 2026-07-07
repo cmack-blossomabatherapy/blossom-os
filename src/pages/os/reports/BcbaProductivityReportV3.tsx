@@ -1026,7 +1026,7 @@ export default function BcbaProductivityReportV3() {
                 <div>
                   <div className="font-medium">Admin-fed CentralReach dataset</div>
                   <div className="mt-1 text-sm text-muted-foreground max-w-xl">
-                    No saved BCBA productivity rows are available yet. Upload and save the CentralReach billing export in System Tools, then refresh this report.
+                    No admin-uploaded BCBA productivity dataset found. Ask an admin to upload the CentralReach billing export.
                   </div>
                   {sharedError && (
                     <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -1144,7 +1144,7 @@ export default function BcbaProductivityReportV3() {
                       </div>
                     ) : (
                       <div className="mt-2 text-xs text-muted-foreground">
-                        No saved BCBA productivity rows are available yet. Upload and save the CentralReach billing export in System Tools, then refresh this report.
+                        No admin-uploaded BCBA productivity dataset found. Ask an admin to upload the CentralReach billing export.
                       </div>
                     )}
                     {sharedError && (

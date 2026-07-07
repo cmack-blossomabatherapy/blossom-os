@@ -18615,6 +18615,48 @@ export type Database = {
         }
         Relationships: []
       }
+      system_tool_audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_user_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_table: string | null
+          id: string
+          metadata: Json
+          new_value: Json
+          previous_value: Json
+          tool_area: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_table?: string | null
+          id?: string
+          metadata?: Json
+          new_value?: Json
+          previous_value?: Json
+          tool_area: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_table?: string | null
+          id?: string
+          metadata?: Json
+          new_value?: Json
+          previous_value?: Json
+          tool_area?: string
+        }
+        Relationships: []
+      }
       system_workflows: {
         Row: {
           created_at: string
