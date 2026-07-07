@@ -63,9 +63,11 @@ export function useReportFavorites() {
       const local = readLocal();
       const missing = local.filter((id) => !ids.includes(id));
       if (missing.length > 0) {
+        // Upsert against the (user_id, scope, scope_key) unique index so
+        // repeated syncs don't create duplicate favorite rows.
         await supabase
           .from("executive_saved_views")
-          .insert(
+          .upsert(
             missing.map((id) => ({
               user_id: uid,
               scope: SCOPE,
@@ -74,6 +76,7 @@ export function useReportFavorites() {
               filters: {},
               is_favorite: true,
             })) as never,
+            { onConflict: "user_id,scope,scope_key" },
           );
         ids.push(...missing);
       }
@@ -102,14 +105,21 @@ export function useReportFavorites() {
           .eq("scope", SCOPE)
           .eq("scope_key", id);
       } else {
-        await supabase.from("executive_saved_views").insert({
-          user_id: userId,
-          scope: SCOPE,
-          scope_key: id,
-          name: id,
-          filters: {},
-          is_favorite: true,
-        } as never);
+        // Upsert so a rapid double-toggle or a stale local list can't
+        // create duplicate favorite rows for the same report.
+        await supabase
+          .from("executive_saved_views")
+          .upsert(
+            {
+              user_id: userId,
+              scope: SCOPE,
+              scope_key: id,
+              name: id,
+              filters: {},
+              is_favorite: true,
+            } as never,
+            { onConflict: "user_id,scope,scope_key" },
+          );
       }
       return next;
     },

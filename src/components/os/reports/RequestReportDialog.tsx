@@ -53,7 +53,11 @@ export function RequestReportDialog({ open, onOpenChange }: { open: boolean; onO
     step === 2;
 
   async function submit() {
-    // Canonical storage: system_issues. Local cache kept as offline fallback.
+    // Canonical storage: system_issues in Supabase. localStorage is used
+    // ONLY as an offline / unauthenticated fallback so a signed-out user
+    // (or a network failure) doesn't lose their draft. On a normal
+    // successful submission we do NOT write a local copy — that would
+    // create duplicate rows for admins reviewing the queue.
     const record = {
       id: `req-${Date.now()}`,
       title: title.trim(),
@@ -70,7 +74,6 @@ export function RequestReportDialog({ open, onOpenChange }: { open: boolean; onO
       createdAt: new Date().toISOString(),
       requestedBy: role,
     };
-    saveReportRequest(record);
 
     let submittedToServer = false;
     try {
@@ -96,19 +99,28 @@ export function RequestReportDialog({ open, onOpenChange }: { open: boolean; onO
         attachment?.name ? `Attachment: ${attachment.name}` : "",
         `Requested by role: ${role}`,
       ].filter(Boolean).join("\n");
-      const { error } = await supabase.from("system_issues").insert({
-        title: `Report request · ${title.trim()}`,
-        area: `Reports · ${department || "Unspecified"}`,
-        description: purpose.trim(),
-        priority: dbPriority,
-        status: "Open",
-        notes,
-        reported_by_id: uid,
-        reported_by_name: reporterName,
-      } as never);
-      submittedToServer = !error;
+      if (uid) {
+        const { error } = await supabase.from("system_issues").insert({
+          title: `Report request · ${title.trim()}`,
+          area: `Reports · ${department || "Unspecified"}`,
+          description: purpose.trim(),
+          priority: dbPriority,
+          status: "Open",
+          notes,
+          reported_by_id: uid,
+          reported_by_name: reporterName,
+        } as never);
+        submittedToServer = !error;
+      }
     } catch {
       submittedToServer = false;
+    }
+
+    // Only fall back to local storage when Supabase couldn't accept the
+    // request (offline, unauthenticated, or insert error). This guarantees
+    // one canonical row per submission for authenticated users.
+    if (!submittedToServer) {
+      saveReportRequest(record);
     }
 
     toast({

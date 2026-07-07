@@ -311,6 +311,12 @@ export async function createExecutiveUpdate(input: {
     .select("*")
     .single();
   if (error) throw error;
+  await logExecutiveActivity({
+    action: publish ? "update.published" : "update.created",
+    entity_type: "executive_update",
+    entity_id: data.id,
+    summary: data.title,
+  });
   return data;
 }
 
@@ -359,6 +365,16 @@ export async function publishExecutiveUpdate(id: string) {
 
 /* ------------------------- Briefings ------------------------- */
 
+export async function listExecutiveBriefings(limit = 25) {
+  const { data, error } = await supabase
+    .from("executive_briefings")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function createExecutiveBriefing(input: {
   title: string;
   period_start?: string | null;
@@ -375,10 +391,54 @@ export async function createExecutiveBriefing(input: {
     .select("*")
     .single();
   if (error) throw error;
+  await logExecutiveActivity({
+    action: "briefing.created",
+    entity_type: "executive_briefing",
+    entity_id: data.id,
+    summary: data.title,
+  });
+  return data;
+}
+
+export async function updateExecutiveBriefing(
+  id: string,
+  patch: Partial<{
+    title: string;
+    period_start: string | null;
+    period_end: string | null;
+    body: string | null;
+    department: string | null;
+    state_code: string | null;
+    metadata: Record<string, unknown>;
+  }>,
+) {
+  const { data, error } = await supabase
+    .from("executive_briefings")
+    .update(patch as never)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  await logExecutiveActivity({
+    action: "briefing.updated",
+    entity_type: "executive_briefing",
+    entity_id: id,
+  });
   return data;
 }
 
 /* ------------------------- KPI snapshots ------------------------- */
+
+export async function listExecutiveKpiSnapshots(limit = 50) {
+  const { data, error } = await supabase
+    .from("executive_kpi_snapshots")
+    .select("*")
+    .order("captured_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
 
 export async function captureExecutiveKpiSnapshot(input: {
   metric_key: string;
@@ -399,6 +459,12 @@ export async function captureExecutiveKpiSnapshot(input: {
     .select("*")
     .single();
   if (error) throw error;
+  await logExecutiveActivity({
+    action: "kpi.snapshot",
+    entity_type: "executive_kpi_snapshot",
+    entity_id: data.id,
+    summary: `${input.metric_label ?? input.metric_key} = ${input.metric_value}${input.unit ? ` ${input.unit}` : ""}`,
+  });
   return data;
 }
 
