@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface SystemWorkflow {
   id: string;
@@ -86,6 +87,15 @@ export type SystemToolArea =
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const anyClient = supabase as any;
+
+const AUDIT_FAILED_MSG = "Saved, but audit log could not be recorded.";
+
+/** Default warning toast for admin-critical audit failures. */
+function warnAuditFailed(detail?: string) {
+  toast.warning(AUDIT_FAILED_MSG, {
+    description: detail && detail.length < 240 ? detail : undefined,
+  });
+}
 
 /**
  * Best-effort audit writer. Failures are swallowed so a lost audit row can
@@ -210,7 +220,7 @@ function useTable<T extends { id: string }>(table: string) {
         .single();
       if (err) throw new Error(err.message);
       const newId = (data?.id ?? null) as string | null;
-      void logSystemToolAction({
+      const auditRes = await logSystemToolAction({
         tool_area:
           table === "system_workflows" ? "workflow_inventory" :
           table === "system_issues" ? "issue_tracker" : "workflow_inventory",
@@ -218,7 +228,13 @@ function useTable<T extends { id: string }>(table: string) {
         entity_table: table,
         entity_id: newId,
         new_value: patch as Record<string, unknown>,
+        metadata: {
+          route: typeof window !== "undefined" ? window.location.pathname : null,
+          changed_fields: Object.keys(patch as Record<string, unknown>),
+          source: "useSystemTools.create",
+        },
       });
+      if (auditRes && !auditRes.auditOk) warnAuditFailed(auditRes.auditError ?? undefined);
       await load();
       return newId;
     },
@@ -234,7 +250,7 @@ function useTable<T extends { id: string }>(table: string) {
         "status" in (patch as Record<string, unknown>) &&
         previous &&
         previous.status !== (patch as Record<string, unknown>).status;
-      void logSystemToolAction({
+      const auditRes = await logSystemToolAction({
         tool_area:
           table === "system_workflows" ? "workflow_inventory" :
           table === "system_issues" ? "issue_tracker" : "workflow_inventory",
@@ -243,7 +259,13 @@ function useTable<T extends { id: string }>(table: string) {
         entity_id: id,
         previous_value: previous ?? {},
         new_value: patch as Record<string, unknown>,
+        metadata: {
+          route: typeof window !== "undefined" ? window.location.pathname : null,
+          changed_fields: Object.keys(patch as Record<string, unknown>),
+          source: "useSystemTools.update",
+        },
       });
+      if (auditRes && !auditRes.auditOk) warnAuditFailed(auditRes.auditError ?? undefined);
       await load();
     },
     [table, load, rows],
@@ -254,7 +276,7 @@ function useTable<T extends { id: string }>(table: string) {
       const previous = rows.find((r) => r.id === id) as Record<string, unknown> | undefined;
       const { error: err } = await anyClient.from(table).delete().eq("id", id);
       if (err) throw new Error(err.message);
-      void logSystemToolAction({
+      const auditRes = await logSystemToolAction({
         tool_area:
           table === "system_workflows" ? "workflow_inventory" :
           table === "system_issues" ? "issue_tracker" : "workflow_inventory",
@@ -262,7 +284,12 @@ function useTable<T extends { id: string }>(table: string) {
         entity_table: table,
         entity_id: id,
         previous_value: previous ?? {},
+        metadata: {
+          route: typeof window !== "undefined" ? window.location.pathname : null,
+          source: "useSystemTools.remove",
+        },
       });
+      if (auditRes && !auditRes.auditOk) warnAuditFailed(auditRes.auditError ?? undefined);
       await load();
     },
     [table, load, rows],
