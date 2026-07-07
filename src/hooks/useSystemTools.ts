@@ -35,6 +35,19 @@ export interface SystemIssue {
   resolved_at: string | null;
   created_at: string;
   updated_at: string;
+  // Operations Leadership Pass — extended request intake fields.
+  request_type?: string | null;
+  affected_department?: string | null;
+  affected_role?: string | null;
+  affected_state?: string | null;
+  affected_route?: string | null;
+  impact?: string | null;
+  desired_outcome?: string | null;
+  due_date?: string | null;
+  linked_work_item_id?: string | null;
+  owner_id?: string | null;
+  reported_by_id?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface SystemToolAuditLog {
