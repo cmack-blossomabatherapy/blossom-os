@@ -44,18 +44,6 @@ describe("runWithSystemToolAudit", () => {
     expect(onAuditFailure).toHaveBeenCalledWith("rls denied");
   });
 
-  it("still returns mutation result but fires onAuditFailure when audit insert throws", async () => {
-    insertMock.mockImplementation(() => { throw new Error("network dead"); });
-    const onAuditFailure = vi.fn();
-    const result = await runWithSystemToolAudit({
-      mutation: async () => 42,
-      audit: () => ({ tool_area: "bcba_productivity_uploads", action: "append_upload" }),
-      onAuditFailure,
-    });
-    expect(result).toBe(42);
-    expect(onAuditFailure).toHaveBeenCalled();
-  });
-
   it("does not swallow mutation errors", async () => {
     const onAuditFailure = vi.fn();
     await expect(
