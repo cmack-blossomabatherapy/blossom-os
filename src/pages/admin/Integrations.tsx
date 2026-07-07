@@ -93,7 +93,7 @@ import { IntakeCommunicationSetupPanel } from "@/components/settings/IntakeCommu
  */
 
 // -----------------------------------------------------------------------------
-// Types & mock data
+// Types & registry-backed catalog
 // -----------------------------------------------------------------------------
 
 type IntegrationStatus =
@@ -216,7 +216,10 @@ function mapRegistryStatus(s: BlossomIntegration["status"]): IntegrationStatus {
     case "connected":
       return "connected";
     case "configured":
-      return "connected";
+      // Static registry "configured" only means credentials are intended,
+      // not that a live backend row exists. Show "Not connected" until a
+      // real integration_connections row overlays this.
+      return "disconnected";
     case "needs_attention":
       return "error";
     case "error":
@@ -312,7 +315,7 @@ function StatusPill({ status }: { status: IntegrationStatus }) {
       cls: "bg-muted text-muted-foreground border-border/60",
     },
     coming_soon: {
-      label: "Coming soon",
+      label: "Credential required",
       dot: "bg-muted-foreground/40",
       cls: "bg-muted text-muted-foreground border-border/60",
     },
@@ -954,7 +957,7 @@ function MarketplaceDialog({
           <div className="relative mb-5">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search 200+ integrations..."
+              placeholder="Search integrations..."
               className="h-10 rounded-xl bg-muted/40 pl-9"
             />
           </div>
@@ -1284,7 +1287,7 @@ export default function Integrations() {
           <p className="mt-3 text-[11px] text-muted-foreground">
             {backendStats.lastEvent
               ? `Last backend event - ${new Date(backendStats.lastEvent).toLocaleString()}`
-              : "No webhook events received yet - static cards below show registry metadata only"}
+              : "No webhook events received yet — cards below reflect registered integrations and any live backend connections."}
           </p>
         </Card>
 

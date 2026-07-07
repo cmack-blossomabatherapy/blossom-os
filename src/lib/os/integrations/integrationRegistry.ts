@@ -6,6 +6,11 @@
  * dashboards should read from here instead of inlining their own list.
  *
  * Notes:
+ *  - Static `status` values in this registry describe the intended
+ *    integration state (configured / planned / maybe / disabled), NOT
+ *    proof of a live backend connection. The Integrations UI overlays
+ *    live `integration_connections` rows on top of these entries; the
+ *    card only shows "Connected" when a real backend row confirms it.
  *  - CentralReach remains the clinical EMR; Blossom OS connects to it.
  *  - Viventium is the HRIS / employee-lifecycle source and governs
  *    Blossom OS user activation/deactivation reviews.
@@ -29,7 +34,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "clinical_emr",
     ownerDepartment: "Clinical Operations / Operations Leadership",
     criticality: "critical",
-    status: "connected",
+    status: "configured",
     methods: ["api", "file_import"],
     inboundData: [
       "Clients",
@@ -72,7 +77,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "hris",
     ownerDepartment: "HR Team",
     criticality: "critical",
-    status: "connected",
+    status: "configured",
     methods: ["api", "file_import"],
     inboundData: [
       "Employee status",
@@ -102,7 +107,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "recruiting",
     ownerDepartment: "Recruiting Team / HR Team",
     criticality: "critical",
-    status: "connected",
+    status: "configured",
     methods: ["api"],
     inboundData: [
       "Candidates",
@@ -130,7 +135,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "communications",
     ownerDepartment: "Operations / All Departments",
     criticality: "critical",
-    status: "connected",
+    status: "configured",
     methods: ["oauth", "api"],
     inboundData: [
       "Email activity",
@@ -185,7 +190,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "marketing",
     ownerDepartment: "Marketing Team",
     criticality: "critical",
-    status: "connected",
+    status: "configured",
     methods: ["api", "webhook"],
     inboundData: [
       "Source-tracked inbound calls",
@@ -212,7 +217,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "ai_voice",
     ownerDepartment: "Marketing / Intake / Operations",
     criticality: "standard",
-    status: "connected",
+    status: "configured",
     methods: ["webhook", "api"],
     inboundData: [
       "After-hours calls",
@@ -290,7 +295,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "communications",
     ownerDepartment: "Operations / Platform",
     criticality: "critical",
-    status: "connected",
+    status: "configured",
     methods: ["api"],
     inboundData: [
       "Email delivery status",
@@ -342,7 +347,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "marketing",
     ownerDepartment: "Marketing Team",
     criticality: "standard",
-    status: "connected",
+    status: "configured",
     methods: ["api"],
     inboundData: [
       "Campaign performance",
@@ -367,7 +372,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "marketing",
     ownerDepartment: "Marketing Team",
     criticality: "standard",
-    status: "connected",
+    status: "configured",
     methods: ["api"],
     inboundData: [
       "Campaign performance",
@@ -418,7 +423,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "eligibility",
     ownerDepartment: "Intake / Authorizations",
     criticality: "standard",
-    status: "connected",
+    status: "configured",
     methods: ["api"],
     inboundData: [
       "Eligibility checks",
@@ -471,7 +476,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "meetings",
     ownerDepartment: "Recruiting / Intake / Business Development / Executives",
     criticality: "standard",
-    status: "connected",
+    status: "configured",
     methods: ["api", "embedded_link"],
     inboundData: [
       "Interview scheduling",
