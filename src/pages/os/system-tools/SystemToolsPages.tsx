@@ -733,7 +733,7 @@ export function IssueTrackerPage() {
   const filtered = useMemo(() => {
     const needle = q.toLowerCase();
     return rows.filter((r) => {
-      if (statusFilter !== ALL_OPTION && r.status !== statusFilter) return false;
+      if (statusFilter !== ALL_OPTION && normalizeIssueStatus(r.status) !== statusFilter) return false;
       if (priorityFilter !== ALL_OPTION && r.priority !== priorityFilter) return false;
       if (severityFilter !== ALL_OPTION && (r.severity ?? "") !== severityFilter) return false;
       if (areaFilter !== ALL_OPTION && (r.area ?? "") !== areaFilter) return false;
@@ -795,7 +795,7 @@ export function IssueTrackerPage() {
     try {
       await update(r.id, {
         request_type: null,
-        status: r.status === "Open" ? "Triage" : r.status,
+        status: isIssueStatus(r.status, "Open") ? "Triage" : normalizeIssueStatus(r.status),
       });
       toast({ title: "Converted to tracked issue" });
     } catch (e) {
