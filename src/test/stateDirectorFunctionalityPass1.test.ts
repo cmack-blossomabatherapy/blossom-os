@@ -137,18 +137,18 @@ describe("State Director — Functionality Pass 1", () => {
       });
       expect(t.id).toBeTruthy();
 
-      stateDirectorStore.completeTask(t.id, "tester");
+      await stateDirectorStore.completeTask(t.id, "tester");
       expect(stateDirectorStore.snapshot().tasks.find((x) => x.id === t.id)?.status).toBe("completed");
 
       const { item: t2 } = await stateDirectorStore.createTask({
         state: "VA", title: "Escalate me", department: "Staffing",
         priority: "medium", createdBy: "tester",
       });
-      const esc = stateDirectorStore.escalateTask(t2.id, "tester");
-      expect(esc.id).toBeTruthy();
+      const escRes = await stateDirectorStore.escalateTask(t2.id, "tester");
+      expect(escRes.item?.id).toBeTruthy();
       const snap = stateDirectorStore.snapshot();
       expect(snap.tasks.find((x) => x.id === t2.id)?.status).toBe("escalated");
-      expect(snap.escalations.find((x) => x.id === esc.id)).toBeTruthy();
+      expect(snap.escalations.find((x) => x.id === escRes.item!.id)).toBeTruthy();
       expect(snap.activity.length).toBeGreaterThan(before);
     });
 
