@@ -768,10 +768,18 @@ function SystemRequestsPanelInner() {
                             <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
                               Secondary
                             </DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => convertToWorkflow(i)}>
-                              <Workflow className="mr-2 h-4 w-4" />
-                              To workflow inventory
-                            </DropdownMenuItem>
+                            <ConvertToWorkflowDialog
+                              request={i}
+                              actor={displayName ?? "admin"}
+                              converting={convertingId === i.id}
+                              onConfirm={(owner) => convertToWorkflow(i, owner)}
+                              trigger={
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <Workflow className="mr-2 h-4 w-4" />
+                                  Preview &amp; convert to workflow inventory
+                                </DropdownMenuItem>
+                              }
+                            />
                           </DropdownMenuContent>
                         </DropdownMenu>
                       ) : (
