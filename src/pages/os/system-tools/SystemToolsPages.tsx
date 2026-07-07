@@ -589,6 +589,11 @@ function IssueTriageDialog({
   const [owner, setOwner] = useState(issue.owner_name ?? "");
   const [priority, setPriority] = useState(issue.priority);
   const [status, setStatus] = useState(issue.status);
+  const [severity, setSeverity] = useState(issue.severity ?? "Medium");
+  const [dueDate, setDueDate] = useState(issue.due_date ? issue.due_date.slice(0, 10) : "");
+  const [relatedIntegration, setRelatedIntegration] = useState(issue.related_integration_id ?? "");
+  const [reproduction, setReproduction] = useState(issue.reproduction_steps ?? "");
+  const [resolution, setResolution] = useState(issue.resolution_notes ?? "");
   const [notes, setNotes] = useState(issue.notes ?? "");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -599,6 +604,11 @@ function IssueTriageDialog({
       await onSubmit({
         owner_name: owner || null,
         priority, status,
+        severity: severity || null,
+        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        related_integration_id: relatedIntegration || null,
+        reproduction_steps: reproduction || null,
+        resolution_notes: resolution || null,
         notes: notes || null,
         resolved_at: status === "Resolved" ? new Date().toISOString() : null,
       });
@@ -615,12 +625,19 @@ function IssueTriageDialog({
         <DialogHeader><DialogTitle>Triage: {issue.title}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div><Label>Owner</Label><Input value={owner} onChange={(e) => setOwner(e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <Label>Priority</Label>
               <Select value={priority} onValueChange={setPriority}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Severity</Label>
+              <Select value={severity} onValueChange={setSeverity}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{SEVERITIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
@@ -631,6 +648,12 @@ function IssueTriageDialog({
               </Select>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Due date</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+            <div><Label>Related integration ID</Label><Input value={relatedIntegration} onChange={(e) => setRelatedIntegration(e.target.value)} placeholder="e.g. retell, viventium" /></div>
+          </div>
+          <div><Label>Reproduction steps</Label><Textarea value={reproduction} onChange={(e) => setReproduction(e.target.value)} rows={3} /></div>
+          <div><Label>Resolution notes</Label><Textarea value={resolution} onChange={(e) => setResolution(e.target.value)} rows={3} placeholder="Populated automatically when you resolve via the quick action." /></div>
           <div><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} /></div>
         </div>
         <DialogFooter>
