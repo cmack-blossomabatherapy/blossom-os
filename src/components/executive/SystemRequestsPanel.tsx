@@ -595,15 +595,22 @@ function SystemRequestsPanelInner() {
           .filter(Boolean).join("\n"),
       });
 
-      void logSystemToolAction({
+      const audit1 = await logSystemToolAction({
         tool_area: "request_intake",
         action: "convert_to_work_queue",
         entity_table: "system_issues",
         entity_id: req.id,
         previous_value: { status: req.status, linked_work_item_id: req.linked_work_item_id ?? null },
         new_value: { status: "in_progress", linked_work_item_id: workItemId, target: "operations_work_items" },
-        metadata: { title: req.title },
+        metadata: {
+          title: req.title,
+          route: typeof window !== "undefined" ? window.location.pathname : null,
+          source: "SystemRequestsPanel.convertToWorkQueue",
+        },
       });
+      if (audit1 && !audit1.auditOk) {
+        toast.warning("Saved, but audit log could not be recorded.");
+      }
 
       toast.success("Converted to Work Queue item");
     } catch (err: any) {
@@ -631,7 +638,7 @@ function SystemRequestsPanelInner() {
             : `Converted to workflow inventory item.`,
         ].filter(Boolean).join("\n"),
       });
-      void logSystemToolAction({
+      const audit2 = await logSystemToolAction({
         tool_area: "request_intake",
         action: "convert_to_workflow",
         entity_table: "system_issues",
@@ -652,8 +659,13 @@ function SystemRequestsPanelInner() {
           affected_department: req.affected_department,
           affected_route: req.affected_route,
           related_integration_id: req.related_integration_id,
+          route: typeof window !== "undefined" ? window.location.pathname : null,
+          source: "SystemRequestsPanel.convertToWorkflow",
         },
       });
+      if (audit2 && !audit2.auditOk) {
+        toast.warning("Saved, but audit log could not be recorded.");
+      }
       toast.success("Converted to workflow inventory item");
       return workflowId;
     } catch (err: any) {
