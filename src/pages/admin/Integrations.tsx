@@ -82,6 +82,7 @@ import {
   type IntegrationWebhookEventRow,
   type OAuthConnectionRow,
 } from "@/lib/os/integrations/backend";
+import { deriveIntegrationStatus } from "@/lib/os/integrations/statusOverlay";
 import { toast } from "sonner";
 import { IntakeCommunicationSetupPanel } from "@/components/settings/IntakeCommunicationSetupPanel";
 
@@ -105,6 +106,7 @@ type IntegrationStatus =
   | "disconnected"
   | "credentials_required"
   | "probe_pending"
+  | "configured"
   | "coming_soon";
 
 type IntegrationCategory =
@@ -348,8 +350,13 @@ function StatusPill({ status }: { status: IntegrationStatus }) {
       cls: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
       pulse: true,
     },
+    configured: {
+      label: "Configured",
+      dot: "bg-indigo-500",
+      cls: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+    },
     coming_soon: {
-      label: "Credential required",
+      label: "Coming soon",
       dot: "bg-muted-foreground/40",
       cls: "bg-muted text-muted-foreground border-border/60",
     },
@@ -1146,53 +1153,17 @@ export default function Integrations() {
     }
     return INTEGRATIONS.map((i) => {
       const live = liveByIntegration.get(i.id);
-      // Truthful default: unless the registry marks the integration as
-      // planned/maybe (coming_soon), any integration without a live
-      // integration_connections row is "Not connected" — never inherit a
-      // catalog default like "connected".
-      let status: IntegrationStatus =
-        i.status === "coming_soon" ? "coming_soon" : "disconnected";
-      let enabled = enabledMap[i.id] ?? i.enabled;
-      let lastSync: string | undefined = undefined;
-      if (live) {
-        enabled = live.enabled;
-        const hasSecrets = (live.secret_names?.length ?? 0) > 0;
-        const requiresSecrets =
-          live.credential_mode !== "none" && live.credential_mode !== "public";
-        const neverProbed = !live.last_tested_at && !live.last_success_at;
-        switch (live.status) {
-          case "connected":
-            status = neverProbed ? "probe_pending" : "connected";
-            break;
-          case "error":
-            status = "error";
-            break;
-          case "needs_attention":
-            status = "reauth";
-            break;
-          case "not_configured":
-            status = requiresSecrets && !hasSecrets
-              ? "credentials_required"
-              : "disconnected";
-            break;
-          case "syncing":
-            status = "syncing";
-            break;
-          case "pending":
-          case "probing":
-            status = "probe_pending";
-            break;
-          default:
-            status = "disconnected";
-            break;
-        }
-        if (requiresSecrets && !hasSecrets && status !== "error") {
-          status = "credentials_required";
-        }
-        if (live.last_success_at) {
-          lastSync = new Date(live.last_success_at).toLocaleString();
-        }
-      }
+      // Truthful overlay: the static registry can NEVER promote an integration
+      // to "connected" — only a live integration_connections row can. See
+      // deriveIntegrationStatus for full vocabulary + probe rules.
+      const status: IntegrationStatus = deriveIntegrationStatus(
+        live ?? null,
+        i.status === "coming_soon" ? "coming_soon" : "disconnected",
+      );
+      const enabled = live ? live.enabled : (enabledMap[i.id] ?? i.enabled);
+      const lastSync = live?.last_success_at
+        ? new Date(live.last_success_at).toLocaleString()
+        : undefined;
       return { ...i, enabled, status, lastSync };
     });
   }, [enabledMap, connections]);
@@ -1213,7 +1184,8 @@ export default function Integrations() {
             i.status === "disconnected" ||
             i.status === "coming_soon" ||
             i.status === "credentials_required" ||
-            i.status === "probe_pending"
+            i.status === "probe_pending" ||
+            i.status === "configured"
           );
         case "errors":
           return i.status === "error" || i.status === "reauth";
