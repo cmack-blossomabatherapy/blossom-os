@@ -103,6 +103,8 @@ type IntegrationStatus =
   | "error"
   | "reauth"
   | "disconnected"
+  | "credentials_required"
+  | "probe_pending"
   | "coming_soon";
 
 type IntegrationCategory =
