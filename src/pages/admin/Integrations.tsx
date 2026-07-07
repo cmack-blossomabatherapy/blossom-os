@@ -422,6 +422,14 @@ function IntegrationCard({
 }) {
   const Icon = integration.icon;
   const isComingSoon = integration.status === "coming_soon";
+  // Pass 5 truthfulness: only allow the toggle to flip when we have a real
+  // backend state to persist to (connected/syncing). Otherwise the switch
+  // would only mutate local UI state and mislead admins.
+  const canToggle = !isComingSoon &&
+    (integration.status === "connected" || integration.status === "syncing");
+  const toggleTitle = canToggle
+    ? `Toggle ${integration.name}`
+    : "Connect/configure this integration before enabling.";
 
   return (
     <Card
@@ -500,7 +508,9 @@ function IntegrationCard({
           {!isComingSoon && (
             <Switch
               checked={integration.enabled}
-              onCheckedChange={onToggle}
+              onCheckedChange={canToggle ? onToggle : undefined}
+              disabled={!canToggle}
+              title={toggleTitle}
               aria-label={`Toggle ${integration.name}`}
             />
           )}
