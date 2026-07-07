@@ -53,6 +53,46 @@ function mapPriorityToWorkflow(p: string): string {
   }
 }
 
+function initialRiskFromPriority(p: string): string {
+  if (p === "urgent" || p === "high") return "High";
+  if (p === "low") return "Low";
+  return "Medium";
+}
+
+interface WorkflowDraft {
+  name: string;
+  department: string | null;
+  owner_name: string | null;
+  current_source: string;
+  status: "Planned";
+  priority: string;
+  risk_level: string;
+  related_route: string | null;
+  related_integration_id: string | null;
+  notes: string;
+}
+
+function buildWorkflowDraftFromRequest(req: SystemIssue, actor: string): WorkflowDraft {
+  const notes = [
+    req.description ? `Description:\n${req.description}` : "",
+    req.impact ? `Impact:\n${req.impact}` : "",
+    req.desired_outcome ? `Desired outcome:\n${req.desired_outcome}` : "",
+    `Converted from system request "${req.title}" (${req.id.slice(0, 8)}) by ${actor} on ${new Date().toLocaleDateString()}.`,
+  ].filter(Boolean).join("\n\n");
+  return {
+    name: req.title,
+    department: req.affected_department ?? req.area ?? null,
+    owner_name: req.owner_name ?? null,
+    current_source: "System request",
+    status: "Planned",
+    priority: mapPriorityToWorkflow(req.priority),
+    risk_level: initialRiskFromPriority(req.priority),
+    related_route: req.affected_route ?? null,
+    related_integration_id: req.related_integration_id ?? null,
+    notes,
+  };
+}
+
 function mapPriorityToWorkItem(p: string): "low" | "normal" | "high" | "urgent" {
   if (p === "urgent" || p === "high" || p === "low" || p === "normal") return p;
   return "normal";
@@ -296,6 +336,103 @@ export function SystemRequestsPanel() {
 }
 
 /**
+ * Preview + confirm dialog for converting a system request into a
+ * Workflow Inventory row. Shows exactly what will be created and lets
+ * the admin override the owner before the row is written.
+ */
+function ConvertToWorkflowDialog({
+  request, actor, converting, onConfirm, trigger,
+}: {
+  request: SystemIssue;
+  actor: string;
+  converting: boolean;
+  onConfirm: (ownerOverride: string | null) => Promise<void>;
+  trigger: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const draft = useMemo(() => buildWorkflowDraftFromRequest(request, actor), [request, actor]);
+  const [owner, setOwner] = useState<string>(draft.owner_name ?? "");
+
+  const handleOpen = (o: boolean) => {
+    setOpen(o);
+    if (o) setOwner(draft.owner_name ?? "");
+  };
+
+  const rows: Array<{ label: string; value: React.ReactNode; muted?: boolean }> = [
+    { label: "Name", value: draft.name },
+    { label: "Department", value: draft.department ?? <span className="text-muted-foreground">—</span>, muted: !draft.department },
+    { label: "Current source", value: draft.current_source },
+    { label: "Initial status", value: <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700">Planned</span> },
+    { label: "Priority", value: draft.priority },
+    { label: "Risk level", value: draft.risk_level },
+    { label: "Related route", value: draft.related_route ?? <span className="text-muted-foreground">—</span>, muted: !draft.related_route },
+    { label: "Related integration", value: draft.related_integration_id ?? <span className="text-muted-foreground">—</span>, muted: !draft.related_integration_id },
+  ];
+
+  const submit = async () => {
+    await onConfirm(owner.trim() || null);
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Convert to Workflow Inventory</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="rounded-lg border border-dashed border-border/60 bg-muted/30 p-3 text-[13px] text-muted-foreground">
+            A new row will be added to <span className="font-medium text-foreground">Workflow Inventory</span> using the values below.
+            The request will be marked <span className="font-medium text-foreground">resolved</span> and linked to the new workflow.
+          </div>
+
+          <div className="overflow-hidden rounded-lg border border-border/60">
+            <table className="w-full text-[13px]">
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.label} className="border-b border-border/60 last:border-b-0">
+                    <td className="w-40 bg-muted/30 px-3 py-2 text-[11px] uppercase tracking-wider text-muted-foreground">{r.label}</td>
+                    <td className={`px-3 py-2 ${r.muted ? "text-muted-foreground" : "text-foreground"}`}>{r.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <Label>Owner</Label>
+            <Input
+              value={owner}
+              onChange={(e) => setOwner(e.target.value)}
+              placeholder="Who will own this workflow?"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {draft.owner_name
+                ? `Pre-filled from the request. Leave blank to create the workflow without an owner.`
+                : `The request has no assignee yet — assign an owner now or leave blank to triage later.`}
+            </p>
+          </div>
+
+          <details className="rounded-lg border border-border/60 bg-background/40 p-3 text-[12px] text-muted-foreground">
+            <summary className="cursor-pointer text-foreground">Notes that will be attached</summary>
+            <pre className="mt-2 whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-muted-foreground">{draft.notes}</pre>
+          </details>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={converting}>Cancel</Button>
+          <Button onClick={submit} disabled={converting}>
+            {converting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Workflow className="mr-1.5 h-3.5 w-3.5" />}
+            Create workflow
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
  * Header-friendly Submit Request button. Uses the same full-form dialog as
  * the intake panel so admins and end users get identical intake surfaces.
  */
@@ -424,37 +561,14 @@ function SystemRequestsPanelInner() {
     } finally { setConvertingId(null); }
   };
 
-  const convertToWorkflow = async (req: SystemIssue) => {
+  const convertToWorkflow = async (req: SystemIssue, ownerOverride: string | null) => {
     setConvertingId(req.id);
     try {
-      // Initial state for a newly-converted workflow:
-      //   status:   Planned   (needs scoping/build before it can be Active)
-      //   priority: mapped from the request priority
-      //   risk:     High when the request is urgent/high, else Medium
-      const initialRisk =
-        req.priority === "urgent" ? "High" :
-        req.priority === "high" ? "High" :
-        req.priority === "low" ? "Low" : "Medium";
-
-      const notesBlock = [
-        req.description ? `Description:\n${req.description}` : "",
-        req.impact ? `Impact:\n${req.impact}` : "",
-        req.desired_outcome ? `Desired outcome:\n${req.desired_outcome}` : "",
-        `Converted from system request "${req.title}" (${req.id.slice(0, 8)}) by ${displayName ?? "admin"} on ${new Date().toLocaleDateString()}.`,
-      ].filter(Boolean).join("\n\n");
-
+      const draft = buildWorkflowDraftFromRequest(req, displayName ?? "admin");
       const workflowId = await createWorkflow({
-        name: req.title,
-        department: req.affected_department ?? req.area ?? null,
-        owner_name: req.owner_name ?? null,
-        current_source: "System request",
+        ...draft,
+        owner_name: ownerOverride,
         future_module: null,
-        status: "Planned",
-        priority: mapPriorityToWorkflow(req.priority),
-        notes: notesBlock,
-        related_route: req.affected_route ?? null,
-        related_integration_id: req.related_integration_id ?? null,
-        risk_level: initialRisk,
       });
 
       await update(req.id, {
@@ -478,8 +592,9 @@ function SystemRequestsPanelInner() {
           target: "system_workflows",
           workflow_id: workflowId,
           initial_workflow_status: "Planned",
-          initial_workflow_priority: mapPriorityToWorkflow(req.priority),
-          initial_workflow_risk: initialRisk,
+          initial_workflow_priority: draft.priority,
+          initial_workflow_risk: draft.risk_level,
+          owner_name: ownerOverride,
         },
         metadata: {
           title: req.title,
@@ -653,10 +768,18 @@ function SystemRequestsPanelInner() {
                             <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
                               Secondary
                             </DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => convertToWorkflow(i)}>
-                              <Workflow className="mr-2 h-4 w-4" />
-                              To workflow inventory
-                            </DropdownMenuItem>
+                            <ConvertToWorkflowDialog
+                              request={i}
+                              actor={displayName ?? "admin"}
+                              converting={convertingId === i.id}
+                              onConfirm={(owner) => convertToWorkflow(i, owner)}
+                              trigger={
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <Workflow className="mr-2 h-4 w-4" />
+                                  Preview &amp; convert to workflow inventory
+                                </DropdownMenuItem>
+                              }
+                            />
                           </DropdownMenuContent>
                         </DropdownMenu>
                       ) : (

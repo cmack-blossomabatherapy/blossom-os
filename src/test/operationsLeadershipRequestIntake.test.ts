@@ -58,7 +58,7 @@ describe("Operations Leadership — Request Intake pass", () => {
     const idx = panel.indexOf("Convert request");
     expect(idx).toBeGreaterThan(0);
     const workQueueAt = panel.indexOf("To Operations Work Queue", idx);
-    const workflowAt = panel.indexOf("To workflow inventory", idx);
+    const workflowAt = panel.indexOf("convert to workflow inventory", idx);
     expect(workQueueAt).toBeGreaterThan(0);
     expect(workflowAt).toBeGreaterThan(workQueueAt);
   });
