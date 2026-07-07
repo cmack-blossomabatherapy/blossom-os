@@ -339,7 +339,7 @@ export default function OSQAWorkspace() {
                   { label: "Send Follow-Ups", icon: Send, to: "/qa-messages" },
                   { label: "Open Escalations", icon: Flame, to: "/escalations-followups" },
                   { label: "View Expiring Items", icon: CalendarClock, to: "/expiring-items" },
-                  { label: "Open Progress Reports", icon: ScrollText, to: "/progress-reports" },
+                  { label: "Open Progress Reports", icon: ScrollText, to: "/reports" },
                 ].map(a => (
                   <Link key={a.label} to={a.to}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted transition">

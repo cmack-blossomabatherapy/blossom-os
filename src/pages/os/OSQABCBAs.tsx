@@ -985,7 +985,7 @@ function BCBASlideout({
           </section>
 
           <section className="grid grid-cols-2 gap-2">
-            <ActionBtn icon={FileText}      label="View PR workflows"   to={`/progress-reports?bcba=${encodeURIComponent(b.name)}`} />
+            <ActionBtn icon={FileText}      label="View PR workflows"   to="/reports" />
             <ActionBtn icon={ClipboardList} label="Open QA queue"       to={`/qa-queue?bcba=${encodeURIComponent(b.name)}`} />
             <ActionBtn icon={ClipboardList} label="Open escalations"    to={`/escalations-followups?bcba=${encodeURIComponent(b.name)}`} />
             <ActionBtn icon={ExternalLink}  label="QA clients"          to={`/qa-clients?bcba=${encodeURIComponent(b.name)}`} />

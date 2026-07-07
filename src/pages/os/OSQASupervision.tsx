@@ -998,7 +998,7 @@ function SupSlideout({ r, onClose, onChanged, sourceSystem }: { r: SupRow; onClo
             {r.auth && <QAActionsPanel auth={r.auth} sourceSystem={sourceSystem} onChanged={onChanged} />}
             <div className="grid grid-cols-2 gap-2 pt-2">
               <ActionBtn icon={ExternalLink}  label="Open client"          to={`/qa-clients?client=${encodeURIComponent(r.clientName)}`} />
-              <ActionBtn icon={FileText}      label="View PR workflow"     to="/progress-reports" />
+              <ActionBtn icon={FileText}      label="View PR workflow"     to="/reports" />
               <ActionBtn icon={ClipboardList} label="View authorization"   to={r.auth ? `/authorization-reviews?id=${encodeURIComponent(r.auth.id)}` : "/authorization-reviews"} />
             </div>
           </section>

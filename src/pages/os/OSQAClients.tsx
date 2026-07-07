@@ -974,7 +974,7 @@ function ClientSlideout({ c, onClose, onChanged, sourceSystem }: { c: ClientRow;
             <div className="grid grid-cols-2 gap-2 pt-2">
               <ActionBtn icon={ExternalLink} label="Open client" to={`/qa-clients?client=${encodeURIComponent(c.primary.clientName ?? c.primary.clientId)}`} />
               <ActionBtn icon={ClipboardList} label="View authorization" to="/authorization-reviews" />
-              <ActionBtn icon={FileText}     label="View PR workflow" to="/progress-reports" />
+              <ActionBtn icon={FileText}     label="View PR workflow" to="/reports" />
             </div>
           </section>
 
