@@ -165,6 +165,47 @@ function QuickActionButton({ icon: Icon, label, onClick, tone }: {
   );
 }
 
+/** Small reusable dialog for the "Assign owner" quick action. */
+function AssignOwnerDialog({
+  trigger, currentOwner, onSubmit,
+}: {
+  trigger: ReactNode;
+  currentOwner: string | null | undefined;
+  onSubmit: (owner: string | null) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [owner, setOwner] = useState(currentOwner ?? "");
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+  async function save() {
+    setSaving(true);
+    try {
+      await onSubmit(owner.trim() || null);
+      setOpen(false);
+      toast({ title: owner.trim() ? `Assigned to ${owner.trim()}` : "Owner cleared" });
+    } catch (e) {
+      toast({ title: "Assign failed", description: (e as Error).message, variant: "destructive" });
+    } finally { setSaving(false); }
+  }
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setOwner(currentOwner ?? ""); }}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>Assign owner</DialogTitle></DialogHeader>
+        <div className="space-y-2">
+          <Label>Owner name</Label>
+          <Input value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Name of the person picking this up" />
+          <p className="text-xs text-muted-foreground">Leave blank to clear the owner.</p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function WorkflowDialog({
   trigger, initial, onSubmit,
 }: {
