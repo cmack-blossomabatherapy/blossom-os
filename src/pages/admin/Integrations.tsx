@@ -1369,6 +1369,80 @@ export default function Integrations() {
           <RecruitingIntegrationHealthPanel />
         </div>
 
+        {/* Source of Truth — which external system owns which operational
+            domain. Blossom OS is the workflow layer, not the system of
+            record for these. */}
+        <Card className="mt-8 rounded-2xl border-border/70 bg-card/60 p-5">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+                  <Database className="size-4" strokeWidth={1.75} />
+                </div>
+                <h2 className="text-base font-semibold tracking-tight text-foreground">
+                  Source of truth
+                </h2>
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground max-w-xl">
+                External systems that own operational data. Blossom OS reads from and
+                coordinates around these — it is not the system of record for anything
+                listed here.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {SOURCE_OF_TRUTH_IDS.map((id) => {
+              const reg = BLOSSOM_INTEGRATIONS.find((r) => r.id === id);
+              if (!reg) return null;
+              const Icon = ICON_BY_ID[id] ?? Plug;
+              const accent = ACCENT_BY_ID[id] ?? "text-muted-foreground";
+              const live = list.find((i) => i.id === id);
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => live && setSelected(live)}
+                  className="group flex flex-col rounded-xl border border-border/60 bg-background/40 p-4 text-left transition-all hover:border-border hover:bg-background/60"
+                >
+                  <div className="mb-2 flex items-center gap-2">
+                    <div className={cn("grid size-8 place-items-center rounded-lg border border-border/60 bg-muted/40", accent)}>
+                      <Icon className="size-4" strokeWidth={1.75} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-foreground">
+                        {reg.displayName}
+                      </div>
+                      {reg.ownerDepartment && (
+                        <div className="truncate text-[11px] text-muted-foreground">
+                          Owner · {reg.ownerDepartment}
+                        </div>
+                      )}
+                    </div>
+                    {live && <StatusPill status={live.status} />}
+                  </div>
+                  <div className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Owns
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {(reg.sourceOfTruthFor.length > 0
+                      ? reg.sourceOfTruthFor
+                      : ["—"]
+                    ).map((s) => (
+                      <Badge
+                        key={s}
+                        variant="secondary"
+                        className="rounded-full bg-muted/60 px-2 py-0.5 text-[11px] font-normal text-muted-foreground"
+                      >
+                        {s}
+                      </Badge>
+                    ))}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+
         {/* Search & filters */}
         <div className="mt-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full md:max-w-md">
@@ -1462,6 +1536,52 @@ export default function Integrations() {
                 Try clearing the search or selecting a different category.
               </p>
             </Card>
+          )}
+
+          {LEGACY_INTEGRATIONS.length > 0 && (
+            <section>
+              <button
+                onClick={() =>
+                  setCollapsed((c) => ({ ...c, __legacy: !c.__legacy }))
+                }
+                className="group flex w-full items-center justify-between border-b border-border/60 pb-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="grid size-8 place-items-center rounded-lg bg-muted/60 text-muted-foreground">
+                    <Lock className="size-4" strokeWidth={1.75} />
+                  </div>
+                  <div className="text-left">
+                    <h2 className="text-base font-semibold tracking-tight text-foreground">
+                      Legacy / Internal
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      Internal automation bridges — not user-facing dependencies.
+                    </p>
+                  </div>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "size-4 text-muted-foreground transition-transform",
+                    !collapsed.__legacy && "rotate-0",
+                    collapsed.__legacy !== false && "-rotate-90",
+                  )}
+                />
+              </button>
+              {collapsed.__legacy === false && (
+                <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {LEGACY_INTEGRATIONS.map((i) => (
+                    <IntegrationCard
+                      key={i.id}
+                      integration={i}
+                      onOpen={() => setSelected(i)}
+                      onToggle={(next) =>
+                        setEnabledMap((m) => ({ ...m, [i.id]: next }))
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
           )}
         </div>
       </div>
