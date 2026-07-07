@@ -1,5 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Workflow, Inbox, Bug, Search, Plus, Pencil, Trash2, ExternalLink, Plug,
   CheckCircle2, PauseCircle, ShieldAlert, Play, RefreshCw, ArchiveRestore,
@@ -207,13 +207,20 @@ function AssignOwnerDialog({
 }
 
 function WorkflowDialog({
-  trigger, initial, onSubmit,
+  trigger, initial, onSubmit, open: openProp, onOpenChange,
 }: {
   trigger: ReactNode;
   initial?: Partial<SystemWorkflow>;
   onSubmit: (patch: Partial<SystemWorkflow>) => Promise<void>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = (o: boolean) => {
+    if (openProp === undefined) setInternalOpen(o);
+    onOpenChange?.(o);
+  };
   const [name, setName] = useState(initial?.name ?? "");
   const [department, setDepartment] = useState(initial?.department ?? "");
   const [owner, setOwner] = useState(initial?.owner_name ?? "");
