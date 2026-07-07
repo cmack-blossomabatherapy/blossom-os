@@ -1562,7 +1562,6 @@ export default function Integrations() {
                 <ChevronDown
                   className={cn(
                     "size-4 text-muted-foreground transition-transform",
-                    !collapsed.__legacy && "rotate-0",
                     collapsed.__legacy !== false && "-rotate-90",
                   )}
                 />
