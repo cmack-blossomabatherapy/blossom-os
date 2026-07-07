@@ -543,6 +543,116 @@ interface MarketingCallRow {
   campaign_id?: string | null;
 }
 
+interface OperationsWorkItemRow {
+  id: string;
+  title: string;
+  description: string | null;
+  type: string | null;
+  department: string | null;
+  owner_id: string | null;
+  owner_name: string | null;
+  assigned_role: string | null;
+  state: string | null;
+  priority: string | null;
+  status: string | null;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string | null;
+  escalated_at: string | null;
+  resolved_at: string | null;
+  snoozed_until: string | null;
+  related_lead_id: string | null;
+  related_patient_id: string | null;
+  related_user_id: string | null;
+  source_system: string | null;
+  tags: string[] | null;
+  escalation_reason: string | null;
+  escalation_level: number | null;
+  resolution_notes: string | null;
+  metadata: Record<string, unknown> | null;
+}
+
+interface OperationsWorkItemEventRow {
+  id: string;
+  work_item_id: string;
+  event_type: string;
+  message: string | null;
+  actor_id: string | null;
+  actor_name: string | null;
+  created_at: string;
+  metadata: Record<string, unknown> | null;
+}
+
+function rowToWorkItem(r: OperationsWorkItemRow): WorkItem {
+  return {
+    id: r.id,
+    title: r.title,
+    description: r.description ?? undefined,
+    type: (r.type as WorkItem["type"]) ?? "general_task",
+    department: (r.department as WorkItem["department"]) ?? "Operations Leadership",
+    ownerId: r.owner_id ?? undefined,
+    ownerName: r.owner_name ?? undefined,
+    assignedRole: r.assigned_role ?? undefined,
+    state: r.state ?? undefined,
+    priority: (r.priority as WorkItem["priority"]) ?? "normal",
+    status: (r.status as WorkItem["status"]) ?? "open",
+    dueDate: r.due_date ?? undefined,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at ?? undefined,
+    escalatedAt: r.escalated_at ?? undefined,
+    resolvedAt: r.resolved_at ?? undefined,
+    snoozedUntil: r.snoozed_until ?? undefined,
+    relatedLeadId: r.related_lead_id ?? undefined,
+    relatedPatientId: r.related_patient_id ?? undefined,
+    relatedUserId: r.related_user_id ?? undefined,
+    sourceSystem: r.source_system ?? undefined,
+    tags: r.tags ?? [],
+    escalationReason: r.escalation_reason ?? undefined,
+    escalationLevel: (r.escalation_level as WorkItem["escalationLevel"]) ?? undefined,
+    resolutionNotes: r.resolution_notes ?? undefined,
+    metadata: r.metadata ?? undefined,
+  };
+}
+
+const WORK_ITEM_EVENT_TITLES: Record<string, { title: (msg?: string | null) => string; type: ActivityEventType; severity: ActivitySeverity }> = {
+  work_item_created: { title: () => "Work item created", type: "work_item_created", severity: "info" },
+  work_item_updated: { title: () => "Work item updated", type: "work_item_updated", severity: "info" },
+  work_item_assigned: { title: () => "Work item assigned", type: "work_item_assigned", severity: "info" },
+  work_item_status_changed: { title: () => "Status changed", type: "work_item_updated", severity: "info" },
+  work_item_snoozed: { title: () => "Snoozed", type: "work_item_updated", severity: "info" },
+  work_item_escalated: { title: () => "Escalated", type: "work_item_escalated", severity: "warning" },
+  work_item_escalation_resolved: { title: () => "Escalation resolved", type: "work_item_escalation_resolved", severity: "success" },
+  work_item_completed: { title: () => "Completed", type: "work_item_completed", severity: "success" },
+  note_added: { title: () => "Note added", type: "note_added", severity: "info" },
+};
+
+function activityFromWorkItemEvent(
+  ev: OperationsWorkItemEventRow,
+  item?: WorkItem,
+): ActivityEvent {
+  const preset = WORK_ITEM_EVENT_TITLES[ev.event_type] ?? WORK_ITEM_EVENT_TITLES.work_item_updated;
+  const suffix = item?.title ? ` — ${item.title}` : "";
+  return normalizeActivityEvent({
+    id: `wie_${ev.id}`,
+    type: preset.type,
+    objectType: "task",
+    objectId: ev.work_item_id,
+    objectLabel: item?.title ?? item?.department,
+    relatedLeadId: item?.relatedLeadId,
+    relatedPatientId: item?.relatedPatientId,
+    relatedUserId: item?.relatedUserId,
+    actorUserId: ev.actor_id ?? undefined,
+    actorName: ev.actor_name ?? item?.ownerName,
+    actorRole: item?.department,
+    occurredAt: ev.created_at,
+    title: preset.title() + suffix,
+    summary: ev.message ?? undefined,
+    sourceSystem: item?.sourceSystem ?? "Work Queue",
+    severity: preset.severity,
+    metadata: ev.metadata ?? undefined,
+  });
+}
+
 interface MarketingEmailRow {
   id: string;
   occurred_at: string;
