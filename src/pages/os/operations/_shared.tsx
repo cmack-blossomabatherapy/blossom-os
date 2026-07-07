@@ -166,18 +166,34 @@ export function ActionPill({
   toastMessage,
   icon,
   className,
+  onClick,
+  disabled,
+  title,
 }: {
   label: string;
   toastMessage?: string;
   icon?: ReactNode;
   className?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  title?: string;
 }) {
   return (
     <button
       type="button"
-      onClick={() => toast.success(toastMessage ?? `${label} sent`)}
+      disabled={disabled}
+      title={title}
+      onClick={() => {
+        if (disabled) return;
+        if (onClick) {
+          onClick();
+          return;
+        }
+        toast.success(toastMessage ?? `${label} sent`);
+      }}
       className={cn(
         "inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[11px] text-muted-foreground transition hover:border-border hover:text-foreground hover:bg-muted",
+        disabled && "opacity-50 cursor-not-allowed hover:bg-card hover:text-muted-foreground",
         className,
       )}
     >
