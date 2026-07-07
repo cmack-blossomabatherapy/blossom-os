@@ -120,6 +120,50 @@ function EmptyRow({ span, label }: { span: number; label: string }) {
 
 const WORKFLOW_STATUSES = ["Planned", "In Build", "Active", "Inactive", "Replaced"];
 const PRIORITIES = ["Low", "Medium", "High"];
+const RISK_LEVELS = ["Low", "Medium", "High", "Critical"];
+const ALL_OPTION = "__all__";
+
+function SelectFilter({
+  label, value, onChange, options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Label className="text-xs text-muted-foreground whitespace-nowrap">{label}</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-9 w-[150px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL_OPTION}>All</SelectItem>
+          {options.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function QuickActionButton({ icon: Icon, label, onClick, tone }: {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  tone?: "default" | "danger" | "success";
+}) {
+  const toneClass =
+    tone === "danger" ? "text-red-600 hover:bg-red-50" :
+    tone === "success" ? "text-emerald-700 hover:bg-emerald-50" :
+    "text-muted-foreground hover:text-foreground";
+  return (
+    <Button
+      size="icon" variant="ghost" className={cn("h-8 w-8", toneClass)}
+      title={label} aria-label={label} onClick={onClick}
+    >
+      <Icon className="h-4 w-4" />
+    </Button>
+  );
+}
 
 function WorkflowDialog({
   trigger, initial, onSubmit,
@@ -137,6 +181,8 @@ function WorkflowDialog({
   const [status, setStatus] = useState(initial?.status ?? "Planned");
   const [priority, setPriority] = useState(initial?.priority ?? "Medium");
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [relatedRoute, setRelatedRoute] = useState(initial?.related_route ?? "");
+  const [riskLevel, setRiskLevel] = useState(initial?.risk_level ?? "");
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 
@@ -155,6 +201,8 @@ function WorkflowDialog({
         future_module: future || null,
         status, priority,
         notes: notes || null,
+        related_route: relatedRoute || null,
+        risk_level: riskLevel || null,
       });
       setOpen(false);
     } catch (e) {
@@ -196,6 +244,19 @@ function WorkflowDialog({
             </div>
           </div>
           <div><Label>Notes</Label><Textarea value={notes ?? ""} onChange={(e) => setNotes(e.target.value)} rows={3} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Related route</Label><Input value={relatedRoute ?? ""} onChange={(e) => setRelatedRoute(e.target.value)} placeholder="/ops/staffing" /></div>
+            <div>
+              <Label>Risk level</Label>
+              <Select value={riskLevel || ""} onValueChange={(v) => setRiskLevel(v === "__none__" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">—</SelectItem>
+                  {RISK_LEVELS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
