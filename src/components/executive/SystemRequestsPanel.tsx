@@ -346,16 +346,22 @@ function ConvertToWorkflowDialog({
   request: SystemIssue;
   actor: string;
   converting: boolean;
-  onConfirm: (ownerOverride: string | null) => Promise<void>;
+  onConfirm: (ownerOverride: string | null) => Promise<string | null>;
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const draft = useMemo(() => buildWorkflowDraftFromRequest(request, actor), [request, actor]);
   const [owner, setOwner] = useState<string>(draft.owner_name ?? "");
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const [createdOwner, setCreatedOwner] = useState<string | null>(null);
 
   const handleOpen = (o: boolean) => {
     setOpen(o);
-    if (o) setOwner(draft.owner_name ?? "");
+    if (o) {
+      setOwner(draft.owner_name ?? "");
+      setCreatedId(null);
+      setCreatedOwner(null);
+    }
   };
 
   const rows: Array<{ label: string; value: React.ReactNode; muted?: boolean }> = [
@@ -370,8 +376,16 @@ function ConvertToWorkflowDialog({
   ];
 
   const submit = async () => {
-    await onConfirm(owner.trim() || null);
-    setOpen(false);
+    const finalOwner = owner.trim() || null;
+    const id = await onConfirm(finalOwner);
+    if (id) {
+      setCreatedId(id);
+      setCreatedOwner(finalOwner);
+    } else {
+      // If we somehow didn't get an id back, close the dialog and let the
+      // caller's toast be the confirmation.
+      setOpen(false);
+    }
   };
 
   return (
@@ -379,8 +393,42 @@ function ConvertToWorkflowDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Convert to Workflow Inventory</DialogTitle>
+          <DialogTitle>{createdId ? "Workflow created" : "Convert to Workflow Inventory"}</DialogTitle>
         </DialogHeader>
+        {createdId ? (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-[13px] text-emerald-900">
+              <div className="flex items-start gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                <div className="space-y-1">
+                  <div className="font-medium text-emerald-900">
+                    "{draft.name}" is now in Workflow Inventory.
+                  </div>
+                  <div className="text-emerald-800/90">
+                    Initial state: <span className="font-medium">Planned</span> · Priority{" "}
+                    <span className="font-medium">{draft.priority}</span> · Risk{" "}
+                    <span className="font-medium">{draft.risk_level}</span>
+                  </div>
+                  <div className="text-emerald-800/90">
+                    Owner: <span className="font-medium">{createdOwner ?? "Unassigned — needs an owner"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="gap-2 sm:justify-between">
+              <Button variant="outline" onClick={() => setOpen(false)}>Done</Button>
+              <Button asChild>
+                <Link
+                  to={`/system/workflow-inventory?selected=${createdId}`}
+                  onClick={() => setOpen(false)}
+                >
+                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                  Open workflow detail
+                </Link>
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
         <div className="space-y-4">
           <div className="rounded-lg border border-dashed border-border/60 bg-muted/30 p-3 text-[13px] text-muted-foreground">
             A new row will be added to <span className="font-medium text-foreground">Workflow Inventory</span> using the values below.
@@ -419,14 +467,16 @@ function ConvertToWorkflowDialog({
             <pre className="mt-2 whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-muted-foreground">{draft.notes}</pre>
           </details>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={converting}>Cancel</Button>
-          <Button onClick={submit} disabled={converting}>
-            {converting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Workflow className="mr-1.5 h-3.5 w-3.5" />}
-            Create workflow
-          </Button>
-        </DialogFooter>
+        )}
+        {!createdId ? (
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={converting}>Cancel</Button>
+            <Button onClick={submit} disabled={converting}>
+              {converting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Workflow className="mr-1.5 h-3.5 w-3.5" />}
+              Create workflow
+            </Button>
+          </DialogFooter>
+        ) : null}
       </DialogContent>
     </Dialog>
   );
