@@ -11,16 +11,33 @@
  * via metadata / source_record fields when leadership takes action.
  */
 import { useMemo, useState } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, ArrowRightLeft, Workflow, Bug, Check } from "lucide-react";
 import { toast } from "sonner";
 import { ExecCard } from "@/pages/os/executive/_shared";
-import { useSystemIssues } from "@/hooks/useSystemTools";
+import { useSystemIssues, useSystemWorkflows, logSystemToolAction, type SystemIssue } from "@/hooks/useSystemTools";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+function mapPriorityToWorkflow(p: string): string {
+  switch (p) {
+    case "urgent":
+    case "high": return "High";
+    case "low": return "Low";
+    default: return "Medium";
+  }
+}
 
 const CATEGORIES = ["Improvement", "Bug", "Access", "Module idea", "Other"];
 const STATUSES = ["open", "triage", "in_progress", "blocked", "resolved"];
 
 export function SystemRequestsPanel() {
   const { rows, loading, create, update } = useSystemIssues();
+  const { create: createWorkflow } = useSystemWorkflows();
+  const { isAdmin, displayName } = useAuth();
+  const [convertingId, setConvertingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [priority, setPriority] = useState("normal");
@@ -54,6 +71,69 @@ export function SystemRequestsPanel() {
       await update(id, { status });
     } catch (err: any) {
       toast.error(err?.message ?? "Could not update");
+    }
+  };
+
+  const convertToWorkflow = async (req: SystemIssue) => {
+    setConvertingId(req.id);
+    try {
+      await createWorkflow({
+        name: req.title,
+        department: req.area ?? null,
+        owner_name: req.owner_name ?? null,
+        current_source: "System request",
+        future_module: null,
+        status: "Planned",
+        priority: mapPriorityToWorkflow(req.priority),
+        notes: [
+          req.description ?? "",
+          `Converted from request "${req.title}" (${req.id.slice(0, 8)}) by ${displayName ?? "admin"} on ${new Date().toLocaleDateString()}.`,
+        ].filter(Boolean).join("\n\n"),
+      });
+      await update(req.id, {
+        status: "resolved",
+        resolved_at: new Date().toISOString(),
+        notes: [req.notes ?? "", `Converted to workflow inventory item.`].filter(Boolean).join("\n"),
+      });
+      void logSystemToolAction({
+        tool_area: "request_intake",
+        action: "convert_to_workflow",
+        entity_table: "system_issues",
+        entity_id: req.id,
+        previous_value: { status: req.status },
+        new_value: { status: "resolved", target: "system_workflows" },
+        metadata: { title: req.title },
+      });
+      toast.success("Converted to workflow inventory item");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Conversion failed");
+    } finally {
+      setConvertingId(null);
+    }
+  };
+
+  const convertToIssue = async (req: SystemIssue) => {
+    setConvertingId(req.id);
+    try {
+      await update(req.id, {
+        area: req.area && req.area !== "Improvement" && req.area !== "Module idea" ? req.area : "Bug",
+        status: "triage",
+        notes: [req.notes ?? "", `Promoted to tracked issue by ${displayName ?? "admin"} on ${new Date().toLocaleDateString()}.`].filter(Boolean).join("\n"),
+      });
+      void logSystemToolAction({
+        tool_area: "request_intake",
+        action: "convert_to_issue",
+        entity_table: "system_issues",
+        entity_id: req.id,
+        previous_value: { status: req.status, area: req.area },
+        new_value: { status: "triage", area: "Bug" },
+        metadata: { title: req.title },
+      });
+      toast.success("Promoted to tracked issue");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Conversion failed");
+    } finally {
+      setConvertingId(null);
     }
   };
 
@@ -123,6 +203,7 @@ export function SystemRequestsPanel() {
                 <th className="px-3 py-2 text-left">Category</th>
                 <th className="px-3 py-2 text-left">Priority</th>
                 <th className="px-3 py-2 text-left">Status</th>
+                <th className="px-3 py-2 text-right">Convert</th>
               </tr>
             </thead>
             <tbody>
@@ -146,6 +227,53 @@ export function SystemRequestsPanel() {
                         <option value={i.status}>{i.status}</option>
                       )}
                     </select>
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {isAdmin ? (
+                      i.status === "resolved" ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <Check className="h-3 w-3" /> Converted
+                        </span>
+                      ) : (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              disabled={convertingId === i.id}
+                              className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background/60 px-2 py-0.5 text-[12px] text-foreground/90 hover:bg-muted disabled:opacity-40"
+                            >
+                              {convertingId === i.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <ArrowRightLeft className="h-3 w-3" />
+                              )}
+                              Convert
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                              Convert request
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => convertToWorkflow(i)}>
+                              <Workflow className="mr-2 h-4 w-4" />
+                              To workflow inventory
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => convertToIssue(i)}>
+                              <Bug className="mr-2 h-4 w-4" />
+                              To tracked issue
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )
+                    ) : (
+                      <span
+                        title="Admins can convert requests into workflow items or issues"
+                        className="inline-flex items-center gap-1 rounded-md border border-dashed border-border/60 px-2 py-0.5 text-[11px] text-muted-foreground opacity-60"
+                      >
+                        <ArrowRightLeft className="h-3 w-3" /> Admin only
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
