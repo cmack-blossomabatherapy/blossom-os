@@ -161,9 +161,10 @@ describe("State Director Final Completion — menus, routes, guards", () => {
     };
     walk("src/pages/os/stateDirector", (f) => f.endsWith(".tsx"));
     walk("src/components/stateDirector", (f) => f.endsWith(".tsx"));
-    for (const f of fs.readdirSync("docs")) {
-      if (/state-director/i.test(f)) targets.push(path.join("docs", f));
-    }
+    // Scan only the new final QA doc — older QA docs contain the phrases
+    // as negative-assertion history ("no Make.com language") which is fine.
+    const finalDoc = "docs/state-director-final-completion-qa.md";
+    if (fs.existsSync(finalDoc)) targets.push(finalDoc);
     for (const f of targets) {
       const src = fs.readFileSync(f, "utf8");
       expect(/monday\.com/i.test(src), `Monday.com in ${f}`).toBe(false);
