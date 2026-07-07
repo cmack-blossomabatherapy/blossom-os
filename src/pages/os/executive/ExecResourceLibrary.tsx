@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { BookOpen, ChevronRight, Search, Sparkles, Star } from "lucide-react";
 import { ExecPage, ExecCard, AIPrompt } from "./_shared";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 type Importance = "Critical" | "Executive" | "Operational";
