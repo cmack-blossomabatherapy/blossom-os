@@ -506,26 +506,21 @@ export function groupActivityByDate(events: ActivityEvent[]): { label: string; e
 /* ---------------------------- Aggregated feed ---------------------------- */
 
 /**
- * Synchronous fallback feed. Contains only Work Queue activity that already
- * lives in a local subscription store. Production surfaces should prefer
- * `useActivityFeed()` / `fetchActivityFeed()`, which merge in database-backed
- * Marketing activity. No seeded mock events, no in-memory source-event store.
+ * Synchronous fallback feed. Production surfaces should always prefer the
+ * async `fetchActivityFeed()` / `useActivityFeed()` paths, which pull from
+ * Supabase. Kept as an empty-array stub for any legacy call sites so they
+ * never surface seeded/mock work queue items.
  */
 export function buildActivityFeed(): ActivityEvent[] {
-  const workEvents = listWorkItems().map(activityFromWorkItem);
-  return sortActivityNewestFirst(workEvents);
+  return [];
 }
 
 /**
- * Subscribe to changes in local subscription stores (work queue only) and
- * re-emit the sync feed. Kept for legacy callers.
+ * Legacy no-op subscription. The realtime Supabase subscription lives inside
+ * `useActivityFeed()`. This shim exists only so older callers do not crash.
  */
-export function subscribeActivityFeed(listener: (events: ActivityEvent[]) => void): () => void {
-  const push = () => listener(buildActivityFeed());
-  const unsubWi = subscribeWorkItems(() => push());
-  return () => {
-    unsubWi();
-  };
+export function subscribeActivityFeed(_listener: (events: ActivityEvent[]) => void): () => void {
+  return () => {};
 }
 
 /* ---------------------------- Database-backed feed ---------------------------- */
