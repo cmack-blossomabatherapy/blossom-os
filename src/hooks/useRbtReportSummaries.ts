@@ -200,10 +200,24 @@ export function useRbtReportSummaries(): RbtReportSummaries {
 
         /* --------------------- CentralReach sync status ------------------- */
         // Uses sync_status from academy_runtime_progress. Anything not
-        // "synced" is treated as pending. If no rows exist, keep the
-        // "no data yet" fallback rather than pretending everything is OK.
-        if (runtimeRows.length > 0) {
-          const pending = runtimeRows.filter((r) => r.sync_status && r.sync_status !== "synced").length;
+        // "synced" is treated as pending. Track-safe: only rows on the
+        // learner's active RBT path count. Legacy null-track rows are used
+        // as fallback only for modules with no active-track row.
+        const syncRows: any[] = (() => {
+          if (!pathId) return runtimeRows;
+          const activeRows = runtimeRows.filter((r) => r.track_id === pathId);
+          const seenKeys = new Set(
+            activeRows.map((r) => r.source_module_id || r.module_id),
+          );
+          const legacyFallback = runtimeRows.filter(
+            (r) =>
+              (r.track_id ?? null) === null &&
+              !seenKeys.has(r.source_module_id || r.module_id),
+          );
+          return [...activeRows, ...legacyFallback];
+        })();
+        if (syncRows.length > 0) {
+          const pending = syncRows.filter((r) => r.sync_status && r.sync_status !== "synced").length;
           summaries["rbt-centralreach-sync"] = {
             key: "rbt-centralreach-sync",
             primary: pending === 0 ? "OK" : `${pending} pending`,
