@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/command";
 import { ROLE_HOME } from "@/lib/os/roleHome";
 import { ROLE_MENUS, DEFAULT_ROLE_MENU } from "@/lib/os/roleMenus";
+import { SUPER_ADMIN_MENU } from "@/lib/os/superAdminMenu";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import blossomMark from "@/assets/blossom-flower-mark.png";
 
@@ -55,117 +56,24 @@ type NavSection = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Super Admin - canonical grouped menu (matches AppSidebar)          */
+/* Super Admin - canonical grouped menu                               */
+/*                                                                    */
+/* This shell consumes the SAME canonical menu as AppSidebar so users */
+/* never see two different Super Admin menus depending on which page  */
+/* rendered the sidebar. Do NOT hand-edit here.                       */
 /* ------------------------------------------------------------------ */
 
-const SUPER_ADMIN_SECTIONS: NavSection[] = [
-  {
-    id: "command_center", label: "Command Center", items: [
-      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-      { to: "/command-center", label: "Command Center", icon: Workflow },
-      { to: "/work-queue", label: "Work Queue", icon: ListTodo },
-      { to: "/reports", label: "Reports", icon: BarChart3 },
-    ],
-  },
-  {
-    id: "people_access", label: "People & Access", items: [
-      { to: "/user-management", label: "User Management", icon: Users2 },
-      { to: "/role-management", label: "Role Management", icon: ShieldCheck },
-      { to: "/employee-directory", label: "Employee Directory", icon: UserCheck },
-      { to: "/permissions", label: "Permissions", icon: ShieldCheck },
-      { to: "/device-inventory", label: "Device Inventory", icon: Smartphone },
-      { to: "/device-requests", label: "Device Requests", icon: Smartphone },
-    ],
-    defaultCollapsed: true,
-  },
-  {
-    id: "training_resources", label: "Training & Resources", items: [
-      { to: "/academy", label: "Training Academy", icon: GraduationCap },
-      { to: "/hr/training-center", label: "Training Management", icon: GraduationCap },
-      { to: "/resource-library", label: "Resource Library", icon: BookOpen },
-    ],
-  },
-  {
-    id: "growth_admissions", label: "Growth & Admissions", items: [
-      { to: "/marketing", label: "Marketing Dashboard", icon: Megaphone },
-      { to: "/business-development", label: "Business Development", icon: HeartHandshake },
-      { to: "/marketing/referral-crm", label: "Referral CRM", icon: HeartHandshake },
-      { to: "/marketing/lead-sources", label: "Lead Sources", icon: TrendingUp },
-      { to: "/marketing/lead-source-inbox", label: "Lead Source Inbox", icon: Inbox },
-      { to: "/marketing/campaigns", label: "Campaigns", icon: Megaphone },
-      { to: "/marketing/call-tracking", label: "CTM / Call Tracking", icon: Phone },
-      { to: "/marketing/leadtrap", label: "LeadTrap", icon: TrendingUp },
-      { to: "/marketing/facebook-ads", label: "Facebook Ads", icon: Megaphone },
-      { to: "/marketing/google-ads", label: "Google Ads", icon: TrendingUp },
-      { to: "/patient-journey", label: "Patient Lifetime Journey", icon: Workflow },
-      { to: "/intake/dashboard", label: "Intake Dashboard", icon: Briefcase },
-      { to: "/intake/lead-to-active", label: "Lead to Ready-to-Start Pipeline", icon: TrendingUp },
-      { to: "/intake/referral-queue", label: "Referral Queue", icon: ClipboardCheck },
-      { to: "/intake/tasks", label: "Intake Tasks", icon: ListTodo },
-      { to: "/intake/benefits-cheat-sheets", label: "Lead Benefits Cheat Sheets", icon: ShieldCheck },
-    ],
-    defaultCollapsed: true,
-  },
-  {
-    id: "clinical_quality", label: "Clinical & Quality", items: [
-      { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck },
-      { to: "/qa", label: "QA Dashboard", icon: ClipboardCheck },
-      { to: "/credentialing/bcba", label: "BCBA Credentials", icon: IdCard },
-      { to: "/credentialing/uncredentialed-bcbas", label: "Uncredentialed BCBAs", icon: AlertTriangle },
-      { to: "/credentialing", label: "Credentialing Dashboard", icon: Stethoscope },
-      { to: "/credentialing/providers", label: "Provider Credentialing", icon: Stethoscope },
-      { to: "/credentialing/insurance", label: "Insurance Credentialing", icon: Building2 },
-      { to: "/credentialing/expiring", label: "Expiring Credentials", icon: CalendarDays },
-    ],
-    defaultCollapsed: true,
-  },
-  {
-    id: "operations", label: "Operations", items: [
-      { to: "/state-operations", label: "State Operations", icon: MapPin },
-      { to: "/authorizations", label: "Authorizations", icon: ShieldCheck },
-      { to: "/authorizations/handoff", label: "Initial → Treatment Handoff", icon: ShieldCheck },
-      { to: "/authorizations?stage=approved", label: "Approved Authorizations", icon: CheckCircle2 },
-      { to: "/authorizations?stage=denied", label: "Denials", icon: XCircle },
-      { to: "/ops/scheduling", label: "Scheduling", icon: CalendarDays },
-      { to: "/scheduling/board", label: "Scheduling Board", icon: CalendarDays },
-      { to: "/ops/staffing", label: "Staffing", icon: Users },
-      { to: "/ops/case-management", label: "Case Management", icon: HeartHandshake },
-      { to: "/ops/no-oon-benefits", label: "No OON Benefits", icon: ShieldCheck },
-      { to: "/ops/staffing?tab=preferences", label: "Family Staffing Preferences", icon: HeartHandshake },
-      { to: "/ops/state-escalations", label: "State Escalations", icon: AlertTriangle },
-      { to: "/ops/tasks", label: "Operational Tasks", icon: ListTodo },
-      { to: "/work-queue/escalations", label: "Escalation Center", icon: Sparkles },
-    ],
-    defaultCollapsed: true,
-  },
-  {
-    id: "communications", label: "Communications", items: [
-      { to: "/phone", label: "Phone System", icon: Phone, end: true },
-      { to: "/communications/call-logs", label: "Call Logs", icon: PhoneCall },
-      { to: "/phone/shared", label: "Shared Lines", icon: Phone },
-      { to: "/communications/phone-requests", label: "Phone Requests", icon: ClipboardList },
-      { to: "/communications/directory", label: "Directory", icon: BookUser },
-      { to: "/phone/ai-calls", label: "After-Hours Calls", icon: PhoneCall, end: true },
-      { to: "/phone/ai-calls/audit", label: "Call Email Audit", icon: FileText },
-      { to: "/communications/user-activity", label: "User Activity Log", icon: Activity },
-      { to: "/communications/patient-activity", label: "Patient Activity Log", icon: HeartHandshake },
-      { to: "/communications/activity-center", label: "Activity Center", icon: Activity },
-    ],
-    defaultCollapsed: true,
-  },
-  {
-    id: "system_tools", label: "System Tools", items: [
-      { to: "/admin/integrations", label: "Integrations", icon: Plug },
-      { to: "/system/email-command-center", label: "Email Command Center", icon: Mail },
-      { to: "/system/bcba-productivity-uploads", label: "BCBA Productivity Uploads", icon: UploadCloud },
-      { to: "/system/workflow-inventory", label: "Workflow Inventory", icon: Workflow },
-      { to: "/system/request-intake", label: "Request Intake", icon: Inbox },
-      { to: "/settings", label: "System Settings", icon: Settings },
-      { to: "/system/issue-tracker", label: "Issue Tracker", icon: Bug },
-    ],
-    defaultCollapsed: true,
-  },
-];
+const SUPER_ADMIN_SECTIONS: NavSection[] = SUPER_ADMIN_MENU.map((s) => ({
+  id: s.id,
+  label: s.label,
+  defaultCollapsed: s.defaultCollapsed,
+  items: s.items.map<NavEntry>((i) => ({
+    to: i.to,
+    label: i.label,
+    icon: i.icon,
+    end: i.end,
+  })),
+}));
 
 /* ------------------------------------------------------------------ */
 /* Section builder                                                    */

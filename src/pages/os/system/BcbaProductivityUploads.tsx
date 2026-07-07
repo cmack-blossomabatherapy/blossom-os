@@ -99,7 +99,7 @@ export default function BcbaProductivityUploads() {
         toast.error(`Missing required columns: ${p.missingColumns.join(", ")}`);
       } else {
         toast.message(`Ready to append ${p.newRowCount.toLocaleString()} new rows`, {
-          description: `${p.parsedRows.length.toLocaleString()} parsed · ${p.duplicateRowCount.toLocaleString()} duplicates detected. Click Append & Save to commit this data.`,
+          description: `${p.parsedRows.length.toLocaleString()} parsed · ${p.duplicateRowCount.toLocaleString()} duplicates detected. Click Append Upload to commit this data.`,
           duration: 8000,
         });
       }
@@ -328,7 +328,7 @@ export default function BcbaProductivityUploads() {
                   {!preview.missingColumns.length && !appending && (
                     <div className="mt-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
                       <AlertTriangle className="mr-1.5 inline h-3.5 w-3.5" />
-                      Parsed only — this data is not saved yet. Click <span className="font-semibold">Append &amp; Save</span> to make it available in the report.
+                      Parsed only — this data is not saved yet. Click <span className="font-semibold">Append Upload</span> to make it available in the report.
                     </div>
                   )}
                   {Object.keys(preview.dropReasons).length > 0 && (
@@ -369,7 +369,7 @@ export default function BcbaProductivityUploads() {
                 onClick={handleAppend}
               >
                 <UploadCloud className="mr-2 h-4 w-4" />
-                {appending ? "Saving…" : "Append & Save"}
+                {appending ? "Saving…" : "Append Upload"}
               </Button>
               {appending && appendPhase && (
                 <div className="rounded-xl border bg-card/60 p-3">

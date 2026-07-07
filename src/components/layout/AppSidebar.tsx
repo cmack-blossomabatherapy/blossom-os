@@ -21,6 +21,7 @@ import { ROLE_HOME } from "@/lib/os/roleHome";
 import { type OSRole } from "@/lib/os/permissions";
 import { workspacesForRoles } from "@/lib/os/workspaces";
 import { ROLE_MENUS, DEFAULT_ROLE_MENU, ROLE_PREVIEW_LIST } from "@/lib/os/roleMenus";
+import { SUPER_ADMIN_MENU } from "@/lib/os/superAdminMenu";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -183,144 +184,17 @@ function buildSections(args: {
 
   // ---- Super Admin (not impersonating): full access ----
   if (effectiveIsAdmin) {
-    return [
-      {
-        title: "Core",
-        items: [
-          { label: "Dashboard",       path: "/",                icon: LayoutDashboard },
-          { label: "Command Center",  path: "/command-center",  icon: Workflow },
-        ],
-      },
-      {
-        title: "Live Now",
-        items: [
-          { label: "Training Academy", path: "/academy",   icon: GraduationCap },
-          { label: "Resource Library", path: "/resources", icon: BookOpen },
-          { label: "Reports",          path: "/reports",   icon: FileText },
-        ],
-      },
-      {
-        title: "People & Access",
-        items: [
-          { label: "User Management",     path: "/user-management",     icon: UsersIcon },
-          { label: "Role Management",     path: "/role-management",     icon: ShieldCheck },
-          { label: "Employee Directory",  path: "/employee-directory",  icon: UserCheck },
-          { label: "Permissions",         path: "/permissions",         icon: ShieldCheck },
-          { label: "Device Inventory",    path: "/device-inventory",    icon: Smartphone },
-          { label: "Device Requests",     path: "/device-requests",     icon: Smartphone },
-        ],
-      },
-      {
-        title: "Operations",
-        items: [
-          { label: "Intake",          path: "/intake",          icon: Briefcase },
-          { label: "Clients",         path: "/clients",         icon: UsersIcon },
-          { label: "Authorizations",  path: "/authorizations",  icon: ShieldCheck },
-          { label: "Scheduling",      path: "/scheduling",      icon: Calendar },
-          { label: "Staffing",        path: "/ops/staffing",    icon: UserCheck },
-          { label: "QA",              path: "/qa",              icon: ClipboardCheck },
-          { label: "Evaluations",     path: "/evaluations",     icon: ClipboardCheck },
-        ],
-      },
-      {
-        title: "State Operations",
-        items: [
-          { label: "State Operations",            path: "/state-operations",                icon: MapPin },
-          { label: "Approved Authorizations",     path: "/authorizations?stage=approved",   icon: CheckCircle2 },
-          { label: "Denials",                     path: "/authorizations?stage=denied",     icon: XCircle },
-          { label: "State Scheduling",            path: "/ops/scheduling",                  icon: Calendar },
-          { label: "Case Management",             path: "/ops/case-management",             icon: HeartHandshake },
-          { label: "No OON Benefits",             path: "/ops/no-oon-benefits",             icon: ShieldCheck },
-          { label: "Family Staffing Preferences", path: "/ops/staffing?tab=preferences",    icon: HeartHandshake },
-          { label: "State QA Dashboard",          path: "/ops/qa",                          icon: ClipboardCheck },
-          { label: "State Escalations",           path: "/ops/state-escalations",           icon: AlertTriangle },
-          { label: "Operational Tasks",           path: "/ops/tasks",                       icon: ListTodo },
-        ],
-        defaultCollapsed: true,
-      },
-      {
-        title: "Growth & Admissions",
-        items: [
-          { label: "Marketing Dashboard",          path: "/marketing",                 icon: Megaphone },
-          { label: "Business Development",         path: "/business-development",      icon: HeartHandshake },
-          { label: "Referral CRM",                 path: "/marketing/referral-crm",    icon: HeartHandshake },
-          { label: "Lead Sources",                 path: "/marketing/lead-sources",    icon: TrendingUp },
-          { label: "Campaigns",                    path: "/marketing/campaigns",       icon: Megaphone },
-          { label: "CTM / Call Tracking",          path: "/marketing/call-tracking",   icon: Phone },
-          { label: "LeadTrap",                     path: "/marketing/leadtrap",        icon: TrendingUp },
-          { label: "Facebook Ads",                 path: "/marketing/facebook-ads",    icon: Megaphone },
-          { label: "Google Ads",                   path: "/marketing/google-ads",      icon: TrendingUp },
-          { label: "Patient Lifetime Journey",     path: "/patient-journey",           icon: Workflow },
-          { label: "Intake Dashboard",             path: "/intake/dashboard",          icon: Briefcase },
-          { label: "Lead to Ready-to-Start Pipeline", path: "/intake/lead-to-active", icon: TrendingUp },
-          { label: "Referral Queue",               path: "/intake/referral-queue",     icon: ClipboardCheck },
-          { label: "Intake Tasks",                 path: "/intake/tasks",              icon: ClipboardCheck },
-          { label: "Lead Benefits Cheat Sheets",   path: "/intake/benefits-cheat-sheets", icon: ShieldCheck },
-        ],
-      },
-      {
-        title: "Finance",
-        items: [
-          { label: "Billing",  path: "/billing-finance",    icon: IdCard },
-          { label: "Payroll",  path: "/payroll/workspace",  icon: Wallet },
-          { label: "Revenue",  path: "/revenue",            icon: TrendingUp },
-        ],
-      },
-      {
-        title: "HR",
-        items: [
-          { label: "HR Dashboard",      path: "/hr/dashboard",         icon: HeartHandshake },
-          { label: "Employee Records",  path: "/hr/employee-records",  icon: UsersIcon },
-          { label: "HR Requests",       path: "/hr/requests",          icon: ClipboardList },
-          { label: "Compliance Items",  path: "/hr/compliance-items",  icon: ShieldCheck },
-        ],
-        defaultCollapsed: true,
-      },
-      {
-        title: "Credentialing",
-        items: [
-          { label: "Credentialing Dashboard", path: "/credentialing",                       icon: Stethoscope },
-          { label: "Provider Credentialing",  path: "/credentialing/providers",             icon: Stethoscope },
-          { label: "Insurance Credentialing", path: "/credentialing/insurance",             icon: Building2 },
-          { label: "BCBA Credentials",        path: "/credentialing/bcba",                  icon: IdCard },
-          { label: "Uncredentialed BCBAs",    path: "/credentialing/uncredentialed-bcbas",  icon: AlertTriangle },
-          { label: "Expiring Credentials",    path: "/credentialing/expiring",              icon: Calendar },
-        ],
-        defaultCollapsed: true,
-      },
-      {
-        title: "Communications",
-        items: [
-          { label: "Phone System",         path: "/phone",                          icon: Phone },
-          { label: "Call Logs",            path: "/communications/call-logs",       icon: PhoneCall },
-          { label: "Shared Lines",         path: "/phone/shared",                   icon: Phone },
-          { label: "Phone Requests",       path: "/communications/phone-requests",  icon: ClipboardList },
-          { label: "Directory",            path: "/communications/directory",       icon: BookUser },
-          { label: "After-Hours Calls",    path: "/phone/ai-calls",                 icon: PhoneCall },
-          { label: "Call Email Audit",     path: "/phone/ai-calls/audit",           icon: FileText },
-          { label: "User Activity Log",    path: "/communications/user-activity",   icon: Activity },
-          { label: "Patient Activity Log", path: "/communications/patient-activity",icon: HeartHandshake },
-        ],
-      },
-      {
-        title: "Systems",
-        items: [
-          { label: "Integrations",     path: "/admin/integrations",      icon: Plug },
-          { label: "Automated Emails", path: "/admin/automated-emails",  icon: Mail },
-          { label: "System Settings",  path: "/settings",                icon: SettingsIcon },
-        ],
-      },
-      {
-        title: "System Tools",
-        items: [
-          { label: "BCBA Productivity Uploads", path: "/system/bcba-productivity-uploads", icon: FileText },
-          { label: "Workflow Inventory",        path: "/system/workflow-inventory",        icon: WorkflowIcon },
-          { label: "Request Intake",            path: "/system/request-intake",            icon: Inbox },
-          { label: "Issue Tracker",             path: "/system/issue-tracker",             icon: Bug },
-        ],
-        defaultCollapsed: true,
-      },
-    ];
+    // Canonical Super Admin sections — same source as OSShell so the sidebar
+    // never disagrees with itself between pages. Edit `superAdminMenu.ts`, not here.
+    return SUPER_ADMIN_MENU.map<NavSection>((s) => ({
+      title: s.label,
+      defaultCollapsed: s.defaultCollapsed,
+      items: s.items.map<NavItem>((i) => ({
+        label: i.label,
+        path: i.to,
+        icon: i.icon,
+      })),
+    }));
   }
 
   // ---- Non-admin (and impersonated views): role-scoped live menu ----
