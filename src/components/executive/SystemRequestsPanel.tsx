@@ -611,7 +611,7 @@ function SystemRequestsPanelInner() {
     } finally { setConvertingId(null); }
   };
 
-  const convertToWorkflow = async (req: SystemIssue, ownerOverride: string | null) => {
+  const convertToWorkflow = async (req: SystemIssue, ownerOverride: string | null): Promise<string | null> => {
     setConvertingId(req.id);
     try {
       const draft = buildWorkflowDraftFromRequest(req, displayName ?? "admin");
@@ -655,8 +655,10 @@ function SystemRequestsPanelInner() {
         },
       });
       toast.success("Converted to workflow inventory item");
+      return workflowId;
     } catch (err: any) {
       toast.error(err?.message ?? "Conversion failed");
+      return null;
     } finally {
       setConvertingId(null);
     }
