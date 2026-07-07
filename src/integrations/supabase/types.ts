@@ -20392,6 +20392,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string[]
       }
+      user_can_manage_all_ops_work: { Args: never; Returns: boolean }
       user_has_hat: {
         Args: {
           _department_key?: string
@@ -20402,7 +20403,12 @@ export type Database = {
         Returns: boolean
       }
       user_is_leadership: { Args: never; Returns: boolean }
+      user_is_state_director_for: { Args: { _state: string }; Returns: boolean }
       user_is_state_scoped_role: { Args: never; Returns: boolean }
+      user_matches_assigned_role: {
+        Args: { _assigned: string }
+        Returns: boolean
+      }
       user_state_code: { Args: never; Returns: string }
     }
     Enums: {
