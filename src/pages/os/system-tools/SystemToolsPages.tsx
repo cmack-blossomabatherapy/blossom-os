@@ -377,6 +377,25 @@ export function WorkflowInventoryPage() {
     await update(id, { owner_name: owner });
   }
 
+  // Deep-link support: /system/workflow-inventory?selected=<id> opens the
+  // detail dialog for that row (used by the Convert-to-Workflow success link).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedId = searchParams.get("selected");
+  const selectedRow = useMemo(
+    () => (selectedId ? rows.find((r) => r.id === selectedId) ?? null : null),
+    [rows, selectedId],
+  );
+  const closeSelected = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("selected");
+    setSearchParams(next, { replace: true });
+  };
+  useEffect(() => {
+    if (!selectedRow) return;
+    const el = document.getElementById(`workflow-row-${selectedRow.id}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [selectedRow]);
+
   return (
     <Shell>
       <PageHeader
@@ -406,7 +425,14 @@ export function WorkflowInventoryPage() {
         ) : filtered.length === 0 ? (
           <EmptyRow span={9} label={rows.length === 0 ? "No workflows yet. Add the first entry to start the inventory." : "No results."} />
         ) : filtered.map((r) => (
-          <tr key={r.id} className="border-t border-border/60 hover:bg-muted/30">
+          <tr
+            key={r.id}
+            id={`workflow-row-${r.id}`}
+            className={cn(
+              "border-t border-border/60 hover:bg-muted/30",
+              selectedId === r.id ? "bg-sky-50/60" : undefined,
+            )}
+          >
             <td className="px-4 py-3 font-medium">{r.name}</td>
             <td className="px-4 py-3 text-muted-foreground">{r.department ?? "—"}</td>
             <td className="px-4 py-3 text-muted-foreground">{r.owner_name ?? "—"}</td>
