@@ -203,7 +203,7 @@ export async function startRuntime(moduleId: string, ctx: RuntimeContext) {
         elapsedSeconds: next.elapsedSeconds,
         startedAt: next.startedAt,
         lastActiveAt: now,
-      });
+      }, ctx.trackId ?? null);
     }
   }
 }
@@ -264,7 +264,7 @@ export async function completeRuntime(moduleId: string, ctx: RuntimeContext) {
         startedAt: next.startedAt,
         completedAt: now,
         lastActiveAt: now,
-      });
+      }, ctx.trackId ?? null);
     }
   }
 }
