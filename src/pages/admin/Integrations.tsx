@@ -315,7 +315,7 @@ function StatusPill({ status }: { status: IntegrationStatus }) {
       cls: "bg-muted text-muted-foreground border-border/60",
     },
     coming_soon: {
-      label: "Coming soon",
+      label: "Credential required",
       dot: "bg-muted-foreground/40",
       cls: "bg-muted text-muted-foreground border-border/60",
     },
