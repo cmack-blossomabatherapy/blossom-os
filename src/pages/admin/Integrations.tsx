@@ -544,7 +544,20 @@ function IntegrationDrawer({
 
   async function handleTest() {
     setTesting(true);
-    const res = await testIntegrationConnection(integration.id);
+    const { runWithSystemToolAudit } = await import("@/hooks/useSystemTools");
+    const res = await runWithSystemToolAudit({
+      mutation: () => testIntegrationConnection(integration.id),
+      audit: (r) => ({
+        tool_area: "integrations",
+        action: "test_connection",
+        entity_table: "integrations",
+        entity_id: integration.id,
+        new_value: { ok: r.ok, message: r.message },
+        metadata: { integration_name: integration.name },
+      }),
+      onAuditFailure: (msg) =>
+        toast.warning(`Action completed but audit log failed: ${msg}`),
+    });
     setTesting(false);
     if (res.ok) toast.success(`${integration.name}: ${res.message}`);
     else toast.error(`${integration.name}: ${res.message}`);
@@ -552,7 +565,20 @@ function IntegrationDrawer({
   }
   async function handleSync() {
     setSyncing(true);
-    const res = await runIntegrationSync(integration.id);
+    const { runWithSystemToolAudit } = await import("@/hooks/useSystemTools");
+    const res = await runWithSystemToolAudit({
+      mutation: () => runIntegrationSync(integration.id),
+      audit: (r) => ({
+        tool_area: "integrations",
+        action: "run_sync",
+        entity_table: "integrations",
+        entity_id: integration.id,
+        new_value: { ok: r.ok, message: r.message ?? null },
+        metadata: { integration_name: integration.name },
+      }),
+      onAuditFailure: (msg) =>
+        toast.warning(`Action completed but audit log failed: ${msg}`),
+    });
     setSyncing(false);
     if (res.ok) toast.success(`${integration.name}: sync queued`);
     else toast.error(`${integration.name}: ${res.message ?? "sync failed"}`);
