@@ -28,6 +28,7 @@ import {
   type WorkItemStatus, type WorkItemType,
 } from "@/lib/workQueue/workQueueModel";
 import { DueCell, KpiCard, PriorityBadge, RecommendedAction, StatusBadge, WorkItemMeta } from "./WorkQueueShared";
+import { WorkItemTimeline } from "@/components/workQueue/WorkItemTimeline";
 
 const DEPARTMENTS: (WorkDepartment | "all")[] = [
   "all", "Intake", "Marketing", "Business Development", "Authorizations",
@@ -397,6 +398,10 @@ export default function WorkQueuePage() {
                       </Link>
                     </Button>
                   )}
+                </div>
+
+                <div className="pt-3 border-t border-border/60">
+                  <WorkItemTimeline workItemId={selected.id} />
                 </div>
               </div>
             ) : (
