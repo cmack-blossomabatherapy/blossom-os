@@ -27,6 +27,11 @@ import {
   type SystemIssue, type SystemWorkflow,
 } from "@/hooks/useSystemTools";
 import { SystemToolAuditPanel, AuditHistoryButton } from "@/components/system-tools/SystemToolAuditPanel";
+import {
+  ISSUE_STATUSES as CANONICAL_ISSUE_STATUSES,
+  normalizeIssueStatus,
+  isIssueStatus,
+} from "@/lib/os/systemToolStatus";
 
 function Shell({ children }: { children: ReactNode }) {
   return (
@@ -539,7 +544,7 @@ export function RequestIntakePage() {
 /* Issue Tracker                                                              */
 /* -------------------------------------------------------------------------- */
 
-const ISSUE_STATUSES = ["Open", "Triage", "In Progress", "Blocked", "Resolved"];
+const ISSUE_STATUSES = [...CANONICAL_ISSUE_STATUSES];
 const SEVERITIES = ["Low", "Medium", "High", "Critical"];
 
 function IssueSubmitDialog({
