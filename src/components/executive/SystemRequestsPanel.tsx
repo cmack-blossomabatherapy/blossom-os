@@ -336,6 +336,103 @@ export function SystemRequestsPanel() {
 }
 
 /**
+ * Preview + confirm dialog for converting a system request into a
+ * Workflow Inventory row. Shows exactly what will be created and lets
+ * the admin override the owner before the row is written.
+ */
+function ConvertToWorkflowDialog({
+  request, actor, converting, onConfirm, trigger,
+}: {
+  request: SystemIssue;
+  actor: string;
+  converting: boolean;
+  onConfirm: (ownerOverride: string | null) => Promise<void>;
+  trigger: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const draft = useMemo(() => buildWorkflowDraftFromRequest(request, actor), [request, actor]);
+  const [owner, setOwner] = useState<string>(draft.owner_name ?? "");
+
+  const handleOpen = (o: boolean) => {
+    setOpen(o);
+    if (o) setOwner(draft.owner_name ?? "");
+  };
+
+  const rows: Array<{ label: string; value: React.ReactNode; muted?: boolean }> = [
+    { label: "Name", value: draft.name },
+    { label: "Department", value: draft.department ?? <span className="text-muted-foreground">—</span>, muted: !draft.department },
+    { label: "Current source", value: draft.current_source },
+    { label: "Initial status", value: <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700">Planned</span> },
+    { label: "Priority", value: draft.priority },
+    { label: "Risk level", value: draft.risk_level },
+    { label: "Related route", value: draft.related_route ?? <span className="text-muted-foreground">—</span>, muted: !draft.related_route },
+    { label: "Related integration", value: draft.related_integration_id ?? <span className="text-muted-foreground">—</span>, muted: !draft.related_integration_id },
+  ];
+
+  const submit = async () => {
+    await onConfirm(owner.trim() || null);
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Convert to Workflow Inventory</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="rounded-lg border border-dashed border-border/60 bg-muted/30 p-3 text-[13px] text-muted-foreground">
+            A new row will be added to <span className="font-medium text-foreground">Workflow Inventory</span> using the values below.
+            The request will be marked <span className="font-medium text-foreground">resolved</span> and linked to the new workflow.
+          </div>
+
+          <div className="overflow-hidden rounded-lg border border-border/60">
+            <table className="w-full text-[13px]">
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.label} className="border-b border-border/60 last:border-b-0">
+                    <td className="w-40 bg-muted/30 px-3 py-2 text-[11px] uppercase tracking-wider text-muted-foreground">{r.label}</td>
+                    <td className={`px-3 py-2 ${r.muted ? "text-muted-foreground" : "text-foreground"}`}>{r.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <Label>Owner</Label>
+            <Input
+              value={owner}
+              onChange={(e) => setOwner(e.target.value)}
+              placeholder="Who will own this workflow?"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {draft.owner_name
+                ? `Pre-filled from the request. Leave blank to create the workflow without an owner.`
+                : `The request has no assignee yet — assign an owner now or leave blank to triage later.`}
+            </p>
+          </div>
+
+          <details className="rounded-lg border border-border/60 bg-background/40 p-3 text-[12px] text-muted-foreground">
+            <summary className="cursor-pointer text-foreground">Notes that will be attached</summary>
+            <pre className="mt-2 whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-muted-foreground">{draft.notes}</pre>
+          </details>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={converting}>Cancel</Button>
+          <Button onClick={submit} disabled={converting}>
+            {converting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Workflow className="mr-1.5 h-3.5 w-3.5" />}
+            Create workflow
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
  * Header-friendly Submit Request button. Uses the same full-form dialog as
  * the intake panel so admins and end users get identical intake surfaces.
  */
