@@ -853,10 +853,10 @@ const App = () => (
                   <Route path="/reports/hr-employee-compliance" element={<ReportRoleGuard reportId="hr-employee-compliance"><HrEmployeeComplianceDashboard /></ReportRoleGuard>} />
                   <Route path="/reports/hr-employee-onboarding" element={<ReportRoleGuard reportId="hr-employee-onboarding"><HrEmployeeOnboardingCommandCenter /></ReportRoleGuard>} />
                   <Route path="/reports/hr-bcba-productivity" element={<ReportRoleGuard reportId="hr-bcba-productivity"><HrBcbaProductivityDashboard /></ReportRoleGuard>} />
-                 <Route path="/reports/bcba-productivity-report" element={<BcbaProductivityReport />} />
-                 <Route path="/reports/bcba-productivity-report-v3" element={<BcbaProductivityReportV3 />} />
-                  <Route path="/reports/cancellation-command-center" element={<CancellationCommandCenter />} />
-                  <Route path="/reports/progress-reports" element={<OSQAProgressReports />} />
+                 <Route path="/reports/bcba-productivity-report" element={<ReportRoleGuard reportId="bcba-productivity-report"><BcbaProductivityReport /></ReportRoleGuard>} />
+                 <Route path="/reports/bcba-productivity-report-v3" element={<ReportRoleGuard reportId="bcba-productivity-report-v3"><BcbaProductivityReportV3 /></ReportRoleGuard>} />
+                  <Route path="/reports/cancellation-command-center" element={<ReportRoleGuard reportId="cancellation-command-center"><CancellationCommandCenter /></ReportRoleGuard>} />
+                  <Route path="/reports/progress-reports" element={<ReportRoleGuard reportId="progress-reports"><OSQAProgressReports /></ReportRoleGuard>} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
                   <Route path="/reports/ai/new" element={<Navigate to="/reports" replace />} />
