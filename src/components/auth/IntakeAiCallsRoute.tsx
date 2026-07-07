@@ -6,10 +6,11 @@ import { useOSRole } from "@/contexts/OSRoleContext";
  * Guard for /phone/ai-calls (After-Hours AI). Intake owns this surface;
  * admins retain access for support. Everyone else is bounced.
  */
+// AI After-Hours Calls is Intake-owned. Executive Leadership sees the full
+// Phone System at /phone but must NOT see After-Hours AI as a normal tool.
+// Admin/super_admin/systems_admin retain access for support.
 const ALLOWED = new Set<string>([
   "super_admin", "admin", "systems_admin",
-  "exec", "executive", "executive_leadership", "ceo", "coo",
-  "director_of_operations", "ops_manager", "operations_leadership",
   "intake", "intake_team", "intake_lead", "intake_admin", "intake_manager",
   "intake_specialist", "intake_coordinator",
 ]);
