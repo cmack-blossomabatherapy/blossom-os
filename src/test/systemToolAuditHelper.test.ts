@@ -45,7 +45,7 @@ describe("runWithSystemToolAudit", () => {
   });
 
   it("still returns mutation result but fires onAuditFailure when audit insert throws", async () => {
-    insertMock.mockRejectedValue(new Error("network dead"));
+    insertMock.mockImplementation(() => { throw new Error("network dead"); });
     const onAuditFailure = vi.fn();
     const result = await runWithSystemToolAudit({
       mutation: async () => 42,
