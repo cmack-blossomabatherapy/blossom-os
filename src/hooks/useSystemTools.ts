@@ -117,9 +117,31 @@ export async function logSystemToolAction(entry: {
       metadata: entry.metadata ?? {},
     });
     if (error) console.warn("[systemToolAudit] insert failed:", error.message);
+    return { auditOk: !error, auditError: error?.message ?? null };
   } catch (e) {
     console.warn("[systemToolAudit] threw:", e);
+    return { auditOk: false, auditError: e instanceof Error ? e.message : String(e) };
   }
+}
+
+/**
+ * Shared "mutation-then-await-audit" helper. Runs the mutation, then attempts
+ * to insert the audit row. If audit insertion fails, the mutation result is
+ * still returned (the action is not blocked) but `onAuditFailure` is invoked
+ * so callers can surface a warning toast instead of silently losing the trail.
+ */
+export async function runWithSystemToolAudit<T>(opts: {
+  mutation: () => Promise<T>;
+  audit: (result: T) => Parameters<typeof logSystemToolAction>[0];
+  onAuditFailure?: (message: string) => void;
+}): Promise<T> {
+  const result = await opts.mutation();
+  const auditEntry = opts.audit(result);
+  const audit = await logSystemToolAction(auditEntry);
+  if (audit && !audit.auditOk && opts.onAuditFailure) {
+    opts.onAuditFailure(audit.auditError ?? "Audit row could not be written");
+  }
+  return result;
 }
 
 /**
