@@ -209,7 +209,7 @@ function AssignOwnerDialog({
 function WorkflowDialog({
   trigger, initial, onSubmit, open: openProp, onOpenChange,
 }: {
-  trigger: ReactNode;
+  trigger?: ReactNode;
   initial?: Partial<SystemWorkflow>;
   onSubmit: (patch: Partial<SystemWorkflow>) => Promise<void>;
   open?: boolean;
@@ -264,7 +264,7 @@ function WorkflowDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>{initial?.id ? "Edit workflow" : "Add workflow"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
