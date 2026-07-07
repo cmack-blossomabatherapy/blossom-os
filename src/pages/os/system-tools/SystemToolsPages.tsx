@@ -729,6 +729,7 @@ export function IssueTrackerPage() {
         status: "Resolved",
         resolution_notes: resolveNotes.trim(),
         resolved_at: new Date().toISOString(),
+        closed_by: displayName ?? null,
       });
       setResolveTarget(null);
       setResolveNotes("");
@@ -736,6 +737,10 @@ export function IssueTrackerPage() {
     } catch (e) {
       toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
     }
+  }
+
+  async function assignOwner(id: string, owner: string | null) {
+    await update(id, { owner_name: owner });
   }
 
   async function convertRequestToIssue(r: SystemIssue) {
@@ -803,6 +808,11 @@ export function IssueTrackerPage() {
             <td className="px-4 py-3 text-right">
               {isAdmin ? (
                 <div className="flex items-center gap-1 justify-end">
+                  <AssignOwnerDialog
+                    currentOwner={r.owner_name}
+                    onSubmit={(owner) => assignOwner(r.id, owner)}
+                    trigger={<Button size="icon" variant="ghost" className="h-8 w-8" title="Assign owner" aria-label="Assign owner"><UserPlus className="h-4 w-4" /></Button>}
+                  />
                   {r.status === "Open" ? (
                     <QuickActionButton icon={PauseCircle} label="Triage" onClick={() => quickStatus(r, "Triage", "for triage")} />
                   ) : null}
