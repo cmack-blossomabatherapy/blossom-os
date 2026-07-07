@@ -155,9 +155,15 @@ function SendToCentralReachReadinessButton({
     });
     setSending(false);
     if (res.ok) {
-      toast.success("CentralReach readiness item created", {
-        description: "This is queued for mapping. Nothing was sent to CentralReach yet.",
-      });
+      if (res.alreadyQueued) {
+        toast.success("Already in CentralReach readiness queue", {
+          description: "This item is already waiting for mapping. Nothing was sent to CentralReach yet.",
+        });
+      } else {
+        toast.success("CentralReach readiness item created", {
+          description: "This is queued for mapping. Nothing was sent to CentralReach yet.",
+        });
+      }
       bumpCentralReachReadiness();
     } else {
       toast.error("Could not create CentralReach readiness item", {
@@ -599,11 +605,34 @@ function EscalationDetail({ esc, onClose }: { esc: Escalation; onClose: () => vo
   const [priority, setPriority] = useState<Priority>(esc.priority);
   const [assignedTo, setAssignedTo] = useState(esc.assignedTo ?? "");
   const [resolution, setResolution] = useState(esc.resolution ?? "");
+  const [busy, setBusy] = useState<null | "save" | "note" | "resolve" | "reopen">(null);
 
-  function save() {
-    stateDirectorStore.updateEscalation(esc.id, {
+  async function save() {
+    setBusy("save");
+    const res = await stateDirectorStore.updateEscalation(esc.id, {
       status, priority, assignedTo: assignedTo || undefined, resolution: resolution || undefined,
     }, actor);
+    setBusy(null);
+    if (res.ok) onClose();
+  }
+  async function addNote() {
+    if (!note.trim()) return;
+    setBusy("note");
+    const res = await stateDirectorStore.addEscalationNote(esc.id, note, actor);
+    setBusy(null);
+    if (res.ok) setNote("");
+  }
+  async function resolve() {
+    setBusy("resolve");
+    const res = await stateDirectorStore.resolveEscalation(esc.id, resolution, actor);
+    setBusy(null);
+    if (res.ok) onClose();
+  }
+  async function reopen() {
+    setBusy("reopen");
+    const res = await stateDirectorStore.reopenEscalation(esc.id, actor);
+    setBusy(null);
+    if (res.ok) onClose();
   }
 
   return (
@@ -648,7 +677,9 @@ function EscalationDetail({ esc, onClose }: { esc: Escalation; onClose: () => vo
             <label className="text-xs text-muted-foreground">Add note</label>
             <div className="flex gap-2">
               <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add operational note…" />
-              <Button variant="outline" onClick={() => { if (note.trim()) { stateDirectorStore.addEscalationNote(esc.id, note, actor); setNote(""); } }}>Add</Button>
+              <Button variant="outline" disabled={busy !== null || !note.trim()} onClick={addNote}>
+                {busy === "note" ? "Adding..." : "Add"}
+              </Button>
             </div>
           </div>
           {esc.notes.length ? (
@@ -664,10 +695,10 @@ function EscalationDetail({ esc, onClose }: { esc: Escalation; onClose: () => vo
           ) : null}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Close</Button>
+          <Button variant="ghost" onClick={onClose} disabled={busy !== null}>Close</Button>
           {esc.status === "resolved"
-            ? <Button variant="outline" onClick={() => { stateDirectorStore.reopenEscalation(esc.id, actor); onClose(); }}>Reopen</Button>
-            : <Button variant="outline" onClick={() => { stateDirectorStore.resolveEscalation(esc.id, resolution, actor); onClose(); }}>Mark resolved</Button>}
+            ? <Button variant="outline" disabled={busy !== null} onClick={reopen}>{busy === "reopen" ? "Reopening..." : "Reopen"}</Button>
+            : <Button variant="outline" disabled={busy !== null} onClick={resolve}>{busy === "resolve" ? "Resolving..." : "Mark resolved"}</Button>}
           <SendToStateSupportButton
             fromDepartment={esc.department}
             defaultKind="handoff"
@@ -705,7 +736,7 @@ function EscalationDetail({ esc, onClose }: { esc: Escalation; onClose: () => vo
             }}
             extraOwner={{ assignedTo: esc.assignedTo }}
           />
-          <Button onClick={() => { save(); onClose(); }}>Save changes</Button>
+          <Button onClick={save} disabled={busy !== null}>{busy === "save" ? "Saving..." : "Save changes"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -718,9 +749,32 @@ function TaskDetail({ task, onClose }: { task: OpsTask; onClose: () => void }) {
   const [status, setStatus] = useState<TaskStatus>(task.status);
   const [priority, setPriority] = useState<Priority>(task.priority);
   const [owner, setOwner] = useState(task.owner ?? "");
+  const [busy, setBusy] = useState<null | "save" | "note" | "escalate" | "complete">(null);
 
-  function save() {
-    stateDirectorStore.updateTask(task.id, { status, priority, owner: owner || undefined }, actor);
+  async function save() {
+    setBusy("save");
+    const res = await stateDirectorStore.updateTask(task.id, { status, priority, owner: owner || undefined }, actor);
+    setBusy(null);
+    if (res.ok) onClose();
+  }
+  async function addNote() {
+    if (!note.trim()) return;
+    setBusy("note");
+    const res = await stateDirectorStore.addTaskNote(task.id, note, actor);
+    setBusy(null);
+    if (res.ok) setNote("");
+  }
+  async function escalate() {
+    setBusy("escalate");
+    const res = await stateDirectorStore.escalateTask(task.id, actor);
+    setBusy(null);
+    if (res.ok) onClose();
+  }
+  async function complete() {
+    setBusy("complete");
+    const res = await stateDirectorStore.completeTask(task.id, actor);
+    setBusy(null);
+    if (res.ok) onClose();
   }
 
   return (
@@ -757,7 +811,9 @@ function TaskDetail({ task, onClose }: { task: OpsTask; onClose: () => void }) {
             <label className="text-xs text-muted-foreground">Add note</label>
             <div className="flex gap-2">
               <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add note…" />
-              <Button variant="outline" onClick={() => { if (note.trim()) { stateDirectorStore.addTaskNote(task.id, note, actor); setNote(""); } }}>Add</Button>
+              <Button variant="outline" disabled={busy !== null || !note.trim()} onClick={addNote}>
+                {busy === "note" ? "Adding..." : "Add"}
+              </Button>
             </div>
           </div>
           {task.notes.length ? (
@@ -773,12 +829,12 @@ function TaskDetail({ task, onClose }: { task: OpsTask; onClose: () => void }) {
           ) : null}
         </div>
         <DialogFooter className="flex-wrap gap-2">
-          <Button variant="ghost" onClick={onClose}>Close</Button>
-          <Button variant="outline" onClick={() => { stateDirectorStore.escalateTask(task.id, actor); onClose(); }}>
-            <Flame className="h-4 w-4 mr-1.5" /> Escalate
+          <Button variant="ghost" onClick={onClose} disabled={busy !== null}>Close</Button>
+          <Button variant="outline" disabled={busy !== null} onClick={escalate}>
+            <Flame className="h-4 w-4 mr-1.5" /> {busy === "escalate" ? "Escalating..." : "Escalate"}
           </Button>
-          <Button variant="outline" onClick={() => { stateDirectorStore.completeTask(task.id, actor); onClose(); }}>
-            <Check className="h-4 w-4 mr-1.5" /> Complete
+          <Button variant="outline" disabled={busy !== null} onClick={complete}>
+            <Check className="h-4 w-4 mr-1.5" /> {busy === "complete" ? "Completing..." : "Complete"}
           </Button>
           <SendToStateSupportButton
             fromDepartment={task.department}
@@ -817,7 +873,7 @@ function TaskDetail({ task, onClose }: { task: OpsTask; onClose: () => void }) {
             }}
             extraOwner={{ owner: task.owner }}
           />
-          <Button onClick={() => { save(); onClose(); }}>Save changes</Button>
+          <Button onClick={save} disabled={busy !== null}>{busy === "save" ? "Saving..." : "Save changes"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

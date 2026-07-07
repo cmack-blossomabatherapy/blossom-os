@@ -54,6 +54,20 @@ export function CentralReachReadinessPanel({
 
   const openCount = (rows ?? []).filter((r) => r.syncStatus !== "synced").length;
 
+  // Display legacy sync_status values as user-friendly labels while keeping
+  // full compatibility with older rows. `not_connected` → pending,
+  // `error` → failed. `ready` is a new intermediate state.
+  function displayStatus(s: string): { label: string; cls: string } {
+    const norm = s === "not_connected" ? "pending" : s === "error" ? "failed" : s;
+    const cls =
+      norm === "synced" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+      norm === "ready"  ? "bg-sky-50 text-sky-700 border-sky-200" :
+      norm === "pending" ? "bg-amber-50 text-amber-800 border-amber-200" :
+      norm === "failed" ? "bg-red-50 text-red-700 border-red-200" :
+      "bg-muted text-foreground border-border";
+    return { label: norm.replace(/_/g, " "), cls };
+  }
+
   return (
     <Card className="p-5 rounded-2xl border-border/60">
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -91,12 +105,10 @@ export function CentralReachReadinessPanel({
                 <td className="px-4 py-2 text-muted-foreground">{r.sourceType}</td>
                 <td className="px-4 py-2 text-muted-foreground">{r.actionType.replace(/_/g, " ")}</td>
                 <td className="px-4 py-2">
-                  <Badge variant="outline" className={
-                    r.syncStatus === "synced" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                    r.syncStatus === "pending" ? "bg-sky-50 text-sky-700 border-sky-200" :
-                    r.syncStatus === "error" ? "bg-red-50 text-red-700 border-red-200" :
-                    "bg-amber-50 text-amber-800 border-amber-200"
-                  }>{r.syncStatus.replace(/_/g, " ")}</Badge>
+                  {(() => {
+                    const d = displayStatus(r.syncStatus);
+                    return <Badge variant="outline" className={d.cls}>{d.label}</Badge>;
+                  })()}
                 </td>
                 <td className="px-4 py-2 text-xs text-muted-foreground">
                   {r.centralreachObjectType ?? "—"}

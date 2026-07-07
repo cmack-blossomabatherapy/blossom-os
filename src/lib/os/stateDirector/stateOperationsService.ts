@@ -569,7 +569,12 @@ export type CentralReachOutboxSourceType =
 export type CentralReachOutboxActionType =
   | "needs_mapping" | "manual_update_required" | "ready_for_sync" | "blocked_missing_cr_id" | "other";
 export type CentralReachOutboxSyncStatus =
-  | "not_connected" | "pending" | "synced" | "error";
+  | "not_connected" | "pending" | "ready" | "synced" | "error" | "failed";
+
+/** Statuses that mean the queue row is still active work (not yet mapped/synced). */
+export const ACTIVE_CENTRALREACH_SYNC_STATUSES: ReadonlyArray<CentralReachOutboxSyncStatus> = [
+  "not_connected", "pending", "ready", "error", "failed",
+];
 
 export interface CentralReachOutboxRow {
   id: string;
@@ -627,9 +632,27 @@ export async function createStateCentralReachOutboxItem(input: {
   syncStatus?: CentralReachOutboxSyncStatus;
   payload?: Record<string, unknown>;
   errorMessage?: string | null;
-}): Promise<{ ok: boolean; error?: string; id?: string }> {
+}): Promise<{ ok: boolean; error?: string; id?: string; alreadyQueued?: boolean }> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
+  // Service-level de-dupe — an active outbox row for the same
+  // (state, sourceType, sourceId) triple means this item is already
+  // waiting on CentralReach mapping. Repeated clicks must not create
+  // duplicate active rows.
+  if (input.sourceId) {
+    const { data: existing } = await supabase
+      .from("state_centralreach_outbox")
+      .select("id")
+      .eq("state_code", input.stateCode)
+      .eq("source_type", input.sourceType)
+      .eq("source_id", input.sourceId)
+      .in("sync_status", ACTIVE_CENTRALREACH_SYNC_STATUSES as unknown as string[])
+      .limit(1)
+      .maybeSingle();
+    if (existing && (existing as any).id) {
+      return { ok: true, id: (existing as any).id, alreadyQueued: true };
+    }
+  }
   const { data, error } = await supabase.from("state_centralreach_outbox").insert({
     state_code: input.stateCode,
     source_type: input.sourceType,
@@ -637,7 +660,7 @@ export async function createStateCentralReachOutboxItem(input: {
     centralreach_object_type: input.centralreachObjectType ?? null,
     centralreach_external_id: input.centralreachExternalId ?? null,
     action_type: input.actionType,
-    sync_status: input.syncStatus ?? "not_connected",
+    sync_status: input.syncStatus ?? "pending",
     payload: input.payload ?? {},
     error_message: input.errorMessage ?? null,
     created_by: uid,
