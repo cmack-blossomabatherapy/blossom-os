@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, Pin, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { ExecPage, ExecCard, HealthPill, AIPrompt, ActionPill, type HealthTone } from "./_shared";
 import { PublishUpdateCard } from "@/components/executive/PublishUpdateCard";
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
@@ -408,8 +409,25 @@ export default function ExecutiveUpdates() {
                 <span>· {priorityFromTone(u.tone)}</span>
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">
-                <ActionPill label="Acknowledge" toastMessage={`Acknowledged: ${u.title}`} />
-                <ActionPill label="Share with leads" toastMessage={`${u.title} shared with leadership`} />
+                <ActionPill
+                  label="Acknowledge"
+                  disabled
+                  title="Acknowledgement tracking coming soon"
+                />
+                <ActionPill
+                  label="Copy link"
+                  onClick={() => {
+                    const url = `${window.location.origin}${window.location.pathname}#${encodeURIComponent(u.title)}`;
+                    if (navigator.clipboard?.writeText) {
+                      navigator.clipboard.writeText(url).then(
+                        () => toast.success("Link copied"),
+                        () => toast.error("Could not copy link"),
+                      );
+                    } else {
+                      toast.error("Clipboard not available");
+                    }
+                  }}
+                />
               </div>
             </div>
           ))}

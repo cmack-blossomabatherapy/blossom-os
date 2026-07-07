@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { BookOpen, ChevronRight, Search, Sparkles, Star } from "lucide-react";
 import { ExecPage, ExecCard, AIPrompt } from "./_shared";
-import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 type Importance = "Critical" | "Executive" | "Operational";
 type Resource = {
@@ -259,8 +259,10 @@ function ResourceCard({ r }: { r: Resource }) {
             {r.importance}
           </span>
           <button
-            onClick={() => toast.success(`Pinned: ${r.title}`)}
-            className="rounded-full p-1 text-muted-foreground hover:text-amber-500 transition"
+            type="button"
+            disabled
+            title="Pinning coming soon - use /resource-library favorites"
+            className="rounded-full p-1 text-muted-foreground/50 cursor-not-allowed transition"
           >
             <Star className="size-3.5" />
           </button>
@@ -272,9 +274,12 @@ function ResourceCard({ r }: { r: Resource }) {
         ))}
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5">
-        <button onClick={() => toast.info(`Opening: ${r.title}`)} className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[11px] hover:bg-muted transition">
-          Preview <ChevronRight className="size-3" />
-        </button>
+        <a
+          href={`/resource-library?q=${encodeURIComponent(r.title)}`}
+          className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[11px] hover:bg-muted transition"
+        >
+          Open in library <ChevronRight className="size-3" />
+        </a>
         <AIPrompt label="AI summarize" prompt={`Summarize the resource "${r.title}" for an executive in 3 lines, focused on operational use.`} />
         <AIPrompt label="Related resources" prompt={`Show resources related to "${r.title}" within the Blossom executive library.`} />
       </div>
@@ -283,13 +288,14 @@ function ResourceCard({ r }: { r: Resource }) {
 }
 
 function CuratedRail({ title, hint, items }: { title: string; hint: string; items: Resource[] }) {
+  const navigate = useNavigate();
   return (
     <ExecCard title={title} hint={hint}>
       <div className="space-y-1.5">
         {items.map((r) => (
           <button
             key={r.id}
-            onClick={() => toast.info(`Opening: ${r.title}`)}
+            onClick={() => navigate(`/resource-library?q=${encodeURIComponent(r.title)}`)}
             className="w-full text-left rounded-xl border border-border/50 bg-background/30 px-3 py-2 hover:bg-muted/40 transition"
           >
             <div className="text-[12.5px] font-medium truncate">{r.title}</div>
