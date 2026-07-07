@@ -318,6 +318,17 @@ function StatusPill({ status }: { status: IntegrationStatus }) {
       dot: "bg-muted-foreground/40",
       cls: "bg-muted text-muted-foreground border-border/60",
     },
+    credentials_required: {
+      label: "Credentials required",
+      dot: "bg-amber-500",
+      cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    },
+    probe_pending: {
+      label: "Probe pending",
+      dot: "bg-sky-500",
+      cls: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+      pulse: true,
+    },
     coming_soon: {
       label: "Credential required",
       dot: "bg-muted-foreground/40",
