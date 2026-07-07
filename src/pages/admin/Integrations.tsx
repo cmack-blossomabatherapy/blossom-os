@@ -349,8 +349,13 @@ function StatusPill({ status }: { status: IntegrationStatus }) {
       cls: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
       pulse: true,
     },
+    configured: {
+      label: "Configured",
+      dot: "bg-indigo-500",
+      cls: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+    },
     coming_soon: {
-      label: "Credential required",
+      label: "Coming soon",
       dot: "bg-muted-foreground/40",
       cls: "bg-muted text-muted-foreground border-border/60",
     },
