@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { SystemRequestsPanel } from "@/components/executive/SystemRequestsPanel";
+import { SystemRequestsPanel, SubmitSystemRequestButton } from "@/components/executive/SystemRequestsPanel";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -295,9 +295,9 @@ export function RequestIntakePage() {
         title="Request Intake"
         subtitle="Submit and track requests for Blossom OS improvements, workflow changes, access needs, bugs, and new module ideas."
         icon={Inbox}
-        actions={<Button size="sm"><Plus className="h-4 w-4 mr-1.5" />Submit request</Button>}
+        actions={<SubmitSystemRequestButton />}
       />
-      <ActionRow actions={["Submit request", "Categorize request", "Assign owner", "Set priority", "Update status", "Mark resolved"]} />
+      <ActionRow actions={["Submit request", "Assign owner", "Filter by department / state", "Set priority", "Convert to Work Queue", "Mark resolved"]} />
       <SystemRequestsPanel />
       <SystemToolAuditPanel title="All System Tools activity" />
     </Shell>
