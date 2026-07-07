@@ -18571,6 +18571,7 @@ export type Database = {
           affected_route: string | null
           affected_state: string | null
           area: string | null
+          closed_by: string | null
           created_at: string
           description: string | null
           desired_outcome: string | null
@@ -18583,10 +18584,15 @@ export type Database = {
           owner_id: string | null
           owner_name: string | null
           priority: string
+          related_integration_id: string | null
+          related_route: string | null
           reported_by_id: string | null
           reported_by_name: string | null
+          reproduction_steps: string | null
           request_type: string | null
+          resolution_notes: string | null
           resolved_at: string | null
+          severity: string | null
           status: string
           title: string
           updated_at: string
@@ -18597,6 +18603,7 @@ export type Database = {
           affected_route?: string | null
           affected_state?: string | null
           area?: string | null
+          closed_by?: string | null
           created_at?: string
           description?: string | null
           desired_outcome?: string | null
@@ -18609,10 +18616,15 @@ export type Database = {
           owner_id?: string | null
           owner_name?: string | null
           priority?: string
+          related_integration_id?: string | null
+          related_route?: string | null
           reported_by_id?: string | null
           reported_by_name?: string | null
+          reproduction_steps?: string | null
           request_type?: string | null
+          resolution_notes?: string | null
           resolved_at?: string | null
+          severity?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -18623,6 +18635,7 @@ export type Database = {
           affected_route?: string | null
           affected_state?: string | null
           area?: string | null
+          closed_by?: string | null
           created_at?: string
           description?: string | null
           desired_outcome?: string | null
@@ -18635,10 +18648,15 @@ export type Database = {
           owner_id?: string | null
           owner_name?: string | null
           priority?: string
+          related_integration_id?: string | null
+          related_route?: string | null
           reported_by_id?: string | null
           reported_by_name?: string | null
+          reproduction_steps?: string | null
           request_type?: string | null
+          resolution_notes?: string | null
           resolved_at?: string | null
+          severity?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -18703,13 +18721,18 @@ export type Database = {
           department: string | null
           future_module: string | null
           id: string
+          last_verified_at: string | null
           name: string
           notes: string | null
           owner_id: string | null
           owner_name: string | null
           priority: string
+          related_integration_id: string | null
+          related_route: string | null
+          risk_level: string | null
           status: string
           updated_at: string
+          verified_by: string | null
         }
         Insert: {
           created_at?: string
@@ -18718,13 +18741,18 @@ export type Database = {
           department?: string | null
           future_module?: string | null
           id?: string
+          last_verified_at?: string | null
           name: string
           notes?: string | null
           owner_id?: string | null
           owner_name?: string | null
           priority?: string
+          related_integration_id?: string | null
+          related_route?: string | null
+          risk_level?: string | null
           status?: string
           updated_at?: string
+          verified_by?: string | null
         }
         Update: {
           created_at?: string
@@ -18733,13 +18761,18 @@ export type Database = {
           department?: string | null
           future_module?: string | null
           id?: string
+          last_verified_at?: string | null
           name?: string
           notes?: string | null
           owner_id?: string | null
           owner_name?: string | null
           priority?: string
+          related_integration_id?: string | null
+          related_route?: string | null
+          risk_level?: string | null
           status?: string
           updated_at?: string
+          verified_by?: string | null
         }
         Relationships: []
       }

@@ -1,6 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import {
-  Workflow, Inbox, Bug, Search, Plus, Pencil, Trash2, type LucideIcon,
+  Workflow, Inbox, Bug, Search, Plus, Pencil, Trash2, ExternalLink, Plug,
+  CheckCircle2, PauseCircle, ShieldAlert, Play, RefreshCw, ArchiveRestore,
+  ArrowRightCircle, type LucideIcon,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -117,6 +120,50 @@ function EmptyRow({ span, label }: { span: number; label: string }) {
 
 const WORKFLOW_STATUSES = ["Planned", "In Build", "Active", "Inactive", "Replaced"];
 const PRIORITIES = ["Low", "Medium", "High"];
+const RISK_LEVELS = ["Low", "Medium", "High", "Critical"];
+const ALL_OPTION = "__all__";
+
+function SelectFilter({
+  label, value, onChange, options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Label className="text-xs text-muted-foreground whitespace-nowrap">{label}</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-9 w-[150px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL_OPTION}>All</SelectItem>
+          {options.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function QuickActionButton({ icon: Icon, label, onClick, tone }: {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  tone?: "default" | "danger" | "success";
+}) {
+  const toneClass =
+    tone === "danger" ? "text-red-600 hover:bg-red-50" :
+    tone === "success" ? "text-emerald-700 hover:bg-emerald-50" :
+    "text-muted-foreground hover:text-foreground";
+  return (
+    <Button
+      size="icon" variant="ghost" className={cn("h-8 w-8", toneClass)}
+      title={label} aria-label={label} onClick={onClick}
+    >
+      <Icon className="h-4 w-4" />
+    </Button>
+  );
+}
 
 function WorkflowDialog({
   trigger, initial, onSubmit,
@@ -134,6 +181,8 @@ function WorkflowDialog({
   const [status, setStatus] = useState(initial?.status ?? "Planned");
   const [priority, setPriority] = useState(initial?.priority ?? "Medium");
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [relatedRoute, setRelatedRoute] = useState(initial?.related_route ?? "");
+  const [riskLevel, setRiskLevel] = useState(initial?.risk_level ?? "");
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 
@@ -152,6 +201,8 @@ function WorkflowDialog({
         future_module: future || null,
         status, priority,
         notes: notes || null,
+        related_route: relatedRoute || null,
+        risk_level: riskLevel || null,
       });
       setOpen(false);
     } catch (e) {
@@ -193,6 +244,19 @@ function WorkflowDialog({
             </div>
           </div>
           <div><Label>Notes</Label><Textarea value={notes ?? ""} onChange={(e) => setNotes(e.target.value)} rows={3} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Related route</Label><Input value={relatedRoute ?? ""} onChange={(e) => setRelatedRoute(e.target.value)} placeholder="/ops/staffing" /></div>
+            <div>
+              <Label>Risk level</Label>
+              <Select value={riskLevel || ""} onValueChange={(v) => setRiskLevel(v === "__none__" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">—</SelectItem>
+                  {RISK_LEVELS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -208,20 +272,51 @@ export function WorkflowInventoryPage() {
   const { rows, loading, create, update, remove } = useSystemWorkflows();
   const { toast } = useToast();
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState(ALL_OPTION);
+  const [priorityFilter, setPriorityFilter] = useState(ALL_OPTION);
+  const [riskFilter, setRiskFilter] = useState(ALL_OPTION);
+  const [departmentFilter, setDepartmentFilter] = useState(ALL_OPTION);
+
+  const departments = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.department).filter(Boolean))) as string[],
+    [rows],
+  );
 
   const filtered = useMemo(() => {
     const needle = q.toLowerCase();
-    if (!needle) return rows;
-    return rows.filter((r) =>
-      [r.name, r.department, r.owner_name, r.current_source, r.future_module, r.notes]
-        .filter(Boolean).some((s) => String(s).toLowerCase().includes(needle)),
-    );
-  }, [rows, q]);
+    return rows.filter((r) => {
+      if (statusFilter !== ALL_OPTION && r.status !== statusFilter) return false;
+      if (priorityFilter !== ALL_OPTION && r.priority !== priorityFilter) return false;
+      if (riskFilter !== ALL_OPTION && (r.risk_level ?? "") !== riskFilter) return false;
+      if (departmentFilter !== ALL_OPTION && (r.department ?? "") !== departmentFilter) return false;
+      if (!needle) return true;
+      return [r.name, r.department, r.owner_name, r.current_source, r.future_module, r.notes, r.related_route]
+        .filter(Boolean).some((s) => String(s).toLowerCase().includes(needle));
+    });
+  }, [rows, q, statusFilter, priorityFilter, riskFilter, departmentFilter]);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this workflow?")) return;
     try { await remove(id); }
     catch (e) { toast({ title: "Delete failed", description: (e as Error).message, variant: "destructive" }); }
+  }
+
+  async function quickStatus(id: string, next: string, action: string) {
+    try {
+      await update(id, { status: next });
+      toast({ title: `Marked ${action}` });
+    } catch (e) {
+      toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
+    }
+  }
+
+  async function quickVerify(id: string) {
+    try {
+      await update(id, { last_verified_at: new Date().toISOString() });
+      toast({ title: "Marked verified" });
+    } catch (e) {
+      toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
+    }
   }
 
   return (
@@ -238,8 +333,16 @@ export function WorkflowInventoryPage() {
           />
         ) : null}
       />
-      <SearchBar value={q} onChange={setQ} />
-      <TableShell columns={["Workflow", "Department", "Owner", "Current Source", "Future Module", "Status", "Priority", "Notes", ""]}>
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchBar value={q} onChange={setQ} />
+        <SelectFilter label="Status" value={statusFilter} onChange={setStatusFilter} options={WORKFLOW_STATUSES} />
+        <SelectFilter label="Priority" value={priorityFilter} onChange={setPriorityFilter} options={PRIORITIES} />
+        <SelectFilter label="Risk" value={riskFilter} onChange={setRiskFilter} options={RISK_LEVELS} />
+        {departments.length > 0 ? (
+          <SelectFilter label="Dept" value={departmentFilter} onChange={setDepartmentFilter} options={departments} />
+        ) : null}
+      </div>
+      <TableShell columns={["Workflow", "Department", "Owner", "Status", "Priority", "Risk", "Related", "Last verified", ""]}>
         {loading ? (
           <EmptyRow span={9} label="Loading…" />
         ) : filtered.length === 0 ? (
@@ -249,14 +352,32 @@ export function WorkflowInventoryPage() {
             <td className="px-4 py-3 font-medium">{r.name}</td>
             <td className="px-4 py-3 text-muted-foreground">{r.department ?? "—"}</td>
             <td className="px-4 py-3 text-muted-foreground">{r.owner_name ?? "—"}</td>
-            <td className="px-4 py-3 text-muted-foreground">{r.current_source ?? "—"}</td>
-            <td className="px-4 py-3 text-muted-foreground">{r.future_module ?? "—"}</td>
             <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
             <td className="px-4 py-3"><StatusBadge status={r.priority} /></td>
-            <td className="px-4 py-3 text-muted-foreground max-w-[280px] truncate">{r.notes ?? "—"}</td>
+            <td className="px-4 py-3">{r.risk_level ? <StatusBadge status={r.risk_level} /> : <span className="text-muted-foreground">—</span>}</td>
+            <td className="px-4 py-3 text-muted-foreground">
+              {r.related_route ? (
+                <Link to={r.related_route} className="inline-flex items-center gap-1 hover:text-foreground">
+                  <ExternalLink className="h-3 w-3" />{r.related_route}
+                </Link>
+              ) : "—"}
+            </td>
+            <td className="px-4 py-3 text-muted-foreground text-xs">
+              {r.last_verified_at ? new Date(r.last_verified_at).toLocaleDateString() : "—"}
+            </td>
             <td className="px-4 py-3 text-right">
               {isAdmin ? (
                 <div className="flex items-center gap-1 justify-end">
+                  {r.status !== "Active" ? (
+                    <QuickActionButton icon={CheckCircle2} label="Mark active" tone="success" onClick={() => quickStatus(r.id, "Active", "active")} />
+                  ) : null}
+                  {r.status !== "Inactive" ? (
+                    <QuickActionButton icon={PauseCircle} label="Mark needs review" onClick={() => quickStatus(r.id, "Inactive", "needs review")} />
+                  ) : null}
+                  {r.status !== "Replaced" ? (
+                    <QuickActionButton icon={ArchiveRestore} label="Mark deprecated" onClick={() => quickStatus(r.id, "Replaced", "deprecated")} />
+                  ) : null}
+                  <QuickActionButton icon={ShieldAlert} label="Mark verified" onClick={() => quickVerify(r.id)} />
                   <AuditHistoryButton
                     toolArea="workflow_inventory"
                     entityId={r.id}
@@ -309,6 +430,7 @@ export function RequestIntakePage() {
 /* -------------------------------------------------------------------------- */
 
 const ISSUE_STATUSES = ["Open", "Triage", "In Progress", "Blocked", "Resolved"];
+const SEVERITIES = ["Low", "Medium", "High", "Critical"];
 
 function IssueSubmitDialog({
   trigger, onSubmit, defaultReporter,
@@ -322,6 +444,9 @@ function IssueSubmitDialog({
   const [area, setArea] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("Medium");
+  const [severity, setSeverity] = useState("Medium");
+  const [reproduction, setReproduction] = useState("");
+  const [relatedRoute, setRelatedRoute] = useState("");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
@@ -334,11 +459,15 @@ function IssueSubmitDialog({
         area: area || null,
         description: description || null,
         priority,
+        severity,
+        reproduction_steps: reproduction || null,
+        related_route: relatedRoute || null,
         status: "Open",
         reported_by_name: defaultReporter ?? null,
       });
       setOpen(false);
       setTitle(""); setArea(""); setDescription(""); setPriority("Medium");
+      setSeverity("Medium"); setReproduction(""); setRelatedRoute("");
       toast({ title: "Issue submitted" });
     } catch (e) {
       toast({ title: "Submit failed", description: (e as Error).message, variant: "destructive" });
@@ -354,12 +483,23 @@ function IssueSubmitDialog({
           <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short summary" /></div>
           <div><Label>Area</Label><Input value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. Authorizations, Sidebar" /></div>
           <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="What happened? Steps to reproduce?" /></div>
-          <div>
-            <Label>Priority</Label>
-            <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-            </Select>
+          <div><Label>Reproduction steps</Label><Textarea value={reproduction} onChange={(e) => setReproduction(e.target.value)} rows={3} placeholder="1. Go to... 2. Click... 3. Expected... Actual..." /></div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label>Priority</Label>
+              <Select value={priority} onValueChange={setPriority}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Severity</Label>
+              <Select value={severity} onValueChange={setSeverity}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{SEVERITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label>Related route</Label><Input value={relatedRoute} onChange={(e) => setRelatedRoute(e.target.value)} placeholder="/scheduling/board" /></div>
           </div>
         </div>
         <DialogFooter>
@@ -440,20 +580,84 @@ export function IssueTrackerPage() {
   const { rows, loading, create, update, remove } = useSystemIssues();
   const { toast } = useToast();
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState(ALL_OPTION);
+  const [priorityFilter, setPriorityFilter] = useState(ALL_OPTION);
+  const [severityFilter, setSeverityFilter] = useState(ALL_OPTION);
+  const [areaFilter, setAreaFilter] = useState(ALL_OPTION);
+  const [resolveTarget, setResolveTarget] = useState<SystemIssue | null>(null);
+  const [resolveNotes, setResolveNotes] = useState("");
+
+  const areas = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.area).filter(Boolean))) as string[],
+    [rows],
+  );
 
   const filtered = useMemo(() => {
     const needle = q.toLowerCase();
-    if (!needle) return rows;
-    return rows.filter((r) =>
-      [r.title, r.area, r.description, r.owner_name, r.reported_by_name, r.notes]
-        .filter(Boolean).some((s) => String(s).toLowerCase().includes(needle)),
-    );
-  }, [rows, q]);
+    return rows.filter((r) => {
+      if (statusFilter !== ALL_OPTION && r.status !== statusFilter) return false;
+      if (priorityFilter !== ALL_OPTION && r.priority !== priorityFilter) return false;
+      if (severityFilter !== ALL_OPTION && (r.severity ?? "") !== severityFilter) return false;
+      if (areaFilter !== ALL_OPTION && (r.area ?? "") !== areaFilter) return false;
+      if (!needle) return true;
+      return [r.title, r.area, r.description, r.owner_name, r.reported_by_name, r.notes, r.related_route]
+        .filter(Boolean).some((s) => String(s).toLowerCase().includes(needle));
+    });
+  }, [rows, q, statusFilter, priorityFilter, severityFilter, areaFilter]);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this issue?")) return;
     try { await remove(id); }
     catch (e) { toast({ title: "Delete failed", description: (e as Error).message, variant: "destructive" }); }
+  }
+
+  async function quickStatus(r: SystemIssue, next: string, action: string) {
+    if (next === "Resolved") {
+      setResolveTarget(r);
+      setResolveNotes(r.resolution_notes ?? "");
+      return;
+    }
+    try {
+      await update(r.id, {
+        status: next,
+        resolved_at: null,
+      });
+      toast({ title: `Marked ${action}` });
+    } catch (e) {
+      toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
+    }
+  }
+
+  async function confirmResolve() {
+    if (!resolveTarget) return;
+    if (!resolveNotes.trim()) {
+      toast({ title: "Resolution notes are required", variant: "destructive" });
+      return;
+    }
+    try {
+      await update(resolveTarget.id, {
+        status: "Resolved",
+        resolution_notes: resolveNotes.trim(),
+        resolved_at: new Date().toISOString(),
+      });
+      setResolveTarget(null);
+      setResolveNotes("");
+      toast({ title: "Issue resolved" });
+    } catch (e) {
+      toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
+    }
+  }
+
+  async function convertRequestToIssue(r: SystemIssue) {
+    try {
+      await update(r.id, {
+        request_type: null,
+        status: r.status === "Open" ? "Triage" : r.status,
+      });
+      toast({ title: "Converted to tracked issue" });
+    } catch (e) {
+      toast({ title: "Convert failed", description: (e as Error).message, variant: "destructive" });
+    }
   }
 
   return (
@@ -471,8 +675,16 @@ export function IssueTrackerPage() {
           />
         }
       />
-      <SearchBar value={q} onChange={setQ} />
-      <TableShell columns={["Issue", "Area", "Reported by", "Owner", "Priority", "Status", "Notes", ""]}>
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchBar value={q} onChange={setQ} />
+        <SelectFilter label="Status" value={statusFilter} onChange={setStatusFilter} options={ISSUE_STATUSES} />
+        <SelectFilter label="Priority" value={priorityFilter} onChange={setPriorityFilter} options={PRIORITIES} />
+        <SelectFilter label="Severity" value={severityFilter} onChange={setSeverityFilter} options={SEVERITIES} />
+        {areas.length > 0 ? (
+          <SelectFilter label="Area" value={areaFilter} onChange={setAreaFilter} options={areas} />
+        ) : null}
+      </div>
+      <TableShell columns={["Issue", "Area", "Owner", "Priority", "Severity", "Status", "Related", ""]}>
         {loading ? (
           <EmptyRow span={8} label="Loading…" />
         ) : filtered.length === 0 ? (
@@ -481,14 +693,43 @@ export function IssueTrackerPage() {
           <tr key={r.id} className="border-t border-border/60 hover:bg-muted/30">
             <td className="px-4 py-3 font-medium">{r.title}</td>
             <td className="px-4 py-3 text-muted-foreground">{r.area ?? "—"}</td>
-            <td className="px-4 py-3 text-muted-foreground">{r.reported_by_name ?? "—"}</td>
             <td className="px-4 py-3 text-muted-foreground">{r.owner_name ?? "—"}</td>
             <td className="px-4 py-3"><StatusBadge status={r.priority} /></td>
+            <td className="px-4 py-3">{r.severity ? <StatusBadge status={r.severity} /> : <span className="text-muted-foreground">—</span>}</td>
             <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
-            <td className="px-4 py-3 text-muted-foreground max-w-[280px] truncate">{r.notes ?? "—"}</td>
+            <td className="px-4 py-3 text-muted-foreground text-xs">
+              {r.related_route ? (
+                <Link to={r.related_route} className="inline-flex items-center gap-1 hover:text-foreground">
+                  <ExternalLink className="h-3 w-3" />route
+                </Link>
+              ) : null}
+              {r.related_integration_id ? (
+                <Link to={`/admin/integrations?id=${r.related_integration_id}`} className="ml-2 inline-flex items-center gap-1 hover:text-foreground">
+                  <Plug className="h-3 w-3" />integration
+                </Link>
+              ) : null}
+              {!r.related_route && !r.related_integration_id ? "—" : null}
+            </td>
             <td className="px-4 py-3 text-right">
               {isAdmin ? (
                 <div className="flex items-center gap-1 justify-end">
+                  {r.status === "Open" ? (
+                    <QuickActionButton icon={PauseCircle} label="Triage" onClick={() => quickStatus(r, "Triage", "for triage")} />
+                  ) : null}
+                  {(r.status === "Open" || r.status === "Triage") ? (
+                    <QuickActionButton icon={Play} label="Start work" onClick={() => quickStatus(r, "In Progress", "in progress")} />
+                  ) : null}
+                  {r.status !== "Blocked" && r.status !== "Resolved" ? (
+                    <QuickActionButton icon={ShieldAlert} label="Mark blocked" tone="danger" onClick={() => quickStatus(r, "Blocked", "blocked")} />
+                  ) : null}
+                  {r.status !== "Resolved" ? (
+                    <QuickActionButton icon={CheckCircle2} label="Resolve" tone="success" onClick={() => quickStatus(r, "Resolved", "resolved")} />
+                  ) : (
+                    <QuickActionButton icon={RefreshCw} label="Reopen" onClick={() => quickStatus(r, "Open", "reopened")} />
+                  )}
+                  {r.request_type ? (
+                    <QuickActionButton icon={ArrowRightCircle} label="Convert to tracked issue" onClick={() => convertRequestToIssue(r)} />
+                  ) : null}
                   <AuditHistoryButton
                     toolArea="issue_tracker"
                     entityId={r.id}
@@ -511,6 +752,28 @@ export function IssueTrackerPage() {
       {isAdmin ? (
         <SystemToolAuditPanel toolArea="issue_tracker" />
       ) : null}
+
+      <Dialog open={!!resolveTarget} onOpenChange={(o) => { if (!o) { setResolveTarget(null); setResolveNotes(""); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Resolve: {resolveTarget?.title}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Resolution notes <span className="text-red-600">*</span></Label>
+              <Textarea
+                value={resolveNotes}
+                onChange={(e) => setResolveNotes(e.target.value)}
+                rows={5}
+                placeholder="What was done to resolve this? Link to fix, migration, or PR if applicable."
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">Required — the audit log captures who resolved and how.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setResolveTarget(null); setResolveNotes(""); }}>Cancel</Button>
+            <Button onClick={confirmResolve} disabled={!resolveNotes.trim()}>Resolve</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Shell>
   );
 }
