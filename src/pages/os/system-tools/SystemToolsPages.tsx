@@ -257,6 +257,11 @@ export function WorkflowInventoryPage() {
             <td className="px-4 py-3 text-right">
               {isAdmin ? (
                 <div className="flex items-center gap-1 justify-end">
+                  <AuditHistoryButton
+                    toolArea="workflow_inventory"
+                    entityId={r.id}
+                    entityLabel={r.name}
+                  />
                   <WorkflowDialog
                     initial={r}
                     trigger={<Button size="icon" variant="ghost" className="h-8 w-8"><Pencil className="h-4 w-4" /></Button>}
@@ -271,6 +276,9 @@ export function WorkflowInventoryPage() {
           </tr>
         ))}
       </TableShell>
+      {isAdmin ? (
+        <SystemToolAuditPanel toolArea="workflow_inventory" />
+      ) : null}
     </Shell>
   );
 }
