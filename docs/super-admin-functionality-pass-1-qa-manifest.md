@@ -69,9 +69,9 @@ center.
 | Systems | Automated Emails | `/admin/automated-emails` | live |
 | Systems | System Settings | `/settings` | live |
 | System Tools (collapsed) | BCBA Productivity Uploads | `/system/bcba-productivity-uploads` | live, admin-only |
-| System Tools (collapsed) | Workflow Inventory | `/system/workflow-inventory` | static — becomes DB-backed in Pass 1B |
+| System Tools (collapsed) | Workflow Inventory | `/system/workflow-inventory` | DB-backed (Pass 1B) |
 | System Tools (collapsed) | Request Intake | `/system/request-intake` | DB-backed (see Executive Leadership Pass C) |
-| System Tools (collapsed) | Issue Tracker | `/system/issue-tracker` | static — becomes DB-backed in Pass 1B |
+| System Tools (collapsed) | Issue Tracker | `/system/issue-tracker` | DB-backed (Pass 1B) |
 
 ## Reports consolidation
 
