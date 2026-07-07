@@ -12,7 +12,6 @@ const REQUIRED_QA_PATHS = [
   "/qa-queue",
   "/qa-clients",
   "/authorization-reviews",
-  "/progress-reports",
   "/treatment-plan-reviews",
   "/missing-information",
   "/expiring-items",
