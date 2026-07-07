@@ -324,8 +324,9 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     category: "marketing",
     ownerDepartment: "Operations / Platform",
     criticality: "standard",
-    status: "configured",
+    status: "disabled",
     methods: ["webhook", "api"],
+    internalOnly: true,
     inboundData: [
       "Automation bridge events",
       "Migration-era event payloads",
@@ -338,7 +339,7 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     ],
     sourceOfTruthFor: [],
     notes:
-      "Automation / migration bridge ONLY. Blossom OS must not depend on Make for core operational state long-term.",
+      "Internal / legacy automation bridge only. Hidden from user-facing integration readiness surfaces. Blossom OS does not depend on Make.com for the operating system's readiness.",
   },
   {
     id: "google-ads",
