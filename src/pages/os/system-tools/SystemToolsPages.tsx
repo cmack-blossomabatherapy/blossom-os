@@ -23,6 +23,7 @@ import {
   useSystemIssues, useSystemWorkflows,
   type SystemIssue, type SystemWorkflow,
 } from "@/hooks/useSystemTools";
+import { SystemToolAuditPanel, AuditHistoryButton } from "@/components/system-tools/SystemToolAuditPanel";
 
 function Shell({ children }: { children: ReactNode }) {
   return (
