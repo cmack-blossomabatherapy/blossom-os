@@ -1108,6 +1108,7 @@ export default function Integrations() {
       let status: IntegrationStatus =
         i.status === "coming_soon" ? "coming_soon" : "disconnected";
       let enabled = enabledMap[i.id] ?? i.enabled;
+      let lastSync: string | undefined = undefined;
       if (live) {
         enabled = live.enabled;
         const hasSecrets = (live.secret_names?.length ?? 0) > 0;
@@ -1143,8 +1144,11 @@ export default function Integrations() {
         if (requiresSecrets && !hasSecrets && status !== "error") {
           status = "credentials_required";
         }
+        if (live.last_success_at) {
+          lastSync = new Date(live.last_success_at).toLocaleString();
+        }
       }
-      return { ...i, enabled, status };
+      return { ...i, enabled, status, lastSync };
     });
   }, [enabledMap, connections]);
 
