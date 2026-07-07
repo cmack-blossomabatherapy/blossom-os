@@ -27,6 +27,11 @@ import {
   type SystemIssue, type SystemWorkflow,
 } from "@/hooks/useSystemTools";
 import { SystemToolAuditPanel, AuditHistoryButton } from "@/components/system-tools/SystemToolAuditPanel";
+import {
+  ISSUE_STATUSES as CANONICAL_ISSUE_STATUSES,
+  normalizeIssueStatus,
+  isIssueStatus,
+} from "@/lib/os/systemToolStatus";
 
 function Shell({ children }: { children: ReactNode }) {
   return (
@@ -539,7 +544,7 @@ export function RequestIntakePage() {
 /* Issue Tracker                                                              */
 /* -------------------------------------------------------------------------- */
 
-const ISSUE_STATUSES = ["Open", "Triage", "In Progress", "Blocked", "Resolved"];
+const ISSUE_STATUSES = [...CANONICAL_ISSUE_STATUSES];
 const SEVERITIES = ["Low", "Medium", "High", "Critical"];
 
 function IssueSubmitDialog({
@@ -653,7 +658,7 @@ function IssueTriageDialog({
         reproduction_steps: reproduction || null,
         resolution_notes: resolution || null,
         notes: notes || null,
-        resolved_at: status === "Resolved" ? new Date().toISOString() : null,
+        resolved_at: isIssueStatus(status, "Resolved") ? new Date().toISOString() : null,
       });
       setOpen(false);
     } catch (e) {
@@ -728,7 +733,7 @@ export function IssueTrackerPage() {
   const filtered = useMemo(() => {
     const needle = q.toLowerCase();
     return rows.filter((r) => {
-      if (statusFilter !== ALL_OPTION && r.status !== statusFilter) return false;
+      if (statusFilter !== ALL_OPTION && normalizeIssueStatus(r.status) !== statusFilter) return false;
       if (priorityFilter !== ALL_OPTION && r.priority !== priorityFilter) return false;
       if (severityFilter !== ALL_OPTION && (r.severity ?? "") !== severityFilter) return false;
       if (areaFilter !== ALL_OPTION && (r.area ?? "") !== areaFilter) return false;
@@ -790,7 +795,7 @@ export function IssueTrackerPage() {
     try {
       await update(r.id, {
         request_type: null,
-        status: r.status === "Open" ? "Triage" : r.status,
+        status: isIssueStatus(r.status, "Open") ? "Triage" : normalizeIssueStatus(r.status),
       });
       toast({ title: "Converted to tracked issue" });
     } catch (e) {
@@ -834,7 +839,7 @@ export function IssueTrackerPage() {
             <td className="px-4 py-3 text-muted-foreground">{r.owner_name ?? "—"}</td>
             <td className="px-4 py-3"><StatusBadge status={r.priority} /></td>
             <td className="px-4 py-3">{r.severity ? <StatusBadge status={r.severity} /> : <span className="text-muted-foreground">—</span>}</td>
-            <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
+            <td className="px-4 py-3"><StatusBadge status={normalizeIssueStatus(r.status)} /></td>
             <td className="px-4 py-3 text-muted-foreground text-xs">
               {r.related_route ? (
                 <Link to={r.related_route} className="inline-flex items-center gap-1 hover:text-foreground">
@@ -856,16 +861,16 @@ export function IssueTrackerPage() {
                     onSubmit={(owner) => assignOwner(r.id, owner)}
                     trigger={<Button size="icon" variant="ghost" className="h-8 w-8" title="Assign owner" aria-label="Assign owner"><UserPlus className="h-4 w-4" /></Button>}
                   />
-                  {r.status === "Open" ? (
+                  {isIssueStatus(r.status, "Open") ? (
                     <QuickActionButton icon={PauseCircle} label="Triage" onClick={() => quickStatus(r, "Triage", "for triage")} />
                   ) : null}
-                  {(r.status === "Open" || r.status === "Triage") ? (
+                  {(isIssueStatus(r.status, "Open") || isIssueStatus(r.status, "Triage")) ? (
                     <QuickActionButton icon={Play} label="Start work" onClick={() => quickStatus(r, "In Progress", "in progress")} />
                   ) : null}
-                  {r.status !== "Blocked" && r.status !== "Resolved" ? (
+                  {!isIssueStatus(r.status, "Blocked") && !isIssueStatus(r.status, "Resolved") ? (
                     <QuickActionButton icon={ShieldAlert} label="Mark blocked" tone="danger" onClick={() => quickStatus(r, "Blocked", "blocked")} />
                   ) : null}
-                  {r.status !== "Resolved" ? (
+                  {!isIssueStatus(r.status, "Resolved") ? (
                     <QuickActionButton icon={CheckCircle2} label="Resolve" tone="success" onClick={() => quickStatus(r, "Resolved", "resolved")} />
                   ) : (
                     <QuickActionButton icon={RefreshCw} label="Reopen" onClick={() => quickStatus(r, "Open", "reopened")} />
