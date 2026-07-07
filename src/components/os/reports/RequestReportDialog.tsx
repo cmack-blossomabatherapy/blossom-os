@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ArrowRight, Sparkles, Upload, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { saveReportRequest } from "@/lib/os/reportsCatalog";
+import { supabase } from "@/integrations/supabase/client";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { cn } from "@/lib/utils";
 
@@ -51,8 +52,9 @@ export function RequestReportDialog({ open, onOpenChange }: { open: boolean; onO
     (step === 1 && metrics.trim() && sources.length > 0) ||
     step === 2;
 
-  function submit() {
-    saveReportRequest({
+  async function submit() {
+    // Canonical storage: system_issues. Local cache kept as offline fallback.
+    const record = {
       id: `req-${Date.now()}`,
       title: title.trim(),
       department,
@@ -64,13 +66,56 @@ export function RequestReportDialog({ open, onOpenChange }: { open: boolean; onO
       visualization: viz,
       aiAssist: ai,
       attachmentName: attachment?.name,
-      status: "New Request",
+      status: "New Request" as const,
       createdAt: new Date().toISOString(),
       requestedBy: role,
-    });
+    };
+    saveReportRequest(record);
+
+    let submittedToServer = false;
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id ?? null;
+      const reporterName =
+        userRes.user?.user_metadata?.full_name ||
+        userRes.user?.email ||
+        role ||
+        null;
+      const dbPriority =
+        priority === "Critical" ? "Critical" :
+        priority === "High" ? "High" :
+        priority === "Low" ? "Low" : "Medium";
+      const notes = [
+        `Report request: ${title.trim()}`,
+        `Purpose: ${purpose.trim()}`,
+        metrics.trim() ? `Metrics: ${metrics.trim()}` : "",
+        sources.length ? `Data sources: ${sources.join(", ")}` : "",
+        `Frequency: ${frequency}`,
+        `Visualization: ${viz}`,
+        `AI assist: ${ai ? "yes" : "no"}`,
+        attachment?.name ? `Attachment: ${attachment.name}` : "",
+        `Requested by role: ${role}`,
+      ].filter(Boolean).join("\n");
+      const { error } = await supabase.from("system_issues").insert({
+        title: `Report request · ${title.trim()}`,
+        area: `Reports · ${department || "Unspecified"}`,
+        description: purpose.trim(),
+        priority: dbPriority,
+        status: "Open",
+        notes,
+        reported_by_id: uid,
+        reported_by_name: reporterName,
+      } as never);
+      submittedToServer = !error;
+    } catch {
+      submittedToServer = false;
+    }
+
     toast({
-      title: "Report request submitted",
-      description: "Systems & Software team has been notified. Track it in Report Requests.",
+      title: submittedToServer ? "Report request submitted" : "Report request saved locally",
+      description: submittedToServer
+        ? "Systems & Software has been notified via System Requests."
+        : "We saved it locally — sign in and reopen to sync it to System Requests.",
     });
     reset();
     onOpenChange(false);
