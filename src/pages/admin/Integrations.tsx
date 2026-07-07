@@ -272,7 +272,9 @@ function toIntegrationCard(reg: BlossomIntegration): Integration {
 }
 
 /** Source of truth: derived directly from `BLOSSOM_INTEGRATIONS`. */
-const INTEGRATIONS: Integration[] = BLOSSOM_INTEGRATIONS.map(toIntegrationCard);
+const INTEGRATIONS: Integration[] = BLOSSOM_INTEGRATIONS
+  .filter((i) => !i.internalOnly)
+  .map(toIntegrationCard);
 
 // -----------------------------------------------------------------------------
 // Small UI atoms
