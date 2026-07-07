@@ -18,6 +18,7 @@ import {
   voidBcbaProductivityBatch, getBcbaProductivityBatchRows,
   type BcbaUploadBatch, type BcbaDatasetStatus, type BcbaUploadPreview,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
+import { runWithSystemToolAudit } from "@/hooks/useSystemTools";
 
 function fmt(n: number | null | undefined) {
   if (n === null || n === undefined || !isFinite(Number(n))) return "—";
@@ -128,10 +129,11 @@ export default function BcbaProductivityUploads() {
       duplicates: preview.duplicateRowCount,
     });
     try {
-      const res = await appendBcbaProductivityUpload({
-        file, uploadLabel, notes,
-        parsed: preview,
-        onProgress: (ev) => {
+      const res = await runWithSystemToolAudit({
+        mutation: () => appendBcbaProductivityUpload({
+          file, uploadLabel, notes,
+          parsed: preview,
+          onProgress: (ev) => {
           if (ev.phase === "check_duplicates") setAppendPhase("Checking for rows already saved…");
           else if (ev.phase === "create_batch") setAppendPhase("Creating upload batch…");
           else if (ev.phase === "finalize_batch") setAppendPhase("Finalizing batch…");
@@ -141,7 +143,21 @@ export default function BcbaProductivityUploads() {
             setAppendProgress({ inserted: ev.inserted, total: ev.total, chunk: ev.chunk, chunks: ev.chunks });
             setAppendPhase(`Uploading rows — ${ev.inserted.toLocaleString()} / ${ev.total.toLocaleString()} (${pct}%) · chunk ${ev.chunk}/${ev.chunks}`);
           }
-        },
+          },
+        }),
+        audit: (r) => ({
+          tool_area: "bcba_productivity_uploads",
+          action: "append_upload",
+          entity_table: "bcba_productivity_upload_batches",
+          entity_id: r?.batchId ?? null,
+          new_value: {
+            appendedRowCount: r?.appendedRowCount ?? 0,
+            duplicateRowCount: r?.duplicateRowCount ?? 0,
+          },
+          metadata: { fileName: file.name, uploadLabel: uploadLabel || null },
+        }),
+        onAuditFailure: (msg) =>
+          toast.warning(`Upload saved but audit log failed: ${msg}`),
       });
       const verified = await getBcbaProductivityDatasetStatus();
       if (res.appendedRowCount > 0 && verified.activeRowCount < res.appendedRowCount) {
@@ -180,7 +196,18 @@ export default function BcbaProductivityUploads() {
   async function handleVoid(batchId: string) {
     if (!confirm("Void this batch? Its rows will be excluded from the active dataset.")) return;
     try {
-      await voidBcbaProductivityBatch(batchId, "Voided from admin upload center");
+      await runWithSystemToolAudit({
+        mutation: () => voidBcbaProductivityBatch(batchId, "Voided from admin upload center"),
+        audit: () => ({
+          tool_area: "bcba_productivity_uploads",
+          action: "void_batch",
+          entity_table: "bcba_productivity_upload_batches",
+          entity_id: batchId,
+          metadata: { reason: "Voided from admin upload center" },
+        }),
+        onAuditFailure: (msg) =>
+          toast.warning(`Batch voided but audit log failed: ${msg}`),
+      });
       toast.success("Batch voided");
       await refresh();
     } catch (e: any) {
