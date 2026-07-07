@@ -82,6 +82,7 @@ import {
   type IntegrationWebhookEventRow,
   type OAuthConnectionRow,
 } from "@/lib/os/integrations/backend";
+import { deriveIntegrationStatus } from "@/lib/os/integrations/statusOverlay";
 import { toast } from "sonner";
 import { IntakeCommunicationSetupPanel } from "@/components/settings/IntakeCommunicationSetupPanel";
 
