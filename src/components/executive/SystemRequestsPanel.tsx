@@ -566,7 +566,7 @@ function SystemRequestsPanelInner() {
                     <div className="flex items-center justify-end gap-1">
                       {i.linked_work_item_id ? (
                         <Link
-                          to={`/work-queue?item=${i.linked_work_item_id}`}
+                          to={`/work-queue?selected=${i.linked_work_item_id}`}
                           className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background/60 px-2 py-0.5 text-[11px] text-foreground/90 hover:bg-muted"
                           title="Open linked Work Queue item"
                         >
