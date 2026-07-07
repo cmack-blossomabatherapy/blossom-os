@@ -23,6 +23,7 @@ import {
   useSystemIssues, useSystemWorkflows,
   type SystemIssue, type SystemWorkflow,
 } from "@/hooks/useSystemTools";
+import { SystemToolAuditPanel, AuditHistoryButton } from "@/components/system-tools/SystemToolAuditPanel";
 
 function Shell({ children }: { children: ReactNode }) {
   return (
@@ -256,6 +257,11 @@ export function WorkflowInventoryPage() {
             <td className="px-4 py-3 text-right">
               {isAdmin ? (
                 <div className="flex items-center gap-1 justify-end">
+                  <AuditHistoryButton
+                    toolArea="workflow_inventory"
+                    entityId={r.id}
+                    entityLabel={r.name}
+                  />
                   <WorkflowDialog
                     initial={r}
                     trigger={<Button size="icon" variant="ghost" className="h-8 w-8"><Pencil className="h-4 w-4" /></Button>}
@@ -270,6 +276,9 @@ export function WorkflowInventoryPage() {
           </tr>
         ))}
       </TableShell>
+      {isAdmin ? (
+        <SystemToolAuditPanel toolArea="workflow_inventory" />
+      ) : null}
     </Shell>
   );
 }
@@ -290,6 +299,7 @@ export function RequestIntakePage() {
       />
       <ActionRow actions={["Submit request", "Categorize request", "Assign owner", "Set priority", "Update status", "Mark resolved"]} />
       <SystemRequestsPanel />
+      <SystemToolAuditPanel title="All System Tools activity" />
     </Shell>
   );
 }
@@ -479,6 +489,11 @@ export function IssueTrackerPage() {
             <td className="px-4 py-3 text-right">
               {isAdmin ? (
                 <div className="flex items-center gap-1 justify-end">
+                  <AuditHistoryButton
+                    toolArea="issue_tracker"
+                    entityId={r.id}
+                    entityLabel={r.title}
+                  />
                   <IssueTriageDialog
                     issue={r}
                     onSubmit={(patch) => update(r.id, patch)}
@@ -493,6 +508,9 @@ export function IssueTrackerPage() {
           </tr>
         ))}
       </TableShell>
+      {isAdmin ? (
+        <SystemToolAuditPanel toolArea="issue_tracker" />
+      ) : null}
     </Shell>
   );
 }
