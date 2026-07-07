@@ -18566,54 +18566,92 @@ export type Database = {
       }
       system_issues: {
         Row: {
+          affected_department: string | null
+          affected_role: string | null
+          affected_route: string | null
+          affected_state: string | null
           area: string | null
           created_at: string
           description: string | null
+          desired_outcome: string | null
+          due_date: string | null
           id: string
+          impact: string | null
+          linked_work_item_id: string | null
+          metadata: Json
           notes: string | null
           owner_id: string | null
           owner_name: string | null
           priority: string
           reported_by_id: string | null
           reported_by_name: string | null
+          request_type: string | null
           resolved_at: string | null
           status: string
           title: string
           updated_at: string
         }
         Insert: {
+          affected_department?: string | null
+          affected_role?: string | null
+          affected_route?: string | null
+          affected_state?: string | null
           area?: string | null
           created_at?: string
           description?: string | null
+          desired_outcome?: string | null
+          due_date?: string | null
           id?: string
+          impact?: string | null
+          linked_work_item_id?: string | null
+          metadata?: Json
           notes?: string | null
           owner_id?: string | null
           owner_name?: string | null
           priority?: string
           reported_by_id?: string | null
           reported_by_name?: string | null
+          request_type?: string | null
           resolved_at?: string | null
           status?: string
           title: string
           updated_at?: string
         }
         Update: {
+          affected_department?: string | null
+          affected_role?: string | null
+          affected_route?: string | null
+          affected_state?: string | null
           area?: string | null
           created_at?: string
           description?: string | null
+          desired_outcome?: string | null
+          due_date?: string | null
           id?: string
+          impact?: string | null
+          linked_work_item_id?: string | null
+          metadata?: Json
           notes?: string | null
           owner_id?: string | null
           owner_name?: string | null
           priority?: string
           reported_by_id?: string | null
           reported_by_name?: string | null
+          request_type?: string | null
           resolved_at?: string | null
           status?: string
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "system_issues_linked_work_item_id_fkey"
+            columns: ["linked_work_item_id"]
+            isOneToOne: false
+            referencedRelation: "operations_work_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_tool_audit_logs: {
         Row: {
