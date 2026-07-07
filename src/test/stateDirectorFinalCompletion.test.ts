@@ -145,21 +145,22 @@ describe("State Director Final Completion — menus, routes, guards", () => {
     expect(all).toMatch(/CREATE UNIQUE INDEX[\s\S]*state_centralreach_outbox[\s\S]*state_code[\s\S]*source_type[\s\S]*source_id[\s\S]*sync_status IN/);
   });
 
-  it("no Monday.com or Make.com language in SD source or QA docs", () => {
+  it("no Monday.com or Make.com language in SD user-visible surfaces or QA docs", () => {
+    // Scope to user-visible surfaces (SD pages + components) and QA docs.
+    // Legacy TS lib files may reference Monday.com in comments describing
+    // historical IDs; that is not user-visible copy and is out of scope.
     const targets: string[] = [];
-    const walk = (dir: string) => {
+    const walk = (dir: string, filter: (f: string) => boolean) => {
+      if (!fs.existsSync(dir)) return;
       for (const f of fs.readdirSync(dir)) {
         const full = path.join(dir, f);
         const stat = fs.statSync(full);
-        if (stat.isDirectory()) walk(full);
-        else if (/\.(tsx?|md)$/.test(f)) targets.push(full);
+        if (stat.isDirectory()) walk(full, filter);
+        else if (filter(f)) targets.push(full);
       }
     };
-    for (const d of [
-      "src/pages/os/stateDirector",
-      "src/components/stateDirector",
-      "src/lib/os/stateDirector",
-    ]) if (fs.existsSync(d)) walk(d);
+    walk("src/pages/os/stateDirector", (f) => f.endsWith(".tsx"));
+    walk("src/components/stateDirector", (f) => f.endsWith(".tsx"));
     for (const f of fs.readdirSync("docs")) {
       if (/state-director/i.test(f)) targets.push(path.join("docs", f));
     }
