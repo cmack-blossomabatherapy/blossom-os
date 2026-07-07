@@ -1277,7 +1277,18 @@ export default function Integrations() {
               variant="ghost"
               size="sm"
               className="h-9 gap-1.5 rounded-xl"
-              onClick={() => setSelected(list[0])}
+              disabled={list.every((i) => i.status !== "connected" && i.status !== "syncing")}
+              title={
+                list.some((i) => i.status === "connected" || i.status === "syncing")
+                  ? "Open the most recently synced integration's log view"
+                  : "Connect an integration to view sync logs"
+              }
+              onClick={() => {
+                const firstLive = list.find(
+                  (i) => i.status === "connected" || i.status === "syncing",
+                );
+                if (firstLive) setSelected(firstLive);
+              }}
             >
               <FileText className="size-4" strokeWidth={1.75} /> View logs
             </Button>
