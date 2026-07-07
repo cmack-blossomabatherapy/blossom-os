@@ -380,7 +380,7 @@ export function WorkflowInventoryPage() {
         actions={isAdmin ? (
           <WorkflowDialog
             trigger={<Button size="sm"><Plus className="h-4 w-4 mr-1.5" />Add workflow</Button>}
-            onSubmit={create}
+            onSubmit={async (patch) => { await create(patch); }}
           />
         ) : null}
       />
