@@ -20507,6 +20507,7 @@ export type Database = {
         | "executive_leadership"
         | "operations_leadership"
         | "qa_team"
+        | "ceo"
       assessment_document_type: "Assessment Notes" | "Treatment Plan"
       assessment_location: "Home" | "School" | "Clinic"
       assessment_status:
@@ -21234,6 +21235,7 @@ export const Constants = {
         "executive_leadership",
         "operations_leadership",
         "qa_team",
+        "ceo",
       ],
       assessment_document_type: ["Assessment Notes", "Treatment Plan"],
       assessment_location: ["Home", "School", "Clinic"],

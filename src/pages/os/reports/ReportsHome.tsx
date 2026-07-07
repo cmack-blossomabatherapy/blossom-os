@@ -12,8 +12,9 @@ import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   visibleReportsForRole, visibleCategoriesForRole, ROLE_AI_SUMMARY,
-  readFavorites, toggleFavorite, readRecent, REPORT_CATEGORIES, type ReportDef,
+  readRecent, REPORT_CATEGORIES, type ReportDef,
 } from "@/lib/os/reportsCatalog";
+import { useReportFavorites } from "@/hooks/useReportFavorites";
 import { OS_ROLES } from "@/lib/os/permissions";
 import { RequestReportDialog } from "@/components/os/reports/RequestReportDialog";
 import {
@@ -93,7 +94,7 @@ export default function ReportsHome() {
   const aiSummary = ROLE_AI_SUMMARY[role];
   const roleLabel = OS_ROLES.find(r => r.id === role)?.label || role;
 
-  const [favs, setFavs] = useState<string[]>(() => readFavorites());
+  const { favorites: favs, toggleFavorite: toggleFav } = useReportFavorites();
   const favReports = favs.map(id => reportsWithLive.find(r => r.id === id)).filter(Boolean) as ReportDef[];
 
   const [requestOpen, setRequestOpen] = useState(false);
@@ -113,7 +114,7 @@ export default function ReportsHome() {
     ];
   }, [reportsWithLive, search, activeCategory]);
 
-  function onFav(id: string) { setFavs(toggleFavorite(id)); }
+  function onFav(id: string) { void toggleFav(id); }
 
   const [cancelSaved, setCancelSaved] = useState<CancellationSavedReport[]>([]);
   const [savedV3, setSavedV3] = useState<BcbaSavedReportV3[]>([]);
