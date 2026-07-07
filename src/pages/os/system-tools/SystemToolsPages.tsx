@@ -312,7 +312,7 @@ function WorkflowDialog({
 }
 
 export function WorkflowInventoryPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, displayName } = useAuth();
   const { rows, loading, create, update, remove } = useSystemWorkflows();
   const { toast } = useToast();
   const [q, setQ] = useState("");
@@ -356,11 +356,18 @@ export function WorkflowInventoryPage() {
 
   async function quickVerify(id: string) {
     try {
-      await update(id, { last_verified_at: new Date().toISOString() });
+      await update(id, {
+        last_verified_at: new Date().toISOString(),
+        verified_by: displayName ?? null,
+      });
       toast({ title: "Marked verified" });
     } catch (e) {
       toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
     }
+  }
+
+  async function assignOwner(id: string, owner: string | null) {
+    await update(id, { owner_name: owner });
   }
 
   return (
@@ -404,14 +411,30 @@ export function WorkflowInventoryPage() {
                 <Link to={r.related_route} className="inline-flex items-center gap-1 hover:text-foreground">
                   <ExternalLink className="h-3 w-3" />{r.related_route}
                 </Link>
-              ) : "—"}
+              ) : null}
+              {r.related_integration_id ? (
+                <Link to={`/admin/integrations?id=${r.related_integration_id}`} className="ml-2 inline-flex items-center gap-1 hover:text-foreground">
+                  <Plug className="h-3 w-3" />{r.related_integration_id}
+                </Link>
+              ) : null}
+              {!r.related_route && !r.related_integration_id ? "—" : null}
             </td>
             <td className="px-4 py-3 text-muted-foreground text-xs">
-              {r.last_verified_at ? new Date(r.last_verified_at).toLocaleDateString() : "—"}
+              {r.last_verified_at ? (
+                <span>
+                  {new Date(r.last_verified_at).toLocaleDateString()}
+                  {r.verified_by ? <span className="ml-1 text-muted-foreground/70">by {r.verified_by}</span> : null}
+                </span>
+              ) : "—"}
             </td>
             <td className="px-4 py-3 text-right">
               {isAdmin ? (
                 <div className="flex items-center gap-1 justify-end">
+                  <AssignOwnerDialog
+                    currentOwner={r.owner_name}
+                    onSubmit={(owner) => assignOwner(r.id, owner)}
+                    trigger={<Button size="icon" variant="ghost" className="h-8 w-8" title="Assign owner" aria-label="Assign owner"><UserPlus className="h-4 w-4" /></Button>}
+                  />
                   {r.status !== "Active" ? (
                     <QuickActionButton icon={CheckCircle2} label="Mark active" tone="success" onClick={() => quickStatus(r.id, "Active", "active")} />
                   ) : null}
