@@ -93,9 +93,45 @@ function itemPatchToRow(p: Partial<WorkItem>): Row {
 }
 
 const TABLE = "operations_work_items";
+const EVENTS_TABLE = "operations_work_item_events";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const anyClient = supabase as any;
+
+async function logWorkItemEvent(
+  workItemId: string,
+  eventType: string,
+  message?: string | null,
+  metadata?: Record<string, unknown>,
+) {
+  try {
+    const { data: userRes } = await anyClient.auth.getUser();
+    const user = userRes?.user;
+    const actorName =
+      (user?.user_metadata?.full_name as string | undefined) ??
+      (user?.email as string | undefined) ??
+      null;
+    await anyClient.from(EVENTS_TABLE).insert({
+      work_item_id: workItemId,
+      event_type: eventType,
+      message: message ?? null,
+      actor_id: user?.id ?? null,
+      actor_name: actorName,
+      metadata: metadata ?? {},
+    });
+  } catch {
+    // Non-fatal — event log is auxiliary.
+  }
+}
+
+function describePatch(patch: Partial<WorkItem>): string | null {
+  const bits: string[] = [];
+  if ("status" in patch) bits.push(`status → ${patch.status}`);
+  if ("priority" in patch) bits.push(`priority → ${patch.priority}`);
+  if ("ownerName" in patch) bits.push(`owner → ${patch.ownerName ?? "unassigned"}`);
+  if ("dueDate" in patch) bits.push(`due → ${patch.dueDate ?? "cleared"}`);
+  return bits.length ? bits.join(", ") : null;
+}
 
 export function useWorkQueue(): UseWorkQueueValue {
   const [items, setItems] = useState<WorkItem[]>([]);
@@ -145,13 +181,20 @@ export function useWorkQueue(): UseWorkQueueValue {
     void anyClient
       .from(TABLE)
       .insert(row)
-      .then(({ error: e }: { error: { message: string } | null }) => {
+      .select("id")
+      .single()
+      .then(({ data, error: e }: { data: { id: string } | null; error: { message: string } | null }) => {
         if (e) setError(e.message);
-        else void load();
+        else {
+          if (data?.id) {
+            void logWorkItemEvent(data.id, "work_item_created", String(row.title ?? ""));
+          }
+          void load();
+        }
       });
   }, [load]);
 
-  const applyPatch = useCallback((id: string, patch: Partial<WorkItem>) => {
+  const applyPatch = useCallback((id: string, patch: Partial<WorkItem>, eventType: string = "work_item_updated", message?: string | null, metadata?: Record<string, unknown>) => {
     // Optimistic update.
     setItems((prev) =>
       prev.map((it) => (it.id === id ? { ...it, ...patch, updatedAt: new Date().toISOString() } : it)),
@@ -164,6 +207,8 @@ export function useWorkQueue(): UseWorkQueueValue {
         if (e) {
           setError(e.message);
           void load();
+        } else {
+          void logWorkItemEvent(id, eventType, message ?? describePatch(patch), metadata);
         }
       });
   }, [load]);
@@ -173,20 +218,22 @@ export function useWorkQueue(): UseWorkQueueValue {
     loading,
     error,
     createWorkItem,
-    updateWorkItem: applyPatch,
-    assignWorkItem: (id, ownerName, ownerId) => applyPatch(id, { ownerName, ownerId }),
+    updateWorkItem: (id, patch) => applyPatch(id, patch, "work_item_updated"),
+    assignWorkItem: (id, ownerName, ownerId) =>
+      applyPatch(id, { ownerName, ownerId }, "work_item_assigned", `Assigned to ${ownerName}`),
     setStatus: (id, status) => {
       const patch: Partial<WorkItem> = { status };
       if (status === "resolved" || status === "closed") patch.resolvedAt = new Date().toISOString();
-      applyPatch(id, patch);
+      applyPatch(id, patch, "work_item_status_changed", `Status → ${status}`);
     },
     completeWorkItem: (id, notes) =>
       applyPatch(id, {
         status: "resolved",
         resolvedAt: new Date().toISOString(),
         resolutionNotes: notes,
-      }),
-    snoozeWorkItem: (id, untilIso) => applyPatch(id, { status: "waiting", snoozedUntil: untilIso }),
+      }, "work_item_completed", notes ?? "Completed"),
+    snoozeWorkItem: (id, untilIso) =>
+      applyPatch(id, { status: "waiting", snoozedUntil: untilIso }, "work_item_snoozed", `Snoozed until ${untilIso}`),
     escalateWorkItem: (id, reason, level = 2) =>
       applyPatch(id, {
         status: "escalated",
@@ -194,13 +241,13 @@ export function useWorkQueue(): UseWorkQueueValue {
         escalationReason: reason,
         escalationLevel: level,
         priority: level >= 4 ? "critical" : level >= 3 ? "urgent" : "high",
-      }),
+      }, "work_item_escalated", reason, { level }),
     resolveEscalation: (id, notes) =>
       applyPatch(id, {
         status: "resolved",
         resolvedAt: new Date().toISOString(),
         resolutionNotes: notes,
-      }),
+      }, "work_item_escalation_resolved", notes ?? "Escalation resolved"),
     refresh: () => void load(),
   };
 }
