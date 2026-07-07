@@ -1184,7 +1184,8 @@ export default function Integrations() {
             i.status === "disconnected" ||
             i.status === "coming_soon" ||
             i.status === "credentials_required" ||
-            i.status === "probe_pending"
+            i.status === "probe_pending" ||
+            i.status === "configured"
           );
         case "errors":
           return i.status === "error" || i.status === "reauth";
