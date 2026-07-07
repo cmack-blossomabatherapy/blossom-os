@@ -216,7 +216,10 @@ function mapRegistryStatus(s: BlossomIntegration["status"]): IntegrationStatus {
     case "connected":
       return "connected";
     case "configured":
-      return "connected";
+      // Static registry "configured" only means credentials are intended,
+      // not that a live backend row exists. Show "Not connected" until a
+      // real integration_connections row overlays this.
+      return "disconnected";
     case "needs_attention":
       return "error";
     case "error":
