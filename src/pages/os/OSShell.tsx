@@ -505,6 +505,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/supervision-visibility",
     "/treatment-plan-reviews",
     "/progress-reports",
+    "/reports/progress-reports",
     "/evaluations",
     "/escalations-followups",
     "/qa-team",
