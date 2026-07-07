@@ -299,6 +299,7 @@ export function RequestIntakePage() {
       />
       <ActionRow actions={["Submit request", "Categorize request", "Assign owner", "Set priority", "Update status", "Mark resolved"]} />
       <SystemRequestsPanel />
+      <SystemToolAuditPanel title="All System Tools activity" />
     </Shell>
   );
 }
