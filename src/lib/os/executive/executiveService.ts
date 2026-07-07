@@ -106,9 +106,9 @@ export async function updateExecutiveWorkItem(
 ): Promise<ExecutiveWorkItem> {
   const uid = await currentUserId();
   const payload: Record<string, unknown> = { ...patch, updated_by: uid };
-  if (patch.status === "completed" && !("completed_at" in patch)) {
-    payload.completed_at = new Date().toISOString();
-  }
+  // completed_at is now managed by a database trigger
+  // (executive_work_items_set_completed_at) so both close and reopen
+  // transitions stay consistent regardless of caller.
   const { data, error } = await supabase
     .from("executive_work_items")
     .update(payload as never)
@@ -123,6 +123,16 @@ export async function updateExecutiveWorkItem(
     summary: patch.status ? `Status → ${patch.status}` : "Updated",
   });
   return data as ExecutiveWorkItem;
+}
+
+/** Convenience helper — marks a work item resolved. Trigger sets completed_at. */
+export async function resolveExecutiveWorkItem(id: string, note?: string) {
+  return updateExecutiveWorkItem(id, { status: "resolved", ...(note ? { description: note } : {}) });
+}
+
+/** Convenience helper — reopens a work item; trigger clears completed_at. */
+export async function reopenExecutiveWorkItem(id: string) {
+  return updateExecutiveWorkItem(id, { status: "open" });
 }
 
 /* ------------------------- Decisions ------------------------- */
@@ -159,6 +169,33 @@ export async function createExecutiveDecision(
     entity_type: "executive_decision",
     entity_id: data.id,
     summary: data.title,
+  });
+  return data;
+}
+
+export async function updateExecutiveDecision(
+  id: string,
+  patch: Partial<{
+    title: string;
+    summary: string | null;
+    decision_body: string | null;
+    department: string | null;
+    state_code: string | null;
+    related_route: string | null;
+  }>,
+) {
+  const uid = await currentUserId();
+  const { data, error } = await supabase
+    .from("executive_decisions")
+    .update({ ...patch, updated_by: uid } as never)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  await logExecutiveActivity({
+    action: "decision.updated",
+    entity_type: "executive_decision",
+    entity_id: id,
   });
   return data;
 }
@@ -201,6 +238,43 @@ export async function createExecutiveRisk(input: {
   return data;
 }
 
+export async function updateExecutiveRisk(
+  id: string,
+  patch: Partial<{
+    title: string;
+    description: string | null;
+    category: string | null;
+    department: string | null;
+    state_code: string | null;
+    severity: string;
+    likelihood: string;
+    mitigation_plan: string | null;
+    due_date: string | null;
+    owner_user_id: string | null;
+    status: string;
+  }>,
+) {
+  const uid = await currentUserId();
+  const { data, error } = await supabase
+    .from("executive_risks")
+    .update({ ...patch, updated_by: uid } as never)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  await logExecutiveActivity({
+    action: patch.status ? `risk.${patch.status}` : "risk.updated",
+    entity_type: "executive_risk",
+    entity_id: id,
+  });
+  return data;
+}
+
+/** Convenience — mark a risk resolved/mitigated (trigger sets resolved_at). */
+export async function resolveExecutiveRisk(id: string, status: "resolved" | "mitigated" | "closed" = "resolved") {
+  return updateExecutiveRisk(id, { status });
+}
+
 /* ------------------------- Updates ------------------------- */
 
 export async function listExecutiveUpdates(limit = 20) {
@@ -237,6 +311,49 @@ export async function createExecutiveUpdate(input: {
     .select("*")
     .single();
   if (error) throw error;
+  return data;
+}
+
+export async function updateExecutiveUpdate(
+  id: string,
+  patch: Partial<{
+    title: string;
+    body: string | null;
+    audience: string;
+    department: string | null;
+    state_code: string | null;
+    pinned: boolean;
+  }>,
+) {
+  const { data, error } = await supabase
+    .from("executive_updates")
+    .update(patch as never)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  await logExecutiveActivity({
+    action: "update.edited",
+    entity_type: "executive_update",
+    entity_id: id,
+  });
+  return data;
+}
+
+/** Publish a draft update (sets published_at = now()). */
+export async function publishExecutiveUpdate(id: string) {
+  const { data, error } = await supabase
+    .from("executive_updates")
+    .update({ published_at: new Date().toISOString() } as never)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  await logExecutiveActivity({
+    action: "update.published",
+    entity_type: "executive_update",
+    entity_id: id,
+  });
   return data;
 }
 

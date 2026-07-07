@@ -2,56 +2,56 @@
  * SystemRequestsPanel
  *
  * Persistent submit/track UI for Blossom OS system requests
- * (bugs, access, improvements, module ideas). Backed by
- * executive_work_items with category="system_request".
+ * (bugs, access, improvements, module ideas). Backed by the canonical
+ * `system_issues` table (Executive Leadership Pass 2 consolidation).
  *
- * Anyone with write access to executive_work_items (leadership +
- * Super Admin per RLS) can submit and triage. Non-leadership users see
- * the list read-only.
+ * Any authenticated user may submit; admin / super_admin roles can
+ * triage/edit per the `system_issues` RLS policies. Executive follow-up
+ * work items live separately in `executive_work_items` and can link back
+ * via metadata / source_record fields when leadership takes action.
  */
 import { useMemo, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ExecCard } from "@/pages/os/executive/_shared";
-import { useExecutiveWorkItems } from "@/hooks/useExecutiveWorkItems";
+import { useSystemIssues } from "@/hooks/useSystemTools";
 
 const CATEGORIES = ["Improvement", "Bug", "Access", "Module idea", "Other"];
-const STATUSES = ["open", "triage", "in_progress", "resolved"];
+const STATUSES = ["open", "triage", "in_progress", "blocked", "resolved"];
 
 export function SystemRequestsPanel() {
-  const { data, isLoading, create, update } = useExecutiveWorkItems({ limit: 100 });
+  const { rows, loading, create, update } = useSystemIssues();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [priority, setPriority] = useState("normal");
-  const items = useMemo(
-    () => (data ?? []).filter((i) => i.category === "system_request"),
-    [data],
-  );
+  const [submitting, setSubmitting] = useState(false);
+  const items = useMemo(() => rows ?? [], [rows]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const t = title.trim();
     if (!t) return;
+    setSubmitting(true);
     try {
-      await create.mutateAsync({
+      await create({
         title: t,
-        category: "system_request",
+        area: category,
         priority,
         status: "open",
-        source_page: "system/request-intake",
-        metadata: { request_category: category },
       });
       setTitle("");
       setPriority("normal");
       toast.success("Request submitted");
     } catch (err: any) {
       toast.error(err?.message ?? "Could not submit");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const setStatus = async (id: string, status: string) => {
     try {
-      await update.mutateAsync({ id, patch: { status } });
+      await update(id, { status });
     } catch (err: any) {
       toast.error(err?.message ?? "Could not update");
     }
@@ -93,10 +93,10 @@ export function SystemRequestsPanel() {
           </select>
           <button
             type="submit"
-            disabled={!title.trim() || create.isPending}
+            disabled={!title.trim() || submitting}
             className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-2.5 py-1.5 text-[12px] font-medium text-background transition hover:opacity-90 disabled:opacity-40"
           >
-            {create.isPending ? (
+            {submitting ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
               <Plus className="h-3 w-3" />
@@ -106,7 +106,7 @@ export function SystemRequestsPanel() {
         </div>
       </form>
 
-      {isLoading ? (
+      {loading ? (
         <div className="flex items-center justify-center py-6 text-muted-foreground">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
         </div>
@@ -129,9 +129,7 @@ export function SystemRequestsPanel() {
               {items.map((i) => (
                 <tr key={i.id} className="border-t border-border/60">
                   <td className="px-3 py-2 text-foreground/90">{i.title}</td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {(i.metadata as any)?.request_category ?? "—"}
-                  </td>
+                  <td className="px-3 py-2 text-muted-foreground">{i.area ?? "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{i.priority}</td>
                   <td className="px-3 py-2">
                     <select
