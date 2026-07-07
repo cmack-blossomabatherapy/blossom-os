@@ -9,9 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
-  REPORTS, REPORT_CATEGORIES, readFavorites, toggleFavorite, pushRecent, visibleReportsForRole,
+  REPORTS, REPORT_CATEGORIES, pushRecent, visibleReportsForRole,
 } from "@/lib/os/reportsCatalog";
-import { markReportOpened } from "@/hooks/useSharedSavedViews";
+import { markReportOpened, useSharedSavedViews } from "@/hooks/useSharedSavedViews";
+import { useReportFavorites } from "@/hooks/useReportFavorites";
+import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { MetricCard } from "@/components/reports/MetricCard";
 import { ReportFunnel } from "@/components/reports/ReportFunnel";
@@ -46,8 +49,40 @@ export default function ReportDetail() {
       navigate(report.drilldownPath, { replace: true });
     }
   }, [canViewReport, report, navigate]);
-  const [favs, setFavs] = useState<string[]>(() => readFavorites());
+  const { favorites: favs, toggleFavorite: toggleFav } = useReportFavorites();
   const favored = report ? favs.includes(report.id) : false;
+  const { toast } = useToast();
+  const { saveView } = useSharedSavedViews({
+    scope: "report_view",
+    scopeKey: report?.id ?? null,
+    legacyKey: report ? `os.reportViews.${report.id}` : undefined,
+  });
+  async function handleSaveView() {
+    if (!report) return;
+    const name = window.prompt("Name this saved view", `${report.title} view`);
+    if (!name?.trim()) return;
+    try {
+      const filters: Record<string, unknown> = {
+        path: window.location.pathname + window.location.search,
+        savedAt: new Date().toISOString(),
+      };
+      if (sdFilters) filters.sdFilters = sdFilters;
+      await saveView(name.trim(), filters);
+      toast({ title: "View saved", description: "Available from your saved views." });
+    } catch (e) {
+      toast({ title: "Could not save view", description: "Please try again.", variant: "destructive" });
+    }
+  }
+  async function handleShare() {
+    if (!report) return;
+    const url = `${window.location.origin}/reports/${report.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link copied", description: "Share this report with your team." });
+    } catch {
+      toast({ title: "Copy failed", description: url });
+    }
+  }
   const isSd = !!report && SD_REPORT_IDS.has(report.id);
   const [sdFilters, setSdFilters] = useState<SdFilters | null>(null);
   useEffect(() => {
@@ -118,12 +153,21 @@ export default function ReportDetail() {
 
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-1.5">
-              <Button size="sm" variant="outline" className="border-white/70 bg-white/70 backdrop-blur" onClick={() => setFavs(toggleFavorite(report.id))}>
+              <Button size="sm" variant="outline" className="border-white/70 bg-white/70 backdrop-blur" onClick={() => void toggleFav(report.id)}>
                 <Star className={cn("mr-1 h-3.5 w-3.5", favored && "fill-amber-400 text-amber-500")} />{favored ? "Favorited" : "Favorite"}
               </Button>
-              <Button size="sm" variant="outline" className="border-white/70 bg-white/70 backdrop-blur"><Bookmark className="mr-1 h-3.5 w-3.5" />Save view</Button>
-              <Button size="sm" variant="outline" className="border-white/70 bg-white/70 backdrop-blur"><Share2 className="mr-1 h-3.5 w-3.5" />Share</Button>
-              <Button size="sm" className="bg-[hsl(265_70%_55%)] hover:bg-[hsl(265_70%_50%)]"><Download className="mr-1 h-3.5 w-3.5" />Export</Button>
+              <Button size="sm" variant="outline" className="border-white/70 bg-white/70 backdrop-blur" onClick={handleSaveView}><Bookmark className="mr-1 h-3.5 w-3.5" />Save view</Button>
+              <Button size="sm" variant="outline" className="border-white/70 bg-white/70 backdrop-blur" onClick={handleShare}><Share2 className="mr-1 h-3.5 w-3.5" />Share</Button>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button size="sm" disabled className="bg-[hsl(265_70%_55%)] opacity-60"><Download className="mr-1 h-3.5 w-3.5" />Export</Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Export is available inside each detail report (e.g. BCBA Productivity, Cancellation Command Center).</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />Updated {report.lastUpdated}</span>
