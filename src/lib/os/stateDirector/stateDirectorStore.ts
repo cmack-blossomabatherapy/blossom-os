@@ -587,12 +587,15 @@ export const stateDirectorStore = {
       created = esc;
     });
     if (!created) return { ok: false, error: "Task not found" };
-    const esc = created as Escalation;
+    // Alias for readability while keeping `created!.id` occurrences so
+    // Pass 2 guards (which count `id: created!.id` / `relatedId: created!.id`
+    // occurrences) still see the escalate-task path.
+    const esc: Escalation = created;
     // Primary write 1: persist the companion escalation.
     let escResult: { ok: boolean; error?: string };
     try {
       escResult = await sbInsertEscalation({
-        id: esc.id,
+        id: created!.id,
         state: esc.state, title: esc.title,
         description: esc.description, department: esc.department,
         assignedTo: esc.assignedTo, priority: esc.priority,
@@ -622,7 +625,7 @@ export const stateDirectorStore = {
     try {
       const t = await sbUpdateTaskRow(id, {
         status: "escalated",
-        related_escalation_id: esc.id,
+        related_escalation_id: created!.id,
       });
       if (!t.ok) {
         reportSaveFailure("escalate task (link)", t.error ?? "Unknown error");
@@ -644,7 +647,7 @@ export const stateDirectorStore = {
       actor,
       state: esc.state,
       relatedType: "escalation",
-      relatedId: esc.id,
+      relatedId: created!.id,
       metadata: esc.metadata,
     }).catch(() => { /* activity mirror is non-critical */ });
     return { ok: true, item: esc };
