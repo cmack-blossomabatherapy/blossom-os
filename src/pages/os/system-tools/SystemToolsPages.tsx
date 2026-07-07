@@ -1,6 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import {
-  Workflow, Inbox, Bug, Search, Plus, Pencil, Trash2, type LucideIcon,
+  Workflow, Inbox, Bug, Search, Plus, Pencil, Trash2, ExternalLink, Plug,
+  CheckCircle2, PauseCircle, ShieldAlert, Play, RefreshCw, ArchiveRestore,
+  ArrowRightCircle, type LucideIcon,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
