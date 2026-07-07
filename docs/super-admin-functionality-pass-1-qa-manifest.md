@@ -50,8 +50,6 @@ center.
 | HR (collapsed) | Employee Records | `/hr/employee-records` | redirect → `/user-management` |
 | HR (collapsed) | HR Requests | `/hr/requests` | live |
 | HR (collapsed) | Compliance Items | `/hr/compliance-items` | live |
-| HR (collapsed) | Device Requests | `/device-requests` | live |
-| HR (collapsed) | Device Inventory | `/device-inventory` | live |
 | Credentialing (collapsed) | Credentialing Dashboard | `/credentialing` | live |
 | Credentialing (collapsed) | Provider Credentialing | `/credentialing/providers` | live |
 | Credentialing (collapsed) | Insurance Credentialing | `/credentialing/insurance` | live |
