@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Workflow, Inbox, Bug, Search, Plus, Pencil, Trash2, ExternalLink, Plug,
   CheckCircle2, PauseCircle, ShieldAlert, Play, RefreshCw, ArchiveRestore,
-  ArrowRightCircle, type LucideIcon,
+  ArrowRightCircle, UserPlus, type LucideIcon,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -165,6 +165,47 @@ function QuickActionButton({ icon: Icon, label, onClick, tone }: {
   );
 }
 
+/** Small reusable dialog for the "Assign owner" quick action. */
+function AssignOwnerDialog({
+  trigger, currentOwner, onSubmit,
+}: {
+  trigger: ReactNode;
+  currentOwner: string | null | undefined;
+  onSubmit: (owner: string | null) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [owner, setOwner] = useState(currentOwner ?? "");
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+  async function save() {
+    setSaving(true);
+    try {
+      await onSubmit(owner.trim() || null);
+      setOpen(false);
+      toast({ title: owner.trim() ? `Assigned to ${owner.trim()}` : "Owner cleared" });
+    } catch (e) {
+      toast({ title: "Assign failed", description: (e as Error).message, variant: "destructive" });
+    } finally { setSaving(false); }
+  }
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setOwner(currentOwner ?? ""); }}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>Assign owner</DialogTitle></DialogHeader>
+        <div className="space-y-2">
+          <Label>Owner name</Label>
+          <Input value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Name of the person picking this up" />
+          <p className="text-xs text-muted-foreground">Leave blank to clear the owner.</p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function WorkflowDialog({
   trigger, initial, onSubmit,
 }: {
@@ -182,6 +223,7 @@ function WorkflowDialog({
   const [priority, setPriority] = useState(initial?.priority ?? "Medium");
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [relatedRoute, setRelatedRoute] = useState(initial?.related_route ?? "");
+  const [relatedIntegration, setRelatedIntegration] = useState(initial?.related_integration_id ?? "");
   const [riskLevel, setRiskLevel] = useState(initial?.risk_level ?? "");
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -202,6 +244,7 @@ function WorkflowDialog({
         status, priority,
         notes: notes || null,
         related_route: relatedRoute || null,
+        related_integration_id: relatedIntegration || null,
         risk_level: riskLevel || null,
       });
       setOpen(false);
@@ -257,6 +300,7 @@ function WorkflowDialog({
               </Select>
             </div>
           </div>
+          <div><Label>Related integration ID</Label><Input value={relatedIntegration ?? ""} onChange={(e) => setRelatedIntegration(e.target.value)} placeholder="e.g. retell, viventium, centralreach" /></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -268,7 +312,7 @@ function WorkflowDialog({
 }
 
 export function WorkflowInventoryPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, displayName } = useAuth();
   const { rows, loading, create, update, remove } = useSystemWorkflows();
   const { toast } = useToast();
   const [q, setQ] = useState("");
@@ -312,11 +356,18 @@ export function WorkflowInventoryPage() {
 
   async function quickVerify(id: string) {
     try {
-      await update(id, { last_verified_at: new Date().toISOString() });
+      await update(id, {
+        last_verified_at: new Date().toISOString(),
+        verified_by: displayName ?? null,
+      });
       toast({ title: "Marked verified" });
     } catch (e) {
       toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
     }
+  }
+
+  async function assignOwner(id: string, owner: string | null) {
+    await update(id, { owner_name: owner });
   }
 
   return (
@@ -360,14 +411,30 @@ export function WorkflowInventoryPage() {
                 <Link to={r.related_route} className="inline-flex items-center gap-1 hover:text-foreground">
                   <ExternalLink className="h-3 w-3" />{r.related_route}
                 </Link>
-              ) : "—"}
+              ) : null}
+              {r.related_integration_id ? (
+                <Link to={`/admin/integrations?id=${r.related_integration_id}`} className="ml-2 inline-flex items-center gap-1 hover:text-foreground">
+                  <Plug className="h-3 w-3" />{r.related_integration_id}
+                </Link>
+              ) : null}
+              {!r.related_route && !r.related_integration_id ? "—" : null}
             </td>
             <td className="px-4 py-3 text-muted-foreground text-xs">
-              {r.last_verified_at ? new Date(r.last_verified_at).toLocaleDateString() : "—"}
+              {r.last_verified_at ? (
+                <span>
+                  {new Date(r.last_verified_at).toLocaleDateString()}
+                  {r.verified_by ? <span className="ml-1 text-muted-foreground/70">by {r.verified_by}</span> : null}
+                </span>
+              ) : "—"}
             </td>
             <td className="px-4 py-3 text-right">
               {isAdmin ? (
                 <div className="flex items-center gap-1 justify-end">
+                  <AssignOwnerDialog
+                    currentOwner={r.owner_name}
+                    onSubmit={(owner) => assignOwner(r.id, owner)}
+                    trigger={<Button size="icon" variant="ghost" className="h-8 w-8" title="Assign owner" aria-label="Assign owner"><UserPlus className="h-4 w-4" /></Button>}
+                  />
                   {r.status !== "Active" ? (
                     <QuickActionButton icon={CheckCircle2} label="Mark active" tone="success" onClick={() => quickStatus(r.id, "Active", "active")} />
                   ) : null}
@@ -522,6 +589,11 @@ function IssueTriageDialog({
   const [owner, setOwner] = useState(issue.owner_name ?? "");
   const [priority, setPriority] = useState(issue.priority);
   const [status, setStatus] = useState(issue.status);
+  const [severity, setSeverity] = useState(issue.severity ?? "Medium");
+  const [dueDate, setDueDate] = useState(issue.due_date ? issue.due_date.slice(0, 10) : "");
+  const [relatedIntegration, setRelatedIntegration] = useState(issue.related_integration_id ?? "");
+  const [reproduction, setReproduction] = useState(issue.reproduction_steps ?? "");
+  const [resolution, setResolution] = useState(issue.resolution_notes ?? "");
   const [notes, setNotes] = useState(issue.notes ?? "");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -532,6 +604,11 @@ function IssueTriageDialog({
       await onSubmit({
         owner_name: owner || null,
         priority, status,
+        severity: severity || null,
+        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        related_integration_id: relatedIntegration || null,
+        reproduction_steps: reproduction || null,
+        resolution_notes: resolution || null,
         notes: notes || null,
         resolved_at: status === "Resolved" ? new Date().toISOString() : null,
       });
@@ -548,12 +625,19 @@ function IssueTriageDialog({
         <DialogHeader><DialogTitle>Triage: {issue.title}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div><Label>Owner</Label><Input value={owner} onChange={(e) => setOwner(e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <Label>Priority</Label>
               <Select value={priority} onValueChange={setPriority}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Severity</Label>
+              <Select value={severity} onValueChange={setSeverity}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{SEVERITIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
@@ -564,6 +648,12 @@ function IssueTriageDialog({
               </Select>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Due date</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+            <div><Label>Related integration ID</Label><Input value={relatedIntegration} onChange={(e) => setRelatedIntegration(e.target.value)} placeholder="e.g. retell, viventium" /></div>
+          </div>
+          <div><Label>Reproduction steps</Label><Textarea value={reproduction} onChange={(e) => setReproduction(e.target.value)} rows={3} /></div>
+          <div><Label>Resolution notes</Label><Textarea value={resolution} onChange={(e) => setResolution(e.target.value)} rows={3} placeholder="Populated automatically when you resolve via the quick action." /></div>
           <div><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} /></div>
         </div>
         <DialogFooter>
@@ -639,6 +729,7 @@ export function IssueTrackerPage() {
         status: "Resolved",
         resolution_notes: resolveNotes.trim(),
         resolved_at: new Date().toISOString(),
+        closed_by: displayName ?? null,
       });
       setResolveTarget(null);
       setResolveNotes("");
@@ -646,6 +737,10 @@ export function IssueTrackerPage() {
     } catch (e) {
       toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
     }
+  }
+
+  async function assignOwner(id: string, owner: string | null) {
+    await update(id, { owner_name: owner });
   }
 
   async function convertRequestToIssue(r: SystemIssue) {
@@ -713,6 +808,11 @@ export function IssueTrackerPage() {
             <td className="px-4 py-3 text-right">
               {isAdmin ? (
                 <div className="flex items-center gap-1 justify-end">
+                  <AssignOwnerDialog
+                    currentOwner={r.owner_name}
+                    onSubmit={(owner) => assignOwner(r.id, owner)}
+                    trigger={<Button size="icon" variant="ghost" className="h-8 w-8" title="Assign owner" aria-label="Assign owner"><UserPlus className="h-4 w-4" /></Button>}
+                  />
                   {r.status === "Open" ? (
                     <QuickActionButton icon={PauseCircle} label="Triage" onClick={() => quickStatus(r, "Triage", "for triage")} />
                   ) : null}
