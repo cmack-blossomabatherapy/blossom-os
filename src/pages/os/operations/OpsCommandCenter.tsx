@@ -14,7 +14,10 @@ import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { WorkQueueSignalsCard } from "@/components/operations/WorkQueueSignalsCard";
 import { SystemRequestsPanel } from "@/components/executive/SystemRequestsPanel";
-import { IntegrationReadinessCard } from "@/components/executive/IntegrationReadinessCard";
+import { OperationsIntegrationReadinessMatrix } from "@/components/operations/OperationsIntegrationReadinessMatrix";
+import {
+  ClipboardList, PhoneCall, ShieldAlert, FileBarChart2, Plug, ArrowRight as ArrowRightIcon,
+} from "lucide-react";
 import { daysUntil, type AuthStage } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
@@ -430,6 +433,29 @@ export default function OpsCommandCenter() {
       {/* 1b. Persistent Work Queue signals */}
       <WorkQueueSignalsCard />
 
+      {/* 1c. Operations quick actions — reduce clicks for common workflows */}
+      <OpsCard title="Quick actions" hint="Common Operations Leadership entry points">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            { icon: ClipboardList, label: "Work Queue", to: "/work-queue" },
+            { icon: ShieldAlert, label: "Escalations", to: "/work-queue/escalations" },
+            { icon: FileBarChart2, label: "Reports", to: "/reports" },
+            { icon: PhoneCall, label: "Phone System", to: "/phone-calls" },
+            { icon: Plug, label: "Integrations", to: "/admin/integrations" },
+            { icon: ArrowRightIcon, label: "Submit request", to: "/system/request-intake" },
+          ].map(({ icon: Icon, label, to }) => (
+            <Link
+              key={label}
+              to={to}
+              className="group flex items-center gap-2 rounded-xl border border-border/60 bg-background/40 px-3 py-2 text-[12.5px] font-medium text-foreground/85 transition hover:-translate-y-0.5 hover:border-border hover:bg-background/70"
+            >
+              <Icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
+              <span className="truncate">{label}</span>
+            </Link>
+          ))}
+        </div>
+      </OpsCard>
+
       {/* 2. Live Operations Pulse */}
       <OpsCard title="Live operations pulse" hint="Last few hours · derived from live data">
         {pulse.length === 0 ? (
@@ -738,7 +764,7 @@ export default function OpsCommandCenter() {
       <SystemRequestsPanel />
 
       {/* Integration readiness snapshot */}
-      <IntegrationReadinessCard title="Operational integration readiness" />
+      <OperationsIntegrationReadinessMatrix title="Operational integration readiness" />
 
       {/* Quick nav */}
       <div className="grid gap-3 md:grid-cols-3">

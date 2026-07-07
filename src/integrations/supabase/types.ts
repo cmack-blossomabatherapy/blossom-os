@@ -16953,6 +16953,63 @@ export type Database = {
           },
         ]
       }
+      report_requests: {
+        Row: {
+          ai_assist: boolean
+          attachment_name: string | null
+          created_at: string
+          data_sources: string[]
+          department: string | null
+          frequency: string | null
+          id: string
+          metrics: string | null
+          priority: string
+          purpose: string | null
+          requested_by_name: string | null
+          requested_by_user_id: string | null
+          status: string
+          title: string
+          updated_at: string
+          visualization: string | null
+        }
+        Insert: {
+          ai_assist?: boolean
+          attachment_name?: string | null
+          created_at?: string
+          data_sources?: string[]
+          department?: string | null
+          frequency?: string | null
+          id?: string
+          metrics?: string | null
+          priority?: string
+          purpose?: string | null
+          requested_by_name?: string | null
+          requested_by_user_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          visualization?: string | null
+        }
+        Update: {
+          ai_assist?: boolean
+          attachment_name?: string | null
+          created_at?: string
+          data_sources?: string[]
+          department?: string | null
+          frequency?: string | null
+          id?: string
+          metrics?: string | null
+          priority?: string
+          purpose?: string | null
+          requested_by_name?: string | null
+          requested_by_user_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          visualization?: string | null
+        }
+        Relationships: []
+      }
       role_audit_log: {
         Row: {
           action: string
