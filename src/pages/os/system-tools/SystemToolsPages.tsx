@@ -488,6 +488,11 @@ export function IssueTrackerPage() {
             <td className="px-4 py-3 text-right">
               {isAdmin ? (
                 <div className="flex items-center gap-1 justify-end">
+                  <AuditHistoryButton
+                    toolArea="issue_tracker"
+                    entityId={r.id}
+                    entityLabel={r.title}
+                  />
                   <IssueTriageDialog
                     issue={r}
                     onSubmit={(patch) => update(r.id, patch)}
@@ -502,6 +507,9 @@ export function IssueTrackerPage() {
           </tr>
         ))}
       </TableShell>
+      {isAdmin ? (
+        <SystemToolAuditPanel toolArea="issue_tracker" />
+      ) : null}
     </Shell>
   );
 }
