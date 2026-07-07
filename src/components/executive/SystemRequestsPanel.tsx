@@ -561,37 +561,14 @@ function SystemRequestsPanelInner() {
     } finally { setConvertingId(null); }
   };
 
-  const convertToWorkflow = async (req: SystemIssue) => {
+  const convertToWorkflow = async (req: SystemIssue, ownerOverride: string | null) => {
     setConvertingId(req.id);
     try {
-      // Initial state for a newly-converted workflow:
-      //   status:   Planned   (needs scoping/build before it can be Active)
-      //   priority: mapped from the request priority
-      //   risk:     High when the request is urgent/high, else Medium
-      const initialRisk =
-        req.priority === "urgent" ? "High" :
-        req.priority === "high" ? "High" :
-        req.priority === "low" ? "Low" : "Medium";
-
-      const notesBlock = [
-        req.description ? `Description:\n${req.description}` : "",
-        req.impact ? `Impact:\n${req.impact}` : "",
-        req.desired_outcome ? `Desired outcome:\n${req.desired_outcome}` : "",
-        `Converted from system request "${req.title}" (${req.id.slice(0, 8)}) by ${displayName ?? "admin"} on ${new Date().toLocaleDateString()}.`,
-      ].filter(Boolean).join("\n\n");
-
+      const draft = buildWorkflowDraftFromRequest(req, displayName ?? "admin");
       const workflowId = await createWorkflow({
-        name: req.title,
-        department: req.affected_department ?? req.area ?? null,
-        owner_name: req.owner_name ?? null,
-        current_source: "System request",
+        ...draft,
+        owner_name: ownerOverride,
         future_module: null,
-        status: "Planned",
-        priority: mapPriorityToWorkflow(req.priority),
-        notes: notesBlock,
-        related_route: req.affected_route ?? null,
-        related_integration_id: req.related_integration_id ?? null,
-        risk_level: initialRisk,
       });
 
       await update(req.id, {
@@ -615,8 +592,9 @@ function SystemRequestsPanelInner() {
           target: "system_workflows",
           workflow_id: workflowId,
           initial_workflow_status: "Planned",
-          initial_workflow_priority: mapPriorityToWorkflow(req.priority),
-          initial_workflow_risk: initialRisk,
+          initial_workflow_priority: draft.priority,
+          initial_workflow_risk: draft.risk_level,
+          owner_name: ownerOverride,
         },
         metadata: {
           title: req.title,
