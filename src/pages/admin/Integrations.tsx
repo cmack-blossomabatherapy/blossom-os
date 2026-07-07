@@ -105,6 +105,7 @@ type IntegrationStatus =
   | "disconnected"
   | "credentials_required"
   | "probe_pending"
+  | "configured"
   | "coming_soon";
 
 type IntegrationCategory =
