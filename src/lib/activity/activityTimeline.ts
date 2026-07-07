@@ -10,7 +10,7 @@
  *   - `marketing_source_events`
  *   - `marketing_call_events`
  *   - `marketing_email_events`
- *   - Work Queue (live in-memory store, DB-backed pass pending)
+ *   - `operations_work_items` + `operations_work_item_events`
  *
  * `activityFromSourceEvent` remains a pure type helper for callers that
  * already have a normalized LeadSourceEvent shape. No production feed uses
@@ -41,7 +41,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { LeadSourceEvent } from "@/lib/leads/leadSourceEvents";
-import { listWorkItems, subscribeWorkItems } from "@/lib/workQueue/workQueueStore";
 import type { WorkItem } from "@/lib/workQueue/workQueueModel";
 import { supabase } from "@/integrations/supabase/client";
 import {
