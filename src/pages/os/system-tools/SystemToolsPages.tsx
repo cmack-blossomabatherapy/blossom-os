@@ -430,6 +430,7 @@ export function RequestIntakePage() {
 /* -------------------------------------------------------------------------- */
 
 const ISSUE_STATUSES = ["Open", "Triage", "In Progress", "Blocked", "Resolved"];
+const SEVERITIES = ["Low", "Medium", "High", "Critical"];
 
 function IssueSubmitDialog({
   trigger, onSubmit, defaultReporter,
@@ -443,6 +444,9 @@ function IssueSubmitDialog({
   const [area, setArea] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("Medium");
+  const [severity, setSeverity] = useState("Medium");
+  const [reproduction, setReproduction] = useState("");
+  const [relatedRoute, setRelatedRoute] = useState("");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
@@ -455,11 +459,15 @@ function IssueSubmitDialog({
         area: area || null,
         description: description || null,
         priority,
+        severity,
+        reproduction_steps: reproduction || null,
+        related_route: relatedRoute || null,
         status: "Open",
         reported_by_name: defaultReporter ?? null,
       });
       setOpen(false);
       setTitle(""); setArea(""); setDescription(""); setPriority("Medium");
+      setSeverity("Medium"); setReproduction(""); setRelatedRoute("");
       toast({ title: "Issue submitted" });
     } catch (e) {
       toast({ title: "Submit failed", description: (e as Error).message, variant: "destructive" });
@@ -475,12 +483,23 @@ function IssueSubmitDialog({
           <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short summary" /></div>
           <div><Label>Area</Label><Input value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. Authorizations, Sidebar" /></div>
           <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="What happened? Steps to reproduce?" /></div>
-          <div>
-            <Label>Priority</Label>
-            <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-            </Select>
+          <div><Label>Reproduction steps</Label><Textarea value={reproduction} onChange={(e) => setReproduction(e.target.value)} rows={3} placeholder="1. Go to... 2. Click... 3. Expected... Actual..." /></div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label>Priority</Label>
+              <Select value={priority} onValueChange={setPriority}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Severity</Label>
+              <Select value={severity} onValueChange={setSeverity}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{SEVERITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label>Related route</Label><Input value={relatedRoute} onChange={(e) => setRelatedRoute(e.target.value)} placeholder="/scheduling/board" /></div>
           </div>
         </div>
         <DialogFooter>
