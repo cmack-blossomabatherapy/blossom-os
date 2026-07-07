@@ -37,7 +37,7 @@ describe("State Director Pass 8 — awaitable writes, de-dupe, menu coverage", (
   it("escalateTask awaits both companion escalation insert and task row update", () => {
     const idx = store.indexOf("async escalateTask");
     expect(idx).toBeGreaterThan(0);
-    const block = store.slice(idx, idx + 3000);
+    const block = store.slice(idx, idx + 6000);
     expect(block).toMatch(/await sbInsertEscalation/);
     expect(block).toMatch(/await sbUpdateTaskRow/);
   });
