@@ -11,10 +11,12 @@ describe("Clinical Director Pass 3 — Reports stays unified", () => {
   const menu = ROLE_MENUS.clinical_director;
   const allItems = menu.sections.flatMap((s) => s.items);
 
-  it("has exactly one Reports menu item pointing to /reports", () => {
-    const reportsItems = allItems.filter((i) => /^\/reports(\/|$)/.test(i.path));
-    expect(reportsItems.length).toBe(1);
-    expect(reportsItems[0].path).toBe("/reports");
+  it("has exactly one Reports hub menu item pointing to /reports", () => {
+    // Reports hub = exact /reports. /reports/* drilldowns (e.g.
+    // /reports/progress-reports) are specific report destinations.
+    const reportsHub = allItems.filter((i) => i.path === "/reports");
+    expect(reportsHub.length).toBe(1);
+    expect(reportsHub[0].path).toBe("/reports");
   });
 
   it("does not mount /clinical/reports", () => {
