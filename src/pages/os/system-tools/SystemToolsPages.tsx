@@ -658,7 +658,7 @@ function IssueTriageDialog({
         reproduction_steps: reproduction || null,
         resolution_notes: resolution || null,
         notes: notes || null,
-        resolved_at: status === "Resolved" ? new Date().toISOString() : null,
+        resolved_at: isIssueStatus(status, "Resolved") ? new Date().toISOString() : null,
       });
       setOpen(false);
     } catch (e) {
