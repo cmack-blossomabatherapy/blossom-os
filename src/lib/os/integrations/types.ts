@@ -58,6 +58,13 @@ export interface BlossomIntegration {
   dependentModules: string[];
   sourceOfTruthFor: string[];
   notes: string;
+  /**
+   * Legacy/technical integration retained in the registry for code
+   * compatibility (e.g. old Make.com automation bridge events) but hidden
+   * from user-facing readiness surfaces. UI code should filter these out
+   * by default.
+   */
+  internalOnly?: boolean;
 }
 
 export interface IntegrationSyncRun {
