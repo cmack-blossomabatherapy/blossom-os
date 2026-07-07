@@ -105,13 +105,26 @@ export function mergeRbtPathProgress(
     }
   }
 
-  const readinessMap = readinessModuleProgress ?? {};
+  // Track-safe readiness: prefer module_progress.byTrack[activeTrackId] and
+  // only fall back to legacy top-level module_progress[moduleId] when no
+  // track-specific entry exists for that module. This prevents shared
+  // module ids (e.g. `welcome-1`) from bleeding between RBT paths.
+  const rawReadiness: any = readinessModuleProgress ?? {};
+  const trackReadiness: Record<string, any> =
+    (activeTrackId && rawReadiness?.byTrack && rawReadiness.byTrack[activeTrackId]) || {};
+  const legacyReadiness: Record<string, any> = {};
+  for (const [k, v] of Object.entries(rawReadiness)) {
+    if (k === "byTrack") continue;
+    legacyReadiness[k] = v as any;
+  }
+  const readinessLookup = (moduleId: string) =>
+    trackReadiness[moduleId] ?? legacyReadiness[moduleId];
 
   const mergedPhases: RBTPhase[] = path.phases.map((phase) => ({
     ...phase,
     modules: phase.modules.map<RBTModule>((m) => {
       const rt = runtimeBySource.get(m.id);
-      const rd = readinessMap[m.id];
+      const rd = readinessLookup(m.id);
       let status = m.status;
       let progress = m.progress;
 
