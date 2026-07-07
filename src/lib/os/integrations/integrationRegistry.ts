@@ -6,6 +6,11 @@
  * dashboards should read from here instead of inlining their own list.
  *
  * Notes:
+ *  - Static `status` values in this registry describe the intended
+ *    integration state (configured / planned / maybe / disabled), NOT
+ *    proof of a live backend connection. The Integrations UI overlays
+ *    live `integration_connections` rows on top of these entries; the
+ *    card only shows "Connected" when a real backend row confirms it.
  *  - CentralReach remains the clinical EMR; Blossom OS connects to it.
  *  - Viventium is the HRIS / employee-lifecycle source and governs
  *    Blossom OS user activation/deactivation reviews.
