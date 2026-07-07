@@ -202,23 +202,25 @@ function useTable<T extends { id: string }>(table: string) {
   }, [load]);
 
   const create = useCallback(
-    async (patch: Partial<T>) => {
+    async (patch: Partial<T>): Promise<string | null> => {
       const { data, error: err } = await anyClient
         .from(table)
         .insert(patch)
         .select("id")
         .single();
       if (err) throw new Error(err.message);
+      const newId = (data?.id ?? null) as string | null;
       void logSystemToolAction({
         tool_area:
           table === "system_workflows" ? "workflow_inventory" :
           table === "system_issues" ? "issue_tracker" : "workflow_inventory",
         action: "create",
         entity_table: table,
-        entity_id: (data?.id ?? null) as string | null,
+        entity_id: newId,
         new_value: patch as Record<string, unknown>,
       });
       await load();
+      return newId;
     },
     [table, load],
   );
