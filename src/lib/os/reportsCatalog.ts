@@ -364,6 +364,14 @@ export const ROLE_AI_SUMMARY: Partial<Record<OSRole, RoleAISummary>> = {
 
 /* ---------- Request store (localStorage Phase 1) ---------- */
 
+// Operations Leadership completion pass:
+// Canonical persistence for report requests + recents is now Supabase.
+// The localStorage paths below remain ONLY as a fallback for signed-out
+// users and for immediate synchronous UI reads. Every write is mirrored
+// to Supabase (`report_requests`, `shared_report_recents`) in the
+// background so favorites and history follow users across devices.
+import { supabase } from "@/integrations/supabase/client";
+
 export interface ReportRequestRecord {
   id: string;
   title: string;
@@ -393,6 +401,31 @@ export function saveReportRequest(r: ReportRequestRecord) {
   const all = readReportRequests();
   all.unshift(r);
   window.localStorage.setItem(REQ_KEY, JSON.stringify(all.slice(0, 100)));
+  // Fire-and-forget: mirror into Supabase so the request is durable and
+  // visible to Systems & Software regardless of which device it came from.
+  void (async () => {
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id ?? null;
+      await supabase.from("report_requests").insert({
+        title: r.title,
+        department: r.department || null,
+        purpose: r.purpose || null,
+        metrics: r.metrics || null,
+        data_sources: r.dataSources ?? [],
+        frequency: r.frequency || null,
+        priority: r.priority || "Normal",
+        visualization: r.visualization || null,
+        ai_assist: !!r.aiAssist,
+        attachment_name: r.attachmentName || null,
+        status: r.status,
+        requested_by_user_id: uid,
+        requested_by_name: r.requestedBy || null,
+      } as never);
+    } catch {
+      /* offline-safe: localStorage row above is the fallback */
+    }
+  })();
 }
 
 const FAV_KEY = "os.reportFavorites";
@@ -422,6 +455,24 @@ export function pushRecent(id: string) {
   const cur = readRecent().filter(x => x !== id);
   cur.unshift(id);
   window.localStorage.setItem(RECENT_KEY, JSON.stringify(cur.slice(0, 8)));
+  // Fire-and-forget upsert into shared_report_recents so recents follow
+  // the user across devices. ReportsHome already reads Supabase first
+  // and merges local; this keeps the two lists in sync.
+  void (async () => {
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) return;
+      await supabase
+        .from("shared_report_recents")
+        .upsert(
+          { user_id: uid, report_key: id, opened_at: new Date().toISOString() } as never,
+          { onConflict: "user_id,report_key" },
+        );
+    } catch {
+      /* offline-safe: localStorage row above is the fallback */
+    }
+  })();
 }
 
 export { BarChart3, LineChart };
