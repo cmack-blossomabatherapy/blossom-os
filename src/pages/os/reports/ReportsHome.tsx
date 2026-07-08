@@ -19,14 +19,17 @@ import { OS_ROLES } from "@/lib/os/permissions";
 import { RequestReportDialog } from "@/components/os/reports/RequestReportDialog";
 import {
   readCancellationSavedReports, deleteCancellationSavedReport,
+  loadCancellationSavedReports,
   type CancellationSavedReport,
 } from "@/lib/os/cancellationSavedReports";
 import {
   readSavedReportsV3, deleteSavedReportV3, type BcbaSavedReportV3,
+  loadSavedReportsV3,
 } from "@/lib/os/bcbaProductivityV3/store";
 import { useAuthorizationReportMetrics } from "@/hooks/useAuthorizationReportMetrics";
 import { useRbtReportSummaries } from "@/hooks/useRbtReportSummaries";
 import { listRecentReports } from "@/hooks/useSharedSavedViews";
+import { migrateLocalReportsIfNeeded } from "@/lib/os/reportPersistence";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
