@@ -114,6 +114,24 @@ export async function listIntegrationConnections(
   return (data ?? []) as IntegrationConnectionRow[];
 }
 
+/**
+ * Persist the enabled flag for a live integration connection row.
+ * Returns the updated row on success so callers can refresh their overlay.
+ */
+export async function updateIntegrationConnectionEnabled(
+  connectionId: string,
+  enabled: boolean,
+): Promise<{ ok: boolean; error?: string; row?: IntegrationConnectionRow }> {
+  const { data, error } = await (db as any)
+    .from("integration_connections")
+    .update({ enabled, updated_at: new Date().toISOString() })
+    .eq("id", connectionId)
+    .select("*")
+    .single();
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, row: data as IntegrationConnectionRow };
+}
+
 export async function listIntegrationSyncRuns(
   integrationId?: string,
   limit = 25,
