@@ -404,6 +404,7 @@ import {
   WorkflowInventoryPage, RequestIntakePage, IssueTrackerPage,
 } from "./pages/os/system-tools/SystemToolsPages";
 import BcbaProductivityUploads from "./pages/os/system/BcbaProductivityUploads";
+import IntegrationRegistryPage from "./pages/os/system-tools/IntegrationRegistryPage";
 import EmailCommandCenter from "./pages/os/system/EmailCommandCenter";
 import BlossomOSHome from "./pages/os/home/BlossomOSHome";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
@@ -948,6 +949,7 @@ const App = () => (
                   <Route path="/system/request-intake" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><RequestIntakePage /></PermissionRoute>} />
                   <Route path="/system/issue-tracker" element={<AdminRoute><IssueTrackerPage /></AdminRoute>} />
                   <Route path="/system/bcba-productivity-uploads" element={<AdminRoute><BcbaProductivityUploads /></AdminRoute>} />
+                  <Route path="/system/integration-registry" element={<AdminRoute><IntegrationRegistryPage /></AdminRoute>} />
                   <Route path="/system/email-command-center" element={<AdminRoute><EmailCommandCenter /></AdminRoute>} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
