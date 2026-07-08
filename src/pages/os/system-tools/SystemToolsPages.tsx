@@ -922,18 +922,18 @@ export function IssueTrackerPage() {
                     trigger={<Button size="icon" variant="ghost" className="h-8 w-8" title="Assign owner" aria-label="Assign owner"><UserPlus className="h-4 w-4" /></Button>}
                   />
                   {isIssueStatus(r.status, "Open") ? (
-                    <QuickActionButton icon={PauseCircle} label="Triage" onClick={() => quickStatus(r, "Triage", "for triage")} />
+                    <QuickActionButton icon={PauseCircle} label="Triage" onClick={() => quickStatus(r, "Triage", "for triage", "issue_triaged")} />
                   ) : null}
                   {(isIssueStatus(r.status, "Open") || isIssueStatus(r.status, "Triage")) ? (
-                    <QuickActionButton icon={Play} label="Start work" onClick={() => quickStatus(r, "In Progress", "in progress")} />
+                    <QuickActionButton icon={Play} label="Start work" onClick={() => quickStatus(r, "In Progress", "in progress", "issue_started")} />
                   ) : null}
                   {!isIssueStatus(r.status, "Blocked") && !isIssueStatus(r.status, "Resolved") ? (
-                    <QuickActionButton icon={ShieldAlert} label="Mark blocked" tone="danger" onClick={() => quickStatus(r, "Blocked", "blocked")} />
+                    <QuickActionButton icon={ShieldAlert} label="Mark blocked" tone="danger" onClick={() => quickStatus(r, "Blocked", "blocked", "issue_blocked")} />
                   ) : null}
                   {!isIssueStatus(r.status, "Resolved") ? (
-                    <QuickActionButton icon={CheckCircle2} label="Resolve" tone="success" onClick={() => quickStatus(r, "Resolved", "resolved")} />
+                    <QuickActionButton icon={CheckCircle2} label="Resolve" tone="success" onClick={() => quickStatus(r, "Resolved", "resolved", "issue_resolved")} />
                   ) : (
-                    <QuickActionButton icon={RefreshCw} label="Reopen" onClick={() => quickStatus(r, "Open", "reopened")} />
+                    <QuickActionButton icon={RefreshCw} label="Reopen" onClick={() => quickStatus(r, "Open", "reopened", "issue_reopened")} />
                   )}
                   {r.request_type ? (
                     <QuickActionButton icon={ArrowRightCircle} label="Convert to tracked issue" onClick={() => convertRequestToIssue(r)} />
