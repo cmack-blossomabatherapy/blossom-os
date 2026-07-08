@@ -481,7 +481,10 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/operations/department-health",
     "/operations/escalations",
     "/system/request-intake",
+    "/org-chart",
     "/phone",
+    "/academy",
+    "/resource-library",
   ]),
   operations_leadership: new Set<string>([
     "/operations/command-center",
@@ -675,9 +678,13 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   ];
 
   const renderNavItem = (item: NavEntry, onClick?: () => void) => {
-    // Non–super-admin roles only have Training Academy, Resource Library, and
-    // Reports as live links. All other items render as inert "Coming Soon"
-    // entries — visible in the menu but not clickable.
+    // Menu items are live when their base path is in the global staged set
+    // (STAGED_ROLE_LIVE_PATHS — Training Academy, Resource Library, Reports)
+    // OR in the role-specific live set (ROLE_SPECIFIC_LIVE_PATHS). Roles that
+    // have fully launched (e.g. Executive Leadership, Operations Leadership,
+    // State Director) have their full working menu clickable; everything else
+    // still renders as an inert "Coming Soon" entry — visible but not
+    // clickable — so users can preview where Blossom OS is going.
     if (item.disabled) {
       const inert = (
         <div

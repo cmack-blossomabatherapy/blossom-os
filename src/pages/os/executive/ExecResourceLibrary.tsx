@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BookOpen, ChevronRight, Search, Sparkles, Star } from "lucide-react";
+import { BookOpen, ChevronRight, Search, Sparkles } from "lucide-react";
 import { ExecPage, ExecCard, AIPrompt } from "./_shared";
 import { useNavigate } from "react-router-dom";
 
@@ -258,14 +258,6 @@ function ResourceCard({ r }: { r: Resource }) {
           <span className={`rounded-full border px-2 py-0.5 text-[10.5px] font-medium ${IMPORTANCE_STYLE[r.importance]}`}>
             {r.importance}
           </span>
-          <button
-            type="button"
-            disabled
-            title="Pinning coming soon - use /resource-library favorites"
-            className="rounded-full p-1 text-muted-foreground/50 cursor-not-allowed transition"
-          >
-            <Star className="size-3.5" />
-          </button>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-1">
