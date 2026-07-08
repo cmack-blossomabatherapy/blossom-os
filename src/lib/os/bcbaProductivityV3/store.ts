@@ -4,6 +4,11 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import {
+  listRemoteSnapshots,
+  upsertRemoteSnapshot,
+  deleteRemoteSnapshot,
+} from "@/lib/os/reportPersistence";
 
 export interface BcbaAssignmentV3 {
   id: string;
@@ -251,6 +256,36 @@ export function readSavedReportsV3(): BcbaSavedReportV3[] {
   if (typeof window === "undefined") return [];
   return safeParse<BcbaSavedReportV3[]>(localStorage.getItem(SAVED_KEY), []);
 }
+
+/**
+ * Async loader that merges Supabase-backed metadata with the local
+ * cache. Supabase wins on duplicates; local cache is refreshed so
+ * subsequent synchronous reads reflect remote state.
+ */
+export async function loadSavedReportsV3(): Promise<BcbaSavedReportV3[]> {
+  const local = readSavedReportsV3();
+  try {
+    const remote = await listRemoteSnapshots("bcba_productivity_v3");
+    if (remote.length === 0) return local;
+    const byId = new Map<string, BcbaSavedReportV3>();
+    for (const m of local) byId.set(m.id, m);
+    for (const r of remote) {
+      byId.set(r.clientKey, {
+        id: r.clientKey,
+        name: r.name,
+        savedAt: r.savedAt,
+        fileName: r.primaryFileName ?? "",
+        rowCount: byId.get(r.clientKey)?.rowCount ?? 0,
+      });
+    }
+    const merged = [...byId.values()].sort((a, b) => b.savedAt - a.savedAt);
+    try { localStorage.setItem(SAVED_KEY, JSON.stringify(merged)); } catch {}
+    return merged;
+  } catch {
+    return local;
+  }
+}
+
 function writeSavedV3(list: BcbaSavedReportV3[]) {
   try { localStorage.setItem(SAVED_KEY, JSON.stringify(list)); } catch {}
   try { window.dispatchEvent(new CustomEvent("bcba-prod-v3-saved-changed")); } catch {}
@@ -275,6 +310,14 @@ export async function saveReportV3(opts: {
   const list = readSavedReportsV3();
   list.unshift(meta);
   writeSavedV3(list);
+  void upsertRemoteSnapshot("bcba_productivity_v3", {
+    clientKey: meta.id,
+    name: meta.name,
+    primaryFileName: meta.fileName,
+    auxFileNames: [],
+    insights: [],
+    savedAt: meta.savedAt,
+  });
   return meta;
 }
 export async function getSavedReportRowsV3(id: string): Promise<any[]> {
@@ -284,6 +327,7 @@ export async function getSavedReportRowsV3(id: string): Promise<any[]> {
 export async function deleteSavedReportV3(id: string) {
   writeSavedV3(readSavedReportsV3().filter(r => r.id !== id));
   await idbDel(id);
+  void deleteRemoteSnapshot("bcba_productivity_v3", id);
 }
 
 /* Last session persistence */
