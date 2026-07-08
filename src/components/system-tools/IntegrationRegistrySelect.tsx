@@ -11,13 +11,18 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { BLOSSOM_INTEGRATIONS } from "@/lib/os/integrations/integrationRegistry";
+import { useIntegrationCatalogOptions } from "@/hooks/useIntegrationCatalog";
 
 export const NONE_INTEGRATION_VALUE = "__none__";
 
-/** All non-internal integrations, sorted by display name. */
+/**
+ * Static fallback options derived from the built-in BLOSSOM_INTEGRATIONS
+ * registry. Runtime callers should prefer the live catalog via
+ * `useIntegrationCatalogOptions` so admin registry edits are respected.
+ */
 export function getIntegrationSelectOptions(): { id: string; label: string }[] {
   return BLOSSOM_INTEGRATIONS
-    .filter((i) => !i.internalOnly)
+    .filter((i) => !i.internalOnly && i.status !== "disabled")
     .map((i) => ({ id: i.id, label: i.displayName ?? i.name }))
     .sort((a, b) => a.label.localeCompare(b.label));
 }
@@ -33,7 +38,9 @@ export function IntegrationRegistrySelect({
   label?: string | null;
   id?: string;
 }) {
-  const options = getIntegrationSelectOptions();
+  // Live-loaded from `integration_catalog` so Settings > Integration Registry
+  // edits (add / disable) immediately update every dropdown in the app.
+  const options = useIntegrationCatalogOptions();
   const current = value && value.length > 0 ? value : NONE_INTEGRATION_VALUE;
   return (
     <div>
