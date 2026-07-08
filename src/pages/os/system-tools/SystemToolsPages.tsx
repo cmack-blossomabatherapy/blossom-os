@@ -488,7 +488,11 @@ export function WorkflowInventoryPage() {
               {r.last_verified_at ? (
                 <span>
                   {new Date(r.last_verified_at).toLocaleDateString()}
-                  {r.verified_by ? <span className="ml-1 text-muted-foreground/70">by {r.verified_by}</span> : null}
+                  {r.verified_by_name || r.verified_by ? (
+                    <span className="ml-1 text-muted-foreground/70">
+                      by {r.verified_by_name ?? r.verified_by}
+                    </span>
+                  ) : null}
                 </span>
               ) : "—"}
             </td>
