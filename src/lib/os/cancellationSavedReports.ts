@@ -166,14 +166,18 @@ export async function saveCancellationReport(
   if (idx >= 0) list[idx] = meta; else list.unshift(meta);
   writeMetaList(list);
   try { window.dispatchEvent(new CustomEvent("cancellation-saved-reports-changed")); } catch {}
-  void upsertRemoteSnapshot("cancellation_command_center", {
-    clientKey: meta.id,
-    name: meta.name,
-    primaryFileName: meta.scheduleFileName,
-    auxFileNames: [meta.billingFileName, ...(meta.authFileNames ?? [])].filter(Boolean) as string[],
-    insights: meta.insights ?? [],
-    savedAt: meta.savedAt,
-  });
+  try {
+    await upsertRemoteSnapshot("cancellation_command_center", {
+      clientKey: meta.id,
+      name: meta.name,
+      primaryFileName: meta.scheduleFileName,
+      auxFileNames: [meta.billingFileName, ...(meta.authFileNames ?? [])].filter(Boolean) as string[],
+      insights: meta.insights ?? [],
+      savedAt: meta.savedAt,
+    });
+  } catch (err) {
+    console.warn("[cancellationSavedReports] remote save failed; kept local copy", err);
+  }
   return { ...meta, scheduleRaws: entry.scheduleRaws, billingRaws: entry.billingRaws, authRecords: entry.authRecords };
 }
 
@@ -181,7 +185,11 @@ export async function deleteCancellationSavedReport(id: string): Promise<void> {
   writeMetaList(readMetaList().filter((r) => r.id !== id));
   await idbDelete(id);
   try { window.dispatchEvent(new CustomEvent("cancellation-saved-reports-changed")); } catch {}
-  void deleteRemoteSnapshot("cancellation_command_center", id);
+  try {
+    await deleteRemoteSnapshot("cancellation_command_center", id);
+  } catch (err) {
+    console.warn("[cancellationSavedReports] remote delete failed; local removed", err);
+  }
 }
 
 export async function getCancellationSavedReport(id: string): Promise<CancellationSavedReport | undefined> {
