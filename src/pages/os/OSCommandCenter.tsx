@@ -134,12 +134,10 @@ type AttentionItem = {
 };
 
 type Task = { id: string; title: string; meta: string; due: string; urgency: Urgency; category: string };
-const MESSAGES = [
-  { id: "m1", channel: "#state-leadership", from: "Director Ops", preview: "Reviewing Q2 staffing forecast — please confirm regional targets by EOD.", time: "9:14 AM", mentions: 1 },
-  { id: "m2", channel: "#staffing", from: "Scheduling Lead", preview: "Greene match approved. Pairing email queued.", time: "8:51 AM", mentions: 0 },
-  { id: "m3", channel: "DM · Recruiter", from: "Taylor B.", preview: "Two BCBA candidates onsite Thursday — need your interview slot.", time: "8:32 AM", mentions: 1 },
-  { id: "m4", channel: "#escalations", from: "QA Lead", preview: "Patel PR rework needed before billing cycle.", time: "Yesterday", mentions: 0 },
-];
+// Hardcoded MESSAGES sample data was removed as part of Executive Leadership
+// persistence hardening. Any leadership-facing feed on this page must come
+// from durable Supabase records (executive activity, system_issues, or
+// leadership updates) — never from a static array pretending to be live.
 
 /* ---------- page ---------- */
 

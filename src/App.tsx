@@ -495,6 +495,23 @@ const MARKETING_ROLES_WITH_BD = [
   ...MARKETING_ROLES,
   "business_development",
 ] as const;
+// Growth Snapshot is executive-visible: leadership roles need read
+// access to /marketing/state-growth in addition to marketing.
+const GROWTH_SNAPSHOT_ROLES = [
+  ...MARKETING_ROLES,
+  "systems_admin",
+  "executive_leadership",
+  "exec",
+  "executive",
+  "ceo",
+  "coo",
+  "operations_leadership",
+  "ops_manager",
+  "director_of_operations",
+  "operations_manager",
+  "marketing_director",
+  "marketing_manager",
+] as const;
 // Canonical Business Development access model. `/business-development`
 // must be reachable by BD as well as marketing_growth_lead (which has
 // BD in its role menu and live-path set) and Admin / Super Admin.
@@ -986,7 +1003,7 @@ const App = () => (
                   <Route path="/marketing/outreach" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingOutreach /></PermissionRoute>} />
                   <Route path="/marketing/reputation" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingReputation /></PermissionRoute>} />
                   <Route path="/marketing/attribution" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingAttribution /></PermissionRoute>} />
-                  <Route path="/marketing/state-growth" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingStateGrowth /></PermissionRoute>} />
+                  <Route path="/marketing/state-growth" element={<PermissionRoute allowedRoles={[...GROWTH_SNAPSHOT_ROLES]}><MarketingStateGrowth /></PermissionRoute>} />
                   {/* /marketing/reports is a redirect-only alias. The Marketing menu never links here — Reports lives at /reports. */}
                   <Route path="/marketing/reports" element={<Navigate to="/reports?category=marketing" replace />} />
                   {/* Phase 4 — Growth & Admissions */}
