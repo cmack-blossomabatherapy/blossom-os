@@ -823,6 +823,47 @@ export default function OSCommandCenter() {
 
         {/* ============ FEED ============ */}
         <Card>
+          <SectionHeader
+            icon={Sparkles}
+            title="Leadership Activity"
+            sub="Live executive decisions, risks, updates, and work items"
+          />
+          <div className="px-5 pb-5 pt-4">
+            <div className="space-y-2">
+              {activityLoading && (
+                <p className="text-[12px] text-muted-foreground px-1 py-3">Loading leadership activity…</p>
+              )}
+              {!activityLoading && leadershipActivity.length === 0 && (
+                <p className="text-[12px] text-muted-foreground px-1 py-3">
+                  No leadership activity yet. Decisions, risks, and updates logged by leadership will appear here.
+                </p>
+              )}
+              {leadershipActivity.map((a) => {
+                const title = a.summary?.trim() || a.action.replace(/_/g, " ");
+                const entity = a.entity_type ? `${a.entity_type.replace(/_/g, " ")}` : null;
+                return (
+                  <div
+                    key={a.id}
+                    className="flex items-start gap-3 rounded-xl border border-foreground/[0.06] bg-white/70 p-3"
+                  >
+                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[hsl(265_85%_96%)] text-[hsl(265_70%_55%)]">
+                      <Sparkles className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12.5px] font-semibold leading-snug capitalize">{title}</p>
+                      <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+                        {new Date(a.created_at).toLocaleString()}
+                        {entity ? ` · ${entity}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
+
+        <Card>
           <SectionHeader icon={Radio} title="Live Operations Feed" sub="Everything that moved in your state" />
           <div className="px-5 pb-5 pt-4">
             <div className="space-y-2">
