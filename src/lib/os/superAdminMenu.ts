@@ -175,6 +175,7 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
     defaultCollapsed: true,
     items: [
       { label: "Integrations",              to: "/admin/integrations",                 icon: Plug },
+      { label: "Integration Registry",      to: "/system/integration-registry",        icon: Plug },
       { label: "Email Command Center",      to: "/system/email-command-center",        icon: Mail },
       { label: "Automated Emails",          to: "/admin/automated-emails",             icon: Mail },
       { label: "BCBA Productivity Uploads", to: "/system/bcba-productivity-uploads",   icon: UploadCloud },
