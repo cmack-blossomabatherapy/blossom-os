@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  listRemoteFollowups,
+  upsertRemoteFollowup,
+} from "@/lib/os/reportPersistence";
+import {
   Upload, FileSpreadsheet, Download, Sparkles, AlertTriangle, CheckCircle2,
   Save, Trash2, X, CalendarRange, DollarSign, Clock, MapPin, Users, Stethoscope,
   Printer, TrendingDown, TrendingUp, Search,
@@ -395,6 +399,26 @@ export default function CancellationCommandCenter() {
   useEffect(() => {
     try { localStorage.setItem("cancellation-cc-followups", JSON.stringify(followUps)); } catch {}
   }, [followUps]);
+  // Hydrate follow-ups from Supabase for logged-in users so state
+  // follows across devices. Local values render instantly; remote
+  // overlays once loaded.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const remote = await listRemoteFollowups("cancellation_command_center");
+      if (cancelled || remote.length === 0) return;
+      setFollowUps((prev) => {
+        const next = { ...prev };
+        for (const r of remote) {
+          if (r.status === "todo" || r.status === "contacted" || r.status === "resolved") {
+            next[r.rowKey] = r.status;
+          }
+        }
+        return next;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const rowKey = (r: ScheduleRow) =>
     `${r.date?.toISOString().slice(0,10) || ""}|${r.client}|${r.rbt}|${r.code}`;
   const cycleFollowUp = (key: string) => setFollowUps(prev => {
@@ -402,7 +426,9 @@ export default function CancellationCommandCenter() {
     const next: Record<string, "todo" | "contacted" | "resolved"> = {
       todo: "contacted" as const, contacted: "resolved" as const, resolved: "todo" as const,
     } as any;
-    return { ...prev, [key]: next[cur] };
+    const status = next[cur];
+    void upsertRemoteFollowup("cancellation_command_center", key, status);
+    return { ...prev, [key]: status };
   });
 
   const activeFilterCount = [
