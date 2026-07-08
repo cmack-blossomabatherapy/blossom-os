@@ -1157,8 +1157,11 @@ const App = () => (
                   <Route path="/hr/employees/:id" element={<PermissionRoute permission="hr.employees.view"><EmployeeProfile /></PermissionRoute>} />
                   <Route path="/hr/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
                   <Route path="/hr/org-chart/manage" element={<PermissionRoute permission="hr.employees.edit"><OrgChartManage /></PermissionRoute>} />
-                  {/* Blossom Identity System — top-level Operations route alias */}
-                  <Route path="/org-chart" element={<Navigate to="/hr/org-chart" replace />} />
+                  {/* Blossom Identity System — canonical top-level /org-chart route
+                      is mounted above with role-guarded <OrgChartPage />. The old
+                      redirect to /hr/org-chart was removed so Executive Leadership
+                      lands on the unified org chart. HR-specific paths remain at
+                      /hr/org-chart and /hr/org-chart/manage. */}
                   <Route path="/hr/onboarding" element={<PermissionRoute permission="hr.onboarding.manage"><OnboardingCenter /></PermissionRoute>} />
                   <Route path="/hr/time-clock" element={<PermissionRoute permission="hr.timeclock.view"><TimeClock /></PermissionRoute>} />
                   <Route path="/hr/hours" element={<PermissionRoute permission="hr.hours.view"><Hours /></PermissionRoute>} />
