@@ -427,7 +427,15 @@ export default function CancellationCommandCenter() {
       todo: "contacted" as const, contacted: "resolved" as const, resolved: "todo" as const,
     } as any;
     const status = next[cur];
-    void upsertRemoteFollowup("cancellation_command_center", key, status);
+    // Persist to Supabase — await through a promise so failures surface to
+    // logs. Local state above is the offline fallback.
+    (async () => {
+      try {
+        await upsertRemoteFollowup("cancellation_command_center", key, status);
+      } catch (err) {
+        console.warn("[CancellationCommandCenter] remote follow-up sync failed", err);
+      }
+    })();
     return { ...prev, [key]: status };
   });
 
