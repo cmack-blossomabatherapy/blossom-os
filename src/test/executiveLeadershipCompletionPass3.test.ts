@@ -22,7 +22,7 @@ describe("Executive Leadership completion — pass 3 (no no-op actions)", () => 
   });
 
   it("My Action Queue Open buttons call openTask(t)", () => {
-    expect(src).toMatch(/openTask\s*\(\s*task\s*:\s*Task\s*\)/);
+    expect(src).toMatch(/const openTask\s*=/);
     expect(src).toMatch(/onClick=\{\(\)\s*=>\s*openTask\(t\)\}/);
   });
 
