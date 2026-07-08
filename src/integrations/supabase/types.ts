@@ -16953,6 +16953,39 @@ export type Database = {
           },
         ]
       }
+      report_followups: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          row_key: string
+          scope: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          row_key: string
+          scope: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          row_key?: string
+          scope?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       report_requests: {
         Row: {
           ai_assist: boolean
@@ -17007,6 +17040,48 @@ export type Database = {
           title?: string
           updated_at?: string
           visualization?: string | null
+        }
+        Relationships: []
+      }
+      report_saved_snapshots: {
+        Row: {
+          aux_file_names: Json
+          client_id: string
+          created_at: string
+          id: string
+          insights: Json
+          name: string
+          primary_file_name: string | null
+          saved_at: string
+          scope: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aux_file_names?: Json
+          client_id: string
+          created_at?: string
+          id?: string
+          insights?: Json
+          name: string
+          primary_file_name?: string | null
+          saved_at?: string
+          scope: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aux_file_names?: Json
+          client_id?: string
+          created_at?: string
+          id?: string
+          insights?: Json
+          name?: string
+          primary_file_name?: string | null
+          saved_at?: string
+          scope?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
