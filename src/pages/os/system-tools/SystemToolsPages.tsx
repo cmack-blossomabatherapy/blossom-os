@@ -27,6 +27,7 @@ import {
   type SystemIssue, type SystemWorkflow,
 } from "@/hooks/useSystemTools";
 import { SystemToolAuditPanel, AuditHistoryButton } from "@/components/system-tools/SystemToolAuditPanel";
+import { IntegrationRegistrySelect } from "@/components/system-tools/IntegrationRegistrySelect";
 import {
   ISSUE_STATUSES as CANONICAL_ISSUE_STATUSES,
   normalizeIssueStatus,
@@ -312,7 +313,10 @@ function WorkflowDialog({
               </Select>
             </div>
           </div>
-          <div><Label>Related integration ID</Label><Input value={relatedIntegration ?? ""} onChange={(e) => setRelatedIntegration(e.target.value)} placeholder="e.g. retell, viventium, centralreach" /></div>
+           <IntegrationRegistrySelect
+             value={relatedIntegration ?? ""}
+             onChange={(v) => setRelatedIntegration(v)}
+           />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -324,7 +328,7 @@ function WorkflowDialog({
 }
 
 export function WorkflowInventoryPage() {
-  const { isAdmin, displayName } = useAuth();
+  const { isAdmin, displayName, user } = useAuth();
   const { rows, loading, create, update, remove } = useSystemWorkflows();
   const { toast } = useToast();
   const [q, setQ] = useState("");
@@ -332,9 +336,19 @@ export function WorkflowInventoryPage() {
   const [priorityFilter, setPriorityFilter] = useState(ALL_OPTION);
   const [riskFilter, setRiskFilter] = useState(ALL_OPTION);
   const [departmentFilter, setDepartmentFilter] = useState(ALL_OPTION);
+  const [ownerFilter, setOwnerFilter] = useState(ALL_OPTION);
+  const [integrationFilter, setIntegrationFilter] = useState(ALL_OPTION);
 
   const departments = useMemo(
     () => Array.from(new Set(rows.map((r) => r.department).filter(Boolean))) as string[],
+    [rows],
+  );
+  const owners = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.owner_name).filter(Boolean))) as string[],
+    [rows],
+  );
+  const integrationsInUse = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.related_integration_id).filter(Boolean))) as string[],
     [rows],
   );
 
@@ -345,11 +359,13 @@ export function WorkflowInventoryPage() {
       if (priorityFilter !== ALL_OPTION && r.priority !== priorityFilter) return false;
       if (riskFilter !== ALL_OPTION && (r.risk_level ?? "") !== riskFilter) return false;
       if (departmentFilter !== ALL_OPTION && (r.department ?? "") !== departmentFilter) return false;
+      if (ownerFilter !== ALL_OPTION && (r.owner_name ?? "") !== ownerFilter) return false;
+      if (integrationFilter !== ALL_OPTION && (r.related_integration_id ?? "") !== integrationFilter) return false;
       if (!needle) return true;
       return [r.name, r.department, r.owner_name, r.current_source, r.future_module, r.notes, r.related_route]
         .filter(Boolean).some((s) => String(s).toLowerCase().includes(needle));
     });
-  }, [rows, q, statusFilter, priorityFilter, riskFilter, departmentFilter]);
+  }, [rows, q, statusFilter, priorityFilter, riskFilter, departmentFilter, ownerFilter, integrationFilter]);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this workflow?")) return;
@@ -357,9 +373,9 @@ export function WorkflowInventoryPage() {
     catch (e) { toast({ title: "Delete failed", description: (e as Error).message, variant: "destructive" }); }
   }
 
-  async function quickStatus(id: string, next: string, action: string) {
+  async function quickStatus(id: string, next: string, action: string, auditAction: string) {
     try {
-      await update(id, { status: next });
+      await update(id, { status: next }, { action: auditAction });
       toast({ title: `Marked ${action}` });
     } catch (e) {
       toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
@@ -368,10 +384,15 @@ export function WorkflowInventoryPage() {
 
   async function quickVerify(id: string) {
     try {
-      await update(id, {
-        last_verified_at: new Date().toISOString(),
-        verified_by: displayName ?? null,
-      });
+      await update(
+        id,
+        {
+          last_verified_at: new Date().toISOString(),
+          verified_by: user?.id ?? null,
+          verified_by_name: displayName ?? null,
+        },
+        { action: "workflow_verified" },
+      );
       toast({ title: "Marked verified" });
     } catch (e) {
       toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
@@ -379,7 +400,7 @@ export function WorkflowInventoryPage() {
   }
 
   async function assignOwner(id: string, owner: string | null) {
-    await update(id, { owner_name: owner });
+    await update(id, { owner_name: owner }, { action: "workflow_owner_assigned" });
   }
 
   // Deep-link support: /system/workflow-inventory?selected=<id> opens the
@@ -422,6 +443,12 @@ export function WorkflowInventoryPage() {
         <SelectFilter label="Risk" value={riskFilter} onChange={setRiskFilter} options={RISK_LEVELS} />
         {departments.length > 0 ? (
           <SelectFilter label="Dept" value={departmentFilter} onChange={setDepartmentFilter} options={departments} />
+        ) : null}
+        {owners.length > 0 ? (
+          <SelectFilter label="Owner" value={ownerFilter} onChange={setOwnerFilter} options={owners} />
+        ) : null}
+        {integrationsInUse.length > 0 ? (
+          <SelectFilter label="Integration" value={integrationFilter} onChange={setIntegrationFilter} options={integrationsInUse} />
         ) : null}
       </div>
       <TableShell columns={["Workflow", "Department", "Owner", "Status", "Priority", "Risk", "Related", "Last verified", ""]}>
