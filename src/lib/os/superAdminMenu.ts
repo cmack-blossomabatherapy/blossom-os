@@ -182,6 +182,7 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
       { label: "Workflow Inventory",        to: "/system/workflow-inventory",          icon: Workflow },
       { label: "Request Intake",            to: "/system/request-intake",              icon: Inbox },
       { label: "Issue Tracker",             to: "/system/issue-tracker",               icon: Bug },
+      { label: "Audit Log Viewer",          to: "/system/audit-log",                   icon: History },
       { label: "System Settings",           to: "/settings",                           icon: Settings },
     ],
   },
