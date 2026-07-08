@@ -481,7 +481,10 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/operations/department-health",
     "/operations/escalations",
     "/system/request-intake",
+    "/org-chart",
     "/phone",
+    "/academy",
+    "/resource-library",
   ]),
   operations_leadership: new Set<string>([
     "/operations/command-center",
