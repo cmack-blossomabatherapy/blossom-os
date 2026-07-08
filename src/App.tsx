@@ -404,6 +404,7 @@ import {
   WorkflowInventoryPage, RequestIntakePage, IssueTrackerPage,
 } from "./pages/os/system-tools/SystemToolsPages";
 import BcbaProductivityUploads from "./pages/os/system/BcbaProductivityUploads";
+import IntegrationRegistryPage from "./pages/os/system-tools/IntegrationRegistryPage";
 import EmailCommandCenter from "./pages/os/system/EmailCommandCenter";
 import BlossomOSHome from "./pages/os/home/BlossomOSHome";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
