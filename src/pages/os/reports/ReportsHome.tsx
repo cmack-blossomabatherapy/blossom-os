@@ -357,7 +357,7 @@ export default function ReportsHome() {
                 </Link>
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) handleDeleteV3(sr.id); }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) void handleDeleteV3(sr.id); }}
                   className="absolute right-2 top-2 rounded-full p-1.5 text-muted-foreground/60 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                   aria-label="Delete saved report"
                 >
@@ -393,7 +393,7 @@ export default function ReportsHome() {
                 </Link>
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) handleDeleteCancelSaved(sr.id); }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) void handleDeleteCancelSaved(sr.id); }}
                   className="absolute right-2 top-2 rounded-full p-1.5 text-muted-foreground/60 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                   aria-label="Delete saved report"
                 >
