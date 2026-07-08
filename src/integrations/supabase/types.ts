@@ -18704,6 +18704,7 @@ export type Database = {
           affected_state: string | null
           area: string | null
           closed_by: string | null
+          closed_by_name: string | null
           created_at: string
           description: string | null
           desired_outcome: string | null
@@ -18736,6 +18737,7 @@ export type Database = {
           affected_state?: string | null
           area?: string | null
           closed_by?: string | null
+          closed_by_name?: string | null
           created_at?: string
           description?: string | null
           desired_outcome?: string | null
@@ -18768,6 +18770,7 @@ export type Database = {
           affected_state?: string | null
           area?: string | null
           closed_by?: string | null
+          closed_by_name?: string | null
           created_at?: string
           description?: string | null
           desired_outcome?: string | null
@@ -18865,6 +18868,7 @@ export type Database = {
           status: string
           updated_at: string
           verified_by: string | null
+          verified_by_name: string | null
         }
         Insert: {
           created_at?: string
@@ -18885,6 +18889,7 @@ export type Database = {
           status?: string
           updated_at?: string
           verified_by?: string | null
+          verified_by_name?: string | null
         }
         Update: {
           created_at?: string
@@ -18905,6 +18910,7 @@ export type Database = {
           status?: string
           updated_at?: string
           verified_by?: string | null
+          verified_by_name?: string | null
         }
         Relationships: []
       }
