@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  listRemoteFollowups,
+  upsertRemoteFollowup,
+} from "@/lib/os/reportPersistence";
+import {
   Upload, FileSpreadsheet, Download, Sparkles, AlertTriangle, CheckCircle2,
   Save, Trash2, X, CalendarRange, DollarSign, Clock, MapPin, Users, Stethoscope,
   Printer, TrendingDown, TrendingUp, Search,
