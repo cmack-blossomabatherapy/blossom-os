@@ -461,13 +461,11 @@ export default function OpsExecutiveDashboard() {
           )}
         </OpsCard>
 
-        <OpsCard title="Leadership priorities" hint={`${priorities.length} pinned`}>
+        <OpsCard title="Leadership priorities" hint={`${priorityItems.length} pinned`}>
           <form
             onSubmit={(ev) => {
               ev.preventDefault();
-              const v = draft.trim();
-              if (!v) return;
-              savePriorities([v, ...priorities].slice(0, 8));
+              pinPriority(draft);
               setDraft("");
             }}
             className="mb-3 flex items-center gap-2 rounded-xl border border-border/60 bg-background/40 px-2 py-1.5"
@@ -487,21 +485,21 @@ export default function OpsExecutiveDashboard() {
               <Plus className="h-3.5 w-3.5" />
             </button>
           </form>
-          {priorities.length === 0 ? (
+          {priorityItems.length === 0 ? (
             <EmptyRow>No pinned priorities. Pin operational focuses to keep them visible.</EmptyRow>
           ) : (
             <ul className="space-y-1.5">
-              {priorities.map((p, idx) => (
+              {priorityItems.map((item) => (
                 <li
-                  key={`${p}-${idx}`}
+                  key={item.id}
                   className="group flex items-start justify-between gap-2 rounded-xl border border-border/60 px-3 py-2"
                 >
                   <div className="flex items-start gap-2 min-w-0">
                     <CircleDot className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                    <span className="text-[13px] text-foreground">{p}</span>
+                    <span className="text-[13px] text-foreground">{item.title}</span>
                   </div>
                   <button
-                    onClick={() => savePriorities(priorities.filter((_, i) => i !== idx))}
+                    onClick={() => unpinPriority(item.id)}
                     className="opacity-0 transition group-hover:opacity-100"
                     aria-label="Remove"
                   >
