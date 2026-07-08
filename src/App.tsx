@@ -1003,7 +1003,7 @@ const App = () => (
                   <Route path="/marketing/outreach" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingOutreach /></PermissionRoute>} />
                   <Route path="/marketing/reputation" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingReputation /></PermissionRoute>} />
                   <Route path="/marketing/attribution" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingAttribution /></PermissionRoute>} />
-                  <Route path="/marketing/state-growth" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingStateGrowth /></PermissionRoute>} />
+                  <Route path="/marketing/state-growth" element={<PermissionRoute allowedRoles={[...GROWTH_SNAPSHOT_ROLES]}><MarketingStateGrowth /></PermissionRoute>} />
                   {/* /marketing/reports is a redirect-only alias. The Marketing menu never links here — Reports lives at /reports. */}
                   <Route path="/marketing/reports" element={<Navigate to="/reports?category=marketing" replace />} />
                   {/* Phase 4 — Growth & Admissions */}
