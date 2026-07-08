@@ -107,6 +107,40 @@ export function readCancellationSavedReports(): CancellationSavedReport[] {
   return readMetaList().map((m) => ({ ...m, scheduleRaws: [], billingRaws: [], authRecords: [] }));
 }
 
+/**
+ * Async loader that pulls from Supabase for logged-in users and merges
+ * with local cache. Supabase entries win on duplicates. Refreshes the
+ * local cache so subsequent sync reads reflect remote state.
+ */
+export async function loadCancellationSavedReports(): Promise<CancellationSavedReport[]> {
+  const local = readMetaList();
+  try {
+    const remote = await listRemoteSnapshots("cancellation_command_center");
+    if (remote.length === 0) {
+      return local.map((m) => ({ ...m, scheduleRaws: [], billingRaws: [], authRecords: [] }));
+    }
+    const byId = new Map<string, SavedMeta>();
+    for (const m of local) byId.set(m.id, m);
+    for (const r of remote) {
+      const [billing, ...auth] = r.auxFileNames ?? [];
+      byId.set(r.clientKey, {
+        id: r.clientKey,
+        name: r.name,
+        savedAt: r.savedAt,
+        scheduleFileName: r.primaryFileName ?? "",
+        billingFileName: billing ?? undefined,
+        authFileNames: auth ?? [],
+        insights: r.insights ?? [],
+      });
+    }
+    const merged = [...byId.values()].sort((a, b) => b.savedAt - a.savedAt);
+    writeMetaList(merged);
+    return merged.map((m) => ({ ...m, scheduleRaws: [], billingRaws: [], authRecords: [] }));
+  } catch {
+    return local.map((m) => ({ ...m, scheduleRaws: [], billingRaws: [], authRecords: [] }));
+  }
+}
+
 export async function saveCancellationReport(
   entry: Omit<CancellationSavedReport, "id" | "savedAt"> & { id?: string }
 ): Promise<CancellationSavedReport> {
@@ -132,6 +166,14 @@ export async function saveCancellationReport(
   if (idx >= 0) list[idx] = meta; else list.unshift(meta);
   writeMetaList(list);
   try { window.dispatchEvent(new CustomEvent("cancellation-saved-reports-changed")); } catch {}
+  void upsertRemoteSnapshot("cancellation_command_center", {
+    clientKey: meta.id,
+    name: meta.name,
+    primaryFileName: meta.scheduleFileName,
+    auxFileNames: [meta.billingFileName, ...(meta.authFileNames ?? [])].filter(Boolean) as string[],
+    insights: meta.insights ?? [],
+    savedAt: meta.savedAt,
+  });
   return { ...meta, scheduleRaws: entry.scheduleRaws, billingRaws: entry.billingRaws, authRecords: entry.authRecords };
 }
 
@@ -139,6 +181,7 @@ export async function deleteCancellationSavedReport(id: string): Promise<void> {
   writeMetaList(readMetaList().filter((r) => r.id !== id));
   await idbDelete(id);
   try { window.dispatchEvent(new CustomEvent("cancellation-saved-reports-changed")); } catch {}
+  void deleteRemoteSnapshot("cancellation_command_center", id);
 }
 
 export async function getCancellationSavedReport(id: string): Promise<CancellationSavedReport | undefined> {
