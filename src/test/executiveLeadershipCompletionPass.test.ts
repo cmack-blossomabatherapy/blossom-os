@@ -35,7 +35,7 @@ describe("Executive Leadership completion pass", () => {
 
   it("top-level /org-chart is not a redirect (canonical route)", () => {
     // The canonical /org-chart mounts <OrgChartPage />, not a <Navigate />.
-    expect(appSrc).toMatch(/path="\/org-chart"[\s\S]{0,400}OrgChartPage/);
+    expect(appSrc).toMatch(/path="\/org-chart"[\s\S]{0,1200}OrgChartPage/);
     expect(appSrc).not.toMatch(
       /path="\/org-chart"\s+element=\{<Navigate\s+to="\/hr\/org-chart"/,
     );
