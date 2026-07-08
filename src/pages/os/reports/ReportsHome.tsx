@@ -159,11 +159,15 @@ export default function ReportsHome() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
-  function handleDeleteCancelSaved(id: string) {
-    void deleteCancellationSavedReport(id).then(() => setCancelSaved(readCancellationSavedReports()));
+  async function handleDeleteCancelSaved(id: string) {
+    await deleteCancellationSavedReport(id);
+    // Rehydrate from Supabase (falls back to local cache offline) so the
+    // deletion is reflected across devices, not just the local list.
+    setCancelSaved(await loadCancellationSavedReports());
   }
-  function handleDeleteV3(id: string) {
-    void deleteSavedReportV3(id).then(() => setSavedV3(readSavedReportsV3()));
+  async function handleDeleteV3(id: string) {
+    await deleteSavedReportV3(id);
+    setSavedV3(await loadSavedReportsV3());
   }
 
   // Recently viewed = real recent IDs only (no padding with featured — keeps it honest).
