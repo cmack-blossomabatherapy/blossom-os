@@ -501,13 +501,13 @@ export function WorkflowInventoryPage() {
                     trigger={<Button size="icon" variant="ghost" className="h-8 w-8" title="Assign owner" aria-label="Assign owner"><UserPlus className="h-4 w-4" /></Button>}
                   />
                   {r.status !== "Active" ? (
-                    <QuickActionButton icon={CheckCircle2} label="Mark active" tone="success" onClick={() => quickStatus(r.id, "Active", "active")} />
+                    <QuickActionButton icon={CheckCircle2} label="Mark active" tone="success" onClick={() => quickStatus(r.id, "Active", "active", "workflow_mark_active")} />
                   ) : null}
                   {r.status !== "Inactive" ? (
-                    <QuickActionButton icon={PauseCircle} label="Mark needs review" onClick={() => quickStatus(r.id, "Inactive", "needs review")} />
+                    <QuickActionButton icon={PauseCircle} label="Mark needs review" onClick={() => quickStatus(r.id, "Inactive", "needs review", "workflow_mark_needs_review")} />
                   ) : null}
                   {r.status !== "Replaced" ? (
-                    <QuickActionButton icon={ArchiveRestore} label="Mark deprecated" onClick={() => quickStatus(r.id, "Replaced", "deprecated")} />
+                    <QuickActionButton icon={ArchiveRestore} label="Mark deprecated" onClick={() => quickStatus(r.id, "Replaced", "deprecated", "workflow_mark_deprecated")} />
                   ) : null}
                   <QuickActionButton icon={ShieldAlert} label="Mark verified" onClick={() => quickVerify(r.id)} />
                   <AuditHistoryButton
