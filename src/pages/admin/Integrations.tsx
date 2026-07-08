@@ -1586,7 +1586,7 @@ export default function Integrations() {
                         key={i.id}
                         integration={i}
                         onOpen={() => setSelected(i)}
-                        onToggle={(next) =>
+                        onToggle={(next) => handleToggleIntegration(i.id, next)}
                           setEnabledMap((m) => ({ ...m, [i.id]: next }))
                         }
                       />
@@ -1642,7 +1642,7 @@ export default function Integrations() {
                       key={i.id}
                       integration={i}
                       onOpen={() => setSelected(i)}
-                      onToggle={(next) =>
+                      onToggle={(next) => handleToggleIntegration(i.id, next)}
                         setEnabledMap((m) => ({ ...m, [i.id]: next }))
                       }
                     />
