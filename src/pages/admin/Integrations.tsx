@@ -1587,8 +1587,6 @@ export default function Integrations() {
                         integration={i}
                         onOpen={() => setSelected(i)}
                         onToggle={(next) => handleToggleIntegration(i.id, next)}
-                          setEnabledMap((m) => ({ ...m, [i.id]: next }))
-                        }
                       />
                     ))}
                   </div>
@@ -1643,8 +1641,6 @@ export default function Integrations() {
                       integration={i}
                       onOpen={() => setSelected(i)}
                       onToggle={(next) => handleToggleIntegration(i.id, next)}
-                        setEnabledMap((m) => ({ ...m, [i.id]: next }))
-                      }
                     />
                   ))}
                 </div>
