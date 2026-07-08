@@ -1,3 +1,9 @@
+import {
+  listRemoteSnapshots,
+  upsertRemoteSnapshot,
+  deleteRemoteSnapshot,
+} from "./reportPersistence";
+
 export type CancellationSavedReport = {
   id: string;
   name: string;
