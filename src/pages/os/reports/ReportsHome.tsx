@@ -138,6 +138,18 @@ export default function ReportsHome() {
       setCancelSaved(readCancellationSavedReports());
       setSavedV3(readSavedReportsV3());
     };
+    // Kick off Supabase-backed hydration so the lists follow the user
+    // across devices. Local values render instantly; remote overwrites
+    // once loaded. Also runs the one-time local -> Supabase migration.
+    void (async () => {
+      await migrateLocalReportsIfNeeded();
+      const [cancelRemote, v3Remote] = await Promise.all([
+        loadCancellationSavedReports(),
+        loadSavedReportsV3(),
+      ]);
+      setCancelSaved(cancelRemote);
+      setSavedV3(v3Remote);
+    })();
     window.addEventListener("cancellation-saved-reports-changed", refresh);
     window.addEventListener("bcba-prod-v3-saved-changed", refresh);
     window.addEventListener("storage", refresh);
