@@ -18,6 +18,7 @@ import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { daysUntil } from "@/data/authorizations";
 import { useRecruitingCandidates } from "@/hooks/useRecruitingCandidates";
+import { useExecutiveActivity } from "@/hooks/useExecutiveActivity";
 
 /* ---------- design atoms ---------- */
 
