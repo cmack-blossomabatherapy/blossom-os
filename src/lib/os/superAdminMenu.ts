@@ -23,7 +23,7 @@ import {
   HeartHandshake, MapPin, UserCheck, Smartphone,
   Stethoscope, PhoneCall, BookUser, Activity, Bug,
   Plug, XCircle, CheckCircle2, ListTodo,
-  Phone, FileText, UploadCloud, Sparkles, Mail, IdCard,
+  Phone, FileText, UploadCloud, Sparkles, Mail, IdCard, History,
   type LucideIcon,
 } from "lucide-react";
 
