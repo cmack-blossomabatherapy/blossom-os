@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -16,10 +16,11 @@ import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { useAuth } from "@/contexts/AuthContext";
+import { useExecutiveWorkItems } from "@/hooks/useExecutiveWorkItems";
 import { cn } from "@/lib/utils";
 
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
-const PRIORITIES_KEY = "ops.leadership.priorities.v1";
+const PRIORITY_CATEGORY = "leadership_priority";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -170,20 +171,31 @@ export default function OpsExecutiveDashboard() {
     return out;
   }, [wf, ops, orgWorkforce, cr]);
 
-  // ---- Leadership priorities (local, pinned) ----
-  const [priorities, setPriorities] = useState<string[]>([]);
+  // ---- Leadership priorities (Supabase-backed executive work items) ----
+  // Pinned leadership focuses live on `executive_work_items` with
+  // category = "leadership_priority" and status = "open". Unpinning
+  // marks the item `resolved` (not deleted) so the audit trail is kept.
+  const priorityItemsQuery = useExecutiveWorkItems({ status: "open", limit: 100 });
+  const priorityItems = useMemo(
+    () => (priorityItemsQuery.data ?? []).filter((it) => it.category === PRIORITY_CATEGORY),
+    [priorityItemsQuery.data],
+  );
   const [draft, setDraft] = useState("");
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(PRIORITIES_KEY);
-      if (raw) setPriorities(JSON.parse(raw));
-    } catch {}
-  }, []);
-  function savePriorities(next: string[]) {
-    setPriorities(next);
-    try {
-      localStorage.setItem(PRIORITIES_KEY, JSON.stringify(next));
-    } catch {}
+  function pinPriority(title: string) {
+    const v = title.trim();
+    if (!v) return;
+    priorityItemsQuery.create.mutate({
+      title: v,
+      category: PRIORITY_CATEGORY,
+      status: "open",
+      priority: "normal",
+      source_page: "/executive",
+      source_system: "Blossom OS",
+      metadata: { pinned: true, display_context: "executive_dashboard_priority" },
+    });
+  }
+  function unpinPriority(id: string) {
+    priorityItemsQuery.update.mutate({ id, patch: { status: "resolved" } });
   }
 
   const name = firstName(user?.email, user?.user_metadata);
