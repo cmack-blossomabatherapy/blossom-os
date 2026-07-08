@@ -77,12 +77,14 @@ import {
   listUserOAuthConnections,
   testIntegrationConnection,
   runIntegrationSync,
+  updateIntegrationConnectionEnabled,
   type IntegrationConnectionRow,
   type IntegrationSyncRunRow,
   type IntegrationWebhookEventRow,
   type OAuthConnectionRow,
 } from "@/lib/os/integrations/backend";
 import { deriveIntegrationStatus } from "@/lib/os/integrations/statusOverlay";
+import { logSystemToolAction } from "@/hooks/useSystemTools";
 import { toast } from "sonner";
 import { IntakeCommunicationSetupPanel } from "@/components/settings/IntakeCommunicationSetupPanel";
 
