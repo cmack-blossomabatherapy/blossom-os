@@ -750,7 +750,7 @@ function IssueTriageDialog({
 }
 
 export function IssueTrackerPage() {
-  const { isAdmin, displayName } = useAuth();
+  const { isAdmin, displayName, user } = useAuth();
   const { rows, loading, create, update, remove } = useSystemIssues();
   const { toast } = useToast();
   const [q, setQ] = useState("");
@@ -758,11 +758,21 @@ export function IssueTrackerPage() {
   const [priorityFilter, setPriorityFilter] = useState(ALL_OPTION);
   const [severityFilter, setSeverityFilter] = useState(ALL_OPTION);
   const [areaFilter, setAreaFilter] = useState(ALL_OPTION);
+  const [ownerFilter, setOwnerFilter] = useState(ALL_OPTION);
+  const [integrationFilter, setIntegrationFilter] = useState(ALL_OPTION);
   const [resolveTarget, setResolveTarget] = useState<SystemIssue | null>(null);
   const [resolveNotes, setResolveNotes] = useState("");
 
   const areas = useMemo(
     () => Array.from(new Set(rows.map((r) => r.area).filter(Boolean))) as string[],
+    [rows],
+  );
+  const owners = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.owner_name).filter(Boolean))) as string[],
+    [rows],
+  );
+  const integrationsInUse = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.related_integration_id).filter(Boolean))) as string[],
     [rows],
   );
 
@@ -773,11 +783,13 @@ export function IssueTrackerPage() {
       if (priorityFilter !== ALL_OPTION && r.priority !== priorityFilter) return false;
       if (severityFilter !== ALL_OPTION && (r.severity ?? "") !== severityFilter) return false;
       if (areaFilter !== ALL_OPTION && (r.area ?? "") !== areaFilter) return false;
+      if (ownerFilter !== ALL_OPTION && (r.owner_name ?? "") !== ownerFilter) return false;
+      if (integrationFilter !== ALL_OPTION && (r.related_integration_id ?? "") !== integrationFilter) return false;
       if (!needle) return true;
       return [r.title, r.area, r.description, r.owner_name, r.reported_by_name, r.notes, r.related_route]
         .filter(Boolean).some((s) => String(s).toLowerCase().includes(needle));
     });
-  }, [rows, q, statusFilter, priorityFilter, severityFilter, areaFilter]);
+  }, [rows, q, statusFilter, priorityFilter, severityFilter, areaFilter, ownerFilter, integrationFilter]);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this issue?")) return;
@@ -785,17 +797,20 @@ export function IssueTrackerPage() {
     catch (e) { toast({ title: "Delete failed", description: (e as Error).message, variant: "destructive" }); }
   }
 
-  async function quickStatus(r: SystemIssue, next: string, action: string) {
+  async function quickStatus(r: SystemIssue, next: string, action: string, auditAction: string) {
     if (next === "Resolved") {
       setResolveTarget(r);
       setResolveNotes(r.resolution_notes ?? "");
       return;
     }
     try {
-      await update(r.id, {
-        status: next,
-        resolved_at: null,
-      });
+      const patch: Partial<SystemIssue> = { status: next };
+      if (auditAction === "issue_reopened") {
+        patch.resolved_at = null;
+        patch.closed_by = null;
+        patch.closed_by_name = null;
+      }
+      await update(r.id, patch, { action: auditAction });
       toast({ title: `Marked ${action}` });
     } catch (e) {
       toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
@@ -809,12 +824,17 @@ export function IssueTrackerPage() {
       return;
     }
     try {
-      await update(resolveTarget.id, {
-        status: "Resolved",
-        resolution_notes: resolveNotes.trim(),
-        resolved_at: new Date().toISOString(),
-        closed_by: displayName ?? null,
-      });
+      await update(
+        resolveTarget.id,
+        {
+          status: "Resolved",
+          resolution_notes: resolveNotes.trim(),
+          resolved_at: new Date().toISOString(),
+          closed_by: user?.id ?? null,
+          closed_by_name: displayName ?? null,
+        },
+        { action: "issue_resolved" },
+      );
       setResolveTarget(null);
       setResolveNotes("");
       toast({ title: "Issue resolved" });
@@ -824,15 +844,19 @@ export function IssueTrackerPage() {
   }
 
   async function assignOwner(id: string, owner: string | null) {
-    await update(id, { owner_name: owner });
+    await update(id, { owner_name: owner }, { action: "issue_owner_assigned" });
   }
 
   async function convertRequestToIssue(r: SystemIssue) {
     try {
-      await update(r.id, {
-        request_type: null,
-        status: isIssueStatus(r.status, "Open") ? "Triage" : normalizeIssueStatus(r.status),
-      });
+      await update(
+        r.id,
+        {
+          request_type: null,
+          status: isIssueStatus(r.status, "Open") ? "Triage" : normalizeIssueStatus(r.status),
+        },
+        { action: "request_converted_to_tracked_issue" },
+      );
       toast({ title: "Converted to tracked issue" });
     } catch (e) {
       toast({ title: "Convert failed", description: (e as Error).message, variant: "destructive" });
