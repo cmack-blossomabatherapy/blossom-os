@@ -152,6 +152,7 @@ export default function OSCommandCenter() {
   const regions = REGIONS_BY_STATE[activeState] ?? REGIONS_BY_STATE.NC;
 
   const { sessions, hasAnyData } = useStateOps(activeState, "4w");
+  const { rows: leadershipActivity, loading: activityLoading } = useExecutiveActivity(10);
   const series = useMemo(() => weeklySeries(sessions), [sessions]);
   const stats = useMemo(() => quickStats(sessions), [sessions]);
 
