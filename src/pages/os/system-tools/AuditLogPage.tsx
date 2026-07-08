@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { History, RefreshCw, Filter, X, ChevronRight } from "lucide-react";
+import { History, RefreshCw, Filter, X, ChevronRight, ChevronDown } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,10 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
-  useSystemToolAuditLogs,
   type SystemToolArea,
   type SystemToolAuditLog,
 } from "@/hooks/useSystemTools";
+import { useAuditLogSearch } from "@/hooks/useAuditLogSearch";
 
 const AREA_LABELS: Record<SystemToolArea, string> = {
   workflow_inventory: "Workflow Inventory",
@@ -109,15 +109,24 @@ function DiffBlock({ label, value }: { label: string; value: Record<string, unkn
 }
 
 export default function AuditLogPage() {
-  const [limit, setLimit] = useState(200);
-  const { rows, loading, error, refresh } = useSystemToolAuditLogs({ limit });
-
-  const [areaFilter, setAreaFilter] = useState<string>("all");
+  const [pageSize, setPageSize] = useState(100);
+  const [areaFilter, setAreaFilter] = useState<SystemToolArea | "all">("all");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [userQ, setUserQ] = useState("");
   const [recordQ, setRecordQ] = useState("");
   const [freeQ, setFreeQ] = useState("");
   const [detail, setDetail] = useState<SystemToolAuditLog | null>(null);
+
+  const {
+    rows, loading, loadingMore, error, hasMore, loadMore, refresh,
+  } = useAuditLogSearch({
+    toolArea: areaFilter,
+    action: actionFilter,
+    actorQuery: userQ,
+    recordQuery: recordQ,
+    freeText: freeQ,
+    pageSize,
+  });
 
   const availableActions = useMemo(() => {
     const suggested = areaFilter === "all"
@@ -127,33 +136,23 @@ export default function AuditLogPage() {
     return Array.from(new Set([...suggested, ...observed])).sort();
   }, [rows, areaFilter]);
 
+  // Server-side filtering handles the coarse cut. We still grep JSON
+  // blobs (previous_value/new_value/metadata) locally against the
+  // currently loaded page when the user typed free-text, since those
+  // columns can't be efficiently searched in PostgREST.
   const filtered = useMemo(() => {
-    const uq = userQ.trim().toLowerCase();
-    const rq = recordQ.trim().toLowerCase();
     const fq = freeQ.trim().toLowerCase();
+    if (!fq) return rows;
     return rows.filter((r) => {
-      if (areaFilter !== "all" && r.tool_area !== areaFilter) return false;
-      if (actionFilter !== "all" && r.action !== actionFilter) return false;
-      if (uq) {
-        const hay = [r.actor_email, r.actor_user_id].filter(Boolean).join(" ").toLowerCase();
-        if (!hay.includes(uq)) return false;
-      }
-      if (rq) {
-        const hay = [r.entity_id, r.entity_table].filter(Boolean).join(" ").toLowerCase();
-        if (!hay.includes(rq)) return false;
-      }
-      if (fq) {
-        const hay = [
-          r.actor_email, r.entity_table, r.entity_id, r.action,
-          JSON.stringify(r.previous_value ?? {}),
-          JSON.stringify(r.new_value ?? {}),
-          JSON.stringify(r.metadata ?? {}),
-        ].filter(Boolean).join(" ").toLowerCase();
-        if (!hay.includes(fq)) return false;
-      }
-      return true;
+      const hay = [
+        r.actor_email, r.entity_table, r.entity_id, r.action,
+        JSON.stringify(r.previous_value ?? {}),
+        JSON.stringify(r.new_value ?? {}),
+        JSON.stringify(r.metadata ?? {}),
+      ].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(fq);
     });
-  }, [rows, areaFilter, actionFilter, userQ, recordQ, freeQ]);
+  }, [rows, freeQ]);
 
   const clear = () => {
     setAreaFilter("all");
@@ -184,13 +183,13 @@ export default function AuditLogPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
               <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="100">Last 100</SelectItem>
-                <SelectItem value="200">Last 200</SelectItem>
-                <SelectItem value="500">Last 500</SelectItem>
-                <SelectItem value="1000">Last 1000</SelectItem>
+                <SelectItem value="50">50 / page</SelectItem>
+                <SelectItem value="100">100 / page</SelectItem>
+                <SelectItem value="200">200 / page</SelectItem>
+                <SelectItem value="500">500 / page</SelectItem>
               </SelectContent>
             </Select>
             <Button size="sm" variant="outline" onClick={() => refresh()} className="h-9 gap-1.5 text-xs">
@@ -206,7 +205,7 @@ export default function AuditLogPage() {
               <Select
                 value={areaFilter}
                 onValueChange={(v) => {
-                  setAreaFilter(v);
+                  setAreaFilter(v as SystemToolArea | "all");
                   setActionFilter("all");
                 }}
               >
@@ -266,7 +265,9 @@ export default function AuditLogPage() {
             <span>
               {loading
                 ? "Loading…"
-                : `${filtered.length} of ${rows.length} entries`}
+                : freeQ.trim()
+                ? `${filtered.length} matched · ${rows.length} loaded${hasMore ? "+" : ""}`
+                : `${rows.length} loaded${hasMore ? "+" : ""}`}
               {error ? ` · ${error}` : ""}
             </span>
             {hasFilters && (
@@ -287,6 +288,7 @@ export default function AuditLogPage() {
                 : "No entries match those filters."}
             </div>
           ) : (
+            <>
             <div className="divide-y divide-border/60">
               {filtered.map((r) => (
                 <button
@@ -315,6 +317,21 @@ export default function AuditLogPage() {
                 </button>
               ))}
             </div>
+            {hasMore && (
+              <div className="border-t border-border/60 p-3 flex justify-center">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void loadMore()}
+                  disabled={loadingMore}
+                  className="h-8 gap-1.5 text-xs"
+                >
+                  <ChevronDown className={cn("h-3.5 w-3.5", loadingMore && "animate-pulse")} />
+                  {loadingMore ? "Loading…" : `Load next ${pageSize}`}
+                </Button>
+              </div>
+            )}
+            </>
           )}
         </Card>
       </div>
