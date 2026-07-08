@@ -19,6 +19,7 @@ import {
   type IntegrationCatalogRow,
   type IntegrationConnectionRow,
 } from "@/lib/os/integrations/backend";
+import { BLOSSOM_INTEGRATIONS } from "@/lib/os/integrations/integrationRegistry";
 import { cn } from "@/lib/utils";
 
 type Props = { className?: string; title?: string };
@@ -52,15 +53,27 @@ export function IntegrationReadinessCard({
     };
   }, []);
 
+  // Internal/legacy integrations (e.g. Make.com) must never appear in
+  // executive-facing readiness. Filter by the frontend integration registry
+  // since the backend catalog does not yet carry an `internalOnly` column.
+  const internalOnlyIds = useMemo(
+    () => new Set(BLOSSOM_INTEGRATIONS.filter((i) => i.internalOnly).map((i) => i.id)),
+    [],
+  );
+  const visibleConns = useMemo(
+    () => conns.filter((c) => !internalOnlyIds.has(c.integration_id)),
+    [conns, internalOnlyIds],
+  );
+
   const summary = useMemo(() => {
-    const total = conns.length;
-    const healthy = conns.filter(
+    const total = visibleConns.length;
+    const healthy = visibleConns.filter(
       (c) => c.enabled && (c.status === "connected" || c.status === "active"),
     ).length;
-    const errored = conns.filter(
+    const errored = visibleConns.filter(
       (c) => c.status === "error" || c.last_error,
     ).length;
-    const disabled = conns.filter((c) => !c.enabled).length;
+    const disabled = visibleConns.filter((c) => !c.enabled).length;
     const tone: HealthTone =
       errored >= 2 ? "risk" : errored === 1 ? "attention" : healthy === 0 ? "neutral" : "healthy";
     const label =
@@ -72,17 +85,17 @@ export function IntegrationReadinessCard({
             ? "Not connected"
             : "Operational";
     return { total, healthy, errored, disabled, tone, label };
-  }, [conns]);
+  }, [visibleConns]);
 
   const needsAttention = useMemo(() => {
-    return conns
+    return visibleConns
       .filter((c) => c.status === "error" || c.last_error)
       .slice(0, 4)
       .map((c) => {
         const cat = catalog.find((k) => k.id === c.integration_id);
         return { conn: c, name: cat?.display_name ?? c.integration_id };
       });
-  }, [conns, catalog]);
+  }, [visibleConns, catalog]);
 
   return (
     <ExecCard title={title} hint="Live from the integrations backend" className={className}>
