@@ -886,6 +886,12 @@ export function IssueTrackerPage() {
         {areas.length > 0 ? (
           <SelectFilter label="Area" value={areaFilter} onChange={setAreaFilter} options={areas} />
         ) : null}
+        {owners.length > 0 ? (
+          <SelectFilter label="Owner" value={ownerFilter} onChange={setOwnerFilter} options={owners} />
+        ) : null}
+        {integrationsInUse.length > 0 ? (
+          <SelectFilter label="Integration" value={integrationFilter} onChange={setIntegrationFilter} options={integrationsInUse} />
+        ) : null}
       </div>
       <TableShell columns={["Issue", "Area", "Owner", "Priority", "Severity", "Status", "Related", ""]}>
         {loading ? (
