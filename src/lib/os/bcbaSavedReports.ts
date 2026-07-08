@@ -108,6 +108,38 @@ export function readSavedReports(): BcbaSavedReport[] {
   return readMetaList().map((m) => ({ ...m, billingRaws: [], authRecords: [] }));
 }
 
+/**
+ * Async loader that pulls from Supabase for logged-in users and merges
+ * with the local metadata cache. Supabase entries win on duplicates.
+ * Refreshes the local cache so subsequent sync reads reflect remote.
+ */
+export async function loadSavedReports(): Promise<BcbaSavedReport[]> {
+  const local = readMetaList();
+  try {
+    const remote = await listRemoteSnapshots("bcba_productivity_legacy");
+    if (remote.length === 0) {
+      return local.map((m) => ({ ...m, billingRaws: [], authRecords: [] }));
+    }
+    const byId = new Map<string, SavedMeta>();
+    for (const m of local) byId.set(m.id, m);
+    for (const r of remote) {
+      byId.set(r.clientKey, {
+        id: r.clientKey,
+        name: r.name,
+        savedAt: r.savedAt,
+        billingFileName: r.primaryFileName ?? "",
+        authFileNames: r.auxFileNames ?? [],
+        insights: r.insights ?? [],
+      });
+    }
+    const merged = [...byId.values()].sort((a, b) => b.savedAt - a.savedAt);
+    writeMetaList(merged);
+    return merged.map((m) => ({ ...m, billingRaws: [], authRecords: [] }));
+  } catch {
+    return local.map((m) => ({ ...m, billingRaws: [], authRecords: [] }));
+  }
+}
+
 export async function saveReport(
   entry: Omit<BcbaSavedReport, "id" | "savedAt"> & { id?: string }
 ): Promise<BcbaSavedReport> {
@@ -128,6 +160,15 @@ export async function saveReport(
   if (idx >= 0) list[idx] = meta; else list.unshift(meta);
   writeMetaList(list);
   try { window.dispatchEvent(new CustomEvent("bcba-saved-reports-changed")); } catch {}
+  // Best-effort remote persist so metadata follows the user across devices.
+  void upsertRemoteSnapshot("bcba_productivity_legacy", {
+    clientKey: meta.id,
+    name: meta.name,
+    primaryFileName: meta.billingFileName,
+    auxFileNames: meta.authFileNames,
+    insights: meta.insights ?? [],
+    savedAt: meta.savedAt,
+  });
   return { ...meta, billingRaws: entry.billingRaws, authRecords: entry.authRecords };
 }
 
@@ -135,6 +176,7 @@ export async function deleteSavedReport(id: string): Promise<void> {
   writeMetaList(readMetaList().filter((r) => r.id !== id));
   await idbDelete(id);
   try { window.dispatchEvent(new CustomEvent("bcba-saved-reports-changed")); } catch {}
+  void deleteRemoteSnapshot("bcba_productivity_legacy", id);
 }
 
 export async function getSavedReport(id: string): Promise<BcbaSavedReport | undefined> {
