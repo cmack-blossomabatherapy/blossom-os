@@ -1256,6 +1256,54 @@ export default function Integrations() {
     return m;
   }, [connections]);
 
+  /**
+   * Pass 6 — persist integration enable/disable to the backend when a
+   * live connection exists. Falls back to local state only for
+   * integrations without a live connection row (toggle is UI-disabled
+   * for those anyway, so this branch is defensive).
+   */
+  async function handleToggleIntegration(integrationId: string, next: boolean) {
+    const live = connectionByIntegration.get(integrationId);
+    if (!live) {
+      setEnabledMap((m) => ({ ...m, [integrationId]: next }));
+      return;
+    }
+    // Optimistic update
+    const previous = live.enabled;
+    setConnections((prev) =>
+      prev.map((c) => (c.id === live.id ? { ...c, enabled: next } : c)),
+    );
+    const res = await updateIntegrationConnectionEnabled(live.id, next);
+    if (!res.ok) {
+      // Revert
+      setConnections((prev) =>
+        prev.map((c) => (c.id === live.id ? { ...c, enabled: previous } : c)),
+      );
+      toast.error(res.error ?? "Could not save integration toggle");
+      return;
+    }
+    // Refresh from backend so we're in sync.
+    await loadBackend();
+    const audit = await logSystemToolAction({
+      tool_area: "integrations",
+      action: next ? "integration_enabled" : "integration_disabled",
+      entity_table: "integration_connections",
+      entity_id: live.id,
+      previous_value: { enabled: previous },
+      new_value: { enabled: next, integration_id: integrationId },
+      metadata: {
+        integration_id: integrationId,
+        connection_id: live.id,
+        environment: live.environment,
+        source: "admin.Integrations.handleToggleIntegration",
+        route: typeof window !== "undefined" ? window.location.pathname : null,
+      },
+    });
+    if (audit && !audit.auditOk) {
+      toast.warning("Saved, but audit log could not be recorded.");
+    }
+  }
+
   return (
     <div className="min-h-full bg-background">
       <div className="mx-auto max-w-7xl px-6 py-10 md:px-10">
