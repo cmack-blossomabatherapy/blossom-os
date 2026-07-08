@@ -43,6 +43,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { IntegrationRegistrySelect } from "@/components/system-tools/IntegrationRegistrySelect";
 
 function mapPriorityToWorkflow(p: string): string {
   switch (p) {
@@ -129,6 +130,7 @@ interface RequestFormState {
   due_date: string;
   owner_name: string;
   description: string;
+  related_integration_id: string;
 }
 
 function emptyForm(): RequestFormState {
@@ -137,6 +139,7 @@ function emptyForm(): RequestFormState {
     priority: "normal", status: "open",
     affected_department: "", affected_role: "", affected_state: "", affected_route: "",
     impact: "", desired_outcome: "", due_date: "", owner_name: "", description: "",
+    related_integration_id: "",
   };
 }
 
@@ -156,6 +159,7 @@ function fromIssue(i: SystemIssue): RequestFormState {
     due_date: i.due_date ? i.due_date.slice(0, 10) : "",
     owner_name: i.owner_name ?? "",
     description: i.description ?? "",
+    related_integration_id: i.related_integration_id ?? "",
   };
 }
 
@@ -175,6 +179,7 @@ function toPayload(f: RequestFormState): Partial<SystemIssue> {
     due_date: f.due_date ? new Date(f.due_date).toISOString() : null,
     owner_name: f.owner_name || null,
     description: f.description || null,
+    related_integration_id: f.related_integration_id || null,
   };
 }
 
@@ -292,6 +297,10 @@ function RequestDialog({
                 placeholder="/authorizations, /scheduling, ..." />
             </div>
           </div>
+          <IntegrationRegistrySelect
+            value={form.related_integration_id}
+            onChange={(v) => set("related_integration_id", v)}
+          />
           <div>
             <Label>Impact</Label>
             <Textarea value={form.impact} onChange={(e) => set("impact", e.target.value)} rows={2}

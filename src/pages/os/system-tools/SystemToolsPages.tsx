@@ -27,6 +27,7 @@ import {
   type SystemIssue, type SystemWorkflow,
 } from "@/hooks/useSystemTools";
 import { SystemToolAuditPanel, AuditHistoryButton } from "@/components/system-tools/SystemToolAuditPanel";
+import { IntegrationRegistrySelect } from "@/components/system-tools/IntegrationRegistrySelect";
 import {
   ISSUE_STATUSES as CANONICAL_ISSUE_STATUSES,
   normalizeIssueStatus,
@@ -312,7 +313,10 @@ function WorkflowDialog({
               </Select>
             </div>
           </div>
-          <div><Label>Related integration ID</Label><Input value={relatedIntegration ?? ""} onChange={(e) => setRelatedIntegration(e.target.value)} placeholder="e.g. retell, viventium, centralreach" /></div>
+           <IntegrationRegistrySelect
+             value={relatedIntegration ?? ""}
+             onChange={(v) => setRelatedIntegration(v)}
+           />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -324,7 +328,7 @@ function WorkflowDialog({
 }
 
 export function WorkflowInventoryPage() {
-  const { isAdmin, displayName } = useAuth();
+  const { isAdmin, displayName, user } = useAuth();
   const { rows, loading, create, update, remove } = useSystemWorkflows();
   const { toast } = useToast();
   const [q, setQ] = useState("");
@@ -332,9 +336,19 @@ export function WorkflowInventoryPage() {
   const [priorityFilter, setPriorityFilter] = useState(ALL_OPTION);
   const [riskFilter, setRiskFilter] = useState(ALL_OPTION);
   const [departmentFilter, setDepartmentFilter] = useState(ALL_OPTION);
+  const [ownerFilter, setOwnerFilter] = useState(ALL_OPTION);
+  const [integrationFilter, setIntegrationFilter] = useState(ALL_OPTION);
 
   const departments = useMemo(
     () => Array.from(new Set(rows.map((r) => r.department).filter(Boolean))) as string[],
+    [rows],
+  );
+  const owners = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.owner_name).filter(Boolean))) as string[],
+    [rows],
+  );
+  const integrationsInUse = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.related_integration_id).filter(Boolean))) as string[],
     [rows],
   );
 
@@ -345,11 +359,13 @@ export function WorkflowInventoryPage() {
       if (priorityFilter !== ALL_OPTION && r.priority !== priorityFilter) return false;
       if (riskFilter !== ALL_OPTION && (r.risk_level ?? "") !== riskFilter) return false;
       if (departmentFilter !== ALL_OPTION && (r.department ?? "") !== departmentFilter) return false;
+      if (ownerFilter !== ALL_OPTION && (r.owner_name ?? "") !== ownerFilter) return false;
+      if (integrationFilter !== ALL_OPTION && (r.related_integration_id ?? "") !== integrationFilter) return false;
       if (!needle) return true;
       return [r.name, r.department, r.owner_name, r.current_source, r.future_module, r.notes, r.related_route]
         .filter(Boolean).some((s) => String(s).toLowerCase().includes(needle));
     });
-  }, [rows, q, statusFilter, priorityFilter, riskFilter, departmentFilter]);
+  }, [rows, q, statusFilter, priorityFilter, riskFilter, departmentFilter, ownerFilter, integrationFilter]);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this workflow?")) return;
@@ -357,9 +373,9 @@ export function WorkflowInventoryPage() {
     catch (e) { toast({ title: "Delete failed", description: (e as Error).message, variant: "destructive" }); }
   }
 
-  async function quickStatus(id: string, next: string, action: string) {
+  async function quickStatus(id: string, next: string, action: string, auditAction: string) {
     try {
-      await update(id, { status: next });
+      await update(id, { status: next }, { action: auditAction });
       toast({ title: `Marked ${action}` });
     } catch (e) {
       toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
@@ -368,10 +384,15 @@ export function WorkflowInventoryPage() {
 
   async function quickVerify(id: string) {
     try {
-      await update(id, {
-        last_verified_at: new Date().toISOString(),
-        verified_by: displayName ?? null,
-      });
+      await update(
+        id,
+        {
+          last_verified_at: new Date().toISOString(),
+          verified_by: user?.id ?? null,
+          verified_by_name: displayName ?? null,
+        },
+        { action: "workflow_verified" },
+      );
       toast({ title: "Marked verified" });
     } catch (e) {
       toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
@@ -379,7 +400,7 @@ export function WorkflowInventoryPage() {
   }
 
   async function assignOwner(id: string, owner: string | null) {
-    await update(id, { owner_name: owner });
+    await update(id, { owner_name: owner }, { action: "workflow_owner_assigned" });
   }
 
   // Deep-link support: /system/workflow-inventory?selected=<id> opens the
@@ -422,6 +443,12 @@ export function WorkflowInventoryPage() {
         <SelectFilter label="Risk" value={riskFilter} onChange={setRiskFilter} options={RISK_LEVELS} />
         {departments.length > 0 ? (
           <SelectFilter label="Dept" value={departmentFilter} onChange={setDepartmentFilter} options={departments} />
+        ) : null}
+        {owners.length > 0 ? (
+          <SelectFilter label="Owner" value={ownerFilter} onChange={setOwnerFilter} options={owners} />
+        ) : null}
+        {integrationsInUse.length > 0 ? (
+          <SelectFilter label="Integration" value={integrationFilter} onChange={setIntegrationFilter} options={integrationsInUse} />
         ) : null}
       </div>
       <TableShell columns={["Workflow", "Department", "Owner", "Status", "Priority", "Risk", "Related", "Last verified", ""]}>
@@ -474,13 +501,13 @@ export function WorkflowInventoryPage() {
                     trigger={<Button size="icon" variant="ghost" className="h-8 w-8" title="Assign owner" aria-label="Assign owner"><UserPlus className="h-4 w-4" /></Button>}
                   />
                   {r.status !== "Active" ? (
-                    <QuickActionButton icon={CheckCircle2} label="Mark active" tone="success" onClick={() => quickStatus(r.id, "Active", "active")} />
+                    <QuickActionButton icon={CheckCircle2} label="Mark active" tone="success" onClick={() => quickStatus(r.id, "Active", "active", "workflow_mark_active")} />
                   ) : null}
                   {r.status !== "Inactive" ? (
-                    <QuickActionButton icon={PauseCircle} label="Mark needs review" onClick={() => quickStatus(r.id, "Inactive", "needs review")} />
+                    <QuickActionButton icon={PauseCircle} label="Mark needs review" onClick={() => quickStatus(r.id, "Inactive", "needs review", "workflow_mark_needs_review")} />
                   ) : null}
                   {r.status !== "Replaced" ? (
-                    <QuickActionButton icon={ArchiveRestore} label="Mark deprecated" onClick={() => quickStatus(r.id, "Replaced", "deprecated")} />
+                    <QuickActionButton icon={ArchiveRestore} label="Mark deprecated" onClick={() => quickStatus(r.id, "Replaced", "deprecated", "workflow_mark_deprecated")} />
                   ) : null}
                   <QuickActionButton icon={ShieldAlert} label="Mark verified" onClick={() => quickVerify(r.id)} />
                   <AuditHistoryButton
@@ -562,6 +589,7 @@ function IssueSubmitDialog({
   const [severity, setSeverity] = useState("Medium");
   const [reproduction, setReproduction] = useState("");
   const [relatedRoute, setRelatedRoute] = useState("");
+  const [relatedIntegration, setRelatedIntegration] = useState("");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
@@ -577,12 +605,13 @@ function IssueSubmitDialog({
         severity,
         reproduction_steps: reproduction || null,
         related_route: relatedRoute || null,
+        related_integration_id: relatedIntegration || null,
         status: "Open",
         reported_by_name: defaultReporter ?? null,
       });
       setOpen(false);
       setTitle(""); setArea(""); setDescription(""); setPriority("Medium");
-      setSeverity("Medium"); setReproduction(""); setRelatedRoute("");
+      setSeverity("Medium"); setReproduction(""); setRelatedRoute(""); setRelatedIntegration("");
       toast({ title: "Issue submitted" });
     } catch (e) {
       toast({ title: "Submit failed", description: (e as Error).message, variant: "destructive" });
@@ -616,6 +645,10 @@ function IssueSubmitDialog({
             </div>
             <div><Label>Related route</Label><Input value={relatedRoute} onChange={(e) => setRelatedRoute(e.target.value)} placeholder="/scheduling/board" /></div>
           </div>
+          <IntegrationRegistrySelect
+            value={relatedIntegration}
+            onChange={setRelatedIntegration}
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -698,7 +731,10 @@ function IssueTriageDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Due date</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
-            <div><Label>Related integration ID</Label><Input value={relatedIntegration} onChange={(e) => setRelatedIntegration(e.target.value)} placeholder="e.g. retell, viventium" /></div>
+            <IntegrationRegistrySelect
+              value={relatedIntegration}
+              onChange={setRelatedIntegration}
+            />
           </div>
           <div><Label>Reproduction steps</Label><Textarea value={reproduction} onChange={(e) => setReproduction(e.target.value)} rows={3} /></div>
           <div><Label>Resolution notes</Label><Textarea value={resolution} onChange={(e) => setResolution(e.target.value)} rows={3} placeholder="Populated automatically when you resolve via the quick action." /></div>
@@ -714,7 +750,7 @@ function IssueTriageDialog({
 }
 
 export function IssueTrackerPage() {
-  const { isAdmin, displayName } = useAuth();
+  const { isAdmin, displayName, user } = useAuth();
   const { rows, loading, create, update, remove } = useSystemIssues();
   const { toast } = useToast();
   const [q, setQ] = useState("");
@@ -722,11 +758,21 @@ export function IssueTrackerPage() {
   const [priorityFilter, setPriorityFilter] = useState(ALL_OPTION);
   const [severityFilter, setSeverityFilter] = useState(ALL_OPTION);
   const [areaFilter, setAreaFilter] = useState(ALL_OPTION);
+  const [ownerFilter, setOwnerFilter] = useState(ALL_OPTION);
+  const [integrationFilter, setIntegrationFilter] = useState(ALL_OPTION);
   const [resolveTarget, setResolveTarget] = useState<SystemIssue | null>(null);
   const [resolveNotes, setResolveNotes] = useState("");
 
   const areas = useMemo(
     () => Array.from(new Set(rows.map((r) => r.area).filter(Boolean))) as string[],
+    [rows],
+  );
+  const owners = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.owner_name).filter(Boolean))) as string[],
+    [rows],
+  );
+  const integrationsInUse = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.related_integration_id).filter(Boolean))) as string[],
     [rows],
   );
 
@@ -737,11 +783,13 @@ export function IssueTrackerPage() {
       if (priorityFilter !== ALL_OPTION && r.priority !== priorityFilter) return false;
       if (severityFilter !== ALL_OPTION && (r.severity ?? "") !== severityFilter) return false;
       if (areaFilter !== ALL_OPTION && (r.area ?? "") !== areaFilter) return false;
+      if (ownerFilter !== ALL_OPTION && (r.owner_name ?? "") !== ownerFilter) return false;
+      if (integrationFilter !== ALL_OPTION && (r.related_integration_id ?? "") !== integrationFilter) return false;
       if (!needle) return true;
       return [r.title, r.area, r.description, r.owner_name, r.reported_by_name, r.notes, r.related_route]
         .filter(Boolean).some((s) => String(s).toLowerCase().includes(needle));
     });
-  }, [rows, q, statusFilter, priorityFilter, severityFilter, areaFilter]);
+  }, [rows, q, statusFilter, priorityFilter, severityFilter, areaFilter, ownerFilter, integrationFilter]);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this issue?")) return;
@@ -749,17 +797,20 @@ export function IssueTrackerPage() {
     catch (e) { toast({ title: "Delete failed", description: (e as Error).message, variant: "destructive" }); }
   }
 
-  async function quickStatus(r: SystemIssue, next: string, action: string) {
+  async function quickStatus(r: SystemIssue, next: string, action: string, auditAction: string) {
     if (next === "Resolved") {
       setResolveTarget(r);
       setResolveNotes(r.resolution_notes ?? "");
       return;
     }
     try {
-      await update(r.id, {
-        status: next,
-        resolved_at: null,
-      });
+      const patch: Partial<SystemIssue> = { status: next };
+      if (auditAction === "issue_reopened") {
+        patch.resolved_at = null;
+        patch.closed_by = null;
+        patch.closed_by_name = null;
+      }
+      await update(r.id, patch, { action: auditAction });
       toast({ title: `Marked ${action}` });
     } catch (e) {
       toast({ title: "Update failed", description: (e as Error).message, variant: "destructive" });
@@ -773,12 +824,17 @@ export function IssueTrackerPage() {
       return;
     }
     try {
-      await update(resolveTarget.id, {
-        status: "Resolved",
-        resolution_notes: resolveNotes.trim(),
-        resolved_at: new Date().toISOString(),
-        closed_by: displayName ?? null,
-      });
+      await update(
+        resolveTarget.id,
+        {
+          status: "Resolved",
+          resolution_notes: resolveNotes.trim(),
+          resolved_at: new Date().toISOString(),
+          closed_by: user?.id ?? null,
+          closed_by_name: displayName ?? null,
+        },
+        { action: "issue_resolved" },
+      );
       setResolveTarget(null);
       setResolveNotes("");
       toast({ title: "Issue resolved" });
@@ -788,15 +844,19 @@ export function IssueTrackerPage() {
   }
 
   async function assignOwner(id: string, owner: string | null) {
-    await update(id, { owner_name: owner });
+    await update(id, { owner_name: owner }, { action: "issue_owner_assigned" });
   }
 
   async function convertRequestToIssue(r: SystemIssue) {
     try {
-      await update(r.id, {
-        request_type: null,
-        status: isIssueStatus(r.status, "Open") ? "Triage" : normalizeIssueStatus(r.status),
-      });
+      await update(
+        r.id,
+        {
+          request_type: null,
+          status: isIssueStatus(r.status, "Open") ? "Triage" : normalizeIssueStatus(r.status),
+        },
+        { action: "request_converted_to_tracked_issue" },
+      );
       toast({ title: "Converted to tracked issue" });
     } catch (e) {
       toast({ title: "Convert failed", description: (e as Error).message, variant: "destructive" });
@@ -825,6 +885,12 @@ export function IssueTrackerPage() {
         <SelectFilter label="Severity" value={severityFilter} onChange={setSeverityFilter} options={SEVERITIES} />
         {areas.length > 0 ? (
           <SelectFilter label="Area" value={areaFilter} onChange={setAreaFilter} options={areas} />
+        ) : null}
+        {owners.length > 0 ? (
+          <SelectFilter label="Owner" value={ownerFilter} onChange={setOwnerFilter} options={owners} />
+        ) : null}
+        {integrationsInUse.length > 0 ? (
+          <SelectFilter label="Integration" value={integrationFilter} onChange={setIntegrationFilter} options={integrationsInUse} />
         ) : null}
       </div>
       <TableShell columns={["Issue", "Area", "Owner", "Priority", "Severity", "Status", "Related", ""]}>
@@ -862,18 +928,18 @@ export function IssueTrackerPage() {
                     trigger={<Button size="icon" variant="ghost" className="h-8 w-8" title="Assign owner" aria-label="Assign owner"><UserPlus className="h-4 w-4" /></Button>}
                   />
                   {isIssueStatus(r.status, "Open") ? (
-                    <QuickActionButton icon={PauseCircle} label="Triage" onClick={() => quickStatus(r, "Triage", "for triage")} />
+                    <QuickActionButton icon={PauseCircle} label="Triage" onClick={() => quickStatus(r, "Triage", "for triage", "issue_triaged")} />
                   ) : null}
                   {(isIssueStatus(r.status, "Open") || isIssueStatus(r.status, "Triage")) ? (
-                    <QuickActionButton icon={Play} label="Start work" onClick={() => quickStatus(r, "In Progress", "in progress")} />
+                    <QuickActionButton icon={Play} label="Start work" onClick={() => quickStatus(r, "In Progress", "in progress", "issue_started")} />
                   ) : null}
                   {!isIssueStatus(r.status, "Blocked") && !isIssueStatus(r.status, "Resolved") ? (
-                    <QuickActionButton icon={ShieldAlert} label="Mark blocked" tone="danger" onClick={() => quickStatus(r, "Blocked", "blocked")} />
+                    <QuickActionButton icon={ShieldAlert} label="Mark blocked" tone="danger" onClick={() => quickStatus(r, "Blocked", "blocked", "issue_blocked")} />
                   ) : null}
                   {!isIssueStatus(r.status, "Resolved") ? (
-                    <QuickActionButton icon={CheckCircle2} label="Resolve" tone="success" onClick={() => quickStatus(r, "Resolved", "resolved")} />
+                    <QuickActionButton icon={CheckCircle2} label="Resolve" tone="success" onClick={() => quickStatus(r, "Resolved", "resolved", "issue_resolved")} />
                   ) : (
-                    <QuickActionButton icon={RefreshCw} label="Reopen" onClick={() => quickStatus(r, "Open", "reopened")} />
+                    <QuickActionButton icon={RefreshCw} label="Reopen" onClick={() => quickStatus(r, "Open", "reopened", "issue_reopened")} />
                   )}
                   {r.request_type ? (
                     <QuickActionButton icon={ArrowRightCircle} label="Convert to tracked issue" onClick={() => convertRequestToIssue(r)} />

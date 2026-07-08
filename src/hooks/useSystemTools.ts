@@ -27,6 +27,7 @@ export interface SystemWorkflow {
   risk_level?: string | null;
   last_verified_at?: string | null;
   verified_by?: string | null;
+  verified_by_name?: string | null;
 }
 
 export interface SystemIssue {
@@ -62,6 +63,7 @@ export interface SystemIssue {
   related_route?: string | null;
   related_integration_id?: string | null;
   closed_by?: string | null;
+  closed_by_name?: string | null;
 }
 
 export interface SystemToolAuditLog {
@@ -212,7 +214,10 @@ function useTable<T extends { id: string }>(table: string) {
   }, [load]);
 
   const create = useCallback(
-    async (patch: Partial<T>): Promise<string | null> => {
+    async (
+      patch: Partial<T>,
+      auditOverride?: { action?: string; metadata?: Record<string, unknown> },
+    ): Promise<string | null> => {
       const { data, error: err } = await anyClient
         .from(table)
         .insert(patch)
@@ -224,7 +229,13 @@ function useTable<T extends { id: string }>(table: string) {
         tool_area:
           table === "system_workflows" ? "workflow_inventory" :
           table === "system_issues" ? "issue_tracker" : "workflow_inventory",
-        action: "create",
+        action:
+          auditOverride?.action ??
+          (table === "system_workflows"
+            ? "workflow_created"
+            : table === "system_issues"
+            ? "issue_created"
+            : "create"),
         entity_table: table,
         entity_id: newId,
         new_value: patch as Record<string, unknown>,
@@ -232,6 +243,7 @@ function useTable<T extends { id: string }>(table: string) {
           route: typeof window !== "undefined" ? window.location.pathname : null,
           changed_fields: Object.keys(patch as Record<string, unknown>),
           source: "useSystemTools.create",
+          ...(auditOverride?.metadata ?? {}),
         },
       });
       if (auditRes && !auditRes.auditOk) warnAuditFailed(auditRes.auditError ?? undefined);
@@ -242,19 +254,22 @@ function useTable<T extends { id: string }>(table: string) {
   );
 
   const update = useCallback(
-    async (id: string, patch: Partial<T>) => {
+    async (
+      id: string,
+      patch: Partial<T>,
+      auditOverride?: { action?: string; metadata?: Record<string, unknown> },
+    ) => {
       const previous = rows.find((r) => r.id === id) as Record<string, unknown> | undefined;
       const { error: err } = await anyClient.from(table).update(patch).eq("id", id);
       if (err) throw new Error(err.message);
-      const isStatusChange =
-        "status" in (patch as Record<string, unknown>) &&
-        previous &&
-        previous.status !== (patch as Record<string, unknown>).status;
+      const defaultAction =
+        table === "system_workflows" ? "workflow_updated" :
+        table === "system_issues" ? "issue_updated" : "update";
       const auditRes = await logSystemToolAction({
         tool_area:
           table === "system_workflows" ? "workflow_inventory" :
           table === "system_issues" ? "issue_tracker" : "workflow_inventory",
-        action: isStatusChange ? "status_change" : "update",
+        action: auditOverride?.action ?? defaultAction,
         entity_table: table,
         entity_id: id,
         previous_value: previous ?? {},
@@ -263,6 +278,9 @@ function useTable<T extends { id: string }>(table: string) {
           route: typeof window !== "undefined" ? window.location.pathname : null,
           changed_fields: Object.keys(patch as Record<string, unknown>),
           source: "useSystemTools.update",
+          previous_status: (previous as { status?: unknown } | undefined)?.status ?? null,
+          previous_owner: (previous as { owner_name?: unknown } | undefined)?.owner_name ?? null,
+          ...(auditOverride?.metadata ?? {}),
         },
       });
       if (auditRes && !auditRes.auditOk) warnAuditFailed(auditRes.auditError ?? undefined);
@@ -272,7 +290,10 @@ function useTable<T extends { id: string }>(table: string) {
   );
 
   const remove = useCallback(
-    async (id: string) => {
+    async (
+      id: string,
+      auditOverride?: { action?: string; metadata?: Record<string, unknown> },
+    ) => {
       const previous = rows.find((r) => r.id === id) as Record<string, unknown> | undefined;
       const { error: err } = await anyClient.from(table).delete().eq("id", id);
       if (err) throw new Error(err.message);
@@ -280,13 +301,20 @@ function useTable<T extends { id: string }>(table: string) {
         tool_area:
           table === "system_workflows" ? "workflow_inventory" :
           table === "system_issues" ? "issue_tracker" : "workflow_inventory",
-        action: "delete",
+        action:
+          auditOverride?.action ??
+          (table === "system_workflows"
+            ? "workflow_deleted"
+            : table === "system_issues"
+            ? "issue_deleted"
+            : "delete"),
         entity_table: table,
         entity_id: id,
         previous_value: previous ?? {},
         metadata: {
           route: typeof window !== "undefined" ? window.location.pathname : null,
           source: "useSystemTools.remove",
+          ...(auditOverride?.metadata ?? {}),
         },
       });
       if (auditRes && !auditRes.auditOk) warnAuditFailed(auditRes.auditError ?? undefined);
