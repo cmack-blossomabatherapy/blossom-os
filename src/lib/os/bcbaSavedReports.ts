@@ -160,15 +160,20 @@ export async function saveReport(
   if (idx >= 0) list[idx] = meta; else list.unshift(meta);
   writeMetaList(list);
   try { window.dispatchEvent(new CustomEvent("bcba-saved-reports-changed")); } catch {}
-  // Best-effort remote persist so metadata follows the user across devices.
-  void upsertRemoteSnapshot("bcba_productivity_legacy", {
-    clientKey: meta.id,
-    name: meta.name,
-    primaryFileName: meta.billingFileName,
-    auxFileNames: meta.authFileNames,
-    insights: meta.insights ?? [],
-    savedAt: meta.savedAt,
-  });
+  // Await remote persist so the caller learns whether cloud sync succeeded.
+  // Local metadata + IndexedDB payload above are the offline fallback.
+  try {
+    await upsertRemoteSnapshot("bcba_productivity_legacy", {
+      clientKey: meta.id,
+      name: meta.name,
+      primaryFileName: meta.billingFileName,
+      auxFileNames: meta.authFileNames,
+      insights: meta.insights ?? [],
+      savedAt: meta.savedAt,
+    });
+  } catch (err) {
+    console.warn("[bcbaSavedReports] remote save failed; kept local copy", err);
+  }
   return { ...meta, billingRaws: entry.billingRaws, authRecords: entry.authRecords };
 }
 
@@ -176,7 +181,11 @@ export async function deleteSavedReport(id: string): Promise<void> {
   writeMetaList(readMetaList().filter((r) => r.id !== id));
   await idbDelete(id);
   try { window.dispatchEvent(new CustomEvent("bcba-saved-reports-changed")); } catch {}
-  void deleteRemoteSnapshot("bcba_productivity_legacy", id);
+  try {
+    await deleteRemoteSnapshot("bcba_productivity_legacy", id);
+  } catch (err) {
+    console.warn("[bcbaSavedReports] remote delete failed; local removed", err);
+  }
 }
 
 export async function getSavedReport(id: string): Promise<BcbaSavedReport | undefined> {
