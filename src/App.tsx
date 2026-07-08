@@ -495,6 +495,23 @@ const MARKETING_ROLES_WITH_BD = [
   ...MARKETING_ROLES,
   "business_development",
 ] as const;
+// Growth Snapshot is executive-visible: leadership roles need read
+// access to /marketing/state-growth in addition to marketing.
+const GROWTH_SNAPSHOT_ROLES = [
+  ...MARKETING_ROLES,
+  "systems_admin",
+  "executive_leadership",
+  "exec",
+  "executive",
+  "ceo",
+  "coo",
+  "operations_leadership",
+  "ops_manager",
+  "director_of_operations",
+  "operations_manager",
+  "marketing_director",
+  "marketing_manager",
+] as const;
 // Canonical Business Development access model. `/business-development`
 // must be reachable by BD as well as marketing_growth_lead (which has
 // BD in its role menu and live-path set) and Admin / Super Admin.
