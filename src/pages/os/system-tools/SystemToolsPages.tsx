@@ -589,6 +589,7 @@ function IssueSubmitDialog({
   const [severity, setSeverity] = useState("Medium");
   const [reproduction, setReproduction] = useState("");
   const [relatedRoute, setRelatedRoute] = useState("");
+  const [relatedIntegration, setRelatedIntegration] = useState("");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
@@ -604,12 +605,13 @@ function IssueSubmitDialog({
         severity,
         reproduction_steps: reproduction || null,
         related_route: relatedRoute || null,
+        related_integration_id: relatedIntegration || null,
         status: "Open",
         reported_by_name: defaultReporter ?? null,
       });
       setOpen(false);
       setTitle(""); setArea(""); setDescription(""); setPriority("Medium");
-      setSeverity("Medium"); setReproduction(""); setRelatedRoute("");
+      setSeverity("Medium"); setReproduction(""); setRelatedRoute(""); setRelatedIntegration("");
       toast({ title: "Issue submitted" });
     } catch (e) {
       toast({ title: "Submit failed", description: (e as Error).message, variant: "destructive" });
@@ -643,6 +645,10 @@ function IssueSubmitDialog({
             </div>
             <div><Label>Related route</Label><Input value={relatedRoute} onChange={(e) => setRelatedRoute(e.target.value)} placeholder="/scheduling/board" /></div>
           </div>
+          <IntegrationRegistrySelect
+            value={relatedIntegration}
+            onChange={setRelatedIntegration}
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -725,7 +731,10 @@ function IssueTriageDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Due date</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
-            <div><Label>Related integration ID</Label><Input value={relatedIntegration} onChange={(e) => setRelatedIntegration(e.target.value)} placeholder="e.g. retell, viventium" /></div>
+            <IntegrationRegistrySelect
+              value={relatedIntegration}
+              onChange={setRelatedIntegration}
+            />
           </div>
           <div><Label>Reproduction steps</Label><Textarea value={reproduction} onChange={(e) => setReproduction(e.target.value)} rows={3} /></div>
           <div><Label>Resolution notes</Label><Textarea value={resolution} onChange={(e) => setResolution(e.target.value)} rows={3} placeholder="Populated automatically when you resolve via the quick action." /></div>
