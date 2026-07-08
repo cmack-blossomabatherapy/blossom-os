@@ -310,14 +310,18 @@ export async function saveReportV3(opts: {
   const list = readSavedReportsV3();
   list.unshift(meta);
   writeSavedV3(list);
-  void upsertRemoteSnapshot("bcba_productivity_v3", {
-    clientKey: meta.id,
-    name: meta.name,
-    primaryFileName: meta.fileName,
-    auxFileNames: [],
-    insights: [],
-    savedAt: meta.savedAt,
-  });
+  try {
+    await upsertRemoteSnapshot("bcba_productivity_v3", {
+      clientKey: meta.id,
+      name: meta.name,
+      primaryFileName: meta.fileName,
+      auxFileNames: [],
+      insights: [],
+      savedAt: meta.savedAt,
+    });
+  } catch (err) {
+    console.warn("[bcbaProductivityV3] remote save failed; kept local copy", err);
+  }
   return meta;
 }
 export async function getSavedReportRowsV3(id: string): Promise<any[]> {
@@ -327,7 +331,11 @@ export async function getSavedReportRowsV3(id: string): Promise<any[]> {
 export async function deleteSavedReportV3(id: string) {
   writeSavedV3(readSavedReportsV3().filter(r => r.id !== id));
   await idbDel(id);
-  void deleteRemoteSnapshot("bcba_productivity_v3", id);
+  try {
+    await deleteRemoteSnapshot("bcba_productivity_v3", id);
+  } catch (err) {
+    console.warn("[bcbaProductivityV3] remote delete failed; local removed", err);
+  }
 }
 
 /* Last session persistence */

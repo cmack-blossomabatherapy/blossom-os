@@ -159,11 +159,15 @@ export default function ReportsHome() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
-  function handleDeleteCancelSaved(id: string) {
-    void deleteCancellationSavedReport(id).then(() => setCancelSaved(readCancellationSavedReports()));
+  async function handleDeleteCancelSaved(id: string) {
+    await deleteCancellationSavedReport(id);
+    // Rehydrate from Supabase (falls back to local cache offline) so the
+    // deletion is reflected across devices, not just the local list.
+    setCancelSaved(await loadCancellationSavedReports());
   }
-  function handleDeleteV3(id: string) {
-    void deleteSavedReportV3(id).then(() => setSavedV3(readSavedReportsV3()));
+  async function handleDeleteV3(id: string) {
+    await deleteSavedReportV3(id);
+    setSavedV3(await loadSavedReportsV3());
   }
 
   // Recently viewed = real recent IDs only (no padding with featured — keeps it honest).
@@ -353,7 +357,7 @@ export default function ReportsHome() {
                 </Link>
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) handleDeleteV3(sr.id); }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) void handleDeleteV3(sr.id); }}
                   className="absolute right-2 top-2 rounded-full p-1.5 text-muted-foreground/60 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                   aria-label="Delete saved report"
                 >
@@ -389,7 +393,7 @@ export default function ReportsHome() {
                 </Link>
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) handleDeleteCancelSaved(sr.id); }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) void handleDeleteCancelSaved(sr.id); }}
                   className="absolute right-2 top-2 rounded-full p-1.5 text-muted-foreground/60 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                   aria-label="Delete saved report"
                 >
