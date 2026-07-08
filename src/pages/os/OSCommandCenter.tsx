@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle, Flame, ArrowRight, Sparkles, Activity, Users, UserPlus,
@@ -115,6 +115,19 @@ function Pill({ children, tone = "neutral" }: { children: React.ReactNode; tone?
 }
 
 function QuickAction({ icon: Icon, label, onClick }: { icon: React.ComponentType<{ className?: string }>; label: string; onClick?: () => void }) {
+  // Executive Leadership hardening: never render a clickable chip without a
+  // real behavior. If no onClick is provided, fall back to a read-only span.
+  if (!onClick) {
+    return (
+      <span
+        aria-disabled="true"
+        className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.06] bg-foreground/[0.03] px-2.5 py-1 text-[11px] font-semibold text-foreground/50"
+      >
+        <Icon className="h-3 w-3" />
+        {label}
+      </span>
+    );
+  }
   return (
     <button
       onClick={onClick}
@@ -147,6 +160,72 @@ export default function OSCommandCenter() {
   const { activeState, role } = useOSRole();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+
+  // Refs for AI right-rail scroll actions ("Prioritize my day", "Find op risks").
+  const attentionRef = useRef<HTMLDivElement | null>(null);
+  const actionQueueRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollTo = (ref: React.RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Resolver for Attention Required action chips. Every label routes to a
+  // real, existing workspace so no chip is a no-op.
+  const handleAttentionAction = (label: string, item: AttentionItem) => {
+    const ctx = { source: "command_center_attention", attentionId: item.id, title: item.title };
+    switch (label) {
+      case "Open Auths":
+        navigate("/authorizations", { state: ctx });
+        return;
+      case "Assign":
+        navigate("/authorizations", { state: { ...ctx, intent: "assign" } });
+        return;
+      case "Open QA Queue":
+        navigate("/qa-queue", { state: ctx });
+        return;
+      case "Escalate":
+        navigate("/operations/escalations", { state: { ...ctx, intent: "create" } });
+        return;
+      case "Create Task":
+        navigate("/operations/command-center", { state: { ...ctx, intent: "create_task" } });
+        return;
+      case "Review Caseload":
+        navigate("/operations", { state: ctx });
+        return;
+      case "Schedule 1:1":
+        navigate("/scheduling", { state: { ...ctx, intent: "one_on_one" } });
+        return;
+      case "Open Scheduling":
+        navigate("/scheduling", { state: ctx });
+        return;
+      case "Open Recruiting":
+        navigate("/recruiting/workspace", { state: ctx });
+        return;
+      default:
+        navigate("/operations/command-center", { state: ctx });
+    }
+  };
+
+  // Resolver for My Action Queue "Open" buttons — routes by task category.
+  const openTask = (task: Task) => {
+    const ctx = { source: "command_center_action_queue", taskId: task.id, title: task.title };
+    switch (task.category) {
+      case "Auth":
+        navigate("/authorizations", { state: ctx });
+        return;
+      case "QA":
+        navigate("/qa-queue", { state: ctx });
+        return;
+      case "Staffing":
+        navigate("/scheduling", { state: ctx });
+        return;
+      case "BCBA":
+        navigate("/operations", { state: ctx });
+        return;
+      default:
+        navigate("/operations/command-center", { state: ctx });
+    }
+  };
 
   const stateName = STATE_NAMES[activeState] ?? activeState;
   const regions = REGIONS_BY_STATE[activeState] ?? REGIONS_BY_STATE.NC;
@@ -498,12 +577,12 @@ export default function OSCommandCenter() {
           </div>
           <div className="mt-4 grid grid-cols-2 gap-1.5">
             {[
-              { label: "Prioritize my day", icon: ListChecks },
-              { label: "Find op risks", icon: ShieldAlert },
-              { label: "Summarize staffing", icon: Users },
-              { label: "Action list", icon: Zap },
+              { label: "Prioritize my day", icon: ListChecks, onClick: () => scrollTo(actionQueueRef) },
+              { label: "Find op risks", icon: ShieldAlert, onClick: () => scrollTo(attentionRef) },
+              { label: "Summarize staffing", icon: Users, onClick: () => navigate("/scheduling") },
+              { label: "Action list", icon: Zap, onClick: () => scrollTo(actionQueueRef) },
             ].map((b) => (
-              <button key={b.label} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[hsl(265_60%_88%)] bg-white/80 px-2.5 py-1.5 text-[11px] font-semibold text-[hsl(265_70%_50%)] transition hover:bg-white">
+              <button key={b.label} onClick={b.onClick} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[hsl(265_60%_88%)] bg-white/80 px-2.5 py-1.5 text-[11px] font-semibold text-[hsl(265_70%_50%)] transition hover:bg-white">
                 <b.icon className="h-3 w-3" />
                 <span className="truncate">{b.label}</span>
               </button>
@@ -594,6 +673,7 @@ export default function OSCommandCenter() {
 
         {/* ============ ATTENTION REQUIRED ============ */}
         <Card>
+          <div ref={attentionRef} />
           <SectionHeader
             icon={AlertTriangle}
             title="Attention Required"
@@ -638,7 +718,12 @@ export default function OSCommandCenter() {
                       </div>
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {a.actions.map((act) => (
-                          <QuickAction key={act.label} icon={act.icon} label={act.label} />
+                          <QuickAction
+                            key={act.label}
+                            icon={act.icon}
+                            label={act.label}
+                            onClick={() => handleAttentionAction(act.label, a)}
+                          />
                         ))}
                       </div>
                     </div>
@@ -651,6 +736,7 @@ export default function OSCommandCenter() {
 
         {/* ============ MY ACTION QUEUE ============ */}
         <Card>
+          <div ref={actionQueueRef} />
           <SectionHeader icon={ListChecks} title="My Action Queue" sub="Your daily operational workspace" />
           <div className="grid gap-4 px-5 pb-5 pt-4 md:grid-cols-2 xl:grid-cols-4">
             {actionGroups.map((g) => (
@@ -678,7 +764,10 @@ export default function OSCommandCenter() {
                         <p className="mt-0.5 text-[11px] text-muted-foreground">{t.meta}</p>
                         <div className="mt-1.5 flex items-center justify-between text-[10.5px] text-muted-foreground">
                           <span>{t.due}</span>
-                          <button className="inline-flex items-center gap-0.5 font-semibold text-foreground/80 hover:text-foreground">
+                          <button
+                            onClick={() => openTask(t)}
+                            className="inline-flex items-center gap-0.5 font-semibold text-foreground/80 hover:text-foreground"
+                          >
                             Open <ChevronRight className="h-3 w-3" />
                           </button>
                         </div>
@@ -732,7 +821,7 @@ export default function OSCommandCenter() {
               <div className="mt-4 flex flex-wrap gap-1.5">
                 <QuickAction icon={CalendarDays} label="Open Scheduling" onClick={() => navigate("/scheduling")} />
                 <QuickAction icon={UserPlus} label="Open Recruiting" onClick={() => navigate("/recruiting/workspace")} />
-                <QuickAction icon={ShieldAlert} label="Escalate" />
+                <QuickAction icon={ShieldAlert} label="Escalate" onClick={() => navigate("/operations/escalations", { state: { source: "staffing_control_center", intent: "create" } })} />
               </div>
             </div>
           </Card>
@@ -759,7 +848,11 @@ export default function OSCommandCenter() {
                         <p className="text-[10.5px] text-muted-foreground">{b.region} · {b.caseload} clients · {b.supervisionPct}% supervision · {b.overduePRs} overdue PR</p>
                       </div>
                       <div className="flex shrink-0 gap-1">
-                        <button title="Open caseload" className="grid h-7 w-7 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/70 hover:bg-foreground/[0.08]"><Users className="h-3 w-3" /></button>
+                        <button
+                          title="Open caseload"
+                          onClick={() => navigate("/operations", { state: { source: "bcba_oversight", bcba: b.name } })}
+                          className="grid h-7 w-7 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/70 hover:bg-foreground/[0.08]"
+                        ><Users className="h-3 w-3" /></button>
                       </div>
                     </div>
                   );
@@ -787,8 +880,8 @@ export default function OSCommandCenter() {
               <MiniStat label="RBT pipeline" value={recruitingStats.rbtPipeline} tone={recruitingStats.rbtPipeline > 0 ? "ok" : "warn"} />
             </div>
             <div className="flex flex-wrap gap-1.5 px-5 pb-5">
-              <QuickAction icon={CalendarDays} label="Schedule Interview" />
-              <QuickAction icon={UserCog} label="Review Candidate" />
+              <QuickAction icon={CalendarDays} label="Schedule Interview" onClick={() => navigate("/recruiting/interviews")} />
+              <QuickAction icon={UserCog} label="Review Candidate" onClick={() => navigate("/recruiting/workspace")} />
             </div>
           </Card>
 
@@ -812,7 +905,10 @@ export default function OSCommandCenter() {
                       <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold tabular-nums", t.pill)}>
                         {overdue ? `${Math.abs(r.daysRemaining)}d overdue` : `${r.daysRemaining}d left`}
                       </span>
-                      <button className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/70 hover:bg-foreground/[0.08]"><ArrowRight className="h-3 w-3" /></button>
+                      <button
+                        onClick={() => navigate("/authorizations", { state: { source: "auth_risk_center", client: r.client, bcba: r.bcba } })}
+                        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/70 hover:bg-foreground/[0.08]"
+                      ><ArrowRight className="h-3 w-3" /></button>
                     </div>
                   );
                 })}
@@ -921,16 +1017,18 @@ export default function OSCommandCenter() {
       </div>
 
       {/* ============ FLOATING QUICK ACTION BAR ============ */}
+      {/* Every button below routes to a real workspace. "Ask AI" was removed
+          because no working assistant route exists yet — do not add it back
+          without a real destination. */}
       <div className="pointer-events-none fixed bottom-5 left-1/2 z-30 hidden -translate-x-1/2 md:block">
         <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-white/70 bg-white/90 px-2 py-2 shadow-[0_18px_40px_-18px_hsl(220_40%_30%/0.3)] backdrop-blur">
           {[
-            { icon: UserCog, label: "Staff" },
-            { icon: UserPlus, label: "Candidate" },
-            { icon: ShieldAlert, label: "Escalate" },
+            { icon: UserCog, label: "Staff", onClick: () => navigate("/scheduling") },
+            { icon: UserPlus, label: "Candidate", onClick: () => navigate("/recruiting/workspace") },
+            { icon: ShieldAlert, label: "Escalate", onClick: () => navigate("/operations/escalations", { state: { source: "quick_action_bar", intent: "create" } }) },
             { icon: CalendarDays, label: "Schedule", onClick: () => navigate("/scheduling") },
-            { icon: PlusCircle, label: "Task" },
+            { icon: PlusCircle, label: "Task", onClick: () => navigate("/operations/command-center", { state: { source: "quick_action_bar", intent: "create_task" } }) },
             { icon: FileText, label: "Reports", onClick: () => navigate("/reports") },
-            { icon: Bot, label: "Ask AI" },
           ].map((b) => (
             <button
               key={b.label}
