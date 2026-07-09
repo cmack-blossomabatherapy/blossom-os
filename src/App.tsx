@@ -575,6 +575,21 @@ function RoleDashboardRedirect() {
   return <Navigate to={allowedRoute} replace />;
 }
 
+// Company Home is the universal landing page for every signed-in role.
+// Role-specific dashboards remain reachable from the sidebar and via /dashboard.
+function RootToCompanyHome() {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/auth" replace />;
+  return <Navigate to="/home" replace />;
+}
+
 function OSCommandCenterRouter() {
   // For now, the State Director Command Center page is our command center experience.
   // Other roles still get a placeholder; this lets State Directors land on a real page.
