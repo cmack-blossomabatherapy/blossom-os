@@ -632,9 +632,13 @@ export default function BcbaProductivityReportV3() {
     const name = prompt("Name this report", `${fileName || "Billing"} — ${new Date().toLocaleDateString()}`);
     if (!name) return;
     try {
-      await saveReportV3({ name, fileName, rows });
+      const rec = await saveReportV3({ name, fileName, rows });
       setSavedList(readSavedReportsV3());
-      toast.success("Report saved");
+      if (rec.remoteSyncError) {
+        toast.warning("Saved locally — cloud sync failed, it won't appear on other devices yet.");
+      } else {
+        toast.success("Report saved");
+      }
     } catch (e: any) {
       console.error("[bcba v3] save report failed", e);
       toast.error(e?.message ?? "Failed to save report");
