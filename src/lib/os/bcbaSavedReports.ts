@@ -13,6 +13,8 @@ export type BcbaSavedReport = {
   billingRaws: any[];
   authRecords: any[];
   insights?: string[];
+  /** Present when local save succeeded but the Supabase mirror failed. */
+  remoteSyncError?: string;
 };
 
 // Metadata-only list lives in localStorage so ReportsHome can render synchronously.
@@ -162,6 +164,7 @@ export async function saveReport(
   try { window.dispatchEvent(new CustomEvent("bcba-saved-reports-changed")); } catch {}
   // Await remote persist so the caller learns whether cloud sync succeeded.
   // Local metadata + IndexedDB payload above are the offline fallback.
+  let remoteSyncError: string | undefined;
   try {
     await upsertRemoteSnapshot("bcba_productivity_legacy", {
       clientKey: meta.id,
@@ -172,19 +175,27 @@ export async function saveReport(
       savedAt: meta.savedAt,
     });
   } catch (err) {
+    remoteSyncError = err instanceof Error ? err.message : String(err);
     console.warn("[bcbaSavedReports] remote save failed; kept local copy", err);
   }
-  return { ...meta, billingRaws: entry.billingRaws, authRecords: entry.authRecords };
+  return {
+    ...meta,
+    billingRaws: entry.billingRaws,
+    authRecords: entry.authRecords,
+    remoteSyncError,
+  };
 }
 
-export async function deleteSavedReport(id: string): Promise<void> {
+export async function deleteSavedReport(id: string): Promise<{ remoteSyncError?: string }> {
   writeMetaList(readMetaList().filter((r) => r.id !== id));
   await idbDelete(id);
   try { window.dispatchEvent(new CustomEvent("bcba-saved-reports-changed")); } catch {}
   try {
     await deleteRemoteSnapshot("bcba_productivity_legacy", id);
+    return {};
   } catch (err) {
     console.warn("[bcbaSavedReports] remote delete failed; local removed", err);
+    return { remoteSyncError: err instanceof Error ? err.message : String(err) };
   }
 }
 
