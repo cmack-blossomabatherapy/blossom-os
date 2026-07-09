@@ -434,6 +434,7 @@ export default function CancellationCommandCenter() {
         await upsertRemoteFollowup("cancellation_command_center", key, status);
       } catch (err) {
         console.warn("[CancellationCommandCenter] remote follow-up sync failed", err);
+        toast.warning("Follow-up updated locally — cloud sync failed.");
       }
     })();
     return { ...prev, [key]: status };

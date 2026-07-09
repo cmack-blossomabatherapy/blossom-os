@@ -30,6 +30,7 @@ import { useAuthorizationReportMetrics } from "@/hooks/useAuthorizationReportMet
 import { useRbtReportSummaries } from "@/hooks/useRbtReportSummaries";
 import { listRecentReports } from "@/hooks/useSharedSavedViews";
 import { migrateLocalReportsIfNeeded } from "@/lib/os/reportPersistence";
+import { toast } from "sonner";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
@@ -160,13 +161,19 @@ export default function ReportsHome() {
     };
   }, []);
   async function handleDeleteCancelSaved(id: string) {
-    await deleteCancellationSavedReport(id);
+    const res = await deleteCancellationSavedReport(id);
+    if (res.remoteSyncError) {
+      toast.warning("Deleted locally — cloud sync failed. It may reappear after refresh.");
+    }
     // Rehydrate from Supabase (falls back to local cache offline) so the
     // deletion is reflected across devices, not just the local list.
     setCancelSaved(await loadCancellationSavedReports());
   }
   async function handleDeleteV3(id: string) {
-    await deleteSavedReportV3(id);
+    const res = await deleteSavedReportV3(id);
+    if (res.remoteSyncError) {
+      toast.warning("Deleted locally — cloud sync failed. It may reappear after refresh.");
+    }
     setSavedV3(await loadSavedReportsV3());
   }
 

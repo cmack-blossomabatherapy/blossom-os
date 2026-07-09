@@ -84,7 +84,7 @@ export async function upsertRemoteSnapshot(
 ): Promise<void> {
   const uid = await currentUserId();
   if (!uid) return;
-  await anyClient.from("report_saved_snapshots").upsert(
+  const { error } = await anyClient.from("report_saved_snapshots").upsert(
     {
       user_id: uid,
       scope,
@@ -97,6 +97,9 @@ export async function upsertRemoteSnapshot(
     },
     { onConflict: "user_id,scope,client_id" },
   );
+  if (error) {
+    throw new Error(`upsertRemoteSnapshot(${scope}) failed: ${error.message ?? String(error)}`);
+  }
 }
 
 export async function deleteRemoteSnapshot(
@@ -105,12 +108,15 @@ export async function deleteRemoteSnapshot(
 ): Promise<void> {
   const uid = await currentUserId();
   if (!uid) return;
-  await anyClient
+  const { error } = await anyClient
     .from("report_saved_snapshots")
     .delete()
     .eq("user_id", uid)
     .eq("scope", scope)
     .eq("client_id", clientKey);
+  if (error) {
+    throw new Error(`deleteRemoteSnapshot(${scope}) failed: ${error.message ?? String(error)}`);
+  }
 }
 
 /* ---------- followups ---------- */
@@ -140,7 +146,7 @@ export async function upsertRemoteFollowup(
 ): Promise<void> {
   const uid = await currentUserId();
   if (!uid) return;
-  await anyClient.from("report_followups").upsert(
+  const { error } = await anyClient.from("report_followups").upsert(
     {
       user_id: uid,
       scope,
@@ -150,6 +156,9 @@ export async function upsertRemoteFollowup(
     },
     { onConflict: "user_id,scope,row_key" },
   );
+  if (error) {
+    throw new Error(`upsertRemoteFollowup(${scope}) failed: ${error.message ?? String(error)}`);
+  }
 }
 
 /* ---------- one-time migration from legacy localStorage keys ---------- */

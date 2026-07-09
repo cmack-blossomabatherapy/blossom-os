@@ -28,6 +28,8 @@ export interface BcbaSavedReportV3 {
   savedAt: number;
   fileName: string;
   rowCount: number;
+  /** Present when local save succeeded but the Supabase mirror failed. */
+  remoteSyncError?: string;
 }
 
 const ASSIGN_KEY = "bcba-prod-v3-assignments-cache";
@@ -320,6 +322,7 @@ export async function saveReportV3(opts: {
       savedAt: meta.savedAt,
     });
   } catch (err) {
+    meta.remoteSyncError = err instanceof Error ? err.message : String(err);
     console.warn("[bcbaProductivityV3] remote save failed; kept local copy", err);
   }
   return meta;
@@ -328,13 +331,15 @@ export async function getSavedReportRowsV3(id: string): Promise<any[]> {
   const v = await idbGet<{ rows: any[] }>(id);
   return v?.rows ?? [];
 }
-export async function deleteSavedReportV3(id: string) {
+export async function deleteSavedReportV3(id: string): Promise<{ remoteSyncError?: string }> {
   writeSavedV3(readSavedReportsV3().filter(r => r.id !== id));
   await idbDel(id);
   try {
     await deleteRemoteSnapshot("bcba_productivity_v3", id);
+    return {};
   } catch (err) {
     console.warn("[bcbaProductivityV3] remote delete failed; local removed", err);
+    return { remoteSyncError: err instanceof Error ? err.message : String(err) };
   }
 }
 

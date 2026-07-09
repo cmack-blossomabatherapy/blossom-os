@@ -15,6 +15,8 @@ export type CancellationSavedReport = {
   billingRaws: any[];
   authRecords: any[];
   insights?: string[];
+  /** Present when local save succeeded but the Supabase mirror failed. */
+  remoteSyncError?: string;
 };
 
 // Metadata in localStorage so ReportsHome renders synchronously.
@@ -166,6 +168,7 @@ export async function saveCancellationReport(
   if (idx >= 0) list[idx] = meta; else list.unshift(meta);
   writeMetaList(list);
   try { window.dispatchEvent(new CustomEvent("cancellation-saved-reports-changed")); } catch {}
+  let remoteSyncError: string | undefined;
   try {
     await upsertRemoteSnapshot("cancellation_command_center", {
       clientKey: meta.id,
@@ -176,19 +179,28 @@ export async function saveCancellationReport(
       savedAt: meta.savedAt,
     });
   } catch (err) {
+    remoteSyncError = err instanceof Error ? err.message : String(err);
     console.warn("[cancellationSavedReports] remote save failed; kept local copy", err);
   }
-  return { ...meta, scheduleRaws: entry.scheduleRaws, billingRaws: entry.billingRaws, authRecords: entry.authRecords };
+  return {
+    ...meta,
+    scheduleRaws: entry.scheduleRaws,
+    billingRaws: entry.billingRaws,
+    authRecords: entry.authRecords,
+    remoteSyncError,
+  };
 }
 
-export async function deleteCancellationSavedReport(id: string): Promise<void> {
+export async function deleteCancellationSavedReport(id: string): Promise<{ remoteSyncError?: string }> {
   writeMetaList(readMetaList().filter((r) => r.id !== id));
   await idbDelete(id);
   try { window.dispatchEvent(new CustomEvent("cancellation-saved-reports-changed")); } catch {}
   try {
     await deleteRemoteSnapshot("cancellation_command_center", id);
+    return {};
   } catch (err) {
     console.warn("[cancellationSavedReports] remote delete failed; local removed", err);
+    return { remoteSyncError: err instanceof Error ? err.message : String(err) };
   }
 }
 
