@@ -19,11 +19,12 @@ describe("State Director Functionality Pass 6 — final hardening", () => {
     expect(store).toMatch(/State metrics hydrate from `state_operational_metrics`/);
   });
 
-  it("store exposes refreshStateMetrics and useRefreshStateMetrics", () => {
+  it("store exposes refreshStateMetrics and useRefreshStateMetrics and rebuilds from the awaiting baseline", () => {
     expect(store).toMatch(/export async function refreshStateMetrics/);
     expect(store).toMatch(/export function useRefreshStateMetrics/);
-    // Merges live rows over the current in-memory snapshot (seed fallback preserved).
-    expect(store).toMatch(/const nextMetrics = \{ \.\.\.current\.metrics \}/);
+    // Rebuilds from awaiting baseline so states without a live row are
+    // never left with stale/seeded operational values.
+    expect(store).toMatch(/buildAwaitingMetrics\(current\.profiles\)/);
   });
 
   it("State Operations page wires upsertStateMetric + refreshStateMetrics into the UI", () => {

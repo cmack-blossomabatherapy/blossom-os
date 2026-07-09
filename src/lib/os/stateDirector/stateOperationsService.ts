@@ -94,7 +94,7 @@ export interface StateOperationsSnapshot {
   activity: ActivityEvent[];
 }
 
-export type StateMetricSource = "live" | "manual" | "integration" | "seed";
+export type StateMetricSource = "live" | "manual" | "integration" | "awaiting";
 
 export interface LiveStateMetric {
   code: StateCode;
@@ -121,7 +121,7 @@ export interface LiveStateMetric {
 
 /**
  * Loads persisted per-state metrics. Returns `null` on failure so the
- * store can gracefully fall back to seed values.
+ * store can leave the awaiting placeholder rows in place.
  */
 export async function loadStateMetrics(): Promise<LiveStateMetric[] | null> {
   try {
@@ -188,22 +188,23 @@ export async function upsertStateMetric(input: Partial<LiveStateMetric> & { code
 /**
  * Bulk ingest helper for future CentralReach / importer jobs. Callers
  * pass a normalized StateMetricInput per state; every row is written with
- * an explicit source (never "seed") and a fresh source_updated_at. This
- * is the single documented upsert path for automated metric writers so
- * they never have to touch the UI store directly.
+ * an explicit source (live / manual / integration — never "awaiting")
+ * and a fresh source_updated_at. This is the single documented upsert
+ * path for automated metric writers so they never have to touch the UI
+ * store directly.
  */
 export type StateMetricInput = Partial<LiveStateMetric> & {
   code: StateCode;
-  source: Exclude<StateMetricSource, "seed">;
+  source: Exclude<StateMetricSource, "awaiting">;
 };
 
 export async function ingestStateMetrics(rows: StateMetricInput[]): Promise<{ ok: boolean; written: number; failures: Array<{ code: StateCode; error: string }> }> {
   const failures: Array<{ code: StateCode; error: string }> = [];
   let written = 0;
   for (const r of rows) {
-    // Guard: importers must never claim "seed" as their source. Seed is
-    // reserved for the calm placeholder rows the UI ships without any
-    // persisted metrics row.
+    // Guard: importers must never claim "awaiting" as their source.
+    // "awaiting" is reserved for the placeholder rows the store builds
+    // for states with no persisted metrics row.
     const source: StateMetricSource = r.source ?? "manual";
     const res = await upsertStateMetric({ ...r, source });
     if (res.ok) written += 1;

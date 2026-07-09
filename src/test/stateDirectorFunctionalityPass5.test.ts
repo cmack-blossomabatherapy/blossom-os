@@ -46,18 +46,19 @@ describe("State Director Functionality Pass 5 — hardening", () => {
     expect(svc).toMatch(/StateMetricSource/);
   });
 
-  it("store hydrates live metrics on top of the seed", () => {
+  it("store hydrates live metrics on top of the awaiting baseline (no seeded operational values)", () => {
     expect(store).toMatch(/sbLoadStateMetrics/);
     expect(store).toMatch(/source: r\.source/);
+    expect(store).not.toMatch(/STATE_DIRECTOR_SEED\.metrics/);
+    expect(store).toMatch(/buildAwaitingMetrics/);
   });
 
-  it("State Operations UI shows live / mixed / seed source labels", () => {
+  it("State Operations UI labels partial/no-live sources without any seed fallback copy", () => {
     expect(pages).toMatch(/Live state metrics/);
-    expect(pages).toMatch(/Mixed live \+ seed fallback metrics/);
-    expect(pages).toMatch(/Seed fallback metrics/);
-    expect(pages).toMatch(/Source: Live state metrics/);
-    expect(pages).toMatch(/Source: Mixed live \+ seed fallback/);
-    expect(pages).toMatch(/Source: Seed fallback/);
+    expect(pages).toMatch(/Partial live metrics/);
+    expect(pages).toMatch(/No live state metrics connected/);
+    expect(pages).not.toMatch(/Seed fallback metrics/);
+    expect(pages).not.toMatch(/Source: Seed fallback/);
   });
 
   it("Snapshot banners pass useful context on department pages", () => {

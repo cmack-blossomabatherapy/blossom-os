@@ -941,12 +941,13 @@ export function StateOperationsPage() {
     view.tasks.filter((t) => (t.centralreachSyncStatus ?? "pending_import") !== "synced").length +
     view.escalations.filter((e) => (e.centralreachSyncStatus ?? "pending_import") !== "synced").length;
 
-  // Metric provenance for the current selection. Distinguishes live vs
-  // manual vs integration vs seed fallback rows so the KPI band and
-  // "State health" table can label the source honestly.
-  const sources = view.metrics.map((m) => (m as { source?: string }).source ?? "seed");
-  const hasLive = sources.some((s) => s === "live" || s === "manual" || s === "integration");
-  const allLive = sources.length > 0 && sources.every((s) => s !== "seed");
+  // Metric provenance for the current selection. Only live/manual/
+  // integration rows count as real operational metrics — awaiting rows
+  // are zeroed placeholders and MUST render as "—".
+  const sources = view.metrics.map((m) => (m as { source?: string }).source ?? "awaiting");
+  const isRealSource = (s: string) => s === "live" || s === "manual" || s === "integration";
+  const hasLive = sources.some(isRealSource);
+  const allLive = sources.length > 0 && sources.every(isRealSource);
   const metricsBannerLabel = allLive
     ? "Live state metrics"
     : hasLive
@@ -1058,7 +1059,7 @@ export function StateOperationsPage() {
             <tbody>
               {view.metrics.map((m) => {
                 const p = view.profiles.find((x) => x.code === m.code);
-                const src = (m as { source?: string }).source ?? "seed";
+                const src = (m as { source?: string }).source ?? "awaiting";
                 const isLive = src === "live" || src === "manual" || src === "integration";
                 const dash = <span className="text-muted-foreground/60">—</span>;
                 return (

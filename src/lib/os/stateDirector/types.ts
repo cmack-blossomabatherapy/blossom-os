@@ -71,8 +71,13 @@ export interface StateMetrics {
   openTasks: number;
   agingBlockers: number;
   updatedAt: string;
-  /** Provenance label — where the metric row came from. */
-  source?: "live" | "manual" | "integration" | "seed";
+  /**
+   * Provenance label — where the metric row came from.
+   *  - live / manual / integration: a real persisted metric row.
+   *  - awaiting: no metric row exists yet; UI must render "—" and NOT
+   *    treat these zero values as operational truth.
+   */
+  source?: "live" | "manual" | "integration" | "awaiting";
   sourceUpdatedAt?: string | null;
 }
 

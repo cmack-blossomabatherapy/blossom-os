@@ -57,10 +57,12 @@ describe("State Director Functionality Pass 4", () => {
     expect(banner).toMatch(/State Director Snapshot/);
   });
 
-  it("State Ops KPI cards carry a seed-fallback label", () => {
+  it("State Ops KPI cards render an awaiting-sync label instead of seed fallback", () => {
     const src = read("src/pages/os/stateDirector/StateDirectorPages.tsx");
-    expect(src).toMatch(/Seed fallback metrics/);
-    expect(src).toMatch(/Source: Seed fallback/);
+    expect(src).not.toMatch(/Seed fallback metrics/);
+    expect(src).not.toMatch(/Source: Seed fallback/);
+    expect(src).toMatch(/No live state metrics connected/);
+    expect(src).toMatch(/Awaiting metrics sync/);
   });
 
   it("State Director store surfaces save failures via toast helper", () => {
