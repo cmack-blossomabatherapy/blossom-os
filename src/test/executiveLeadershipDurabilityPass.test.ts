@@ -15,6 +15,8 @@ const read = (p: string) => fs.readFileSync(p, "utf8");
 const stateOps = read("src/pages/os/stateDirector/StateDirectorPages.tsx");
 const resLib = read("src/pages/os/OSResourceLibrary.tsx");
 const phone = read("src/pages/phone/PhonePages.tsx");
+const store = read("src/lib/os/stateDirector/stateDirectorStore.ts");
+const types = read("src/lib/os/stateDirector/types.ts");
 
 describe("Executive Leadership durability pass", () => {
   it("State Operations removes seed fallback user-facing copy", () => {
@@ -28,6 +30,21 @@ describe("Executive Leadership durability pass", () => {
     expect(stateOps).toMatch(/liveMetrics/);
     expect(stateOps).toMatch(/"live"|'live'/);
     expect(stateOps).toMatch(/No live state metrics connected/);
+  });
+
+  it("State Director store no longer carries seeded operational metrics", () => {
+    // Runtime source path must not copy seeded metric values.
+    expect(store).not.toMatch(/STATE_DIRECTOR_SEED\.metrics/);
+    expect(store).not.toMatch(/source:\s*m\.source\s*\?\?\s*"seed"/);
+    expect(store).not.toMatch(/source\s*=\s*"seed"|source:\s*"seed"/);
+    // Missing states must fall through the awaiting placeholder path.
+    expect(store).toMatch(/buildAwaitingMetrics/);
+    expect(store).toMatch(/source:\s*"awaiting"/);
+  });
+
+  it("StateMetrics source type no longer includes 'seed'", () => {
+    expect(types).not.toMatch(/"seed"/);
+    expect(types).toMatch(/"awaiting"/);
   });
 
   it("Resource Library drops resource_requests localStorage", () => {
