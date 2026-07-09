@@ -745,17 +745,25 @@ export default function CancellationCommandCenter() {
     const name = window.prompt("Name this report:", defaultName);
     if (!name) return;
     const insights = buildInsights(processedAll, agg.lostRevenue);
-    await saveCancellationReport({
-      name,
-      scheduleFileName,
-      billingFileName: billingFileName || undefined,
-      authFileNames,
-      scheduleRaws,
-      billingRaws,
-      authRecords,
-      insights,
-    });
-    toast.success(`Saved "${name}"`);
+    try {
+      const saved = await saveCancellationReport({
+        name,
+        scheduleFileName,
+        billingFileName: billingFileName || undefined,
+        authFileNames,
+        scheduleRaws,
+        billingRaws,
+        authRecords,
+        insights,
+      });
+      if (saved.remoteSyncError) {
+        toast.warning(`Saved "${saved.name}" locally — cloud sync failed, so it may not appear on other devices yet.`);
+      } else {
+        toast.success(`Saved "${saved.name}"`);
+      }
+    } catch {
+      toast.error("Couldn't save report — please try again.");
+    }
   }
 
   /* ---- exports ---- */

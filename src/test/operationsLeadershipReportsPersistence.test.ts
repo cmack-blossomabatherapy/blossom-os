@@ -60,6 +60,15 @@ describe("Operations Leadership — reports persistence hardening", () => {
     expect(cancelUi).toMatch(/await\s+upsertRemoteFollowup\("cancellation_command_center"/);
   });
 
+  it("Cancellation save handler checks remoteSyncError and warns when cloud sync fails", () => {
+    expect(cancelUi).toMatch(/const\s+saved\s*=\s*await\s+saveCancellationReport\(/);
+    expect(cancelUi).toMatch(/saved\.remoteSyncError/);
+    expect(cancelUi).toMatch(/toast\.warning\(/);
+    expect(cancelUi).toMatch(
+      /cloud sync failed, so it may not appear on other devices yet/,
+    );
+  });
+
   it("ReportsHome delete handlers rehydrate via the async loaders", () => {
     expect(home).toMatch(/await\s+loadCancellationSavedReports\(\)/);
     expect(home).toMatch(/await\s+loadSavedReportsV3\(\)/);
