@@ -1,81 +1,103 @@
+# Plan: Live Org Chart + Company Home
 
-# HR Team Functionality Pass — Execution Plan
+## 1. Live Org Chart — make it work, not "coming soon"
 
-This is a large multi-phase request. Rather than pretend to ship all 10 phases in one turn (which would produce shallow, half-real code across a dozen pages, tests, and migrations), I want to sequence the work honestly.
+The route `/org-chart` already renders `src/pages/os/org/OrgChartPage.tsx` (React Flow, backed by the existing `org_chart_nodes` table). The "coming soon" feel comes from (a) role-guard bounces on roles not in the allow list and (b) an empty table on first load.
 
-The redirect infrastructure and route mounts you referenced already exist:
-- `/hr/reports` and `/admin/hr/reports` already `<Navigate to="/reports?category=hr" replace />`
-- `/user-logins-vault`, `/nfc-badges`, `/admin/login-vault` already redirect to `/user-management`
-- All 11 HR page routes are already mounted in `App.tsx`
+Fixes:
+- **Open access to view** — expand the `PermissionRoute` allow list on `/org-chart` in `src/App.tsx` so every authenticated role can view (read-only). Editing stays limited to `super_admin`, `admin`, `systems_admin`, `hr_team`, `hr_lead` (matches `EDITOR_ROLES` in the page).
+- **Better empty state** — replace "No one on the chart yet" with a real onboarding block: "Build your org chart" + primary CTA "Add first person" for editors, and a calm "Your HR team hasn't set this up yet" for viewers.
+- **Seed helper** — add an "Import from Employees" button (editors only) that pulls active rows from `employees` + `hr_departments` and inserts a starter set into `org_chart_nodes` with auto-laid-out positions, so HR can get a real chart in one click instead of adding people one by one.
+- **Sidebar/menu link** — make sure every leadership role menu in `src/lib/os/roleMenus.ts` points to `/org-chart` (already true for Exec/Ops/HR; add for State Director + Clinical Director so they can view).
+- **Remove stale "coming soon" copy** on the Org Chart tile if any surfaces show it (spot-check `AppSidebar.tsx` `comingSoon` flag for org chart — clear it).
 
-So the actual delta breaks into two ships.
+No schema changes needed — `org_chart_nodes` already exists with 14 columns and 4 policies.
 
----
+## 2. Company Home — calendar + updates + highlights
 
-## Ship 1 (this turn) — Menu, live paths, and HR AI cleanup
+New page at `/home` that becomes the default post-login landing.
 
-Small enough to land cleanly with build validation in one pass.
+### UI (single page, three calm sections)
+- **Hero:** Company logo/name, today's date, one-line "What's happening at Blossom today."
+- **Company Calendar (left, 60%):** Month grid + upcoming list. Click a day to see events. Categories: Holiday, Company Event, Training, PTO Block, Deadline. Color-coded chips.
+- **Updates (right, 40%):** Reverse-chronological company updates (title + short body + author + posted date). Pinned updates stick to top.
+- **Highlights strip (bottom):** Horizontal cards for shout-outs / wins / new hires (title, short blurb, optional photo).
 
-### 1. HR menu rewrite (`src/lib/os/roleMenus.ts`)
-Rewrite `hr_team` and `hr_lead` menus into the four sections you specified:
-- **HR Command**: Dashboard, Workspace, New Hires, Orientation Queue, Training & Certifications, Compliance, Employee Support, HR Requests, Evaluations, Messages & Announcements, HR Resources
-- **People & Access**: User Management, Device Requests, Device Inventory
-- **Communications**: Phone System
-- **Training & Resources**: Training Academy, Resource Library, Reports
+Blossom OS design system: glass cards, `rounded-2xl`, hairline borders, one primary accent, generous spacing.
 
-Rules honored:
-- Reports label = "Reports" (not "HR Reports")
-- No `/hr/reports`, `/user-logins-vault`, `/admin/login-vault`, `/nfc-badges`, `/hr/nfc-badge-support` items
-- Canonical evaluations path = `/hr/evaluations` (route exists, keeps HR context)
+### HR admin panel
+New page at `/home/manage` (gated to `hr_team`, `hr_lead`, `super_admin`, `admin`, `systems_admin`):
+- Tabs: Calendar / Updates / Highlights.
+- Simple create/edit/delete forms per tab (title, date/date range, body, category, pin, publish toggle).
+- Reachable from a small "Manage" button on the Company Home for authorized users.
 
-### 2. Live paths (`src/pages/os/OSShell.tsx`)
-Expand `ROLE_SPECIFIC_LIVE_PATHS` for `hr_team` and `hr_lead` so every HR menu path is clickable (not gated as "coming soon"): all `/hr/*` paths above, `/user-management`, `/device-requests`, `/device-inventory`, `/phone`, `/academy`, `/resource-library`, `/reports`.
+### Post-login landing
+- Change `ROLE_HOME` in `src/lib/os/roleHome.ts` so every role lands on `/home` by default (keep the current role dashboards as second-click destinations from the sidebar). Super Admin keeps `/dashboard/legacy` if we want power-user landing — will confirm during build if it should also route to `/home`.
 
-### 3. Remove visible AI CTAs from HR pages
-Files to edit (identified via ripgrep): `OSHRTeam`, `OSHRWorkspace`, `OSHRNewHires`, `OSHRCompliance`, `OSHRTrainingCerts`, `OSHRTrainingAcademy`, `OSHROrientationQueue`, `OSHRRequests`, `OSHRMessages`, `OSHREmployeeSupport`, `OSHRResources`.
+### Data model — one migration
 
-Per-file edits:
-- Remove `<Link to="/ai/assistant">Operational Insights</Link>` header buttons
-- Rename right-rail "Operational Insights" sections to "Priority Actions" / "Next Best Actions" / "Workflow Guidance" (per page context)
-- Replace `/ai/assistant?q=...` prompt links with plain, non-navigating text bullets ("Next best actions") so no AI route is exposed from HR
-- Global AI infrastructure elsewhere (`/ai/assistant` route, ask-blossom, etc.) is left untouched
+```sql
+create table public.company_calendar_events (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text,
+  category text not null default 'company_event',   -- holiday | company_event | training | pto_block | deadline
+  starts_on date not null,
+  ends_on date,
+  all_day boolean not null default true,
+  location text,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
-### 4. Tests
-Add `src/test/hrRoleMenuPass.test.ts`:
-- `hr_team` and `hr_lead` home to `/hr-team`
-- Menu contains every required path
-- Menu does NOT contain `/hr/reports`, `/user-logins-vault`, `/admin/login-vault`, `/nfc-badges`, `/ai/assistant`
-- No menu label is exactly "HR Reports"
-- All HR menu paths are in `ROLE_SPECIFIC_LIVE_PATHS`
-- HR page source files contain no visible `/ai/assistant` links or "Operational Insights" section titles
+create table public.company_updates (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  body text not null,
+  author_name text,
+  pinned boolean not null default false,
+  published boolean not null default true,
+  published_at timestamptz not null default now(),
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
-Run existing suite to confirm no regressions.
+create table public.company_highlights (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  body text,
+  image_url text,
+  link_url text,
+  sort_order int not null default 0,
+  published boolean not null default true,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
 
----
+Grants + RLS (same pattern for all three):
+- `GRANT SELECT, INSERT, UPDATE, DELETE ... TO authenticated; GRANT ALL ... TO service_role;`
+- Enable RLS.
+- Policies:
+  - SELECT: any authenticated user (published only for updates/highlights; all rows for calendar).
+  - INSERT/UPDATE/DELETE: `has_role(auth.uid(),'super_admin') OR has_role(auth.uid(),'admin') OR has_role(auth.uid(),'systems_admin') OR has_role(auth.uid(),'hr_lead') OR has_role(auth.uid(),'hr_team')`.
 
-## Ship 2 (follow-up turn, explicitly not this turn) — Data-backed workflows + integrations
+### Files to add / edit
 
-Phases 3, 4, 5, 7, 8, 9 (data-backed CRUD, CentralReach/Viventium/Stellar readiness, RLS, full test coverage) are real multi-hour work: schema deltas for readiness columns on `employee_onboarding` + new `stellar_checks` catalog row, wiring 11 pages off real Supabase reads/writes with loading/empty/error/toast, and a corresponding test tier. Doing that inside the same turn as the UI cleanup would produce untested SQL and half-real page rewrites.
+- `supabase/migrations/<ts>_company_home.sql` — three tables + grants + RLS.
+- `src/pages/os/home/CompanyHome.tsx` — the landing page.
+- `src/pages/os/home/CompanyHomeManage.tsx` — HR admin panel (tabs for events/updates/highlights).
+- `src/hooks/useCompanyCalendar.ts`, `useCompanyUpdates.ts`, `useCompanyHighlights.ts` — thin data hooks (Supabase select + realtime channel).
+- `src/App.tsx` — add `/home` and `/home/manage` routes; widen `/org-chart` view allow list.
+- `src/lib/os/roleHome.ts` — set every role's home to `/home`.
+- `src/pages/os/org/OrgChartPage.tsx` — improved empty state + "Import from Employees" action.
+- `src/lib/os/roleMenus.ts` — ensure "Company Home" tops each role's menu; add Org Chart link for State/Clinical Director menus.
+- Small test: `src/test/companyHomeAndOrgChart.test.ts` verifying routes exist, `/home` is role home for all roles, and org chart page renders for viewer roles.
 
-I'll break Ship 2 into three separate follow-up turns when you're ready:
-- **2a**: Migration — add `viventium_status`, `stellar_status`, `centralreach_status` (+ external ids, timestamps, notes) to `employee_onboarding`; ensure `integration_catalog` rows exist for centralreach/viventium/stellar_checks with honest "not connected" statuses; RLS updates keyed to `hr_team`/`hr_lead`/`super_admin`.
-- **2b**: Wire New Hires, Orientation Queue, Training & Certs, Compliance, Employee Support, HR Requests, Messages to real reads/mutations against existing tables (`employee_onboarding`, `employee_trainings`, `employee_documents_hr`, `employee_cases`, `hr_announcements`, etc.), including readiness panel that reads the new columns and shows honest "integration not connected yet" copy.
-- **2c**: RLS/permission tests + HR page functional tests + build validation.
-
----
-
-## Out of scope for both ships (per your rules)
-- No new Login Vault or NFC pages
-- No `/hr/reports` page
-- No AI sections added anywhere in HR
-- No fake "synced" statuses for CR/Viventium/Stellar
-- No touching Super Admin, User Management internals, BCBA Productivity V3, or the shared `/reports` catalog beyond confirming the HR-category tiles still exist
-
----
-
-## Acceptance for Ship 1
-- `bun run build` clean; existing tests pass
-- New `hrRoleMenuPass.test.ts` passes
-- Manual: signing in as `hr_team` shows the 4-section menu, every item routes to a live page, no "Operational Insights" button or `/ai/assistant` link visible on any HR page
-
-Reply "go" to ship 1, or tell me to re-scope (e.g. "do menu only", "include migration this turn", "swap evaluations path to `/evaluations`").
+### Out of scope (per "don't go crazy")
+- No RSVPs, no attendee lists, no ICS export, no email digest.
+- No rich-text editor — plain textarea for updates/highlights.
+- No image uploads for highlights v1 — accept a URL field; can add Storage upload later.
