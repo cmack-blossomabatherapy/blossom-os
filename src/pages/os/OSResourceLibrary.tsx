@@ -669,36 +669,56 @@ export default function OSResourceLibrary() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRequestOpen(false)}>Cancel</Button>
             <Button
-              onClick={() => {
+              disabled={requestSubmitting}
+              onClick={async () => {
                 if (!reqTitle.trim()) {
                   toast.error("Please add a resource title");
                   return;
                 }
+                setRequestSubmitting(true);
                 try {
-                  const key = "resource_requests";
-                  const existing = JSON.parse(localStorage.getItem(key) || "[]");
-                  existing.unshift({
-                    id: crypto.randomUUID(),
+                  await createSystemIssue({
                     title: reqTitle.trim(),
-                    type: reqType.trim(),
-                    details: reqDetails.trim(),
-                    requestedBy: role,
-                    state: activeState,
-                    createdAt: new Date().toISOString(),
-                    status: "pending",
+                    area: "Resource Library",
+                    description: reqDetails.trim(),
+                    request_type: "resource_request",
+                    affected_department: "Training and Resources",
+                    affected_role: String(role),
+                    affected_state: activeState ?? null,
+                    affected_route: "/resource-library",
+                    impact:
+                      "Resource needed for training, SOP, policy, or operating support.",
+                    desired_outcome:
+                      reqType.trim() || "Add or update resource",
+                    priority: "Medium",
+                    status: "Open",
+                    reported_by_id: user?.id ?? null,
+                    reported_by_name: user?.email ?? String(role),
+                    metadata: {
+                      source: "resource_library_request_dialog",
+                      requested_type: reqType.trim(),
+                      requested_by_role: role,
+                      requested_state: activeState,
+                    },
+                  } as never);
+                  toast.success("Request submitted", {
+                    description:
+                      "Sent to System Requests for Super Admin review.",
                   });
-                  localStorage.setItem(key, JSON.stringify(existing));
-                } catch {}
-                toast.success("Request submitted", {
-                  description: "Super Admins have been notified to review your request.",
-                });
-                setReqTitle("");
-                setReqType("");
-                setReqDetails("");
-                setRequestOpen(false);
+                  setReqTitle("");
+                  setReqType("");
+                  setReqDetails("");
+                  setRequestOpen(false);
+                } catch (err) {
+                  const msg =
+                    err instanceof Error ? err.message : "Please try again.";
+                  toast.error("Could not submit request", { description: msg });
+                } finally {
+                  setRequestSubmitting(false);
+                }
               }}
             >
-              Submit request
+              {requestSubmitting ? "Submitting…" : "Submit request"}
             </Button>
           </DialogFooter>
         </DialogContent>
