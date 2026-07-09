@@ -906,8 +906,18 @@ export function StateOperationsPage() {
   const [activeEsc, setActiveEsc] = useState<Escalation | null>(null);
   const [activeTask, setActiveTask] = useState<OpsTask | null>(null);
 
+  // Only metrics that have a real source (live/manual/integration) roll up
+  // into Executive-visible KPIs. Seed rows exist only as calm placeholders
+  // in preview and MUST NOT be presented as operational truth.
+  const liveMetrics = useMemo(
+    () => view.metrics.filter((m) => {
+      const s = (m as { source?: string }).source;
+      return s === "live" || s === "manual" || s === "integration";
+    }),
+    [view.metrics],
+  );
   const rollup = useMemo(() => {
-    const list = view.metrics;
+    const list = liveMetrics;
     const sum = (k: keyof typeof list[number]) => list.reduce((a, m) => a + (Number(m[k]) || 0), 0);
     return {
       activeClients: sum("activeClients"),
@@ -923,7 +933,7 @@ export function StateOperationsPage() {
       openTasks: view.tasks.filter((t) => t.status !== "completed").length,
       health: list.length ? Math.round(list.reduce((a, m) => a + m.healthScore, 0) / list.length) : 0,
     };
-  }, [view.metrics, view.escalations, view.tasks]);
+  }, [liveMetrics, view.escalations, view.tasks]);
 
   const escPreview = view.escalations.filter((e) => e.status !== "resolved").slice(0, 6);
   const taskPreview = view.tasks.filter((t) => t.status !== "completed").slice(0, 6);
@@ -940,21 +950,22 @@ export function StateOperationsPage() {
   const metricsBannerLabel = allLive
     ? "Live state metrics"
     : hasLive
-      ? "Mixed live + seed fallback metrics"
-      : "Seed fallback metrics";
+      ? "Partial live metrics"
+      : "No live state metrics connected";
   const metricsSourceSummary = allLive
     ? "Source: Live state metrics"
     : hasLive
-      ? "Source: Mixed live + seed fallback"
-      : "Source: Seed fallback";
+      ? "Source: Partial live metrics"
+      : "Source: No live state metrics connected";
   const metricsUpdated = (() => {
-    const stamps = view.metrics
+    const stamps = liveMetrics
       .map((m) => (m as { sourceUpdatedAt?: string | null }).sourceUpdatedAt || m.updatedAt)
       .filter(Boolean) as string[];
-    if (!stamps.length) return "sample";
+    if (!stamps.length) return "—";
     const latest = stamps.sort().slice(-1)[0];
     try { return new Date(latest).toLocaleString(); } catch { return latest; }
   })();
+  const kpiVal = (n: number) => (hasLive ? n : "—");
 
   const departmentSnapshots: { label: string; icon: LucideIcon; to: string }[] = [
     { label: "Intake",          icon: Briefcase,   to: "/intake/dashboard" },
@@ -999,18 +1010,17 @@ export function StateOperationsPage() {
       <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-6">
         <div className="col-span-full -mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
           {metricsBannerLabel}
-          {/* Retain literal 'Seed fallback metrics' string when applicable for pass-4 test */}
         </div>
-        <KPI label="State health"        value={rollup.health || "—"} tone={rollup.health >= 85 ? "ok" : rollup.health >= 70 ? "warn" : "danger"} />
-        <KPI label="Active clients"      value={rollup.activeClients} tone="info" />
-        <KPI label="Authorized hrs"      value={rollup.authorizedHours} tone="muted" />
-        <KPI label="Scheduled hrs"       value={rollup.scheduledHours}  tone="muted" />
-        <KPI label="Delivered hrs"       value={rollup.deliveredHours}  tone="ok" />
-        <KPI label="Staffing gaps"       value={rollup.staffingGaps}    tone={rollup.staffingGaps > 5 ? "danger" : "warn"} />
-        <KPI label="Intake pipeline"     value={rollup.intakePipeline}  tone="info" />
-        <KPI label="Auths < 30d"         value={rollup.authsExpiring30d} tone={rollup.authsExpiring30d > 4 ? "danger" : "warn"} />
-        <KPI label="Clinical risks"      value={rollup.clinicalRisks}   tone={rollup.clinicalRisks > 2 ? "danger" : "warn"} />
-        <KPI label="Recruiting needs"    value={rollup.recruitingNeeds} tone="warn" />
+        <KPI label="State health"        value={hasLive ? (rollup.health || "—") : "—"} tone={rollup.health >= 85 ? "ok" : rollup.health >= 70 ? "warn" : "muted"} />
+        <KPI label="Active clients"      value={kpiVal(rollup.activeClients)} tone="info" />
+        <KPI label="Authorized hrs"      value={kpiVal(rollup.authorizedHours)} tone="muted" />
+        <KPI label="Scheduled hrs"       value={kpiVal(rollup.scheduledHours)}  tone="muted" />
+        <KPI label="Delivered hrs"       value={kpiVal(rollup.deliveredHours)}  tone="ok" />
+        <KPI label="Staffing gaps"       value={kpiVal(rollup.staffingGaps)}    tone={hasLive && rollup.staffingGaps > 5 ? "danger" : "muted"} />
+        <KPI label="Intake pipeline"     value={kpiVal(rollup.intakePipeline)}  tone="info" />
+        <KPI label="Auths < 30d"         value={kpiVal(rollup.authsExpiring30d)} tone={hasLive && rollup.authsExpiring30d > 4 ? "danger" : "muted"} />
+        <KPI label="Clinical risks"      value={kpiVal(rollup.clinicalRisks)}   tone={hasLive && rollup.clinicalRisks > 2 ? "danger" : "muted"} />
+        <KPI label="Recruiting needs"    value={kpiVal(rollup.recruitingNeeds)} tone="muted" />
         <KPI label="Open escalations"    value={rollup.openEscalations} tone={rollup.openEscalations > 3 ? "danger" : "warn"} />
         <KPI label="Open tasks"          value={rollup.openTasks}       tone="info" />
       </div>
@@ -1018,8 +1028,8 @@ export function StateOperationsPage() {
         Tasks, escalations, notes, handoffs, and daily health notes are live.
         State health metrics above use{" "}
         {allLive ? "persisted live metrics from state_operational_metrics." :
-          hasLive ? "a mix of persisted live metrics and seed fallback for states without a live row." :
-          "sample fallback values (Seed fallback metrics) until a live state metrics source is connected."}
+          hasLive ? "persisted live metrics only for states that have a live row; other states show as awaiting metrics sync." :
+          "no live state metrics — connect a state metrics source to populate KPIs."}
       </p>
 
       <StateOpsCentralReachSummaryBadge pendingCount={pendingCrCount} />
@@ -1048,36 +1058,42 @@ export function StateOperationsPage() {
             <tbody>
               {view.metrics.map((m) => {
                 const p = view.profiles.find((x) => x.code === m.code);
+                const src = (m as { source?: string }).source ?? "seed";
+                const isLive = src === "live" || src === "manual" || src === "integration";
+                const dash = <span className="text-muted-foreground/60">—</span>;
                 return (
                   <tr key={m.code} className="border-t border-border/60">
                     <td className="px-4 py-3 font-medium">{p?.name ?? m.code}</td>
                     <td className="px-4 py-3">
-                      <Badge variant="outline" className={cn(
-                        m.healthLabel === "Healthy" && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                        m.healthLabel === "Stable"  && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                        m.healthLabel === "Watch"   && "bg-amber-50 text-amber-800 border-amber-200",
-                        (m.healthLabel === "Risk" || m.healthLabel === "Critical") && "bg-red-50 text-red-700 border-red-200",
-                      )}>{m.healthLabel} · {m.healthScore}</Badge>
+                      {isLive ? (
+                        <Badge variant="outline" className={cn(
+                          m.healthLabel === "Healthy" && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                          m.healthLabel === "Stable"  && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                          m.healthLabel === "Watch"   && "bg-amber-50 text-amber-800 border-amber-200",
+                          (m.healthLabel === "Risk" || m.healthLabel === "Critical") && "bg-red-50 text-red-700 border-red-200",
+                        )}>{m.healthLabel} · {m.healthScore}</Badge>
+                      ) : dash}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{m.activeClients}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{m.authorizedHours}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{m.scheduledHours}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{m.deliveredHours}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{m.staffingGaps}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{m.authsExpiring30d}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{m.clinicalRisks}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{isLive ? m.activeClients : dash}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{isLive ? m.authorizedHours : dash}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{isLive ? m.scheduledHours : dash}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{isLive ? m.deliveredHours : dash}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{isLive ? m.staffingGaps : dash}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{isLive ? m.authsExpiring30d : dash}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{isLive ? m.clinicalRisks : dash}</td>
                     <td className="px-4 py-3 text-muted-foreground">{m.openEscalations}</td>
                     <td className="px-4 py-3 text-muted-foreground">{m.openTasks}</td>
                     <td className="px-4 py-3 text-xs">
                       <Badge variant="outline" className={cn(
-                        (m as { source?: string }).source === "live" && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                        (m as { source?: string }).source === "integration" && "bg-blue-50 text-blue-700 border-blue-200",
-                        (m as { source?: string }).source === "manual" && "bg-slate-100 text-slate-700 border-slate-200",
-                        (!(m as { source?: string }).source || (m as { source?: string }).source === "seed") && "bg-amber-50 text-amber-800 border-amber-200",
-                      )}>{(m as { source?: string }).source ?? "seed"}</Badge>
+                        src === "live" && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                        src === "integration" && "bg-blue-50 text-blue-700 border-blue-200",
+                        src === "manual" && "bg-slate-100 text-slate-700 border-slate-200",
+                        !isLive && "bg-muted text-muted-foreground border-border",
+                      )}>{isLive ? src : "Awaiting metrics sync"}</Badge>
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {(() => {
+                        if (!isLive) return "—";
                         const s = (m as { sourceUpdatedAt?: string | null }).sourceUpdatedAt || m.updatedAt;
                         try { return s ? new Date(s).toLocaleDateString() : "—"; } catch { return s; }
                       })()}
