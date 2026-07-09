@@ -243,7 +243,7 @@ function InnerOrgChart() {
             Loading org chart…
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState canEdit={isEditor} onAdd={() => setCreating(true)} />
+          <EmptyState canEdit={isEditor} onAdd={() => setCreating(true)} onImported={load} />
         ) : (
           <ReactFlow
             nodes={nodes}
