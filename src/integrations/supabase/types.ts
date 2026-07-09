@@ -4894,6 +4894,126 @@ export type Database = {
           },
         ]
       }
+      company_calendar_events: {
+        Row: {
+          all_day: boolean
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_on: string | null
+          id: string
+          location: string | null
+          starts_on: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          all_day?: boolean
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_on?: string | null
+          id?: string
+          location?: string | null
+          starts_on: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          all_day?: boolean
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_on?: string | null
+          id?: string
+          location?: string | null
+          starts_on?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_highlights: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string | null
+          link_url: string | null
+          published: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          link_url?: string | null
+          published?: boolean
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          link_url?: string | null
+          published?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_updates: {
+        Row: {
+          author_name: string | null
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          pinned: boolean
+          published: boolean
+          published_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_name?: string | null
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pinned?: boolean
+          published?: boolean
+          published_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pinned?: boolean
+          published?: boolean
+          published_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       credentialing_activity: {
         Row: {
           activity_type: string
@@ -20358,6 +20478,7 @@ export type Database = {
         Returns: boolean
       }
       can_manage_clinical_work: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_company_home: { Args: { _uid: string }; Returns: boolean }
       can_manage_marketing: { Args: { _uid: string }; Returns: boolean }
       can_manage_role_assignments: {
         Args: { _user_id: string }

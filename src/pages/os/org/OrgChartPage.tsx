@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/sheet";
 import { OrgChartNodeCard, type OrgNodeData } from "@/components/org/OrgChartNodeCard";
 import { toast } from "sonner";
-import { Plus, Save, Trash2, Users, Lock } from "lucide-react";
+import { Plus, Save, Trash2, Users, Lock, DownloadCloud } from "lucide-react";
 
 type DbRow = {
   id: string;
@@ -243,7 +243,7 @@ function InnerOrgChart() {
             Loading org chart…
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState canEdit={isEditor} onAdd={() => setCreating(true)} />
+          <EmptyState canEdit={isEditor} onAdd={() => setCreating(true)} onImported={load} />
         ) : (
           <ReactFlow
             nodes={nodes}
@@ -302,7 +302,48 @@ function InnerOrgChart() {
   );
 }
 
-function EmptyState({ canEdit, onAdd }: { canEdit: boolean; onAdd: () => void }) {
+async function importFromEmployees(): Promise<{ imported: number; error?: string }> {
+  const { data: emps, error } = await supabase
+    .from("employees")
+    .select("id,first_name,last_name,preferred_name,email,job_title,status")
+    .in("status", ["active", "on_leave"])
+    .order("last_name");
+  if (error) return { imported: 0, error: error.message };
+  const rows = (emps ?? []).map((e, idx) => {
+    const name = `${e.preferred_name || e.first_name || ""} ${e.last_name || ""}`.trim();
+    return {
+      name: name || (e.email ?? "Unnamed teammate"),
+      title: e.job_title ?? null,
+      email: e.email ?? null,
+      accent_color: ["#F472B6", "#60A5FA", "#34D399", "#FBBF24", "#A78BFA", "#F97316"][idx % 6],
+      position_x: (idx % 6) * 300,
+      position_y: Math.floor(idx / 6) * 200,
+      sort_order: idx,
+    };
+  });
+  if (rows.length === 0) return { imported: 0 };
+  const { error: insErr } = await supabase.from("org_chart_nodes").insert(rows);
+  if (insErr) return { imported: 0, error: insErr.message };
+  return { imported: rows.length };
+}
+
+function EmptyState({ canEdit, onAdd, onImported }: { canEdit: boolean; onAdd: () => void; onImported: () => void }) {
+  const [importing, setImporting] = useState(false);
+  const handleImport = async () => {
+    setImporting(true);
+    const result = await importFromEmployees();
+    setImporting(false);
+    if (result.error) {
+      toast.error("Import failed", { description: result.error });
+      return;
+    }
+    if (result.imported === 0) {
+      toast.info("No active employees to import");
+      return;
+    }
+    toast.success(`Imported ${result.imported} teammates`);
+    onImported();
+  };
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
       <div className="grid size-14 place-items-center rounded-2xl border border-border/70 bg-card">
@@ -312,15 +353,21 @@ function EmptyState({ canEdit, onAdd }: { canEdit: boolean; onAdd: () => void })
         <p className="text-base font-medium text-foreground">No one on the chart yet</p>
         <p className="mt-1 text-sm text-muted-foreground">
           {canEdit
-            ? "Add the first person to start mapping reporting lines."
+            ? "Import from your employee directory to seed the chart, or add people one at a time."
             : "Ask HR to publish the organization chart."}
         </p>
       </div>
       {canEdit && (
-        <Button size="sm" className="mt-2 rounded-xl" onClick={onAdd}>
-          <Plus className="size-4" />
-          Add first person
-        </Button>
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+          <Button size="sm" className="rounded-xl" onClick={handleImport} disabled={importing}>
+            <DownloadCloud className="size-4" />
+            {importing ? "Importing…" : "Import from Employees"}
+          </Button>
+          <Button size="sm" variant="outline" className="rounded-xl" onClick={onAdd}>
+            <Plus className="size-4" />
+            Add person manually
+          </Button>
+        </div>
       )}
     </div>
   );

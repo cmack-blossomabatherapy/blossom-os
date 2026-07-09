@@ -17,6 +17,8 @@ import { Loader2 } from "lucide-react";
 import LeadIdRedirect from "./components/leads/LeadIdRedirect";
 import MapslyHub from "./pages/os/mapsly/MapslyHub";
 import OrgChartPage from "./pages/os/org/OrgChartPage";
+import CompanyHome from "./pages/os/home/CompanyHome";
+import CompanyHomeManage from "./pages/os/home/CompanyHomeManage";
 import MileageCenter from "./pages/os/mapsly/MileageCenter";
 import BDTerritories from "./pages/os/mapsly/BDTerritories";
 import RecruitingMap from "./pages/os/mapsly/RecruitingMap";
@@ -573,6 +575,21 @@ function RoleDashboardRedirect() {
   return <Navigate to={allowedRoute} replace />;
 }
 
+// Company Home is the universal landing page for every signed-in role.
+// Role-specific dashboards remain reachable from the sidebar and via /dashboard.
+function RootToCompanyHome() {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/auth" replace />;
+  return <Navigate to="/home" replace />;
+}
+
 function OSCommandCenterRouter() {
   // For now, the State Director Command Center page is our command center experience.
   // Other roles still get a placeholder; this lets State Directors land on a real page.
@@ -634,7 +651,7 @@ const App = () => (
                 <Routes>
                 {PublicRoutes}
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
-                  <Route path="/" element={<RoleDashboardRedirect />} />
+                  <Route path="/" element={<RootToCompanyHome />} />
                   <Route path="/home" element={<BlossomOSHome />} />
                   <Route path="/dashboard/legacy" element={<OSDashboard />} />
                   {/* Legacy /ws/:id routes are kept only for back-compat redirects
@@ -753,34 +770,12 @@ const App = () => (
                   {/* Case Manager role */}
                   <Route path="/case-manager" element={<OSCaseManager />} />
                   <Route path="/clinical-director" element={<ClinicalDirectorDashboard />} />
-                  {/* Live Org Chart — HR + admins can edit; Exec/Ops Leadership + HR + Super Admin can view */}
-                  <Route
-                    path="/org-chart"
-                    element={
-                      <PermissionRoute
-                        allowedRoles={[
-                          "super_admin",
-                          "admin",
-                          "systems_admin",
-                          "executive_leadership",
-                          "exec",
-                          "executive",
-                          "coo",
-                          "operations_leadership",
-                          "ops_manager",
-                          "operations_manager",
-                          "director_of_operations",
-                          "hr_team",
-                          "hr",
-                          "hr_lead",
-                          "hr_manager",
-                          "hr_admin",
-                        ]}
-                      >
-                        <OrgChartPage />
-                      </PermissionRoute>
-                    }
-                  />
+                  {/* Live Org Chart — HR + admins can edit; every authenticated
+                      teammate can view. Edit gate is enforced inside OrgChartPage. */}
+                  <Route path="/org-chart" element={<OrgChartPage />} />
+                  {/* Company Home — universal landing for every signed-in user */}
+                  <Route path="/home" element={<CompanyHome />} />
+                  <Route path="/home/manage" element={<CompanyHomeManage />} />
                   <Route path="/behavioral-support" element={<BehavioralSupportDashboard />} />
                   <Route path="/behavioral-support/crisis-support" element={<BehavioralSupportCrisisSupport />} />
                   <Route path="/behavioral-support/escalations" element={<BehavioralSupportEscalations />} />
