@@ -27,6 +27,8 @@ import {
   type Resource, type ResourceCategoryId,
 } from "@/lib/resources/resourceData";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
+import { useSystemIssues } from "@/hooks/useSystemTools";
+import { useAuth } from "@/contexts/AuthContext";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import { isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
 import { cleanResourceTitle } from "@/lib/resources/resourceDisplay";
@@ -80,6 +82,8 @@ function whoThisHelps(r: Resource): string {
 
 export default function OSResourceLibrary() {
   const { role, activeState } = useOSRole();
+  const { user } = useAuth();
+  const { create: createSystemIssue } = useSystemIssues();
   const canManage = role === "super_admin" || role === "hr_team";
   const { resources: libraryResources, loading } = useLibraryResources();
 
@@ -95,6 +99,7 @@ export default function OSResourceLibrary() {
   const [reqTitle, setReqTitle] = useState("");
   const [reqType, setReqType] = useState("");
   const [reqDetails, setReqDetails] = useState("");
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
 
   // Role-aware scope, pulled live from the operational library.
   const scope = useMemo(
