@@ -30,6 +30,7 @@ import { useAuthorizationReportMetrics } from "@/hooks/useAuthorizationReportMet
 import { useRbtReportSummaries } from "@/hooks/useRbtReportSummaries";
 import { listRecentReports } from "@/hooks/useSharedSavedViews";
 import { migrateLocalReportsIfNeeded } from "@/lib/os/reportPersistence";
+import { toast } from "sonner";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
