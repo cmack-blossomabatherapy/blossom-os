@@ -636,7 +636,7 @@ const App = () => (
                 <Routes>
                 {PublicRoutes}
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
-                  <Route path="/" element={<RoleDashboardRedirect />} />
+                  <Route path="/" element={<RootToCompanyHome />} />
                   <Route path="/home" element={<BlossomOSHome />} />
                   <Route path="/dashboard/legacy" element={<OSDashboard />} />
                   {/* Legacy /ws/:id routes are kept only for back-compat redirects
