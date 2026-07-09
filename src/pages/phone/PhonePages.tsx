@@ -1698,8 +1698,6 @@ export function PhoneAdmin() {
           <div><Label className="text-xs">Main number (secondary)</Label><Input value={settings.mainNumberSecondary} onChange={(e) => setSettings({ ...settings, mainNumberSecondary: e.target.value })} /></div>
           <div><Label className="text-xs">After-hours number</Label><Input value={settings.afterHoursNumber} onChange={(e) => setSettings({ ...settings, afterHoursNumber: e.target.value })} /></div>
           <div><Label className="text-xs">Ops reply-to email</Label><Input value={settings.opsEmail} onChange={(e) => setSettings({ ...settings, opsEmail: e.target.value })} /></div>
-          <div><Label className="text-xs">Vendor ticket link</Label><Input value={settings.vendorTicketUrl ?? ""} onChange={(e) => setSettings({ ...settings, vendorTicketUrl: e.target.value })} placeholder="Link to Jivetel / Retell support ticket" /></div>
-          <div className="sm:col-span-2"><Label className="text-xs">Integration / routing notes</Label><Textarea rows={2} value={settings.integrationNotes ?? ""} onChange={(e) => setSettings({ ...settings, integrationNotes: e.target.value })} placeholder="Retell / Jivetel routing notes, escalation contacts, known issues" /></div>
           <div className="flex items-center gap-2 pt-5">
             <Checkbox checked={settings.retellEnabled} onCheckedChange={(v) => setSettings({ ...settings, retellEnabled: !!v })} id="retell" />
             <Label htmlFor="retell" className="text-sm">Retell AI enabled for after-hours</Label>
