@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import type {
   StateDirectorSnapshot, StateDirectorAdapter, Escalation, OpsTask,
   EscalationStatus, TaskStatus, Priority, Department, StateCode, ActivityEvent, ActivityKind, EscalationNote,
+  StateMetrics, StateProfile,
 } from "./types";
 import { STATE_DIRECTOR_SEED } from "./stateDirectorSeed";
 import {
@@ -44,7 +45,8 @@ export type StateDirectorMutationResult<T = unknown> = {
 /**
  * State Director operating store.
  *
- * Persistence contract (Pass 7 — current truth, no localStorage):
+ * Persistence contract (Pass 8 — current truth, no localStorage, no
+ * seeded operational metrics in the runtime source path):
  *  - Tasks, escalations, notes, activity, handoffs, and daily health
  *    notes are Supabase-backed (`state_operational_*` +
  *    `state_department_handoffs` + `state_daily_health_notes`). On first
@@ -62,17 +64,68 @@ export type StateDirectorMutationResult<T = unknown> = {
  *    secondary sync (activity mirror rows, non-critical background
  *    reconciliation) may be treated as best-effort, and only when a
  *    failure would not lose user intent.
- *  - State metrics hydrate from `state_operational_metrics` when a live
- *    row exists and fall back to the seed row only for states without
- *    persisted data. The State Operations dashboard labels the source
- *    (live / manual / integration / seed) honestly and never presents
- *    seed values as CentralReach truth.
+ *  - State metrics hydrate from `state_operational_metrics`. States
+ *    without a persisted row render as "awaiting metrics sync" — the
+ *    store builds zeroed placeholder rows tagged `source: "awaiting"`
+ *    from the state profiles, and the UI must render "—" for those
+ *    cells. Fake/seeded operational metrics never enter the runtime
+ *    source path for Executive-visible KPIs.
  *  - CentralReach sync is NOT connected yet. Tasks, escalations, and
  *    handoffs are tagged with `centralreach_sync_status` (default
  *    `not_connected`) so a future integration has a clean hook, and
  *    unmapped work is tracked in the `state_centralreach_outbox`
  *    readiness table.
  */
+
+/**
+ * Build zeroed "awaiting" metric rows for every known state profile.
+ * These are placeholders so downstream code always has a row per state,
+ * but they are explicitly tagged `source: "awaiting"` so the UI knows
+ * to render "—" and never present them as operational truth.
+ */
+function buildAwaitingMetrics(profiles: readonly StateProfile[]): Record<StateCode, StateMetrics> {
+  const zeroTs = new Date(0).toISOString();
+  const out: Record<StateCode, StateMetrics> = {} as Record<StateCode, StateMetrics>;
+  for (const p of profiles) {
+    out[p.code] = {
+      code: p.code,
+      healthScore: 0,
+      healthLabel: "Stable",
+      activeClients: 0,
+      authorizedHours: 0,
+      scheduledHours: 0,
+      deliveredHours: 0,
+      staffingGaps: 0,
+      intakePipeline: 0,
+      authsExpiring30d: 0,
+      clinicalRisks: 0,
+      recruitingNeeds: 0,
+      cancellationRisk: 0,
+      openEscalations: 0,
+      openTasks: 0,
+      agingBlockers: 0,
+      updatedAt: zeroTs,
+      source: "awaiting",
+      sourceUpdatedAt: null,
+    };
+  }
+  return out;
+}
+
+/**
+ * The runtime baseline snapshot — keeps seed profiles and any preview
+ * scaffolding for escalations/tasks/activity, but strips all seeded
+ * operational metric values and replaces them with awaiting rows.
+ */
+function buildBaselineSnapshot(): StateDirectorSnapshot {
+  return {
+    profiles: STATE_DIRECTOR_SEED.profiles,
+    metrics: buildAwaitingMetrics(STATE_DIRECTOR_SEED.profiles),
+    escalations: STATE_DIRECTOR_SEED.escalations,
+    tasks: STATE_DIRECTOR_SEED.tasks,
+    activity: STATE_DIRECTOR_SEED.activity,
+  };
+}
 
 function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
   const listeners = new Set<(s: StateDirectorSnapshot) => void>();
@@ -81,23 +134,18 @@ function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
 
   const read = (): StateDirectorSnapshot => {
     if (cache) return cache;
-    if (typeof window === "undefined") return STATE_DIRECTOR_SEED;
-    // Seed = calm placeholder. Mark every seed metric explicitly so the
-    // UI can distinguish it from real persisted rows.
-    const seedMetrics: typeof STATE_DIRECTOR_SEED.metrics = {} as never;
-    for (const [code, m] of Object.entries(STATE_DIRECTOR_SEED.metrics)) {
-      seedMetrics[code as StateCode] = { ...m, source: m.source ?? "seed" };
-    }
-    cache = { ...STATE_DIRECTOR_SEED, metrics: seedMetrics };
-    // Kick off async Supabase hydration once; the seed acts only as a
-    // calm placeholder until real data lands.
+    if (typeof window === "undefined") return buildBaselineSnapshot();
+    // Baseline snapshot has zero operational metrics tagged "awaiting".
+    // Real metrics only land from Supabase hydration below.
+    cache = buildBaselineSnapshot();
+    // Kick off async Supabase hydration once.
     if (!hydrated) {
       hydrated = true;
       void loadStateOperationsSnapshot().then((snap) => {
         if (!snap) return;
         const next: StateDirectorSnapshot = {
-          profiles: (cache ?? STATE_DIRECTOR_SEED).profiles,
-          metrics: (cache ?? STATE_DIRECTOR_SEED).metrics,
+          profiles: (cache ?? buildBaselineSnapshot()).profiles,
+          metrics: (cache ?? buildBaselineSnapshot()).metrics,
           escalations: snap.escalations,
           tasks: snap.tasks,
           activity: snap.activity,
@@ -105,13 +153,13 @@ function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
         cache = next;
         listeners.forEach((fn) => fn(next));
       }).catch((err) => reportSaveFailure("hydrate state ops", err));
-      // Live persisted metrics — merge on top of the seed so a state
-      // with a real row uses it, and a state with no row keeps the seed
-      // fallback (tagged source="seed"). This makes the mixed-source
-      // header in State Operations honest.
+      // Live persisted metrics — overlay onto the awaiting baseline so
+      // states with a real row show live values, and states without a
+      // row remain flagged awaiting. Seeded operational values are
+      // never in scope here.
       void sbLoadStateMetrics().then((rows) => {
         if (!rows) return;
-        const base = cache ?? STATE_DIRECTOR_SEED;
+        const base = cache ?? buildBaselineSnapshot();
         const nextMetrics = { ...base.metrics };
         for (const r of rows) {
           nextMetrics[r.code] = {
@@ -147,8 +195,8 @@ function createSupabaseBackedStateOperationsAdapter(): StateDirectorAdapter {
           void loadStateOperationsSnapshot().then((snap) => {
             if (!snap) return;
             const next: StateDirectorSnapshot = {
-              profiles: (cache ?? STATE_DIRECTOR_SEED).profiles,
-              metrics: (cache ?? STATE_DIRECTOR_SEED).metrics,
+              profiles: (cache ?? buildBaselineSnapshot()).profiles,
+              metrics: (cache ?? buildBaselineSnapshot()).metrics,
               escalations: snap.escalations,
               tasks: snap.tasks,
               activity: snap.activity,
@@ -235,9 +283,9 @@ export const stateDirectorStore = {
   snapshot(): StateDirectorSnapshot { return adapter.read(); },
   subscribe: (cb: (s: StateDirectorSnapshot) => void) => adapter.subscribe(cb),
 
-  /** DEBUG — reset to seed. */
+  /** DEBUG — reset to the awaiting baseline (no seeded operational metrics). */
   reset() {
-    adapter.write(STATE_DIRECTOR_SEED);
+    adapter.write(buildBaselineSnapshot());
   },
 
   /* ------------------------------- escalations ---------------------------- */
@@ -686,18 +734,21 @@ export const stateDirectorStore = {
 };
 
 /**
- * Re-hydrates persisted state metrics from Supabase and merges them over
- * the current in-memory snapshot. States without a live row keep the
- * seed fallback (tagged `source="seed"`). Notifies subscribers so the
- * State Operations dashboard reflects the new values without a full
- * page reload.
+ * Re-hydrates persisted state metrics from Supabase. Rebuilds every
+ * state's metric row from the awaiting baseline, then overlays live
+ * rows on top. States without a persisted row stay flagged
+ * `source: "awaiting"` — they never fall back to seeded operational
+ * values. Notifies subscribers so the State Operations dashboard
+ * reflects the new values without a full page reload.
  */
 export async function refreshStateMetrics(): Promise<{ ok: boolean; error?: string }> {
   try {
     const rows = await sbLoadStateMetrics();
     if (!rows) return { ok: false, error: "Could not load state metrics" };
     const current = adapter.read();
-    const nextMetrics = { ...current.metrics };
+    // Rebuild from the awaiting baseline so states without a live row
+    // never inherit stale/seeded values, then overlay live rows.
+    const nextMetrics = { ...buildAwaitingMetrics(current.profiles) };
     for (const r of rows) {
       nextMetrics[r.code] = {
         code: r.code,
