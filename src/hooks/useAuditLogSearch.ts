@@ -140,7 +140,7 @@ export function useAuditLogSearch(
           const safe = escapeOrValue(record);
           if (safe) {
             q = q.or(
-              `entity_table.ilike.%${safe}%,entity_id.ilike.%${safe}%`,
+              `entity_table.ilike.%${safe}%,entity_id::text.ilike.%${safe}%`,
             );
           }
         }
@@ -154,7 +154,7 @@ export function useAuditLogSearch(
             [
               `actor_email.ilike.%${safe}%`,
               `entity_table.ilike.%${safe}%`,
-              `entity_id.ilike.%${safe}%`,
+              `entity_id::text.ilike.%${safe}%`,
               `action.ilike.%${safe}%`,
             ].join(","),
           );
