@@ -90,6 +90,9 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = SUPER_ADMIN_MENU.map((s) => ({
  * is going, but only the surfaces below are actually clickable today.
  */
 export const STAGED_ROLE_LIVE_PATHS: ReadonlySet<string> = new Set([
+  "/home",
+  "/home/manage",
+  "/org-chart",
   "/academy",
   "/training",
   "/resource-library",
