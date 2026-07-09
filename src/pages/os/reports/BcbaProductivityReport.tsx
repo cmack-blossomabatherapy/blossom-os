@@ -686,7 +686,11 @@ export default function BcbaProductivityReport() {
       });
       pushRecent("bcba-productivity-report");
       setSearchParams({ saved: rec.id }, { replace: true });
-      toast.success(`Saved "${rec.name}" to Saved Reports`);
+      if (rec.remoteSyncError) {
+        toast.warning(`Saved "${rec.name}" locally — cloud sync failed, it won't appear on other devices yet.`);
+      } else {
+        toast.success(`Saved "${rec.name}" to Saved Reports`);
+      }
     } catch (err) {
       console.error("Failed to save report", err);
       toast.error("Couldn't save report — please try again.");
