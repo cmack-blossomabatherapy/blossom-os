@@ -121,9 +121,9 @@ describe("State Director Assistant — Pass 6 final hardening", () => {
     expect(button).toMatch(/disabled=\{Boolean\(isStateScoped && pinnedState\)\}/);
   });
 
-  it("ingestStateMetrics helper exists and never persists 'seed' as source", () => {
+  it("ingestStateMetrics helper exists and never persists placeholder awaiting metrics as importer source", () => {
     expect(svc).toMatch(/export async function ingestStateMetrics/);
-    expect(svc).toMatch(/Exclude<StateMetricSource,\s*"seed">/);
+    expect(svc).toMatch(/Exclude<StateMetricSource,\s*"awaiting">/);
   });
 
   it("no mojibake in touched State Director Assistant files", () => {
