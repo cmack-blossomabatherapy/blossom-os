@@ -84,9 +84,9 @@ export function useRbtReportSummaries(): RbtReportSummaries {
             .select("path_id, current_module_id, module_progress, flags")
             .eq("user_id", uid)
             .maybeSingle(),
-          supabase.from("rbt_resource_prefs").select("status, resource_id").eq("user_id", uid),
+          supabase.from("rbt_resource_prefs").select("completed, resource_id").eq("user_id", uid),
           employeeId
-            ? supabase.from("rbt_sessions").select("status").eq("rbt_employee_id", employeeId)
+            ? supabase.from("rbt_sessions").select("session_status").eq("rbt_employee_id", employeeId)
             : Promise.resolve({ data: [] as any[] }),
           employeeId
             ? supabase.from("rbt_help_requests").select("status").eq("rbt_employee_id", employeeId)
@@ -154,7 +154,7 @@ export function useRbtReportSummaries(): RbtReportSummaries {
         }
 
         /* ---------------------- Resource completion ---------------------- */
-        const completedRes = prefRows.filter((p) => p.status === "completed").length;
+        const completedRes = prefRows.filter((p) => p.completed === true).length;
         if (prefRows.length > 0 || completedRes > 0) {
           summaries["rbt-resource-completion"] = {
             key: "rbt-resource-completion",
@@ -166,8 +166,8 @@ export function useRbtReportSummaries(): RbtReportSummaries {
         /* ---------------- Sessions / Help / Supervision ---------------- */
         if (employeeId) {
           if (sessionRows.length > 0) {
-            const completed = sessionRows.filter((s) => s.status === "completed").length;
-            const cancelled = sessionRows.filter((s) => s.status === "cancelled").length;
+            const completed = sessionRows.filter((s) => s.session_status === "completed").length;
+            const cancelled = sessionRows.filter((s) => s.session_status === "cancelled").length;
             summaries["rbt-sessions-attendance"] = {
               key: "rbt-sessions-attendance",
               primary: `${completed}`,

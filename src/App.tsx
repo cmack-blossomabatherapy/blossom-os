@@ -652,7 +652,7 @@ const App = () => (
                 {PublicRoutes}
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<RootToCompanyHome />} />
-                  <Route path="/home" element={<BlossomOSHome />} />
+                  <Route path="/blossom-os" element={<BlossomOSHome />} />
                   <Route path="/dashboard/legacy" element={<OSDashboard />} />
                   {/* Legacy /ws/:id routes are kept only for back-compat redirects
                       onto the live Blossom OS shell. Executive Leadership and
