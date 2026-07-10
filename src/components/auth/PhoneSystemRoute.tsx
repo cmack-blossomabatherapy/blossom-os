@@ -13,8 +13,9 @@ import { useOSRole } from "@/contexts/OSRoleContext";
  *     Marketing roles.
  *   - State Director is intentionally allowed by prior product decision
  *     for cross-department coordination.
- *   - Assistant State Director is intentionally NOT allowed. The
- *     Assistant role uses the limited /phone/ai-calls surface only.
+ *   - Assistant State Director is intentionally NOT allowed the full
+ *     Phone System, and is NOT granted After-Hours AI Calls either
+ *     unless separately added to IntakeAiCallsRoute's allow-list.
  *
  * Intake's limited /phone/ai-calls surface is NOT wrapped by this guard.
  */
