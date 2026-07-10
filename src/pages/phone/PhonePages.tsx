@@ -36,6 +36,23 @@ import {
 } from "@/data/phoneSystem";
 import { AfterHoursAIBoard } from "@/components/phone/AfterHoursAIBoard";
 
+/**
+ * After-Hours AI Calls is an Intake-owned surface. Admins retain support
+ * access. Every other role (Executive Leadership, HR, Marketing, State
+ * Director, etc.) must NOT see After-Hours AI entry points inside /phone
+ * — no stat cards, no CTAs, no quick links. This mirrors
+ * IntakeAiCallsRoute's allow-list exactly.
+ */
+export const AFTER_HOURS_AI_ROLES: ReadonlySet<string> = new Set([
+  "super_admin", "admin", "systems_admin",
+  "intake", "intake_team", "intake_lead", "intake_admin", "intake_manager",
+  "intake_specialist", "intake_coordinator",
+]);
+
+export function canSeeAfterHoursAI(role: string | null | undefined): boolean {
+  return !!role && AFTER_HOURS_AI_ROLES.has(String(role));
+}
+
 // ---------- shared chrome ----------
 
 function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
@@ -124,6 +141,8 @@ function QuickLink({ to, label }: { to: string; label: string }) {
 
 export function PhoneDashboard() {
   const { queues, requests, shared, settings, retellCalls } = usePhoneSystem();
+  const { role } = useOSRole();
+  const showAfterHoursAI = canSeeAfterHoursAI(role);
   const openRequests = requests.filter((r) => !["Closed", "Reverted"].includes(r.status));
   const followUpCalls = retellCalls.filter((c) => c.status === "New" || c.status === "Needs Follow-Up" || c.status === "Attempted");
   const recent = [...requests].slice(0, 5);
@@ -150,8 +169,12 @@ export function PhoneDashboard() {
 
       <div className="grid gap-4 md:grid-cols-3 mt-4">
         <StatCard label="Open Change Requests"   value={openRequests.length}  icon={CalendarClock} />
-           <StatCard label="After-Hours AI Calls"   value={retellCalls.length}   icon={Moon} />
-        <StatCard label="Calls Needing Follow-Up" value={followUpCalls.length} icon={AlertTriangle} />
+        {showAfterHoursAI && (
+          <>
+            <StatCard label="After-Hours AI Calls"   value={retellCalls.length}   icon={Moon} />
+            <StatCard label="Calls Needing Follow-Up" value={followUpCalls.length} icon={AlertTriangle} />
+          </>
+        )}
       </div>
 
       <div className="grid gap-6 mt-6 lg:grid-cols-3">
@@ -166,18 +189,20 @@ export function PhoneDashboard() {
               <Info label="Intake Hours"          value={`${settings.businessHours.adminWeekday} · ${settings.businessHours.adminFriday}`} />
               <Info label="State Director Hours"  value={`${settings.businessHours.directorsWeekday} · ${settings.businessHours.directorsFriday}`} />
             </div>
-            <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 px-3 py-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="font-medium">Retell AI after-hours</span>
-                <Badge variant={settings.retellEnabled ? "default" : "secondary"}>
-                  {settings.retellEnabled ? "Enabled" : "Disabled"}
-                </Badge>
+            {showAfterHoursAI && (
+              <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Retell AI after-hours</span>
+                  <Badge variant={settings.retellEnabled ? "default" : "secondary"}>
+                    {settings.retellEnabled ? "Enabled" : "Disabled"}
+                  </Badge>
+                </div>
+                <Button size="sm" variant="ghost" asChild>
+                  <Link to="/phone/ai-calls">View calls <ArrowRight className="ml-1 h-3 w-3" /></Link>
+                </Button>
               </div>
-              <Button size="sm" variant="ghost" asChild>
-                <Link to="/phone/ai-calls">View calls <ArrowRight className="ml-1 h-3 w-3" /></Link>
-              </Button>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -188,8 +213,12 @@ export function PhoneDashboard() {
             <QuickLink to="/phone/directory" label="Routing Directory" />
             <QuickLink to="/phone/shared"    label="Shared Routing" />
             <QuickLink to="/phone/requests"  label="Change Requests" />
-            <QuickLink to="/phone/ai-calls"  label="After-Hours AI Calls" />
-            <QuickLink to="/phone/ai-calls/audit" label="Call Email Audit" />
+            {showAfterHoursAI && (
+              <>
+                <QuickLink to="/phone/ai-calls"  label="After-Hours AI Calls" />
+                <QuickLink to="/phone/ai-calls/audit" label="Call Email Audit" />
+              </>
+            )}
             <QuickLink to="/phone/admin"     label="Admin Settings" />
           </CardContent>
         </Card>
