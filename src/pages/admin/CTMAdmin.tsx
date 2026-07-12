@@ -1,0 +1,179 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import { PhoneCall, RefreshCw, Trash2 } from "lucide-react";
+
+type Mapping = {
+  id: string;
+  tracking_number: string;
+  friendly_name: string | null;
+  state_code: string | null;
+  marketing_source_id: string | null;
+  marketing_campaign_id: string | null;
+  is_active: boolean;
+};
+
+type CallRow = {
+  id: string;
+  ctm_call_id: string;
+  from_number: string | null;
+  to_number: string | null;
+  tracking_number: string | null;
+  duration_seconds: number | null;
+  source_name: string | null;
+  campaign_name: string | null;
+  resolved_state: string | null;
+  intake_lead_id: string | null;
+  called_at: string | null;
+  recording_url: string | null;
+};
+
+export default function CTMAdmin() {
+  const [mappings, setMappings] = useState<Mapping[]>([]);
+  const [calls, setCalls] = useState<CallRow[]>([]);
+  const [syncing, setSyncing] = useState(false);
+  const [draft, setDraft] = useState({ tracking_number: "", friendly_name: "", state_code: "" });
+
+  async function load() {
+    const [m, c] = await Promise.all([
+      supabase.from("ctm_number_mapping").select("*").order("tracking_number"),
+      supabase.from("ctm_call_events")
+        .select("id,ctm_call_id,from_number,to_number,tracking_number,duration_seconds,source_name,campaign_name,resolved_state,intake_lead_id,called_at,recording_url")
+        .order("called_at", { ascending: false, nullsFirst: false })
+        .limit(50),
+    ]);
+    setMappings((m.data ?? []) as Mapping[]);
+    setCalls((c.data ?? []) as CallRow[]);
+  }
+
+  useEffect(() => {
+    void load();
+    const ch = supabase.channel("ctm-calls-admin")
+      .on("postgres_changes", { event: "*", schema: "public", table: "ctm_call_events" }, () => void load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  async function addMapping() {
+    if (!draft.tracking_number) return;
+    const { error } = await supabase.from("ctm_number_mapping").insert({
+      tracking_number: draft.tracking_number.trim(),
+      friendly_name: draft.friendly_name.trim() || null,
+      state_code: draft.state_code.trim().toUpperCase() || null,
+    });
+    if (error) { toast.error(error.message); return; }
+    setDraft({ tracking_number: "", friendly_name: "", state_code: "" });
+    toast.success("Mapping added");
+    void load();
+  }
+  async function removeMapping(id: string) {
+    const { error } = await supabase.from("ctm_number_mapping").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    void load();
+  }
+  async function runSync() {
+    setSyncing(true);
+    const { data, error } = await supabase.functions.invoke("ctm-sync", { body: {} });
+    setSyncing(false);
+    if (error) return toast.error(error.message);
+    const d = data as { ok?: boolean; fetched?: number; upserted?: number; error?: string | null };
+    if (d?.error) return toast.error(d.error);
+    toast.success(`Synced ${d?.upserted ?? 0} calls`);
+    void load();
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-6 p-6">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">CTM (CallTrackingMetrics)</h1>
+          <p className="text-sm text-muted-foreground">
+            Live call tracking, tracking-number mapping, and backfill sync.
+          </p>
+        </div>
+        <Button onClick={runSync} disabled={syncing}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
+          {syncing ? "Syncing…" : "Run backfill"}
+        </Button>
+      </header>
+
+      <Card>
+        <CardHeader><CardTitle>Tracking number mapping</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <Input placeholder="Tracking # (+18885551234)" value={draft.tracking_number}
+              onChange={(e) => setDraft({ ...draft, tracking_number: e.target.value })} />
+            <Input placeholder="Friendly name (Google Ads GA)" value={draft.friendly_name}
+              onChange={(e) => setDraft({ ...draft, friendly_name: e.target.value })} />
+            <Input placeholder="State (GA, NC, ...)" value={draft.state_code}
+              onChange={(e) => setDraft({ ...draft, state_code: e.target.value })} />
+            <Button onClick={addMapping}>Add mapping</Button>
+          </div>
+          <div className="rounded-lg border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+                <tr><th className="p-2">Number</th><th className="p-2">Name</th><th className="p-2">State</th><th className="p-2 w-16" /></tr>
+              </thead>
+              <tbody>
+                {mappings.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">No mappings yet.</td></tr>}
+                {mappings.map((m) => (
+                  <tr key={m.id} className="border-t">
+                    <td className="p-2 font-mono">{m.tracking_number}</td>
+                    <td className="p-2">{m.friendly_name ?? "—"}</td>
+                    <td className="p-2">{m.state_code ?? "—"}</td>
+                    <td className="p-2 text-right">
+                      <Button variant="ghost" size="icon" onClick={() => removeMapping(m.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><PhoneCall className="h-4 w-4" /> Recent calls (live)</CardTitle></CardHeader>
+        <CardContent>
+          <div className="rounded-lg border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="p-2">When</th><th className="p-2">From</th><th className="p-2">Tracking</th>
+                  <th className="p-2">Source</th><th className="p-2">State</th><th className="p-2">Duration</th><th className="p-2">Lead</th>
+                </tr>
+              </thead>
+              <tbody>
+                {calls.length === 0 && (
+                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">
+                    No CTM calls yet. Add tracking-number mappings above and run a backfill, or wait for the webhook to fire.
+                  </td></tr>
+                )}
+                {calls.map((c) => (
+                  <tr key={c.id} className="border-t">
+                    <td className="p-2">{c.called_at ? new Date(c.called_at).toLocaleString() : "—"}</td>
+                    <td className="p-2 font-mono">{c.from_number ?? "—"}</td>
+                    <td className="p-2 font-mono">{c.tracking_number ?? "—"}</td>
+                    <td className="p-2">{c.source_name ?? "—"}</td>
+                    <td className="p-2">{c.resolved_state ?? "—"}</td>
+                    <td className="p-2">{c.duration_seconds ?? 0}s</td>
+                    <td className="p-2">
+                      {c.intake_lead_id
+                        ? <a className="text-primary hover:underline" href={`/intake?lead=${c.intake_lead_id}`}>Open</a>
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
