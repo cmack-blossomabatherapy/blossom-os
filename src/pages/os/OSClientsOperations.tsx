@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Sparkles, AlertTriangle, ChevronRight, Loader2,
   ShieldCheck, ClipboardList, Calendar as CalendarIcon, Activity,
@@ -54,7 +54,26 @@ export default function OSClientsOperations() {
   const [profileState, setProfileState] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [openClientId, setOpenClientId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [openClientId, setOpenClientId] = useState<string | null>(
+    () => searchParams.get("client"),
+  );
+
+  // Keep drawer state in sync with the ?client=<id> deep link (CTM/escalation links).
+  useEffect(() => {
+    const q = searchParams.get("client");
+    if (q && q !== openClientId) setOpenClientId(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const closeClientDrawer = () => {
+    setOpenClientId(null);
+    if (searchParams.get("client")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("client");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   useEffect(() => {
     if (!user?.id) return;
