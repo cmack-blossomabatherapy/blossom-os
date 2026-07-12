@@ -11,6 +11,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { EscalationLinkPicker, LINK_TYPE_LABEL, linkToHref, type LinkValue, type LinkEntityType } from "./EscalationLinkPicker";
 
 type Category = "escalation" | "task" | "note";
 type Priority = "low" | "medium" | "high" | "urgent";
@@ -40,6 +42,7 @@ type Thread = {
   state: string | null;
   linked_entity_type: string | null;
   linked_entity_id: string | null;
+  linked_entity_label: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -104,6 +107,7 @@ export function FloatingEscalationChat() {
   const [priority, setPriority] = useState<Priority>("medium");
   const [body, setBody] = useState("");
   const [composeDue, setComposeDue] = useState<string>("");
+  const [composeLink, setComposeLink] = useState<LinkValue>(null);
 
   const uid = user?.id ?? null;
 
@@ -324,6 +328,9 @@ export function FloatingEscalationChat() {
         owner_id: toUserId,
         status: "Open",
         due_date: composeDue || null,
+        linked_entity_type: composeLink?.type ?? null,
+        linked_entity_id: composeLink?.id ?? null,
+        linked_entity_label: composeLink?.label ?? null,
       })
       .select("*")
       .single();
@@ -338,7 +345,7 @@ export function FloatingEscalationChat() {
     });
     if (msgErr) toast.warning("Thread created but message failed — try again");
     toast.success("Sent");
-    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium"); setComposeDue("");
+    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium"); setComposeDue(""); setComposeLink(null);
     setActiveThread(data as Thread);
     setView("thread");
   }
@@ -481,6 +488,14 @@ export function FloatingEscalationChat() {
                               {t.due_date ? ` · Due ${new Date(t.due_date).toLocaleDateString()}` : ""}
                               {" · "}{new Date(t.updated_at).toLocaleString()}
                             </div>
+                            {t.linked_entity_type && t.linked_entity_id && (
+                              <div className="mt-1">
+                                <Badge variant="outline" className="text-[10px] gap-1">
+                                  <span className="opacity-70">{LINK_TYPE_LABEL[t.linked_entity_type as LinkEntityType]}:</span>
+                                  <span className="truncate max-w-[180px]">{t.linked_entity_label ?? t.linked_entity_id}</span>
+                                </Badge>
+                              </div>
+                            )}
                           </div>
                         </button>
                       </li>
@@ -555,6 +570,45 @@ export function FloatingEscalationChat() {
                       className="h-8 text-xs"
                     />
                   </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase text-muted-foreground">Context</label>
+                  {activeThread.linked_entity_type && activeThread.linked_entity_id ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Link
+                        to={linkToHref({
+                          type: activeThread.linked_entity_type as LinkEntityType,
+                          id: activeThread.linked_entity_id,
+                          label: activeThread.linked_entity_label ?? "",
+                        })}
+                        className="text-xs font-medium text-primary underline underline-offset-2 truncate"
+                      >
+                        {LINK_TYPE_LABEL[activeThread.linked_entity_type as LinkEntityType]}: {activeThread.linked_entity_label ?? activeThread.linked_entity_id}
+                      </Link>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => patchThread({
+                          linked_entity_type: null,
+                          linked_entity_id: null,
+                          linked_entity_label: null,
+                        } as Partial<Thread>)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <EscalationLinkPicker
+                      value={null}
+                      compact
+                      onChange={(v) => v && patchThread({
+                        linked_entity_type: v.type,
+                        linked_entity_id: v.id,
+                        linked_entity_label: v.label,
+                      } as Partial<Thread>)}
+                    />
+                  )}
                 </div>
               </div>
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -652,6 +706,10 @@ export function FloatingEscalationChat() {
                   value={composeDue}
                   onChange={(e) => setComposeDue(e.target.value)}
                 />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Context (optional)</label>
+                <EscalationLinkPicker value={composeLink} onChange={setComposeLink} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium">Notes</label>

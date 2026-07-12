@@ -7956,6 +7956,7 @@ export type Database = {
           from_user_id: string
           id: string
           linked_entity_id: string | null
+          linked_entity_label: string | null
           linked_entity_type: string | null
           next_step: string | null
           owner_id: string | null
@@ -7974,6 +7975,7 @@ export type Database = {
           from_user_id: string
           id?: string
           linked_entity_id?: string | null
+          linked_entity_label?: string | null
           linked_entity_type?: string | null
           next_step?: string | null
           owner_id?: string | null
@@ -7992,6 +7994,7 @@ export type Database = {
           from_user_id?: string
           id?: string
           linked_entity_id?: string | null
+          linked_entity_label?: string | null
           linked_entity_type?: string | null
           next_step?: string | null
           owner_id?: string | null
