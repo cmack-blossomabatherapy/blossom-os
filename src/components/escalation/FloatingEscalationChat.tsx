@@ -111,6 +111,8 @@ export function FloatingEscalationChat() {
   const [body, setBody] = useState("");
   const [composeDue, setComposeDue] = useState<string>("");
   const [composeLink, setComposeLink] = useState<LinkValue>(null);
+  const [composeAttachments, setComposeAttachments] = useState<Attachment[]>([]);
+  const [replyAttachments, setReplyAttachments] = useState<Attachment[]>([]);
 
   // List filters
   const [filterQuery, setFilterQuery] = useState("");
@@ -308,17 +310,22 @@ export function FloatingEscalationChat() {
   /* ---------- Actions ---------- */
 
   async function sendMessage() {
-    if (!uid || !activeThread || !reply.trim()) return;
+    if (!uid || !activeThread) return;
+    if (!reply.trim() && replyAttachments.length === 0) return;
     const body = reply.trim();
+    const attachments = replyAttachments;
     setReply("");
+    setReplyAttachments([]);
     const { error } = await supabase.from("escalation_thread_messages").insert({
       thread_id: activeThread.id,
       sender_id: uid,
       body,
+      attachments,
     });
     if (error) {
       toast.error("Message failed to send");
       setReply(body);
+      setReplyAttachments(attachments);
     }
   }
 
@@ -353,10 +360,11 @@ export function FloatingEscalationChat() {
       thread_id: data.id,
       sender_id: uid,
       body: body.trim(),
+      attachments: composeAttachments,
     });
     if (msgErr) toast.warning("Thread created but message failed — try again");
     toast.success("Sent");
-    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium"); setComposeDue(""); setComposeLink(null);
+    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium"); setComposeDue(""); setComposeLink(null); setComposeAttachments([]);
     setActiveThread(data as Thread);
     setView("thread");
   }
