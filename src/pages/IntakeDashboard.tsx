@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock, Download, Eye, FileText,
   Mail, Phone, RefreshCw, Search, Send, ShieldCheck, UserPlus, Users, Zap,
@@ -229,7 +230,54 @@ export default function IntakeDashboard() {
         </div>
       </section>
 
-      <section className="space-y-3"><div className="flex items-center justify-between"><h2 className="text-base font-semibold text-foreground">Pipeline Health</h2><span className="text-xs text-muted-foreground">Oldest and average days by stage</span></div><div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6 2xl:grid-cols-11">{stageHealth.map((item) => <button key={item.stage} onClick={() => setActiveKpi("all")} className="rounded-xl border border-border/60 bg-card p-3 text-left shadow-sm"><div className="flex items-center justify-between gap-2"><span className="text-xs font-medium text-foreground">{item.stage}</span><HealthDot health={item.health} /></div><div className="mt-2 text-xl font-semibold text-foreground">{item.count}</div><div className="mt-2 space-y-1 text-[11px] text-muted-foreground"><p>Oldest {item.oldest}d</p><p>Avg {item.avgDays}d</p></div></button>)}</div></section>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Aging by Stage</h2>
+            <p className="text-xs text-muted-foreground">Click any stage to open those leads in the Leads workspace, sorted by oldest first.</p>
+          </div>
+          <Link to="/leads" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            Open Leads <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+          {stageHealth
+            .slice()
+            .sort((a, b) => b.oldest - a.oldest)
+            .map((item) => {
+              const empty = item.count === 0;
+              return (
+                <Link
+                  key={item.stage}
+                  to={`/leads?status=${encodeURIComponent(item.stage)}`}
+                  aria-label={`Open ${item.count} ${item.stage} leads`}
+                  className={cn(
+                    "group rounded-xl border border-border/60 bg-card p-4 text-left shadow-sm transition",
+                    "hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                    empty && "opacity-70",
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-foreground">{item.stage}</span>
+                    <HealthDot health={item.health} />
+                  </div>
+                  <div className="mt-3 flex items-baseline gap-2">
+                    <span className="text-2xl font-semibold text-foreground">{item.count}</span>
+                    <span className="text-[11px] text-muted-foreground">leads</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>Oldest <span className="font-medium text-foreground">{item.oldest}d</span></span>
+                    <span>Avg <span className="font-medium text-foreground">{item.avgDays}d</span></span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-[11px] font-medium text-primary opacity-0 transition group-hover:opacity-100">
+                    <span>Open list</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </div>
+                </Link>
+              );
+            })}
+        </div>
+      </section>
 
       <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
         <div className="rounded-xl border border-border/60 bg-card shadow-sm"><div className="border-b border-border/60 p-4"><h2 className="text-base font-semibold text-foreground">Intake Owner Performance</h2></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground"><tr>{["Team Member", "Assigned", "Avg First Contact", "Forms Sent", "Forms Completed", "Missing Resolved", "VOBs Sent", "Conversion", "Open Tasks", "Overdue"].map((h) => <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>)}</tr></thead><tbody>{teamRows.map((row) => <tr key={row.owner} className="border-t border-border/50"><td className="px-4 py-3 font-medium text-foreground">{row.owner}</td><td className="px-4 py-3">{row.assigned}</td><td className="px-4 py-3">{row.speed}h</td><td className="px-4 py-3">{row.sent}</td><td className="px-4 py-3">{row.completed}</td><td className="px-4 py-3">{row.resolved}</td><td className="px-4 py-3">{row.vobs}</td><td className="px-4 py-3">{row.conversion}%</td><td className="px-4 py-3">{row.openTasks}</td><td className={cn("px-4 py-3 font-medium", row.overdue ? "text-destructive" : "text-muted-foreground")}>{row.overdue}</td></tr>)}</tbody></table></div></div>
