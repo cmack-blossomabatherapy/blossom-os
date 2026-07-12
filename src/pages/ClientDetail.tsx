@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useClients } from "@/contexts/ClientsContext";
 import { toast } from "sonner";
+import { CallHistoryList } from "@/components/phone/CallHistoryList";
 import {
   AddTaskDialog, DatePickerDialog, ScheduleBlockDialog, UploadDocumentDialog,
 } from "@/components/clients/ClientDetailDialogs";
