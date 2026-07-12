@@ -396,6 +396,70 @@ export function FloatingEscalationChat() {
 
           {view === "thread" && activeThread && (
             <>
+              {/* Workflow bar: status, owner, due date, blocker, next step */}
+              <div className="border-b bg-muted/30 p-3 space-y-2">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-muted-foreground">Status</label>
+                    <Select value={activeThread.status} onValueChange={(v) => setStatus(v as EscalationStatus)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map((s) => (
+                          <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-muted-foreground flex items-center gap-1">
+                      <UserCog className="h-3 w-3" /> Owner
+                    </label>
+                    <Select value={activeThread.owner_id ?? ""} onValueChange={(v) => setOwner(v)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Assign owner" /></SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {sortedRecipients.map((r) => (
+                          <SelectItem key={r.user_id} value={r.user_id} className="text-xs">
+                            {r.display_name || "Teammate"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-muted-foreground flex items-center gap-1">
+                      <CalendarIcon className="h-3 w-3" /> Due
+                    </label>
+                    <Input
+                      type="date"
+                      value={activeThread.due_date ?? ""}
+                      onChange={(e) => patchThread({ due_date: e.target.value || null })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-muted-foreground">Blocker</label>
+                    <Input
+                      value={activeThread.blocker ?? ""}
+                      onChange={(e) => setActiveThread({ ...activeThread, blocker: e.target.value })}
+                      onBlur={(e) => patchThread({ blocker: e.target.value || null })}
+                      placeholder="What's holding this up?"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-muted-foreground">Next step</label>
+                    <Input
+                      value={activeThread.next_step ?? ""}
+                      onChange={(e) => setActiveThread({ ...activeThread, next_step: e.target.value })}
+                      onBlur={(e) => patchThread({ next_step: e.target.value || null })}
+                      placeholder="What happens next?"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2">
                 {messages.map((m) => {
                   const mine = m.sender_id === uid;
@@ -482,6 +546,14 @@ export function FloatingEscalationChat() {
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="e.g. Escalate lead — missing VOB"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Due date (optional)</label>
+                <Input
+                  type="date"
+                  value={composeDue}
+                  onChange={(e) => setComposeDue(e.target.value)}
                 />
               </div>
               <div className="space-y-1">
