@@ -120,6 +120,7 @@ export function FloatingEscalationChat() {
   const [filterPriority, setFilterPriority] = useState<"all" | Priority>("all");
   const [filterRecipient, setFilterRecipient] = useState<"all" | string>("all");
   const [filterLinkType, setFilterLinkType] = useState<"all" | LinkEntityType | "any">("all");
+  const [sortBy, setSortBy] = useState<"activity" | "created" | "due" | "priority">("activity");
   const [showFilters, setShowFilters] = useState(false);
 
   const uid = user?.id ?? null;
