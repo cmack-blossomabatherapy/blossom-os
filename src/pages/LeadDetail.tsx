@@ -680,6 +680,13 @@ export default function LeadDetail() {
                   onChange={(e) => handleDocumentUpload(e.target.files)}
                 />
               </div>
+              <div className="mt-4">
+                <CallHistoryList
+                  numbers={[lead.phone]}
+                  title="Call Recordings & Transcripts"
+                  emptyMessage="No tracked call recordings for this lead yet."
+                />
+              </div>
             </TabsContent>
 
             {/* Automation Log */}
