@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MessageCircle, X, Send, Plus, ArrowLeft, CheckCircle2, AlertTriangle, ListTodo, StickyNote } from "lucide-react";
+import { MessageCircle, X, Send, Plus, ArrowLeft, CheckCircle2, AlertTriangle, ListTodo, StickyNote, CalendarIcon, UserCog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -14,16 +14,29 @@ import { toast } from "sonner";
 
 type Category = "escalation" | "task" | "note";
 type Priority = "low" | "medium" | "high" | "urgent";
-type Status = "open" | "resolved";
+export type EscalationStatus = "Open" | "Assigned" | "In Review" | "Resolved";
+
+const STATUS_OPTIONS: EscalationStatus[] = ["Open", "Assigned", "In Review", "Resolved"];
+
+const STATUS_STYLES: Record<EscalationStatus, string> = {
+  Open: "bg-amber-100 text-amber-800 border-amber-200",
+  Assigned: "bg-blue-100 text-blue-800 border-blue-200",
+  "In Review": "bg-purple-100 text-purple-800 border-purple-200",
+  Resolved: "bg-emerald-100 text-emerald-800 border-emerald-200",
+};
 
 type Thread = {
   id: string;
   subject: string;
   category: Category;
   priority: Priority;
-  status: Status;
+  status: EscalationStatus;
   from_user_id: string;
   to_user_id: string;
+  owner_id: string | null;
+  due_date: string | null;
+  blocker: string | null;
+  next_step: string | null;
   state: string | null;
   linked_entity_type: string | null;
   linked_entity_id: string | null;
@@ -71,6 +84,7 @@ export function FloatingEscalationChat() {
   const [category, setCategory] = useState<Category>("escalation");
   const [priority, setPriority] = useState<Priority>("medium");
   const [body, setBody] = useState("");
+  const [composeDue, setComposeDue] = useState<string>("");
 
   const uid = user?.id ?? null;
 
@@ -213,6 +227,9 @@ export function FloatingEscalationChat() {
         priority,
         from_user_id: uid,
         to_user_id: toUserId,
+        owner_id: toUserId,
+        status: "Open",
+        due_date: composeDue || null,
       })
       .select("*")
       .single();
@@ -227,21 +244,30 @@ export function FloatingEscalationChat() {
     });
     if (msgErr) toast.warning("Thread created but message failed — try again");
     toast.success("Sent");
-    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium");
+    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium"); setComposeDue("");
     setActiveThread(data as Thread);
     setView("thread");
   }
 
-  async function toggleResolved() {
+  async function patchThread(patch: Partial<Thread>) {
     if (!activeThread) return;
-    const next: Status = activeThread.status === "open" ? "resolved" : "open";
     const { error } = await supabase
       .from("escalation_threads")
-      .update({ status: next })
+      .update(patch)
       .eq("id", activeThread.id);
     if (error) { toast.error("Update failed"); return; }
-    setActiveThread({ ...activeThread, status: next });
-    setThreads((prev) => prev.map((t) => t.id === activeThread.id ? { ...t, status: next } : t));
+    const merged = { ...activeThread, ...patch } as Thread;
+    setActiveThread(merged);
+    setThreads((prev) => prev.map((t) => t.id === activeThread.id ? merged : t));
+  }
+
+  async function setStatus(next: EscalationStatus) {
+    await patchThread({ status: next });
+  }
+  async function setOwner(nextOwnerId: string) {
+    // If moving out of Open, auto-advance to Assigned when still Open
+    const status: EscalationStatus = activeThread?.status === "Open" ? "Assigned" : (activeThread?.status ?? "Open");
+    await patchThread({ owner_id: nextOwnerId, status });
   }
 
   /* ---------- Derived ---------- */
@@ -313,9 +339,13 @@ export function FloatingEscalationChat() {
               </Button>
             )}
             {view === "thread" && activeThread && (
-              <Button size="sm" variant="ghost" onClick={toggleResolved}>
-                <CheckCircle2 className={cn("h-4 w-4 mr-1", activeThread.status === "resolved" && "text-emerald-500")} />
-                {activeThread.status === "resolved" ? "Reopen" : "Resolve"}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setStatus(activeThread.status === "Resolved" ? "Open" : "Resolved")}
+              >
+                <CheckCircle2 className={cn("h-4 w-4 mr-1", activeThread.status === "Resolved" && "text-emerald-500")} />
+                {activeThread.status === "Resolved" ? "Reopen" : "Resolve"}
               </Button>
             )}
           </div>
@@ -339,17 +369,20 @@ export function FloatingEscalationChat() {
                         >
                           <Icon className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="truncate text-sm font-medium">{t.subject}</span>
-                              {t.status === "resolved" && (
-                                <Badge variant="outline" className="text-[10px]">resolved</Badge>
-                              )}
-                              {t.status === "open" && t.priority === "urgent" && (
+                              <Badge variant="outline" className={cn("text-[10px] border", STATUS_STYLES[t.status])}>
+                                {t.status}
+                              </Badge>
+                              {t.status !== "Resolved" && t.priority === "urgent" && (
                                 <Badge className="text-[10px] bg-red-500 hover:bg-red-500">urgent</Badge>
                               )}
                             </div>
                             <div className="truncate text-[11px] text-muted-foreground">
-                              {t.from_user_id === uid ? "To" : "From"} {nameOf(otherId(t))} · {new Date(t.updated_at).toLocaleString()}
+                              {t.from_user_id === uid ? "To" : "From"} {nameOf(otherId(t))}
+                              {t.owner_id && t.owner_id !== otherId(t) ? ` · Owner ${nameOf(t.owner_id)}` : ""}
+                              {t.due_date ? ` · Due ${new Date(t.due_date).toLocaleDateString()}` : ""}
+                              {" · "}{new Date(t.updated_at).toLocaleString()}
                             </div>
                           </div>
                         </button>
@@ -363,6 +396,70 @@ export function FloatingEscalationChat() {
 
           {view === "thread" && activeThread && (
             <>
+              {/* Workflow bar: status, owner, due date, blocker, next step */}
+              <div className="border-b bg-muted/30 p-3 space-y-2">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-muted-foreground">Status</label>
+                    <Select value={activeThread.status} onValueChange={(v) => setStatus(v as EscalationStatus)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map((s) => (
+                          <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-muted-foreground flex items-center gap-1">
+                      <UserCog className="h-3 w-3" /> Owner
+                    </label>
+                    <Select value={activeThread.owner_id ?? ""} onValueChange={(v) => setOwner(v)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Assign owner" /></SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {sortedRecipients.map((r) => (
+                          <SelectItem key={r.user_id} value={r.user_id} className="text-xs">
+                            {r.display_name || "Teammate"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-muted-foreground flex items-center gap-1">
+                      <CalendarIcon className="h-3 w-3" /> Due
+                    </label>
+                    <Input
+                      type="date"
+                      value={activeThread.due_date ?? ""}
+                      onChange={(e) => patchThread({ due_date: e.target.value || null })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-muted-foreground">Blocker</label>
+                    <Input
+                      value={activeThread.blocker ?? ""}
+                      onChange={(e) => setActiveThread({ ...activeThread, blocker: e.target.value })}
+                      onBlur={(e) => patchThread({ blocker: e.target.value || null })}
+                      placeholder="What's holding this up?"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-muted-foreground">Next step</label>
+                    <Input
+                      value={activeThread.next_step ?? ""}
+                      onChange={(e) => setActiveThread({ ...activeThread, next_step: e.target.value })}
+                      onBlur={(e) => patchThread({ next_step: e.target.value || null })}
+                      placeholder="What happens next?"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2">
                 {messages.map((m) => {
                   const mine = m.sender_id === uid;
@@ -449,6 +546,14 @@ export function FloatingEscalationChat() {
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="e.g. Escalate lead — missing VOB"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Due date (optional)</label>
+                <Input
+                  type="date"
+                  value={composeDue}
+                  onChange={(e) => setComposeDue(e.target.value)}
                 />
               </div>
               <div className="space-y-1">
