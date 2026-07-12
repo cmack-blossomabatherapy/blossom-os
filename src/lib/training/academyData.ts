@@ -1659,7 +1659,7 @@ interface AcademyState {
   journeys: RoleJourney[];
 }
 
-const STORAGE_KEY = "blossom.training.academy.v9";
+const STORAGE_KEY = "blossom.training.academy.v10";
 
 function loadInitial(): AcademyState {
   if (typeof window === "undefined") {
@@ -1872,12 +1872,37 @@ export function getTraining(id: string): Training | undefined {
 }
 
 export function getJourneyForRole(role: string): RoleJourney {
-  // Assistant State Director shares the State Director launch journey.
-  if (role === "assistant_state_director") {
-    const sd = state.journeys.find((j) => j.role === "state_director");
-    if (sd) return sd;
-  }
-  const direct = state.journeys.find((j) => j.role === role);
+  // Alias newer/lead role variants back to their canonical journey so every
+  // seat sees an assigned wireframe on day one.
+  const ROLE_ALIASES: Record<string, string> = {
+    assistant_state_director: "state_director",
+    intake_lead: "intake_coordinator",
+    authorization_manager: "authorization_coordinator",
+    scheduling_lead: "scheduling_team",
+    scheduling_coordinator: "scheduling_team",
+    staffing_lead: "staffing_team",
+    staffing_coordinator: "staffing_team",
+    recruiting_lead: "recruiting_team",
+    recruiting_coordinator: "recruiting_team",
+    hr_lead: "hr_team",
+    payroll_lead: "payroll_coordinator",
+    billing_lead: "billing_finance",
+    finance_benefits_lead: "billing_finance",
+    finance_benefits_team: "billing_finance",
+    credentialing_lead: "credentialing_team",
+    rcm_team: "billing_finance",
+    qa_director: "qa_team",
+    qa_specialist: "qa_team",
+    clinical_lead: "clinical_director",
+    marketing_growth_lead: "marketing_team",
+    executive: "executive_leadership",
+    ceo: "executive_leadership",
+    coo: "executive_leadership",
+    director_of_operations: "operations_leadership",
+    operations_manager: "operations_leadership",
+  };
+  const resolvedRole = ROLE_ALIASES[role] ?? role;
+  const direct = state.journeys.find((j) => j.role === resolvedRole);
   if (direct) return direct;
   if (role === "super_admin") {
     return state.journeys.find((j) => j.role === "executive_leadership")
