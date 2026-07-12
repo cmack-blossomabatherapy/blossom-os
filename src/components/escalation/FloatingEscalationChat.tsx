@@ -74,9 +74,28 @@ export function FloatingEscalationChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
-  const [unread, setUnread] = useState(0);
+  const [unreadThreads, setUnreadThreads] = useState<Set<string>>(new Set());
   const [reply, setReply] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Refs so realtime callbacks always see current values without re-subscribing.
+  const openRef = useRef(open);
+  const activeThreadIdRef = useRef<string | null>(null);
+  const profileNamesRef = useRef<Record<string, string>>({});
+  useEffect(() => { openRef.current = open; }, [open]);
+  useEffect(() => { activeThreadIdRef.current = activeThread?.id ?? null; }, [activeThread]);
+  useEffect(() => { profileNamesRef.current = profileNames; }, [profileNames]);
+
+  // Clear per-thread unread badge whenever the user opens a thread.
+  useEffect(() => {
+    if (!open || !activeThread) return;
+    setUnreadThreads((prev) => {
+      if (!prev.has(activeThread.id)) return prev;
+      const next = new Set(prev);
+      next.delete(activeThread.id);
+      return next;
+    });
+  }, [open, activeThread]);
 
   // compose state
   const [toUserId, setToUserId] = useState("");
@@ -128,14 +147,89 @@ export function FloatingEscalationChat() {
               (a, b) => (b.updated_at > a.updated_at ? 1 : -1),
             );
           });
-          if (!open && payload.eventType === "INSERT" && row.to_user_id === uid) {
-            setUnread((n) => n + 1);
+          if (payload.eventType === "INSERT" && row.to_user_id === uid) {
+            const isActive = openRef.current && activeThreadIdRef.current === row.id;
+            if (!isActive) {
+              setUnreadThreads((prev) => {
+                const next = new Set(prev);
+                next.add(row.id);
+                return next;
+              });
+              const senderName = profileNamesRef.current[row.from_user_id] || "A teammate";
+              toast(`New escalation from ${senderName}`, {
+                description: row.subject,
+                action: {
+                  label: "Open",
+                  onClick: () => {
+                    setOpen(true);
+                    setActiveThread(row as Thread);
+                    setView("thread");
+                  },
+                },
+              });
+            }
           }
         },
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [uid, open]);
+  }, [uid]);
+
+  /* ---------- Global realtime for message replies -> badge + notify ---------- */
+  useEffect(() => {
+    if (!uid) return;
+    const ch = supabase
+      .channel("escalation_msgs_global")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "escalation_thread_messages" },
+        async (payload) => {
+          const m = payload.new as Message;
+          if (!m || m.sender_id === uid) return; // ignore self-sends
+
+          // Confirm the current user participates in the thread (RLS should already gate, belt-and-suspenders).
+          const { data: t } = await supabase
+            .from("escalation_threads")
+            .select("id,subject,from_user_id,to_user_id")
+            .eq("id", m.thread_id)
+            .maybeSingle();
+          if (!t) return;
+          if (t.from_user_id !== uid && t.to_user_id !== uid) return;
+
+          const isActive = openRef.current && activeThreadIdRef.current === t.id;
+          if (isActive) return; // user is reading it; no badge/toast
+
+          setUnreadThreads((prev) => {
+            const next = new Set(prev);
+            next.add(t.id);
+            return next;
+          });
+          const senderName = profileNamesRef.current[m.sender_id] || "A teammate";
+          const preview = m.body.length > 100 ? `${m.body.slice(0, 100)}…` : m.body;
+          toast(`${senderName} · ${t.subject}`, {
+            description: preview,
+            action: {
+              label: "Open",
+              onClick: async () => {
+                setOpen(true);
+                // Load full thread and open it.
+                const { data: full } = await supabase
+                  .from("escalation_threads")
+                  .select("*")
+                  .eq("id", t.id)
+                  .maybeSingle();
+                if (full) {
+                  setActiveThread(full as Thread);
+                  setView("thread");
+                }
+              },
+            },
+          });
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [uid]);
 
   /* ---------- Load recipients (active profiles) ---------- */
   useEffect(() => {
@@ -287,16 +381,16 @@ export function FloatingEscalationChat() {
       {/* Floating button */}
       <button
         aria-label="Open escalation chat"
-        onClick={() => { setOpen((o) => !o); setUnread(0); }}
+        onClick={() => setOpen((o) => !o)}
         className={cn(
           "fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full",
           "bg-primary text-primary-foreground shadow-lg hover:scale-105 transition-transform",
         )}
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-        {!open && unread > 0 && (
+        {!open && unreadThreads.size > 0 && (
           <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-            {unread}
+            {unreadThreads.size}
           </span>
         )}
       </button>
@@ -371,6 +465,9 @@ export function FloatingEscalationChat() {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="truncate text-sm font-medium">{t.subject}</span>
+                              {unreadThreads.has(t.id) && (
+                                <span className="h-2 w-2 rounded-full bg-red-500" aria-label="Unread" />
+                              )}
                               <Badge variant="outline" className={cn("text-[10px] border", STATUS_STYLES[t.status])}>
                                 {t.status}
                               </Badge>
