@@ -182,6 +182,7 @@ export const WORKSPACES: Workspace[] = [
       { label: "Scheduling Queue", path: "/scheduling" },
       { label: "RBT Roster",       path: "/scheduling/rbts" },
       { label: "BCBA Roster",      path: "/scheduling/bcbas" },
+      { label: "Orientation",      path: "/hr/orientation-queue" },
       { label: "Workspace",        path: "/scheduling-workspace" },
       { label: "Resources",        path: "/scheduling/resources" },
     ],

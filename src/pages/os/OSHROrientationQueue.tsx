@@ -324,7 +324,7 @@ export default function OSHROrientationQueue() {
             <div className="min-w-0 flex-1">
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Orientation Queue</h1>
               <p className="text-[13px] text-muted-foreground mt-1 max-w-2xl">
-                Coordinate orientation scheduling, onboarding readiness, attendance, and staffing preparation across Blossom.
+                Schedule new-hire orientations, track attendance, and hand off readiness updates to HR and staffing.
               </p>
             </div>
           </div>
@@ -658,10 +658,9 @@ export default function OSHROrientationQueue() {
               <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Quick links</h3>
               <nav className="space-y-1">
                 {[
-                  { label: "New Hires", to: "/hr/new-hires", icon: Users },
-                  { label: "Employee Support", to: "/hr/employee-support", icon: MessageSquare },
-                  { label: "Training & Certifications", to: "/hr/training-certifications", icon: GraduationCap },
-                  { label: "Compliance & Documents", to: "/hr/compliance", icon: ShieldCheck },
+                  { label: "New Hire Pipeline", to: "/hr/new-hires", icon: Users },
+                  { label: "Scheduling Workspace", to: "/scheduling-workspace", icon: Calendar },
+                  { label: "HR Messages", to: "/hr/messages", icon: MessageSquare },
                 ].map(l => (
                   <Link key={l.label} to={l.to} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[13px] hover:bg-muted transition-colors">
                     <span className="inline-flex items-center gap-2">

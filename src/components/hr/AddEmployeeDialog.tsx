@@ -65,6 +65,24 @@ export function AddEmployeeDialog({ open, onOpenChange, departments, onCreated }
       toast.error(error?.message ?? "Could not create employee.");
       return;
     }
+    const { data: existingOnboarding, error: onboardingLookupError } = await supabase
+      .from("employee_onboarding")
+      .select("id")
+      .eq("employee_id", data.id)
+      .maybeSingle();
+
+    if (onboardingLookupError) {
+      toast.warning("Employee created, but onboarding setup could not be checked. Open the profile to finish setup.");
+    } else if (!existingOnboarding) {
+      const { error: onboardingError } = await supabase.from("employee_onboarding").insert({
+        employee_id: data.id,
+        status: "new_hire_pending",
+        notes: "Created from User Management employee setup.",
+      });
+      if (onboardingError) {
+        toast.warning("Employee created, but onboarding setup did not save. Open the profile to finish setup.");
+      }
+    }
     await supabase.from("employee_timeline").insert({
       employee_id: data.id,
       event_type: "created",
@@ -72,12 +90,12 @@ export function AddEmployeeDialog({ open, onOpenChange, departments, onCreated }
     });
     toast.success("Employee added.");
     if (email.trim()) {
-      // Best-effort: provision an auth account so the Access tab is ready to send a sign-in link.
+      // Best-effort: provision an auth account so User Management can finish software access from the employee profile.
       const { error: linkErr } = await supabase.functions.invoke("admin-employee-magic-link", {
         body: { employeeId: data.id, siteUrl: window.location.origin, skipEmail: true },
       });
       if (linkErr) {
-        toast.warning("Employee created, but couldn't auto-create their login. You can still send a sign-in link from the Access tab.");
+        toast.warning("Employee created, but their software login was not prepared. Finish access from the employee profile.");
       }
     }
     onCreated(data.id);

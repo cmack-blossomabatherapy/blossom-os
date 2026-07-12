@@ -279,7 +279,7 @@ export default function OSHRNewHires() {
             </p>
           </div>
           <div className="hidden md:flex items-center gap-2 flex-wrap justify-end">
-            <Link to="/hr/orientation-queue" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/user-management?add=1" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <UserPlus className="h-3.5 w-3.5" strokeWidth={1.75} /> Add new hire
             </Link>
             <Link to="/hr/orientation-queue" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
@@ -463,6 +463,7 @@ export default function OSHRNewHires() {
               <nav className="space-y-1">
                 {[
                   { label: "HR Workspace",     to: "/hr/workspace" },
+                  { label: "User Management", to: "/user-management" },
                   { label: "Orientation queue",to: "/hr/orientation-queue" },
                   { label: "Training Management", to: "/hr/training-center" },
                   { label: "Learner Academy", to: "/academy" },

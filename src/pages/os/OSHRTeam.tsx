@@ -312,7 +312,7 @@ export default function OSHRTeam() {
 
         {/* QUICK ACTIONS */}
         <div className="flex flex-wrap items-center gap-2">
-          <Link to="/hr/new-hires"             className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition inline-flex items-center gap-2"><UserPlus className="h-4 w-4" strokeWidth={1.75} /> Add new hire</Link>
+          <Link to="/user-management?add=1"   className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition inline-flex items-center gap-2"><UserPlus className="h-4 w-4" strokeWidth={1.75} /> Add new hire</Link>
           <Link to="/hr/orientation-queue"     className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><CalendarClock className="h-4 w-4" strokeWidth={1.75} /> Review orientation queue</Link>
           <Link to="/hr/training-certifications" className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><GraduationCap className="h-4 w-4" strokeWidth={1.75} /> Assign training</Link>
           <Link to="/hr/requests"              className="h-9 px-4 rounded-xl bg-muted/60 border border-border text-sm hover:bg-muted transition inline-flex items-center gap-2"><Inbox className="h-4 w-4" strokeWidth={1.75} /> Open HR requests</Link>
