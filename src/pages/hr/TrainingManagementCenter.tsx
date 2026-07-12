@@ -78,6 +78,7 @@ import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { LayoutDashboard } from "lucide-react";
 import { ResourceAttachmentManager } from "@/components/training/ResourceAttachmentManager";
+import { RoleJourneyAssignmentsView } from "@/components/training/RoleJourneyAssignmentsView";
 import {
   JourneyMetaEditor,
   ModuleEditDialog,
@@ -205,6 +206,7 @@ function toViewJourney(j: RoleJourney): ViewJourney {
 type NavId =
   | "control-room"
   | "journeys"
+  | "role-journeys"
   | "modules"
   | "onboarding"
   | "sops"
@@ -219,6 +221,7 @@ type NavId =
 const NAV: { id: NavId; label: string; icon: typeof FileText }[] = [
   { id: "control-room", label: "Control Room", icon: LayoutDashboard },
   { id: "journeys", label: "Journeys", icon: Compass },
+  { id: "role-journeys", label: "Role Journeys", icon: Users },
   { id: "modules", label: "Modules", icon: Layers },
   { id: "onboarding", label: "Welcome to Blossom", icon: Heart },
   { id: "sops", label: "SOPs", icon: FileText },
@@ -522,6 +525,7 @@ export default function TrainingManagementCenter() {
               onSelect={setSelectedJourneyId}
             />
           )}
+          {nav === "role-journeys" && <RoleJourneyAssignmentsView />}
           {nav === "journeys" && selectedJourney && (
             <JourneyBuilderView
               journey={selectedJourney}
