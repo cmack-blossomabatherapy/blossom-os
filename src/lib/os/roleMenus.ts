@@ -402,6 +402,8 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Session Coverage",     path: "/scheduling-workspace",                    icon: Calendar },
           { label: "RBT Roster",           path: "/scheduling/rbts",                         icon: UserCheck },
           { label: "BCBA Roster",          path: "/scheduling/bcbas",                        icon: UserCheck },
+          { label: "Orientation Scheduling", path: "/hr/orientation-queue",                    icon: CalendarClock },
+          { label: "Cancellation Report",  path: "/reports/cancellation-command-center",      icon: ClipboardList },
           { label: "Make-Up Sessions",     path: "/ops/make-up-sessions",                    icon: Activity },
           { label: "Scheduling Resources", path: "/scheduling/resources",                    icon: BookOpen },
         ],

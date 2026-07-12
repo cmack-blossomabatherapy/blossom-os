@@ -215,7 +215,7 @@ export default function OSHRWorkspace() {
             </p>
           </div>
           <div className="hidden md:flex items-center gap-2">
-            <Link to="/hr/new-hires" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/user-management?add=1" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
               <UserPlus className="h-3.5 w-3.5" strokeWidth={1.75} /> Add new hire
             </Link>
             <Link to="/hr/orientation-queue" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
