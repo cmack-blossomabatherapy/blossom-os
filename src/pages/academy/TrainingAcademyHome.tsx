@@ -13,6 +13,8 @@ import {
   loadLearnerHome, emptyLearnerHome, type LearnerHome,
 } from "@/lib/academy/learnerHome";
 import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCard";
+import { resolveRoleJourney } from "@/lib/training/roleJourneyAssignments";
+import { useRoleJourneyAssignments } from "@/hooks/useRoleJourneyAssignments";
 
 /** Warm, color-coded accents for the LMS home. Used sparingly on icon
  *  tiles and status chips so the page feels alive without losing the
@@ -37,92 +39,11 @@ export default function TrainingAcademyHome() {
   const { isAdmin, user, roles } = useAuth();
   const isRbt = roles.includes("rbt" as never);
   const isBcba = roles.includes("bcba" as never);
-  // Every operational role has an assigned wireframe training path.
-  // Map the learner's role(s) to the TRAINING_PATHS slug so /academy always
-  // surfaces "your journey" first — not just for RBT/BCBA.
-  const ROLE_TO_SLUG: Record<string, string> = {
-    rbt: "rbt",
-    bcba: "bcba",
-    case_manager: "case-manager",
-    behavioral_support: "behavioral-support",
-    clinical_director: "clinical-director",
-    clinical_lead: "clinical-director",
-    state_director: "state-director",
-    assistant_state_director: "state-director",
-    intake: "intake",
-    intake_coordinator: "intake",
-    intake_lead: "intake",
-    intake_team: "intake",
-    marketing: "marketing",
-    marketing_team: "marketing",
-    marketing_growth_lead: "marketing",
-    bd: "business-development",
-    business_development: "business-development",
-    recruiting: "recruiting",
-    recruiting_team: "recruiting",
-    recruiting_lead: "recruiting",
-    recruiting_coordinator: "recruiting",
-    recruiting_assistant: "recruiting",
-    auths: "authorizations",
-    authorizations: "authorizations",
-    authorization_coordinator: "authorizations",
-    authorization_manager: "authorizations",
-    authorizations_team: "authorizations",
-    auth_team: "authorizations",
-    scheduling: "scheduling",
-    scheduling_team: "scheduling",
-    scheduling_lead: "scheduling",
-    scheduling_coordinator: "scheduling",
-    staffing: "staffing",
-    staffing_team: "staffing",
-    staffing_lead: "staffing",
-    staffing_coordinator: "staffing",
-    hr_admin: "hr",
-    hr_admin_assistant: "hr",
-    hr_manager: "hr",
-    hr_team: "hr",
-    hr_lead: "hr",
-    hr: "hr",
-    credentialing: "credentialing",
-    credentialing_team: "credentialing",
-    credentialing_lead: "credentialing",
-    qa: "qa",
-    qa_team: "qa",
-    qa_director: "qa",
-    qa_specialist: "qa",
-    // Leadership / cross-functional roles → Blossom OS Basics as the assigned wireframe.
-    admin: "blossom-os-basics",
-    super_admin: "blossom-os-basics",
-    systems_admin: "blossom-os-basics",
-    exec: "blossom-os-basics",
-    executive: "blossom-os-basics",
-    coo: "blossom-os-basics",
-    director_of_operations: "blossom-os-basics",
-    ops_manager: "blossom-os-basics",
-    operations_manager: "blossom-os-basics",
-    dept_manager: "blossom-os-basics",
-    training_admin: "blossom-os-basics",
-    // Finance / billing / payroll
-    finance: "blossom-os-basics",
-    finance_benefits_lead: "blossom-os-basics",
-    finance_benefits_team: "blossom-os-basics",
-    payroll_admin: "blossom-os-basics",
-    payroll_lead: "blossom-os-basics",
-    billing_lead: "blossom-os-basics",
-    rcm_team: "blossom-os-basics",
-    // Support / clinic / generic
-    phone_support: "blossom-os-basics",
-    clinic: "blossom-os-basics",
-    clinic_director: "clinical-director",
-    staff: "blossom-os-basics",
-    viewer: "blossom-os-basics",
-  };
-  // Resolve the learner's assigned journey slug. Every signed-in user falls
-  // back to "blossom-os-basics" so the home page never shows "No active
-  // journey" — that was misleading for leadership/finance/support roles.
-  const resolvedFromRoles =
-    (roles as string[]).map((r) => ROLE_TO_SLUG[r]).find(Boolean) ??
-    (user ? "blossom-os-basics" : null);
+  // Role → wireframe path mapping (default + HR overrides from
+  // training_role_journey_assignments). Every signed-in user falls back
+  // to "blossom-os-basics" so the home page never shows "No active journey".
+  const { overrides } = useRoleJourneyAssignments();
+  const resolvedFromRoles = user ? resolveRoleJourney(roles as string[], overrides) : null;
   const [home, setHome] = useState<LearnerHome>(() => emptyLearnerHome());
   useEffect(() => {
     let cancelled = false;
