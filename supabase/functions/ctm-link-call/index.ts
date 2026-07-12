@@ -58,20 +58,14 @@ Deno.serve(async (req) => {
     }
 
     if (!ev.matched_client_id) {
-      const or = nums.flatMap((n) => [`primary_phone.eq.${n}`, `parent_phone.eq.${n}`]).join(",");
-      const { data: client } = await supabase.from("clients").select("id").or(or).limit(1).maybeSingle().then(
-        (r) => r,
-        () => ({ data: null }),
-      );
+      const or = nums.map((n) => `phone.eq.${n}`).join(",");
+      const { data: client } = await supabase.from("clients").select("id").or(or).limit(1).maybeSingle();
       if (client?.id) update.matched_client_id = client.id;
     }
 
     if (!ev.matched_employee_id) {
-      const or = nums.flatMap((n) => [`work_phone.eq.${n}`, `personal_phone.eq.${n}`]).join(",");
-      const { data: emp } = await supabase.from("employees").select("id,user_id").or(or).limit(1).maybeSingle().then(
-        (r) => r,
-        () => ({ data: null }),
-      );
+      const or = nums.map((n) => `phone.eq.${n}`).join(",");
+      const { data: emp } = await supabase.from("employees").select("id,user_id").or(or).limit(1).maybeSingle();
       if (emp?.id) update.matched_employee_id = emp.id;
     }
 
@@ -118,7 +112,7 @@ Deno.serve(async (req) => {
           await supabase.from("intake_tasks").insert({
             lead_id: leadId,
             title: `Return missed call · CTM:${ev.ctm_call_id}`,
-            status: "open",
+            status: "Open",
           });
           missedTasks++;
         }
