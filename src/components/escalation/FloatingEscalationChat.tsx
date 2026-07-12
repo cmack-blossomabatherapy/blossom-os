@@ -11,6 +11,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { EscalationLinkPicker, LINK_TYPE_LABEL, linkToHref, type LinkValue, type LinkEntityType } from "./EscalationLinkPicker";
 
 type Category = "escalation" | "task" | "note";
 type Priority = "low" | "medium" | "high" | "urgent";
@@ -40,6 +42,7 @@ type Thread = {
   state: string | null;
   linked_entity_type: string | null;
   linked_entity_id: string | null;
+  linked_entity_label: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -104,6 +107,7 @@ export function FloatingEscalationChat() {
   const [priority, setPriority] = useState<Priority>("medium");
   const [body, setBody] = useState("");
   const [composeDue, setComposeDue] = useState<string>("");
+  const [composeLink, setComposeLink] = useState<LinkValue>(null);
 
   const uid = user?.id ?? null;
 
@@ -324,6 +328,9 @@ export function FloatingEscalationChat() {
         owner_id: toUserId,
         status: "Open",
         due_date: composeDue || null,
+        linked_entity_type: composeLink?.type ?? null,
+        linked_entity_id: composeLink?.id ?? null,
+        linked_entity_label: composeLink?.label ?? null,
       })
       .select("*")
       .single();
@@ -338,7 +345,7 @@ export function FloatingEscalationChat() {
     });
     if (msgErr) toast.warning("Thread created but message failed — try again");
     toast.success("Sent");
-    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium"); setComposeDue("");
+    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium"); setComposeDue(""); setComposeLink(null);
     setActiveThread(data as Thread);
     setView("thread");
   }
