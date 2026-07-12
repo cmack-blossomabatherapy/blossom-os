@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
+import { NextUpCard } from "@/components/training/NextUpCard";
 
 export default function MyLearning() {
   const { user } = useAuth();
@@ -46,6 +47,8 @@ export default function MyLearning() {
           </div>
         </div>
       </section>
+
+      <NextUpCard />
 
       <section className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
         <div className="flex items-start gap-4">
