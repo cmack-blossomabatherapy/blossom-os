@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { EscalationLinkPicker, LINK_TYPE_LABEL, linkToHref, type LinkValue, type LinkEntityType } from "./EscalationLinkPicker";
+import { AttachmentComposer, AttachmentList, type Attachment } from "./EscalationAttachments";
 
 type Category = "escalation" | "task" | "note";
 type Priority = "low" | "medium" | "high" | "urgent";
@@ -54,6 +55,7 @@ type Message = {
   sender_id: string;
   body: string;
   created_at: string;
+  attachments?: Attachment[] | null;
 };
 
 type Recipient = {
