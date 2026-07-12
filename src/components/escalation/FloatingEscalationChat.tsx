@@ -121,6 +121,10 @@ export function FloatingEscalationChat() {
   const [filterRecipient, setFilterRecipient] = useState<"all" | string>("all");
   const [filterLinkType, setFilterLinkType] = useState<"all" | LinkEntityType | "any">("all");
   const [sortBy, setSortBy] = useState<"activity" | "created" | "due" | "priority">("activity");
+  const [pageSize, setPageSize] = useState(50);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
   const uid = user?.id ?? null;
@@ -130,21 +134,39 @@ export function FloatingEscalationChat() {
     if (!uid) return;
     let cancelled = false;
     (async () => {
+      setLoadingMore(true);
       const { data, error } = await supabase
         .from("escalation_threads")
         .select("*")
         .or(`from_user_id.eq.${uid},to_user_id.eq.${uid}`)
         .order("updated_at", { ascending: false })
-        .limit(50);
+        .limit(pageSize + 1);
       if (cancelled) return;
+      setLoadingMore(false);
       if (error) {
         console.warn("[escalation] load threads failed", error);
         return;
       }
-      setThreads((data ?? []) as Thread[]);
+      const rows = (data ?? []) as Thread[];
+      setHasMore(rows.length > pageSize);
+      setThreads(rows.slice(0, pageSize));
     })();
     return () => { cancelled = true; };
-  }, [uid, open]);
+  }, [uid, open, pageSize]);
+
+  /* ---------- Infinite scroll sentinel ---------- */
+  useEffect(() => {
+    if (!open || !hasMore) return;
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting) && !loadingMore) {
+        setPageSize((n) => n + 50);
+      }
+    }, { rootMargin: "120px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [open, hasMore, loadingMore]);
 
   /* ---------- Realtime new thread messages -> bump unread ---------- */
   useEffect(() => {
@@ -669,6 +691,18 @@ export function FloatingEscalationChat() {
                     );
                   })}
                 </ul>
+              )}
+              {hasMore && (
+                <div ref={loadMoreRef} className="p-3 flex justify-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={loadingMore}
+                    onClick={() => setPageSize((n) => n + 50)}
+                  >
+                    {loadingMore ? "Loading…" : "Load more"}
+                  </Button>
+                </div>
               )}
             </div>
           )}
