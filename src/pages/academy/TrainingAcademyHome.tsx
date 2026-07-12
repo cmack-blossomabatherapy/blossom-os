@@ -73,6 +73,7 @@ export default function TrainingAcademyHome() {
     authorization_coordinator: "authorizations",
     authorization_manager: "authorizations",
     authorizations_team: "authorizations",
+    auth_team: "authorizations",
     scheduling: "scheduling",
     scheduling_team: "scheduling",
     scheduling_lead: "scheduling",
@@ -94,10 +95,39 @@ export default function TrainingAcademyHome() {
     qa_team: "qa",
     qa_director: "qa",
     qa_specialist: "qa",
+    // Leadership / cross-functional roles → Blossom OS Basics as the assigned wireframe.
+    admin: "blossom-os-basics",
+    super_admin: "blossom-os-basics",
+    systems_admin: "blossom-os-basics",
+    exec: "blossom-os-basics",
+    executive: "blossom-os-basics",
+    coo: "blossom-os-basics",
+    director_of_operations: "blossom-os-basics",
+    ops_manager: "blossom-os-basics",
+    operations_manager: "blossom-os-basics",
+    dept_manager: "blossom-os-basics",
+    training_admin: "blossom-os-basics",
+    // Finance / billing / payroll
+    finance: "blossom-os-basics",
+    finance_benefits_lead: "blossom-os-basics",
+    finance_benefits_team: "blossom-os-basics",
+    payroll_admin: "blossom-os-basics",
+    payroll_lead: "blossom-os-basics",
+    billing_lead: "blossom-os-basics",
+    rcm_team: "blossom-os-basics",
+    // Support / clinic / generic
+    phone_support: "blossom-os-basics",
+    clinic: "blossom-os-basics",
+    clinic_director: "clinical-director",
+    staff: "blossom-os-basics",
+    viewer: "blossom-os-basics",
   };
-  const resolvedFromRoles = (roles as string[])
-    .map((r) => ROLE_TO_SLUG[r])
-    .find(Boolean);
+  // Resolve the learner's assigned journey slug. Every signed-in user falls
+  // back to "blossom-os-basics" so the home page never shows "No active
+  // journey" — that was misleading for leadership/finance/support roles.
+  const resolvedFromRoles =
+    (roles as string[]).map((r) => ROLE_TO_SLUG[r]).find(Boolean) ??
+    (user ? "blossom-os-basics" : null);
   const [home, setHome] = useState<LearnerHome>(() => emptyLearnerHome());
   useEffect(() => {
     let cancelled = false;
