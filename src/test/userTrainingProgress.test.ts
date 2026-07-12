@@ -15,8 +15,10 @@ describe("Per-user training progress persistence", () => {
   it("progressCloud upserts scoped to user_training_progress", () => {
     const src = read("src/lib/training/progressCloud.ts");
     expect(src).toMatch(/from\("user_training_progress"\)/);
-    expect(src).toMatch(/onConflict:\s*"user_id,training_id"/);
+    expect(src).toMatch(/merge_user_training_progress/);
     expect(src).toMatch(/bindTrainingProgressUser/);
+    expect(src).toMatch(/flushTrainingProgressQueue/);
+    expect(src).toMatch(/postgres_changes/);
   });
 
   it("OSShell mounts the training-progress cloud bridge", () => {
