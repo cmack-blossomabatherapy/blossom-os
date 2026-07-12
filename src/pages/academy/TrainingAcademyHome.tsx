@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   GraduationCap, Clock, ArrowRight, BookOpen, CheckCircle2,
   PlayCircle, ClipboardList, Users, Settings2, FileText, BarChart3,
-  Sparkles, Flame, Library, Target, Trophy,
+  Library, Target, Trophy,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -12,6 +12,7 @@ import { TRAINING_PATHS, type TrainingPath } from "@/lib/academy/trainingPaths";
 import {
   loadLearnerHome, emptyLearnerHome, type LearnerHome,
 } from "@/lib/academy/learnerHome";
+import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCard";
 
 const TONE = {
   Foundations: "bg-primary/10 text-primary",
@@ -136,20 +137,13 @@ export default function TrainingAcademyHome() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  // Role-aware "My Training": surface the learner's own role path first.
-  const primarySlug = isRbt ? "rbt" : isBcba ? "bcba" : (resolvedFromRoles ?? null);
-  const orderedPaths = primarySlug
-    ? [
-        ...TRAINING_PATHS.filter((p) => p.slug === primarySlug),
-        ...TRAINING_PATHS.filter((p) => p.slug !== primarySlug),
-      ]
-    : TRAINING_PATHS;
-  const myTraining = orderedPaths.slice(0, 3).map((p, i) => ({
-    ...p,
-    progress: [62, 28, 10][i] ?? 0,
-    lastOpened: ["Today", "Yesterday", "3 days ago"][i] ?? "—",
-  }));
-  const required = orderedPaths.filter((p) => p.category !== "Role" || p.slug === primarySlug).slice(0, 4);
+  // Role-aware "My Training": surface the learner's own role path only.
+  const primarySlug = isRbt ? "rbt" : isBcba ? "bcba" : (resolvedFromRoles ?? "blossom-os-basics");
+  const myPath = TRAINING_PATHS.find((p) => p.slug === primarySlug) ?? null;
+  const myTraining = myPath
+    ? [{ ...myPath, progress: 0, lastOpened: "—" }]
+    : [];
+  // Admins can preview all paths for assignment purposes.
   const rolePaths = TRAINING_PATHS.filter((p) => p.category === "Role");
   const departmentPaths = TRAINING_PATHS.filter((p) => p.category === "Department");
 
@@ -229,13 +223,18 @@ export default function TrainingAcademyHome() {
         </div>
       </header>
 
-      {/* ---------- My Training (Continue) ---------- */}
+      {/* ---------- Welcome to Blossom (universal Phase 0) ---------- */}
+      <div className="mt-8">
+        <WelcomeToBlossomCard />
+      </div>
+
+      {/* ---------- My Training (Continue) — role-scoped, single path ---------- */}
       <Section
         eyebrow="Continue learning"
-        title="My Training"
-        description="Pick up where you left off."
+        title="My Training Journey"
+        description="Your assigned role journey — everything you need, nothing you don't."
       >
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {myTraining.map((t, i) => (
             <Link
               key={t.slug}
@@ -270,38 +269,6 @@ export default function TrainingAcademyHome() {
         </div>
       </Section>
 
-      {/* ---------- Required ---------- */}
-      <Section
-        eyebrow="Required"
-        title="Required Training"
-        description="Training expected of you based on your role and onboarding stage."
-      >
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {required.map((t) => (
-            <PathRow key={t.slug} path={t} required />
-          ))}
-        </div>
-      </Section>
-
-      {/* ---------- Role Training Paths ---------- */}
-      <Section
-        anchorId="paths"
-        eyebrow="By role"
-        title="Role Training Paths"
-        description="Structured learning for every Blossom role."
-      >
-        <PathGrid paths={rolePaths} />
-      </Section>
-
-      {/* ---------- Department Training ---------- */}
-      <Section
-        eyebrow="By department"
-        title="Department Training"
-        description="Operational training built around how each department runs."
-      >
-        <PathGrid paths={departmentPaths} />
-      </Section>
-
       {/* ---------- Completed ---------- */}
       <Section
         eyebrow="Completed"
@@ -319,6 +286,22 @@ export default function TrainingAcademyHome() {
 
       {/* ---------- Super Admin: Training Management ---------- */}
       {isAdmin && (
+        <>
+        <Section
+          anchorId="paths"
+          eyebrow="Admin · By role"
+          title="All Role Training Paths"
+          description="Preview any role's journey for assignment or editing."
+        >
+          <PathGrid paths={rolePaths} />
+        </Section>
+        <Section
+          eyebrow="Admin · By department"
+          title="Department Training"
+          description="Operational training built around how each department runs."
+        >
+          <PathGrid paths={departmentPaths} />
+        </Section>
         <Section
           eyebrow="Super Admin"
           title="Training Management"
@@ -331,6 +314,7 @@ export default function TrainingAcademyHome() {
             <AdminCard to="/training/academy/leadership" icon={BarChart3} title="Training Completion Report" body="Leadership reporting on training engagement." />
           </div>
         </Section>
+        </>
       )}
     </div>
   );
@@ -439,26 +423,6 @@ function PathCard({ path }: { path: TrainingPath }) {
         {isStateDirector ? "Open State Director Journey" : "Open path"}
         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
       </div>
-    </Link>
-  );
-}
-
-function PathRow({ path, required }: { path: TrainingPath; required?: boolean }) {
-  const to = path.slug === "state-director" ? "/training" : `/academy/path/${path.slug}`;
-  return (
-    <Link
-      to={to}
-      className="flex items-center gap-3 rounded-xl border border-border/70 bg-card p-4 transition hover:border-border"
-    >
-      <div className="grid h-9 w-9 place-items-center rounded-lg bg-muted text-foreground">
-        <path.icon className="h-4 w-4" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{path.title}</p>
-        <p className="truncate text-[12px] text-muted-foreground">{path.description}</p>
-      </div>
-      {required && <Badge className="bg-primary/10 text-primary hover:bg-primary/10">Required</Badge>}
-      <ArrowRight className="h-4 w-4 text-muted-foreground" />
     </Link>
   );
 }
