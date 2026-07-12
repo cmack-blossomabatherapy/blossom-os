@@ -339,9 +339,13 @@ export function FloatingEscalationChat() {
               </Button>
             )}
             {view === "thread" && activeThread && (
-              <Button size="sm" variant="ghost" onClick={toggleResolved}>
-                <CheckCircle2 className={cn("h-4 w-4 mr-1", activeThread.status === "resolved" && "text-emerald-500")} />
-                {activeThread.status === "resolved" ? "Reopen" : "Resolve"}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setStatus(activeThread.status === "Resolved" ? "Open" : "Resolved")}
+              >
+                <CheckCircle2 className={cn("h-4 w-4 mr-1", activeThread.status === "Resolved" && "text-emerald-500")} />
+                {activeThread.status === "Resolved" ? "Reopen" : "Resolve"}
               </Button>
             )}
           </div>
@@ -365,17 +369,20 @@ export function FloatingEscalationChat() {
                         >
                           <Icon className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="truncate text-sm font-medium">{t.subject}</span>
-                              {t.status === "resolved" && (
-                                <Badge variant="outline" className="text-[10px]">resolved</Badge>
-                              )}
-                              {t.status === "open" && t.priority === "urgent" && (
+                              <Badge variant="outline" className={cn("text-[10px] border", STATUS_STYLES[t.status])}>
+                                {t.status}
+                              </Badge>
+                              {t.status !== "Resolved" && t.priority === "urgent" && (
                                 <Badge className="text-[10px] bg-red-500 hover:bg-red-500">urgent</Badge>
                               )}
                             </div>
                             <div className="truncate text-[11px] text-muted-foreground">
-                              {t.from_user_id === uid ? "To" : "From"} {nameOf(otherId(t))} · {new Date(t.updated_at).toLocaleString()}
+                              {t.from_user_id === uid ? "To" : "From"} {nameOf(otherId(t))}
+                              {t.owner_id && t.owner_id !== otherId(t) ? ` · Owner ${nameOf(t.owner_id)}` : ""}
+                              {t.due_date ? ` · Due ${new Date(t.due_date).toLocaleDateString()}` : ""}
+                              {" · "}{new Date(t.updated_at).toLocaleString()}
                             </div>
                           </div>
                         </button>
