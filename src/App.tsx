@@ -376,6 +376,7 @@ import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
 import IdentityDashboard from "./pages/admin/IdentityDashboard";
 import AutomatedEmailsPage from "./pages/admin/AutomatedEmails";
+import CTMAdmin from "./pages/admin/CTMAdmin";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { BlockIntakeRoute } from "./components/auth/BlockIntakeRoute";
 import { PhoneSystemRoute } from "./components/auth/PhoneSystemRoute";
