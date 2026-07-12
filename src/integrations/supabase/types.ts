@@ -7673,6 +7673,83 @@ export type Database = {
           },
         ]
       }
+      escalation_thread_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          sender_id: string
+          thread_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          thread_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalation_thread_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "escalation_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escalation_threads: {
+        Row: {
+          category: string
+          created_at: string
+          from_user_id: string
+          id: string
+          linked_entity_id: string | null
+          linked_entity_type: string | null
+          priority: string
+          state: string | null
+          status: string
+          subject: string
+          to_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          from_user_id: string
+          id?: string
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
+          priority?: string
+          state?: string | null
+          status?: string
+          subject: string
+          to_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
+          priority?: string
+          state?: string | null
+          status?: string
+          subject?: string
+          to_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       evaluation_ai_insights: {
         Row: {
           body: string
