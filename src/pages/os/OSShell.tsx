@@ -35,6 +35,7 @@ import { ROLE_MENUS, DEFAULT_ROLE_MENU } from "@/lib/os/roleMenus";
 import { SUPER_ADMIN_MENU } from "@/lib/os/superAdminMenu";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import blossomMark from "@/assets/blossom-flower-mark.png";
+import { FloatingEscalationChat } from "@/components/escalation/FloatingEscalationChat";
 
 /* ------------------------------------------------------------------ */
 /* Section / item types                                               */
@@ -1117,6 +1118,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           ))}
         </CommandList>
       </CommandDialog>
+      <FloatingEscalationChat />
     </div>
   );
 }
