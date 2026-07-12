@@ -164,7 +164,7 @@ export default function OSClientsOperations() {
       </div>
 
       {openClientId && (
-        <ClientDrawer clientId={openClientId} onClose={() => setOpenClientId(null)} />
+        <ClientDrawer clientId={openClientId} onClose={closeClientDrawer} />
       )}
     </OSShell>
   );
