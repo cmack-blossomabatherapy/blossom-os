@@ -20791,6 +20791,7 @@ export type Database = {
       }
     }
     Functions: {
+      _training_status_rank: { Args: { _s: string }; Returns: number }
       admin_rollback_onboarding: {
         Args: {
           clear_certificate?: boolean
@@ -21142,6 +21143,32 @@ export type Database = {
           source_title: string
           source_url: string
         }[]
+      }
+      merge_user_training_progress: {
+        Args: {
+          _completed_at: string
+          _progress_percent: number
+          _started_at: string
+          _status: string
+          _training_id: string
+        }
+        Returns: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          progress_percent: number
+          started_at: string | null
+          status: string
+          training_id: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_training_progress"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       owns_stage: {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
