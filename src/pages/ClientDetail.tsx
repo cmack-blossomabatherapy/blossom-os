@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useClients } from "@/contexts/ClientsContext";
 import { toast } from "sonner";
+import { CallHistoryList } from "@/components/phone/CallHistoryList";
 import {
   AddTaskDialog, DatePickerDialog, ScheduleBlockDialog, UploadDocumentDialog,
 } from "@/components/clients/ClientDetailDialogs";
@@ -625,6 +626,13 @@ export default function ClientDetail() {
                 >
                   <FileText className="h-3 w-3" /> Upload Document
                 </Button>
+              </div>
+              <div className="mt-4">
+                <CallHistoryList
+                  numbers={[client.phone]}
+                  title="Call Recordings & Transcripts"
+                  emptyMessage="No tracked call recordings for this client yet."
+                />
               </div>
             </TabsContent>
 

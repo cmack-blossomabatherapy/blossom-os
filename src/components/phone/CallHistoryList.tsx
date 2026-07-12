@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPhoneDisplay, toE164 } from "@/lib/phone/format";
-import { Phone, PhoneMissed, PhoneIncoming, PhoneOutgoing, Play } from "lucide-react";
+import { Phone, PhoneMissed, PhoneIncoming, PhoneOutgoing, Play, Download, FileText } from "lucide-react";
 
 export type CallHistoryRow = {
   id: string;
@@ -132,9 +132,16 @@ export function CallHistoryList({ numbers, title = "Call History", emptyMessage,
                           <Play className="h-3 w-3 mr-1" /> {playingId === r.id ? "Hide" : "Play"}
                         </Button>
                       )}
+                      {r.recording_url && (
+                        <Button asChild size="sm" variant="ghost" title="Download recording">
+                          <a href={r.recording_url} download target="_blank" rel="noreferrer">
+                            <Download className="h-3 w-3" />
+                          </a>
+                        </Button>
+                      )}
                       {r.transcript && (
                         <Button size="sm" variant="ghost" onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}>
-                          {expandedId === r.id ? "Hide" : "Transcript"}
+                          <FileText className="h-3 w-3 mr-1" /> {expandedId === r.id ? "Hide" : "Transcript"}
                         </Button>
                       )}
                     </div>
@@ -143,7 +150,26 @@ export function CallHistoryList({ numbers, title = "Call History", emptyMessage,
                     <audio className="w-full mt-2" controls src={r.recording_url} autoPlay />
                   )}
                   {expandedId === r.id && r.transcript && (
-                    <div className="text-xs mt-2 whitespace-pre-wrap bg-muted p-2 rounded">{r.transcript}</div>
+                    <div className="mt-2 space-y-2">
+                      <div className="text-xs whitespace-pre-wrap bg-muted p-2 rounded max-h-64 overflow-auto">{r.transcript}</div>
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const blob = new Blob([r.transcript ?? ""], { type: "text/plain" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `transcript-${r.id}.txt`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                        >
+                          <Download className="h-3 w-3 mr-1" /> Download transcript
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               );
