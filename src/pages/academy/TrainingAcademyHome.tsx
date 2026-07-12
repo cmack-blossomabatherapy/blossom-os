@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  GraduationCap, Clock, ArrowRight, BookOpen, CheckCircle2,
+  GraduationCap, Clock, ArrowRight, CheckCircle2,
   PlayCircle, ClipboardList, Users, Settings2, FileText, BarChart3,
   Library, Target, Trophy,
 } from "lucide-react";
@@ -346,54 +346,6 @@ function TodayCard({
       )}
       <div className="relative mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-primary">
         {cta}
-        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-      </div>
-    </Link>
-  );
-}
-
-function PathGrid({ paths }: { paths: TrainingPath[] }) {
-  return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {paths.map((p) => (
-        <PathCard key={p.slug} path={p} />
-      ))}
-    </div>
-  );
-}
-
-function PathCard({ path }: { path: TrainingPath }) {
-  // The State Director card is special: it routes to the live 5-week / 25-day
-  // journey at /training (SDLearnerHome), not the generic academy stub.
-  const isStateDirector = path.slug === "state-director";
-  const to = isStateDirector ? "/training" : `/academy/path/${path.slug}`;
-  return (
-    <Link
-      to={to}
-      className="group flex flex-col rounded-2xl border border-border/70 bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-border"
-    >
-      <div className="flex items-start justify-between">
-        <div className="grid h-10 w-10 place-items-center rounded-xl bg-muted text-foreground">
-          <path.icon className="h-5 w-5" />
-        </div>
-        {isStateDirector ? (
-          <Badge className="bg-primary text-primary-foreground hover:bg-primary text-[10px]">Live Journey</Badge>
-        ) : (
-          <Badge variant="outline" className={`text-[10px] ${TONE[path.category]}`}>{path.category}</Badge>
-        )}
-      </div>
-      <h3 className="mt-4 text-[15px] font-semibold tracking-tight">{path.title}</h3>
-      <p className="mt-1 text-[13px] text-muted-foreground line-clamp-2">
-        {isStateDirector
-          ? "5-week / 25-day live State Director journey — Welcome to Blossom, leadership letters, daily modules, SOPs, shadowing, and certification."
-          : path.description}
-      </p>
-      <div className="mt-4 flex items-center justify-between text-[11px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1"><BookOpen className="h-3 w-3" />{path.lessonCount} lessons</span>
-        <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />~{path.estimatedHours}h</span>
-      </div>
-      <div className="mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-primary">
-        {isStateDirector ? "Open State Director Journey" : "Open path"}
         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
       </div>
     </Link>
