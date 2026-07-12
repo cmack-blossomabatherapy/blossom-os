@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     const { data: existingLead } = await supabase
       .from("intake_leads")
       .select("id")
-      .or(`caller_phone.eq.${fromNumber},phone.eq.${fromNumber}`)
+      .or(`phone.eq.${fromNumber},parent_cell_phone.eq.${fromNumber},home_phone.eq.${fromNumber}`)
       .maybeSingle();
 
     let leadId: string | null = existingLead?.id ?? null;
@@ -127,12 +127,11 @@ Deno.serve(async (req) => {
       const { data: newLead, error: leadErr } = await supabase
         .from("intake_leads")
         .insert({
-          caller_phone: fromNumber,
           phone: fromNumber,
-          caller_name: callRow.caller_name ?? "Unknown caller",
+          parent_name: callRow.caller_name ?? "Unknown caller",
           lead_source: callRow.source_name ?? "CTM",
           state: resolved_state,
-          status: "new",
+          pipeline_stage: "new_lead",
           ctm_call_id: callId,
         })
         .select("id")
@@ -148,10 +147,11 @@ Deno.serve(async (req) => {
       await supabase.from("ctm_call_events").update({ intake_lead_id: leadId }).eq("id", upserted.id);
       await supabase.from("intake_communications").insert({
         lead_id: leadId,
-        channel: "phone",
+        communication_type: "phone",
         direction: callRow.direction ?? "inbound",
-        summary: `CTM call · ${callRow.duration_seconds ?? 0}s · ${callRow.source_name ?? "unknown source"}`,
-        occurred_at: callRow.called_at ?? new Date().toISOString(),
+        subject: `CTM call · ${callRow.source_name ?? "unknown source"}`,
+        preview: `Inbound call to ${tracking ?? "tracking number"} · ${callRow.duration_seconds ?? 0}s`,
+        duration_seconds: callRow.duration_seconds ?? null,
       });
     }
   }
