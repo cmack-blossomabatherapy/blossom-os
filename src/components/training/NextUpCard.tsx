@@ -10,7 +10,7 @@ import {
   type Training,
   type TrainingProgress,
 } from "@/lib/training/academyData";
-import { useOSRole } from "@/contexts/OSRoleContext";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 
 type Row = { training: Training; progress: TrainingProgress };
 
@@ -32,7 +32,8 @@ function pickNextUp(role: string, limit = 3): Row[] {
 export function NextUpCard({ className }: { className?: string }) {
   // Subscribe so hydration + completions re-render.
   useAcademy();
-  const { role } = useOSRole();
+  const roleCtx = useOSRoleSafe();
+  const role = roleCtx?.role ?? "operations_leadership";
   const rows = pickNextUp(role);
 
   if (rows.length === 0) {
