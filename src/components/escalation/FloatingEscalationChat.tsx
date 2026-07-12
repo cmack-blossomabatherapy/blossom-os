@@ -661,6 +661,10 @@ export function FloatingEscalationChat() {
                 />
               </div>
               <div className="space-y-1">
+                <label className="text-xs font-medium">Context (optional)</label>
+                <EscalationLinkPicker value={composeLink} onChange={setComposeLink} />
+              </div>
+              <div className="space-y-1">
                 <label className="text-xs font-medium">Notes</label>
                 <Textarea
                   value={body}
