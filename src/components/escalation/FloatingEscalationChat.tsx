@@ -124,6 +124,7 @@ export function FloatingEscalationChat() {
   const [pageSize, setPageSize] = useState(50);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
   const uid = user?.id ?? null;
