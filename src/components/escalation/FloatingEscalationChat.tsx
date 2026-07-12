@@ -547,6 +547,18 @@ export function FloatingEscalationChat() {
                     )}
                   </Button>
                 </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground">Sort by</span>
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                    <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="activity">Newest activity</SelectItem>
+                      <SelectItem value="created">Newest created</SelectItem>
+                      <SelectItem value="due">Due date (soonest)</SelectItem>
+                      <SelectItem value="priority">Priority (urgent first)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 {showFilters && (
                   <div className="grid grid-cols-2 gap-2">
                     <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
