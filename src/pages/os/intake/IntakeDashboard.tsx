@@ -18,7 +18,8 @@ import { Button } from "@/components/ui/button";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 import { cn } from "@/lib/utils";
-import { SendToStateSupportButton } from "@/components/stateDirector/SendToStateSupportButton";
+// Send-to-State-Support has been retired here in favor of the
+// floating escalation chat available site-wide from OSShell.
 import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
 import {
   callParent,
@@ -216,7 +217,6 @@ export default function IntakeDashboard() {
       headerRight={
         <div className="flex items-center gap-2">
           <IntakeStateFilterToggle />
-          <SendToStateSupportButton fromDepartment="Intake" />
         </div>
       }
       actions={[
@@ -494,20 +494,6 @@ export default function IntakeDashboard() {
                   <Link to="/authorizations" className="text-[11px] text-primary hover:underline">→ Authorizations</Link>
                   <Link to="/ops/scheduling" className="text-[11px] text-primary hover:underline">→ Scheduling</Link>
                   <Link to="/qa-team" className="text-[11px] text-primary hover:underline">→ Clinical</Link>
-                  <SendToStateSupportButton
-                    fromDepartment="Intake"
-                    linkedLeadId={String(lead.id)}
-                    defaultState={lead.state || undefined}
-                    defaultTitle={`Intake support: ${lead.childName ?? "lead"}`}
-                    defaultDescription={`State: ${lead.state ?? ""} · Owner: ${lead.owner ?? "Unassigned"} · Next: handoff readiness review.`}
-                    defaultPriority="medium"
-                    sourceModule="intake"
-                    metadata={{ leadName: lead.childName, state: lead.state, owner: lead.owner, stage: (lead as any).stage, insurance: (lead as any).insurance }}
-                    buttonLabel="State Support"
-                    variant="ghost"
-                    size="sm"
-                    className="text-[11px] h-6 px-1.5"
-                  />
                 </div>
               </article>
             ))}
