@@ -139,7 +139,7 @@ export default function CTMCalls() {
                 const linkTo = r.matched_lead_id
                   ? `/leads?lead=${r.matched_lead_id}`
                   : r.matched_client_id
-                    ? `/clients/${r.matched_client_id}`
+                    ? `/clients?client=${r.matched_client_id}`
                     : null;
                 return (
                   <div key={r.id} className="border rounded-md p-3">
