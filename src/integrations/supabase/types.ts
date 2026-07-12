@@ -7949,12 +7949,16 @@ export type Database = {
       }
       escalation_threads: {
         Row: {
+          blocker: string | null
           category: string
           created_at: string
+          due_date: string | null
           from_user_id: string
           id: string
           linked_entity_id: string | null
           linked_entity_type: string | null
+          next_step: string | null
+          owner_id: string | null
           priority: string
           state: string | null
           status: string
@@ -7963,12 +7967,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          blocker?: string | null
           category?: string
           created_at?: string
+          due_date?: string | null
           from_user_id: string
           id?: string
           linked_entity_id?: string | null
           linked_entity_type?: string | null
+          next_step?: string | null
+          owner_id?: string | null
           priority?: string
           state?: string | null
           status?: string
@@ -7977,12 +7985,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          blocker?: string | null
           category?: string
           created_at?: string
+          due_date?: string | null
           from_user_id?: string
           id?: string
           linked_entity_id?: string | null
           linked_entity_type?: string | null
+          next_step?: string | null
+          owner_id?: string | null
           priority?: string
           state?: string | null
           status?: string
