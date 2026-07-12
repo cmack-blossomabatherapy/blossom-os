@@ -1,35 +1,70 @@
-# Consolidate Integrations into one page
 
-Right now Super Admin has two side-by-side entries — **Integrations** (`/admin/integrations`, driven by the code-defined integration registry) and **Integration Registry** (`/system/integration-registry`, a CRUD table over the `integration_catalog` DB rows used by dropdowns). Plus a legacy `/integrations` route. This unifies everything under one page.
+## Goal
 
-## What changes
+Right now the mapping of role → assigned wireframe journey (`TRAINING_PATHS` slug) is hard-coded in `src/pages/academy/TrainingAcademyHome.tsx` (`ROLE_TO_SLUG`). HR cannot change it without a code push. Add a live "Role Journeys" management screen inside the existing HR **Training & Certifications** hub (`TrainingManagementCenter`) so an admin can pick which journey each role sees, with a default fallback that keeps the current behavior intact.
 
-1. **Single canonical page:** `/admin/integrations` becomes the only Integrations page — the current list of all live and planned integrations, connect/toggle actions, status overlays, and per-integration deep links (opened via `?id=<integration>`).
-2. **Fold catalog management in:** move the `integration_catalog` CRUD (Add / Edit / Enable / Disable / Delete rows used by picker dropdowns) into a secondary **"Catalog metadata"** section on the same page, collapsed by default. Nothing that admins do today on `/system/integration-registry` is lost.
-3. **Delete the second page:** remove `src/pages/os/system-tools/IntegrationRegistryPage.tsx` and its route `/system/integration-registry`.
-4. **Menu cleanup (Super Admin):** in `src/lib/os/superAdminMenu.ts` remove the "Integration Registry" item; keep a single **Integrations** entry pointing to `/admin/integrations`.
-5. **Route hygiene in `src/App.tsx`:**
-   - Redirect `/integrations` → `/admin/integrations`.
-   - Redirect `/system/integration-registry` → `/admin/integrations` (so any bookmarks or in-app links keep working during the transition).
-   - Remove the now-unused `IntegrationRegistryPage` import.
-6. **Fix stray internal links** so nothing points at the removed page or the legacy `/integrations` path:
-   - `src/pages/os/OSStaffingWorkspace.tsx` link `to="/integrations"` → `/admin/integrations`.
-   - `src/lib/os/workspaces.ts` entries already use `/admin/integrations` — leave as is.
-   - `src/hooks/useIntegrationCatalog.ts` doc comment updated from "Settings > Integration Registry" to "Admin > Integrations".
+## What gets built
 
-## Access
+### 1. New table: `training_role_journey_assignments`
+Cloud-persisted overrides for the role → journey slug map.
 
-`/admin/integrations` stays behind `PermissionRoute allowedRoles={["admin"]}` (matches today's Super Admin visibility). The catalog metadata section inside the page renders only for admins as well.
+Columns (domain-specific): `role_slug` (unique text), `path_slug` (text, references a `TRAINING_PATHS` slug), `notes` (text, optional), `updated_by` (uuid).
 
-## Verification
+Access rules:
+- Any signed-in user can read (the Academy home page needs it to resolve their assigned journey).
+- Only HR, Training Admin, and Super Admin roles can insert/update/delete.
+- Every write is audited via `hr_audit_logs` (existing table) with a trigger or hook-side log.
 
-- Super Admin menu shows exactly one Integrations entry.
-- Visiting `/system/integration-registry` or `/integrations` lands on `/admin/integrations`.
-- The consolidated page still lists every registry integration, and admins can still add/edit/disable catalog rows used by other pickers.
-- Build passes (`vite build`).
+### 2. Data layer
+- `src/lib/training/roleJourneyAssignments.ts` — pure module exporting:
+  - `DEFAULT_ROLE_TO_SLUG` (moved out of `TrainingAcademyHome.tsx`).
+  - `ALL_ROLE_SLUGS` (union of default keys + any Blossom OS role we recognize) for the picker.
+  - `resolveRoleJourney(roles, overrides)` helper: returns the first matching path slug, override-first, then default, then `blossom-os-basics`.
+- `src/hooks/useRoleJourneyAssignments.ts` — realtime hook: loads rows from the new table, subscribes to changes, exposes `{ overrides, save(roleSlug, pathSlug, notes?), clear(roleSlug), loading }`.
 
-## Technical notes
+### 3. Wire the Academy home to the overrides
+Update `src/pages/academy/TrainingAcademyHome.tsx`:
+- Import `DEFAULT_ROLE_TO_SLUG` and `resolveRoleJourney` from the new module (delete the inline `ROLE_TO_SLUG` object).
+- Consume `useRoleJourneyAssignments()` and pass its `overrides` into `resolveRoleJourney(roles, overrides)`.
+- Behavior stays identical when no overrides exist.
 
-- Files edited: `src/App.tsx`, `src/lib/os/superAdminMenu.ts`, `src/pages/admin/Integrations.tsx` (append a `CatalogMetadataSection` powered by `useIntegrationCatalog`, reusing the dialog/table logic from the old page), `src/pages/os/OSStaffingWorkspace.tsx`, `src/hooks/useIntegrationCatalog.ts` (comment only).
-- Files deleted: `src/pages/os/system-tools/IntegrationRegistryPage.tsx`.
-- No DB schema changes; `integration_catalog` table and its RLS remain untouched.
+### 4. New "Role Journeys" tab inside Training Management Center
+Edit `src/pages/hr/TrainingManagementCenter.tsx`:
+- Add `role-journeys` to `NavId` and to the `NAV` array (icon: `Users` or `Compass`, label "Role Journeys"), placed right under **Journeys**.
+- Render a new component `RoleJourneyAssignmentsView` when `nav === "role-journeys"`.
+
+`RoleJourneyAssignmentsView` (defined in the same file or a small sibling under `src/components/training/`):
+- Header + one-sentence explanation ("Choose which wireframe training path each role sees in the Training Academy. Leave blank to use the built-in default.").
+- Search input filters the role rows.
+- A clean card list — one row per role slug — showing:
+  - Role slug + friendly label.
+  - `Select` of every `TRAINING_PATHS` entry (title + slug).
+  - Small "Default" pill when using the fallback; "Custom" pill when overridden.
+  - Inline notes field (optional).
+  - Save / Reset-to-default buttons per row.
+- Bulk actions row: "Reset all to defaults" (confirm dialog).
+- Uses `toast` for success/error and calls the hook's `save` / `clear`.
+
+Access-gate the tab so only HR / Training Admin / Super Admin can see it — reuse the same pattern already used for `canUploadResources` in this file.
+
+### 5. Route + entrypoint touch-ups
+- Ensure `/hr/training-center?nav=role-journeys` works (it already will, since the tab drives off `?nav=`).
+- Add a small "Manage Role Journeys" quick-link inside the existing **Journeys** view header so HR can jump from the Journeys tab to the new assignment screen.
+
+### 6. Cleanup
+- Remove the giant inline `ROLE_TO_SLUG` block from `TrainingAcademyHome.tsx` (moved into `roleJourneyAssignments.ts`) so there is one source of truth.
+- Update `src/test/welcomeToBlossomFinalize.test.ts` and `src/test/trainingManagement.test.ts` only if they explicitly assert the removed inline map.
+
+## Files touched
+
+- New: `supabase/migrations/<timestamp>_role_journey_assignments.sql`
+- New: `src/lib/training/roleJourneyAssignments.ts`
+- New: `src/hooks/useRoleJourneyAssignments.ts`
+- Edit: `src/pages/academy/TrainingAcademyHome.tsx`
+- Edit: `src/pages/hr/TrainingManagementCenter.tsx` (add nav entry + `RoleJourneyAssignmentsView`)
+
+## Out of scope
+
+- Editing modules inside a wireframe journey — that already exists in the current **Journeys** tab and is not part of this request.
+- Per-user (not per-role) overrides.
+- Changing the wireframe journey generator in `academyData.ts`.
