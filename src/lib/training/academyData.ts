@@ -1809,7 +1809,7 @@ export function reorderJourneyModule(journeyId: string, fromIndex: number, toInd
 
 /* ---------------- Mock progress ---------------- */
 
-const PROGRESS_STORAGE_KEY = "blossom.training.progress.v1";
+const PROGRESS_STORAGE_KEY = "blossom.training.progress.v2";
 
 function loadStoredProgress(): Record<string, TrainingProgress> {
   if (typeof window === "undefined") return {};
@@ -1841,7 +1841,11 @@ export function getProgress(id: string): TrainingProgress {
   return trainingProgress[id] ?? { trainingId: id, status: "not_started", progressPercent: 0 };
 }
 
-export function setTrainingProgress(id: string, patch: Partial<TrainingProgress>) {
+export function setTrainingProgress(
+  id: string,
+  patch: Partial<TrainingProgress>,
+  opts?: { skipCloud?: boolean },
+) {
   trainingProgress[id] = {
     ...getProgress(id),
     trainingId: id,
@@ -1850,6 +1854,13 @@ export function setTrainingProgress(id: string, patch: Partial<TrainingProgress>
   persistTrainingProgress();
   state = { ...state };
   emit();
+  if (!opts?.skipCloud) {
+    // Fire-and-forget cloud mirror. Loaded lazily to avoid a hard cycle
+    // between this module and progressCloud.ts.
+    void import("./progressCloud")
+      .then((m) => m.pushProgressToCloud(id, trainingProgress[id]))
+      .catch(() => { /* offline / no user — local cache is fine */ });
+  }
 }
 
 export function markTrainingStarted(id: string) {
