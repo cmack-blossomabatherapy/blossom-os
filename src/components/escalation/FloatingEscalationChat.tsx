@@ -465,6 +465,9 @@ export function FloatingEscalationChat() {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="truncate text-sm font-medium">{t.subject}</span>
+                              {unreadThreads.has(t.id) && (
+                                <span className="h-2 w-2 rounded-full bg-red-500" aria-label="Unread" />
+                              )}
                               <Badge variant="outline" className={cn("text-[10px] border", STATUS_STYLES[t.status])}>
                                 {t.status}
                               </Badge>
