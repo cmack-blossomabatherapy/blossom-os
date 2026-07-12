@@ -20045,6 +20045,42 @@ export type Database = {
           },
         ]
       }
+      user_training_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          progress_percent: number
+          started_at: string | null
+          status: string
+          training_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          progress_percent?: number
+          started_at?: string | null
+          status?: string
+          training_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          progress_percent?: number
+          started_at?: string | null
+          status?: string
+          training_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       va_credentialing_raw: {
         Row: {
           data: Json

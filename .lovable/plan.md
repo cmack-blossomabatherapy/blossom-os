@@ -1,42 +1,53 @@
-Plan to fix the HR/user/new-hire confusion without redesigning unrelated areas:
 
-1. Make User Management the source of truth for people setup
-- Treat `/user-management` as the canonical place to add any employee/user.
-- Add support for `/user-management?add=1` so any “Add new hire / Add employee” button opens the same setup dialog directly.
-- After creation, route to the employee profile so HR can finish access, role, login, device/NFC, training, and onboarding details in one place.
+## What's actually there today
 
-2. Fix the broken Add New Hire button behavior
-- Change the New Hires page header button that currently sends users to Orientation Queue.
-- Update HR Dashboard and HR Workspace “Add new hire” buttons to use the same `/user-management?add=1` flow.
-- Keep “Orientation” buttons only for scheduling orientation, not employee/user creation.
+- **RBT / BCBA runtime modules** already sync per-user progress to Supabase via `academy_runtime_progress` (`src/lib/academy/runtimeStore.ts`). This part works.
+- **Everything else** — department journeys, intake/scheduling/HR/etc. modules driven by `src/lib/training/academyData.ts` — persists progress **only in `localStorage`** (`PROGRESS_STORAGE_KEY`). It's per-browser, not per-user, and vanishes on sign-out / new device. That's the gap you're feeling.
+- `academy_progress` in the DB is enrollment + UUID-module shaped, so it doesn't fit the string IDs (`"intake-foundations"`, etc.) that academyData modules use.
 
-3. Connect new employees to onboarding cleanly
-- Update the add-employee flow so creating an employee also creates/ensures the matching onboarding record when appropriate.
-- Keep the existing login provisioning attempt, but make the copy clearer: this creates the employee record and prepares system access; HR can complete access from the employee profile.
-- Leave Viventium as a future source by keeping Viventium status fields as readiness signals, not a fake live import.
+## What I'll build
 
-4. Simplify page responsibilities
-- User Management: all employees/users, profiles, software access, roles, devices, badges.
-- New Hires: progress/status view for pending-start employees and late-stage candidates.
-- Orientation Queue: scheduling/attendance/follow-up only.
-- Employee Support/Compliance/Training: downstream HR work only.
+1. **New table `user_training_progress`** — per-user × per-training-id row:
+   - `user_id`, `training_id` (text), `status` (`not_started` | `in_progress` | `completed`), `progress_percent`, `started_at`, `completed_at`, timestamps.
+   - Unique on `(user_id, training_id)`. RLS: each user reads/writes only their own rows.
 
-5. Make Orientation Queue available to Scheduling
-- Add Orientation Queue to Scheduling role navigation as “Orientation Scheduling”.
-- Add `/hr/orientation-queue` to Scheduling live-path allowlists.
-- Keep HR access, because HR still owns onboarding, but make the page language more scheduling-focused.
+2. **Cloud-first store** in `src/lib/training/academyData.ts`:
+   - Replace the localStorage-only progress path with an async Supabase read/write, keeping localStorage as an offline cache and a one-time migration of any existing local progress into the cloud on first load.
+   - Expose sync-friendly helpers: `useTrainingProgress(id)`, `useAllTrainingProgress()`, and keep `markTrainingComplete(id)` async so callers `await` it.
 
-6. Clean confusing navigation links
-- Remove or retarget any “Add new hire” link that points to `/hr/new-hires` or `/hr/orientation-queue` when the intended action is actually user setup.
-- Keep links to `/hr/new-hires` only when the label is “New hire pipeline”, “Review new hires”, or similar.
-- On Orientation Queue, replace HR-only quick links with a smaller set focused on New Hire Pipeline, Scheduling Workspace, and Messages.
+3. **Mark complete** action:
+   - Wire the existing "Mark complete" button in `TrainingModuleRuntime` (academyData branch) and the department journey module cards to call the new async setter and show a toast on failure.
 
-7. Add regression coverage
-- Test that no visible “Add new hire” button routes to Orientation Queue.
-- Test that User Management supports query-driven add dialog behavior.
-- Test that Scheduling roles can see/access Orientation Queue.
-- Test that employee creation code creates/ensures onboarding and keeps login setup tied to User Management.
+4. **"What's next" surface**:
+   - Add a small `NextUpCard` on `TrainingHub` / `MyLearning` that lists the next 3 required-or-in-progress modules for the current user (in progress first, then required not-started), pulling from the same cloud store. Clicking navigates to the module.
 
-8. Validation
-- Run the focused HR/scheduling/user-management tests after implementation.
-- Do not change unrelated modules, report logic, phone access, training journeys, or broad role menus beyond the scheduling/orientation alignment above.
+5. **Validation**:
+   - Vitest: new `src/test/userTrainingProgress.test.ts` that asserts (a) `academyData` setters call Supabase, (b) `NextUpCard` picks in-progress before not-started required, (c) the local→cloud migration runs once.
+   - Manual: mark a module complete, refresh, sign out/in — progress persists and "What's next" updates.
+
+## Out of scope
+
+- Not touching RBT/BCBA runtime (`academy_runtime_progress`) — already cloud-synced.
+- Not restructuring `academy_progress` / enrollments.
+- No changes to menus, roles, or the academy content itself.
+
+## Technical notes
+
+- Table:
+  ```sql
+  CREATE TABLE public.user_training_progress (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL,
+    training_id text NOT NULL,
+    status text NOT NULL DEFAULT 'not_started',
+    progress_percent int NOT NULL DEFAULT 0,
+    started_at timestamptz,
+    completed_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (user_id, training_id)
+  );
+  ```
+  Grants to `authenticated` + `service_role`, RLS `user_id = auth.uid()` for all ops, `updated_at` trigger.
+- Cache key bumped to `blossom.training.progress.v2` to force clean migration.
+- Anonymous users keep working via the existing localStorage fallback (no auth = no cloud write).
