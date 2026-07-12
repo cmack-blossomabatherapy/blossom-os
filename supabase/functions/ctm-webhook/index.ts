@@ -165,6 +165,22 @@ Deno.serve(async (req) => {
     leads_created: leadCreated ? 1 : 0,
   });
 
+  // Fire-and-forget: run richer matching + timeline write + missed-call task
+  // via the ctm-link-call function.
+  try {
+    const linkUrl = `${SUPABASE_URL}/functions/v1/ctm-link-call`;
+    void fetch(linkUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${SERVICE_KEY}`,
+      },
+      body: JSON.stringify({ call_event_id: upserted.id }),
+    }).catch((err) => console.warn("ctm-link-call trigger failed", err));
+  } catch (err) {
+    console.warn("ctm-link-call dispatch failed", err);
+  }
+
   return new Response(JSON.stringify({ ok: true, call_id: callId, lead_created: leadCreated }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
