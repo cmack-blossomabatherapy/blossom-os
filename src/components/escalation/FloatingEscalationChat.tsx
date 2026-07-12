@@ -127,6 +127,19 @@ export function FloatingEscalationChat() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Debounced search query so we don't re-fetch on every keystroke.
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(filterQuery.trim()), 250);
+    return () => clearTimeout(t);
+  }, [filterQuery]);
+
+  // Reset pagination whenever filters/sort/search change so the next page is
+  // always relative to the current result set.
+  useEffect(() => {
+    setPageSize(50);
+  }, [debouncedQuery, filterStatus, filterPriority, filterRecipient, filterLinkType, sortBy]);
+
   const uid = user?.id ?? null;
 
   /* ---------- Load threads ---------- */
@@ -135,12 +148,57 @@ export function FloatingEscalationChat() {
     let cancelled = false;
     (async () => {
       setLoadingMore(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from("escalation_threads")
-        .select("*")
-        .or(`from_user_id.eq.${uid},to_user_id.eq.${uid}`)
-        .order("updated_at", { ascending: false })
-        .limit(pageSize + 1);
+        .select("*");
+
+      // Recipient filter narrows the participant scope; otherwise include both sides.
+      if (filterRecipient !== "all") {
+        query = query.or(
+          `and(from_user_id.eq.${uid},to_user_id.eq.${filterRecipient}),` +
+          `and(from_user_id.eq.${filterRecipient},to_user_id.eq.${uid})`,
+        );
+      } else {
+        query = query.or(`from_user_id.eq.${uid},to_user_id.eq.${uid}`);
+      }
+
+      if (filterStatus !== "all") query = query.eq("status", filterStatus);
+      if (filterPriority !== "all") query = query.eq("priority", filterPriority);
+      if (filterLinkType === "any") {
+        query = query.not("linked_entity_type", "is", null);
+      } else if (filterLinkType !== "all") {
+        query = query.eq("linked_entity_type", filterLinkType);
+      }
+
+      if (debouncedQuery) {
+        const esc = debouncedQuery.replace(/[%,()]/g, " ");
+        const like = `%${esc}%`;
+        query = query.or(
+          [
+            `subject.ilike.${like}`,
+            `linked_entity_label.ilike.${like}`,
+            `blocker.ilike.${like}`,
+            `next_step.ilike.${like}`,
+          ].join(","),
+        );
+      }
+
+      // Sort pushed to the server so pagination pages the same ordering the UI shows.
+      // Priority is a text/enum — Postgres orders it lexicographically, so we still
+      // re-rank client-side after fetch to get urgent → high → medium → low.
+      if (sortBy === "created") {
+        query = query.order("created_at", { ascending: false });
+      } else if (sortBy === "due") {
+        query = query
+          .order("due_date", { ascending: true, nullsFirst: false })
+          .order("updated_at", { ascending: false });
+      } else if (sortBy === "priority") {
+        query = query.order("priority", { ascending: true }).order("updated_at", { ascending: false });
+      } else {
+        query = query.order("updated_at", { ascending: false });
+      }
+
+      const { data, error } = await query.limit(pageSize + 1);
       if (cancelled) return;
       setLoadingMore(false);
       if (error) {
@@ -152,7 +210,7 @@ export function FloatingEscalationChat() {
       setThreads(rows.slice(0, pageSize));
     })();
     return () => { cancelled = true; };
-  }, [uid, open, pageSize]);
+  }, [uid, open, pageSize, debouncedQuery, filterStatus, filterPriority, filterRecipient, filterLinkType, sortBy]);
 
   /* ---------- Infinite scroll sentinel ---------- */
   useEffect(() => {
@@ -420,6 +478,8 @@ export function FloatingEscalationChat() {
   const filteredThreads = useMemo(() => {
     const q = filterQuery.trim().toLowerCase();
     const priorityRank: Record<Priority, number> = { urgent: 0, high: 1, medium: 2, low: 3 } as any;
+    // Server already applied filters + search; re-apply defensively so realtime
+    // inserts that don't match the current criteria don't slip into the list.
     const filtered = threads.filter((t) => {
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       if (filterPriority !== "all" && t.priority !== filterPriority) return false;
