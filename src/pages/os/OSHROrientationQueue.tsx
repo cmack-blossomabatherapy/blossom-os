@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  CalendarClock, Sparkles, Search, Filter, Plus, Send, CheckCircle2,
+  CalendarClock, Search, Filter, Send, CheckCircle2,
   AlertCircle, ChevronRight, X, Clock, Calendar, MapPin, Users,
-  ShieldCheck, GraduationCap, MessageSquare, ArrowRight, UserCheck, Video,
+  MessageSquare, ArrowRight, UserCheck, Video,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";

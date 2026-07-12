@@ -147,6 +147,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/scheduling/resources",
     "/hr/orientation-queue",
     "/reports",
+    "/reports/cancellation-command-center",
     "/ops/make-up-sessions",
   ]),
   scheduling_lead: new Set<string>([
@@ -158,6 +159,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/scheduling/resources",
     "/hr/orientation-queue",
     "/reports",
+    "/reports/cancellation-command-center",
     "/ops/make-up-sessions",
   ]),
   scheduling_coordinator: new Set<string>([
@@ -169,6 +171,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/scheduling/resources",
     "/hr/orientation-queue",
     "/reports",
+    "/reports/cancellation-command-center",
     "/ops/make-up-sessions",
   ]),
   staffing_team: new Set<string>([
@@ -316,6 +319,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/hr/messages",
     "/hr/team-resources",
     "/user-management",
+    "/org-chart",
     "/device-requests",
     "/device-inventory",
     "/phone",

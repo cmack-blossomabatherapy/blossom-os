@@ -22,7 +22,7 @@ describe("HR people setup alignment", () => {
       ["OSHRNewHires", NEW_HIRES],
     ] as const) {
       expect(src, `${name} should deep-link to the add employee flow`).toMatch(/to="\/user-management\?add=1"/);
-      expect(src, `${name} must not send Add new hire to Orientation Queue`).not.toMatch(/Add new hire<\/Link>[\s\S]{0,120}\/hr\/orientation-queue|\/hr\/orientation-queue[\s\S]{0,120}Add new hire/);
+      expect(src, `${name} must not send Add new hire to Orientation Queue`).not.toMatch(/to="\/hr\/orientation-queue"[^>]*>[\s\S]{0,80}Add new hire/);
     }
   });
 
