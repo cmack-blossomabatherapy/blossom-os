@@ -12,6 +12,7 @@ import { TRAINING_PATHS, type TrainingPath } from "@/lib/academy/trainingPaths";
 import {
   loadLearnerHome, emptyLearnerHome, type LearnerHome,
 } from "@/lib/academy/learnerHome";
+import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCard";
 
 const TONE = {
   Foundations: "bg-primary/10 text-primary",
@@ -136,20 +137,13 @@ export default function TrainingAcademyHome() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  // Role-aware "My Training": surface the learner's own role path first.
-  const primarySlug = isRbt ? "rbt" : isBcba ? "bcba" : (resolvedFromRoles ?? null);
-  const orderedPaths = primarySlug
-    ? [
-        ...TRAINING_PATHS.filter((p) => p.slug === primarySlug),
-        ...TRAINING_PATHS.filter((p) => p.slug !== primarySlug),
-      ]
-    : TRAINING_PATHS;
-  const myTraining = orderedPaths.slice(0, 3).map((p, i) => ({
-    ...p,
-    progress: [62, 28, 10][i] ?? 0,
-    lastOpened: ["Today", "Yesterday", "3 days ago"][i] ?? "—",
-  }));
-  const required = orderedPaths.filter((p) => p.category !== "Role" || p.slug === primarySlug).slice(0, 4);
+  // Role-aware "My Training": surface the learner's own role path only.
+  const primarySlug = isRbt ? "rbt" : isBcba ? "bcba" : (resolvedFromRoles ?? "blossom-os-basics");
+  const myPath = TRAINING_PATHS.find((p) => p.slug === primarySlug) ?? null;
+  const myTraining = myPath
+    ? [{ ...myPath, progress: 0, lastOpened: "—" }]
+    : [];
+  // Admins can preview all paths for assignment purposes.
   const rolePaths = TRAINING_PATHS.filter((p) => p.category === "Role");
   const departmentPaths = TRAINING_PATHS.filter((p) => p.category === "Department");
 
@@ -229,13 +223,18 @@ export default function TrainingAcademyHome() {
         </div>
       </header>
 
-      {/* ---------- My Training (Continue) ---------- */}
+      {/* ---------- Welcome to Blossom (universal Phase 0) ---------- */}
+      <div className="mt-8">
+        <WelcomeToBlossomCard />
+      </div>
+
+      {/* ---------- My Training (Continue) — role-scoped, single path ---------- */}
       <Section
         eyebrow="Continue learning"
-        title="My Training"
-        description="Pick up where you left off."
+        title="My Training Journey"
+        description="Your assigned role journey — everything you need, nothing you don't."
       >
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {myTraining.map((t, i) => (
             <Link
               key={t.slug}
@@ -270,38 +269,6 @@ export default function TrainingAcademyHome() {
         </div>
       </Section>
 
-      {/* ---------- Required ---------- */}
-      <Section
-        eyebrow="Required"
-        title="Required Training"
-        description="Training expected of you based on your role and onboarding stage."
-      >
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {required.map((t) => (
-            <PathRow key={t.slug} path={t} required />
-          ))}
-        </div>
-      </Section>
-
-      {/* ---------- Role Training Paths ---------- */}
-      <Section
-        anchorId="paths"
-        eyebrow="By role"
-        title="Role Training Paths"
-        description="Structured learning for every Blossom role."
-      >
-        <PathGrid paths={rolePaths} />
-      </Section>
-
-      {/* ---------- Department Training ---------- */}
-      <Section
-        eyebrow="By department"
-        title="Department Training"
-        description="Operational training built around how each department runs."
-      >
-        <PathGrid paths={departmentPaths} />
-      </Section>
-
       {/* ---------- Completed ---------- */}
       <Section
         eyebrow="Completed"
@@ -319,6 +286,22 @@ export default function TrainingAcademyHome() {
 
       {/* ---------- Super Admin: Training Management ---------- */}
       {isAdmin && (
+        <>
+        <Section
+          anchorId="paths"
+          eyebrow="Admin · By role"
+          title="All Role Training Paths"
+          description="Preview any role's journey for assignment or editing."
+        >
+          <PathGrid paths={rolePaths} />
+        </Section>
+        <Section
+          eyebrow="Admin · By department"
+          title="Department Training"
+          description="Operational training built around how each department runs."
+        >
+          <PathGrid paths={departmentPaths} />
+        </Section>
         <Section
           eyebrow="Super Admin"
           title="Training Management"
@@ -331,6 +314,7 @@ export default function TrainingAcademyHome() {
             <AdminCard to="/training/academy/leadership" icon={BarChart3} title="Training Completion Report" body="Leadership reporting on training engagement." />
           </div>
         </Section>
+        </>
       )}
     </div>
   );
