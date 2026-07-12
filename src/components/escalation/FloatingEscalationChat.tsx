@@ -384,6 +384,34 @@ export function FloatingEscalationChat() {
   const otherId = (t: Thread) => (t.from_user_id === uid ? t.to_user_id : t.from_user_id);
   const nameOf = (id: string) => profileNames[id] || "Teammate";
 
+  const filteredThreads = useMemo(() => {
+    const q = filterQuery.trim().toLowerCase();
+    return threads.filter((t) => {
+      if (filterStatus !== "all" && t.status !== filterStatus) return false;
+      if (filterPriority !== "all" && t.priority !== filterPriority) return false;
+      if (filterRecipient !== "all" && otherId(t) !== filterRecipient) return false;
+      if (filterLinkType === "any" && !t.linked_entity_type) return false;
+      if (filterLinkType !== "all" && filterLinkType !== "any" && t.linked_entity_type !== filterLinkType) return false;
+      if (q) {
+        const hay = [
+          t.subject,
+          t.linked_entity_label ?? "",
+          nameOf(otherId(t)),
+          t.blocker ?? "",
+          t.next_step ?? "",
+        ].join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [threads, filterQuery, filterStatus, filterPriority, filterRecipient, filterLinkType, uid, profileNames]);
+
+  const activeFilterCount =
+    (filterStatus !== "all" ? 1 : 0) +
+    (filterPriority !== "all" ? 1 : 0) +
+    (filterRecipient !== "all" ? 1 : 0) +
+    (filterLinkType !== "all" ? 1 : 0);
+
   const sortedRecipients = useMemo(
     () => recipients.slice().sort((a, b) => (a.display_name ?? "").localeCompare(b.display_name ?? "")),
     [recipients],
