@@ -1,0 +1,1 @@
+ALTER TABLE public.escalation_threads ADD COLUMN IF NOT EXISTS linked_entity_label text;
