@@ -491,13 +491,99 @@ export function FloatingEscalationChat() {
           {/* Body */}
           {view === "list" && (
             <div className="flex-1 overflow-y-auto">
+              {/* Search + filters */}
+              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-3 py-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      value={filterQuery}
+                      onChange={(e) => setFilterQuery(e.target.value)}
+                      placeholder="Search subject, person, record…"
+                      className="h-8 pl-7 text-xs"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={showFilters || activeFilterCount > 0 ? "secondary" : "ghost"}
+                    className="h-8 px-2"
+                    onClick={() => setShowFilters((s) => !s)}
+                  >
+                    <FilterIcon className="h-3.5 w-3.5" />
+                    {activeFilterCount > 0 && (
+                      <span className="ml-1 text-[10px] font-semibold">{activeFilterCount}</span>
+                    )}
+                  </Button>
+                </div>
+                {showFilters && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any status</SelectItem>
+                        {STATUS_OPTIONS.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v as any)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Priority" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any priority</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterRecipient} onValueChange={(v) => setFilterRecipient(v)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Person" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Anyone</SelectItem>
+                        {sortedRecipients.map((r) => (
+                          <SelectItem key={r.user_id} value={r.user_id}>{r.display_name ?? "Teammate"}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterLinkType} onValueChange={(v) => setFilterLinkType(v as any)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Linked record" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any record</SelectItem>
+                        <SelectItem value="any">Has linked record</SelectItem>
+                        <SelectItem value="lead">Lead</SelectItem>
+                        <SelectItem value="client">Client</SelectItem>
+                        <SelectItem value="authorization">Authorization</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {activeFilterCount > 0 && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="col-span-2 h-7 text-[11px]"
+                        onClick={() => {
+                          setFilterStatus("all");
+                          setFilterPriority("all");
+                          setFilterRecipient("all");
+                          setFilterLinkType("all");
+                        }}
+                      >
+                        Clear filters
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
               {threads.length === 0 ? (
                 <div className="p-6 text-center text-sm text-muted-foreground">
                   No escalations yet. Tap <b>New</b> to send one to your state director or manager.
                 </div>
+              ) : filteredThreads.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  No escalations match your filters.
+                </div>
               ) : (
                 <ul className="divide-y">
-                  {threads.map((t) => {
+                  {filteredThreads.map((t) => {
                     const Icon = CATEGORY_ICON[t.category] ?? AlertTriangle;
                     return (
                       <li key={t.id}>
