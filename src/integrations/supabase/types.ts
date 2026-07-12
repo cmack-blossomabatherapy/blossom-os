@@ -5449,6 +5449,180 @@ export type Database = {
         }
         Relationships: []
       }
+      ctm_call_events: {
+        Row: {
+          called_at: string | null
+          caller_city: string | null
+          caller_name: string | null
+          caller_state: string | null
+          caller_zip: string | null
+          campaign_name: string | null
+          created_at: string
+          ctm_account_id: string | null
+          ctm_call_id: string
+          direction: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          from_number: string | null
+          id: string
+          intake_lead_id: string | null
+          raw: Json | null
+          recording_url: string | null
+          resolved_campaign_id: string | null
+          resolved_source_id: string | null
+          resolved_state: string | null
+          source_name: string | null
+          status: string | null
+          tags: string[] | null
+          talk_time_seconds: number | null
+          to_number: string | null
+          tracking_number: string | null
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          called_at?: string | null
+          caller_city?: string | null
+          caller_name?: string | null
+          caller_state?: string | null
+          caller_zip?: string | null
+          campaign_name?: string | null
+          created_at?: string
+          ctm_account_id?: string | null
+          ctm_call_id: string
+          direction?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          from_number?: string | null
+          id?: string
+          intake_lead_id?: string | null
+          raw?: Json | null
+          recording_url?: string | null
+          resolved_campaign_id?: string | null
+          resolved_source_id?: string | null
+          resolved_state?: string | null
+          source_name?: string | null
+          status?: string | null
+          tags?: string[] | null
+          talk_time_seconds?: number | null
+          to_number?: string | null
+          tracking_number?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          called_at?: string | null
+          caller_city?: string | null
+          caller_name?: string | null
+          caller_state?: string | null
+          caller_zip?: string | null
+          campaign_name?: string | null
+          created_at?: string
+          ctm_account_id?: string | null
+          ctm_call_id?: string
+          direction?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          from_number?: string | null
+          id?: string
+          intake_lead_id?: string | null
+          raw?: Json | null
+          recording_url?: string | null
+          resolved_campaign_id?: string | null
+          resolved_source_id?: string | null
+          resolved_state?: string | null
+          source_name?: string | null
+          status?: string | null
+          tags?: string[] | null
+          talk_time_seconds?: number | null
+          to_number?: string | null
+          tracking_number?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ctm_number_mapping: {
+        Row: {
+          created_at: string
+          default_intake_owner: string | null
+          friendly_name: string | null
+          id: string
+          is_active: boolean
+          marketing_campaign_id: string | null
+          marketing_source_id: string | null
+          notes: string | null
+          state_code: string | null
+          tracking_number: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_intake_owner?: string | null
+          friendly_name?: string | null
+          id?: string
+          is_active?: boolean
+          marketing_campaign_id?: string | null
+          marketing_source_id?: string | null
+          notes?: string | null
+          state_code?: string | null
+          tracking_number: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_intake_owner?: string | null
+          friendly_name?: string | null
+          id?: string
+          is_active?: boolean
+          marketing_campaign_id?: string | null
+          marketing_source_id?: string | null
+          notes?: string | null
+          state_code?: string | null
+          tracking_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ctm_sync_runs: {
+        Row: {
+          calls_fetched: number
+          calls_upserted: number
+          detail: Json | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          leads_created: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          calls_fetched?: number
+          calls_upserted?: number
+          detail?: Json | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: string
+          leads_created?: number
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          calls_fetched?: number
+          calls_upserted?: number
+          detail?: Json | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          leads_created?: number
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       data_uploads: {
         Row: {
           file_name: string
@@ -10035,6 +10209,7 @@ export type Database = {
           copay: number
           created_at: string
           created_by: string | null
+          ctm_call_id: string | null
           deductible_amount: number
           deductible_remaining: number
           diagnosis_status: string | null
@@ -10123,6 +10298,7 @@ export type Database = {
           copay?: number
           created_at?: string
           created_by?: string | null
+          ctm_call_id?: string | null
           deductible_amount?: number
           deductible_remaining?: number
           diagnosis_status?: string | null
@@ -10211,6 +10387,7 @@ export type Database = {
           copay?: number
           created_at?: string
           created_by?: string | null
+          ctm_call_id?: string | null
           deductible_amount?: number
           deductible_remaining?: number
           diagnosis_status?: string | null
@@ -11624,6 +11801,7 @@ export type Database = {
           central_reach_client_id: string | null
           central_reach_patient_id: string | null
           created_at: string
+          ctm_call_id: string | null
           direction: string | null
           disposition: string | null
           duration_seconds: number | null
@@ -11656,6 +11834,7 @@ export type Database = {
           central_reach_client_id?: string | null
           central_reach_patient_id?: string | null
           created_at?: string
+          ctm_call_id?: string | null
           direction?: string | null
           disposition?: string | null
           duration_seconds?: number | null
@@ -11688,6 +11867,7 @@ export type Database = {
           central_reach_client_id?: string | null
           central_reach_patient_id?: string | null
           created_at?: string
+          ctm_call_id?: string | null
           direction?: string | null
           disposition?: string | null
           duration_seconds?: number | null

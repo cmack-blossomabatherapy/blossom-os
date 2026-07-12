@@ -376,6 +376,7 @@ import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
 import IdentityDashboard from "./pages/admin/IdentityDashboard";
 import AutomatedEmailsPage from "./pages/admin/AutomatedEmails";
+import CTMAdmin from "./pages/admin/CTMAdmin";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { BlockIntakeRoute } from "./components/auth/BlockIntakeRoute";
 import { PhoneSystemRoute } from "./components/auth/PhoneSystemRoute";
@@ -1060,6 +1061,7 @@ const App = () => (
                   <Route path="/admin/journey-editor" element={<AdminRoute><JourneyEditor /></AdminRoute>} />
                   <Route path="/admin/identity" element={<AdminRoute><IdentityDashboard /></AdminRoute>} />
                   <Route path="/admin/automated-emails" element={<AdminRoute><AutomatedEmailsPage /></AdminRoute>} />
+                  <Route path="/admin/ctm" element={<AdminRoute><CTMAdmin /></AdminRoute>} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
                   <Route path="/onboarding" element={<Journey />} />
