@@ -210,6 +210,7 @@ export function PhoneDashboard() {
           <CardHeader><CardTitle className="text-base">Quick Links</CardTitle></CardHeader>
           <CardContent className="space-y-2">
             <QuickLink to="/phone/lookup"    label="Extension Lookup" />
+            <QuickLink to="/phone/calls"     label="Call History (CTM)" />
             <QuickLink to="/phone/directory" label="Routing Directory" />
             <QuickLink to="/phone/shared"    label="Shared Routing" />
             <QuickLink to="/phone/requests"  label="Change Requests" />
