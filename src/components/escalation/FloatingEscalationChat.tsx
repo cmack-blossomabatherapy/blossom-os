@@ -133,21 +133,25 @@ export function FloatingEscalationChat() {
     if (!uid) return;
     let cancelled = false;
     (async () => {
+      setLoadingMore(true);
       const { data, error } = await supabase
         .from("escalation_threads")
         .select("*")
         .or(`from_user_id.eq.${uid},to_user_id.eq.${uid}`)
         .order("updated_at", { ascending: false })
-        .limit(50);
+        .limit(pageSize + 1);
       if (cancelled) return;
+      setLoadingMore(false);
       if (error) {
         console.warn("[escalation] load threads failed", error);
         return;
       }
-      setThreads((data ?? []) as Thread[]);
+      const rows = (data ?? []) as Thread[];
+      setHasMore(rows.length > pageSize);
+      setThreads(rows.slice(0, pageSize));
     })();
     return () => { cancelled = true; };
-  }, [uid, open]);
+  }, [uid, open, pageSize]);
 
   /* ---------- Realtime new thread messages -> bump unread ---------- */
   useEffect(() => {
