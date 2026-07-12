@@ -236,7 +236,7 @@ async function hydrateFromCloud(userId: string): Promise<void> {
     if (merged.status !== local.status || merged.progressPercent !== local.progressPercent) {
       setTrainingProgress(row.training_id, merged, { skipCloud: true });
     }
-    if (rank(local.status) > rank(cloud.status) || (local.progressPercent ?? 0) > (cloud.progress_percent ?? 0)) {
+    if (rank(local.status) > rank(cloud.status) || (local.progressPercent ?? 0) > (cloud.progressPercent ?? 0)) {
       enqueue(progressToWrite(row.training_id, merged));
     }
   }
