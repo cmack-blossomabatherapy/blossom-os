@@ -84,6 +84,7 @@ import {
   type OAuthConnectionRow,
 } from "@/lib/os/integrations/backend";
 import { deriveIntegrationStatus } from "@/lib/os/integrations/statusOverlay";
+import { IntegrationCatalogSection } from "@/components/admin/IntegrationCatalogSection";
 import { logSystemToolAction } from "@/hooks/useSystemTools";
 import { toast } from "sonner";
 import { IntakeCommunicationSetupPanel } from "@/components/settings/IntakeCommunicationSetupPanel";
@@ -1647,6 +1648,8 @@ export default function Integrations() {
               )}
             </section>
           )}
+
+          <IntegrationCatalogSection />
         </div>
       </div>
 

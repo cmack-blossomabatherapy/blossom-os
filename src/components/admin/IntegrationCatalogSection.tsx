@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plug, Plus, Pencil, Trash2, Search, PowerOff, Power } from "lucide-react";
-import { OSShell } from "@/pages/os/OSShell";
+import { Plug, Plus, Pencil, Trash2, Search, PowerOff, Power, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,12 +7,13 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import {
   useIntegrationCatalog,
   type IntegrationCatalogRow,
@@ -66,9 +66,17 @@ const EMPTY_FORM: FormState = {
   notes: "",
 };
 
-export default function IntegrationRegistryPage() {
+/**
+ * Catalog metadata management, formerly the standalone
+ * /system/integration-registry page. Rendered inline within
+ * /admin/integrations so admins have one place to manage every
+ * integration and the registry keys that feed dropdowns across
+ * Workflow Inventory, Issue Tracker, and Request Intake.
+ */
+export function IntegrationCatalogSection() {
   const { rows, loading, upsert, setStatus, remove } = useIntegrationCatalog();
   const { toast } = useToast();
+  const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -174,114 +182,126 @@ export default function IntegrationRegistryPage() {
   };
 
   return (
-    <OSShell>
-      <div className="px-6 lg:px-10 py-8 max-w-[1400px] mx-auto space-y-8">
-        <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
-              <Plug className="h-3.5 w-3.5" /> System Settings
-            </div>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-              Integration Registry
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl">
-              Canonical list of integration keys used across Workflow Inventory, Issue Tracker,
-              Request Intake, and integration readiness surfaces. Disable an entry to hide it
-              from every dropdown without deleting it.
+    <section className="mt-10">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="group flex w-full items-center justify-between border-b border-border/60 pb-3"
+      >
+        <div className="flex items-center gap-3">
+          <div className="grid size-8 place-items-center rounded-lg bg-muted/60 text-muted-foreground">
+            <Plug className="size-4" strokeWidth={1.75} />
+          </div>
+          <div className="text-left">
+            <h2 className="text-base font-semibold tracking-tight text-foreground">
+              Catalog metadata
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Registry keys used by Workflow Inventory, Issue Tracker, Request Intake, and readiness surfaces.
             </p>
           </div>
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1.5" /> Add integration
-          </Button>
-        </header>
-
-        <Card className="p-4 flex flex-col md:flex-row md:items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search by key, name, or category"
-              className="pl-9"
-            />
-          </div>
-          <div className="w-full md:w-56">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                {STATUS_OPTIONS.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </Card>
-
-        <Card className="overflow-hidden">
-          <div className="grid grid-cols-[minmax(160px,1fr)_minmax(200px,1.4fr)_140px_140px_140px_180px] text-xs font-medium text-muted-foreground bg-muted/40 px-4 py-2 border-b border-border">
-            <div>Registry key</div>
-            <div>Display name</div>
-            <div>Category</div>
-            <div>Criticality</div>
-            <div>Status</div>
-            <div className="text-right">Actions</div>
-          </div>
-          {loading ? (
-            <div className="p-6 text-sm text-muted-foreground">Loading registry…</div>
-          ) : filtered.length === 0 ? (
-            <div className="p-6 text-sm text-muted-foreground">No integrations match.</div>
-          ) : (
-            filtered.map((r) => (
-              <div
-                key={r.id}
-                className="grid grid-cols-[minmax(160px,1fr)_minmax(200px,1.4fr)_140px_140px_140px_180px] items-center px-4 py-3 border-b border-border last:border-b-0 hover:bg-muted/20"
-              >
-                <code className="text-xs font-mono">{r.id}</code>
-                <div className="text-sm font-medium text-foreground">
-                  {r.display_name}
-                  {r.owner_department ? (
-                    <div className="text-xs text-muted-foreground font-normal">{r.owner_department}</div>
-                  ) : null}
-                </div>
-                <div className="text-xs text-muted-foreground">{r.category}</div>
-                <div className="text-xs text-muted-foreground capitalize">{r.criticality}</div>
-                <div>
-                  <Badge variant="outline" className={statusTone(r.status)}>
-                    {r.status}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleDisabled(r)}
-                    title={r.status === "disabled" ? "Re-enable" : "Disable (hide from dropdowns)"}
-                  >
-                    {r.status === "disabled" ? (
-                      <Power className="h-4 w-4" />
-                    ) : (
-                      <PowerOff className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Edit">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => confirmDelete(r)}
-                    title="Delete"
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))
+        </div>
+        <ChevronDown
+          className={cn(
+            "size-4 text-muted-foreground transition-transform",
+            !open && "-rotate-90",
           )}
-        </Card>
-      </div>
+        />
+      </button>
+
+      {open && (
+        <div className="mt-5 space-y-4">
+          <Card className="p-4 flex flex-col md:flex-row md:items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search by key, name, or category"
+                className="pl-9"
+              />
+            </div>
+            <div className="w-full md:w-56">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  {STATUS_OPTIONS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-1.5" /> Add registry entry
+            </Button>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <div className="grid grid-cols-[minmax(160px,1fr)_minmax(200px,1.4fr)_140px_140px_140px_180px] text-xs font-medium text-muted-foreground bg-muted/40 px-4 py-2 border-b border-border">
+              <div>Registry key</div>
+              <div>Display name</div>
+              <div>Category</div>
+              <div>Criticality</div>
+              <div>Status</div>
+              <div className="text-right">Actions</div>
+            </div>
+            {loading ? (
+              <div className="p-6 text-sm text-muted-foreground">Loading registry…</div>
+            ) : filtered.length === 0 ? (
+              <div className="p-6 text-sm text-muted-foreground">No integrations match.</div>
+            ) : (
+              filtered.map((r) => (
+                <div
+                  key={r.id}
+                  className="grid grid-cols-[minmax(160px,1fr)_minmax(200px,1.4fr)_140px_140px_140px_180px] items-center px-4 py-3 border-b border-border last:border-b-0 hover:bg-muted/20"
+                >
+                  <code className="text-xs font-mono">{r.id}</code>
+                  <div className="text-sm font-medium text-foreground">
+                    {r.display_name}
+                    {r.owner_department ? (
+                      <div className="text-xs text-muted-foreground font-normal">{r.owner_department}</div>
+                    ) : null}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{r.category}</div>
+                  <div className="text-xs text-muted-foreground capitalize">{r.criticality}</div>
+                  <div>
+                    <Badge variant="outline" className={statusTone(r.status)}>
+                      {r.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleDisabled(r)}
+                      title={r.status === "disabled" ? "Re-enable" : "Disable (hide from dropdowns)"}
+                    >
+                      {r.status === "disabled" ? (
+                        <Power className="h-4 w-4" />
+                      ) : (
+                        <PowerOff className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Edit">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => confirmDelete(r)}
+                      title="Delete"
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </Card>
+        </div>
+      )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
@@ -375,6 +395,8 @@ export default function IntegrationRegistryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </OSShell>
+    </section>
   );
 }
+
+export default IntegrationCatalogSection;
