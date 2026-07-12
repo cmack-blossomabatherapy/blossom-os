@@ -693,7 +693,7 @@ export function FloatingEscalationChat() {
                 </ul>
               )}
               {hasMore && (
-                <div className="p-3 flex justify-center">
+                <div ref={loadMoreRef} className="p-3 flex justify-center">
                   <Button
                     size="sm"
                     variant="outline"
