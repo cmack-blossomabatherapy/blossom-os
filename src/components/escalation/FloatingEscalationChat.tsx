@@ -154,6 +154,20 @@ export function FloatingEscalationChat() {
     return () => { cancelled = true; };
   }, [uid, open, pageSize]);
 
+  /* ---------- Infinite scroll sentinel ---------- */
+  useEffect(() => {
+    if (!open || !hasMore) return;
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting) && !loadingMore) {
+        setPageSize((n) => n + 50);
+      }
+    }, { rootMargin: "120px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [open, hasMore, loadingMore]);
+
   /* ---------- Realtime new thread messages -> bump unread ---------- */
   useEffect(() => {
     if (!uid) return;
