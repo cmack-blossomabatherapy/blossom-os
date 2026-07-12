@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   GraduationCap, Clock, ArrowRight, BookOpen, CheckCircle2,
   PlayCircle, ClipboardList, Users, Settings2, FileText, BarChart3,
-  Sparkles, Flame, Library, Target, Trophy,
+  Library, Target, Trophy,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -423,26 +423,6 @@ function PathCard({ path }: { path: TrainingPath }) {
         {isStateDirector ? "Open State Director Journey" : "Open path"}
         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
       </div>
-    </Link>
-  );
-}
-
-function PathRow({ path, required }: { path: TrainingPath; required?: boolean }) {
-  const to = path.slug === "state-director" ? "/training" : `/academy/path/${path.slug}`;
-  return (
-    <Link
-      to={to}
-      className="flex items-center gap-3 rounded-xl border border-border/70 bg-card p-4 transition hover:border-border"
-    >
-      <div className="grid h-9 w-9 place-items-center rounded-lg bg-muted text-foreground">
-        <path.icon className="h-4 w-4" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{path.title}</p>
-        <p className="truncate text-[12px] text-muted-foreground">{path.description}</p>
-      </div>
-      {required && <Badge className="bg-primary/10 text-primary hover:bg-primary/10">Required</Badge>}
-      <ArrowRight className="h-4 w-4 text-muted-foreground" />
     </Link>
   );
 }
