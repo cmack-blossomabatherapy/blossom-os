@@ -488,6 +488,14 @@ export function FloatingEscalationChat() {
                               {t.due_date ? ` · Due ${new Date(t.due_date).toLocaleDateString()}` : ""}
                               {" · "}{new Date(t.updated_at).toLocaleString()}
                             </div>
+                            {t.linked_entity_type && t.linked_entity_id && (
+                              <div className="mt-1">
+                                <Badge variant="outline" className="text-[10px] gap-1">
+                                  <span className="opacity-70">{LINK_TYPE_LABEL[t.linked_entity_type as LinkEntityType]}:</span>
+                                  <span className="truncate max-w-[180px]">{t.linked_entity_label ?? t.linked_entity_id}</span>
+                                </Badge>
+                              </div>
+                            )}
                           </div>
                         </button>
                       </li>
