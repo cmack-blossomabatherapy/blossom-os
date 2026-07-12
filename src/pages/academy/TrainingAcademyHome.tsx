@@ -42,6 +42,48 @@ export default function TrainingAcademyHome() {
   const { isAdmin, user, roles } = useAuth();
   const isRbt = roles.includes("rbt" as never);
   const isBcba = roles.includes("bcba" as never);
+  // Every operational role has an assigned wireframe training path.
+  // Map the learner's role(s) to the TRAINING_PATHS slug so /academy always
+  // surfaces "your journey" first — not just for RBT/BCBA.
+  const ROLE_TO_SLUG: Record<string, string> = {
+    rbt: "rbt",
+    bcba: "bcba",
+    case_manager: "case-manager",
+    behavioral_support: "behavioral-support",
+    clinical_director: "clinical-director",
+    clinical_lead: "clinical-director",
+    state_director: "state-director",
+    assistant_state_director: "state-director",
+    intake_coordinator: "intake",
+    intake_lead: "intake",
+    intake_team: "intake",
+    marketing_team: "marketing",
+    marketing_growth_lead: "marketing",
+    business_development: "business-development",
+    recruiting_team: "recruiting",
+    recruiting_lead: "recruiting",
+    recruiting_coordinator: "recruiting",
+    authorization_coordinator: "authorizations",
+    authorization_manager: "authorizations",
+    authorizations_team: "authorizations",
+    scheduling_team: "scheduling",
+    scheduling_lead: "scheduling",
+    scheduling_coordinator: "scheduling",
+    staffing_team: "staffing",
+    staffing_lead: "staffing",
+    staffing_coordinator: "staffing",
+    hr_team: "hr",
+    hr_lead: "hr",
+    hr: "hr",
+    credentialing_team: "credentialing",
+    credentialing_lead: "credentialing",
+    qa_team: "qa",
+    qa_director: "qa",
+    qa_specialist: "qa",
+  };
+  const resolvedFromRoles = (roles as string[])
+    .map((r) => ROLE_TO_SLUG[r])
+    .find(Boolean);
   const [home, setHome] = useState<LearnerHome>(() => emptyLearnerHome());
   useEffect(() => {
     let cancelled = false;
@@ -51,7 +93,7 @@ export default function TrainingAcademyHome() {
   }, [user?.id]);
 
   // Role-aware "My Training": surface the learner's own role path first.
-  const primarySlug = isRbt ? "rbt" : isBcba ? "bcba" : null;
+  const primarySlug = isRbt ? "rbt" : isBcba ? "bcba" : (resolvedFromRoles ?? null);
   const orderedPaths = primarySlug
     ? [
         ...TRAINING_PATHS.filter((p) => p.slug === primarySlug),
