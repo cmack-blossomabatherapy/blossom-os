@@ -8,17 +8,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
-import { TRAINING_PATHS, type TrainingPath } from "@/lib/academy/trainingPaths";
+import { TRAINING_PATHS } from "@/lib/academy/trainingPaths";
 import {
   loadLearnerHome, emptyLearnerHome, type LearnerHome,
 } from "@/lib/academy/learnerHome";
 import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCard";
-
-const TONE = {
-  Foundations: "bg-primary/10 text-primary",
-  Role: "bg-accent/40 text-foreground",
-  Department: "bg-muted text-muted-foreground",
-} as const;
 
 /** Warm, color-coded accents for the LMS home. Used sparingly on icon
  *  tiles and status chips so the page feels alive without losing the
@@ -36,7 +30,7 @@ const ROTATE: Accent[] = ["orchid", "sky", "mint", "citrus", "coral", "teal"];
 
 /**
  * Training Academy landing — universal home for every role.
- * Sections: My Training · Required · Role Paths · Department · Completed.
+ * Learners see Welcome to Blossom plus their assigned role journey only.
  * Super Admin sees a Training Management quick-access panel at the bottom.
  */
 export default function TrainingAcademyHome() {
@@ -143,10 +137,6 @@ export default function TrainingAcademyHome() {
   const myTraining = myPath
     ? [{ ...myPath, progress: 0, lastOpened: "—" }]
     : [];
-  // Admins can preview all paths for assignment purposes.
-  const rolePaths = TRAINING_PATHS.filter((p) => p.category === "Role");
-  const departmentPaths = TRAINING_PATHS.filter((p) => p.category === "Department");
-
   const firstName =
     home.employee?.first_name ||
     (user?.email?.split("@")[0]) ||
@@ -180,7 +170,7 @@ export default function TrainingAcademyHome() {
           SOPs, walkthroughs, and quick checks, all in one place.
         </p>
 
-        {/* Today / Continue strip — colorful, live when enrolled */}
+        {/* Today / Continue strip — role-scoped for learners */}
         <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
           <TodayCard
             accent="orchid"
@@ -286,22 +276,6 @@ export default function TrainingAcademyHome() {
 
       {/* ---------- Super Admin: Training Management ---------- */}
       {isAdmin && (
-        <>
-        <Section
-          anchorId="paths"
-          eyebrow="Admin · By role"
-          title="All Role Training Paths"
-          description="Preview any role's journey for assignment or editing."
-        >
-          <PathGrid paths={rolePaths} />
-        </Section>
-        <Section
-          eyebrow="Admin · By department"
-          title="Department Training"
-          description="Operational training built around how each department runs."
-        >
-          <PathGrid paths={departmentPaths} />
-        </Section>
         <Section
           eyebrow="Super Admin"
           title="Training Management"
@@ -314,7 +288,6 @@ export default function TrainingAcademyHome() {
             <AdminCard to="/training/academy/leadership" icon={BarChart3} title="Training Completion Report" body="Leadership reporting on training engagement." />
           </div>
         </Section>
-        </>
       )}
     </div>
   );
