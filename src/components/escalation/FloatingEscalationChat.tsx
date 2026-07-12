@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle, X, Send, Plus, ArrowLeft, CheckCircle2, AlertTriangle, ListTodo, StickyNote, CalendarIcon, UserCog } from "lucide-react";
+import { Search as SearchIcon, Filter as FilterIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -108,6 +109,14 @@ export function FloatingEscalationChat() {
   const [body, setBody] = useState("");
   const [composeDue, setComposeDue] = useState<string>("");
   const [composeLink, setComposeLink] = useState<LinkValue>(null);
+
+  // List filters
+  const [filterQuery, setFilterQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | EscalationStatus>("all");
+  const [filterPriority, setFilterPriority] = useState<"all" | Priority>("all");
+  const [filterRecipient, setFilterRecipient] = useState<"all" | string>("all");
+  const [filterLinkType, setFilterLinkType] = useState<"all" | LinkEntityType | "any">("all");
+  const [showFilters, setShowFilters] = useState(false);
 
   const uid = user?.id ?? null;
 
