@@ -677,6 +677,18 @@ export function FloatingEscalationChat() {
                   })}
                 </ul>
               )}
+              {hasMore && (
+                <div className="p-3 flex justify-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={loadingMore}
+                    onClick={() => setPageSize((n) => n + 50)}
+                  >
+                    {loadingMore ? "Loading…" : "Load more"}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
