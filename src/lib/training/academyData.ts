@@ -1426,7 +1426,148 @@ export const SD_JOURNEY_MODULE_IDS: string[] = STATE_DIRECTOR_TRAININGS.map((t) 
 
 SEED_TRAININGS.push(...STATE_DIRECTOR_TRAININGS);
 
-/** Only Intake is seeded with modules. Other roles get empty journeys ready to edit. */
+/* ---------------- Wireframe role journeys ----------------
+ * Every operational role gets a lightweight 6-module "wireframe" journey so
+ * new hires immediately see a shape for their onboarding path. Content owners
+ * flesh these out over time in Manage Journeys.
+ */
+
+interface WireframeSpec {
+  slug: string;
+  role: string;
+  department: string;
+  title: string;
+  tagline: string;
+  icon: IconKey;
+  tone: JourneyTone;
+  roleLabel: string;
+}
+
+function buildWireframeModules(spec: WireframeSpec): Training[] {
+  const { slug, department, roleLabel } = spec;
+  const base: Array<Omit<Training, "id" | "category" | "department"> & { key: string }> = [
+    {
+      key: "welcome",
+      title: `Welcome to Blossom — ${roleLabel}`,
+      description: `Kick off your ${roleLabel} journey: who we are, how we operate, and what your first two weeks look like.`,
+      type: "Training",
+      estimatedMinutes: 20,
+      required: true,
+      overview: `Meet Blossom and the ${roleLabel} team. Understand the mission, the states we support, and how your role fits in.`,
+      whyItMatters: "A shared starting point keeps every hire grounded before workflows begin.",
+      whatToDo: "Watch the welcome, review the org overview, meet your mentor.",
+    },
+    {
+      key: "role-charter",
+      title: `${roleLabel} Role Charter`,
+      description: `Clear responsibilities, decision rights, and success measures for the ${roleLabel} seat.`,
+      type: "SOP",
+      estimatedMinutes: 20,
+      required: true,
+      overview: "Your role charter is the single source of truth for what this seat owns and how success is measured.",
+    },
+    {
+      key: "foundations",
+      title: `${roleLabel} Foundations`,
+      description: `Core concepts, vocabulary, and operational context every ${roleLabel} needs on day one.`,
+      type: "Training",
+      estimatedMinutes: 30,
+      required: true,
+    },
+    {
+      key: "systems",
+      title: `Systems You'll Use`,
+      description: `Blossom OS, CentralReach, and the supporting tools this role touches daily.`,
+      type: "Workflow",
+      estimatedMinutes: 25,
+      required: true,
+    },
+    {
+      key: "daily-workflow",
+      title: `Core Daily Workflow`,
+      description: `The end-to-end operational loop for ${roleLabel} — from inbox to hand-off.`,
+      type: "Workflow",
+      estimatedMinutes: 30,
+      required: true,
+    },
+    {
+      key: "handoffs",
+      title: `Handoffs & Communication`,
+      description: `Who you talk to, when, and how — the escalation and hand-off standards for this role.`,
+      type: "SOP",
+      estimatedMinutes: 20,
+    },
+    {
+      key: "reports-kpis",
+      title: `Reports & KPIs`,
+      description: `The reports you own, the KPIs that matter, and where to find them in Blossom OS.`,
+      type: "Quick Guide",
+      estimatedMinutes: 15,
+    },
+    {
+      key: "readiness",
+      title: `Readiness Check`,
+      description: `A short checklist to confirm you're ready to operate independently as ${roleLabel}.`,
+      type: "Checklist",
+      estimatedMinutes: 15,
+      required: true,
+    },
+  ];
+  return base.map((m) => ({
+    id: `${slug}-${m.key}`,
+    title: m.title,
+    description: m.description,
+    type: m.type,
+    estimatedMinutes: m.estimatedMinutes,
+    required: m.required,
+    category: "role" as const,
+    department,
+    owner: `${roleLabel} Lead`,
+    lastUpdated: "2026-07-12",
+    overview: m.overview,
+    whyItMatters: m.whyItMatters,
+    whatToDo: m.whatToDo,
+  }));
+}
+
+/** One wireframe spec per operational role that needs a journey. */
+const WIREFRAME_SPECS: WireframeSpec[] = [
+  { slug: "wf-auth",         role: "authorization_coordinator", department: "authorizations", title: "Authorization Coordinator Journey", tagline: "Auths approved on time, every time.",                       icon: "ShieldCheck",   tone: "sky",    roleLabel: "Authorization Coordinator" },
+  { slug: "wf-scheduling",   role: "scheduling_team",           department: "scheduling",     title: "Scheduling Journey",                tagline: "Build clean schedules that hold up.",                        icon: "CalendarClock", tone: "mint",   roleLabel: "Scheduling Team" },
+  { slug: "wf-staffing",     role: "staffing_team",             department: "staffing",       title: "Staffing Journey",                  tagline: "Pair the right clinician with the right family.",            icon: "Users",         tone: "mint",   roleLabel: "Staffing Team" },
+  { slug: "wf-recruiting",   role: "recruiting_team",           department: "recruiting",     title: "Recruiting Journey",                tagline: "A predictable pipeline of great clinicians.",                icon: "Users",         tone: "peach",  roleLabel: "Recruiting Team" },
+  { slug: "wf-bcba",         role: "bcba",                      department: "clinical",       title: "BCBA Journey",                      tagline: "Clinical excellence and clean supervision.",                 icon: "Stethoscope",   tone: "sky",    roleLabel: "BCBA" },
+  { slug: "wf-rbt",          role: "rbt",                       department: "clinical",       title: "RBT Journey",                       tagline: "Show up prepared, document on time.",                        icon: "Stethoscope",   tone: "mint",   roleLabel: "RBT" },
+  { slug: "wf-hr",           role: "hr_team",                   department: "hr",             title: "HR Journey",                        tagline: "Take care of the people who take care of clients.",          icon: "Heart",         tone: "rose",   roleLabel: "HR Team" },
+  { slug: "wf-billing",      role: "billing_finance",           department: "billing",        title: "Billing & Finance Journey",         tagline: "Keep revenue clean and predictable.",                        icon: "Wallet",        tone: "lilac",  roleLabel: "Billing & Finance" },
+  { slug: "wf-exec",         role: "executive_leadership",      department: "leadership",     title: "Executive Leadership Journey",      tagline: "Lead Blossom with rhythm and clarity.",                      icon: "Crown",         tone: "violet", roleLabel: "Executive Leadership" },
+  { slug: "wf-ops",          role: "operations_leadership",     department: "leadership",     title: "Operations Leadership Journey",     tagline: "Keep all states pulling the same direction.",                icon: "Workflow",      tone: "violet", roleLabel: "Operations Leadership" },
+  { slug: "wf-marketing",    role: "marketing_team",            department: "marketing",      title: "Marketing Journey",                 tagline: "Campaigns, brand, and growth reporting.",                    icon: "Sparkles",      tone: "peach",  roleLabel: "Marketing Team" },
+  { slug: "wf-bd",           role: "business_development",      department: "growth",         title: "Business Development Journey",      tagline: "Outreach, partnerships, and referral relationships.",        icon: "Workflow",      tone: "peach",  roleLabel: "Business Development" },
+  { slug: "wf-credentialing",role: "credentialing_team",        department: "credentialing",  title: "Credentialing Journey",             tagline: "Provider files, payer enrollment, and expirations.",         icon: "ShieldCheck",   tone: "lilac",  roleLabel: "Credentialing Team" },
+  { slug: "wf-clinical-dir", role: "clinical_director",         department: "clinical",       title: "Clinical Director Journey",         tagline: "Clinical oversight, BCBA performance, and quality systems.", icon: "Stethoscope",   tone: "violet", roleLabel: "Clinical Director" },
+  { slug: "wf-payroll",      role: "payroll_coordinator",       department: "payroll",        title: "Payroll Journey",                   tagline: "Accurate, on-time payroll every cycle.",                     icon: "Wallet",        tone: "lilac",  roleLabel: "Payroll Coordinator" },
+  { slug: "wf-behavioral",   role: "behavioral_support",        department: "clinical",       title: "Behavioral Support Journey",        tagline: "Support workflows, escalation handling, and clinical alignment.", icon: "Heart",   tone: "mint",   roleLabel: "Behavioral Support" },
+  { slug: "wf-systems-admin",role: "systems_admin",             department: "platform",       title: "Systems Admin Journey",             tagline: "Keep Blossom OS healthy, secure, and integrated.",           icon: "Workflow",      tone: "violet", roleLabel: "Systems Admin" },
+];
+
+const WIREFRAME_TRAININGS: Training[] = WIREFRAME_SPECS.flatMap(buildWireframeModules);
+SEED_TRAININGS.push(...WIREFRAME_TRAININGS);
+
+function wireframeJourney(spec: WireframeSpec, id: string): RoleJourney {
+  return {
+    id,
+    role: spec.role,
+    title: spec.title,
+    tagline: spec.tagline,
+    icon: spec.icon,
+    tone: spec.tone,
+    moduleIds: buildWireframeModules(spec).map((m) => m.id),
+  };
+}
+
+/** Intake, QA, State Director, and Case Manager keep their authored journeys.
+ *  Every other operational role gets a wireframe journey so it renders on day one. */
 const SEED_JOURNEYS: RoleJourney[] = [
   { id: "j-intake", role: "intake_coordinator", title: "Intake Coordinator Journey", tagline: "From first phone call to a happy active client.", icon: "ClipboardList", tone: "lilac", moduleIds: [
     "intake-welcome-to-blossom",
@@ -1460,8 +1601,9 @@ const SEED_JOURNEYS: RoleJourney[] = [
     "intake-shadowing-checklist",
     "intake-final-readiness-check",
   ] },
-  { id: "j-auth", role: "authorization_coordinator", title: "Authorization Coordinator Journey", tagline: "Auths approved on time, every time.", icon: "ShieldCheck", tone: "sky", moduleIds: [] },
-  { id: "j-scheduling", role: "scheduling_team", title: "Scheduling Journey", tagline: "Build clean schedules that hold up.", icon: "CalendarClock", tone: "mint", moduleIds: [] },
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "authorization_coordinator")!, "j-auth"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "scheduling_team")!, "j-scheduling"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "staffing_team")!, "j-staffing"),
   { id: "j-qa", role: "qa_team", title: "QA / Compliance Journey",
     tagline: "Learn Blossom QA workflows, review systems, escalation processes, and operational quality standards.",
     icon: "CheckCircle2", tone: "violet", moduleIds: [
@@ -1475,16 +1617,23 @@ const SEED_JOURNEYS: RoleJourney[] = [
       "qa-using-blossom-os",
       "qa-operational-standards",
     ] },
-  { id: "j-recruiting", role: "recruiting_team", title: "Recruiting Journey", tagline: "A predictable pipeline of great clinicians.", icon: "Users", tone: "peach", moduleIds: [] },
-  { id: "j-bcba", role: "bcba", title: "BCBA Journey", tagline: "Clinical excellence and clean supervision.", icon: "Stethoscope", tone: "sky", moduleIds: [] },
-  { id: "j-rbt", role: "rbt", title: "RBT Journey", tagline: "Show up prepared, document on time.", icon: "Stethoscope", tone: "mint", moduleIds: [] },
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "recruiting_team")!, "j-recruiting"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "bcba")!, "j-bcba"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "rbt")!, "j-rbt"),
   { id: "j-state", role: "state_director", title: "State Director Journey",
     tagline: "5-week structured onboarding: foundations → systems → auths → staffing → leadership.",
     icon: "Crown", tone: "violet", moduleIds: SD_JOURNEY_MODULE_IDS },
-  { id: "j-hr", role: "hr_team", title: "HR Journey", tagline: "Take care of the people who take care of clients.", icon: "Heart", tone: "rose", moduleIds: [] },
-  { id: "j-billing", role: "billing_finance", title: "Billing & Finance Journey", tagline: "Keep revenue clean and predictable.", icon: "Wallet", tone: "lilac", moduleIds: [] },
-  { id: "j-exec", role: "executive_leadership", title: "Executive Leadership Journey", tagline: "Lead Blossom with rhythm and clarity.", icon: "Crown", tone: "violet", moduleIds: [] },
-  { id: "j-ops", role: "operations_leadership", title: "Operations Leadership Journey", tagline: "Keep all states pulling the same direction.", icon: "Workflow", tone: "violet", moduleIds: [] },
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "hr_team")!, "j-hr"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "billing_finance")!, "j-billing"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "executive_leadership")!, "j-exec"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "operations_leadership")!, "j-ops"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "marketing_team")!, "j-marketing"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "business_development")!, "j-bd"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "credentialing_team")!, "j-credentialing"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "clinical_director")!, "j-clinical-director"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "payroll_coordinator")!, "j-payroll"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "behavioral_support")!, "j-behavioral"),
+  wireframeJourney(WIREFRAME_SPECS.find((s) => s.role === "systems_admin")!, "j-systems-admin"),
   { id: "j-case-manager", role: "case_manager", title: "Case Manager Onboarding Journey",
     tagline: "Learn how to support families, coordinate service continuity, and keep communication calm, clear, and consistent.",
     icon: "Heart", tone: "rose", moduleIds: [
@@ -1510,7 +1659,7 @@ interface AcademyState {
   journeys: RoleJourney[];
 }
 
-const STORAGE_KEY = "blossom.training.academy.v9";
+const STORAGE_KEY = "blossom.training.academy.v10";
 
 function loadInitial(): AcademyState {
   if (typeof window === "undefined") {
@@ -1723,12 +1872,37 @@ export function getTraining(id: string): Training | undefined {
 }
 
 export function getJourneyForRole(role: string): RoleJourney {
-  // Assistant State Director shares the State Director launch journey.
-  if (role === "assistant_state_director") {
-    const sd = state.journeys.find((j) => j.role === "state_director");
-    if (sd) return sd;
-  }
-  const direct = state.journeys.find((j) => j.role === role);
+  // Alias newer/lead role variants back to their canonical journey so every
+  // seat sees an assigned wireframe on day one.
+  const ROLE_ALIASES: Record<string, string> = {
+    assistant_state_director: "state_director",
+    intake_lead: "intake_coordinator",
+    authorization_manager: "authorization_coordinator",
+    scheduling_lead: "scheduling_team",
+    scheduling_coordinator: "scheduling_team",
+    staffing_lead: "staffing_team",
+    staffing_coordinator: "staffing_team",
+    recruiting_lead: "recruiting_team",
+    recruiting_coordinator: "recruiting_team",
+    hr_lead: "hr_team",
+    payroll_lead: "payroll_coordinator",
+    billing_lead: "billing_finance",
+    finance_benefits_lead: "billing_finance",
+    finance_benefits_team: "billing_finance",
+    credentialing_lead: "credentialing_team",
+    rcm_team: "billing_finance",
+    qa_director: "qa_team",
+    qa_specialist: "qa_team",
+    clinical_lead: "clinical_director",
+    marketing_growth_lead: "marketing_team",
+    executive: "executive_leadership",
+    ceo: "executive_leadership",
+    coo: "executive_leadership",
+    director_of_operations: "operations_leadership",
+    operations_manager: "operations_leadership",
+  };
+  const resolvedRole = ROLE_ALIASES[role] ?? role;
+  const direct = state.journeys.find((j) => j.role === resolvedRole);
   if (direct) return direct;
   if (role === "super_admin") {
     return state.journeys.find((j) => j.role === "executive_leadership")
