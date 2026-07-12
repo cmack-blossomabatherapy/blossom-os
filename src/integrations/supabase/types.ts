@@ -20170,6 +20170,36 @@ export type Database = {
         }
         Relationships: []
       }
+      training_role_journey_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          path_slug: string
+          role_slug: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          path_slug: string
+          role_slug: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          path_slug?: string
+          role_slug?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       training_track_courses: {
         Row: {
           course_id: string
