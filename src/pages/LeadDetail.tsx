@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { CallHistoryList } from "@/components/phone/CallHistoryList";
 import {
   ArrowLeft, Phone, Mail, MessageSquare, FileText, ArrowRight, UserPlus,
   CheckCircle2, Circle, Clock, Zap, FileIcon, Shield, Calendar,
