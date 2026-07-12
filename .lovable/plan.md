@@ -1,47 +1,89 @@
-## Fix 1 — Login always lands on Company Home
 
-**File:** `src/pages/Auth.tsx`
+# Phone → Blossom OS Integration (CTM-first)
 
-- Change the post-login redirect to always send users to `/home` (CompanyHome) on a fresh sign-in, instead of computing `redirectTo` from `location.state.from`.
-- Keep the "return to `from`" behavior only when `from` is one of a small allow-list of app pages that meaningfully benefit from resume (e.g. `/reports/*`, `/work-queue`, `/clients/*`). Direct deep-links like `/user-management/...` will no longer trap the user there; they'll land on the company home first.
-- No other auth changes.
+Scope is locked to what you have working today: **CallTrackingMetrics** is the source of truth for every call in and out. Jivetel / GoIntegrator server APIs are deferred; dialing happens through the browser's `tel:` handler so it uses whatever softphone the user has installed (GoIntegrator, native dialer, mobile). When Jivetel API access is available later, we swap the dial handler without touching the rest.
 
-Result: signing in as `testintake@blossomabatherapy.com` (or anyone) drops you on the Company Home page (calendar, updates, highlights).
+## 1. Universal Click-to-Call
 
-## Fix 2 — Personal Information section shows every NFC Badge field
+New shared component `<PhoneNumber value={...} context={{ leadId?, clientId?, employeeId? }} />` that:
 
-**File:** `src/pages/account/AccountSettings.tsx` (extend existing Profile card; keep the same "Your account" page)
+- Renders the formatted number + a call button.
+- On click → opens `tel:+1XXXXXXXXXX` (works with GoIntegrator, iOS, Android, softphones).
+- Records the outbound intent in a new `phone_dial_events` table (who dialed, target number, linked record, timestamp) so we can reconcile against the CTM call event that arrives seconds later.
 
-Today it edits: first name, last name, preferred name, pronouns, address, meeting link.
+Wired into:
+- Intake leads (list rows + detail — both `phone` and `parent_cell_phone`)
+- Clients + parent contacts
+- Employees / staff directory + org chart cards
+- Global replacement of every raw phone number render in the app (search-and-replace pass on the ~dozen components that print `{phone}` today)
 
-Add the remaining NFC Badge fields so a user can fully populate their digital card from Settings:
+## 2. CTM Call Tracking (already flowing)
 
-- **Identity & display**
-  - Photo (upload → `employees.photo_url`, uses existing avatar storage)
-  - Credential (e.g. "BCBA, LPC")
-  - LinkedIn URL
-- **Contact**
-  - Work phone
-  - Extension
-  - (Email + job title stay read-only — HR-managed, matching the existing note)
-- **About**
-  - Short bio / About me (textarea)
-  - Languages (chip input)
-  - Expertise (chip input)
-  - Skills (chip input)
-  - "I can help with…" (chip input)
-- **Emergency contact** (collapsible section)
-  - Name, relationship, phone, email → stored on `employees.emergency_contact` JSON
-- **Badge visibility toggles** (mirrors what the NFC page reads from `nfc_settings`)
-  - Public card enabled / Internal card enabled / Business-card style / Emergency info visible
+The `ctm-webhook` edge function already writes to `ctm_call_events`. This pass hardens the downstream side:
 
-Implementation notes:
-- Extend the `ProfileRow` select to include: `photo_url, credential, linkedin_url, phone, extension, bio, about_me, expertise, skills, languages, help_with, emergency_contact, nfc_settings`.
-- Save writes back to the same `employees` row so the NFC public profile immediately reflects changes (it already reads those columns via the `Badge` type in `src/pages/nfc/NfcPublicProfile.tsx`).
-- Reuse existing shadcn `Input`, `Textarea`, `Switch`, and a small chip-list helper for array fields.
-- Preserve the current single-column, calm layout — grouped into "Identity", "Contact", "About you", "Emergency contact", "Badge visibility" sections with dividers.
-- Nothing else on the page changes.
+**Auto-link + timeline write** (new edge function `ctm-link-call`, triggered from the webhook after insert):
+- Match caller/called number against `intake_leads.phone`/`parent_cell_phone`, `clients` contacts, and `employees.work_phone`/`personal_phone`.
+- Match outbound calls against the most recent `phone_dial_events` row (same agent + same destination within 60s) to attribute who dialed.
+- On match, insert a row into `intake_communications` (for leads) or `client_timeline` (for clients) with direction, duration, recording URL, transcript, CTM call id.
+- Update `intake_leads.last_contact_at` / equivalent client field.
 
-## Out of scope
-- No changes to NFC public profile rendering, roles, routing (other than login default), user management, or HR data model.
-- No new tables — all fields already exist on `employees`.
+**Recording + transcript surfacing:**
+- Store `recording_url` and `transcript` on `ctm_call_events` (already columns) and expose them in the timeline entry with a playable audio element and collapsible transcript.
+
+## 3. Missed-Call Alerts + Follow-ups
+
+- Webhook branch: when `call_status = 'missed' | 'voicemail'` and matched to a lead/client, create a `client_tasks` / `intake_tasks` row assigned to the record's owner titled "Return missed call from {name}".
+- Fire a message into the floating **escalation chat** thread for that record's owner so it surfaces immediately.
+- Unassigned missed calls (no owner) land in a new "Unclaimed Calls" queue on `/phone/lookup`.
+
+## 4. Per-User Call Stats
+
+- New view `v_user_call_stats` aggregating `ctm_call_events` by matched `agent_user_id` (from dial-intent join): calls today/week, avg duration, missed count, talk time.
+- Small stat card rendered on the user's own dashboard + on the Intake / BD / Scheduling command centers (filtered to that department's users).
+
+## 5. CTM Lookup Surfaces
+
+**Per-record tab** on lead + client detail pages:
+- "Call History" tab listing every `ctm_call_events` row matching any phone number on that record, newest first, with play/transcript inline.
+
+**Global search page** at `/phone/lookup` (Intake, BD, Ops, Exec, Admin roles):
+- Search by phone number, date range, agent, tracking number, or transcript keyword (Postgres `to_tsvector` on transcript).
+- Row click → jumps to the linked lead/client if matched, or offers "Attach to lead/client" for orphan calls.
+
+## 6. Admin
+
+Extend `/admin/ctm`:
+- Add a "Recent unlinked calls" table so an admin can spot mapping gaps.
+- Show per-tracking-number call volume last 7 days.
+
+---
+
+## Technical section
+
+**New tables**
+- `phone_dial_events` — id, user_id, target_number_e164, linked_lead_id, linked_client_id, linked_employee_id, dialed_at. RLS: user can insert their own; Intake/Ops/Exec/Admin can read all.
+- (No new table for stats — view over `ctm_call_events`.)
+
+**Schema tweaks**
+- `ctm_call_events`: add `matched_lead_id uuid`, `matched_client_id uuid`, `matched_employee_id uuid`, `matched_agent_user_id uuid`, `linked_dial_event_id uuid`, `linked_at timestamptz`. Indexes on the four match columns + `(caller_number)`, `(called_number)`, and a GIN index on `to_tsvector('english', coalesce(transcript,''))`.
+
+**Edge functions**
+- `ctm-link-call` (new, service-role): runs the matching + timeline writes + task creation. Called by `ctm-webhook` after insert and available as a manual "re-link" trigger from the admin page for backfills.
+- `ctm-webhook` (existing): add branch to enqueue `ctm-link-call` invocation.
+
+**Frontend**
+- `src/components/phone/PhoneNumber.tsx` — the universal click-to-call component + dial-event logger.
+- `src/components/phone/CallHistoryTab.tsx` — per-record CTM history with audio + transcript.
+- `src/pages/phone/CTMLookup.tsx` — global search page (route `/phone/lookup`, added to Phone menu for allowed roles).
+- `src/hooks/useCallStats.ts` + `<CallStatsCard />` for dashboard embeds.
+- Search-and-replace pass to swap raw phone renders for `<PhoneNumber />`.
+
+**Access**
+- Click-to-call: everyone who can already see the phone number.
+- `/phone/lookup`: Intake, BD, Scheduling leads, Ops, Exec, Admin (matches existing Phone allow-list minus RBT).
+- Recording/transcript: restricted to Intake, BD, Ops, Exec, Admin, and the assigned owner of the matched record.
+
+**Out of scope this pass** (call out explicitly)
+- Jivetel API / GoIntegrator server integration — deferred until you have API creds. Dialing works via `tel:` today; the reconciliation layer (`phone_dial_events` ↔ `ctm_call_events`) is designed so swapping in a real Jivetel dial API later is a one-file change.
+- In-browser softphone / WebRTC.
+- SMS send from the OS (CTM inbound SMS already logs via the webhook).

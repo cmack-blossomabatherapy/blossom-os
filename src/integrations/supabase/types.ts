@@ -5466,6 +5466,12 @@ export type Database = {
           from_number: string | null
           id: string
           intake_lead_id: string | null
+          linked_at: string | null
+          linked_dial_event_id: string | null
+          matched_agent_user_id: string | null
+          matched_client_id: string | null
+          matched_employee_id: string | null
+          matched_lead_id: string | null
           raw: Json | null
           recording_url: string | null
           resolved_campaign_id: string | null
@@ -5496,6 +5502,12 @@ export type Database = {
           from_number?: string | null
           id?: string
           intake_lead_id?: string | null
+          linked_at?: string | null
+          linked_dial_event_id?: string | null
+          matched_agent_user_id?: string | null
+          matched_client_id?: string | null
+          matched_employee_id?: string | null
+          matched_lead_id?: string | null
           raw?: Json | null
           recording_url?: string | null
           resolved_campaign_id?: string | null
@@ -5526,6 +5538,12 @@ export type Database = {
           from_number?: string | null
           id?: string
           intake_lead_id?: string | null
+          linked_at?: string | null
+          linked_dial_event_id?: string | null
+          matched_agent_user_id?: string | null
+          matched_client_id?: string | null
+          matched_employee_id?: string | null
+          matched_lead_id?: string | null
           raw?: Json | null
           recording_url?: string | null
           resolved_campaign_id?: string | null
@@ -5540,7 +5558,57 @@ export type Database = {
           transcript?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ctm_call_events_linked_dial_event_id_fkey"
+            columns: ["linked_dial_event_id"]
+            isOneToOne: false
+            referencedRelation: "phone_dial_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_client_id_fkey"
+            columns: ["matched_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_employee_id_fkey"
+            columns: ["matched_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_employee_id_fkey"
+            columns: ["matched_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_employee_id_fkey"
+            columns: ["matched_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_employee_id_fkey"
+            columns: ["matched_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_lead_id_fkey"
+            columns: ["matched_lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ctm_number_mapping: {
         Row: {
@@ -14381,6 +14449,95 @@ export type Database = {
           verification_status?: string | null
         }
         Relationships: []
+      }
+      phone_dial_events: {
+        Row: {
+          context_label: string | null
+          created_at: string
+          dialed_at: string
+          id: string
+          linked_client_id: string | null
+          linked_employee_id: string | null
+          linked_lead_id: string | null
+          matched_ctm_call_id: string | null
+          target_number_e164: string
+          user_id: string
+        }
+        Insert: {
+          context_label?: string | null
+          created_at?: string
+          dialed_at?: string
+          id?: string
+          linked_client_id?: string | null
+          linked_employee_id?: string | null
+          linked_lead_id?: string | null
+          matched_ctm_call_id?: string | null
+          target_number_e164: string
+          user_id: string
+        }
+        Update: {
+          context_label?: string | null
+          created_at?: string
+          dialed_at?: string
+          id?: string
+          linked_client_id?: string | null
+          linked_employee_id?: string | null
+          linked_lead_id?: string | null
+          matched_ctm_call_id?: string | null
+          target_number_e164?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_dial_events_linked_client_id_fkey"
+            columns: ["linked_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_dial_events_linked_employee_id_fkey"
+            columns: ["linked_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_dial_events_linked_employee_id_fkey"
+            columns: ["linked_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "phone_dial_events_linked_employee_id_fkey"
+            columns: ["linked_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_dial_events_linked_employee_id_fkey"
+            columns: ["linked_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_dial_events_linked_lead_id_fkey"
+            columns: ["linked_lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_dial_events_matched_ctm_call_id_fkey"
+            columns: ["matched_ctm_call_id"]
+            isOneToOne: false
+            referencedRelation: "ctm_call_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       phone_system_state: {
         Row: {
