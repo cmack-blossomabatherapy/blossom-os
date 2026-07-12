@@ -408,7 +408,6 @@ import {
   WorkflowInventoryPage, RequestIntakePage, IssueTrackerPage,
 } from "./pages/os/system-tools/SystemToolsPages";
 import BcbaProductivityUploads from "./pages/os/system/BcbaProductivityUploads";
-import IntegrationRegistryPage from "./pages/os/system-tools/IntegrationRegistryPage";
 import AuditLogPage from "./pages/os/system-tools/AuditLogPage";
 import EmailCommandCenter from "./pages/os/system/EmailCommandCenter";
 import BlossomOSHome from "./pages/os/home/BlossomOSHome";
@@ -964,14 +963,14 @@ const App = () => (
                   <Route path="/system/request-intake" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><RequestIntakePage /></PermissionRoute>} />
                   <Route path="/system/issue-tracker" element={<AdminRoute><IssueTrackerPage /></AdminRoute>} />
                   <Route path="/system/bcba-productivity-uploads" element={<AdminRoute><BcbaProductivityUploads /></AdminRoute>} />
-                  <Route path="/system/integration-registry" element={<AdminRoute><IntegrationRegistryPage /></AdminRoute>} />
+                  <Route path="/system/integration-registry" element={<Navigate to="/admin/integrations" replace />} />
                   <Route path="/system/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
                   <Route path="/system/email-command-center" element={<AdminRoute><EmailCommandCenter /></AdminRoute>} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/permissions" element={<AdminRoute><OSPermissions /></AdminRoute>} />
-                  <Route path="/integrations" element={<AdminRoute><Integrations /></AdminRoute>} />
+                  <Route path="/integrations" element={<Navigate to="/admin/integrations" replace />} />
                   <Route path="/phone" element={<PhoneSystemRoute><PhoneDashboard /></PhoneSystemRoute>} />
                   <Route path="/phone/lookup" element={<PhoneSystemRoute><PhoneLookup /></PhoneSystemRoute>} />
                   <Route path="/phone/calls" element={<PhoneSystemRoute><CTMCalls /></PhoneSystemRoute>} />

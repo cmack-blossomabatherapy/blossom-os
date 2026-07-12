@@ -1260,7 +1260,7 @@ function ApploiHandoffTab() {
                     Workspace is ready for Apploi candidate handoff. New records will appear here automatically as integration data starts flowing.
                     <div className="mt-3">
                       <Button asChild size="sm" variant="outline">
-                        <Link to="/integrations">Open Integrations <ArrowUpRight className="h-3.5 w-3.5 ml-1" /></Link>
+                        <Link to="/admin/integrations">Open Integrations <ArrowUpRight className="h-3.5 w-3.5 ml-1" /></Link>
                       </Button>
                     </div>
                   </td>
