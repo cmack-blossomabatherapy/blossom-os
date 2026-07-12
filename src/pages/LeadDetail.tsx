@@ -426,6 +426,13 @@ export default function LeadDetail() {
                   ))}
                 </div>
               </div>
+              <div className="mt-4">
+                <CallHistoryList
+                  numbers={[lead.phone]}
+                  title="Call Recordings & Transcripts"
+                  emptyMessage="No tracked calls linked to this lead yet."
+                />
+              </div>
             </TabsContent>
 
             {/* Tasks */}
