@@ -290,6 +290,26 @@ function OSLeadsV2Inner() {
   const setPage = (n: number) =>
     updateParams((p) => { if (n > 0) p.set("p", String(n + 1)); else p.delete("p"); });
 
+  // Missing-lead guard: if the ?lead=<id> deep link (from CTM or escalation
+  // chips) doesn't resolve to a real lead once data is loaded, surface a
+  // toast and clear the stale param so the drawer never mounts on nothing.
+  const missingLeadHandledRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (loading) return;
+    if (!openLeadId) { missingLeadHandledRef.current = null; return; }
+    if (missingLeadHandledRef.current === openLeadId) return;
+    const exists = leads.some((l) => l.id === openLeadId);
+    if (!exists) {
+      missingLeadHandledRef.current = openLeadId;
+      toast.error("Lead not found", {
+        description: "That lead may have been deleted or you don't have access.",
+      });
+      const next = new URLSearchParams(searchParams);
+      next.delete("lead");
+      setSearchParams(next, { replace: true });
+    }
+  }, [loading, leads, openLeadId, searchParams, setSearchParams]);
+
   // Manual lead creation (Add Lead button + ?new=1 deep link).
   const [newLeadOpen, setNewLeadOpen] = useState<boolean>(() => searchParams.get("new") === "1");
   useEffect(() => {
