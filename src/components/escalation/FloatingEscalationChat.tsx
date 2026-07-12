@@ -756,6 +756,9 @@ export function FloatingEscalationChat() {
                         )}
                       >
                         <div className="whitespace-pre-wrap break-words">{m.body}</div>
+                        {Array.isArray(m.attachments) && m.attachments.length > 0 && (
+                          <AttachmentList items={m.attachments as Attachment[]} mine={mine} />
+                        )}
                         <div className={cn("mt-1 text-[10px] opacity-70")}>
                           {new Date(m.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                         </div>
@@ -764,20 +767,34 @@ export function FloatingEscalationChat() {
                   );
                 })}
               </div>
-              <div className="border-t p-2 flex items-end gap-2">
-                <Textarea
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  placeholder="Add a note…"
-                  rows={2}
-                  className="min-h-[44px] resize-none text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-                  }}
-                />
-                <Button size="icon" onClick={sendMessage} disabled={!reply.trim()}>
-                  <Send className="h-4 w-4" />
-                </Button>
+              <div className="border-t p-2 space-y-1.5">
+                <div className="flex items-end gap-2">
+                  <Textarea
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="Add a note…"
+                    rows={2}
+                    className="min-h-[44px] resize-none text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    onClick={sendMessage}
+                    disabled={!reply.trim() && replyAttachments.length === 0}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+                {uid && (
+                  <AttachmentComposer
+                    value={replyAttachments}
+                    onChange={setReplyAttachments}
+                    uid={uid}
+                    scope={activeThread.id}
+                  />
+                )}
               </div>
             </>
           )}
@@ -852,6 +869,17 @@ export function FloatingEscalationChat() {
                   placeholder="Add context — lead name, client, blocker, next step…"
                   rows={5}
                 />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Evidence (optional)</label>
+                {uid && (
+                  <AttachmentComposer
+                    value={composeAttachments}
+                    onChange={setComposeAttachments}
+                    uid={uid}
+                    scope="new"
+                  />
+                )}
               </div>
               <Button className="w-full" onClick={createThread}>
                 <Send className="h-4 w-4 mr-2" /> Send
