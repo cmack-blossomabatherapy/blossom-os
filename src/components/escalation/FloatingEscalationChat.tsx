@@ -86,6 +86,17 @@ export function FloatingEscalationChat() {
   useEffect(() => { activeThreadIdRef.current = activeThread?.id ?? null; }, [activeThread]);
   useEffect(() => { profileNamesRef.current = profileNames; }, [profileNames]);
 
+  // Clear per-thread unread badge whenever the user opens a thread.
+  useEffect(() => {
+    if (!open || !activeThread) return;
+    setUnreadThreads((prev) => {
+      if (!prev.has(activeThread.id)) return prev;
+      const next = new Set(prev);
+      next.delete(activeThread.id);
+      return next;
+    });
+  }, [open, activeThread]);
+
   // compose state
   const [toUserId, setToUserId] = useState("");
   const [subject, setSubject] = useState("");
@@ -370,16 +381,16 @@ export function FloatingEscalationChat() {
       {/* Floating button */}
       <button
         aria-label="Open escalation chat"
-        onClick={() => { setOpen((o) => !o); setUnread(0); }}
+        onClick={() => setOpen((o) => !o)}
         className={cn(
           "fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full",
           "bg-primary text-primary-foreground shadow-lg hover:scale-105 transition-transform",
         )}
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-        {!open && unread > 0 && (
+        {!open && unreadThreads.size > 0 && (
           <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-            {unread}
+            {unreadThreads.size}
           </span>
         )}
       </button>
