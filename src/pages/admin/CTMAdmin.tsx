@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { PhoneCall, RefreshCw, Trash2 } from "lucide-react";
+import { PhoneCall, RefreshCw, Trash2, Copy } from "lucide-react";
 
 type Mapping = {
   id: string;
@@ -36,6 +36,9 @@ export default function CTMAdmin() {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [draft, setDraft] = useState({ tracking_number: "", friendly_name: "", state_code: "" });
+  const projectId = (import.meta.env.VITE_SUPABASE_PROJECT_ID as string) ?? "";
+  const webhookBase = projectId ? `https://${projectId}.functions.supabase.co/ctm-webhook` : "";
+  const webhookUrl = webhookBase ? `${webhookBase}?token=YOUR_CTM_WEBHOOK_TOKEN` : "";
 
   async function load() {
     const [m, c] = await Promise.all([
@@ -99,6 +102,26 @@ export default function CTMAdmin() {
           {syncing ? "Syncing…" : "Run backfill"}
         </Button>
       </header>
+
+      <Card>
+        <CardHeader><CardTitle>Webhook setup</CardTitle></CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p className="text-muted-foreground">
+            In CTM go to <strong>Settings → Integrations → Webhooks</strong> and add a webhook for
+            <em> Call Started, Call Completed, Voicemail, SMS Received</em> pointing to:
+          </p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 rounded bg-muted px-3 py-2 text-xs break-all">{webhookUrl || "Loading…"}</code>
+            <Button variant="outline" size="icon" onClick={() => {
+              if (webhookUrl) { navigator.clipboard.writeText(webhookUrl); toast.success("Copied"); }
+            }}><Copy className="h-4 w-4" /></Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Replace <code>YOUR_CTM_WEBHOOK_TOKEN</code> with the value you saved as the
+            <code> CTM_WEBHOOK_TOKEN</code> secret. Only requests matching that token are accepted.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>Tracking number mapping</CardTitle></CardHeader>
