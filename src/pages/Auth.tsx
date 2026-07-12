@@ -30,9 +30,13 @@ export default function Auth() {
   const prefillEmail = searchParams.get("email") ?? "";
   const isWelcome = searchParams.get("welcome") === "1";
   const fromState = (location.state as { from?: { pathname?: string; search?: string; hash?: string } } | null)?.from;
-  const redirectTo = fromState?.pathname
-    ? `${fromState.pathname}${fromState.search ?? ""}${fromState.hash ?? ""}`
-    : "/";
+  // Only resume the prior path for canonical work surfaces; otherwise land on the Company Home.
+  const RESUME_PREFIXES = ["/reports", "/work-queue", "/clients", "/scheduling", "/intake"];
+  const shouldResume =
+    !!fromState?.pathname && RESUME_PREFIXES.some((p) => fromState!.pathname!.startsWith(p));
+  const redirectTo = shouldResume
+    ? `${fromState!.pathname}${fromState!.search ?? ""}${fromState!.hash ?? ""}`
+    : "/home";
   const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
