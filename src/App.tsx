@@ -973,6 +973,7 @@ const App = () => (
                   <Route path="/integrations" element={<AdminRoute><Integrations /></AdminRoute>} />
                   <Route path="/phone" element={<PhoneSystemRoute><PhoneDashboard /></PhoneSystemRoute>} />
                   <Route path="/phone/lookup" element={<PhoneSystemRoute><PhoneLookup /></PhoneSystemRoute>} />
+                  <Route path="/phone/calls" element={<PhoneSystemRoute><CTMCalls /></PhoneSystemRoute>} />
                   <Route path="/phone/shared" element={<PhoneSystemRoute><PhoneShared /></PhoneSystemRoute>} />
                   <Route path="/phone/directory" element={<PhoneSystemRoute><PhoneDirectory /></PhoneSystemRoute>} />
                   <Route path="/phone/requests" element={<PhoneSystemRoute><PhoneRequestList /></PhoneSystemRoute>} />
