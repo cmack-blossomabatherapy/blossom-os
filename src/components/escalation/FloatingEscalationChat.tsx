@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MessageCircle, X, Send, Plus, ArrowLeft, CheckCircle2, AlertTriangle, ListTodo, StickyNote } from "lucide-react";
+import { MessageCircle, X, Send, Plus, ArrowLeft, CheckCircle2, AlertTriangle, ListTodo, StickyNote, CalendarIcon, UserCog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -14,16 +14,29 @@ import { toast } from "sonner";
 
 type Category = "escalation" | "task" | "note";
 type Priority = "low" | "medium" | "high" | "urgent";
-type Status = "open" | "resolved";
+export type EscalationStatus = "Open" | "Assigned" | "In Review" | "Resolved";
+
+const STATUS_OPTIONS: EscalationStatus[] = ["Open", "Assigned", "In Review", "Resolved"];
+
+const STATUS_STYLES: Record<EscalationStatus, string> = {
+  Open: "bg-amber-100 text-amber-800 border-amber-200",
+  Assigned: "bg-blue-100 text-blue-800 border-blue-200",
+  "In Review": "bg-purple-100 text-purple-800 border-purple-200",
+  Resolved: "bg-emerald-100 text-emerald-800 border-emerald-200",
+};
 
 type Thread = {
   id: string;
   subject: string;
   category: Category;
   priority: Priority;
-  status: Status;
+  status: EscalationStatus;
   from_user_id: string;
   to_user_id: string;
+  owner_id: string | null;
+  due_date: string | null;
+  blocker: string | null;
+  next_step: string | null;
   state: string | null;
   linked_entity_type: string | null;
   linked_entity_id: string | null;
@@ -71,6 +84,7 @@ export function FloatingEscalationChat() {
   const [category, setCategory] = useState<Category>("escalation");
   const [priority, setPriority] = useState<Priority>("medium");
   const [body, setBody] = useState("");
+  const [composeDue, setComposeDue] = useState<string>("");
 
   const uid = user?.id ?? null;
 
@@ -213,6 +227,9 @@ export function FloatingEscalationChat() {
         priority,
         from_user_id: uid,
         to_user_id: toUserId,
+        owner_id: toUserId,
+        status: "Open",
+        due_date: composeDue || null,
       })
       .select("*")
       .single();
@@ -227,21 +244,30 @@ export function FloatingEscalationChat() {
     });
     if (msgErr) toast.warning("Thread created but message failed — try again");
     toast.success("Sent");
-    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium");
+    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium"); setComposeDue("");
     setActiveThread(data as Thread);
     setView("thread");
   }
 
-  async function toggleResolved() {
+  async function patchThread(patch: Partial<Thread>) {
     if (!activeThread) return;
-    const next: Status = activeThread.status === "open" ? "resolved" : "open";
     const { error } = await supabase
       .from("escalation_threads")
-      .update({ status: next })
+      .update(patch)
       .eq("id", activeThread.id);
     if (error) { toast.error("Update failed"); return; }
-    setActiveThread({ ...activeThread, status: next });
-    setThreads((prev) => prev.map((t) => t.id === activeThread.id ? { ...t, status: next } : t));
+    const merged = { ...activeThread, ...patch } as Thread;
+    setActiveThread(merged);
+    setThreads((prev) => prev.map((t) => t.id === activeThread.id ? merged : t));
+  }
+
+  async function setStatus(next: EscalationStatus) {
+    await patchThread({ status: next });
+  }
+  async function setOwner(nextOwnerId: string) {
+    // If moving out of Open, auto-advance to Assigned when still Open
+    const status: EscalationStatus = activeThread?.status === "Open" ? "Assigned" : (activeThread?.status ?? "Open");
+    await patchThread({ owner_id: nextOwnerId, status });
   }
 
   /* ---------- Derived ---------- */
