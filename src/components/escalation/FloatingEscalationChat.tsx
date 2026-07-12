@@ -397,7 +397,8 @@ export function FloatingEscalationChat() {
 
   const filteredThreads = useMemo(() => {
     const q = filterQuery.trim().toLowerCase();
-    return threads.filter((t) => {
+    const priorityRank: Record<Priority, number> = { urgent: 0, high: 1, medium: 2, low: 3 } as any;
+    const filtered = threads.filter((t) => {
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       if (filterPriority !== "all" && t.priority !== filterPriority) return false;
       if (filterRecipient !== "all" && otherId(t) !== filterRecipient) return false;
@@ -415,7 +416,27 @@ export function FloatingEscalationChat() {
       }
       return true;
     });
-  }, [threads, filterQuery, filterStatus, filterPriority, filterRecipient, filterLinkType, uid, profileNames]);
+    const sorted = filtered.slice();
+    sorted.sort((a, b) => {
+      if (sortBy === "created") {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      if (sortBy === "due") {
+        // Threads with a due date come first, soonest first; no due date sinks to the bottom.
+        const ad = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+        const bd = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+        return ad - bd;
+      }
+      if (sortBy === "priority") {
+        const diff = (priorityRank[a.priority] ?? 99) - (priorityRank[b.priority] ?? 99);
+        if (diff !== 0) return diff;
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      }
+      // "activity" (default): most recently updated first
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
+    return sorted;
+  }, [threads, filterQuery, filterStatus, filterPriority, filterRecipient, filterLinkType, sortBy, uid, profileNames]);
 
   const activeFilterCount =
     (filterStatus !== "all" ? 1 : 0) +
