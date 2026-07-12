@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { EscalationLinkPicker, LINK_TYPE_LABEL, linkToHref, type LinkValue, type LinkEntityType } from "./EscalationLinkPicker";
+import { AttachmentComposer, AttachmentList, type Attachment } from "./EscalationAttachments";
 
 type Category = "escalation" | "task" | "note";
 type Priority = "low" | "medium" | "high" | "urgent";
@@ -54,6 +55,7 @@ type Message = {
   sender_id: string;
   body: string;
   created_at: string;
+  attachments?: Attachment[] | null;
 };
 
 type Recipient = {
@@ -109,6 +111,8 @@ export function FloatingEscalationChat() {
   const [body, setBody] = useState("");
   const [composeDue, setComposeDue] = useState<string>("");
   const [composeLink, setComposeLink] = useState<LinkValue>(null);
+  const [composeAttachments, setComposeAttachments] = useState<Attachment[]>([]);
+  const [replyAttachments, setReplyAttachments] = useState<Attachment[]>([]);
 
   // List filters
   const [filterQuery, setFilterQuery] = useState("");
@@ -306,17 +310,22 @@ export function FloatingEscalationChat() {
   /* ---------- Actions ---------- */
 
   async function sendMessage() {
-    if (!uid || !activeThread || !reply.trim()) return;
+    if (!uid || !activeThread) return;
+    if (!reply.trim() && replyAttachments.length === 0) return;
     const body = reply.trim();
+    const attachments = replyAttachments;
     setReply("");
+    setReplyAttachments([]);
     const { error } = await supabase.from("escalation_thread_messages").insert({
       thread_id: activeThread.id,
       sender_id: uid,
       body,
+      attachments,
     });
     if (error) {
       toast.error("Message failed to send");
       setReply(body);
+      setReplyAttachments(attachments);
     }
   }
 
@@ -351,10 +360,11 @@ export function FloatingEscalationChat() {
       thread_id: data.id,
       sender_id: uid,
       body: body.trim(),
+      attachments: composeAttachments,
     });
     if (msgErr) toast.warning("Thread created but message failed — try again");
     toast.success("Sent");
-    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium"); setComposeDue(""); setComposeLink(null);
+    setSubject(""); setBody(""); setToUserId(""); setCategory("escalation"); setPriority("medium"); setComposeDue(""); setComposeLink(null); setComposeAttachments([]);
     setActiveThread(data as Thread);
     setView("thread");
   }
@@ -746,6 +756,9 @@ export function FloatingEscalationChat() {
                         )}
                       >
                         <div className="whitespace-pre-wrap break-words">{m.body}</div>
+                        {Array.isArray(m.attachments) && m.attachments.length > 0 && (
+                          <AttachmentList items={m.attachments as Attachment[]} mine={mine} />
+                        )}
                         <div className={cn("mt-1 text-[10px] opacity-70")}>
                           {new Date(m.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                         </div>
@@ -754,20 +767,34 @@ export function FloatingEscalationChat() {
                   );
                 })}
               </div>
-              <div className="border-t p-2 flex items-end gap-2">
-                <Textarea
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  placeholder="Add a note…"
-                  rows={2}
-                  className="min-h-[44px] resize-none text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-                  }}
-                />
-                <Button size="icon" onClick={sendMessage} disabled={!reply.trim()}>
-                  <Send className="h-4 w-4" />
-                </Button>
+              <div className="border-t p-2 space-y-1.5">
+                <div className="flex items-end gap-2">
+                  <Textarea
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="Add a note…"
+                    rows={2}
+                    className="min-h-[44px] resize-none text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    onClick={sendMessage}
+                    disabled={!reply.trim() && replyAttachments.length === 0}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+                {uid && (
+                  <AttachmentComposer
+                    value={replyAttachments}
+                    onChange={setReplyAttachments}
+                    uid={uid}
+                    scope={activeThread.id}
+                  />
+                )}
               </div>
             </>
           )}
@@ -842,6 +869,17 @@ export function FloatingEscalationChat() {
                   placeholder="Add context — lead name, client, blocker, next step…"
                   rows={5}
                 />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Evidence (optional)</label>
+                {uid && (
+                  <AttachmentComposer
+                    value={composeAttachments}
+                    onChange={setComposeAttachments}
+                    uid={uid}
+                    scope="new"
+                  />
+                )}
               </div>
               <Button className="w-full" onClick={createThread}>
                 <Send className="h-4 w-4 mr-2" /> Send
