@@ -45,8 +45,10 @@ Deno.serve(async (req) => {
   }
 
   const shared = Deno.env.get("RESOURCE_INGEST_SECRET");
+  const bootstrap = Deno.env.get("RESOURCE_INGEST_BOOTSTRAP");
   const provided = req.headers.get("x-ingest-secret");
-  if (!shared || provided !== shared) {
+  const ok = (shared && provided === shared) || (bootstrap && provided === bootstrap);
+  if (!ok) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
