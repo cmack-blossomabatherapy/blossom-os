@@ -123,6 +123,7 @@ export type ResourceUploadStatus =
   | "business_review"
   | "vault_only"
   | "excluded"
+  | "missing_file"
   | "published";
 
 export const UPLOAD_STATUS_LABEL: Record<ResourceUploadStatus, string> = {
@@ -133,6 +134,7 @@ export const UPLOAD_STATUS_LABEL: Record<ResourceUploadStatus, string> = {
   business_review:  "Business review",
   vault_only:       "Vault only",
   excluded:         "Excluded",
+  missing_file:     "Missing file",
   published:        "Published",
 };
 
@@ -145,6 +147,7 @@ export const NON_PUBLIC_UPLOAD_STATUSES: ResourceUploadStatus[] = [
   "vault_only",
   "excluded",
   "ready_to_upload",
+  "missing_file",
 ];
 
 /** Keywords that indicate a credential / vault / portal-access document. */
