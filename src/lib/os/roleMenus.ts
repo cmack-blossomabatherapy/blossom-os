@@ -209,6 +209,26 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     ],
   },
 
+  /* --------------------------------- State VA -------------------------------- */
+  state_va: {
+    sections: [
+      {
+        id: "state_va", label: "State VA", items: [
+          { label: "VA Dashboard",                path: "/state-operations",               icon: LayoutDashboard },
+          { label: "Assigned Tasks",              path: "/ops/tasks?owner=me",             icon: ClipboardList },
+          { label: "Intake Follow-Ups",           path: "/intake/tasks",                   icon: Briefcase },
+          { label: "Recruiting Scheduling",       path: "/recruiting/pipeline?stage=interview", icon: CalendarClock },
+          { label: "Missing Documents",           path: "/intake/missing-information",     icon: ShieldCheck },
+          { label: "Data Cleanup",                path: "/ops/tasks?type=cleanup",         icon: List },
+          { label: "Family / Applicant Notes",    path: "/intake/parent-communication",    icon: MessageSquare },
+          { label: "State Pipeline Support",      path: "/intake/lead-to-active",          icon: TrendingUp },
+          { label: "Reports",                     path: "/reports?category=state",         icon: BarChart3 },
+        ],
+      },
+      STATE_TRAINING_AND_RESOURCES,
+    ],
+  },
+
   /* ------------------------------ Marketing Team ----------------------------- */
   marketing_team: {
     sections: [

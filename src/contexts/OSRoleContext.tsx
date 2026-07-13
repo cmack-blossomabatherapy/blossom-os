@@ -18,6 +18,7 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("executive")) return "executive_leadership";
   if (appRoles.includes("director_of_operations") || appRoles.includes("operations_manager")) return "operations_leadership";
   if (appRoles.includes("assistant_state_director")) return "assistant_state_director";
+  if (has("state_va") || has("virtual_assistant") || has("state_virtual_assistant")) return "state_va";
   if (appRoles.includes("state_director")) return "state_director";
   if (appRoles.includes("exec")) return "executive_leadership";
   if (appRoles.includes("ops_manager")) return "operations_leadership";

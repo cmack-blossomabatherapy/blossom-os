@@ -571,6 +571,18 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/ops/family-staffing-preferences",
     "/qa-team",
   ]),
+  state_va: new Set<string>([
+    "/state-operations",
+    "/ops/tasks",
+    "/intake/tasks",
+    "/intake/missing-information",
+    "/intake/parent-communication",
+    "/intake/lead-to-active",
+    "/recruiting/pipeline",
+    "/training",
+    "/resource-library",
+    "/reports",
+  ]),
 };
 
 export function isPathLiveForRole(role: string, basePath: string): boolean {
@@ -707,7 +719,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const allItems = sections.flatMap((s) => s.items);
 
   const homeForRole = ROLE_HOME[role] ?? "/dashboard";
-  const isStateTrainingRole = role === "state_director" || role === "assistant_state_director";
+  const isStateTrainingRole =
+    role === "state_director" || role === "assistant_state_director" || role === "state_va";
   const trainingPath = isStateTrainingRole ? "/training" : "/academy";
   const bottomNav: NavEntry[] = [
     { to: homeForRole, label: "Home", icon: LayoutDashboard, end: true },
