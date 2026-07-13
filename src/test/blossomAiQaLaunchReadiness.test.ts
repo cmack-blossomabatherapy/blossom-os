@@ -192,8 +192,8 @@ describe("Blossom AI — QA & launch readiness (Prompt 6)", () => {
 
   describe("Signed URLs & path safety", () => {
     const base: Resource = {
-      id: "r1", title: "T", description: "", type: "document",
-      category: "sop", status: "Published", roles: [], departments: [],
+      id: "r1", title: "T", description: "", type: "PDF",
+      category: "sops", status: "Published", roles: [], departments: [],
       states: [], tags: [], uploadedBy: "sys",
       createdAt: "2026-07-13", updatedAt: "2026-07-13",
       resourceType: "sop", sensitivity: "internal",
