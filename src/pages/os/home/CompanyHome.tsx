@@ -200,15 +200,110 @@ export default function CompanyHome() {
                 <CalendarIcon className="size-4" />
                 <h2 className="text-sm font-medium uppercase tracking-widest">Company Calendar</h2>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-full text-xs"
-                onClick={goToday}
-              >
-                Today
-              </Button>
+              <div className="flex items-center gap-2">
+                <Select value={rangePreset} onValueChange={(v) => setRangePreset(v as RangePreset)}>
+                  <SelectTrigger className="h-8 rounded-full text-xs w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(RANGE_LABELS) as RangePreset[]).map((k) => (
+                      <SelectItem key={k} value={k} className="text-xs">
+                        {RANGE_LABELS[k]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 rounded-full text-xs gap-1.5"
+                      disabled={availableCategories.length === 0}
+                    >
+                      <Filter className="size-3.5" />
+                      Types
+                      {categoryFilter.size > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">
+                          {categoryFilter.size}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" align="end">
+                    <div className="px-2 py-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
+                      Filter by type
+                    </div>
+                    <div className="max-h-64 overflow-auto space-y-0.5">
+                      {availableCategories.map((cat) => {
+                        const checked = categoryFilter.has(cat);
+                        return (
+                          <label
+                            key={cat}
+                            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={() => toggleCategory(cat)}
+                            />
+                            <span className="truncate">{formatCategory(cat)}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                {activeFilterCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-full text-xs gap-1"
+                    onClick={clearFilters}
+                  >
+                    <X className="size-3.5" />
+                    Clear
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 rounded-full text-xs"
+                  onClick={goToday}
+                >
+                  Today
+                </Button>
+              </div>
             </div>
+            {activeFilterCount > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {rangePreset !== "all" && (
+                  <Badge variant="secondary" className="rounded-full text-[11px] gap-1">
+                    {RANGE_LABELS[rangePreset]}
+                    <button
+                      type="button"
+                      onClick={() => setRangePreset("all")}
+                      className="hover:opacity-70"
+                      aria-label="Clear date range"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </Badge>
+                )}
+                {Array.from(categoryFilter).map((cat) => (
+                  <Badge key={cat} variant="secondary" className="rounded-full text-[11px] gap-1">
+                    {formatCategory(cat)}
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(cat)}
+                      className="hover:opacity-70"
+                      aria-label={`Remove ${cat} filter`}
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
             <Calendar
               mode="single"
               selected={selectedDate}
