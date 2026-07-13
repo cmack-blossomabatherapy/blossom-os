@@ -110,6 +110,7 @@ export default function CompanyHome() {
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [month, setMonth] = useState<Date>(today);
   const [openEvent, setOpenEvent] = useState<CompanyCalendarEvent | null>(null);
+  const [dayDrawer, setDayDrawer] = useState<{ date: Date; category: string | null } | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<Set<string>>(new Set());
   const [rangePreset, setRangePreset] = useState<RangePreset>("all");
 
@@ -420,14 +421,20 @@ export default function CompanyHome() {
                         </p>
                         <div className="flex flex-wrap gap-1.5 mb-2">
                           {Array.from(byCat.entries()).map(([cat, count]) => (
-                            <span
+                            <button
                               key={cat}
-                              className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[11px]"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedDate(date);
+                                setDayDrawer({ date, category: cat });
+                              }}
+                              className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[11px] hover:bg-primary/10 hover:text-primary transition"
                             >
                               <span className={cn("size-1.5 rounded-full", categoryColor(cat))} />
                               {CATEGORY_COLORS[cat]?.label ?? formatCategory(cat)}
                               <span className="text-muted-foreground">· {count}</span>
-                            </span>
+                            </button>
                           ))}
                         </div>
                         <ul className="space-y-1">
