@@ -10,6 +10,7 @@ import {
   Printer, TrendingDown, TrendingUp, Search,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
+import { ReportAIButton } from "@/components/ai/ReportAIButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -836,7 +837,8 @@ export default function CancellationCommandCenter() {
               Single source of truth for cancellations, lost hours, utilization leakage, staffing issues and revenue impact across every state.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <ReportAIButton preset="cancellation-center" />
             <Button variant="outline" size="sm" onClick={() => scheduleInput.current?.click()}>
               <Upload className="mr-1 h-3.5 w-3.5" />Scheduling
             </Button>

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Navigate } from "react-router-dom";
 import { OSShell } from "@/pages/os/OSShell";
+import { ReportAIButton } from "@/components/ai/ReportAIButton";
 import { LibraryTabs } from "@/components/resource-library/LibraryTabs";
 import { ResourceListView } from "@/components/resource-library/ResourceListView";
 import { useAdminResources } from "@/hooks/useAdminResources";
@@ -54,12 +55,19 @@ export default function ResourceLibraryAdminQA() {
   return (
     <OSShell>
       <div className="mx-auto max-w-7xl space-y-6 p-6">
-        <header className="space-y-1">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Resource Library</p>
-          <h1 className="text-2xl font-semibold tracking-tight">Import & QA</h1>
-          <p className="text-[13px] text-muted-foreground">
-            Reconciliation of manifest metadata against Supabase Storage buckets. Super Admin only.
-          </p>
+        <header className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Resource Library</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Import & QA</h1>
+            <p className="text-[13px] text-muted-foreground">
+              Reconciliation of manifest metadata against storage buckets. Super Admin only.
+            </p>
+          </div>
+          <ReportAIButton
+            preset="resource-library-import"
+            contextExtra={`Current KPIs — total: ${kpis.total}, imported: ${kpis.imported}, missing_file: ${kpis.missing}, sensitive: ${kpis.sensitive}, ack required: ${kpis.needsAck}.`}
+            label="Explain import"
+          />
         </header>
         <LibraryTabs />
 

@@ -5,6 +5,7 @@ import {
   ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Trash2, X,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
+import { ReportAIButton } from "@/components/ai/ReportAIButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -324,6 +325,11 @@ export default function ReportsHome() {
               <Search className="pointer-events-none absolute z-10 left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search reports…" className="h-9 border-white/80 bg-white/70 pl-9 backdrop-blur" />
             </div>
+            <ReportAIButton
+              preset="reports-home"
+              contextExtra={`Role: ${roleLabel}. ${reports.length} reports available, ${categories.length} categories.`}
+              label="Ask about reports"
+            />
           </div>
         </div>
       </section>

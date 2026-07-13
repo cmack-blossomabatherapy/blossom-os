@@ -5,6 +5,7 @@ import {
   AlertTriangle, CheckCircle2, Brain, Trash2, Award, TrendingUp,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
+import { ReportAIButton } from "@/components/ai/ReportAIButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -564,19 +565,22 @@ export default function HrBcbaProductivityDashboard() {
   return (
     <OSShell>
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link to="/reports" className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground transition hover:-translate-y-0.5 hover:text-foreground">
-          <ArrowLeft className="h-3.5 w-3.5" />
-        </Link>
-        <div>
-          <Badge variant="secondary" className="rounded-full bg-[hsl(265_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(265_70%_55%)]">
-            HR · Featured Dashboard
-          </Badge>
-          <h1 className="mt-1 text-[28px] font-semibold tracking-tight">BCBA Productivity &amp; Minimum Hours Dashboard</h1>
-          <p className="text-[12.5px] text-muted-foreground">
-            Track BCBA productivity, minimum hours compliance, supervision and parent training activity, earnings, caseload, payroll risk and state-level performance.
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link to="/reports" className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground transition hover:-translate-y-0.5 hover:text-foreground">
+            <ArrowLeft className="h-3.5 w-3.5" />
+          </Link>
+          <div>
+            <Badge variant="secondary" className="rounded-full bg-[hsl(265_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(265_70%_55%)]">
+              HR · Featured Dashboard
+            </Badge>
+            <h1 className="mt-1 text-[28px] font-semibold tracking-tight">BCBA Productivity &amp; Minimum Hours Dashboard</h1>
+            <p className="text-[12.5px] text-muted-foreground">
+              Track BCBA productivity, minimum hours compliance, supervision and parent training activity, earnings, caseload, payroll risk and state-level performance.
+            </p>
+          </div>
         </div>
+        <ReportAIButton preset="hr-bcba-productivity" />
       </div>
 
       {/* Upload */}

@@ -5,6 +5,7 @@ import {
   AlertTriangle, CheckCircle2, X, Filter, Brain, Trash2,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
+import { ReportAIButton } from "@/components/ai/ReportAIButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -616,6 +617,7 @@ export default function QaSupervisionPtDashboard() {
             </p>
           </div>
         </div>
+        <ReportAIButton preset="supervision-pt" />
       </div>
 
       {/* Upload + month selector */}
