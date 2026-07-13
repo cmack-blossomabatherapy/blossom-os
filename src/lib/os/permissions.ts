@@ -82,6 +82,7 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "operations_leadership", label: "Operations Leadership", tier: "leadership" },
   { id: "state_director", label: "State Director", tier: "leadership" },
   { id: "assistant_state_director", label: "Assistant State Director", tier: "leadership" },
+  { id: "state_va", label: "State VA", tier: "operations" },
   { id: "marketing_growth_lead", label: "Marketing & Growth Lead", tier: "operations" },
   { id: "marketing_team", label: "Marketing Team", tier: "operations" },
   { id: "intake_lead", label: "Intake Lead", tier: "operations" },
