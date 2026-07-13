@@ -127,10 +127,7 @@ export default function CompanyHome() {
                 variant="ghost"
                 size="sm"
                 className="rounded-full text-xs"
-                onClick={() => {
-                  setSelectedDate(today);
-                  setMonth(today);
-                }}
+                onClick={goToday}
               >
                 Today
               </Button>
