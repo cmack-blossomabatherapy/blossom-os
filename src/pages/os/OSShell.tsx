@@ -1046,6 +1046,20 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             </div>
             <div className="flex-1 md:hidden" />
             <OSNotificationsBell />
+            <Tooltip delayDuration={120}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => navigate("/home")}
+                  className="os-glass-icon inline-flex"
+                  aria-label="Company home"
+                >
+                  <Home className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[12px] font-medium">
+                Company Home
+              </TooltipContent>
+            </Tooltip>
             <WorkingAsSelector />
             <RoleSwitcher />
             {rightRail && (
