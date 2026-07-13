@@ -17,6 +17,7 @@ import {
   Pencil,
   Filter,
   X,
+  HelpCircle,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
@@ -63,6 +64,40 @@ function formatCategory(c: string): string {
   return c
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+// Deterministic color assignment per event category. Known categories get
+// hand-picked hues; unknown ones fall back to a stable hash-based palette so
+// the legend and event dots always agree.
+const CATEGORY_COLORS: Record<string, { dot: string; label: string }> = {
+  company_event: { dot: "bg-primary", label: "Company event" },
+  holiday: { dot: "bg-rose-500", label: "Holiday / PTO" },
+  pto: { dot: "bg-rose-400", label: "Holiday / PTO" },
+  training: { dot: "bg-violet-500", label: "Training" },
+  meeting: { dot: "bg-sky-500", label: "Meeting" },
+  deadline: { dot: "bg-amber-500", label: "Deadline" },
+  task: { dot: "bg-emerald-500", label: "Task" },
+  qa_review: { dot: "bg-fuchsia-500", label: "QA review" },
+  scheduling: { dot: "bg-teal-500", label: "Scheduling" },
+  hr: { dot: "bg-orange-500", label: "HR" },
+  onboarding: { dot: "bg-lime-500", label: "Onboarding" },
+  finance: { dot: "bg-yellow-500", label: "Finance" },
+};
+const FALLBACK_PALETTE = [
+  "bg-slate-500",
+  "bg-cyan-500",
+  "bg-indigo-500",
+  "bg-pink-500",
+  "bg-emerald-600",
+  "bg-amber-600",
+];
+export function categoryColor(category: string | null | undefined): string {
+  if (!category) return "bg-primary";
+  const known = CATEGORY_COLORS[category];
+  if (known) return known.dot;
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) hash = (hash * 31 + category.charCodeAt(i)) | 0;
+  return FALLBACK_PALETTE[Math.abs(hash) % FALLBACK_PALETTE.length];
 }
 
 export default function CompanyHome() {
@@ -266,6 +301,47 @@ export default function CompanyHome() {
                     Clear
                   </Button>
                 )}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Event legend"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                    >
+                      <HelpCircle className="size-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-3" align="end">
+                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
+                      Event legend
+                    </p>
+                    <ul className="space-y-1.5">
+                      {(() => {
+                        const seen = new Set<string>();
+                        const rows: Array<{ key: string; label: string; dot: string }> = [];
+                        const add = (cat: string, label?: string) => {
+                          const known = CATEGORY_COLORS[cat];
+                          const lbl = label ?? known?.label ?? formatCategory(cat);
+                          if (seen.has(lbl)) return;
+                          seen.add(lbl);
+                          rows.push({ key: cat, label: lbl, dot: categoryColor(cat) });
+                        };
+                        // Always include core defaults so the legend never looks empty.
+                        ["company_event", "training", "meeting", "deadline", "task", "holiday"].forEach((c) => add(c));
+                        availableCategories.forEach((c) => add(c));
+                        return rows.map((r) => (
+                          <li key={r.key} className="flex items-center gap-2 text-sm">
+                            <span className={cn("size-2.5 rounded-full", r.dot)} />
+                            <span className="text-foreground">{r.label}</span>
+                          </li>
+                        ));
+                      })()}
+                    </ul>
+                    <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
+                      Dots on days show that events are scheduled. Click a day to see details.
+                    </p>
+                  </PopoverContent>
+                </Popover>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -499,7 +575,7 @@ function EventRow({
         onClick={() => onOpen(ev)}
         className="w-full text-left flex items-start gap-3 rounded-xl p-2 -mx-2 hover:bg-muted transition"
       >
-        <div className="mt-1 size-2 rounded-full bg-primary shrink-0" />
+        <div className={cn("mt-1 size-2 rounded-full shrink-0", categoryColor(ev.category))} />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-foreground truncate">{ev.title}</p>
           <p className="text-xs text-muted-foreground">
