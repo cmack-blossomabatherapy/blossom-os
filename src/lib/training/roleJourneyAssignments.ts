@@ -57,38 +57,47 @@ export const DEFAULT_ROLE_TO_SLUG: Record<string, string> = {
   qa_team: "qa",
   qa_director: "qa",
   qa_specialist: "qa",
-  // Leadership / cross-functional roles → Blossom OS Basics fallback.
-  admin: "blossom-os-basics",
-  super_admin: "blossom-os-basics",
-  systems_admin: "blossom-os-basics",
-  exec: "blossom-os-basics",
-  executive: "blossom-os-basics",
-  executive_leadership: "blossom-os-basics",
-  operations_leadership: "blossom-os-basics",
-  ceo: "blossom-os-basics",
-  coo: "blossom-os-basics",
-  director_of_operations: "blossom-os-basics",
-  ops_manager: "blossom-os-basics",
-  operations_manager: "blossom-os-basics",
-  dept_manager: "blossom-os-basics",
-  training_admin: "blossom-os-basics",
+  // Systems / super admin
+  admin: "systems",
+  super_admin: "systems",
+  systems_admin: "systems",
+  training_admin: "systems",
+  // Executive leadership
+  exec: "executive",
+  executive: "executive",
+  executive_leadership: "executive",
+  ceo: "executive",
+  // Operations leadership
+  coo: "operations",
+  director_of_operations: "operations",
+  operations_leadership: "operations",
+  ops_manager: "operations",
+  operations_manager: "operations",
+  dept_manager: "operations",
   // Finance / billing / payroll
-  finance: "blossom-os-basics",
-  finance_benefits_lead: "blossom-os-basics",
-  finance_benefits_team: "blossom-os-basics",
-  payroll_admin: "blossom-os-basics",
-  payroll_lead: "blossom-os-basics",
-  billing_lead: "blossom-os-basics",
-  rcm_team: "blossom-os-basics",
-  // Support / clinic / generic
-  phone_support: "blossom-os-basics",
-  clinic: "blossom-os-basics",
+  finance: "finance",
+  finance_benefits_lead: "finance",
+  finance_benefits_team: "finance",
+  payroll_admin: "finance",
+  payroll_lead: "finance",
+  billing_lead: "finance",
+  rcm_team: "finance",
+  // Clinic
+  clinic: "clinic-operations",
   clinic_director: "clinical-director",
+  // True generic fallbacks (kept on Blossom OS Basics)
+  phone_support: "blossom-os-basics",
   staff: "blossom-os-basics",
   viewer: "blossom-os-basics",
 };
 
 export const FALLBACK_PATH_SLUG = "blossom-os-basics";
+
+/**
+ * Slugs treated as generic fallbacks. Anything mapped to one of these
+ * is only used when no specific department/role journey applies.
+ */
+const GENERIC_FALLBACK_SLUGS = new Set<string>(["blossom-os-basics"]);
 
 /** Every role slug the picker offers, sorted alphabetically. */
 export const ALL_ROLE_SLUGS: string[] = Object.keys(DEFAULT_ROLE_TO_SLUG).sort();
@@ -113,13 +122,23 @@ export function resolveRoleJourney(
   overrides: RoleJourneyOverrides = {},
 ): string {
   const rs = roles ?? [];
+  // 1. HR overrides always win.
   for (const r of rs) {
     if (overrides[r]) return overrides[r];
   }
+  // 2. Prefer any specific (non-generic) journey, regardless of role order.
+  let genericMatch: string | null = null;
   for (const r of rs) {
-    if (DEFAULT_ROLE_TO_SLUG[r]) return DEFAULT_ROLE_TO_SLUG[r];
+    const slug = DEFAULT_ROLE_TO_SLUG[r];
+    if (!slug) continue;
+    if (GENERIC_FALLBACK_SLUGS.has(slug)) {
+      if (!genericMatch) genericMatch = slug;
+      continue;
+    }
+    return slug;
   }
-  return FALLBACK_PATH_SLUG;
+  // 3. Otherwise use the first generic match, else the universal fallback.
+  return genericMatch ?? FALLBACK_PATH_SLUG;
 }
 
 /** Validation helper — does this slug exist in TRAINING_PATHS? */
