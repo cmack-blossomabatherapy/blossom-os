@@ -838,6 +838,7 @@ export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "Operations Leadership",       role: "operations_leadership" },
   { label: "State Director",              role: "state_director" },
   { label: "State Director Assistant",    role: "assistant_state_director" },
+  { label: "Regional State Director",     role: "regional_state_director" },
   { label: "Marketing Team",              role: "marketing_team" },
   { label: "Business Development",        role: "business_development" },
   { label: "Intake Team",                 role: "intake_coordinator" },
