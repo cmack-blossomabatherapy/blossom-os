@@ -20479,6 +20479,148 @@ export type Database = {
         }
         Relationships: []
       }
+      user_goal_activity: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          goal_id: string
+          id: string
+          note: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          goal_id: string
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          goal_id?: string
+          id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_goal_activity_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "user_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_goal_milestones: {
+        Row: {
+          approval_notes: string | null
+          completed_at: string | null
+          created_at: string
+          goal_id: string
+          id: string
+          order_index: number
+          status: Database["public"]["Enums"]["user_goal_milestone_status"]
+          success_criteria: string | null
+          target_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          approval_notes?: string | null
+          completed_at?: string | null
+          created_at?: string
+          goal_id: string
+          id?: string
+          order_index?: number
+          status?: Database["public"]["Enums"]["user_goal_milestone_status"]
+          success_criteria?: string | null
+          target_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          approval_notes?: string | null
+          completed_at?: string | null
+          created_at?: string
+          goal_id?: string
+          id?: string
+          order_index?: number
+          status?: Database["public"]["Enums"]["user_goal_milestone_status"]
+          success_criteria?: string | null
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_goal_milestones_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "user_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_goals: {
+        Row: {
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by_id: string | null
+          assigned_by_id: string
+          category: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          owner_id: string
+          priority: Database["public"]["Enums"]["user_task_priority"]
+          status: Database["public"]["Enums"]["user_goal_status"]
+          submitted_at: string | null
+          target_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by_id?: string | null
+          assigned_by_id: string
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          owner_id: string
+          priority?: Database["public"]["Enums"]["user_task_priority"]
+          status?: Database["public"]["Enums"]["user_goal_status"]
+          submitted_at?: string | null
+          target_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by_id?: string | null
+          assigned_by_id?: string
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          owner_id?: string
+          priority?: Database["public"]["Enums"]["user_task_priority"]
+          status?: Database["public"]["Enums"]["user_goal_status"]
+          submitted_at?: string | null
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -20497,6 +20639,60 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_tasks: {
+        Row: {
+          assigned_by_id: string
+          assignee_id: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_at: string | null
+          id: string
+          priority: Database["public"]["Enums"]["user_task_priority"]
+          related_record_id: string | null
+          related_record_label: string | null
+          related_record_type: string | null
+          related_url: string | null
+          status: Database["public"]["Enums"]["user_task_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by_id: string
+          assignee_id: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["user_task_priority"]
+          related_record_id?: string | null
+          related_record_label?: string | null
+          related_record_type?: string | null
+          related_url?: string | null
+          status?: Database["public"]["Enums"]["user_task_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by_id?: string
+          assignee_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["user_task_priority"]
+          related_record_id?: string | null
+          related_record_label?: string | null
+          related_record_type?: string | null
+          related_url?: string | null
+          status?: Database["public"]["Enums"]["user_task_status"]
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -22024,6 +22220,21 @@ export type Database = {
         | "expired"
         | "waived"
       unlock_method: "pin" | "passkey"
+      user_goal_milestone_status:
+        | "pending"
+        | "approved"
+        | "changes_requested"
+        | "in_progress"
+        | "done"
+      user_goal_status:
+        | "draft_milestones"
+        | "pending_approval"
+        | "changes_requested"
+        | "active"
+        | "completed"
+        | "archived"
+      user_task_priority: "low" | "medium" | "high"
+      user_task_status: "open" | "in_progress" | "done" | "cancelled"
       work_setting:
         | "clinic"
         | "home"
@@ -22802,6 +23013,23 @@ export const Constants = {
         "waived",
       ],
       unlock_method: ["pin", "passkey"],
+      user_goal_milestone_status: [
+        "pending",
+        "approved",
+        "changes_requested",
+        "in_progress",
+        "done",
+      ],
+      user_goal_status: [
+        "draft_milestones",
+        "pending_approval",
+        "changes_requested",
+        "active",
+        "completed",
+        "archived",
+      ],
+      user_task_priority: ["low", "medium", "high"],
+      user_task_status: ["open", "in_progress", "done", "cancelled"],
       work_setting: [
         "clinic",
         "home",
