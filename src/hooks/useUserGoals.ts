@@ -341,11 +341,16 @@ export function useAssignableUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id,display_name,email")
+        .select("user_id,display_name,email")
+        .eq("active", true)
         .order("display_name", { ascending: true })
         .limit(500);
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string; display_name: string | null; email: string | null }>;
+      return (data ?? []).map((r) => ({
+        id: r.user_id as string,
+        display_name: r.display_name as string | null,
+        email: r.email as string | null,
+      }));
     },
   });
 }
