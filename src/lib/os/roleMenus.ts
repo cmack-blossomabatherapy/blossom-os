@@ -807,6 +807,28 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       TRAINING_AND_RESOURCES,
     ],
   },
+
+  /* --------------------- Clinic Growth-to-Launch / Director of Clinics -------------------- */
+  clinic_growth: {
+    sections: [
+      {
+        id: "clinic_growth", label: "Clinic Growth to Launch", items: [
+          { label: "Clinic Growth Dashboard",         path: "/executive/growth-readiness?scope=clinic",          icon: LayoutDashboard },
+          { label: "Clinic Leads",                    path: "/leads?scope=clinic",                                icon: Users },
+          { label: "Clinic Intake Support",           path: "/intake?scope=clinic",                               icon: ClipboardList },
+          { label: "Clinic Marketing Activity",       path: "/marketing/state-growth?scope=clinic",               icon: BarChart3 },
+          { label: "Clinic Authorization Readiness",  path: "/authorizations?view=readiness&scope=clinic",        icon: ShieldCheck },
+          { label: "Clinic Recruiting / Hiring Readiness", path: "/recruiting?view=readiness&scope=clinic",       icon: UserCheck },
+          { label: "Clinic Onboarding Readiness",     path: "/hr/new-hires?scope=clinic",                         icon: Workflow },
+          { label: "Clinic Training Readiness",       path: "/admin/training-statistics?scope=clinic",            icon: GraduationCap },
+          { label: "Clinic Staffing Readiness",       path: "/staffing?view=readiness&scope=clinic",              icon: Users },
+          { label: "First 97153 Milestone",           path: "/executive/growth-readiness?milestone=97153",        icon: Flame },
+          { label: "Reports",                         path: "/reports?category=clinic-growth",                    icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
 };
 
 /** Fallback for any role without an explicit menu definition. */
@@ -850,4 +872,5 @@ export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "Director of RCM / Benefits",  role: "billing_finance" },
   { label: "Training Manager / Enablement", role: "training_manager" },
   { label: "Office Manager / HR Assistant", role: "office_manager" },
+  { label: "Clinic Growth-to-Launch",       role: "clinic_growth" },
 ];
