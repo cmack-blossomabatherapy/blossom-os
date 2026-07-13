@@ -415,6 +415,13 @@ import BlossomOSHome from "./pages/os/home/BlossomOSHome";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
 import OSAskBlossom from "./pages/os/OSAskBlossom";
 import OSResourceLibrary from "./pages/os/OSResourceLibrary";
+import ResourceLibraryRole from "./pages/resource-library/ResourceLibraryRole";
+import ResourceLibraryDepartment from "./pages/resource-library/ResourceLibraryDepartment";
+import ResourceLibraryTraining from "./pages/resource-library/ResourceLibraryTraining";
+import ResourceLibrarySops from "./pages/resource-library/ResourceLibrarySops";
+import ResourceLibraryVideos from "./pages/resource-library/ResourceLibraryVideos";
+import ResourceLibraryDetail from "./pages/resource-library/ResourceLibraryDetail";
+import ResourceLibraryAdminQA from "./pages/resource-library/ResourceLibraryAdminQA";
 import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
 import OSAuthHandoff from "./pages/os/OSAuthHandoff";
 import OSQAReviewBoard from "./pages/os/OSQAReviewBoard";
@@ -884,6 +891,13 @@ const App = () => (
                   <Route path="/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
                   <Route path="/sop" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/resource-library" element={<OSResourceLibrary />} />
+                  <Route path="/resource-library/role" element={<ResourceLibraryRole />} />
+                  <Route path="/resource-library/department" element={<ResourceLibraryDepartment />} />
+                  <Route path="/resource-library/training" element={<ResourceLibraryTraining />} />
+                  <Route path="/resource-library/sops" element={<ResourceLibrarySops />} />
+                  <Route path="/resource-library/videos" element={<ResourceLibraryVideos />} />
+                  <Route path="/resource-library/resource/:id" element={<ResourceLibraryDetail />} />
+                  <Route path="/resource-library/admin/qa" element={<ResourceLibraryAdminQA />} />
                   <Route path="/authorizations/resources" element={<OSAuthorizationResources />} />
                   <Route path="/analytics" element={<Navigate to="/reports" replace />} />
                   <Route path="/tech-requests" element={<OSPlaceholder title="Tech Requests" description="Internal technology support requests." icon={LifeBuoy} />} />

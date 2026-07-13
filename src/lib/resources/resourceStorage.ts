@@ -184,11 +184,14 @@ export async function resolveResourceOpenUrl(r: Resource): Promise<string | null
   // External link first.
   if (r.url && /^https?:\/\//i.test(r.url)) return r.url;
   if (r.fileUrl && /^https?:\/\//i.test(r.fileUrl)) return r.fileUrl;
-  // Storage path stored in `url` slot by the hook.
-  const storagePath = (r as Resource & { storagePath?: string }).storagePath ?? r.url;
+  const storagePath = r.storagePath ?? r.url;
   if (!storagePath) return null;
+  // Use the bucket the file actually lives in; fall back to the library bucket.
+  const bucket = r.storageBucket && r.storageBucket.length > 0
+    ? r.storageBucket
+    : RESOURCE_LIBRARY_BUCKET;
   const { data, error } = await supabase.storage
-    .from(RESOURCE_LIBRARY_BUCKET)
+    .from(bucket)
     .createSignedUrl(storagePath, 60 * 10);
   if (error || !data) return null;
   return data.signedUrl;

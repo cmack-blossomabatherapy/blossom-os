@@ -46,6 +46,30 @@ export interface Resource {
   fileUrl?: string;
   /** Supabase Storage path (private bucket). Resolved to a signed URL on open. */
   storagePath?: string;
+  /** Supabase Storage bucket the file actually lives in (resource-library, knowledge-documents, resource-videos, bcba-imports, data-uploads). */
+  storageBucket?: string;
+  /** File name shown in the detail view and download button. */
+  fileName?: string;
+  /** File size in bytes, if known. */
+  fileSize?: number;
+  /** MIME type, if known. */
+  mimeType?: string;
+  /** Stable manifest identifier (RFO-#####). */
+  resourceId?: string;
+  /** Manifest-driven visibility level: admin_only, leadership_only, operations_only, clinical_only, department_only, role_only, all_staff. */
+  visibilityLevel?: string;
+  /** Manifest owner name, if provided. */
+  owner?: string;
+  /** Date the resource was last reviewed (ISO date). */
+  lastReviewedDate?: string;
+  /** True when the manifest marks the resource as sensitive. */
+  isSensitive?: boolean;
+  /** True when the resource must be acknowledged before use. */
+  requiresAcknowledgement?: boolean;
+  /** True when the resource is part of a training journey. */
+  trainingRelated?: boolean;
+  /** True when the resource is a SOP / policy / procedure. */
+  sopRelated?: boolean;
   featured?: boolean;
   pinned?: boolean;
   /**
