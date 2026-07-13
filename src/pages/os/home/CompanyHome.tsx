@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { format, parseISO, isSameDay, startOfDay } from "date-fns";
+import { format, parseISO, isSameDay, startOfDay, addDays, endOfMonth, startOfMonth } from "date-fns";
 import {
   Calendar as CalendarIcon,
   Megaphone,
@@ -15,12 +15,23 @@ import {
   Download,
   Copy,
   Pencil,
+  Filter,
+  X,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -37,6 +48,21 @@ function safeDate(d: string): Date {
   return parseISO(d);
 }
 
+type RangePreset = "all" | "7d" | "30d" | "month";
+
+const RANGE_LABELS: Record<RangePreset, string> = {
+  all: "All dates",
+  "7d": "Next 7 days",
+  "30d": "Next 30 days",
+  month: "This month",
+};
+
+function formatCategory(c: string): string {
+  return c
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
 export default function CompanyHome() {
   const { events, updates, highlights, loading } = useCompanyHome();
   const canManage = useCanManageCompanyHome();
@@ -46,6 +72,40 @@ export default function CompanyHome() {
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [month, setMonth] = useState<Date>(today);
   const [openEvent, setOpenEvent] = useState<CompanyCalendarEvent | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<Set<string>>(new Set());
+  const [rangePreset, setRangePreset] = useState<RangePreset>("all");
+
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const ev of events) {
+      if (ev.category) set.add(ev.category);
+    }
+    return Array.from(set).sort();
+  }, [events]);
+
+  const filteredEvents = useMemo(() => {
+    const now = today.getTime();
+    let rangeStart: number | null = null;
+    let rangeEnd: number | null = null;
+    if (rangePreset === "7d") {
+      rangeStart = now;
+      rangeEnd = addDays(today, 7).getTime();
+    } else if (rangePreset === "30d") {
+      rangeStart = now;
+      rangeEnd = addDays(today, 30).getTime();
+    } else if (rangePreset === "month") {
+      rangeStart = startOfMonth(month).getTime();
+      rangeEnd = endOfMonth(month).getTime();
+    }
+    return events.filter((ev) => {
+      if (categoryFilter.size > 0 && !categoryFilter.has(ev.category)) return false;
+      if (rangeStart !== null && rangeEnd !== null) {
+        const t = safeDate(ev.starts_on).getTime();
+        if (t < rangeStart || t > rangeEnd) return false;
+      }
+      return true;
+    });
+  }, [events, categoryFilter, rangePreset, today, month]);
 
   // Index events once by yyyy-mm-dd for O(1) day lookups instead of
   // scanning the full list on every render / calendar cell.
@@ -53,7 +113,7 @@ export default function CompanyHome() {
     const byDay = new Map<string, CompanyCalendarEvent[]>();
     const days: Date[] = [];
     const seen = new Set<string>();
-    const sorted = [...events].sort(
+    const sorted = [...filteredEvents].sort(
       (a, b) => safeDate(a.starts_on).getTime() - safeDate(b.starts_on).getTime(),
     );
     for (const ev of sorted) {
@@ -67,7 +127,24 @@ export default function CompanyHome() {
       }
     }
     return { eventsByDay: byDay, eventDays: days, sortedFutureEvents: sorted };
-  }, [events]);
+  }, [filteredEvents]);
+
+  const toggleCategory = useCallback((cat: string) => {
+    setCategoryFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setCategoryFilter(new Set());
+    setRangePreset("all");
+  }, []);
+
+  const activeFilterCount =
+    categoryFilter.size + (rangePreset !== "all" ? 1 : 0);
 
   const selectedKey = format(selectedDate, "yyyy-MM-dd");
   const selectedDayEvents = eventsByDay.get(selectedKey) ?? [];
@@ -123,15 +200,110 @@ export default function CompanyHome() {
                 <CalendarIcon className="size-4" />
                 <h2 className="text-sm font-medium uppercase tracking-widest">Company Calendar</h2>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-full text-xs"
-                onClick={goToday}
-              >
-                Today
-              </Button>
+              <div className="flex items-center gap-2">
+                <Select value={rangePreset} onValueChange={(v) => setRangePreset(v as RangePreset)}>
+                  <SelectTrigger className="h-8 rounded-full text-xs w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(RANGE_LABELS) as RangePreset[]).map((k) => (
+                      <SelectItem key={k} value={k} className="text-xs">
+                        {RANGE_LABELS[k]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 rounded-full text-xs gap-1.5"
+                      disabled={availableCategories.length === 0}
+                    >
+                      <Filter className="size-3.5" />
+                      Types
+                      {categoryFilter.size > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">
+                          {categoryFilter.size}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" align="end">
+                    <div className="px-2 py-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
+                      Filter by type
+                    </div>
+                    <div className="max-h-64 overflow-auto space-y-0.5">
+                      {availableCategories.map((cat) => {
+                        const checked = categoryFilter.has(cat);
+                        return (
+                          <label
+                            key={cat}
+                            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={() => toggleCategory(cat)}
+                            />
+                            <span className="truncate">{formatCategory(cat)}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                {activeFilterCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-full text-xs gap-1"
+                    onClick={clearFilters}
+                  >
+                    <X className="size-3.5" />
+                    Clear
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 rounded-full text-xs"
+                  onClick={goToday}
+                >
+                  Today
+                </Button>
+              </div>
             </div>
+            {activeFilterCount > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {rangePreset !== "all" && (
+                  <Badge variant="secondary" className="rounded-full text-[11px] gap-1">
+                    {RANGE_LABELS[rangePreset]}
+                    <button
+                      type="button"
+                      onClick={() => setRangePreset("all")}
+                      className="hover:opacity-70"
+                      aria-label="Clear date range"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </Badge>
+                )}
+                {Array.from(categoryFilter).map((cat) => (
+                  <Badge key={cat} variant="secondary" className="rounded-full text-[11px] gap-1">
+                    {formatCategory(cat)}
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(cat)}
+                      className="hover:opacity-70"
+                      aria-label={`Remove ${cat} filter`}
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
             <Calendar
               mode="single"
               selected={selectedDate}
