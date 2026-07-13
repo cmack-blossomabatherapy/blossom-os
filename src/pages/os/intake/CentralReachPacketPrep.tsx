@@ -47,14 +47,12 @@ const SECTIONS: SectionSpec[] = [
     check: (l) => {
       const missing: string[] = [];
       if (!l.state?.trim()) missing.push("State");
-      if (!l.intake?.address?.trim() && !l.intake?.city?.trim()) missing.push("Address / city");
       return { ok: missing.length === 0, missing };
     } },
   { key: "insurance", label: "Insurance Cards",              icon: ShieldQuestion, required: true,
     check: (l) => {
       const missing: string[] = [];
       if (!l.insurance?.trim()) missing.push("Payer / plan");
-      if (!l.intake?.memberId?.trim() && !l.intake?.policyNumber?.trim()) missing.push("Member ID");
       return { ok: missing.length === 0, missing };
     } },
   { key: "diagnosis", label: "Diagnosis Documents",          icon: FileText,       required: true,
@@ -68,7 +66,9 @@ const SECTIONS: SectionSpec[] = [
   { key: "consents", label: "Consents / Forms",              icon: FileWarning,    required: true,
     check: (l) => {
       const missing: string[] = [];
-      if (l.formStatus !== "Received" && l.formReviewStatus !== "Approved") missing.push("Intake packet received");
+      const formOk = l.formStatus === "Complete" || l.formStatus === "Completed";
+      const reviewOk = l.formReviewStatus === "Complete";
+      if (!formOk && !reviewOk) missing.push("Intake packet completed");
       return { ok: missing.length === 0, missing };
     } },
   { key: "source", label: "Lead Source",                     icon: Inbox,          required: true,
@@ -81,13 +81,13 @@ const SECTIONS: SectionSpec[] = [
   { key: "availability", label: "Family Availability",       icon: ListChecks,     required: false,
     check: (l) => {
       const missing: string[] = [];
-      if (!l.intake?.availability?.trim() && !l.intake?.schedulingNotes?.trim()) missing.push("Availability / scheduling window");
+      if (!l.intake?.messageComments?.trim()) missing.push("Availability / scheduling window");
       return { ok: missing.length === 0, missing };
     } },
   { key: "notes", label: "Notes for RCM / Auth / Scheduling", icon: StickyNote,    required: false,
     check: (l) => {
       const missing: string[] = [];
-      if (!l.notes?.trim() && !l.intake?.handoffNotes?.trim()) missing.push("Handoff notes");
+      if (!l.notes?.trim()) missing.push("Handoff notes");
       return { ok: missing.length === 0, missing };
     } },
 ];
