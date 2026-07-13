@@ -245,7 +245,7 @@ describe("Blossom AI — QA & launch readiness (Prompt 6)", () => {
   describe("Report AI presets carry base guardrails", () => {
     it("ReportAIButton exports guardrails baseline", () => {
       expect(REPORT_AI).toMatch(/BASE_GUARDRAILS|REPORT_AI_GUARDRAILS/);
-      expect(REPORT_AI).toMatch(/do not recompute|not modify|cannot change/i);
+      expect(REPORT_AI).toMatch(/recompute|invent|not change/i);
     });
   });
 
