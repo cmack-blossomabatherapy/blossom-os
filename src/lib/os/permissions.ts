@@ -65,6 +65,7 @@ export type OSRole =
   | "rcm_team"
   | "assistant_state_director"
   | "state_va"
+  | "regional_state_director"
   | "business_development"
   | "staffing_team"
   | "credentialing_team"
