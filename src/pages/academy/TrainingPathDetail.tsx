@@ -14,6 +14,7 @@ import {
 import { RBT_BUCKETS } from "@/lib/academy/trainingPaths";
 import { RBT_PATHS, type RBTPathId } from "@/lib/training/rbtAcademy";
 import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
+import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
 
 /**
  * Real Journey Detail for /academy/path/:slug.
