@@ -21140,6 +21140,18 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      hr_normalize_role: { Args: { _r: string }; Returns: string }
+      hr_resource_visible: {
+        Args: {
+          _is_sensitive: boolean
+          _tags: string[]
+          _user: string
+          _visibility_level: string
+          _visibility_roles: string[]
+        }
+        Returns: boolean
+      }
+      hr_user_role_slugs: { Args: { _user: string }; Returns: string[] }
       is_academy_trainee: { Args: { _enrollment_id: string }; Returns: boolean }
       is_access_request_reviewer: {
         Args: { _user_id: string }
