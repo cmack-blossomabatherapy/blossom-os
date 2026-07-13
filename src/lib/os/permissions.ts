@@ -72,6 +72,7 @@ export type OSRole =
   | "clinical_director"
   | "training_manager"
   | "office_manager"
+  | "clinic_growth"
   | "viewer";
 
 export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadership" | "operations" | "field" }[] = [
@@ -118,6 +119,7 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "clinical_director", label: "Clinical Director", tier: "leadership" },
   { id: "training_manager", label: "Training Manager / Enablement", tier: "operations" },
   { id: "office_manager", label: "Office Manager / HR Assistant", tier: "operations" },
+  { id: "clinic_growth", label: "Clinic Growth-to-Launch / Director of Clinics", tier: "operations" },
   { id: "billing_finance", label: "Billing / Finance", tier: "operations" },
   { id: "qa_team", label: "QA / Compliance", tier: "operations" },
   { id: "payroll_coordinator", label: "Payroll Coordinator", tier: "operations" },
@@ -572,6 +574,7 @@ const ROLE_ALIASES: Record<
   state_va: "assistant_state_director",
   training_manager: "hr_team",
   office_manager: "hr_team",
+  clinic_growth: "operations_leadership",
   viewer: "behavioral_support",
 };
 
