@@ -751,6 +751,27 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       TRAINING_AND_RESOURCES,
     ],
   },
+
+  /* --------------------- Director of RCM / Benefits / VOB -------------------- */
+  billing_finance: {
+    sections: [
+      {
+        id: "rcm", label: "RCM / Benefits / VOB", items: [
+          { label: "RCM Dashboard",                        path: "/billing-finance",                            icon: Gauge },
+          { label: "Benefits / VOB Queue",                 path: "/vob-decision-center",                        icon: ShieldCheck },
+          { label: "Financial Case Approval",              path: "/rcm/financial-case-approval",                icon: CheckCircle2 },
+          { label: "No OON Benefits",                      path: "/ops/no-oon-benefits",                        icon: XCircle },
+          { label: "Lead Benefits Cheat Sheets",           path: "/intake/benefits-cheat-sheets",               icon: ShieldCheck },
+          { label: "Unknown Insurance Review",             path: "/rcm/unknown-insurance",                      icon: AlertTriangle },
+          { label: "Payment Plan Status",                  path: "/rcm/payment-plans",                          icon: ClipboardList },
+          { label: "OON / Commercial Flags",               path: "/rcm/oon-flags",                              icon: Flame },
+          { label: "CR Packet — Financial Section",        path: "/intake/cr-packet-prep?section=financial",    icon: FileCheck2 },
+          { label: "Reports",                              path: "/reports?category=rcm",                       icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
 };
 
 /** Fallback for any role without an explicit menu definition. */
@@ -790,4 +811,5 @@ export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "Case Manager",                role: "case_manager" },
   { label: "RBT",                         role: "rbt" },
   { label: "Behavioral Support",          role: "behavioral_support" },
+  { label: "Director of RCM / Benefits",  role: "billing_finance" },
 ];
