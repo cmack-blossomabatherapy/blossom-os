@@ -716,6 +716,76 @@ function buildIcs(ev: CompanyCalendarEvent): string {
   ].filter(Boolean).join("\r\n");
 }
 
+function DayEventsDrawer({
+  state,
+  onClose,
+  eventsByDay,
+  onOpenEvent,
+}: {
+  state: { date: Date; category: string | null } | null;
+  onClose: () => void;
+  eventsByDay: Map<string, CompanyCalendarEvent[]>;
+  onOpenEvent: (ev: CompanyCalendarEvent) => void;
+}) {
+  if (!state) return null;
+  const key = format(state.date, "yyyy-MM-dd");
+  const all = eventsByDay.get(key) ?? [];
+  const filtered = state.category
+    ? all.filter((e) => (e.category || "company_event") === state.category)
+    : all;
+  const typeLabel = state.category
+    ? CATEGORY_COLORS[state.category]?.label ?? formatCategory(state.category)
+    : "All events";
+  return (
+    <Sheet open={!!state} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+        <SheetHeader className="text-left">
+          <SheetTitle>{format(state.date, "EEEE, MMM d")}</SheetTitle>
+          <SheetDescription>
+            <span className="inline-flex items-center gap-1.5">
+              {state.category && (
+                <span className={cn("size-2 rounded-full", categoryColor(state.category))} />
+              )}
+              {typeLabel} · {filtered.length} event{filtered.length === 1 ? "" : "s"}
+            </span>
+          </SheetDescription>
+        </SheetHeader>
+        {filtered.length === 0 ? (
+          <div className="mt-6 rounded-xl border border-dashed border-border/70 bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+            Nothing scheduled.
+          </div>
+        ) : (
+          <ul className="mt-5 space-y-2">
+            {filtered.map((ev) => (
+              <li key={ev.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpenEvent(ev)}
+                  className="w-full text-left flex items-start gap-3 rounded-xl border border-border/60 bg-card p-3 hover:bg-muted/40 transition"
+                >
+                  <div className={cn("mt-1 size-2 rounded-full shrink-0", categoryColor(ev.category))} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">{ev.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {ev.all_day ? "All day" : format(safeDate(ev.starts_on), "h:mma")}
+                      {ev.location ? ` · ${ev.location}` : ""}
+                    </p>
+                    {ev.owner_name && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Owner · {ev.owner_name}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function EventDetailDrawer({
   event,
   onClose,
