@@ -73,8 +73,29 @@ export default function TrainingPathDetail() {
 
       {/* Hero */}
       <header className="mt-4">
-        <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          <GraduationCap className="h-3 w-3" /> {path.category} · {path.audience}
+        <div className="flex items-center justify-between gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <GraduationCap className="h-3 w-3" /> {path.category} · {path.audience}
+          </div>
+          <BlossomAIButton
+            surface="training"
+            title={`Coach · ${path.title}`}
+            hint="Role-based coach for this journey."
+            contextText={`Learner is on training path "${path.title}" (${path.audience}). ${path.description}${nextModule ? ` Next module: ${nextModule.title}.` : ""}${nextDay ? ` Next day: Week ${currentWeek?.weekNumber} Day ${nextDay.dayNumber}.` : ""} Progress: ${pct}% (${completedModules}/${totalModules} modules).`}
+            suggestions={[
+              nextModule ? `Explain "${nextModule.title}" in plain language` : "Summarize this journey",
+              nextDay ? `What resources go with Day ${nextDay.dayNumber}?` : "What resources go with today?",
+              "What SOP should I review next?",
+              "What do I need to complete next?",
+            ]}
+            guardrails={[
+              "Do not complete training or quizzes for the user",
+              "Do not reveal quiz answers before the user submits",
+              "Only use resources the learner's role can access",
+              "Explain SOPs and modules in simpler language",
+            ]}
+            label="Ask coach"
+          />
         </div>
         <div className="mt-3 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
