@@ -201,12 +201,9 @@ export default function OSWelcomeToBlossom() {
             grounded, meet the company, and take the next step.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
-            <Button size="sm" className="rounded-full" onClick={markReviewed}>
-              Start Welcome to Blossom <ArrowRight className="ml-1 h-3.5 w-3.5" />
-            </Button>
-            <Button size="sm" variant="outline" className="rounded-full" onClick={continueToStateDirectorJourney}>
-              Continue to State Director Journey
-            </Button>
+            <p className="text-[12.5px] text-muted-foreground">
+              Read each section below and confirm you've read it. When all sections are confirmed, the <span className="font-medium text-foreground">Start Training</span> button at the bottom will unlock.
+            </p>
           </div>
 
           {/* Overall Welcome progress — updates the moment a module is marked complete */}
@@ -348,16 +345,13 @@ export default function OSWelcomeToBlossom() {
                 variant={videoDone ? "outline" : "default"}
                 className="rounded-full"
                 onClick={markReviewed}
+                data-testid="welcome-module-complete-welcome-video-from-blossom"
               >
-                {videoDone ? "Marked reviewed" : "Mark welcome reviewed"}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="rounded-full"
-                onClick={continueToStateDirectorJourney}
-              >
-                Continue to State Director Journey <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                {videoDone ? (
+                  <><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Confirmed read</>
+                ) : (
+                  "I've read / watched this"
+                )}
               </Button>
             </div>
           </div>
@@ -646,19 +640,16 @@ export default function OSWelcomeToBlossom() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button
                     size="sm"
-                    className="rounded-full"
-                    onClick={continueToStateDirectorJourney}
-                    data-testid="welcome-reflection-continue"
-                  >
-                    Continue to my launch path <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
+                    variant={videoDone ? "outline" : "default"}
                     className="rounded-full"
                     onClick={markReviewed}
+                    data-testid="welcome-reflection-continue"
                   >
-                    {videoDone ? "Marked reviewed" : "Mark welcome reviewed"}
+                    {videoDone ? (
+                      <><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Confirmed read</>
+                    ) : (
+                      "I've read this section"
+                    )}
                   </Button>
                 </div>
               </div>
@@ -688,11 +679,16 @@ export default function OSWelcomeToBlossom() {
                 size="lg"
                 className="rounded-2xl shadow-md shadow-primary/20"
                 onClick={continueToStateDirectorJourney}
+                disabled={!allWelcomeDone}
                 data-testid="welcome-continue-launch-path"
               >
-                Continue to my State Director launch path <ArrowRight className="ml-1 h-4 w-4" />
+                {allWelcomeDone ? (
+                  <>Start Training <ArrowRight className="ml-1 h-4 w-4" /></>
+                ) : (
+                  <>Confirm all sections to start training ({welcomeDoneCount}/{welcomeTotal})</>
+                )}
               </Button>
-              <span className="sr-only">Continue to State Director Journey</span>
+              <span className="sr-only">Start Training — continues to your launch path</span>
               <Button
                 size="sm"
                 variant="outline"
@@ -830,71 +826,33 @@ function ModuleCompleteAction({
   syncWelcomeToAcademy: (welcomeModuleId: string) => void | Promise<void>;
 }) {
   const done = isWelcomeModuleComplete(moduleId, status.modulesComplete);
-  const trainingId = WELCOME_TO_SD_TRAINING_ID[moduleId];
   return (
     <div className="mt-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/60 bg-muted/30 px-4 py-3">
       <p className="text-[12.5px] text-muted-foreground">
         {done
-          ? "You've completed this module. Open the training page any time to review."
-          : "This is the breakdown of what to expect. Open the training page to walk the full module and start the timer."}
+          ? "You've confirmed you read this section."
+          : "Please confirm you've read this section before continuing."}
       </p>
       <div className="flex items-center gap-2">
-        {!done && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="rounded-full text-[12px]"
-            onClick={() => {
+        <Button
+          size="sm"
+          variant={done ? "outline" : "default"}
+          className="rounded-full"
+          onClick={() => {
+            if (!done) {
               completeWelcomeModuleEverywhere(moduleId);
               void syncWelcomeToAcademy(moduleId);
-            }}
-            data-testid={`welcome-module-complete-${moduleId}`}
-          >
-            Mark reviewed
-          </Button>
-        )}
-        {trainingId ? (
-          <Button
-            asChild
-            size="sm"
-            variant={done ? "outline" : "default"}
-            className="rounded-full"
-          >
-            <Link to={`/training/${trainingId}`} data-testid={`welcome-module-start-${moduleId}`}>
-              {done ? (
-                <>
-                  <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Review training
-                </>
-              ) : (
-                <>
-                  Start training <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                </>
-              )}
-            </Link>
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            variant={done ? "outline" : "default"}
-            className="rounded-full"
-            disabled={done}
-            onClick={() => {
-              if (!done) {
-                completeWelcomeModuleEverywhere(moduleId);
-                void syncWelcomeToAcademy(moduleId);
-              }
-            }}
-            data-testid={`welcome-module-complete-${moduleId}`}
-          >
-            {done ? (
-              <>
-                <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Completed
-              </>
-            ) : (
-              "Mark complete"
-            )}
-          </Button>
-        )}
+            }
+          }}
+          data-testid={`welcome-module-complete-${moduleId}`}
+          aria-pressed={done}
+        >
+          {done ? (
+            <><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Confirmed read</>
+          ) : (
+            "I've read this section"
+          )}
+        </Button>
       </div>
     </div>
   );
