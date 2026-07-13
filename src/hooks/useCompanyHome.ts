@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -57,47 +58,102 @@ export function useCanManageCompanyHome(): boolean {
   );
 }
 
+/**
+ * Company Home data hook.
+ *
+ * Uses React Query so:
+ *  - all consumers share one cache,
+ *  - remounts are instant (stale-while-revalidate),
+ *  - re-focus doesn't refetch aggressively,
+ *  - the calendar query is bounded (upcoming window only) to stay
+ *    responsive with large datasets.
+ */
+const COMPANY_HOME_KEYS = {
+  events: ["company-home", "events"] as const,
+  updates: ["company-home", "updates"] as const,
+  highlights: ["company-home", "highlights"] as const,
+};
+
+// Lightweight column projection — no `select("*")` payload bloat.
+const EVENT_COLS =
+  "id,title,description,category,starts_on,ends_on,all_day,location,owner_name,related_record_type,related_record_id,related_record_label,related_url,next_step";
+const UPDATE_COLS = "id,title,body,author_name,pinned,published,published_at";
+const HIGHLIGHT_COLS = "id,title,body,image_url,link_url,sort_order,published";
+
+async function fetchUpcomingEvents(): Promise<CompanyCalendarEvent[]> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const { data } = await supabase
+    .from("company_calendar_events")
+    .select(EVENT_COLS)
+    .gte("starts_on", today.toISOString().slice(0, 10))
+    .order("starts_on", { ascending: true })
+    .limit(200);
+  return (data ?? []) as CompanyCalendarEvent[];
+}
+
+async function fetchTopUpdates(): Promise<CompanyUpdate[]> {
+  const { data } = await supabase
+    .from("company_updates")
+    .select(UPDATE_COLS)
+    .order("pinned", { ascending: false })
+    .order("published_at", { ascending: false })
+    .limit(25);
+  return (data ?? []) as CompanyUpdate[];
+}
+
+async function fetchPublishedHighlights(): Promise<CompanyHighlight[]> {
+  const { data } = await supabase
+    .from("company_highlights")
+    .select(HIGHLIGHT_COLS)
+    .eq("published", true)
+    .order("sort_order", { ascending: true })
+    .limit(20);
+  return (data ?? []) as CompanyHighlight[];
+}
+
 export function useCompanyHome() {
-  const [events, setEvents] = useState<CompanyCalendarEvent[]>([]);
-  const [updates, setUpdates] = useState<CompanyUpdate[]>([]);
-  const [highlights, setHighlights] = useState<CompanyHighlight[]>([]);
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const [e, u, h] = await Promise.all([
-      supabase
-        .from("company_calendar_events")
-        .select("*")
-        .gte("starts_on", today.toISOString().slice(0, 10))
-        .order("starts_on", { ascending: true })
-        .limit(50),
-      supabase
-        .from("company_updates")
-        .select("*")
-        .order("pinned", { ascending: false })
-        .order("published_at", { ascending: false })
-        .limit(25),
-      supabase
-        .from("company_highlights")
-        .select("*")
-        .eq("published", true)
-        .order("sort_order", { ascending: true })
-        .limit(20),
-    ]);
-    setEvents((e.data ?? []) as CompanyCalendarEvent[]);
-    setUpdates((u.data ?? []) as CompanyUpdate[]);
-    setHighlights((h.data ?? []) as CompanyHighlight[]);
-    setLoading(false);
-  }, []);
+  const eventsQ = useQuery({
+    queryKey: COMPANY_HOME_KEYS.events,
+    queryFn: fetchUpcomingEvents,
+    staleTime: 5 * 60 * 1000,       // 5 min: calendar doesn't change often
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    placeholderData: (prev) => prev, // keep last data while refetching
+  });
+  const updatesQ = useQuery({
+    queryKey: COMPANY_HOME_KEYS.updates,
+    queryFn: fetchTopUpdates,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    placeholderData: (prev) => prev,
+  });
+  const highlightsQ = useQuery({
+    queryKey: COMPANY_HOME_KEYS.highlights,
+    queryFn: fetchPublishedHighlights,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    placeholderData: (prev) => prev,
+  });
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const reload = () => {
+    void qc.invalidateQueries({ queryKey: ["company-home"] });
+  };
 
-  return { events, updates, highlights, loading, reload: load };
+  return {
+    events: eventsQ.data ?? [],
+    updates: updatesQ.data ?? [],
+    highlights: highlightsQ.data ?? [],
+    loading:
+      (eventsQ.isLoading && !eventsQ.data) ||
+      (updatesQ.isLoading && !updatesQ.data) ||
+      (highlightsQ.isLoading && !highlightsQ.data),
+    reload,
+  };
 }
 
 export async function fetchAllCalendarEvents(): Promise<CompanyCalendarEvent[]> {
