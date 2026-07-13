@@ -749,6 +749,27 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     ],
   },
 
+  /* --------------------- Training Manager / Enablement -------------------- */
+  training_manager: {
+    sections: [
+      {
+        id: "training_governance", label: "Training Governance", items: [
+          { label: "Training Management",       path: "/hr/training-center",                       icon: LayoutDashboard },
+          { label: "Journey Builder",           path: "/hr/training-center?nav=journeys",          icon: Workflow },
+          { label: "Role Training Assignments", path: "/hr/training-center?nav=role-journeys",     icon: UserCheck },
+          { label: "Completion Dashboard",      path: "/admin/training-statistics",                icon: Gauge },
+          { label: "RBT Training",              path: "/training/rbt-admin",                       icon: GraduationCap },
+          { label: "BCBA Training",             path: "/bcba/training-academy",                    icon: GraduationCap },
+          { label: "State Director Training",   path: "/training",                                 icon: GraduationCap },
+          { label: "Resource Library Admin",    path: "/resource-library?admin=1",                 icon: Library },
+          { label: "SOP / Policy Resources",    path: "/resource-library?section=sop",             icon: FileText },
+          { label: "Reports",                   path: "/reports?category=training",                icon: BarChart3 },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
   /* --------------------- Finance / Controller / Billing (Visibility) -------------------- */
   billing_finance: {
     sections: [
@@ -806,4 +827,5 @@ export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "RBT",                         role: "rbt" },
   { label: "Behavioral Support",          role: "behavioral_support" },
   { label: "Director of RCM / Benefits",  role: "billing_finance" },
+  { label: "Training Manager / Enablement", role: "training_manager" },
 ];

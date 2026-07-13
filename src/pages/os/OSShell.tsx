@@ -357,6 +357,17 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/resource-library",
     "/reports",
   ]),
+  training_manager: new Set<string>([
+    "/hr/training-center",
+    "/admin/training-statistics",
+    "/training",
+    "/training/rbt-admin",
+    "/rbt/training-academy",
+    "/bcba/training-academy",
+    "/academy",
+    "/resource-library",
+    "/reports",
+  ]),
   credentialing_team: new Set<string>([
     "/credentialing",
     "/credentialing/providers",

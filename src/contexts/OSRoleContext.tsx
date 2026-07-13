@@ -76,6 +76,9 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (has("clinical_director") || has("clinic_director") || has("clinical_lead")) {
     return "clinical_director";
   }
+  if (has("training_manager") || has("training_lead") || has("enablement") || has("enablement_lead") || has("training_enablement")) {
+    return "training_manager";
+  }
   return null;
 }
 
