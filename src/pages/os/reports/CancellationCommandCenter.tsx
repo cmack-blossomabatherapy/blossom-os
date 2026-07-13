@@ -10,6 +10,7 @@ import {
   Printer, TrendingDown, TrendingUp, Search,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
+import { ReportAIButton } from "@/components/ai/ReportAIButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
