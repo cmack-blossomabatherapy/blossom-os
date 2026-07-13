@@ -227,6 +227,10 @@ interface ChatFnSource {
   snippet?: string;
   similarity?: number;
   category?: string;
+  resourceId?: string | null;
+  number?: number;
+  department?: string | null;
+  type?: string | null;
 }
 
 interface ChatFnResponse {
@@ -275,9 +279,23 @@ export async function* streamAskBlossom(
   conversationId?: string,
 ): AsyncGenerator<string, AskBlossomResponse & { conversationId?: string }, void> {
   try {
-    const { data, error } = await supabase.functions.invoke<ChatFnResponse>("chat", {
-      body: { message: prompt, conversationId },
+    // Prefer the role-aware RAG endpoint that filters by Resource Library
+    // visibility. Fall back to the legacy tool-calling `chat` function if the
+    // new one isn't reachable (e.g. still deploying).
+    let data: ChatFnResponse | null = null;
+    let error: { message?: string } | null = null;
+    const primary = await supabase.functions.invoke<ChatFnResponse>("blossom-ai-chat", {
+      body: { message: prompt },
     });
+    if (primary.error || !primary.data || primary.data.error) {
+      const fallback = await supabase.functions.invoke<ChatFnResponse>("chat", {
+        body: { message: prompt, conversationId },
+      });
+      data = fallback.data ?? null;
+      error = fallback.error ?? null;
+    } else {
+      data = primary.data;
+    }
 
     if (error) {
       const msg = error.message ?? "AI is unavailable right now.";

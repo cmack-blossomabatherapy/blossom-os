@@ -1,0 +1,174 @@
+// Role-aware RAG chat for Blossom AI.
+// - Embeds the user's question via the Lovable AI Gateway
+// - Calls match_resource_chunks() with the caller's JWT so RLS filters chunks
+//   to only those visible to their role (Resource Library rules)
+// - Sends context + question to a chat model with strict "cite only what you
+//   used, refuse when nothing relevant" instructions
+// - Returns { content, sources: [{ resourceId, title, url? }] }
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const EMBED_MODEL = "openai/text-embedding-3-small";
+const CHAT_MODEL = "google/gemini-3-flash-preview";
+const GATEWAY = "https://ai.gateway.lovable.dev/v1";
+const MATCH_COUNT = 8;
+const CONTEXT_CHAR_BUDGET = 12_000;
+
+const SYSTEM_PROMPT = `You are Blossom AI, the operational assistant for Blossom ABA Therapy staff.
+
+RULES:
+- Answer ONLY from the provided KNOWLEDGE excerpts. Do NOT use outside knowledge.
+- Every substantive claim must cite the source by number, like [1] or [2].
+- If the excerpts don't contain the answer, say: "I don't have that in the Resource Library I can see. Try rephrasing, or contact the owning team."
+- Never invent policies, numbers, names, or file contents.
+- If the user asks about a video and the excerpts include no transcript for it, say the transcript isn't available yet.
+- Be concise, warm, and use markdown. Cite source titles in italics when quoting.
+- Do not reveal storage paths, internal IDs, or raw URLs — cite by title and number only.`;
+
+type ChunkHit = {
+  id: string;
+  resource_id: string | null;
+  source_title: string;
+  content: string;
+  storage_bucket: string | null;
+  storage_path: string | null;
+  department: string | null;
+  resource_type: string | null;
+  similarity: number;
+};
+
+async function embedQuery(text: string, apiKey: string): Promise<number[]> {
+  const res = await fetch(`${GATEWAY}/embeddings`, {
+    method: "POST",
+    headers: { "Lovable-API-Key": apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: EMBED_MODEL, input: text }),
+  });
+  if (!res.ok) throw new Error(`embed_${res.status}:${(await res.text()).slice(0, 200)}`);
+  const j = await res.json() as { data: Array<{ embedding: number[] }> };
+  return j.data[0].embedding;
+}
+
+async function chat(messages: Array<{ role: string; content: string }>, apiKey: string): Promise<string> {
+  const res = await fetch(`${GATEWAY}/chat/completions`, {
+    method: "POST",
+    headers: { "Lovable-API-Key": apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: CHAT_MODEL, messages }),
+  });
+  if (!res.ok) throw new Error(`chat_${res.status}:${(await res.text()).slice(0, 200)}`);
+  const j = await res.json() as { choices: Array<{ message: { content: string } }> };
+  return j.choices?.[0]?.message?.content ?? "";
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  try {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Per-request client that carries the user's JWT so RLS applies to the RPC.
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+    if (!user) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = (await req.json().catch(() => ({}))) as {
+      message?: string;
+      department?: string;
+      resourceType?: string;
+    };
+    const question = (body.message ?? "").trim();
+    if (!question) {
+      return new Response(JSON.stringify({ error: "missing_message" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 1. Embed
+    const qvec = await embedQuery(question, LOVABLE_API_KEY);
+
+    // 2. Role-filtered retrieval (RLS on knowledge_chunks does the filtering)
+    const { data: hits, error: rpcErr } = await supabase.rpc("match_resource_chunks", {
+      query_embedding: qvec as unknown as string,
+      match_count: MATCH_COUNT,
+      filter_department: body.department ?? null,
+      filter_resource_type: body.resourceType ?? null,
+    });
+    if (rpcErr) throw rpcErr;
+
+    const chunks = (hits ?? []) as ChunkHit[];
+
+    if (chunks.length === 0) {
+      return new Response(JSON.stringify({
+        content: "I don't have anything in the Resource Library I can see that matches that question. Try rephrasing, or contact the owning team.",
+        sources: [],
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // 3. Assemble context within a character budget, dedup by resource.
+    let used = 0;
+    const contextParts: string[] = [];
+    const cited: Array<{ number: number; resourceId: string | null; title: string; department: string | null; type: string | null }> = [];
+    const seenResources = new Set<string>();
+    let n = 0;
+    for (const c of chunks) {
+      const excerpt = c.content.slice(0, 1600);
+      if (used + excerpt.length > CONTEXT_CHAR_BUDGET) break;
+      n += 1;
+      contextParts.push(`[${n}] ${c.source_title}\n${excerpt}`);
+      used += excerpt.length;
+      const key = c.resource_id ?? c.source_title;
+      if (!seenResources.has(key)) {
+        seenResources.add(key);
+        cited.push({
+          number: n,
+          resourceId: c.resource_id,
+          title: c.source_title,
+          department: c.department,
+          type: c.resource_type,
+        });
+      }
+    }
+
+    // 4. Ask the model
+    const answer = await chat([
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: `KNOWLEDGE:\n\n${contextParts.join("\n\n---\n\n")}\n\nQUESTION: ${question}` },
+    ], LOVABLE_API_KEY);
+
+    return new Response(JSON.stringify({
+      content: answer,
+      sources: cited,
+      matchedChunks: chunks.length,
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    // 429 rate limit and 402 credit exhaustion surface as their status in msg
+    let status = 500;
+    if (/^embed_429|^chat_429/.test(msg)) status = 429;
+    else if (/^embed_402|^chat_402/.test(msg)) status = 402;
+    return new Response(JSON.stringify({ error: msg }), {
+      status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

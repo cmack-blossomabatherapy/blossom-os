@@ -10014,6 +10014,7 @@ export type Database = {
         Row: {
           attachment_status: string
           category: Database["public"]["Enums"]["hr_resource_category"]
+          chunk_count: number
           created_at: string
           departments: string[]
           description: string | null
@@ -10021,6 +10022,9 @@ export type Database = {
           file_size: number | null
           id: string
           import_batch: number | null
+          ingest_error: string | null
+          ingest_status: string
+          ingested_at: string | null
           is_active: boolean
           is_pinned: boolean
           is_sensitive: boolean
@@ -10045,6 +10049,7 @@ export type Database = {
           title: string
           topic_tags: string[]
           training_related: boolean
+          transcript_available: boolean
           updated_at: string
           upload_status: string
           uploaded_by: string | null
@@ -10058,6 +10063,7 @@ export type Database = {
         Insert: {
           attachment_status?: string
           category?: Database["public"]["Enums"]["hr_resource_category"]
+          chunk_count?: number
           created_at?: string
           departments?: string[]
           description?: string | null
@@ -10065,6 +10071,9 @@ export type Database = {
           file_size?: number | null
           id?: string
           import_batch?: number | null
+          ingest_error?: string | null
+          ingest_status?: string
+          ingested_at?: string | null
           is_active?: boolean
           is_pinned?: boolean
           is_sensitive?: boolean
@@ -10089,6 +10098,7 @@ export type Database = {
           title: string
           topic_tags?: string[]
           training_related?: boolean
+          transcript_available?: boolean
           updated_at?: string
           upload_status?: string
           uploaded_by?: string | null
@@ -10102,6 +10112,7 @@ export type Database = {
         Update: {
           attachment_status?: string
           category?: Database["public"]["Enums"]["hr_resource_category"]
+          chunk_count?: number
           created_at?: string
           departments?: string[]
           description?: string | null
@@ -10109,6 +10120,9 @@ export type Database = {
           file_size?: number | null
           id?: string
           import_batch?: number | null
+          ingest_error?: string | null
+          ingest_status?: string
+          ingested_at?: string | null
           is_active?: boolean
           is_pinned?: boolean
           is_sensitive?: boolean
@@ -10133,6 +10147,7 @@ export type Database = {
           title?: string
           topic_tags?: string[]
           training_related?: boolean
+          transcript_available?: boolean
           updated_at?: string
           upload_status?: string
           uploaded_by?: string | null
@@ -11470,43 +11485,70 @@ export type Database = {
           chunk_index: number
           content: string
           created_at: string
+          department: string | null
           document_id: string | null
           embedding: string | null
           id: string
+          is_sensitive: boolean | null
           metadata: Json
+          resource_id: string | null
+          resource_type: string | null
           search: unknown
           source_id: string | null
           source_title: string
           source_type: string
           source_url: string | null
+          storage_bucket: string | null
+          storage_path: string | null
+          tags: string[] | null
+          visibility_level: string | null
+          visible_to_roles: string[] | null
         }
         Insert: {
           chunk_index?: number
           content: string
           created_at?: string
+          department?: string | null
           document_id?: string | null
           embedding?: string | null
           id?: string
+          is_sensitive?: boolean | null
           metadata?: Json
+          resource_id?: string | null
+          resource_type?: string | null
           search?: unknown
           source_id?: string | null
           source_title: string
           source_type: string
           source_url?: string | null
+          storage_bucket?: string | null
+          storage_path?: string | null
+          tags?: string[] | null
+          visibility_level?: string | null
+          visible_to_roles?: string[] | null
         }
         Update: {
           chunk_index?: number
           content?: string
           created_at?: string
+          department?: string | null
           document_id?: string | null
           embedding?: string | null
           id?: string
+          is_sensitive?: boolean | null
           metadata?: Json
+          resource_id?: string | null
+          resource_type?: string | null
           search?: unknown
           source_id?: string | null
           source_title?: string
           source_type?: string
           source_url?: string | null
+          storage_bucket?: string | null
+          storage_path?: string | null
+          tags?: string[] | null
+          visibility_level?: string | null
+          visible_to_roles?: string[] | null
         }
         Relationships: [
           {
@@ -21223,6 +21265,27 @@ export type Database = {
           similarity: number
           source_title: string
           source_url: string
+        }[]
+      }
+      match_resource_chunks: {
+        Args: {
+          filter_department?: string
+          filter_resource_type?: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          chunk_index: number
+          content: string
+          department: string
+          id: string
+          resource_id: string
+          resource_type: string
+          similarity: number
+          source_title: string
+          storage_bucket: string
+          storage_path: string
+          visibility_level: string
         }[]
       }
       merge_user_training_progress: {

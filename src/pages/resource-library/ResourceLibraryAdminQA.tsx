@@ -5,6 +5,7 @@ import { LibraryTabs } from "@/components/resource-library/LibraryTabs";
 import { ResourceListView } from "@/components/resource-library/ResourceListView";
 import { useAdminResources } from "@/hooks/useAdminResources";
 import { useOSRole } from "@/contexts/OSRoleContext";
+import { BlossomAIIngestPanel } from "@/components/resource-library/BlossomAIIngestPanel";
 
 function KpiTile({ label, value, tone = "slate" }: { label: string; value: number | string; tone?: string }) {
   const toneClass: Record<string, string> = {
@@ -100,6 +101,8 @@ export default function ResourceLibraryAdminQA() {
         </div>
 
         <ResourceListView resources={resources} loading={loading} flat emptyMessage="No records found." />
+
+        <BlossomAIIngestPanel />
       </div>
     </OSShell>
   );
