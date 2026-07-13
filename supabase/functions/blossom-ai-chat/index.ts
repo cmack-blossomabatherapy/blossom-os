@@ -83,6 +83,41 @@ async function chat(messages: Array<{ role: string; content: string }>, apiKey: 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const startedAt = Date.now();
+  let auditUserId: string | null = null;
+  let auditRole: string | null = null;
+  let auditEmail: string | null = null;
+  let auditPrompt = "";
+  let auditStatus: "ok" | "no_context" | "error" = "ok";
+  let auditKbHits: Array<{ resourceId: string | null; title: string; similarity: number }> = [];
+  let auditPreview = "";
+  let auditError: string | null = null;
+  let auditActiveState: string | null = null;
+
+  const logAudit = async (client: ReturnType<typeof createClient>): Promise<string | null> => {
+    try {
+      const { data, error } = await client.from("ai_audit_log").insert({
+        user_id: auditUserId,
+        user_email: auditEmail,
+        role: auditRole,
+        active_state: auditActiveState,
+        prompt: auditPrompt.slice(0, 4000),
+        response_preview: auditPreview.slice(0, 1200),
+        status: auditStatus,
+        model: CHAT_MODEL,
+        duration_ms: Date.now() - startedAt,
+        kb_hits: auditKbHits,
+        tools_called: [],
+        records_accessed: [],
+        error: auditError,
+      }).select("id").maybeSingle();
+      if (error) return null;
+      return data?.id ?? null;
+    } catch {
+      return null;
+    }
+  };
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -107,18 +142,25 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    auditUserId = user.id;
+    auditEmail = user.email ?? null;
 
     const body = (await req.json().catch(() => ({}))) as {
       message?: string;
       department?: string;
       resourceType?: string;
+      role?: string;
+      activeState?: string;
     };
+    auditRole = body.role ?? null;
+    auditActiveState = body.activeState ?? null;
     const question = (body.message ?? "").trim();
     if (!question) {
       return new Response(JSON.stringify({ error: "missing_message" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    auditPrompt = question;
 
     // 1. Embed
     const qvec = await embedQuery(question, LOVABLE_API_KEY);
@@ -133,11 +175,20 @@ Deno.serve(async (req) => {
     if (rpcErr) throw rpcErr;
 
     const chunks = (hits ?? []) as ChunkHit[];
+    auditKbHits = chunks.slice(0, MATCH_COUNT).map((c) => ({
+      resourceId: c.resource_id,
+      title: c.source_title,
+      similarity: Number(c.similarity ?? 0),
+    }));
 
     if (chunks.length === 0) {
+      auditStatus = "no_context";
+      auditPreview = "No approved Blossom resource was found for that.";
+      const logId = await logAudit(supabase);
       return new Response(JSON.stringify({
-        content: "I don't have anything in the Resource Library I can see that matches that question. Try rephrasing, or contact the owning team.",
+        content: "No approved Blossom resource was found for that. Try rephrasing, or contact the owning team.",
         sources: [],
+        logId,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -171,14 +222,30 @@ Deno.serve(async (req) => {
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: `KNOWLEDGE:\n\n${contextParts.join("\n\n---\n\n")}\n\nQUESTION: ${question}` },
     ], LOVABLE_API_KEY);
+    auditPreview = answer;
+    const logId = await logAudit(supabase);
 
     return new Response(JSON.stringify({
       content: answer,
       sources: cited,
       matchedChunks: chunks.length,
+      logId,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    auditStatus = "error";
+    auditError = msg.slice(0, 500);
+    try {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+      const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const authHeader = req.headers.get("Authorization") ?? "";
+      if (authHeader) {
+        const c = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        await logAudit(c);
+      }
+    } catch { /* swallow */ }
     // 429 rate limit and 402 credit exhaustion surface as their status in msg
     let status = 500;
     if (/^embed_429|^chat_429/.test(msg)) status = 429;
