@@ -872,4 +872,5 @@ export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "Director of RCM / Benefits",  role: "billing_finance" },
   { label: "Training Manager / Enablement", role: "training_manager" },
   { label: "Office Manager / HR Assistant", role: "office_manager" },
+  { label: "Clinic Growth-to-Launch",       role: "clinic_growth" },
 ];
