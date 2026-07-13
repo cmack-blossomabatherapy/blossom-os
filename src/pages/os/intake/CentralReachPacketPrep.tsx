@@ -14,7 +14,7 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import { getMissingInfoFlags, canonicalFamilyLeadStage } from "@/lib/intake/intakeWorkflow";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
-import type { Lead } from "@/lib/leads/leadsData";
+import type { Lead } from "@/data/leads";
 
 type SectionKey =
   | "demographics" | "guardian" | "address" | "insurance"
@@ -127,7 +127,7 @@ export default function CentralReachPacketPrep() {
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     return scoped
-      .filter((l) => canonicalFamilyLeadStage(l.status) !== "Ready to Start")
+      .filter((l) => canonicalFamilyLeadStage(l.status) !== "Intake Complete")
       .map((lead) => ({ lead, readiness: computeReadiness(lead) }))
       .filter(({ lead, readiness }) => {
         if (filter === "ready" && !(readiness.ready && !readiness.blocked)) return false;
