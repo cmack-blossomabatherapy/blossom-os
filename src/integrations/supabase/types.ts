@@ -4904,6 +4904,12 @@ export type Database = {
           ends_on: string | null
           id: string
           location: string | null
+          next_step: string | null
+          owner_name: string | null
+          related_record_id: string | null
+          related_record_label: string | null
+          related_record_type: string | null
+          related_url: string | null
           starts_on: string
           title: string
           updated_at: string
@@ -4917,6 +4923,12 @@ export type Database = {
           ends_on?: string | null
           id?: string
           location?: string | null
+          next_step?: string | null
+          owner_name?: string | null
+          related_record_id?: string | null
+          related_record_label?: string | null
+          related_record_type?: string | null
+          related_url?: string | null
           starts_on: string
           title: string
           updated_at?: string
@@ -4930,6 +4942,12 @@ export type Database = {
           ends_on?: string | null
           id?: string
           location?: string | null
+          next_step?: string | null
+          owner_name?: string | null
+          related_record_id?: string | null
+          related_record_label?: string | null
+          related_record_type?: string | null
+          related_url?: string | null
           starts_on?: string
           title?: string
           updated_at?: string
