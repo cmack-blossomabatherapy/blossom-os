@@ -539,6 +539,16 @@ export default function CompanyHome() {
           canManage={canManage}
         />
 
+        <DayEventsDrawer
+          state={dayDrawer}
+          onClose={() => setDayDrawer(null)}
+          eventsByDay={eventsByDay}
+          onOpenEvent={(ev) => {
+            setOpenEvent(ev);
+            setDayDrawer(null);
+          }}
+        />
+
         {/* Personal workspace: tasks + goals */}
         <section className="grid gap-6 lg:grid-cols-2">
           <MyTasksCard />
