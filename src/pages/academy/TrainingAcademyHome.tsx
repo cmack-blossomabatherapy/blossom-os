@@ -38,8 +38,6 @@ const ROTATE: Accent[] = ["orchid", "sky", "mint", "citrus", "coral", "teal"];
  */
 export default function TrainingAcademyHome() {
   const { isAdmin, user, roles } = useAuth();
-  const isRbt = roles.includes("rbt" as never);
-  const isBcba = roles.includes("bcba" as never);
   // Role → wireframe path mapping (default + HR overrides from
   // training_role_journey_assignments). Every signed-in user falls back
   // to "blossom-os-basics" so the home page never shows "No active journey".
@@ -53,8 +51,9 @@ export default function TrainingAcademyHome() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  // Role-aware "My Training": surface the learner's own role path only.
-  const primarySlug = isRbt ? "rbt" : isBcba ? "bcba" : (resolvedFromRoles ?? "blossom-os-basics");
+  // Role-aware "My Training": surface the learner's resolved role path,
+  // honoring HR overrides for every role (including rbt/bcba).
+  const primarySlug = resolvedFromRoles ?? "blossom-os-basics";
   const myPath = TRAINING_PATHS.find((p) => p.slug === primarySlug) ?? null;
   const myTraining = myPath
     ? [{ ...myPath, progress: 0, lastOpened: "—" }]
@@ -167,7 +166,7 @@ export default function TrainingAcademyHome() {
           {myTraining.map((t, i) => (
             <Link
               key={t.slug}
-              to={t.slug === "state-director" ? "/training" : `/academy/path/${t.slug}`}
+              to={`/academy/path/${t.slug}`}
               className="group flex flex-col rounded-2xl border border-border/70 bg-card p-5 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)] transition-all hover:-translate-y-0.5 hover:border-border"
             >
               <div className="flex items-start justify-between">

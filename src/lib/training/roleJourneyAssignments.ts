@@ -1,4 +1,5 @@
 import { TRAINING_PATHS } from "@/lib/academy/trainingPaths";
+import { ROLE_META } from "@/lib/roles";
 
 /**
  * Default role -> Training Academy wireframe path mapping.
@@ -99,8 +100,13 @@ export const FALLBACK_PATH_SLUG = "blossom-os-basics";
  */
 const GENERIC_FALLBACK_SLUGS = new Set<string>(["blossom-os-basics"]);
 
-/** Every role slug the picker offers, sorted alphabetically. */
-export const ALL_ROLE_SLUGS: string[] = Object.keys(DEFAULT_ROLE_TO_SLUG).sort();
+/**
+ * Every role slug the HR "Role Journeys" picker offers, sorted alphabetically.
+ * Restricted to canonical AppRole values so HR only sees rows they can
+ * actually assign. `DEFAULT_ROLE_TO_SLUG` still contains extra legacy
+ * aliases so the runtime resolver tolerates any historical role string.
+ */
+export const ALL_ROLE_SLUGS: string[] = ROLE_META.map((r) => r.key as string).sort();
 
 /** Human-friendly label for a role slug (Title Case). */
 export function humanizeRoleSlug(slug: string): string {

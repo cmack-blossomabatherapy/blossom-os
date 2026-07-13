@@ -105,6 +105,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
     case "business-development": return byDept("business_development");
     case "clinical-director":   return byDept("clinical_director");
     case "behavioral-support":   return byDept("behavioral_support");
+    case "state-director":       return byDept("state_director", "state_operations", "leadership_state");
     case "finance":              return byDept("finance", "billing", "payroll", "rcm");
     case "operations":           return byDept("operations");
     case "executive":            return byDept("executive");
