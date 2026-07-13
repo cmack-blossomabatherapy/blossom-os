@@ -70,6 +70,7 @@ export type OSRole =
   | "staffing_team"
   | "credentialing_team"
   | "clinical_director"
+  | "training_manager"
   | "viewer";
 
 export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadership" | "operations" | "field" }[] = [
@@ -114,6 +115,7 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "staffing_team", label: "Staffing Team", tier: "operations" },
   { id: "credentialing_team", label: "Credentialing Team", tier: "operations" },
   { id: "clinical_director", label: "Clinical Director", tier: "leadership" },
+  { id: "training_manager", label: "Training Manager / Enablement", tier: "operations" },
   { id: "billing_finance", label: "Billing / Finance", tier: "operations" },
   { id: "qa_team", label: "QA / Compliance", tier: "operations" },
   { id: "payroll_coordinator", label: "Payroll Coordinator", tier: "operations" },
