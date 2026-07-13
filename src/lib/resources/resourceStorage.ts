@@ -181,11 +181,15 @@ export async function uploadAndPublishResource(
 
 /** Resolve a signed URL for opening/downloading a private resource. */
 export async function resolveResourceOpenUrl(r: Resource): Promise<string | null> {
-  // External link first.
+  // External link first — ONLY accept http/https. Local paths like
+  // `C:\Users\...`, `file://`, or SMB shares are never usable in a browser.
   if (r.url && /^https?:\/\//i.test(r.url)) return r.url;
   if (r.fileUrl && /^https?:\/\//i.test(r.fileUrl)) return r.fileUrl;
-  const storagePath = r.storagePath ?? r.url;
-  if (!storagePath) return null;
+  // Only a Supabase storage path is a valid source for signed URLs.
+  const storagePath = r.storagePath;
+  if (!storagePath || /^([a-zA-Z]:\\|\\\\|file:|https?:)/i.test(storagePath)) {
+    return null;
+  }
   // Use the bucket the file actually lives in; fall back to the library bucket.
   const bucket = r.storageBucket && r.storageBucket.length > 0
     ? r.storageBucket
