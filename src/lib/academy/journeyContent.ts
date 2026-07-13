@@ -105,6 +105,11 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
     case "business-development": return byDept("business_development");
     case "clinical-director":   return byDept("clinical_director");
     case "behavioral-support":   return byDept("behavioral_support");
+    case "finance":              return byDept("finance", "billing", "payroll", "rcm");
+    case "operations":           return byDept("operations");
+    case "executive":            return byDept("executive");
+    case "systems":              return byDept("systems", "admin");
+    case "clinic-operations":    return byDept("clinic", "clinic_operations", "office");
     case "blossom-os-basics":    return all.filter((t) => t.category === "systems");
     default:                     return [];
   }
