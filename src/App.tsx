@@ -1027,6 +1027,7 @@ const App = () => (
                        future passes. --- */}
                   <Route path="/intake/missing-information"  element={<MissingInformation />} />
                   <Route path="/intake/parent-communication" element={<ParentCommunication />} />
+                  <Route path="/intake/cr-packet-prep"       element={<CentralReachPacketPrep />} />
                   <Route path="/ops/expiring-authorizations" element={<OSShellPage><ExpiringAuthorizations /></OSShellPage>} />
                   <Route path="/ops/missing-docs"            element={<OSShellPage><MissingDocs /></OSShellPage>} />
                   <Route path="/ops/payer-requirements"      element={<OSShellPage><PayerRequirements /></OSShellPage>} />
