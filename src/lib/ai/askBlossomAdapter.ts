@@ -257,10 +257,11 @@ function toolToCategory(tool?: string): KBCategory {
 function sourcesFromChat(items: ChatFnSource[] | undefined): AiSource[] {
   if (!items?.length) return [];
   return items.slice(0, 8).map((s, i) => ({
-    id: `src-${i}-${s.title.slice(0, 20)}`,
+    id: s.resourceId ?? `src-${i}-${s.title.slice(0, 20)}`,
     title: s.title,
     category: toolToCategory(s.tool),
-    sourceType: s.tool ?? "knowledge",
+    sourceType: s.tool ?? (s.resourceId ? "resource" : "knowledge"),
+    sourceId: s.resourceId ?? undefined,
     url: s.url,
     snippet: s.snippet,
     similarity: s.similarity,

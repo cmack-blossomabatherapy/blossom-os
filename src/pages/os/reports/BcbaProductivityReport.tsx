@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useBcbaWorkflow } from "@/hooks/useBcbaWorkflow";
 import { BcbaCentralReachSummaryBadge } from "@/components/bcba/BcbaCentralReachBadge";
+import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
 
 /**
  * Pass 3: inline signal strip that surfaces BOS-native BCBA workflow
@@ -1212,6 +1213,18 @@ export default function BcbaProductivityReport() {
             <BcbaWorkflowSignalsInline />
           </div>
           <div className="flex flex-wrap items-center gap-2 print:hidden">
+            <BlossomAIButton
+              surface="report"
+              title="BCBA Productivity report assistant"
+              hint="Explains report fields, metrics, and uploaded data. Does not change calculations."
+              contextText="User is viewing the BCBA Productivity Report. Fields include billable hours, supervision hours (97155), parent training (97156), caseload count, and RBT support metrics — sourced from CentralReach billing exports uploaded into the BCBA Productivity Uploads page."
+              guardrails={[
+                "Explain fields and how metrics are calculated",
+                "Do not change or recompute report values",
+                "Cite the report or upload source when possible",
+              ]}
+              label="Explain report"
+            />
             <Button variant="outline" size="sm" onClick={handleSaveReport} disabled={!billingRaws.length}>
               <Save className="mr-1.5 h-3.5 w-3.5" />Save Report
             </Button>

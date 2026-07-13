@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
+import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
 import {
   resourceCategories, categoryById, resourcesByCategory,
   isVisibleToRole, pinnedFor, recentFor, searchResources,
@@ -197,6 +198,13 @@ export default function OSResourceLibrary() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <BlossomAIButton
+                surface="resource-library"
+                title="Resource Library assistant"
+                hint="Answers cite the resources they came from — you only see what your role can access."
+                contextText={`User role: ${roleLabelText}. They are browsing the Resource Library.`}
+                label="Ask Blossom"
+              />
               <Button variant="outline" asChild>
                 <Link to="/training"><GraduationCap className="mr-2 h-4 w-4" />Training Academy</Link>
               </Button>

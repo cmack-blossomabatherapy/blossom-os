@@ -37,6 +37,7 @@ import blossomLogo from "@/assets/blossom-logo-color.png";
 import blossomMark from "@/assets/blossom-flower-mark.png";
 import { FloatingEscalationChat } from "@/components/escalation/FloatingEscalationChat";
 import { TrainingProgressCloudBridge } from "@/components/training/TrainingProgressCloudBridge";
+import { BlossomAIProvider, BlossomAILauncher } from "@/components/ai/BlossomAIAssistant";
 
 /* ------------------------------------------------------------------ */
 /* Section / item types                                               */
@@ -836,6 +837,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   };
 
   return (
+    <BlossomAIProvider>
     <div className="min-h-screen w-full os-bg text-foreground md:h-screen md:overflow-hidden">
       <div className="mx-auto flex max-w-[1680px] gap-4 p-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:p-5 md:pb-5 md:items-start">
         {/* MOBILE MENU */}
@@ -1194,7 +1196,9 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       </CommandDialog>
       <FloatingEscalationChat />
       <TrainingProgressCloudBridge />
+      <BlossomAILauncher />
     </div>
+    </BlossomAIProvider>
   );
 }
 

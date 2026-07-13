@@ -15,6 +15,7 @@ import {
 import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCard";
 import { resolveRoleJourney } from "@/lib/training/roleJourneyAssignments";
 import { useRoleJourneyAssignments } from "@/hooks/useRoleJourneyAssignments";
+import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
 
 /** Warm, color-coded accents for the LMS home. Used sparingly on icon
  *  tiles and status chips so the page feels alive without losing the
@@ -80,8 +81,25 @@ export default function TrainingAcademyHome() {
     <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10">
       {/* ---------- Hero ---------- */}
       <header className="mb-10">
-        <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          <GraduationCap className="h-3 w-3" /> Training Academy
+        <div className="flex items-center justify-between gap-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <GraduationCap className="h-3 w-3" /> Training Academy
+          </div>
+          <BlossomAIButton
+            surface="training"
+            title="Training coach"
+            hint="Your role-based coach for modules, SOPs, and quiz prep."
+            contextText={primaryPath
+              ? `Learner is on training path: ${primaryPath.title}. Description: ${primaryPath.description}`
+              : "Learner is browsing the Training Academy home."}
+            guardrails={[
+              "Do not complete training or quizzes for the user",
+              "Do not reveal quiz answers before the user submits",
+              "Explain SOPs and modules in simpler language",
+              "Suggest resources to review after modules",
+            ]}
+            label="Ask coach"
+          />
         </div>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
           {greeting}, {firstName}.
