@@ -494,6 +494,25 @@ export default function TrainingManagementCenter() {
                 >
                   <Sparkles className="mr-1.5 h-3.5 w-3.5" /> AI Generate
                 </Button>
+                <BlossomAIButton
+                  surface="training"
+                  title="Coverage coach"
+                  hint="Admin coach for training coverage and gaps."
+                  contextText={`Admin is reviewing training coverage in the Training Management Center. Active view: ${nav}. ${allJourneys.length} journeys, ${allModules.length} modules registered.`}
+                  suggestions={[
+                    "Summarize training progress by role",
+                    "Which role journeys have missing resource links?",
+                    "Which modules have no quiz or resource attached?",
+                    "Who is overdue on required training?",
+                    "Which roles have no assigned journey?",
+                  ]}
+                  guardrails={[
+                    "Only report on data the admin can access",
+                    "Do not expose learner quiz answers",
+                    "Flag missing assignments and resource gaps clearly",
+                  ]}
+                  label="Ask coach"
+                />
               </div>
             </div>
 
