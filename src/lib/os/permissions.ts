@@ -568,6 +568,7 @@ const ROLE_ALIASES: Record<
   rcm_team: "billing_finance",
   assistant_state_director: "state_director",
   state_va: "assistant_state_director",
+  training_manager: "hr_team",
   viewer: "behavioral_support",
 };
 
