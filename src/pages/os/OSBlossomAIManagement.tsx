@@ -7,7 +7,7 @@ import { BlossomAIIngestPanel } from "@/components/resource-library/BlossomAIIng
 import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Database, FileWarning, ShieldAlert, Video, RefreshCw, AlertTriangle, MessageSquare, ShieldOff } from "lucide-react";
+import { Sparkles, Database, FileWarning, ShieldAlert, Video, RefreshCw, AlertTriangle, MessageSquare, ShieldOff, ThumbsUp, ThumbsDown } from "lucide-react";
 
 interface HealthMetrics {
   totalResources: number;
@@ -95,19 +95,30 @@ export default function OSBlossomAIManagement() {
   const [metrics, setMetrics] = useState<HealthMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [failedRows, setFailedRows] = useState<Array<{ id: string; title: string; ingest_error: string | null; storage_bucket: string | null }>>([]);
+  const [recentAudit, setRecentAudit] = useState<Array<{
+    id: string; created_at: string; user_email: string | null; role: string | null;
+    prompt: string; response_preview: string | null; status: string; kb_hits: unknown;
+  }>>([]);
+  const [feedbackRows, setFeedbackRows] = useState<Array<{ id: string; rating: number; note: string | null; message_id: string | null; created_at: string }>>([]);
 
   const refresh = async () => {
     setLoading(true);
     try {
       const m = await loadMetrics();
       setMetrics(m);
-      const { data } = await supabase
-        .from("hr_resources")
-        .select("id, title, ingest_error, storage_bucket")
-        .eq("ingest_status", "error")
-        .order("updated_at", { ascending: false })
-        .limit(15);
-      setFailedRows((data ?? []) as typeof failedRows);
+      const [failed, audit, feedback] = await Promise.all([
+        supabase.from("hr_resources").select("id, title, ingest_error, storage_bucket")
+          .eq("ingest_status", "error").order("updated_at", { ascending: false }).limit(15),
+        supabase.from("ai_audit_log")
+          .select("id, created_at, user_email, role, prompt, response_preview, status, kb_hits")
+          .order("created_at", { ascending: false }).limit(30),
+        supabase.from("ai_message_feedback")
+          .select("id, rating, note, message_id, created_at")
+          .order("created_at", { ascending: false }).limit(20),
+      ]);
+      setFailedRows((failed.data ?? []) as typeof failedRows);
+      setRecentAudit((audit.data ?? []) as typeof recentAudit);
+      setFeedbackRows((feedback.data ?? []) as typeof feedbackRows);
     } finally {
       setLoading(false);
     }
@@ -215,6 +226,61 @@ export default function OSBlossomAIManagement() {
             <section>
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Ingestion controls</h2>
               <BlossomAIIngestPanel />
+            </section>
+
+            {/* Recent AI usage */}
+            <section>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Recent AI activity</h2>
+              {recentAudit.length === 0 ? (
+                <Card className="p-4 text-sm text-muted-foreground">No AI activity yet.</Card>
+              ) : (
+                <Card className="divide-y divide-border/60">
+                  {recentAudit.map((r) => {
+                    const hits = Array.isArray(r.kb_hits) ? r.kb_hits.length : 0;
+                    const denied = r.status === "no_context" || r.status === "error";
+                    return (
+                      <div key={r.id} className="p-3 text-xs space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium truncate">{r.user_email ?? "unknown"} · <span className="text-muted-foreground font-normal">{r.role ?? "—"}</span></span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge variant="outline" className="text-[10px]">{hits} hits</Badge>
+                            <Badge variant={denied ? "destructive" : "secondary"} className="text-[10px]">{r.status}</Badge>
+                            <span className="text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <div className="text-foreground line-clamp-1"><span className="text-muted-foreground">Q:</span> {r.prompt}</div>
+                        {r.response_preview && (
+                          <div className="text-muted-foreground line-clamp-2"><span className="text-muted-foreground/70">A:</span> {r.response_preview}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </Card>
+              )}
+            </section>
+
+            {/* Feedback */}
+            <section>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Feedback</h2>
+              {feedbackRows.length === 0 ? (
+                <Card className="p-4 text-sm text-muted-foreground">No feedback submitted yet.</Card>
+              ) : (
+                <Card className="divide-y divide-border/60">
+                  {feedbackRows.map((f) => (
+                    <div key={f.id} className="flex items-start gap-2 p-3 text-xs">
+                      {f.rating > 0 ? (
+                        <ThumbsUp className="h-3.5 w-3.5 text-emerald-600 mt-0.5" />
+                      ) : (
+                        <ThumbsDown className="h-3.5 w-3.5 text-rose-600 mt-0.5" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-muted-foreground">{new Date(f.created_at).toLocaleString()}</div>
+                        {f.note && <div className="text-foreground mt-0.5">{f.note}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </Card>
+              )}
             </section>
           </>
         ) : null}
