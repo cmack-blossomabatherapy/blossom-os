@@ -43,6 +43,8 @@ import { cn } from "@/lib/utils";
 import { useCompanyHome, useCanManageCompanyHome, type CompanyCalendarEvent } from "@/hooks/useCompanyHome";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { MyTasksCard } from "./MyTasksCard";
+import { MyGoalsCard } from "./MyGoalsCard";
 
 function safeDate(d: string): Date {
   return parseISO(d);
@@ -392,6 +394,12 @@ export default function CompanyHome() {
           onClose={() => setOpenEvent(null)}
           canManage={canManage}
         />
+
+        {/* Personal workspace: tasks + goals */}
+        <section className="grid gap-6 lg:grid-cols-2">
+          <MyTasksCard />
+          <MyGoalsCard />
+        </section>
 
         {/* Highlights */}
         {highlights.length > 0 && (
