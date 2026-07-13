@@ -563,6 +563,7 @@ const ROLE_ALIASES: Record<
   credentialing_lead: "credentialing_team",
   rcm_team: "billing_finance",
   assistant_state_director: "state_director",
+  state_va: "assistant_state_director",
   viewer: "behavioral_support",
 };
 
