@@ -827,4 +827,5 @@ export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "RBT",                         role: "rbt" },
   { label: "Behavioral Support",          role: "behavioral_support" },
   { label: "Director of RCM / Benefits",  role: "billing_finance" },
+  { label: "Training Manager / Enablement", role: "training_manager" },
 ];
