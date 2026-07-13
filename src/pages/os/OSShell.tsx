@@ -368,6 +368,15 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/resource-library",
     "/reports",
   ]),
+  office_manager: new Set<string>([
+    "/work-queue",
+    "/device-inventory",
+    "/device-requests",
+    "/user-management",
+    "/system/request-intake",
+    "/academy",
+    "/resource-library",
+  ]),
   credentialing_team: new Set<string>([
     "/credentialing",
     "/credentialing/providers",

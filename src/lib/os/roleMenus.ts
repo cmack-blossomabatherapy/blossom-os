@@ -786,6 +786,27 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       TRAINING_AND_RESOURCES,
     ],
   },
+
+  /* --------------------- Office Manager / HR Assistant -------------------- */
+  office_manager: {
+    sections: [
+      {
+        id: "office_ops", label: "Office Operations", items: [
+          { label: "Office Dashboard",        path: "/work-queue?scope=office",                         icon: LayoutDashboard },
+          { label: "Office Tasks",            path: "/work-queue?scope=office&view=tasks",              icon: ClipboardList },
+          { label: "Supplies / Inventory",    path: "/device-inventory?category=supplies",              icon: Library },
+          { label: "Device Requests",         path: "/device-requests",                                 icon: ShieldCheck },
+          { label: "Shipping / UPS",          path: "/work-queue?scope=office&view=shipping",           icon: Workflow },
+          { label: "Ramp / Purchasing Support", path: "/work-queue?scope=office&view=purchasing",       icon: FileText },
+          { label: "Lunch Orders",            path: "/work-queue?scope=office&view=lunch",              icon: ClipboardList },
+          { label: "Scanning / AP Support",   path: "/work-queue?scope=office&view=scanning",           icon: FileText },
+          { label: "Employee Setup Support",  path: "/user-management?scope=office",                    icon: UserCheck },
+          { label: "Requests",                path: "/system/request-intake",                           icon: AlertTriangle },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
 };
 
 /** Fallback for any role without an explicit menu definition. */
@@ -828,4 +849,5 @@ export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "Behavioral Support",          role: "behavioral_support" },
   { label: "Director of RCM / Benefits",  role: "billing_finance" },
   { label: "Training Manager / Enablement", role: "training_manager" },
+  { label: "Office Manager / HR Assistant", role: "office_manager" },
 ];
