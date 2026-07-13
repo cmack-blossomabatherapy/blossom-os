@@ -142,6 +142,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/ops/expiring-authorizations",
     "/ops/missing-docs",
     "/ops/payer-requirements",
+    "/intake/cr-packet-prep",
     "/ai/assistant",
   ]),
   authorization_manager: new Set<string>([
@@ -151,6 +152,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/ops/expiring-authorizations",
     "/ops/missing-docs",
     "/ops/payer-requirements",
+    "/intake/cr-packet-prep",
     "/ai/assistant",
   ]),
   scheduling_team: new Set<string>([
