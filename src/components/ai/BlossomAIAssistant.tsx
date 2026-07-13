@@ -371,10 +371,72 @@ function MessageBubble({ msg, onClose }: { msg: Msg; onClose: () => void }) {
         )}
       >
         {msg.content || (msg.streaming ? "…" : "")}
+        {!isUser && !msg.streaming && msg.destructive && (
+          <div className="mt-2 flex items-start gap-1.5 rounded-md border border-amber-200/70 bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+            <ShieldAlert className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span>Blossom AI can draft this, but it will not send or change records for you. Review and take the action yourself.</span>
+          </div>
+        )}
         {!isUser && msg.sources && msg.sources.length > 0 && (
           <SourcesList sources={msg.sources} onClose={onClose} />
         )}
+        {!isUser && !msg.streaming && msg.logId && (
+          <FeedbackControls logId={msg.logId} initial={msg.feedback ?? null} />
+        )}
       </div>
+    </div>
+  );
+}
+
+function FeedbackControls({ logId, initial }: { logId: string; initial: 1 | -1 | null }) {
+  const [vote, setVote] = useState<1 | -1 | null>(initial);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (rating: 1 | -1) => {
+    if (busy || vote === rating) return;
+    setBusy(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase.from("ai_message_feedback").insert({
+        user_id: userData?.user?.id ?? null,
+        message_id: logId,
+        rating,
+      });
+      if (error) throw error;
+      setVote(rating);
+      toast.success(rating > 0 ? "Thanks — noted" : "Thanks — we'll review");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Feedback failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 flex items-center gap-1 pt-1.5 border-t border-border/40">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Helpful?</span>
+      <button
+        onClick={() => submit(1)}
+        disabled={busy}
+        aria-label="Helpful"
+        className={cn(
+          "h-6 w-6 rounded-md hover:bg-muted flex items-center justify-center transition",
+          vote === 1 && "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30",
+        )}
+      >
+        <ThumbsUp className="h-3 w-3" />
+      </button>
+      <button
+        onClick={() => submit(-1)}
+        disabled={busy}
+        aria-label="Not helpful"
+        className={cn(
+          "h-6 w-6 rounded-md hover:bg-muted flex items-center justify-center transition",
+          vote === -1 && "text-rose-600 bg-rose-50 dark:bg-rose-950/30",
+        )}
+      >
+        <ThumbsDown className="h-3 w-3" />
+      </button>
     </div>
   );
 }
