@@ -1,51 +1,50 @@
-# Fix duplicate Reports + upgrade Company Home calendar
+# Training Academy — Role → Journey Fix Plan
 
-## 1. Remove duplicate "Reports" from every role menu
+Audit result: the mapping is nearly complete (every `AppRole` is in `DEFAULT_ROLE_TO_SLUG`, and the HR admin tab lists every role). Three real gaps to close:
 
-In `src/lib/os/roleMenus.ts`, "Reports" appears twice for most roles: once inside the role's own section (e.g. Intake → Reports, Marketing → Reports, State → Reports) AND again inside the shared `TRAINING_AND_RESOURCES` / `STATE_TRAINING_AND_RESOURCES` sections that get appended to every menu.
+## Gap 1 — `state-director` journey has no content
 
-Change: keep Reports ONLY under **Training & Resources** (the shared appended section), and delete the per-role Reports entries.
+`src/lib/academy/journeyContent.ts` has no `case "state-director"` in `sourceTrainingsForSlug`, so its journey renders empty. `TrainingAcademyHome.tsx:170` currently side-routes state-director to `/training` as a workaround.
 
-- Remove every in-section `{ label: "Reports"..., path: "/reports..." }` line across all roles (~30 lines, including the deep-linked variants like `/reports?category=intake`, `/reports?category=state`, etc.).
-- Keep the single Reports item in `TRAINING_AND_RESOURCES` (line 62) and `STATE_TRAINING_AND_RESOURCES` (line 76), both routing to `/reports`.
-- Leave specialized non-"Reports"-labeled items alone (e.g. "BCBA Productivity Reports" on line 678 stays — it is a distinct labeled shortcut, not the generic Reports entry).
-- Super Admin menu is unaffected (it doesn't use the shared appended section).
+**Fix:** Add `case "state-director": return byDept("state_director", "state_operations", "leadership_state");` in `journeyContent.ts` so it works as a normal blank-canvas department journey. Remove the `/training` side-route in `TrainingAcademyHome.tsx` — state-director goes through `/academy/path/state-director` like every other department.
 
-Result: every non-super-admin role sees exactly one "Reports" link, always under Training & Resources.
+## Gap 2 — HR overrides ignored for RBT / BCBA
 
-## 2. Upgrade `/home` with a real monthly calendar
+`src/pages/academy/TrainingAcademyHome.tsx:57`:
+```
+const primarySlug = isRbt ? "rbt" : isBcba ? "bcba" : (resolvedFromRoles ?? "blossom-os-basics");
+```
+This hardcodes `rbt`/`bcba` before the override-aware resolver runs, so HR-configured overrides for those roles are discarded.
 
-`src/pages/os/home/CompanyHome.tsx` currently shows only a text list of events. Add a proper visual month calendar as the centerpiece.
+**Fix:** Trust `resolveRoleJourney` for everyone. Replace with:
+```
+const primarySlug = resolvedFromRoles ?? "blossom-os-basics";
+```
+Confirm `DEFAULT_ROLE_TO_SLUG` maps `rbt → "rbt"` and `bcba → "bcba"` (audit shows it does), so the default behavior is unchanged while HR overrides now actually apply.
 
-Changes to `CompanyHome.tsx`:
-- Reorder layout so the **calendar is the hero** below the welcome header. Grid becomes: month calendar on the left (spans wider), a "Selected day / Up next" panel on the right.
-- Add a month grid using the existing shadcn `Calendar` component (`@/components/ui/calendar`) in `mode="single"`:
-  - Custom `DayContent` (or `modifiers` + `modifiersClassNames`) to show a small dot under any date that has one or more events from `useCompanyHome().events`.
-  - Track `selectedDate` state; clicking a day filters the right-hand panel to that day's events.
-  - Add prev/next month controls (built in) and a "Today" button that resets `selectedDate` and `month`.
-- Right-hand panel:
-  - Header: formatted selected date (e.g. "Monday, Jul 13").
-  - List of that day's events with time, location, category badge, description.
-  - Empty state: "Nothing scheduled." with a soft illustration-free calm card.
-  - Below it: a compact "Up next" list (next 5 upcoming events across all months) so users see what's coming even when they land on an empty day.
-- Keep Highlights and Company Updates sections below the calendar, unchanged in style.
-- Keep the "Manage" button gated by `useCanManageCompanyHome()`.
-- Preserve loading skeletons and empty states.
+## Gap 3 — Unreachable / legacy keys in the map and HR admin UI
 
-Visual/UX (per Blossom OS design system):
-- Rounded-2xl cards, soft borders, generous spacing, muted labels in uppercase tracking-widest.
-- Event dot uses `bg-primary`; today ring uses existing calendar styles.
-- No hardcoded colors — use semantic tokens.
-- Add `pointer-events-auto` on the `Calendar` wrapper (per shadcn-datepicker guidance) for reliability.
+`DEFAULT_ROLE_TO_SLUG` includes several keys that aren't `AppRole` values: `case_manager`, `clinical_director`, `authorizations`, `auths`, `bd`, `business_development`, `intake_team`, `hr_team`, `executive_leadership`, `ceo`, `operations_leadership`, `recruiting`, `recruiting_team`, `authorizations_team`. Because the HR "Role Journeys" tab is driven by `ALL_ROLE_SLUGS = Object.keys(DEFAULT_ROLE_TO_SLUG)`, HR sees ghost rows they can't actually assign.
 
-No data model changes. No route changes. No changes to `useCompanyHome` — it already returns `events`, `updates`, `highlights`.
+**Fix in `src/lib/training/roleJourneyAssignments.ts`:**
+1. Keep the extra keys in `DEFAULT_ROLE_TO_SLUG` as tolerated aliases for the resolver (data may still contain them).
+2. Change `ALL_ROLE_SLUGS` so the HR admin UI only lists **canonical `AppRole` values**. Import `AppRole` from `src/lib/roles.ts` (or a static array of the same) and export `ALL_ROLE_SLUGS = [...canonical AppRole slugs].sort()`.
+3. Result: `RoleJourneyAssignmentsView` shows exactly 59 rows — one per real OS role — while the resolver still handles legacy aliases gracefully.
+
+## Nice-to-have — verify departments in `byDept`
+
+The new `state-director` case (Gap 1) and the existing blank-canvas cases (`finance`, `operations`, `executive`, `systems`, `clinic-operations`) call `byDept("<slug>", ...)`. If no records exist yet in `hr_resources` with those department slugs the journey renders as an intentional blank canvas — matches the earlier "blank canvas will be added later" decision. No content changes.
 
 ## Files touched
 
-- `src/lib/os/roleMenus.ts` — delete per-role Reports items.
-- `src/pages/os/home/CompanyHome.tsx` — new calendar-first layout.
+- `src/lib/academy/journeyContent.ts` — add `state-director` case.
+- `src/pages/academy/TrainingAcademyHome.tsx` — remove RBT/BCBA hardcoding; remove `/training` side-route for state-director; route state-director through `/academy/path/state-director`.
+- `src/lib/training/roleJourneyAssignments.ts` — narrow `ALL_ROLE_SLUGS` to canonical `AppRole` values only.
 
 ## Validation
 
-- Grep confirms only two remaining `label: "Reports"` occurrences (the two shared sections).
-- Manual: sign-in as intake role → single Reports link under Training & Resources; `/home` renders month calendar, clicking a day filters events, "Today" resets.
+- `bunx tsgo --noEmit` passes.
+- Grep confirms `ALL_ROLE_SLUGS` still exported and no consumer is broken.
+- Manual: as a state_director user, `/academy` primary card links to `/academy/path/state-director` and renders (blank-canvas is acceptable). As RBT with an HR override to another slug, the override is respected. HR "Role Journeys" tab shows exactly the canonical OS roles.
+
+Out of scope: seeding actual training modules for blank-canvas department paths — deferred per earlier decision.
