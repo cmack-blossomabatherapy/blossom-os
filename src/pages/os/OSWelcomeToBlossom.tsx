@@ -201,12 +201,9 @@ export default function OSWelcomeToBlossom() {
             grounded, meet the company, and take the next step.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
-            <Button size="sm" className="rounded-full" onClick={markReviewed}>
-              Start Welcome to Blossom <ArrowRight className="ml-1 h-3.5 w-3.5" />
-            </Button>
-            <Button size="sm" variant="outline" className="rounded-full" onClick={continueToStateDirectorJourney}>
-              Continue to State Director Journey
-            </Button>
+            <p className="text-[12.5px] text-muted-foreground">
+              Read each section below and confirm you've read it. When all sections are confirmed, the <span className="font-medium text-foreground">Start Training</span> button at the bottom will unlock.
+            </p>
           </div>
 
           {/* Overall Welcome progress — updates the moment a module is marked complete */}
@@ -348,16 +345,13 @@ export default function OSWelcomeToBlossom() {
                 variant={videoDone ? "outline" : "default"}
                 className="rounded-full"
                 onClick={markReviewed}
+                data-testid="welcome-module-complete-welcome-video-from-blossom"
               >
-                {videoDone ? "Marked reviewed" : "Mark welcome reviewed"}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="rounded-full"
-                onClick={continueToStateDirectorJourney}
-              >
-                Continue to State Director Journey <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                {videoDone ? (
+                  <><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Confirmed read</>
+                ) : (
+                  "I've read / watched this"
+                )}
               </Button>
             </div>
           </div>
