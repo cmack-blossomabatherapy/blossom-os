@@ -197,6 +197,7 @@ export default function OSResourceLibrary() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <ResourceLibraryAskButton />
               <Button variant="outline" asChild>
                 <Link to="/training"><GraduationCap className="mr-2 h-4 w-4" />Training Academy</Link>
               </Button>
