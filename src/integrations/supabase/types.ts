@@ -10020,25 +10020,38 @@ export type Database = {
           file_name: string | null
           file_size: number | null
           id: string
+          import_batch: number | null
           is_active: boolean
           is_pinned: boolean
+          is_sensitive: boolean
           kind: Database["public"]["Enums"]["hr_resource_kind"]
+          last_reviewed_date: string | null
+          manifest_upload_path: string | null
           mime_type: string | null
+          owner: string | null
           parent_id: string | null
+          pending_reason: string | null
           position: number
+          requires_acknowledgement: boolean
+          resource_id: string | null
           resource_type: string | null
           sensitivity: string
+          sop_related: boolean
           source_note: string | null
+          state_scope: string[]
           storage_bucket: string | null
           storage_path: string | null
           tags: string[]
           title: string
+          topic_tags: string[]
+          training_related: boolean
           updated_at: string
           upload_status: string
           uploaded_by: string | null
           uploaded_by_name: string | null
           url: string | null
           visibility_clinics: string[]
+          visibility_level: string | null
           visibility_roles: string[]
           visibility_states: string[]
         }
@@ -10051,25 +10064,38 @@ export type Database = {
           file_name?: string | null
           file_size?: number | null
           id?: string
+          import_batch?: number | null
           is_active?: boolean
           is_pinned?: boolean
+          is_sensitive?: boolean
           kind?: Database["public"]["Enums"]["hr_resource_kind"]
+          last_reviewed_date?: string | null
+          manifest_upload_path?: string | null
           mime_type?: string | null
+          owner?: string | null
           parent_id?: string | null
+          pending_reason?: string | null
           position?: number
+          requires_acknowledgement?: boolean
+          resource_id?: string | null
           resource_type?: string | null
           sensitivity?: string
+          sop_related?: boolean
           source_note?: string | null
+          state_scope?: string[]
           storage_bucket?: string | null
           storage_path?: string | null
           tags?: string[]
           title: string
+          topic_tags?: string[]
+          training_related?: boolean
           updated_at?: string
           upload_status?: string
           uploaded_by?: string | null
           uploaded_by_name?: string | null
           url?: string | null
           visibility_clinics?: string[]
+          visibility_level?: string | null
           visibility_roles?: string[]
           visibility_states?: string[]
         }
@@ -10082,25 +10108,38 @@ export type Database = {
           file_name?: string | null
           file_size?: number | null
           id?: string
+          import_batch?: number | null
           is_active?: boolean
           is_pinned?: boolean
+          is_sensitive?: boolean
           kind?: Database["public"]["Enums"]["hr_resource_kind"]
+          last_reviewed_date?: string | null
+          manifest_upload_path?: string | null
           mime_type?: string | null
+          owner?: string | null
           parent_id?: string | null
+          pending_reason?: string | null
           position?: number
+          requires_acknowledgement?: boolean
+          resource_id?: string | null
           resource_type?: string | null
           sensitivity?: string
+          sop_related?: boolean
           source_note?: string | null
+          state_scope?: string[]
           storage_bucket?: string | null
           storage_path?: string | null
           tags?: string[]
           title?: string
+          topic_tags?: string[]
+          training_related?: boolean
           updated_at?: string
           upload_status?: string
           uploaded_by?: string | null
           uploaded_by_name?: string | null
           url?: string | null
           visibility_clinics?: string[]
+          visibility_level?: string | null
           visibility_roles?: string[]
           visibility_states?: string[]
         }
