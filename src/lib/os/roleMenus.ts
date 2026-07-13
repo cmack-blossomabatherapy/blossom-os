@@ -234,6 +234,26 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     ],
   },
 
+  /* ------------------------ Regional State Director ------------------------- */
+  regional_state_director: {
+    sections: [
+      {
+        id: "regional", label: "Regional Oversight", items: [
+          { label: "Regional Dashboard",           path: "/state-operations?tab=regional",          icon: LayoutDashboard },
+          { label: "State Health Comparison",      path: "/state-operations?tab=comparison",        icon: Activity },
+          { label: "State Director Scorecards",    path: "/reports?category=state-director-scorecard", icon: BarChart3 },
+          { label: "State Director Coaching",      path: "/ops/tasks?type=coaching",                icon: Users },
+          { label: "State Escalations",            path: "/ops/state-escalations",                  icon: AlertTriangle },
+          { label: "Pipeline Aging by State",      path: "/intake/lead-to-active",                  icon: TrendingUp },
+          { label: "Growth Readiness",             path: "/marketing/state-growth",                 icon: MapPin },
+          { label: "Training / Mentor Program",    path: "/training",                               icon: GraduationCap },
+          { label: "Reports",                      path: "/reports?category=state",                 icon: BarChart3 },
+        ],
+      },
+      STATE_TRAINING_AND_RESOURCES,
+    ],
+  },
+
   /* ------------------------------ Marketing Team ----------------------------- */
   marketing_team: {
     sections: [
