@@ -61,6 +61,8 @@ const ROLE_HOME_MAP: Partial<Record<OSRole, string>> = {
   hr_lead:                    "/hr-team",
   hr_team:                    "/hr-team",
 
+  training_manager:           "/hr/training-center",
+
   credentialing_team:         "/credentialing",
   credentialing_lead:         "/credentialing",
 
