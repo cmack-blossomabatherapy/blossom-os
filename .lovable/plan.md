@@ -1,70 +1,60 @@
+## Problem
 
-## Goal
+An Intake user sees **"Blossom OS Basics"** in the *Your Journey* card on `/academy` even though the *Journey Progress* card correctly opens the Intake journey. That happens because `resolveRoleJourney` (in `src/lib/training/roleJourneyAssignments.ts`) walks the user's roles in array order and returns the first match. Generic roles like `staff`, `admin`, `exec`, `ops_manager`, `clinic`, `viewer` are all mapped to `"blossom-os-basics"`. Whenever one of those appears before the department role, or before the roles finish loading, the fallback wins.
 
-Right now the mapping of role → assigned wireframe journey (`TRAINING_PATHS` slug) is hard-coded in `src/pages/academy/TrainingAcademyHome.tsx` (`ROLE_TO_SLUG`). HR cannot change it without a code push. Add a live "Role Journeys" management screen inside the existing HR **Training & Certifications** hub (`TrainingManagementCenter`) so an admin can pick which journey each role sees, with a default fallback that keeps the current behavior intact.
+The user also wants every department to have a journey card ready — not funnel everyone into Blossom OS Basics.
 
-## What gets built
+## Fix 1 — Journey resolver: prefer department journeys over generic fallbacks
 
-### 1. New table: `training_role_journey_assignments`
-Cloud-persisted overrides for the role → journey slug map.
+Rework `resolveRoleJourney` so it doesn't depend on role array order:
 
-Columns (domain-specific): `role_slug` (unique text), `path_slug` (text, references a `TRAINING_PATHS` slug), `notes` (text, optional), `updated_by` (uuid).
+1. Build two sets from `DEFAULT_ROLE_TO_SLUG`:
+   - **Department/role journeys** (specific — `intake`, `bcba`, `qa`, `hr`, `scheduling`, `authorizations`, `state-director`, `marketing`, `recruiting`, `credentialing`, `staffing`, `case-manager`, `behavioral-support`, `clinical-director`, `business-development`, `finance`, `operations`, `executive`, `systems`, `rbt`).
+   - **Generic fallbacks** (any role whose slug is `blossom-os-basics`).
+2. Iterate overrides first, then iterate user roles looking for a **specific** journey slug, and only fall back to a generic mapping if no specific one exists.
+3. Result: an Intake user with `["staff","intake"]` always gets `intake`, not `blossom-os-basics`.
 
-Access rules:
-- Any signed-in user can read (the Academy home page needs it to resolve their assigned journey).
-- Only HR, Training Admin, and Super Admin roles can insert/update/delete.
-- Every write is audited via `hr_audit_logs` (existing table) with a trigger or hook-side log.
+## Fix 2 — Blank-canvas journeys for every department
 
-### 2. Data layer
-- `src/lib/training/roleJourneyAssignments.ts` — pure module exporting:
-  - `DEFAULT_ROLE_TO_SLUG` (moved out of `TrainingAcademyHome.tsx`).
-  - `ALL_ROLE_SLUGS` (union of default keys + any Blossom OS role we recognize) for the picker.
-  - `resolveRoleJourney(roles, overrides)` helper: returns the first matching path slug, override-first, then default, then `blossom-os-basics`.
-- `src/hooks/useRoleJourneyAssignments.ts` — realtime hook: loads rows from the new table, subscribes to changes, exposes `{ overrides, save(roleSlug, pathSlug, notes?), clear(roleSlug), loading }`.
+Currently `TRAINING_PATHS` (in `src/lib/academy/trainingPaths.ts`) has paths for the clinical + department roles but leaves several groups pointing at `blossom-os-basics`. Add blank-canvas paths so every department has its own:
 
-### 3. Wire the Academy home to the overrides
-Update `src/pages/academy/TrainingAcademyHome.tsx`:
-- Import `DEFAULT_ROLE_TO_SLUG` and `resolveRoleJourney` from the new module (delete the inline `ROLE_TO_SLUG` object).
-- Consume `useRoleJourneyAssignments()` and pass its `overrides` into `resolveRoleJourney(roles, overrides)`.
-- Behavior stays identical when no overrides exist.
+- `finance` — *Finance & Billing Training*
+- `payroll` — *Payroll Training* (alias handled in role map)
+- `operations` — *Operations Training*
+- `executive` — *Executive Training*
+- `systems` — *Systems Admin Training*
+- `clinic-operations` — *Clinic Operations Training* (for `clinic` / office manager)
 
-### 4. New "Role Journeys" tab inside Training Management Center
-Edit `src/pages/hr/TrainingManagementCenter.tsx`:
-- Add `role-journeys` to `NavId` and to the `NAV` array (icon: `Users` or `Compass`, label "Role Journeys"), placed right under **Journeys**.
-- Render a new component `RoleJourneyAssignmentsView` when `nav === "role-journeys"`.
+Each new path is registered with title, audience, category `Department`, a one-line description, `estimatedHours: 0`, `lessonCount: 0`, and a sensible lucide icon. No modules are wired yet — this is the requested blank canvas.
 
-`RoleJourneyAssignmentsView` (defined in the same file or a small sibling under `src/components/training/`):
-- Header + one-sentence explanation ("Choose which wireframe training path each role sees in the Training Academy. Leave blank to use the built-in default.").
-- Search input filters the role rows.
-- A clean card list — one row per role slug — showing:
-  - Role slug + friendly label.
-  - `Select` of every `TRAINING_PATHS` entry (title + slug).
-  - Small "Default" pill when using the fallback; "Custom" pill when overridden.
-  - Inline notes field (optional).
-  - Save / Reset-to-default buttons per row.
-- Bulk actions row: "Reset all to defaults" (confirm dialog).
-- Uses `toast` for success/error and calls the hook's `save` / `clear`.
+## Fix 3 — Map the remaining roles to their new journeys
 
-Access-gate the tab so only HR / Training Admin / Super Admin can see it — reuse the same pattern already used for `canUploadResources` in this file.
+Update `DEFAULT_ROLE_TO_SLUG` so previously-fallback roles now resolve to a real department path:
 
-### 5. Route + entrypoint touch-ups
-- Ensure `/hr/training-center?nav=role-journeys` works (it already will, since the tab drives off `?nav=`).
-- Add a small "Manage Role Journeys" quick-link inside the existing **Journeys** view header so HR can jump from the Journeys tab to the new assignment screen.
+- `finance`, `finance_benefits_lead`, `finance_benefits_team`, `billing_lead`, `rcm_team` → `finance`
+- `payroll_admin`, `payroll_lead` → `finance` (or `payroll` — use `finance` to keep count low)
+- `exec`, `executive`, `executive_leadership`, `ceo` → `executive`
+- `coo`, `director_of_operations`, `ops_manager`, `operations_manager`, `operations_leadership`, `dept_manager` → `operations`
+- `admin`, `super_admin`, `systems_admin`, `training_admin` → `systems`
+- `clinic` → `clinic-operations`
+- `staff`, `viewer`, `phone_support` → keep on `blossom-os-basics` (true universal fallback)
 
-### 6. Cleanup
-- Remove the giant inline `ROLE_TO_SLUG` block from `TrainingAcademyHome.tsx` (moved into `roleJourneyAssignments.ts`) so there is one source of truth.
-- Update `src/test/welcomeToBlossomFinalize.test.ts` and `src/test/trainingManagement.test.ts` only if they explicitly assert the removed inline map.
+`FALLBACK_PATH_SLUG` stays as `blossom-os-basics` so brand-new/unknown roles still get *something*.
+
+## Fix 4 — Journey renderer for the new paths
+
+`sourceTrainingsForSlug` in `src/lib/academy/journeyContent.ts` returns `[]` for any slug it doesn't recognize, which already produces the "curriculum coming online" blank-canvas state. Add cases for the new slugs (`finance`, `operations`, `executive`, `systems`, `clinic-operations`) so they filter academyData by matching department when content shows up later; today they'll still render as blank canvas because those departments don't have modules yet — exactly what the user asked for.
 
 ## Files touched
 
-- New: `supabase/migrations/<timestamp>_role_journey_assignments.sql`
-- New: `src/lib/training/roleJourneyAssignments.ts`
-- New: `src/hooks/useRoleJourneyAssignments.ts`
-- Edit: `src/pages/academy/TrainingAcademyHome.tsx`
-- Edit: `src/pages/hr/TrainingManagementCenter.tsx` (add nav entry + `RoleJourneyAssignmentsView`)
+- `src/lib/training/roleJourneyAssignments.ts` — new resolver + updated role map.
+- `src/lib/academy/trainingPaths.ts` — add finance/operations/executive/systems/clinic-operations paths.
+- `src/lib/academy/journeyContent.ts` — recognise the new slugs so `hasContent` behaves correctly.
 
-## Out of scope
+## Verification
 
-- Editing modules inside a wireframe journey — that already exists in the current **Journeys** tab and is not part of this request.
-- Per-user (not per-role) overrides.
-- Changing the wireframe journey generator in `academyData.ts`.
+- Sign in as an Intake user (role `intake`): *Your Journey* card shows **Intake Training** and links to `/academy/path/intake`.
+- Sign in as any role that previously fell back to Blossom OS Basics (finance, exec, ops, clinic, systems): the card shows their department journey with a blank-canvas body.
+- Users with only `staff`/`viewer` continue to see Blossom OS Basics (correct fallback).
+- Existing RBT/BCBA/clinical/state-director/HR/QA/etc. journeys are unchanged.
+- Type-check succeeds.
