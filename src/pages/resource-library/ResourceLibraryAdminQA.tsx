@@ -32,8 +32,10 @@ export default function ResourceLibraryAdminQA() {
     const bucketCounts = new Map<string, number>();
     const visibilityCounts = new Map<string, number>();
     for (const r of resources) {
-      if ((r.uploadStatus ?? "") === "missing_file") missing++;
-      if ((r.attachmentStatus ?? "") === "attached" || r.storagePath) imported++;
+      const upload = String(r.uploadStatus ?? "");
+      const attach = String(r.attachmentStatus ?? "");
+      if (upload === "missing_file") missing++;
+      if (attach === "available" || attach === "attached" || r.storagePath) imported++;
       if (r.isSensitive) sensitive++;
       if (r.requiresAcknowledgement) needsAck++;
       const b = r.storageBucket ?? "—";
