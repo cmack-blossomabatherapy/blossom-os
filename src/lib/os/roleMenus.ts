@@ -263,14 +263,15 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "biz_dev", label: "Business Development", items: [
-          { label: "Business Development Dashboard", path: "/business-development",                    icon: HeartHandshake },
-          { label: "Partner Pipeline",               path: "/business-development?tab=partners",       icon: HeartHandshake },
-          { label: "Outreach Pipeline",              path: "/business-development?tab=outreach",       icon: MessageSquare },
-          { label: "Follow-Up Tasks",                path: "/business-development?tab=tasks",          icon: ClipboardList },
-          { label: "Provider Relationships",         path: "/business-development?tab=providers",      icon: Briefcase },
-          { label: "Community Relationships",        path: "/business-development?tab=community",      icon: Users },
-          { label: "Lead Source Handoffs",           path: "/business-development?tab=sources",        icon: Inbox },
-          { label: "Referral CRM",                   path: "/marketing/referral-crm",                  icon: HeartHandshake },
+          { label: "BD Dashboard",              path: "/business-development",                    icon: BarChart3 },
+          { label: "Referral Partners",         path: "/marketing/referral-crm",                  icon: HeartHandshake },
+          { label: "Outreach Visits",           path: "/business-development?tab=outreach",       icon: MessageSquare },
+          { label: "State Growth Activity",     path: "/marketing/state-growth",                  icon: MapPin },
+          { label: "Community Events",          path: "/business-development?tab=community",      icon: Users },
+          { label: "Referral Follow-Ups",       path: "/business-development?tab=tasks",          icon: ClipboardList },
+          { label: "Lead Source Contribution",  path: "/business-development?tab=sources",        icon: Inbox },
+          { label: "State Campaign Support",    path: "/marketing/campaigns",                     icon: Megaphone },
+          { label: "Reports",                   path: "/reports?category=marketing",              icon: BarChart3 },
         ],
       },
       TRAINING_AND_RESOURCES,
