@@ -79,6 +79,9 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (has("training_manager") || has("training_lead") || has("enablement") || has("enablement_lead") || has("training_enablement")) {
     return "training_manager";
   }
+  if (has("office_manager") || has("office_admin") || has("hr_assistant") || has("office_coordinator")) {
+    return "office_manager";
+  }
   return null;
 }
 
