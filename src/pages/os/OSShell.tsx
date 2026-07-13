@@ -444,14 +444,14 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   ]),
   clinical_director: new Set<string>([
     "/clinical-director",
+    "/qa/board",
+    "/evaluations",
     "/assigned-bcbas",
     "/supervision-visibility",
-    "/treatment-plan-reviews",
-    "/progress-reports",
-    "/evaluations",
     "/escalations-followups",
     "/qa-team",
     "/reports",
+    "/phone",
   ]),
   bcba: new Set<string>([
     "/bcba",
