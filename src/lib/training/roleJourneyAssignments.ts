@@ -1,5 +1,5 @@
 import { TRAINING_PATHS } from "@/lib/academy/trainingPaths";
-import { ROLES } from "@/lib/roles";
+import { ROLE_META } from "@/lib/roles";
 
 /**
  * Default role -> Training Academy wireframe path mapping.
@@ -106,7 +106,7 @@ const GENERIC_FALLBACK_SLUGS = new Set<string>(["blossom-os-basics"]);
  * actually assign. `DEFAULT_ROLE_TO_SLUG` still contains extra legacy
  * aliases so the runtime resolver tolerates any historical role string.
  */
-export const ALL_ROLE_SLUGS: string[] = ROLES.map((r) => r.key as string).sort();
+export const ALL_ROLE_SLUGS: string[] = ROLE_META.map((r) => r.key as string).sort();
 
 /** Human-friendly label for a role slug (Title Case). */
 export function humanizeRoleSlug(slug: string): string {
