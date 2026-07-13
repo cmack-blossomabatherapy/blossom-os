@@ -33,6 +33,15 @@ interface HrResourceRow {
   file_size?: number | null;
   mime_type?: string | null;
   source_note?: string | null;
+  storage_bucket?: string | null;
+  resource_id?: string | null;
+  visibility_level?: string | null;
+  owner?: string | null;
+  last_reviewed_date?: string | null;
+  is_sensitive?: boolean | null;
+  requires_acknowledgement?: boolean | null;
+  training_related?: boolean | null;
+  sop_related?: boolean | null;
 }
 
 const KIND_TO_TYPE: Record<string, ResourceType> = {
@@ -77,8 +86,20 @@ function mapRow(r: HrResourceRow): Resource {
     attachmentStatus: (r.attachment_status as Resource["attachmentStatus"]) ?? undefined,
     uploadStatus: (r.upload_status as Resource["uploadStatus"]) ?? "published",
     sourceNote: r.source_note ?? undefined,
-    // Stash storage path on the resource so the open handler can sign it.
+    // Stash storage path/bucket on the resource so the open handler can sign it.
     ...(r.storage_path ? { storagePath: r.storage_path } : {}),
+    ...(r.storage_bucket ? { storageBucket: r.storage_bucket } : {}),
+    ...(r.resource_id ? { resourceId: r.resource_id } : {}),
+    ...(r.file_name ? { fileName: r.file_name } : {}),
+    ...(typeof r.file_size === "number" ? { fileSize: r.file_size } : {}),
+    ...(r.mime_type ? { mimeType: r.mime_type } : {}),
+    ...(r.visibility_level ? { visibilityLevel: r.visibility_level } : {}),
+    ...(r.owner ? { owner: r.owner } : {}),
+    ...(r.last_reviewed_date ? { lastReviewedDate: r.last_reviewed_date } : {}),
+    isSensitive: !!r.is_sensitive,
+    requiresAcknowledgement: !!r.requires_acknowledgement,
+    trainingRelated: !!r.training_related,
+    sopRelated: !!r.sop_related,
   };
 }
 
@@ -101,7 +122,7 @@ export function useLibraryResources(): LibraryResourcesResult {
       const { data, error } = await (supabase
         .from("hr_resources") as any)
         .select(
-          "id,title,description,kind,category,url,storage_path,visibility_states,visibility_roles,is_pinned,is_active,uploaded_by_name,created_at,updated_at,upload_status,attachment_status,sensitivity,resource_type,tags,departments,file_name,file_size,mime_type,source_note",
+          "id,title,description,kind,category,url,storage_path,storage_bucket,resource_id,visibility_states,visibility_roles,is_pinned,is_active,uploaded_by_name,created_at,updated_at,upload_status,attachment_status,sensitivity,resource_type,tags,departments,file_name,file_size,mime_type,source_note,visibility_level,owner,last_reviewed_date,is_sensitive,requires_acknowledgement,training_related,sop_related",
         )
         .eq("is_active", true)
         .eq("upload_status", "published")
