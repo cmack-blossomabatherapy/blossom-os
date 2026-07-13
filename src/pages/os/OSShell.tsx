@@ -207,6 +207,14 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/ops/rbt-match-queue",
     "/ops/family-staffing-preferences",
   ]),
+  billing_finance: new Set<string>([
+    "/billing-finance",
+    "/vob-decision-center",
+    "/ops/no-oon-benefits",
+    "/intake/benefits-cheat-sheets",
+    "/intake/cr-packet-prep",
+    "/phone",
+  ]),
   qa_team: new Set<string>([
     "/qa-team",
     "/qa-workspace",

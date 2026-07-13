@@ -43,7 +43,17 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   // HR Admin Assistant is a trainee — must NOT inherit full HR Team access.
   // Drop them to a minimal Viewer experience (Training + Resources + Reports only).
   if (appRoles.includes("hr_admin_assistant")) return "viewer";
-  if (appRoles.includes("finance")) return "billing_finance";
+  if (
+    appRoles.includes("finance") ||
+    has("director_of_rcm") ||
+    has("rcm_director") ||
+    has("rcm_lead") ||
+    has("billing_finance") ||
+    has("billing_lead") ||
+    has("rcm_team") ||
+    has("finance_benefits_lead") ||
+    has("finance_benefits_team")
+  ) return "billing_finance";
   if (appRoles.includes("qa_director")) return "qa_director";
   if (appRoles.includes("qa_specialist")) return "qa_specialist";
   if (appRoles.includes("qa")) return "qa_team";
