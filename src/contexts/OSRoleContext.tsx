@@ -82,6 +82,9 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (has("office_manager") || has("office_admin") || has("hr_assistant") || has("office_coordinator")) {
     return "office_manager";
   }
+  if (has("clinic_growth") || has("director_of_clinics") || has("clinic_launch") || has("growth_to_launch")) {
+    return "clinic_growth";
+  }
   return null;
 }
 
