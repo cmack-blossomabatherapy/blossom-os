@@ -571,6 +571,18 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/ops/family-staffing-preferences",
     "/qa-team",
   ]),
+  state_va: new Set<string>([
+    "/state-operations",
+    "/ops/tasks",
+    "/intake/tasks",
+    "/intake/missing-information",
+    "/intake/parent-communication",
+    "/intake/lead-to-active",
+    "/recruiting/pipeline",
+    "/training",
+    "/resource-library",
+    "/reports",
+  ]),
 };
 
 export function isPathLiveForRole(role: string, basePath: string): boolean {
