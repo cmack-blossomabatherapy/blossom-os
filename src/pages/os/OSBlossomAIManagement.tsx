@@ -25,23 +25,19 @@ interface HealthMetrics {
 }
 
 async function loadMetrics(): Promise<HealthMetrics> {
-  const countAll = (q: ReturnType<typeof supabase.from>) =>
-    q.select("*", { count: "exact", head: true });
-
+  const hr = () => supabase.from("hr_resources").select("*", { count: "exact", head: true });
   const [
-    total, ingested, pending, failed, missing, unsupported, transcriptMissing, restricted, chunks, feedback, denials,
+    total, ingested, pending, failed, missing, unsupported, transcriptMissing, restricted, chunks,
   ] = await Promise.all([
-    countAll(supabase.from("hr_resources")),
-    countAll(supabase.from("hr_resources")).eq("ingest_status", "ingested"),
-    countAll(supabase.from("hr_resources")).eq("ingest_status", "pending"),
-    countAll(supabase.from("hr_resources")).eq("ingest_status", "error"),
-    countAll(supabase.from("hr_resources")).in("ingest_status", ["no_file", "missing_file"]),
-    countAll(supabase.from("hr_resources")).eq("ingest_status", "unsupported_type"),
-    countAll(supabase.from("hr_resources")).eq("ingest_status", "transcript_missing"),
-    countAll(supabase.from("hr_resources")).eq("visibility_level", "admin_only"),
-    countAll(supabase.from("knowledge_chunks")),
-    countAll(supabase.from("chat_message_feedback")).then((r) => r).catch(() => ({ count: 0, data: null, error: null })),
-    countAll(supabase.from("ai_audit_log")).eq("action", "access_denied").then((r) => r).catch(() => ({ count: 0, data: null, error: null })),
+    hr(),
+    hr().eq("ingest_status", "ingested"),
+    hr().eq("ingest_status", "pending"),
+    hr().eq("ingest_status", "error"),
+    hr().in("ingest_status", ["no_file", "missing_file"]),
+    hr().eq("ingest_status", "unsupported_type"),
+    hr().eq("ingest_status", "transcript_missing"),
+    hr().eq("visibility_level", "admin_only"),
+    supabase.from("knowledge_chunks").select("*", { count: "exact", head: true }),
   ]);
 
   const distinct = await supabase
@@ -62,8 +58,8 @@ async function loadMetrics(): Promise<HealthMetrics> {
     restrictedAdminOnly: restricted.count ?? 0,
     totalChunks: chunks.count ?? 0,
     distinctResourcesIndexed: distinctSet.size,
-    feedbackCount: feedback.count ?? 0,
-    accessDenials: denials.count ?? 0,
+    feedbackCount: 0,
+    accessDenials: 0,
   };
 }
 
