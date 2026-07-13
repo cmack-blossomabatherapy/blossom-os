@@ -234,6 +234,26 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     ],
   },
 
+  /* ------------------------ Regional State Director ------------------------- */
+  regional_state_director: {
+    sections: [
+      {
+        id: "regional", label: "Regional Oversight", items: [
+          { label: "Regional Dashboard",           path: "/state-operations?tab=regional",          icon: LayoutDashboard },
+          { label: "State Health Comparison",      path: "/state-operations?tab=comparison",        icon: Activity },
+          { label: "State Director Scorecards",    path: "/reports?category=state-director-scorecard", icon: BarChart3 },
+          { label: "State Director Coaching",      path: "/ops/tasks?type=coaching",                icon: Users },
+          { label: "State Escalations",            path: "/ops/state-escalations",                  icon: AlertTriangle },
+          { label: "Pipeline Aging by State",      path: "/intake/lead-to-active",                  icon: TrendingUp },
+          { label: "Growth Readiness",             path: "/marketing/state-growth",                 icon: MapPin },
+          { label: "Training / Mentor Program",    path: "/training",                               icon: GraduationCap },
+          { label: "Reports",                      path: "/reports?category=state",                 icon: BarChart3 },
+        ],
+      },
+      STATE_TRAINING_AND_RESOURCES,
+    ],
+  },
+
   /* ------------------------------ Marketing Team ----------------------------- */
   marketing_team: {
     sections: [
@@ -818,6 +838,7 @@ export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "Operations Leadership",       role: "operations_leadership" },
   { label: "State Director",              role: "state_director" },
   { label: "State Director Assistant",    role: "assistant_state_director" },
+  { label: "Regional State Director",     role: "regional_state_director" },
   { label: "Marketing Team",              role: "marketing_team" },
   { label: "Business Development",        role: "business_development" },
   { label: "Intake Team",                 role: "intake_coordinator" },

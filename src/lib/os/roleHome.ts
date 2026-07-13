@@ -21,6 +21,7 @@ const ROLE_HOME_MAP: Partial<Record<OSRole, string>> = {
 
   state_director:             "/state-operations",
   assistant_state_director:   "/state-operations",
+  regional_state_director:    "/state-operations?tab=regional",
 
   marketing_growth_lead:      "/marketing",
   marketing_team:             "/marketing",
