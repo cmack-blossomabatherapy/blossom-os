@@ -19,6 +19,7 @@ import MapslyHub from "./pages/os/mapsly/MapslyHub";
 import OrgChartPage from "./pages/os/org/OrgChartPage";
 import CompanyHome from "./pages/os/home/CompanyHome";
 import CompanyHomeManage from "./pages/os/home/CompanyHomeManage";
+import GoalsPage from "./pages/os/goals/GoalsPage";
 import MileageCenter from "./pages/os/mapsly/MileageCenter";
 import BDTerritories from "./pages/os/mapsly/BDTerritories";
 import RecruitingMap from "./pages/os/mapsly/RecruitingMap";
@@ -787,6 +788,7 @@ const App = () => (
                   {/* Company Home — universal landing for every signed-in user */}
                   <Route path="/home" element={<CompanyHome />} />
                   <Route path="/home/manage" element={<CompanyHomeManage />} />
+                  <Route path="/goals" element={<GoalsPage />} />
                   <Route path="/behavioral-support" element={<BehavioralSupportDashboard />} />
                   <Route path="/behavioral-support/crisis-support" element={<BehavioralSupportCrisisSupport />} />
                   <Route path="/behavioral-support/escalations" element={<BehavioralSupportEscalations />} />
