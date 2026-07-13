@@ -301,6 +301,47 @@ export default function CompanyHome() {
                     Clear
                   </Button>
                 )}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Event legend"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                    >
+                      <HelpCircle className="size-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-3" align="end">
+                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
+                      Event legend
+                    </p>
+                    <ul className="space-y-1.5">
+                      {(() => {
+                        const seen = new Set<string>();
+                        const rows: Array<{ key: string; label: string; dot: string }> = [];
+                        const add = (cat: string, label?: string) => {
+                          const known = CATEGORY_COLORS[cat];
+                          const lbl = label ?? known?.label ?? formatCategory(cat);
+                          if (seen.has(lbl)) return;
+                          seen.add(lbl);
+                          rows.push({ key: cat, label: lbl, dot: categoryColor(cat) });
+                        };
+                        // Always include core defaults so the legend never looks empty.
+                        ["company_event", "training", "meeting", "deadline", "task", "holiday"].forEach((c) => add(c));
+                        availableCategories.forEach((c) => add(c));
+                        return rows.map((r) => (
+                          <li key={r.key} className="flex items-center gap-2 text-sm">
+                            <span className={cn("size-2.5 rounded-full", r.dot)} />
+                            <span className="text-foreground">{r.label}</span>
+                          </li>
+                        ));
+                      })()}
+                    </ul>
+                    <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
+                      Dots on days show that events are scheduled. Click a day to see details.
+                    </p>
+                  </PopoverContent>
+                </Popover>
                 <Button
                   variant="ghost"
                   size="sm"
