@@ -552,6 +552,7 @@ function RoleDashboardRedirect() {
     : roles.includes("staffing_lead") ? ROLE_HOME.staffing_lead
     : roles.includes("staffing_coordinator") ? ROLE_HOME.staffing_coordinator
     : roles.includes("staffing") ? ROLE_HOME.staffing_team
+    : roles.includes("recruiting_team") ? ROLE_HOME.recruiting_team
     : roles.includes("recruiting_lead") ? ROLE_HOME.recruiting_lead
     : roles.includes("recruiting_coordinator") ? ROLE_HOME.recruiting_coordinator
     : roles.includes("recruiting_assistant") ? ROLE_HOME.recruiting_team

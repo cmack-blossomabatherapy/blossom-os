@@ -7,7 +7,7 @@ import {
   LayoutDashboard, AlertTriangle, MapPin, Stethoscope, CheckCircle2,
   XCircle, Gauge, LineChart, Activity, Inbox, type LucideIcon,
   FileCheck2, Clock, Eye, Flame, Library, UserPlus, Bell, List, Sparkles, ChevronRight,
-  Workflow, CalendarClock, LifeBuoy,
+  Workflow, CalendarClock, LifeBuoy, Plug,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
 
