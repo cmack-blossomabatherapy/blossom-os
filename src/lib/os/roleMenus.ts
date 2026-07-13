@@ -512,30 +512,15 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "hr_command", label: "HR Command", items: [
-          { label: "HR Dashboard",                path: "/hr-team",                     icon: LayoutDashboard },
-          { label: "HR Workspace",                path: "/hr/workspace",                icon: Workflow },
-          { label: "New Hires",                   path: "/hr/new-hires",                icon: UserPlus },
-          { label: "Orientation Queue",           path: "/hr/orientation-queue",        icon: CalendarClock },
-          { label: "Training & Certifications",   path: "/hr/training-certifications",  icon: GraduationCap },
-          { label: "Compliance Items",            path: "/hr/compliance",               icon: ShieldCheck },
-          { label: "Employee Support",            path: "/hr/employee-support",         icon: LifeBuoy },
-          { label: "HR Requests",                 path: "/hr/requests",                 icon: ClipboardList },
-          { label: "Evaluations",                 path: "/hr/evaluations",              icon: ClipboardCheck },
-          { label: "Messages & Announcements",    path: "/hr/messages",                 icon: MessageSquare },
-          { label: "HR Resources",                path: "/hr/team-resources",           icon: BookOpen },
-        ],
-      },
-      {
-        id: "hr_people", label: "People & Access", items: [
-          { label: "User Management",             path: "/user-management",             icon: Users },
-          { label: "Org Chart",                   path: "/org-chart",                   icon: Users },
-          { label: "Device Requests",             path: "/device-requests",             icon: Wrench },
-          { label: "Device Inventory",            path: "/device-inventory",            icon: Wrench },
-        ],
-      },
-      {
-        id: "hr_comms", label: "Communications", items: [
-          { label: "Phone System",                path: "/phone",                       icon: Phone },
+          { label: "HR Dashboard",             path: "/hr-team",                     icon: LayoutDashboard },
+          { label: "Employees",                path: "/hr/workspace",                icon: Users },
+          { label: "Onboarding",               path: "/hr/new-hires",                icon: UserPlus },
+          { label: "Employee Support",         path: "/hr/employee-support",         icon: LifeBuoy },
+          { label: "Training Assignments",     path: "/hr/training-certifications",  icon: GraduationCap },
+          { label: "Compliance",               path: "/hr/compliance",               icon: ShieldCheck },
+          { label: "User Management",          path: "/user-management",             icon: IdCard },
+          { label: "Viventium Handoff",        path: "/admin/integrations?connector=viventium", icon: Workflow },
+          { label: "Reports",                  path: "/reports",                     icon: BarChart3 },
         ],
       },
       TRAINING_AND_RESOURCES,
@@ -547,29 +532,15 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "hr_command", label: "HR Command", items: [
-          { label: "HR Dashboard",                path: "/hr-team",                     icon: LayoutDashboard },
-          { label: "HR Workspace",                path: "/hr/workspace",                icon: Workflow },
-          { label: "New Hires",                   path: "/hr/new-hires",                icon: UserPlus },
-          { label: "Orientation Queue",           path: "/hr/orientation-queue",        icon: CalendarClock },
-          { label: "Training & Certifications",   path: "/hr/training-certifications",  icon: GraduationCap },
-          { label: "Compliance Items",            path: "/hr/compliance",               icon: ShieldCheck },
-          { label: "Employee Support",            path: "/hr/employee-support",         icon: LifeBuoy },
-          { label: "HR Requests",                 path: "/hr/requests",                 icon: ClipboardList },
-          { label: "Evaluations",                 path: "/hr/evaluations",              icon: ClipboardCheck },
-          { label: "Messages & Announcements",    path: "/hr/messages",                 icon: MessageSquare },
-          { label: "HR Resources",                path: "/hr/team-resources",           icon: BookOpen },
-        ],
-      },
-      {
-        id: "hr_people", label: "People & Access", items: [
-          { label: "User Management",             path: "/user-management",             icon: Users },
-          { label: "Device Requests",             path: "/device-requests",             icon: Wrench },
-          { label: "Device Inventory",            path: "/device-inventory",            icon: Wrench },
-        ],
-      },
-      {
-        id: "hr_comms", label: "Communications", items: [
-          { label: "Phone System",                path: "/phone",                       icon: Phone },
+          { label: "HR Dashboard",             path: "/hr-team",                     icon: LayoutDashboard },
+          { label: "Employees",                path: "/hr/workspace",                icon: Users },
+          { label: "Onboarding",               path: "/hr/new-hires",                icon: UserPlus },
+          { label: "Employee Support",         path: "/hr/employee-support",         icon: LifeBuoy },
+          { label: "Training Assignments",     path: "/hr/training-certifications",  icon: GraduationCap },
+          { label: "Compliance",               path: "/hr/compliance",               icon: ShieldCheck },
+          { label: "User Management",          path: "/user-management",             icon: IdCard },
+          { label: "Viventium Handoff",        path: "/admin/integrations?connector=viventium", icon: Workflow },
+          { label: "Reports",                  path: "/reports",                     icon: BarChart3 },
         ],
       },
       TRAINING_AND_RESOURCES,
@@ -582,11 +553,13 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       {
         id: "credentialing", label: "Credentialing", items: [
           { label: "Credentialing Dashboard",   path: "/credentialing",                       icon: LayoutDashboard },
-          { label: "Provider Credentialing",    path: "/credentialing/providers",             icon: Stethoscope },
-          { label: "Insurance Credentialing",   path: "/credentialing/insurance",             icon: Building2 },
           { label: "BCBA Credentials",          path: "/credentialing/bcba",                  icon: IdCard },
           { label: "Uncredentialed BCBAs",      path: "/credentialing/uncredentialed-bcbas",  icon: AlertTriangle },
+          { label: "Provider Credentialing",    path: "/credentialing/providers",             icon: Stethoscope },
+          { label: "Insurance Credentialing",   path: "/credentialing/insurance",             icon: Building2 },
           { label: "Expiring Credentials",      path: "/credentialing/expiring",              icon: Calendar },
+          { label: "VA Insurance Credentialing",path: "/credentialing/insurance?state=VA",    icon: Building2 },
+          { label: "Reports",                   path: "/reports",                             icon: BarChart3 },
         ],
       },
       TRAINING_AND_RESOURCES,
@@ -598,11 +571,13 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       {
         id: "credentialing", label: "Credentialing", items: [
           { label: "Credentialing Dashboard",   path: "/credentialing",                       icon: LayoutDashboard },
-          { label: "Provider Credentialing",    path: "/credentialing/providers",             icon: Stethoscope },
-          { label: "Insurance Credentialing",   path: "/credentialing/insurance",             icon: Building2 },
           { label: "BCBA Credentials",          path: "/credentialing/bcba",                  icon: IdCard },
           { label: "Uncredentialed BCBAs",      path: "/credentialing/uncredentialed-bcbas",  icon: AlertTriangle },
+          { label: "Provider Credentialing",    path: "/credentialing/providers",             icon: Stethoscope },
+          { label: "Insurance Credentialing",   path: "/credentialing/insurance",             icon: Building2 },
           { label: "Expiring Credentials",      path: "/credentialing/expiring",              icon: Calendar },
+          { label: "VA Insurance Credentialing",path: "/credentialing/insurance?state=VA",    icon: Building2 },
+          { label: "Reports",                   path: "/reports",                             icon: BarChart3 },
         ],
       },
       TRAINING_AND_RESOURCES,
