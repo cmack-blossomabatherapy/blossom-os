@@ -239,6 +239,7 @@ interface ChatFnResponse {
   content: string;
   tools_used?: string[];
   sources?: ChatFnSource[];
+  logId?: string | null;
   error?: string;
 }
 
@@ -278,7 +279,7 @@ export async function* streamAskBlossom(
   role: OSRole,
   state: string,
   conversationId?: string,
-): AsyncGenerator<string, AskBlossomResponse & { conversationId?: string }, void> {
+): AsyncGenerator<string, AskBlossomResponse & { conversationId?: string; logId?: string | null }, void> {
   try {
     // Prefer the role-aware RAG endpoint that filters by Resource Library
     // visibility. Fall back to the legacy tool-calling `chat` function if the
@@ -286,7 +287,7 @@ export async function* streamAskBlossom(
     let data: ChatFnResponse | null = null;
     let error: { message?: string } | null = null;
     const primary = await supabase.functions.invoke<ChatFnResponse>("blossom-ai-chat", {
-      body: { message: prompt },
+      body: { message: prompt, role, activeState: state },
     });
     if (primary.error || !primary.data || primary.data.error) {
       const fallback = await supabase.functions.invoke<ChatFnResponse>("chat", {
@@ -332,6 +333,7 @@ export async function* streamAskBlossom(
       suggestedActions: [],
       recordsAccessed: (data.tools_used ?? []).map((t) => `tool:${t}`),
       conversationId: data.conversationId,
+      logId: data.logId ?? null,
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "AI request failed.";

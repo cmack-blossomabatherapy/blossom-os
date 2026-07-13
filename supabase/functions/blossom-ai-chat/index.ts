@@ -21,14 +21,30 @@ const CONTEXT_CHAR_BUDGET = 12_000;
 
 const SYSTEM_PROMPT = `You are Blossom AI, the operational assistant for Blossom ABA Therapy staff.
 
-RULES:
+GROUND RULES — ANSWER FROM SOURCES
 - Answer ONLY from the provided KNOWLEDGE excerpts. Do NOT use outside knowledge.
 - Every substantive claim must cite the source by number, like [1] or [2].
-- If the excerpts don't contain the answer, say: "I don't have that in the Resource Library I can see. Try rephrasing, or contact the owning team."
-- Never invent policies, numbers, names, or file contents.
-- If the user asks about a video and the excerpts include no transcript for it, say the transcript isn't available yet.
-- Be concise, warm, and use markdown. Cite source titles in italics when quoting.
-- Do not reveal storage paths, internal IDs, or raw URLs — cite by title and number only.`;
+- If the excerpts don't contain the answer, say: "No approved Blossom resource was found for that. Try rephrasing, or contact the owning team."
+- Never invent policies, SOPs, numbers, names, staff, clients, or file contents.
+- If the user asks about a video and the excerpts include no transcript for it, say the transcript isn't available yet — do not pretend the video was reviewed.
+- If context suggests the user lacks access to something, say "You don't have access to that resource." Do not describe or hint at its contents.
+- Never reveal secrets, passwords, credentials, MFA codes, NFC/security data, storage paths, internal IDs, or raw URLs. Cite by title and number only.
+- Do not give legal, medical, clinical, or compliance guarantees. Say the user should consult the SOP owner, QA, or Compliance.
+- Do not expose PHI, HR/payroll, or credentialing details beyond what the excerpts already show for this role.
+
+WHAT YOU CAN DO
+- Summarize accessible SOPs/resources, explain workflows, recommend next steps.
+- Find related resources and link to them via their citation number.
+- Draft text (emails, tasks, updates) for the user to review — always label a draft with "**Draft — review before sending:**" and do NOT claim it has been sent.
+- Help users understand reports and metrics.
+
+WHAT YOU CANNOT DO WITHOUT EXPLICIT CONFIRMATION
+- Send emails, update client/employee/HR records, change permissions, delete resources, submit authorizations, modify payroll/finance/credentialing data, or change report calculations.
+- If a user asks for one of those, respond: "I can prepare a draft, but I can't do that action for you. Review it and take the action yourself, or ask the owning team."
+- Never complete training or quiz work for the user. Never reveal quiz answers.
+
+STYLE
+- Concise, warm, markdown. Cite source titles in italics when quoting.`;
 
 type ChunkHit = {
   id: string;
@@ -67,6 +83,41 @@ async function chat(messages: Array<{ role: string; content: string }>, apiKey: 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const startedAt = Date.now();
+  let auditUserId: string | null = null;
+  let auditRole: string | null = null;
+  let auditEmail: string | null = null;
+  let auditPrompt = "";
+  let auditStatus: "ok" | "no_context" | "error" = "ok";
+  let auditKbHits: Array<{ resourceId: string | null; title: string; similarity: number }> = [];
+  let auditPreview = "";
+  let auditError: string | null = null;
+  let auditActiveState: string | null = null;
+
+  const logAudit = async (client: ReturnType<typeof createClient>): Promise<string | null> => {
+    try {
+      const { data, error } = await client.from("ai_audit_log").insert({
+        user_id: auditUserId,
+        user_email: auditEmail,
+        role: auditRole,
+        active_state: auditActiveState,
+        prompt: auditPrompt.slice(0, 4000),
+        response_preview: auditPreview.slice(0, 1200),
+        status: auditStatus,
+        model: CHAT_MODEL,
+        duration_ms: Date.now() - startedAt,
+        kb_hits: auditKbHits,
+        tools_called: [],
+        records_accessed: [],
+        error: auditError,
+      }).select("id").maybeSingle();
+      if (error) return null;
+      return data?.id ?? null;
+    } catch {
+      return null;
+    }
+  };
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -91,18 +142,25 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    auditUserId = user.id;
+    auditEmail = user.email ?? null;
 
     const body = (await req.json().catch(() => ({}))) as {
       message?: string;
       department?: string;
       resourceType?: string;
+      role?: string;
+      activeState?: string;
     };
+    auditRole = body.role ?? null;
+    auditActiveState = body.activeState ?? null;
     const question = (body.message ?? "").trim();
     if (!question) {
       return new Response(JSON.stringify({ error: "missing_message" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    auditPrompt = question;
 
     // 1. Embed
     const qvec = await embedQuery(question, LOVABLE_API_KEY);
@@ -117,11 +175,20 @@ Deno.serve(async (req) => {
     if (rpcErr) throw rpcErr;
 
     const chunks = (hits ?? []) as ChunkHit[];
+    auditKbHits = chunks.slice(0, MATCH_COUNT).map((c) => ({
+      resourceId: c.resource_id,
+      title: c.source_title,
+      similarity: Number(c.similarity ?? 0),
+    }));
 
     if (chunks.length === 0) {
+      auditStatus = "no_context";
+      auditPreview = "No approved Blossom resource was found for that.";
+      const logId = await logAudit(supabase);
       return new Response(JSON.stringify({
-        content: "I don't have anything in the Resource Library I can see that matches that question. Try rephrasing, or contact the owning team.",
+        content: "No approved Blossom resource was found for that. Try rephrasing, or contact the owning team.",
         sources: [],
+        logId,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -155,14 +222,30 @@ Deno.serve(async (req) => {
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: `KNOWLEDGE:\n\n${contextParts.join("\n\n---\n\n")}\n\nQUESTION: ${question}` },
     ], LOVABLE_API_KEY);
+    auditPreview = answer;
+    const logId = await logAudit(supabase);
 
     return new Response(JSON.stringify({
       content: answer,
       sources: cited,
       matchedChunks: chunks.length,
+      logId,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    auditStatus = "error";
+    auditError = msg.slice(0, 500);
+    try {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+      const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const authHeader = req.headers.get("Authorization") ?? "";
+      if (authHeader) {
+        const c = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        await logAudit(c);
+      }
+    } catch { /* swallow */ }
     // 429 rate limit and 402 credit exhaustion surface as their status in msg
     let status = 500;
     if (/^embed_429|^chat_429/.test(msg)) status = 429;
