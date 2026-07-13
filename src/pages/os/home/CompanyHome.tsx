@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -392,6 +393,66 @@ export default function CompanyHome() {
               modifiersClassNames={{
                 hasEvent:
                   "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary",
+              }}
+              components={{
+                DayContent: ({ date }) => {
+                  const key = format(date, "yyyy-MM-dd");
+                  const dayEvents = eventsByDay.get(key);
+                  const label = <span>{date.getDate()}</span>;
+                  if (!dayEvents || dayEvents.length === 0) return label;
+                  // Group by category for the summary line.
+                  const byCat = new Map<string, number>();
+                  for (const ev of dayEvents) {
+                    const c = ev.category || "company_event";
+                    byCat.set(c, (byCat.get(c) ?? 0) + 1);
+                  }
+                  return (
+                    <Tooltip delayDuration={120}>
+                      <TooltipTrigger asChild>
+                        <span className="flex h-full w-full items-center justify-center">
+                          {label}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs p-3">
+                        <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-1">
+                          {format(date, "EEE, MMM d")} · {dayEvents.length} event
+                          {dayEvents.length === 1 ? "" : "s"}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {Array.from(byCat.entries()).map(([cat, count]) => (
+                            <span
+                              key={cat}
+                              className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[11px]"
+                            >
+                              <span className={cn("size-1.5 rounded-full", categoryColor(cat))} />
+                              {CATEGORY_COLORS[cat]?.label ?? formatCategory(cat)}
+                              <span className="text-muted-foreground">· {count}</span>
+                            </span>
+                          ))}
+                        </div>
+                        <ul className="space-y-1">
+                          {dayEvents.slice(0, 3).map((ev) => (
+                            <li key={ev.id} className="flex items-start gap-2 text-xs">
+                              <span className={cn("mt-1 size-1.5 rounded-full shrink-0", categoryColor(ev.category))} />
+                              <span className="min-w-0">
+                                <span className="font-medium text-foreground">{ev.title}</span>
+                                <span className="text-muted-foreground">
+                                  {" · "}
+                                  {ev.all_day ? "All day" : format(safeDate(ev.starts_on), "h:mma")}
+                                </span>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                        {dayEvents.length > 3 && (
+                          <p className="mt-1.5 text-[11px] text-muted-foreground">
+                            +{dayEvents.length - 3} more
+                          </p>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                },
               }}
               className={cn("pointer-events-auto w-full")}
             />
