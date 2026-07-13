@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { format, parseISO, isSameDay, startOfDay } from "date-fns";
 import {
@@ -47,23 +47,47 @@ export default function CompanyHome() {
   const [month, setMonth] = useState<Date>(today);
   const [openEvent, setOpenEvent] = useState<CompanyCalendarEvent | null>(null);
 
-  const eventDays = useMemo(
-    () => events.map((e) => startOfDay(safeDate(e.starts_on))),
-    [events],
-  );
+  // Index events once by yyyy-mm-dd for O(1) day lookups instead of
+  // scanning the full list on every render / calendar cell.
+  const { eventsByDay, eventDays, sortedFutureEvents } = useMemo(() => {
+    const byDay = new Map<string, CompanyCalendarEvent[]>();
+    const days: Date[] = [];
+    const seen = new Set<string>();
+    const sorted = [...events].sort(
+      (a, b) => safeDate(a.starts_on).getTime() - safeDate(b.starts_on).getTime(),
+    );
+    for (const ev of sorted) {
+      const key = ev.starts_on.slice(0, 10);
+      const list = byDay.get(key);
+      if (list) list.push(ev);
+      else byDay.set(key, [ev]);
+      if (!seen.has(key)) {
+        seen.add(key);
+        days.push(startOfDay(safeDate(ev.starts_on)));
+      }
+    }
+    return { eventsByDay: byDay, eventDays: days, sortedFutureEvents: sorted };
+  }, [events]);
 
-  const selectedDayEvents = useMemo(
-    () => events.filter((e) => isSameDay(safeDate(e.starts_on), selectedDate)),
-    [events, selectedDate],
-  );
+  const selectedKey = format(selectedDate, "yyyy-MM-dd");
+  const selectedDayEvents = eventsByDay.get(selectedKey) ?? [];
 
   const upNext = useMemo(() => {
     const now = today.getTime();
-    return [...events]
-      .filter((e) => safeDate(e.starts_on).getTime() >= now)
-      .sort((a, b) => safeDate(a.starts_on).getTime() - safeDate(b.starts_on).getTime())
-      .slice(0, 5);
-  }, [events, today]);
+    const out: CompanyCalendarEvent[] = [];
+    for (const ev of sortedFutureEvents) {
+      if (safeDate(ev.starts_on).getTime() >= now) {
+        out.push(ev);
+        if (out.length === 5) break;
+      }
+    }
+    return out;
+  }, [sortedFutureEvents, today]);
+
+  const goToday = useCallback(() => {
+    setSelectedDate(today);
+    setMonth(today);
+  }, [today]);
 
   return (
     <OSShell>
