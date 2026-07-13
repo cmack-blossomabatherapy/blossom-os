@@ -587,6 +587,16 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/resource-library",
     "/reports",
   ]),
+  regional_state_director: new Set<string>([
+    "/state-operations",
+    "/ops/state-escalations",
+    "/ops/tasks",
+    "/intake/lead-to-active",
+    "/marketing/state-growth",
+    "/training",
+    "/resource-library",
+    "/reports",
+  ]),
 };
 
 export function isPathLiveForRole(role: string, basePath: string): boolean {
