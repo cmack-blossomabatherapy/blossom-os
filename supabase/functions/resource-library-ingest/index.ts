@@ -53,6 +53,37 @@ Deno.serve(async (req) => {
     });
   }
 
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  const url = new URL(req.url);
+  const mode = url.searchParams.get("mode") ?? "upsert";
+
+  // Mode: return signed upload URLs so the importer can PUT file bytes
+  // straight into the private `resource-library` bucket.
+  if (mode === "sign_uploads") {
+    let payload: { paths?: string[] };
+    try { payload = await req.json(); } catch {
+      return new Response(JSON.stringify({ error: "invalid_json" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const paths = Array.isArray(payload.paths) ? payload.paths : [];
+    const out: Array<{ path: string; signedUrl?: string; token?: string; error?: string }> = [];
+    for (const p of paths) {
+      const { data, error } = await supabase.storage
+        .from("resource-library")
+        .createSignedUploadUrl(p, { upsert: true });
+      if (error || !data) out.push({ path: p, error: error?.message ?? "sign_failed" });
+      else out.push({ path: p, signedUrl: data.signedUrl, token: data.token });
+    }
+    return new Response(JSON.stringify({ ok: true, results: out }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   let body: { rows?: Row[] };
   try {
     body = await req.json();
@@ -69,11 +100,6 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
 
   const cleaned = rows.map((r) => ({
     resource_id: r.resource_id,
