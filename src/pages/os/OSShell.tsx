@@ -110,6 +110,19 @@ export const STAGED_ROLE_LIVE_PATHS: ReadonlySet<string> = new Set([
  * links live for those roles before their own role is ready.
  */
 export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string>>> = {
+  coo: new Set<string>([
+    "/operations/command-center",
+    "/command-center",
+    "/operations/department-health",
+    "/state-operations",
+    "/work-queue",
+    "/work-queue/escalations",
+    "/authorizations/handoff",
+    "/admin/integrations",
+    "/role-management",
+    "/system/request-intake",
+    "/phone",
+  ]),
   intake_coordinator: new Set<string>([
     "/intake/dashboard",
     "/intake/referral-queue",
