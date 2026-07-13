@@ -113,6 +113,30 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     ],
   },
 
+  /* --------------------- COO / Operating Owner --------------------- */
+  coo: {
+    sections: [
+      {
+        id: "coo_command", label: "COO Command", items: [
+          { label: "COO Command Center",       path: "/operations/command-center",       icon: LayoutDashboard },
+          { label: "Operating Pipeline",       path: "/command-center",                  icon: Workflow },
+          { label: "Department Health",        path: "/operations/department-health",    icon: Gauge },
+          { label: "State Health",             path: "/state-operations",                icon: MapPin },
+          { label: "Work Queue",               path: "/work-queue",                      icon: ClipboardList },
+          { label: "Escalation Center",        path: "/work-queue/escalations",          icon: Flame },
+          { label: "CR Handoff Queue",         path: "/authorizations/handoff",          icon: ShieldCheck },
+          { label: "Integration Health",       path: "/admin/integrations",              icon: Activity },
+          { label: "Role / Menu Governance",   path: "/role-management",                 icon: ShieldCheck },
+          { label: "System Request Intake",    path: "/system/request-intake",           icon: Inbox },
+          { label: "Reports",                  path: "/reports",                         icon: BarChart3 },
+          { label: "Org Chart",                path: "/org-chart",                       icon: Users },
+          { label: "Phone System",             path: "/phone",                           icon: Phone },
+        ],
+      },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
   /* -------------------------- Operations Leadership -------------------------- */
   operations_leadership: {
     sections: [
