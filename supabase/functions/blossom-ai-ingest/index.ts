@@ -9,6 +9,8 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { extractText, getDocumentProxy } from "https://esm.sh/unpdf@0.12.1";
+import * as XLSX from "https://esm.sh/xlsx@0.18.5";
+import mammoth from "https://esm.sh/mammoth@1.8.0?bundle";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,7 +68,26 @@ async function extractTextFromFile(bytes: Uint8Array, mime: string, path: string
     const { text } = await extractText(pdf, { mergePages: true });
     return Array.isArray(text) ? text.join("\n\n") : String(text ?? "");
   }
-  // DOCX/XLSX/etc. — not yet supported in this ingestion pass.
+  if (
+    ext === "docx" ||
+    lower === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    const { value } = await mammoth.extractRawText({ arrayBuffer: bytes.buffer as ArrayBuffer });
+    return String(value ?? "");
+  }
+  if (
+    ["xlsx", "xls", "xlsm"].includes(ext) ||
+    lower === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+    lower === "application/vnd.ms-excel"
+  ) {
+    const wb = XLSX.read(bytes, { type: "array" });
+    const parts: string[] = [];
+    for (const name of wb.SheetNames) {
+      const csv = XLSX.utils.sheet_to_csv(wb.Sheets[name]);
+      parts.push(`# Sheet: ${name}\n${csv}`);
+    }
+    return parts.join("\n\n");
+  }
   throw new Error(`unsupported_type:${lower || ext || "unknown"}`);
 }
 
