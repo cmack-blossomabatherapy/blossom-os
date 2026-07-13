@@ -749,20 +749,16 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     ],
   },
 
-  /* --------------------- Director of RCM / Benefits / VOB -------------------- */
+  /* --------------------- Finance / Controller / Billing (Visibility) -------------------- */
   billing_finance: {
     sections: [
       {
-        id: "rcm", label: "RCM / Benefits / VOB", items: [
-          { label: "RCM Dashboard",                        path: "/billing-finance",                            icon: Gauge },
-          { label: "Benefits / VOB Queue",                 path: "/vob-decision-center",                        icon: ShieldCheck },
-          { label: "Financial Case Approval",              path: "/rcm/financial-case-approval",                icon: CheckCircle2 },
-          { label: "No OON Benefits",                      path: "/ops/no-oon-benefits",                        icon: XCircle },
-          { label: "Lead Benefits Cheat Sheets",           path: "/intake/benefits-cheat-sheets",               icon: ShieldCheck },
-          { label: "Unknown Insurance Review",             path: "/rcm/unknown-insurance",                      icon: AlertTriangle },
-          { label: "Payment Plan Status",                  path: "/rcm/payment-plans",                          icon: ClipboardList },
-          { label: "OON / Commercial Flags",               path: "/rcm/oon-flags",                              icon: Flame },
-          { label: "CR Packet — Financial Section",        path: "/intake/cr-packet-prep?section=financial",    icon: FileCheck2 },
+        id: "finance", label: "Finance Visibility", items: [
+          { label: "Finance Snapshot",                     path: "/billing-finance",                            icon: Gauge },
+          { label: "RCM / Billing Visibility",             path: "/rcm/financial-case-approval",                icon: ShieldCheck },
+          { label: "Collections / AR Snapshot",            path: "/rcm/unknown-insurance",                      icon: AlertTriangle },
+          { label: "Payment Plan Visibility",              path: "/rcm/payment-plans",                          icon: ClipboardList },
+          { label: "Write-Off / Denial Review Visibility", path: "/rcm/oon-flags",                              icon: Flame },
           { label: "Reports",                              path: "/reports?category=rcm",                       icon: BarChart3 },
         ],
       },
