@@ -11,7 +11,7 @@ import {
   Stethoscope, PhoneCall, BookUser, Activity, Bug, UserCheck,
   Plug, MonitorSmartphone, XCircle, CheckCircle2, ListTodo,
   Phone, FileText, LogOut,
-  UploadCloud, Sparkles, Mail,
+  UploadCloud, Sparkles, Mail, Home,
   type LucideIcon,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
@@ -1046,6 +1046,20 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             </div>
             <div className="flex-1 md:hidden" />
             <OSNotificationsBell />
+            <Tooltip delayDuration={120}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => navigate("/home")}
+                  className="os-glass-icon inline-flex"
+                  aria-label="Company home"
+                >
+                  <Home className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[12px] font-medium">
+                Company Home
+              </TooltipContent>
+            </Tooltip>
             <WorkingAsSelector />
             <RoleSwitcher />
             {rightRail && (
