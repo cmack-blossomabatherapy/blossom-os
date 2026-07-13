@@ -1,11 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { format, parseISO, isSameMonth, isSameDay } from "date-fns";
+import { format, parseISO, isSameDay, startOfDay } from "date-fns";
 import { Calendar as CalendarIcon, Megaphone, Sparkles, Pin, Settings, ExternalLink } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { useCompanyHome, useCanManageCompanyHome, type CompanyCalendarEvent } from "@/hooks/useCompanyHome";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -13,27 +15,32 @@ function safeDate(d: string): Date {
   return parseISO(d);
 }
 
-function groupEventsByMonth(events: CompanyCalendarEvent[]) {
-  const groups: { label: string; items: CompanyCalendarEvent[] }[] = [];
-  for (const ev of events) {
-    const d = safeDate(ev.starts_on);
-    const label = format(d, "MMMM yyyy");
-    const last = groups[groups.length - 1];
-    if (last && last.label === label) last.items.push(ev);
-    else groups.push({ label, items: [ev] });
-  }
-  return groups;
-}
-
 export default function CompanyHome() {
   const { events, updates, highlights, loading } = useCompanyHome();
   const canManage = useCanManageCompanyHome();
   const { displayName } = useAuth();
 
-  const grouped = useMemo(() => groupEventsByMonth(events), [events]);
-  const today = new Date();
-  const todayEvents = events.filter((e) => isSameDay(safeDate(e.starts_on), today));
-  const thisMonth = events.filter((e) => isSameMonth(safeDate(e.starts_on), today));
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [month, setMonth] = useState<Date>(today);
+
+  const eventDays = useMemo(
+    () => events.map((e) => startOfDay(safeDate(e.starts_on))),
+    [events],
+  );
+
+  const selectedDayEvents = useMemo(
+    () => events.filter((e) => isSameDay(safeDate(e.starts_on), selectedDate)),
+    [events, selectedDate],
+  );
+
+  const upNext = useMemo(() => {
+    const now = today.getTime();
+    return [...events]
+      .filter((e) => safeDate(e.starts_on).getTime() >= now)
+      .sort((a, b) => safeDate(a.starts_on).getTime() - safeDate(b.starts_on).getTime())
+      .slice(0, 5);
+  }, [events, today]);
 
   return (
     <OSShell>
@@ -61,24 +68,107 @@ export default function CompanyHome() {
           )}
         </header>
 
-        {/* Today / this month strip */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatTile
-            label="Today"
-            value={todayEvents.length === 0 ? "Nothing on the calendar" : todayEvents.map((e) => e.title).join(" · ")}
-            icon={<CalendarIcon className="size-4" />}
-          />
-          <StatTile
-            label="This month"
-            value={`${thisMonth.length} event${thisMonth.length === 1 ? "" : "s"}`}
-            icon={<CalendarIcon className="size-4" />}
-          />
-          <StatTile
-            label="New updates"
-            value={`${updates.filter((u) => u.published).length} posted`}
-            icon={<Megaphone className="size-4" />}
-          />
-        </div>
+        {/* Calendar hero */}
+        <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+          <Card className="rounded-2xl border-border/70 bg-card p-4 md:p-6">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <CalendarIcon className="size-4" />
+                <h2 className="text-sm font-medium uppercase tracking-widest">Company Calendar</h2>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full text-xs"
+                onClick={() => {
+                  setSelectedDate(today);
+                  setMonth(today);
+                }}
+              >
+                Today
+              </Button>
+            </div>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(d) => d && setSelectedDate(d)}
+              month={month}
+              onMonthChange={setMonth}
+              modifiers={{ hasEvent: eventDays }}
+              modifiersClassNames={{
+                hasEvent:
+                  "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary",
+              }}
+              className={cn("pointer-events-auto w-full")}
+            />
+          </Card>
+
+          <Card className="rounded-2xl border-border/70 bg-card p-6 space-y-5">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                {isSameDay(selectedDate, today) ? "Today" : "Selected"}
+              </p>
+              <h3 className="text-lg font-semibold tracking-tight text-foreground mt-1">
+                {format(selectedDate, "EEEE, MMM d")}
+              </h3>
+            </div>
+
+            {selectedDayEvents.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border/70 bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+                Nothing scheduled.
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {selectedDayEvents.map((ev) => (
+                  <EventRow key={ev.id} ev={ev} />
+                ))}
+              </ul>
+            )}
+
+            {upNext.length > 0 && (
+              <div className="pt-4 border-t border-border/60">
+                <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">
+                  Up next
+                </p>
+                <ul className="space-y-3">
+                  {upNext.map((ev) => (
+                    <li key={ev.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = startOfDay(safeDate(ev.starts_on));
+                          setSelectedDate(d);
+                          setMonth(d);
+                        }}
+                        className="w-full text-left flex items-start gap-3 rounded-xl p-2 -mx-2 hover:bg-muted transition"
+                      >
+                        <div className="w-12 shrink-0 text-center rounded-lg bg-muted/60 border border-border/60 py-1.5">
+                          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                            {format(safeDate(ev.starts_on), "MMM")}
+                          </p>
+                          <p className="text-base font-semibold text-foreground tabular-nums leading-tight">
+                            {format(safeDate(ev.starts_on), "d")}
+                          </p>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {ev.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {ev.all_day ? "All day" : format(safeDate(ev.starts_on), "h:mma")}
+                            {ev.location ? ` · ${ev.location}` : ""}
+                          </p>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {loading && events.length === 0 && <SkeletonList />}
+          </Card>
+        </section>
 
         {/* Highlights */}
         {highlights.length > 0 && (
@@ -115,9 +205,8 @@ export default function CompanyHome() {
           </section>
         )}
 
-        <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-          {/* Updates */}
-          <section className="space-y-4">
+        {/* Updates */}
+        <section className="space-y-4">
             <SectionHeader icon={<Megaphone className="size-4" />} title="Company Updates" />
             {loading && updates.length === 0 ? (
               <SkeletonList />
@@ -155,61 +244,7 @@ export default function CompanyHome() {
                 ))}
               </div>
             )}
-          </section>
-
-          {/* Calendar */}
-          <section className="space-y-4">
-            <SectionHeader icon={<CalendarIcon className="size-4" />} title="Company Calendar" />
-            {loading && events.length === 0 ? (
-              <SkeletonList />
-            ) : events.length === 0 ? (
-              <EmptyBlock text="No upcoming events." />
-            ) : (
-              <div className="rounded-2xl border border-border/70 bg-card divide-y divide-border/60">
-                {grouped.map((g) => (
-                  <div key={g.label} className="p-4">
-                    <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">
-                      {g.label}
-                    </p>
-                    <ul className="space-y-3">
-                      {g.items.map((ev) => (
-                        <li key={ev.id} className="flex items-start gap-3">
-                          <div className="w-14 shrink-0 text-center rounded-xl bg-muted/60 border border-border/60 py-2">
-                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                              {format(safeDate(ev.starts_on), "MMM")}
-                            </p>
-                            <p className="text-lg font-semibold text-foreground tabular-nums">
-                              {format(safeDate(ev.starts_on), "d")}
-                            </p>
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {ev.title}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {ev.all_day
-                                ? "All day"
-                                : format(safeDate(ev.starts_on), "h:mma")}
-                              {ev.location ? ` · ${ev.location}` : ""}
-                              {ev.category && ev.category !== "company_event"
-                                ? ` · ${prettyCategory(ev.category)}`
-                                : ""}
-                            </p>
-                            {ev.description && (
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {ev.description}
-                              </p>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
+        </section>
       </div>
     </OSShell>
   );
@@ -219,24 +254,35 @@ function prettyCategory(c: string): string {
   return c.replace(/[_-]/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
+function EventRow({ ev }: { ev: CompanyCalendarEvent }) {
+  return (
+    <li className="flex items-start gap-3">
+      <div className="mt-1 size-2 rounded-full bg-primary shrink-0" />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-foreground truncate">{ev.title}</p>
+        <p className="text-xs text-muted-foreground">
+          {ev.all_day ? "All day" : format(safeDate(ev.starts_on), "h:mma")}
+          {ev.location ? ` · ${ev.location}` : ""}
+          {ev.category && ev.category !== "company_event"
+            ? ` · ${prettyCategory(ev.category)}`
+            : ""}
+        </p>
+        {ev.description && (
+          <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">
+            {ev.description}
+          </p>
+        )}
+      </div>
+    </li>
+  );
+}
+
 function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="flex items-center gap-2 text-muted-foreground">
       {icon}
       <h2 className="text-sm font-medium uppercase tracking-widest">{title}</h2>
     </div>
-  );
-}
-
-function StatTile({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
-  return (
-    <Card className="rounded-2xl border-border/70 bg-card p-5">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        {icon}
-        <p className="text-xs uppercase tracking-widest">{label}</p>
-      </div>
-      <p className="mt-2 text-sm text-foreground truncate">{value}</p>
-    </Card>
   );
 }
 
