@@ -763,6 +763,7 @@ export const DEFAULT_ROLE_MENU: RoleMenu = {
  */
 export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "Super Admin",                 role: "super_admin" },
+  { label: "COO / Operating Owner",       role: "coo" },
   { label: "Executive Leadership",        role: "executive_leadership" },
   { label: "Operations Leadership",       role: "operations_leadership" },
   { label: "State Director",              role: "state_director" },
