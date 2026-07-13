@@ -640,19 +640,16 @@ export default function OSWelcomeToBlossom() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button
                     size="sm"
-                    className="rounded-full"
-                    onClick={continueToStateDirectorJourney}
-                    data-testid="welcome-reflection-continue"
-                  >
-                    Continue to my launch path <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
+                    variant={videoDone ? "outline" : "default"}
                     className="rounded-full"
                     onClick={markReviewed}
+                    data-testid="welcome-reflection-continue"
                   >
-                    {videoDone ? "Marked reviewed" : "Mark welcome reviewed"}
+                    {videoDone ? (
+                      <><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Confirmed read</>
+                    ) : (
+                      "I've read this section"
+                    )}
                   </Button>
                 </div>
               </div>
@@ -682,11 +679,16 @@ export default function OSWelcomeToBlossom() {
                 size="lg"
                 className="rounded-2xl shadow-md shadow-primary/20"
                 onClick={continueToStateDirectorJourney}
+                disabled={!allWelcomeDone}
                 data-testid="welcome-continue-launch-path"
               >
-                Continue to my State Director launch path <ArrowRight className="ml-1 h-4 w-4" />
+                {allWelcomeDone ? (
+                  <>Start Training <ArrowRight className="ml-1 h-4 w-4" /></>
+                ) : (
+                  <>Confirm all sections to start training ({welcomeDoneCount}/{welcomeTotal})</>
+                )}
               </Button>
-              <span className="sr-only">Continue to State Director Journey</span>
+              <span className="sr-only">Start Training — continues to your launch path</span>
               <Button
                 size="sm"
                 variant="outline"
