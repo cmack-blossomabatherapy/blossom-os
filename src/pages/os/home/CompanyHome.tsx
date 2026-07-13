@@ -534,7 +534,7 @@ function EventRow({
         onClick={() => onOpen(ev)}
         className="w-full text-left flex items-start gap-3 rounded-xl p-2 -mx-2 hover:bg-muted transition"
       >
-        <div className="mt-1 size-2 rounded-full bg-primary shrink-0" />
+        <div className={cn("mt-1 size-2 rounded-full shrink-0", categoryColor(ev.category))} />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-foreground truncate">{ev.title}</p>
           <p className="text-xs text-muted-foreground">
