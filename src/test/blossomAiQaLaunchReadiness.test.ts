@@ -196,7 +196,7 @@ describe("Blossom AI — QA & launch readiness (Prompt 6)", () => {
       category: "sops", status: "Published", roles: [], departments: [],
       states: [], tags: [], uploadedBy: "sys",
       createdAt: "2026-07-13", updatedAt: "2026-07-13",
-      resourceType: "sop", sensitivity: "internal",
+      resourceType: "sop", sensitivity: "public_internal",
       attachmentStatus: "available", uploadStatus: "published",
     } as Resource;
 
