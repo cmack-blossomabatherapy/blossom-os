@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkles, X, Send, ExternalLink, HelpCircle, Loader2 } from "lucide-react";
+import { Sparkles, X, Send, ExternalLink, HelpCircle, Loader2, ThumbsUp, ThumbsDown, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,8 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import { streamAskBlossom } from "@/lib/ai/askBlossomAdapter";
 import type { AiSource } from "@/lib/ai/types";
 import type { OSRole } from "@/lib/os/permissions";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
 /* Types & context                                                     */
@@ -70,6 +72,17 @@ interface Msg {
   content: string;
   sources?: AiSource[];
   streaming?: boolean;
+  logId?: string | null;
+  destructive?: boolean;
+  feedback?: 1 | -1 | null;
+}
+// Keywords that suggest the user wants Blossom to *do* something sensitive.
+// The server prompt already refuses; the UI adds a visible confirm-before-you-act banner.
+const DESTRUCTIVE_INTENT_RE =
+  /\b(send|email|update|change|delete|remove|submit|approve|deny|payroll|permission|role|reauth|authorization|credential|password|mfa|nfc)\b/i;
+
+function isDestructiveIntent(text: string): boolean {
+  return DESTRUCTIVE_INTENT_RE.test(text);
 }
 
 const DEFAULT_SUGGESTIONS: Record<BlossomAISurface, string[]> = {
@@ -200,6 +213,7 @@ function BlossomAIDrawer({
       try {
         const stream = streamAskBlossom(buildContextualPrompt(clean), role, activeState);
         let acc = "";
+        const destructive = isDestructiveIntent(clean);
         while (true) {
           const next = await stream.next();
           if (next.done) {
@@ -207,7 +221,14 @@ function BlossomAIDrawer({
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === asstMsg.id
-                  ? { ...m, content: final?.content || acc, sources: final?.sources ?? [], streaming: false }
+                  ? {
+                      ...m,
+                      content: final?.content || acc,
+                      sources: final?.sources ?? [],
+                      streaming: false,
+                      logId: final?.logId ?? null,
+                      destructive,
+                    }
                   : m,
               ),
             );
