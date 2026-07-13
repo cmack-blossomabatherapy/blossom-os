@@ -672,14 +672,15 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "clinical_leadership", label: "Clinical Leadership", items: [
-          { label: "Clinical Director Dashboard", path: "/clinical-director",      icon: LayoutDashboard },
-          { label: "BCBA Oversight",              path: "/assigned-bcbas",         icon: UserCheck },
-          { label: "Supervision Health",          path: "/supervision-visibility", icon: Eye },
-          { label: "Treatment Plan Reviews",      path: "/treatment-plan-reviews", icon: FileCheck2 },
-          { label: "Progress Reports",            path: "/reports?category=progress", icon: BarChart3 },
-          { label: "Evaluations",                 path: "/evaluations",            icon: ClipboardCheck },
-          { label: "Clinical Escalations",        path: "/escalations-followups",  icon: AlertTriangle },
-          { label: "QA Dashboard",                path: "/qa-team",                icon: ShieldCheck },
+          { label: "Clinical Readiness Dashboard", path: "/clinical-director",       icon: LayoutDashboard },
+          { label: "CentralReach Handoff Queue",   path: "/qa/board",                icon: ClipboardCheck },
+          { label: "Evaluation Readiness",         path: "/evaluations",             icon: FileCheck2 },
+          { label: "Assigned BCBAs",               path: "/assigned-bcbas",          icon: UserCheck },
+          { label: "Supervision Visibility",       path: "/supervision-visibility",  icon: Eye },
+          { label: "Operational Blockers",         path: "/escalations-followups",   icon: AlertTriangle },
+          { label: "QA / Correction Visibility",   path: "/qa-team",                 icon: ShieldCheck },
+          { label: "Reports",                      path: "/reports",                 icon: BarChart3 },
+          { label: "Phone",                        path: "/phone",                   icon: Phone },
         ],
       },
       TRAINING_AND_RESOURCES,
