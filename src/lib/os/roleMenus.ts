@@ -735,16 +735,16 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "rbt", label: "RBT", items: [
-          { label: "My Day",                       path: "/rbt/my-day",          icon: LayoutDashboard },
-          { label: "My Clients",                   path: "/rbt/clients",         icon: UserCheck },
-          { label: "My Schedule",                  path: "/rbt/schedule",        icon: Calendar },
-          { label: "Session Support",              path: "/rbt/session-support", icon: MessageSquare },
-          { label: "Supervision Notes",            path: "/rbt/supervision",     icon: ClipboardCheck },
-          { label: "RBT Training Academy",         path: "/rbt/training-academy",icon: GraduationCap },
-          { label: "Nonbillable Points / Readiness", path: "/rbt/readiness",     icon: Activity },
-          { label: "RBT Messages",                 path: "/rbt/messages",        icon: MessageSquare },
-          { label: "RBT Resources",                path: "/rbt/resources",       icon: Library },
-          { label: "Help",                         path: "/rbt/help",            icon: HeartHandshake },
+          { label: "RBT Dashboard / My Day",        path: "/rbt/my-day",           icon: LayoutDashboard },
+          { label: "RBT Training Academy",          path: "/rbt/training-academy", icon: GraduationCap },
+          { label: "RBT Training Journey",          path: "/welcome",              icon: BookOpen },
+          { label: "Resource Library",              path: "/rbt/resources",        icon: Library },
+          { label: "My Schedule Visibility",        path: "/rbt/schedule",         icon: Calendar },
+          { label: "Assigned Client Support Info",  path: "/rbt/clients",          icon: UserCheck },
+          { label: "Supervision Visibility",        path: "/rbt/supervision",      icon: Eye },
+          { label: "Support Requests / Help",       path: "/rbt/help",             icon: HeartHandshake },
+          { label: "Readiness",                     path: "/rbt/readiness",        icon: Activity },
+          { label: "Messages / Announcements",      path: "/rbt/messages",         icon: MessageSquare },
         ],
       },
       {
