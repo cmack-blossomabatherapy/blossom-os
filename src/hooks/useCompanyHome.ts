@@ -11,6 +11,12 @@ export interface CompanyCalendarEvent {
   ends_on: string | null;
   all_day: boolean;
   location: string | null;
+  owner_name?: string | null;
+  related_record_type?: string | null;
+  related_record_id?: string | null;
+  related_record_label?: string | null;
+  related_url?: string | null;
+  next_step?: string | null;
 }
 
 export interface CompanyUpdate {

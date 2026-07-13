@@ -1,15 +1,37 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, parseISO, isSameDay, startOfDay } from "date-fns";
-import { Calendar as CalendarIcon, Megaphone, Sparkles, Pin, Settings, ExternalLink } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Megaphone,
+  Sparkles,
+  Pin,
+  Settings,
+  ExternalLink,
+  User,
+  MapPin,
+  ArrowRight,
+  Link2,
+  Download,
+  Copy,
+  Pencil,
+} from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useCompanyHome, useCanManageCompanyHome, type CompanyCalendarEvent } from "@/hooks/useCompanyHome";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 function safeDate(d: string): Date {
   return parseISO(d);
@@ -23,6 +45,7 @@ export default function CompanyHome() {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [month, setMonth] = useState<Date>(today);
+  const [openEvent, setOpenEvent] = useState<CompanyCalendarEvent | null>(null);
 
   const eventDays = useMemo(
     () => events.map((e) => startOfDay(safeDate(e.starts_on))),
@@ -120,7 +143,7 @@ export default function CompanyHome() {
             ) : (
               <ul className="space-y-3">
                 {selectedDayEvents.map((ev) => (
-                  <EventRow key={ev.id} ev={ev} />
+                  <EventRow key={ev.id} ev={ev} onOpen={setOpenEvent} />
                 ))}
               </ul>
             )}
@@ -139,6 +162,7 @@ export default function CompanyHome() {
                           const d = startOfDay(safeDate(ev.starts_on));
                           setSelectedDate(d);
                           setMonth(d);
+                          setOpenEvent(ev);
                         }}
                         className="w-full text-left flex items-start gap-3 rounded-xl p-2 -mx-2 hover:bg-muted transition"
                       >
@@ -169,6 +193,12 @@ export default function CompanyHome() {
             {loading && events.length === 0 && <SkeletonList />}
           </Card>
         </section>
+
+        <EventDetailDrawer
+          event={openEvent}
+          onClose={() => setOpenEvent(null)}
+          canManage={canManage}
+        />
 
         {/* Highlights */}
         {highlights.length > 0 && (
@@ -254,26 +284,248 @@ function prettyCategory(c: string): string {
   return c.replace(/[_-]/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
-function EventRow({ ev }: { ev: CompanyCalendarEvent }) {
+function EventRow({
+  ev,
+  onOpen,
+}: {
+  ev: CompanyCalendarEvent;
+  onOpen: (ev: CompanyCalendarEvent) => void;
+}) {
   return (
-    <li className="flex items-start gap-3">
-      <div className="mt-1 size-2 rounded-full bg-primary shrink-0" />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-foreground truncate">{ev.title}</p>
-        <p className="text-xs text-muted-foreground">
-          {ev.all_day ? "All day" : format(safeDate(ev.starts_on), "h:mma")}
-          {ev.location ? ` · ${ev.location}` : ""}
-          {ev.category && ev.category !== "company_event"
-            ? ` · ${prettyCategory(ev.category)}`
-            : ""}
-        </p>
-        {ev.description && (
-          <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">
-            {ev.description}
+    <li>
+      <button
+        type="button"
+        onClick={() => onOpen(ev)}
+        className="w-full text-left flex items-start gap-3 rounded-xl p-2 -mx-2 hover:bg-muted transition"
+      >
+        <div className="mt-1 size-2 rounded-full bg-primary shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground truncate">{ev.title}</p>
+          <p className="text-xs text-muted-foreground">
+            {ev.all_day ? "All day" : format(safeDate(ev.starts_on), "h:mma")}
+            {ev.location ? ` · ${ev.location}` : ""}
+            {ev.category && ev.category !== "company_event"
+              ? ` · ${prettyCategory(ev.category)}`
+              : ""}
           </p>
-        )}
-      </div>
+          {ev.owner_name && (
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Owner · {ev.owner_name}
+            </p>
+          )}
+        </div>
+      </button>
     </li>
+  );
+}
+
+/* ---------------- Event detail drawer ---------------- */
+
+function relatedRecordHref(ev: CompanyCalendarEvent): string | null {
+  if (ev.related_url) return ev.related_url;
+  const type = (ev.related_record_type ?? "").toLowerCase();
+  const id = ev.related_record_id;
+  if (!type || !id) return null;
+  switch (type) {
+    case "lead":            return `/os/leads?lead=${encodeURIComponent(id)}`;
+    case "client":          return `/os/clients?client=${encodeURIComponent(id)}`;
+    case "authorization":
+    case "auth":            return `/os/authorizations?authId=${encodeURIComponent(id)}`;
+    case "task":            return `/os/work-queue?selected=${encodeURIComponent(id)}`;
+    case "candidate":       return `/os/recruiting?candidate=${encodeURIComponent(id)}`;
+    case "employee":        return `/user-management?user=${encodeURIComponent(id)}`;
+    default:                return null;
+  }
+}
+
+function buildIcs(ev: CompanyCalendarEvent): string {
+  const dt = (s: string) => s.replace(/-/g, "");
+  const end = ev.ends_on ?? ev.starts_on;
+  const uid = `${ev.id}@blossom-os`;
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const esc = (s: string) => s.replace(/([,;\\])/g, "\\$1").replace(/\n/g, "\\n");
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Blossom OS//Company Calendar//EN",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART;VALUE=DATE:${dt(ev.starts_on)}`,
+    `DTEND;VALUE=DATE:${dt(end)}`,
+    `SUMMARY:${esc(ev.title)}`,
+    ev.location ? `LOCATION:${esc(ev.location)}` : "",
+    ev.description ? `DESCRIPTION:${esc(ev.description)}` : "",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].filter(Boolean).join("\r\n");
+}
+
+function EventDetailDrawer({
+  event,
+  onClose,
+  canManage,
+}: {
+  event: CompanyCalendarEvent | null;
+  onClose: () => void;
+  canManage: boolean;
+}) {
+  const relatedHref = event ? relatedRecordHref(event) : null;
+
+  const copyLink = async () => {
+    if (!event) return;
+    const url = `${window.location.origin}/home?event=${event.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Event link copied");
+    } catch {
+      toast.error("Couldn't copy link");
+    }
+  };
+
+  const downloadIcs = () => {
+    if (!event) return;
+    const blob = new Blob([buildIcs(event)], { type: "text/calendar" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${event.title.replace(/[^\w-]+/g, "_")}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <Sheet open={!!event} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+        {event && (
+          <>
+            <SheetHeader className="text-left">
+              <div className="flex items-center gap-2 mb-1">
+                {event.category && event.category !== "company_event" && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {prettyCategory(event.category)}
+                  </Badge>
+                )}
+                {event.all_day && (
+                  <Badge variant="outline" className="text-[10px]">All day</Badge>
+                )}
+              </div>
+              <SheetTitle className="text-xl tracking-tight">{event.title}</SheetTitle>
+              <SheetDescription>
+                {format(safeDate(event.starts_on), "EEEE, MMM d, yyyy")}
+                {event.ends_on && event.ends_on !== event.starts_on
+                  ? ` – ${format(safeDate(event.ends_on), "MMM d, yyyy")}`
+                  : ""}
+                {!event.all_day ? ` · ${format(safeDate(event.starts_on), "h:mma")}` : ""}
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="mt-6 space-y-5">
+              {event.description && (
+                <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                  {event.description}
+                </p>
+              )}
+
+              <div className="rounded-xl border border-border/70 divide-y divide-border/60 text-sm">
+                <DetailRow icon={<User className="size-4" />} label="Owner"
+                  value={event.owner_name ?? "Unassigned"} />
+                {event.location && (
+                  <DetailRow icon={<MapPin className="size-4" />} label="Location"
+                    value={event.location} />
+                )}
+                <DetailRow
+                  icon={<Link2 className="size-4" />}
+                  label="Related record"
+                  value={
+                    event.related_record_label ||
+                    (event.related_record_type && event.related_record_id
+                      ? `${prettyCategory(event.related_record_type)} · ${event.related_record_id.slice(0, 8)}`
+                      : "None linked")
+                  }
+                  action={
+                    relatedHref ? (
+                      <Button asChild size="sm" variant="ghost" className="h-7 rounded-lg text-xs">
+                        <Link to={relatedHref} onClick={onClose}>
+                          Open <ExternalLink className="size-3 ml-1" />
+                        </Link>
+                      </Button>
+                    ) : null
+                  }
+                />
+                <DetailRow
+                  icon={<ArrowRight className="size-4" />}
+                  label="Next step"
+                  value={event.next_step ?? "—"}
+                />
+              </div>
+
+              {/* Quick actions */}
+              <div>
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
+                  Quick actions
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {relatedHref && (
+                    <Button asChild variant="outline" size="sm" className="rounded-lg justify-start">
+                      <Link to={relatedHref} onClick={onClose}>
+                        <ExternalLink className="size-4" /> Open record
+                      </Link>
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg justify-start"
+                    onClick={downloadIcs}
+                  >
+                    <Download className="size-4" /> Add to calendar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg justify-start"
+                    onClick={copyLink}
+                  >
+                    <Copy className="size-4" /> Copy link
+                  </Button>
+                  {canManage && (
+                    <Button asChild variant="outline" size="sm" className="rounded-lg justify-start">
+                      <Link to={`/home/manage?event=${event.id}`} onClick={onClose}>
+                        <Pencil className="size-4" /> Edit
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function DetailRow({
+  icon,
+  label,
+  value,
+  action,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-3 py-2.5">
+      <div className="text-muted-foreground shrink-0">{icon}</div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</p>
+        <p className="text-sm text-foreground truncate">{value}</p>
+      </div>
+      {action}
+    </div>
   );
 }
 
