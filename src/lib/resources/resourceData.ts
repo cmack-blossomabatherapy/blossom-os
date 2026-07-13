@@ -147,6 +147,7 @@ export const NON_PUBLIC_UPLOAD_STATUSES: ResourceUploadStatus[] = [
   "vault_only",
   "excluded",
   "ready_to_upload",
+  "missing_file",
 ];
 
 /** Keywords that indicate a credential / vault / portal-access document. */
