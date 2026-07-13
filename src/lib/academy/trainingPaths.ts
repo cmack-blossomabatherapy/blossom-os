@@ -1,7 +1,8 @@
 import {
   GraduationCap, Building2, Megaphone, TrendingUp, Briefcase, ShieldCheck,
   Calendar, Users, HeartHandshake, IdCard, ClipboardCheck, UserCheck,
-  FileSignature, BookOpen, Brain, Compass, type LucideIcon,
+  FileSignature, BookOpen, Brain, Compass, DollarSign, Sparkles, Settings2, Home,
+  type LucideIcon,
 } from "lucide-react";
 
 export interface TrainingPath {
@@ -38,6 +39,11 @@ export const TRAINING_PATHS: TrainingPath[] = [
   { slug: "hr",                       title: "HR Training",                audience: "HR Team",             category: "Department",  description: "Employee onboarding, compliance, evaluations, and people operations workflows.",         estimatedHours: 6,  lessonCount: 14, icon: HeartHandshake },
   { slug: "credentialing",            title: "Credentialing Training",     audience: "Credentialing Team",  category: "Department",  description: "Provider files, payer credentialing, and expirations management.",                      estimatedHours: 4,  lessonCount: 10, icon: IdCard },
   { slug: "qa",                       title: "QA Training",                audience: "QA Team",             category: "Department",  description: "Treatment plan reviews, supervision QA, compliance, and documentation quality.",        estimatedHours: 5,  lessonCount: 12, icon: ClipboardCheck },
+  { slug: "finance",                  title: "Finance & Billing Training", audience: "Finance / Billing / Payroll", category: "Department", description: "Blank canvas — finance, billing, payroll, and RCM workflows will land here.",         estimatedHours: 0,  lessonCount: 0, icon: DollarSign },
+  { slug: "operations",               title: "Operations Training",        audience: "Operations Leadership", category: "Department", description: "Blank canvas — operations rhythms, oversight, and cross-department workflows will land here.", estimatedHours: 0,  lessonCount: 0, icon: TrendingUp },
+  { slug: "executive",                title: "Executive Training",         audience: "Executive Leadership",  category: "Department", description: "Blank canvas — executive rhythms, KPI reviews, and strategic workflows will land here.",     estimatedHours: 0,  lessonCount: 0, icon: Sparkles },
+  { slug: "systems",                  title: "Systems Admin Training",     audience: "Systems / Super Admin", category: "Department", description: "Blank canvas — Blossom OS administration, permissions, and configuration will land here.",   estimatedHours: 0,  lessonCount: 0, icon: Settings2 },
+  { slug: "clinic-operations",        title: "Clinic Operations Training", audience: "Clinic / Office Manager", category: "Department", description: "Blank canvas — clinic-level operations, front-desk, and supply workflows will land here.",   estimatedHours: 0,  lessonCount: 0, icon: Home },
 ];
 
 /** RBT experience-level buckets surfaced on the RBT Training Academy landing. */
