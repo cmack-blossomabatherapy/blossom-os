@@ -776,10 +776,10 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       {
         id: "finance", label: "Finance Visibility", items: [
           { label: "Finance Snapshot",                     path: "/billing-finance",                            icon: Gauge },
-          { label: "RCM / Billing Visibility",             path: "/rcm/financial-case-approval",                icon: ShieldCheck },
-          { label: "Collections / AR Snapshot",            path: "/rcm/unknown-insurance",                      icon: AlertTriangle },
-          { label: "Payment Plan Visibility",              path: "/rcm/payment-plans",                          icon: ClipboardList },
-          { label: "Write-Off / Denial Review Visibility", path: "/rcm/oon-flags",                              icon: Flame },
+          { label: "RCM / Billing Visibility",             path: "/billing-finance?tab=rcm",                    icon: ShieldCheck },
+          { label: "Collections / AR Snapshot",            path: "/billing-finance?tab=collections",            icon: AlertTriangle },
+          { label: "Payment Plan Visibility",              path: "/billing-finance?tab=payment-plans",          icon: ClipboardList },
+          { label: "Write-Off / Denial Review Visibility", path: "/billing-finance?tab=write-offs",             icon: Flame },
           { label: "Reports",                              path: "/reports?category=rcm",                       icon: BarChart3 },
         ],
       },
