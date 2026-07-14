@@ -459,7 +459,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
                   ) : visible.map((r) => {
                     const c = classify(r);
                     const leadName = r.lead?.childName ?? "Lead";
-                    const leadId = r.lead?.id ?? r.task.lead_id;
+                    const leadId = r.lead?.id ?? r.task.lead_id ?? null;
                     const isEscalated = (r.lead?.tags ?? []).some((t) => /escalat/i.test(t));
                     const wrap = (label: string, fn: () => Promise<void>) => async () => {
                       try { await fn(); toast.success(`${label}: ${r.task.title}`); }
@@ -477,7 +477,11 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
                         </td>
                         <td className="px-3 py-2 font-medium text-foreground truncate max-w-[280px]">{r.task.title}</td>
                         <td className="px-3 py-2">
-                          <LeadNameLink leadId={leadId} className="hover:underline text-foreground">{leadName}</LeadNameLink>
+                          {leadId ? (
+                            <LeadNameLink leadId={leadId} className="hover:underline text-foreground">{leadName}</LeadNameLink>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">{r.task.task_type || "—"}</td>
                         <td className={cn("px-3 py-2 text-xs", c === "overdue" && "text-rose-700 dark:text-rose-300 font-medium")}>
