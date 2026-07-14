@@ -41,6 +41,9 @@ import {
   type SmartCollectionId,
   type SmartCollectionResult,
 } from "@/lib/resources/smartCollections";
+import {
+  INTAKE_SECTIONS, groupByIntakeSection, isIntakeRelevant,
+} from "@/lib/resources/intakeSections";
 
 const TONE_BG: Record<string, string> = {
   purple:  "bg-[hsl(265_70%_96%)] text-[hsl(265_70%_45%)]",
@@ -88,6 +91,7 @@ export default function OSResourceLibrary() {
   const { create: createSystemIssue } = useSystemIssues();
   const canManage = role === "super_admin" || role === "hr_team";
   const { resources: libraryResources, loading } = useLibraryResources();
+  const isIntakeView = role === "intake_coordinator";
 
   const [query, setQuery] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -105,8 +109,12 @@ export default function OSResourceLibrary() {
 
   // Role-aware scope, pulled live from the operational library.
   const scope = useMemo(
-    () => libraryResources.filter((r) => isVisibleToRole(r, role, activeState)),
-    [libraryResources, role, activeState],
+    () => {
+      const base = libraryResources.filter((r) => isVisibleToRole(r, role, activeState));
+      // Intake team should only see resources that are actually about intake work.
+      return isIntakeView ? base.filter(isIntakeRelevant) : base;
+    },
+    [libraryResources, role, activeState, isIntakeView],
   );
   const filteredScope = useMemo(
     () => (typeFilter ? scope.filter((r) => r.type === typeFilter) : scope),
@@ -153,6 +161,12 @@ export default function OSResourceLibrary() {
   );
   const showSdLaunchCollection =
     isSdSopVisibleToRole(role) && !query && !activeCategory && !activeCollection;
+
+  // Intake-specific sectioning.
+  const intakeGrouped = useMemo(
+    () => (isIntakeView ? groupByIntakeSection(filteredScope) : null),
+    [isIntakeView, filteredScope],
+  );
 
   const visibleList: Resource[] = useMemo(() => {
     if (query) return searchResults;
@@ -368,7 +382,7 @@ export default function OSResourceLibrary() {
             )}
 
             {/* SMART COLLECTIONS GRID */}
-            {!query && !activeCategory && !activeCollection && (
+            {!isIntakeView && !query && !activeCategory && !activeCollection && (
               <section data-testid="smart-collections">
                 <SectionHeader
                   title="Smart collections"
@@ -416,6 +430,38 @@ export default function OSResourceLibrary() {
                   </div>
                 )}
               </section>
+            )}
+
+            {/* INTAKE SECTIONED VIEW */}
+            {isIntakeView && intakeGrouped && !query && !activeCategory && !activeCollection && !typeFilter && (
+              <div className="space-y-8" data-testid="intake-sections">
+                {INTAKE_SECTIONS.map((s) => {
+                  const items = intakeGrouped[s.id];
+                  if (!items || items.length === 0) return null;
+                  const shown = items.slice(0, 9);
+                  const Icon = s.icon;
+                  return (
+                    <section key={s.id} data-testid={`intake-section-${s.id}`}>
+                      <SectionHeader title={s.title} subtitle={s.subtitle} icon={Icon} />
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {shown.map((r) => (
+                          <ResourceCard
+                            key={r.id} r={r}
+                            onOpen={openResource}
+                            onFavorite={toggleFavorite}
+                            isFavorite={favorites.has(r.id)}
+                          />
+                        ))}
+                      </div>
+                      {items.length > shown.length && (
+                        <p className="mt-2 text-[11.5px] text-muted-foreground">
+                          + {items.length - shown.length} more — use search or filters to explore this section.
+                        </p>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
             )}
 
             {/* STATE DIRECTOR LAUNCH SMART COLLECTION */}
@@ -466,7 +512,7 @@ export default function OSResourceLibrary() {
             )}
 
             {/* ROLE RESOURCES */}
-            {!query && !activeCategory && !activeCollection && (
+            {!isIntakeView && !query && !activeCategory && !activeCollection && (
               <section>
                 <SectionHeader
                   title={`Resources for ${roleLabelText}s`}
@@ -487,7 +533,7 @@ export default function OSResourceLibrary() {
             )}
 
             {/* CATEGORIES */}
-            {!query && !activeCollection && (
+            {!isIntakeView && !query && !activeCollection && (
               <section>
                 <SectionHeader title="Browse by category" subtitle="Organized operational knowledge" icon={BookOpen} />
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
