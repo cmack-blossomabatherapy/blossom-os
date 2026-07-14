@@ -1,290 +1,359 @@
 import { useMemo, useState } from "react";
-import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import {
-  MessageSquare, Phone, Mail, Plus, Copy, Send, FileText, AlertCircle,
-  ShieldCheck, List, Megaphone, Radio, Inbox, Sparkles,
+  MessageSquare, Mail, Copy, Send, Search, ShieldAlert, FileText, StickyNote,
 } from "lucide-react";
-import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
-import {
-  IntakeSectionHeader, IntakePulseStrip, INTAKE_TONE, type PulseTileSpec,
-} from "@/components/os/intake/IntakeVisuals";
-import { cn } from "@/lib/utils";
-import { useLeads } from "@/contexts/LeadsContext";
-import { useIntakeCommsLive } from "@/hooks/useIntakeCommsLive";
-import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
+import { GrowthPageShell } from "@/components/os/growth/GrowthPageShell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { useLeads } from "@/contexts/LeadsContext";
 import type { Lead } from "@/data/leads";
 import {
-  sendLeadEmail, sendLeadSms, sendIntakePacket, sendMissingInfoReminder,
-  sendVobUpdate, notifyCommunicationResult,
+  sendLeadEmail, sendLeadSms, notifyCommunicationResult,
 } from "@/lib/integrations/communications/communicationAdapters";
-import { toast } from "sonner";
 import {
-  isLeadOutOfPipeline, isReadyToStartStage, canonicalFamilyLeadStage,
-} from "@/lib/intake/intakeWorkflow";
-import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
+  PARENT_COMM_TEMPLATES,
+  PARENT_COMM_INTERNAL_NOTES,
+  PARENT_COMM_SECTIONS,
+  PARENT_COMM_TEAMS,
+  PARENT_COMM_CHANNELS,
+  PARENT_COMM_MERGE_FIELDS,
+  type ParentCommTemplate,
+} from "@/lib/parent-communication/templates";
+import { cn } from "@/lib/utils";
 
-type TemplateAction =
-  | { kind: "email" } | { kind: "sms" } | { kind: "intake-packet" }
-  | { kind: "missing-info" } | { kind: "vob-update" };
+type SendMode = "sms" | "email";
 
-const TEMPLATES: { id: string; label: string; body: string; tone: keyof typeof INTAKE_TONE; actions: TemplateAction[] }[] = [
-  { id: "first-contact", tone: "sky",     label: "First contact",                    body: "Hi {{parent}}, this is {{coordinator}} from Blossom ABA Therapy. Thanks for reaching out about {{child}} - I'd love to learn a bit more so we can get started. When is a good time for a quick 10-minute call today or tomorrow?", actions: [{ kind: "sms" }, { kind: "email" }] },
-  { id: "packet-sent",   tone: "indigo",  label: "Intake packet",                    body: "Hi {{parent}}, sending over the intake packet now. It takes about 10 minutes to complete. Reply here if anything's unclear - happy to walk you through it.", actions: [{ kind: "intake-packet" }, { kind: "sms" }] },
-  { id: "missing-info",  tone: "amber",   label: "Missing information reminder",     body: "Hi {{parent}}, quick follow-up: we still need {{missing}} before we can move {{child}}'s file to verification. Want me to send the form again or jump on a quick call?", actions: [{ kind: "missing-info" }, { kind: "email" }] },
-  { id: "vob-update",    tone: "violet",  label: "Benefits Verification Update",     body: "Hi {{parent}}, your benefits verification is in progress. We're checking with {{payer}} and expect to hear back within a few business days. I'll reach out the moment we have an answer.", actions: [{ kind: "vob-update" }, { kind: "sms" }] },
-  { id: "non-qualified", tone: "rose",    label: "Non-qualified message",            body: "Hi {{parent}}, thanks for trusting us with {{child}}'s care. Unfortunately {{reason}} means we aren't able to start services right now. If anything changes - coverage, location, or otherwise - please reach back out. We're rooting for you.", actions: [{ kind: "email" }] },
-  { id: "handoff",       tone: "emerald", label: "Handoff to scheduling / clinical", body: "Hi {{parent}}, great news - {{child}} is approved and ready to begin. I'm handing your file to our scheduling and clinical team. {{nextOwner}} will reach out within 1 business day to schedule the first assessment.", actions: [{ kind: "email" }, { kind: "sms" }] },
-];
-
-function leadToContext(lead: Lead) {
-  return {
-    leadId: lead.id, phone: lead.phone, email: lead.email,
-    parentName: lead.parentName, childName: lead.childName,
-    state: lead.state, insurance: lead.primaryInsurance ?? lead.insurance ?? null,
-  };
+function copy(text: string, label: string) {
+  if (!text) { toast.error(`${label} is empty`); return; }
+  navigator.clipboard.writeText(text);
+  toast.success(`${label} copied`);
 }
 
-async function runTemplateAction(action: TemplateAction, lead: Lead) {
-  const ctx = leadToContext(lead);
-  switch (action.kind) {
-    case "email": return notifyCommunicationResult(await sendLeadEmail(ctx));
-    case "sms": return notifyCommunicationResult(await sendLeadSms(ctx));
-    case "intake-packet": return notifyCommunicationResult(await sendIntakePacket(ctx));
-    case "missing-info": return notifyCommunicationResult(await sendMissingInfoReminder(ctx));
-    case "vob-update": return notifyCommunicationResult(await sendVobUpdate(ctx));
+function LeadPickerDialog({
+  open, mode, template, onClose,
+}: {
+  open: boolean; mode: SendMode | null;
+  template: ParentCommTemplate | null; onClose: () => void;
+}) {
+  const { leads } = useLeads();
+  const [q, setQ] = useState("");
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const base = leads.slice(0, 500);
+    if (!term) return base.slice(0, 50);
+    return base.filter((l) =>
+      [l.childName, l.parentName, l.phone, l.email, l.state]
+        .filter(Boolean).some((v) => String(v).toLowerCase().includes(term)),
+    ).slice(0, 80);
+  }, [leads, q]);
+
+  async function pick(lead: Lead) {
+    if (!template || !mode) return;
+    const ctx = {
+      leadId: lead.id, phone: lead.phone, email: lead.email,
+      parentName: lead.parentName, childName: lead.childName,
+      state: lead.state, insurance: lead.primaryInsurance ?? lead.insurance ?? null,
+    };
+    // Copy personalized template so the sender can paste into CTM/Mailchimp UI
+    if (mode === "sms") {
+      navigator.clipboard.writeText(template.sms || "");
+      notifyCommunicationResult(await sendLeadSms(ctx));
+    } else {
+      navigator.clipboard.writeText(
+        `Subject: ${template.subject}\n\n${template.body}`,
+      );
+      notifyCommunicationResult(await sendLeadEmail(ctx));
+    }
+    toast.success(`Template ${template.id} sent to ${lead.childName}`, {
+      description: "Message copied to clipboard and tracked on the lead.",
+    });
+    onClose();
   }
-}
 
-const ACTION_META: Record<TemplateAction["kind"], { label: string; icon: typeof Send }> = {
-  email: { label: "Send Email", icon: Mail },
-  sms: { label: "Send SMS", icon: MessageSquare },
-  "intake-packet": { label: "Send Intake Packet", icon: FileText },
-  "missing-info": { label: "Send Missing Info Reminder", icon: AlertCircle },
-  "vob-update": { label: "Send Benefits Verification Update", icon: ShieldCheck },
-};
-
-interface CommRow {
-  leadId: string; leadName: string;
-  type: "call" | "sms" | "email" | "note";
-  preview: string; timestamp: string; user?: string;
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
+            Send {mode === "sms" ? "SMS" : "Email"} · {template?.title}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            autoFocus placeholder="Search leads by child, parent, phone, email, state..."
+            value={q} onChange={(e) => setQ(e.target.value)} className="pl-8"
+          />
+        </div>
+        <div className="max-h-[50vh] overflow-y-auto rounded-lg border divide-y">
+          {filtered.length === 0 ? (
+            <div className="p-4 text-sm text-muted-foreground text-center">No leads match.</div>
+          ) : filtered.map((l) => (
+            <button key={l.id} onClick={() => pick(l)}
+              className="w-full text-left p-2.5 hover:bg-muted/60 transition-colors flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm font-medium truncate">{l.childName}</div>
+                <div className="text-[11px] text-muted-foreground truncate">
+                  {l.parentName ?? "—"} · {l.state ?? "—"} · {mode === "sms" ? (l.phone ?? "no phone") : (l.email ?? "no email")}
+                </div>
+              </div>
+              <Send className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            </button>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          The template is copied to your clipboard and the outreach is logged on the lead's timeline.
+        </p>
+      </DialogContent>
+    </Dialog>
+  );
 }
-const ICONS = { call: Phone, sms: MessageSquare, email: Mail, note: MessageSquare } as const;
-const TYPE_TONE: Record<CommRow["type"], keyof typeof INTAKE_TONE> = {
-  call: "emerald", sms: "sky", email: "violet", note: "amber",
-};
 
 export default function ParentCommunication() {
-  const { leads: allLeads, loading } = useLeads();
-  const { matches } = useIntakeStateFilter();
-  const leads = useMemo(() => allLeads.filter((l) => matches(l.state)), [allLeads, matches]);
-  const { comms } = useIntakeCommsLive(100);
-  const [selectedLeadId, setSelectedLeadId] = useState<string>("");
-  const selectedLead = useMemo(
-    () => leads.find((l) => l.id === selectedLeadId) ?? null,
-    [leads, selectedLeadId],
-  );
+  const [q, setQ] = useState("");
+  const [section, setSection] = useState<string>("all");
+  const [team, setTeam] = useState<string>("all");
+  const [channel, setChannel] = useState<string>("all");
+  const [preview, setPreview] = useState<ParentCommTemplate | null>(null);
+  const [sendMode, setSendMode] = useState<SendMode | null>(null);
+  const [sendTpl, setSendTpl] = useState<ParentCommTemplate | null>(null);
 
-  const leadNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    leads.forEach((l) => map.set(l.id, l.childName));
-    return map;
-  }, [leads]);
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    return PARENT_COMM_TEMPLATES.filter((t) => {
+      if (section !== "all" && t.section !== section) return false;
+      if (team !== "all" && !t.team.toLowerCase().includes(team.toLowerCase())) return false;
+      if (channel !== "all" && t.channel !== channel) return false;
+      if (!term) return true;
+      return [t.title, t.useWhen, t.sms, t.subject, t.body, t.stage, t.section, t.team, t.id]
+        .some((v) => v.toLowerCase().includes(term));
+    });
+  }, [q, section, team, channel]);
 
-  const recent = useMemo<CommRow[]>(() => {
-    return comms.map((c) => ({
-      leadId: c.lead_id,
-      leadName: leadNameById.get(c.lead_id) ?? "Lead",
-      type: c.communication_type,
-      preview: c.preview,
-      timestamp: c.created_at,
-      user: c.logged_by_name ?? undefined,
-    })).slice(0, 50);
-  }, [comms, leadNameById]);
-
-  const followUps = useMemo(
-    () => {
-      const buckets = new Map<string, Lead[]>();
-      const ordered: string[] = [];
-      leads.forEach((l) => {
-        if (!l.nextAction) return;
-        if (isReadyToStartStage(l.status)) return;
-        if (isLeadOutOfPipeline(l.status)) return;
-        const bucket = canonicalFamilyLeadStage(l.status);
-        if (!buckets.has(bucket)) { buckets.set(bucket, []); ordered.push(bucket); }
-        buckets.get(bucket)!.push(l);
-      });
-      return ordered.flatMap((b) => buckets.get(b) ?? []).slice(0, 30);
-    },
-    [leads],
-  );
-
-  const pulseTiles: PulseTileSpec[] = useMemo(() => {
-    const now = Date.now();
-    const dayMs = 24 * 60 * 60 * 1000;
-    const last24 = recent.filter((r) => now - new Date(r.timestamp).getTime() < dayMs);
-    const calls = last24.filter((r) => r.type === "call").length;
-    const sms = last24.filter((r) => r.type === "sms").length;
-    const email = last24.filter((r) => r.type === "email").length;
-    return [
-      { key: "open",     label: "Open Follow-Ups", value: followUps.length, hint: "Leads with next action",  icon: Inbox,      tone: "indigo" },
-      { key: "last24",   label: "Sent · 24h",      value: last24.length,    hint: "All channels",            icon: Sparkles,   tone: "primary" },
-      { key: "calls",    label: "Calls · 24h",     value: calls,            hint: "Voice outreach",          icon: Phone,      tone: "emerald" },
-      { key: "sms",      label: "SMS · 24h",       value: sms,              hint: "Text outreach",           icon: MessageSquare, tone: "sky" },
-      { key: "email",    label: "Email · 24h",     value: email,            hint: "Email outreach",          icon: Mail,       tone: "violet" },
-      { key: "tpl",      label: "Templates",       value: TEMPLATES.length, hint: "Ready to send",           icon: Megaphone,  tone: "amber" },
-    ];
-  }, [recent, followUps.length]);
+  function openSend(t: ParentCommTemplate, mode: SendMode) {
+    setSendTpl(t); setSendMode(mode);
+  }
 
   return (
     <GrowthPageShell
-      eyebrow="Intake"
-      title="Intake Communications"
-      description="Send calls, SMS, and email to families through Blossom OS - powered by CTM, Jivetel, and Mailchimp adapters."
-      headerRight={<IntakeStateFilterToggle />}
-      actions={[
-        { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
-        { label: "Open Leads", icon: List, to: "/leads" },
-      ]}
+      eyebrow="Resource Library"
+      title="Parent Communication Resources"
+      description="Approved SMS and email templates for every stage of the family journey. Search, filter, copy, or send from a lead."
     >
-      <section>
-        <IntakeSectionHeader icon={Radio} tone="violet" title="Comms Pulse" subtitle="Outreach across calls, SMS, and email in the last 24 hours." />
-        <IntakePulseStrip tiles={pulseTiles} loading={loading} />
-      </section>
+      <div className="rounded-xl border border-amber-200 bg-amber-50/60 dark:bg-amber-950/20 p-3 flex items-start gap-2">
+        <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+        <p className="text-xs text-amber-900 dark:text-amber-200">
+          Do not include sensitive clinical, insurance, billing, or diagnosis details in SMS.
+          Use approved secure processes when detail is required.
+        </p>
+      </div>
 
-      <section>
-        <IntakeSectionHeader icon={MessageSquare} tone="sky" title={`Recent communications (${recent.length})`} subtitle="Synced from CTM, Jivetel, and Mailchimp." />
-        {recent.length === 0 ? (
-          <ReadyForDataNotice message={loading ? "Loading communications..." : "Calls, SMS, and emails sent from Blossom OS or synced from CTM/Jivetel/Mailchimp will appear here."} />
-        ) : (
-          <div className="rounded-2xl border border-border/70 bg-card divide-y divide-border/60 overflow-hidden">
-            {recent.map((r, i) => {
-              const Icon = ICONS[r.type] ?? MessageSquare;
-              const t = INTAKE_TONE[TYPE_TONE[r.type]];
-              return (
-                <div key={`${r.leadId}-${i}`} className="flex items-start gap-3 p-3 hover:bg-muted/40 transition-colors">
-                  <div className={cn("grid place-items-center h-7 w-7 rounded-lg shrink-0 mt-0.5", t.icon)}>
-                    <Icon className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 text-sm">
-                      <LeadNameLink leadId={r.leadId} className="font-medium hover:underline truncate">{r.leadName}</LeadNameLink>
-                      <span className="text-[11px] text-muted-foreground">{new Date(r.timestamp).toLocaleString()}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate">{r.preview}</div>
-                    {r.user && <div className="text-[10px] text-muted-foreground mt-0.5">sent by {r.user} via Blossom OS</div>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <IntakeSectionHeader
-          icon={Megaphone} tone="amber"
-          title="Send from template"
-          subtitle="Pick a lead, then send through Blossom OS. {{variables}} are personalized server-side."
-        />
-        <div className="mb-3 flex items-center gap-2">
-          <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
-            <SelectTrigger className="w-full max-w-sm h-9 text-sm">
-              <SelectValue placeholder="Select a lead to enable sending" />
-            </SelectTrigger>
-            <SelectContent>
-              {leads.slice(0, 100).map((l) => (
-                <SelectItem key={l.id} value={l.id}>
-                  {l.childName}{l.parentName ? ` - ${l.parentName}` : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {!selectedLead && (
-            <span className="text-[11px] text-muted-foreground">Select a lead to enable send actions.</span>
-          )}
+      <section className="rounded-xl border bg-card p-3 grid grid-cols-1 md:grid-cols-4 gap-2">
+        <div className="relative md:col-span-4 lg:col-span-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)}
+            placeholder="Search templates..." className="pl-8 h-9" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {TEMPLATES.map((tpl) => {
-            const t = INTAKE_TONE[tpl.tone];
-            return (
-              <article key={tpl.id} className={cn("group rounded-2xl border border-border/70 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm", t.bg)}>
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-foreground">{tpl.label}</h3>
-                  <Button
-                    size="sm" variant="ghost" className="h-7"
-                    onClick={() => { navigator.clipboard.writeText(tpl.body); toast.success("Template copied"); }}
-                    title="Copy template text for reference"
-                  >
-                    <Copy className="h-3 w-3 mr-1" /> Copy
+        <Select value={section} onValueChange={setSection}>
+          <SelectTrigger className="h-9"><SelectValue placeholder="Stage / Section" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All stages</SelectItem>
+            {PARENT_COMM_SECTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={team} onValueChange={setTeam}>
+          <SelectTrigger className="h-9"><SelectValue placeholder="Team" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All teams</SelectItem>
+            {PARENT_COMM_TEAMS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={channel} onValueChange={setChannel}>
+          <SelectTrigger className="h-9"><SelectValue placeholder="Channel" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All channels</SelectItem>
+            {PARENT_COMM_CHANNELS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </section>
+
+      <div className="text-xs text-muted-foreground">
+        {filtered.length} of {PARENT_COMM_TEMPLATES.length} templates
+      </div>
+
+      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {filtered.map((t) => (
+          <article key={t.id}
+            className="group rounded-2xl border bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="text-[10px] font-mono text-muted-foreground">#{t.id}</div>
+                <h3 className="text-sm font-semibold text-foreground truncate">{t.title}</h3>
+              </div>
+              <Badge variant="outline" className="text-[10px] shrink-0">{t.channel}</Badge>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              <Badge variant="secondary" className="text-[10px]">{t.section}</Badge>
+              <Badge variant="secondary" className="text-[10px]">{t.stage}</Badge>
+              <Badge variant="secondary" className="text-[10px]">{t.team}</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-3 line-clamp-3">{t.useWhen}</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setPreview(t)}>
+                <FileText className="h-3 w-3 mr-1" /> View
+              </Button>
+              {t.sms && (
+                <>
+                  <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => copy(t.sms, "SMS")}>
+                    <Copy className="h-3 w-3 mr-1" /> Copy SMS
                   </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap line-clamp-5">{tpl.body}</p>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {tpl.actions.map((a, idx) => {
-                    const meta = ACTION_META[a.kind];
-                    const Icon = meta.icon;
-                    return (
-                      <Button
-                        key={idx}
-                        size="sm"
-                        variant="default"
-                        className="h-7 text-[11px]"
-                        disabled={!selectedLead}
-                        onClick={() => selectedLead && runTemplateAction(a, selectedLead)}
-                      >
-                        <Icon className="h-3 w-3 mr-1" /> {meta.label}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                  <Button size="sm" variant="default" className="h-7 text-[11px]" onClick={() => openSend(t, "sms")}>
+                    <MessageSquare className="h-3 w-3 mr-1" /> Send SMS
+                  </Button>
+                </>
+              )}
+              {t.body && (
+                <>
+                  <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => copy(t.body, "Email body")}>
+                    <Copy className="h-3 w-3 mr-1" /> Copy Email
+                  </Button>
+                  <Button size="sm" variant="default" className="h-7 text-[11px]" onClick={() => openSend(t, "email")}>
+                    <Mail className="h-3 w-3 mr-1" /> Send Email
+                  </Button>
+                </>
+              )}
+            </div>
+          </article>
+        ))}
       </section>
 
       <section>
-        <IntakeSectionHeader icon={Inbox} tone="indigo" title={`Required follow-ups (${followUps.length})`} subtitle="Leads with an open next action." />
-        {followUps.length === 0 ? (
-          <ReadyForDataNotice message="No follow-ups pending." />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-            {followUps.map((l) => {
-              const t = INTAKE_TONE.indigo;
-              return (
-                <div key={l.id} className={cn("rounded-xl border border-border/60 p-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm", t.bg)}>
-                  <div className="flex items-center justify-between gap-2">
-                    <LeadNameLink leadId={l.id} className="font-medium text-sm truncate hover:underline">{l.childName}</LeadNameLink>
-                    <span className="text-[11px] text-muted-foreground shrink-0">{l.status}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">{l.nextAction}</div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <Button size="sm" variant="outline" className="h-7 text-[11px]"
-                      onClick={async () => notifyCommunicationResult(await sendLeadSms(leadToContext(l)))}>
-                      <MessageSquare className="h-3 w-3 mr-1" /> SMS
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-7 text-[11px]"
-                      onClick={async () => notifyCommunicationResult(await sendLeadEmail(leadToContext(l)))}>
-                      <Mail className="h-3 w-3 mr-1" /> Email
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-7 text-[11px]"
-                      onClick={async () => notifyCommunicationResult(await sendMissingInfoReminder(leadToContext(l)))}>
-                      <AlertCircle className="h-3 w-3 mr-1" /> Missing Info
-                    </Button>
-                  </div>
-                  <div className="mt-2">
-                    <LeadActionPanel lead={l} compact sourcePage="parent-communication" />
-                  </div>
+        <h2 className="text-sm font-semibold flex items-center gap-2 mb-2">
+          <StickyNote className="h-4 w-4" /> Internal note templates
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {PARENT_COMM_INTERNAL_NOTES.map((n) => (
+            <article key={n.id} className="rounded-2xl border bg-card p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-[10px] font-mono text-muted-foreground">#{n.id}</div>
+                  <h3 className="text-sm font-semibold">{n.title}</h3>
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => copy(n.body, "Internal note")}>
+                  <Copy className="h-3 w-3 mr-1" /> Copy
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap">{n.body}</p>
+            </article>
+          ))}
+        </div>
       </section>
+
+      <section className="rounded-xl border bg-muted/30 p-3">
+        <div className="text-xs font-semibold mb-1.5">Available merge fields</div>
+        <div className="flex flex-wrap gap-1">
+          {PARENT_COMM_MERGE_FIELDS.map((f) => (
+            <button key={f} onClick={() => copy(`{{${f}}}`, `{{${f}}}`)}
+              className="text-[10px] font-mono px-1.5 py-0.5 rounded border bg-background hover:bg-muted transition-colors">
+              {`{{${f}}}`}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <Sheet open={!!preview} onOpenChange={(o) => { if (!o) setPreview(null); }}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          {preview && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="text-left">
+                  <div className="text-[10px] font-mono text-muted-foreground">#{preview.id}</div>
+                  {preview.title}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-4 text-sm">
+                <div className="flex flex-wrap gap-1">
+                  <Badge variant="secondary">{preview.section}</Badge>
+                  <Badge variant="secondary">{preview.stage}</Badge>
+                  <Badge variant="secondary">{preview.team}</Badge>
+                  <Badge variant="outline">{preview.channel}</Badge>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-1">When to use</div>
+                  <p className="text-sm">{preview.useWhen}</p>
+                </div>
+                {preview.sms && (
+                  <div className={cn("rounded-lg border p-3 bg-sky-50/50 dark:bg-sky-950/20")}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-xs font-semibold flex items-center gap-1"><MessageSquare className="h-3 w-3" /> SMS</div>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => copy(preview.sms, "SMS")}>
+                          <Copy className="h-3 w-3 mr-1" /> Copy
+                        </Button>
+                        <Button size="sm" variant="default" className="h-6 text-[11px]" onClick={() => openSend(preview, "sms")}>
+                          Send SMS
+                        </Button>
+                      </div>
+                    </div>
+                    <pre className="whitespace-pre-wrap text-xs font-sans">{preview.sms}</pre>
+                  </div>
+                )}
+                {preview.subject && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-xs font-semibold text-muted-foreground">Email subject</div>
+                      <Button size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => copy(preview.subject, "Subject")}>
+                        <Copy className="h-3 w-3 mr-1" /> Copy
+                      </Button>
+                    </div>
+                    <div className="rounded-md border bg-background p-2 text-sm">{preview.subject}</div>
+                  </div>
+                )}
+                {preview.body && (
+                  <div className="rounded-lg border p-3 bg-violet-50/50 dark:bg-violet-950/20">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-xs font-semibold flex items-center gap-1"><Mail className="h-3 w-3" /> Email body</div>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => copy(preview.body, "Email body")}>
+                          <Copy className="h-3 w-3 mr-1" /> Copy
+                        </Button>
+                        <Button size="sm" variant="default" className="h-6 text-[11px]" onClick={() => openSend(preview, "email")}>
+                          Send Email
+                        </Button>
+                      </div>
+                    </div>
+                    <pre className="whitespace-pre-wrap text-xs font-sans">{preview.body}</pre>
+                  </div>
+                )}
+                {preview.after && (
+                  <div>
+                    <div className="text-xs font-semibold text-muted-foreground mb-1">After sending</div>
+                    <p className="text-sm">{preview.after}</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <LeadPickerDialog
+        open={!!sendMode && !!sendTpl}
+        mode={sendMode}
+        template={sendTpl}
+        onClose={() => { setSendMode(null); setSendTpl(null); }}
+      />
     </GrowthPageShell>
   );
 }
