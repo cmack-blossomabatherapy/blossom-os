@@ -20,6 +20,8 @@ import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/inta
 import { useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Lock } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AssigneePicker } from "@/components/tasks/AssigneePicker";
 
 type FilterKey = "all" | "today" | "overdue" | "escalated";
 type SortKey = "due" | "lead" | "owner" | "title";
@@ -166,12 +168,9 @@ export default function IntakeTasks() {
     </button>
   );
 
-  const onReassignRow = async (row: TaskRow) => {
-    const next = window.prompt("Reassign to", row.task.owner || "");
-    if (next && next.trim()) {
-      try { await reassign(row.task.id, next.trim()); toast.success(`Reassigned to ${next.trim()}`); }
-      catch (e) { toast.error(e instanceof Error ? e.message : "Could not reassign"); }
-    }
+  const onReassignRow = async (row: TaskRow, next: string) => {
+    try { await reassign(row.task.id, next); toast.success(next ? `Reassigned to ${next}` : "Cleared assignment"); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Could not reassign"); }
   };
 
   const startTask = async (row: TaskRow) => {
@@ -194,8 +193,8 @@ export default function IntakeTasks() {
   return (
     <GrowthPageShell
       eyebrow="Growth & Admissions"
-      title="Intake Tasks"
-      description="Your personal intake task list — follow-ups, missing information, and lead actions."
+      title="Tasks"
+      description="Your task list — follow-ups, actions, and reminders across every role."
       headerRight={<IntakeStateFilterToggle />}
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
@@ -277,7 +276,19 @@ export default function IntakeTasks() {
                             <StartButton row={r} onStart={() => startTask(r)} />
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={wrap("Completed", () => complete(r.task.id))}>Complete</Button>
                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={wrap("Snoozed", () => snooze(r.task.id))}>Snooze</Button>
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onReassignRow(r)}>Reassign</Button>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">Reassign</Button>
+                              </PopoverTrigger>
+                              <PopoverContent align="end" className="p-2 w-[320px]">
+                                <div className="text-[11px] text-muted-foreground px-1 pb-1">Reassign task</div>
+                                <AssigneePicker
+                                  value={r.task.owner || ""}
+                                  onChange={(name) => onReassignRow(r, name)}
+                                  placeholder="Search team members…"
+                                />
+                              </PopoverContent>
+                            </Popover>
                           </div>
                         </td>
                       </tr>

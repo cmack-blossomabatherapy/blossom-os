@@ -39,7 +39,6 @@ import ClinicDetail from "./pages/ClinicDetail";
 import Clinics from "./pages/Clinics";
 
 import Documents from "./pages/Documents";
-import Tasks from "./pages/Tasks";
 import Reports from "./pages/Reports";
 import ReportsHome from "./pages/os/reports/ReportsHome";
 import BusinessDevelopmentDashboard from "./pages/os/growth/BusinessDevelopmentDashboard";
@@ -1157,7 +1156,7 @@ const App = () => (
                   <Route path="/qa" element={<Navigate to="/qa-team" replace />} />
                   <Route path="/qa/:id" element={<QADetail />} />
                   <Route path="/documents" element={<Documents />} />
-                  <Route path="/tasks" element={<Tasks />} />
+                  <Route path="/tasks" element={<IntakeTasks />} />
                   <Route path="/automations" element={<PermissionRoute permission="automations.view" allowedRoles={AUTOMATIONS_ROLES}><Automations /></PermissionRoute>} />
                   <Route path="/training/academy" element={<AcademyHome />} />
                   <Route path="/training/academy/week/:weekId" element={<AcademyWeekDetail />} />
