@@ -130,10 +130,12 @@ export default function CompanyHome() {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [month, setMonth] = useState<Date>(today);
+  const [view, setView] = useState<"month" | "week">("month");
   const [openEvent, setOpenEvent] = useState<CompanyCalendarEvent | null>(null);
   const [dayDrawer, setDayDrawer] = useState<{ date: Date; category: string | null } | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<Set<string>>(new Set());
   const [rangePreset, setRangePreset] = useState<RangePreset>("all");
+  const [jumpOpen, setJumpOpen] = useState(false);
 
   const availableCategories = useMemo(() => {
     const set = new Set<string>();
