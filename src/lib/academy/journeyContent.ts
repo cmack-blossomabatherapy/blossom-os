@@ -621,6 +621,39 @@ function buildAssistantStateDirectorJourney(slug: string, path: TrainingPath): P
   return journey;
 }
 
+/* ------------------- State Director source adapter ------------------- */
+
+function synthesizeStateDirectorModule(d: StateDirectorDayModule): AcademyJourneyModule {
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  return {
+    id: `state-director::${d.id}`,
+    title: d.title,
+    description: d.description,
+    type: "Workflow",
+    estimatedMinutes: minutes,
+    required: true,
+    category: "role",
+    department: "state_operations",
+    sourceKind: "state-director",
+    sourceModuleId: d.id,
+    resources: [],
+  };
+}
+
+function buildStateDirectorJourney(slug: string, path: TrainingPath): PathJourney {
+  const dayGroups: AcademyJourneyModule[][] = STATE_DIRECTOR_DAYS.map((d) => [synthesizeStateDirectorModule(d)]);
+  const weekGroups = chunk(dayGroups, 5);
+  const dayTitles = STATE_DIRECTOR_DAYS.map((d) => `Day ${d.dayInJourney} · ${d.title}`);
+  const journey = assembleJourney({
+    slug, path, weekGroups, dayTitles, source: "state-director",
+  });
+  journey.weeks = journey.weeks.map((w) => ({
+    ...w,
+    title: STATE_DIRECTOR_WEEKS.find((sw) => sw.weekNumber === w.weekNumber)?.title ?? w.title,
+  }));
+  return journey;
+}
+
 function assembleJourney(opts: {
   slug: string;
   path: TrainingPath;
@@ -760,6 +793,9 @@ export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }
   }
   if (slug === "assistant-state-director") {
     return buildAssistantStateDirectorJourney(slug, path);
+  }
+  if (slug === "state-director") {
+    return buildStateDirectorJourney(slug, path);
   }
 
   const all = getTrainings();
