@@ -8,6 +8,15 @@ import { useAdminResources } from "@/hooks/useAdminResources";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { BlossomAIIngestPanel } from "@/components/resource-library/BlossomAIIngestPanel";
 
+const EXEC_TIER = new Set([
+  "executive",
+  "executive_leadership",
+  "ceo",
+  "coo",
+  "doo",
+  "super_admin",
+]);
+
 function KpiTile({ label, value, tone = "slate" }: { label: string; value: number | string; tone?: string }) {
   const toneClass: Record<string, string> = {
     slate: "bg-slate-50 text-slate-800 border-slate-200",
@@ -30,7 +39,7 @@ export default function ResourceLibraryAdminQA() {
 
   const kpis = useMemo(() => {
     const total = resources.length;
-    let missing = 0, imported = 0, sensitive = 0, needsAck = 0;
+    let missing = 0, imported = 0, sensitive = 0, needsAck = 0, untagged = 0, missingExec = 0;
     const bucketCounts = new Map<string, number>();
     const visibilityCounts = new Map<string, number>();
     for (const r of resources) {
@@ -40,12 +49,31 @@ export default function ResourceLibraryAdminQA() {
       if (attach === "available" || attach === "attached" || r.storagePath) imported++;
       if (r.isSensitive) sensitive++;
       if (r.requiresAcknowledgement) needsAck++;
+      const roles = (r.roles ?? []) as string[];
+      const nonExec = roles.filter((x) => !EXEC_TIER.has(x));
+      if (nonExec.length === 0) untagged++;
+      if (!roles.some((x) => EXEC_TIER.has(x))) missingExec++;
       const b = r.storageBucket ?? "—";
       bucketCounts.set(b, (bucketCounts.get(b) ?? 0) + 1);
       const v = r.visibilityLevel ?? "—";
       visibilityCounts.set(v, (visibilityCounts.get(v) ?? 0) + 1);
     }
-    return { total, missing, imported, sensitive, needsAck, bucketCounts, visibilityCounts };
+    return { total, missing, imported, sensitive, needsAck, untagged, missingExec, bucketCounts, visibilityCounts };
+  }, [resources]);
+
+  const queues = useMemo(() => {
+    const missingStorage = resources.filter(
+      (r) => !r.storagePath && String(r.uploadStatus ?? "") === "missing_file",
+    );
+    const untaggedList = resources.filter((r) => {
+      const roles = (r.roles ?? []) as string[];
+      return roles.filter((x) => !EXEC_TIER.has(x)).length === 0;
+    });
+    const missingExecList = resources.filter((r) => {
+      const roles = (r.roles ?? []) as string[];
+      return !roles.some((x) => EXEC_TIER.has(x));
+    });
+    return { missingStorage, untaggedList, missingExecList };
   }, [resources]);
 
   if (role !== "super_admin") {
@@ -79,6 +107,24 @@ export default function ResourceLibraryAdminQA() {
           <KpiTile label="Ack required" value={kpis.needsAck} tone="blue" />
         </div>
 
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <KpiTile
+            label="Untagged (no role)"
+            value={kpis.untagged}
+            tone={kpis.untagged > 0 ? "amber" : "emerald"}
+          />
+          <KpiTile
+            label="Missing exec tier"
+            value={kpis.missingExec}
+            tone={kpis.missingExec > 0 ? "rose" : "emerald"}
+          />
+          <KpiTile
+            label="Missing storage file"
+            value={queues.missingStorage.length}
+            tone={queues.missingStorage.length > 0 ? "amber" : "emerald"}
+          />
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-border/60 bg-card p-4">
             <h2 className="text-[14px] font-semibold">Bucket distribution</h2>
@@ -109,6 +155,25 @@ export default function ResourceLibraryAdminQA() {
         </div>
 
         <ResourceListView resources={resources} loading={loading} flat emptyMessage="No records found." />
+
+        {queues.missingStorage.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-[14px] font-semibold">QA queue · Missing storage file ({queues.missingStorage.length})</h2>
+            <ResourceListView resources={queues.missingStorage} loading={false} flat emptyMessage="All clear." />
+          </section>
+        )}
+        {queues.untaggedList.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-[14px] font-semibold">QA queue · Untagged roles ({queues.untaggedList.length})</h2>
+            <ResourceListView resources={queues.untaggedList} loading={false} flat emptyMessage="All clear." />
+          </section>
+        )}
+        {queues.missingExecList.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-[14px] font-semibold">QA queue · Missing executive tier ({queues.missingExecList.length})</h2>
+            <ResourceListView resources={queues.missingExecList} loading={false} flat emptyMessage="All clear." />
+          </section>
+        )}
 
         <BlossomAIIngestPanel />
       </div>
