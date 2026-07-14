@@ -101,6 +101,19 @@ export interface Resource {
    * Only `published` items appear in the standard Resource Library.
    */
   uploadStatus?: ResourceUploadStatus;
+  /**
+   * Phase 6 — AI ingestion lifecycle:
+   *  - pending  → not yet chunked
+   *  - queued   → scheduled for the next ingest run
+   *  - ready    → chunks live in `knowledge_chunks` for Blossom AI
+   *  - error    → last ingest attempt failed
+   *  - skipped  → intentionally excluded from ingestion
+   */
+  ingestStatus?: "pending" | "queued" | "ready" | "error" | "skipped";
+  /** Count of vector chunks generated for AI retrieval. */
+  chunkCount?: number;
+  /** True when a transcript has been captured for a video resource. */
+  transcriptAvailable?: boolean;
 }
 
 /**
