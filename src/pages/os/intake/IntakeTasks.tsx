@@ -26,6 +26,8 @@ import { AssigneePicker } from "@/components/tasks/AssigneePicker";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Circle, Loader2, Ban, CheckCircle2 as CheckIcon } from "lucide-react";
+import { Activity as ActivityIcon } from "lucide-react";
+import { TaskActivityDrawer } from "@/components/tasks/TaskActivityDrawer";
 
 const STATUS_META: Record<IntakeTaskRow["status"], { label: string; dot: string; text: string; bg: string; border: string; Icon: React.ComponentType<{ className?: string }> }> = {
   "Open":        { label: "Not started", dot: "bg-slate-400",  text: "text-slate-700 dark:text-slate-200", bg: "bg-slate-500/10",  border: "border-slate-500/30",  Icon: Circle },
@@ -165,6 +167,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
   const [dueRange, setDueRange] = useState<DueRangeKey>("any");
   const [flag, setFlag] = useState<FlagKey>("any");
   const [createOpen, setCreateOpen] = useState(false);
+  const [activityTask, setActivityTask] = useState<IntakeTaskRow | null>(null);
 
   const leadById = useMemo(() => {
     const map = new Map<string, Lead>();
@@ -319,6 +322,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
   };
 
   return (
+    <>
     <GrowthPageShell
       eyebrow={isUniversal ? "Work" : "Growth & Admissions"}
       title="Tasks"
@@ -557,6 +561,15 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
                             <StartButton row={r} onStart={() => startTask(r)} />
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={wrap("Completed", () => complete(r.task.id))}>Complete</Button>
                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={wrap("Snoozed", () => snooze(r.task.id))}>Snooze</Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs gap-1"
+                              onClick={() => setActivityTask(r.task)}
+                              title="View activity"
+                            >
+                              <ActivityIcon className="h-3 w-3" /> Activity
+                            </Button>
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">Reassign</Button>
@@ -586,6 +599,12 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
         </section>
       )}
     </GrowthPageShell>
+    <TaskActivityDrawer
+      task={activityTask}
+      open={!!activityTask}
+      onOpenChange={(o) => { if (!o) setActivityTask(null); }}
+    />
+    </>
   );
 }
 
