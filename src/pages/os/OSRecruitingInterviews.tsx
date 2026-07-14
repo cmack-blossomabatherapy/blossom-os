@@ -140,7 +140,9 @@ const OUTCOME_STEPS = [
 export default function OSRecruitingInterviews() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveInterviews } = useRecruitingInterviews();
+  // Live interviews subscription is kept to trigger realtime refreshes of the
+  // legacy mapper; the raw items aren't needed here.
+  useRecruitingInterviews();
   const [activeChip, setActiveChip] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [state, setState] = useState<string>("all");
@@ -148,7 +150,7 @@ export default function OSRecruitingInterviews() {
   const [recruiter, setRecruiter] = useState<string>("all");
   const [source, setSource] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const { getArray: getChecks, toggleStep } = useInterviewChecklist(OUTCOME_STEPS);
+  const { getArray: getChecks } = useInterviewChecklist(OUTCOME_STEPS);
 
   // Operational Insights panel state
   const [aiQuestion, setAiQuestion] = useState("");
@@ -228,11 +230,10 @@ export default function OSRecruitingInterviews() {
         default: return true;
       }
     });
-  }, [activeChip, search, state, role, recruiter, source]);
+  }, [activeChip, search, state, role, recruiter, source, recruitingCandidates]);
 
-  const all = recruitingCandidates;
   const summary = useMemo(() => {
-    const get = (pred: (c: RecruitingCandidate) => boolean) => all.filter(pred).length;
+    const get = (pred: (c: RecruitingCandidate) => boolean) => recruitingCandidates.filter(pred).length;
     return {
       today:        get((c) => isToday(c.interviewAt) || c.interviewStatus === "Today"),
       needsSchedule:get((c) => stageOf(c) === "needsSchedule"),
@@ -241,16 +242,15 @@ export default function OSRecruitingInterviews() {
       noShows:      get((c) => stageOf(c) === "noShow"),
       needsDecision:get((c) => stageOf(c) === "needsDecision"),
       offerRec:     get((c) => stageOf(c) === "offerRec"),
-      followUp:     get((c) => c.blockers.length > 0 && c.daysInStage >= 3),
+      followUp:     get((c) => (c.blockers ?? []).length > 0 && c.daysInStage >= 3),
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [recruitingCandidates]);
 
   const todays = useMemo(() => {
     return recruitingCandidates
       .filter((c) => isToday(c.interviewAt) || c.interviewStatus === "Today")
       .sort((a, b) => (a.interviewAt ?? "").localeCompare(b.interviewAt ?? ""));
-  }, []);
+  }, [recruitingCandidates]);
 
   const followUpQueue = useMemo(() => {
     return recruitingCandidates.filter((c) => {
@@ -258,8 +258,7 @@ export default function OSRecruitingInterviews() {
       return s === "noShow" || s === "needsDecision" || (s === "offerRec" && c.offerStatus !== "Sent" && c.offerStatus !== "Accepted")
         || (s === "completed" && c.daysInStage >= 2);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [recruitingCandidates]);
 
   const selected = selectedId ? recruitingCandidates.find((c) => c.id === selectedId) ?? null : null;
 
