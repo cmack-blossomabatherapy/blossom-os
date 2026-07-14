@@ -125,6 +125,16 @@ export default function ResourceLibraryAdminQA() {
           />
         </div>
 
+        <div className="rounded-2xl border border-border/60 bg-card p-4 text-[12.5px] text-muted-foreground">
+          <span className="font-semibold text-foreground">Phase 5 auto-classification is live.</span>{" "}
+          Executive-tier-only records are backfilled with role tags inferred from title, description
+          and source (billing, recruiting, HR, RBT, BCBA, scheduling, authorization, QA, marketing,
+          intake, credentialing, case management, behavioral support, state operations, business
+          development). README noise entries have been deactivated so they no longer surface in the
+          library. Use <code className="rounded bg-muted px-1 py-0.5">public.suggest_resource_roles()</code>{" "}
+          to preview suggestions for any new upload.
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-border/60 bg-card p-4">
             <h2 className="text-[14px] font-semibold">Bucket distribution</h2>
