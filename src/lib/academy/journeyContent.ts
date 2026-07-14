@@ -19,8 +19,9 @@ import { INTAKE_DAYS, INTAKE_WEEKS, type IntakeDayModule } from "@/lib/training/
 import { RECRUITING_DAYS, RECRUITING_WEEKS, type RecruitingDayModule } from "@/lib/training/recruitingAcademy";
 import { AUTHORIZATIONS_DAYS, AUTHORIZATIONS_WEEKS, type AuthorizationsDayModule } from "@/lib/training/authorizationsAcademy";
 import { SCHEDULING_DAYS, SCHEDULING_WEEKS, type SchedulingDayModule } from "@/lib/training/schedulingAcademy";
+import { STAFFING_DAYS, STAFFING_WEEKS, type StaffingDayModule } from "@/lib/training/staffingAcademy";
 
-export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling";
+export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing";
 
 /** Training-shaped record that carries the original source for routing & resource lookup. */
 export type AcademyJourneyModule = Training & {
@@ -100,11 +101,11 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
     case "recruiting":           return []; // sourced from recruitingAcademy.ts
     case "authorizations":       return []; // sourced from authorizationsAcademy.ts
     case "scheduling":           return []; // sourced from schedulingAcademy.ts
+    case "staffing":             return []; // sourced from staffingAcademy.ts
     case "qa":                   return byDept("qa");
     case "case-manager":         return byDept("case_management");
     case "hr":                   return byDept("hr");
     case "credentialing":        return byDept("credentialing");
-    case "staffing":             return byDept("staffing");
     case "marketing":            return byDept("marketing");
     case "business-development": return byDept("business_development");
     case "clinical-director":   return byDept("clinical_director");
@@ -123,7 +124,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
 /** Build the live runtime route for a module id, source-aware. */
 function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
   return (id: string) => {
-    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::")) {
+    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::")) {
       return `/academy/path/${slug}/module/${encodeURIComponent(id)}`;
     }
     return `/training/${id}`;
@@ -132,7 +133,7 @@ function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
 
 /** Unified per-module status: runtime store for rbt/bcba, academyData for everything else. */
 function unifiedStatus(id: string): "completed" | "in_progress" | "overdue" | "not_started" {
-  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::")) {
+  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::")) {
     const s = getRuntimeStatus(id);
     return s === "completed" ? "completed" : s === "in_progress" ? "in_progress" : "not_started";
   }
