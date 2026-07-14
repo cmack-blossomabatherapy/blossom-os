@@ -292,16 +292,16 @@ export default function CompanyHome() {
         </header>
 
         {/* Calendar hero */}
-        <section className="grid gap-6 lg:grid-cols-[1.7fr_1fr]">
+        <section className="grid gap-6 items-start lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
           {/* Colorful blossom-petal frame around the calendar */}
           <div
-            className="relative rounded-[28px] p-[1.5px] shadow-[0_20px_60px_-30px_hsl(189_50%_45%/0.35)]"
+            className="relative min-w-0 rounded-[28px] p-[1.5px] shadow-[0_20px_60px_-30px_hsl(189_50%_45%/0.35)]"
             style={{
               backgroundImage:
                 "conic-gradient(from 210deg at 50% 50%, hsl(189 55% 58% / 0.55), hsl(280 60% 70% / 0.5), hsl(330 75% 72% / 0.55), hsl(20 85% 68% / 0.5), hsl(45 90% 65% / 0.5), hsl(160 55% 60% / 0.5), hsl(189 55% 58% / 0.55))",
             }}
           >
-            <Card className="relative overflow-hidden rounded-[26px] border-0 bg-card/95 backdrop-blur p-6 md:p-9">
+            <Card className="relative overflow-hidden rounded-[26px] border-0 bg-card/95 backdrop-blur p-4 sm:p-6 md:p-9 min-h-[560px] flex flex-col">
               {/* Soft petal glow backdrop */}
               <div
                 aria-hidden
