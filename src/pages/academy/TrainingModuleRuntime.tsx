@@ -16,6 +16,7 @@ import { getRecruitingDay, type RecruitingDayModule } from "@/lib/training/recru
 import { getAuthorizationsDay, type AuthorizationsDayModule } from "@/lib/training/authorizationsAcademy";
 import { getSchedulingDay, type SchedulingDayModule } from "@/lib/training/schedulingAcademy";
 import { getStaffingDay, type StaffingDayModule } from "@/lib/training/staffingAcademy";
+import { getHrDay, type HrDayModule } from "@/lib/training/hrAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime, persistRuntimeElapsed,
   type RuntimeContext,
@@ -54,6 +55,7 @@ export default function TrainingModuleRuntime() {
     if (parsed.kind === "authorizations") return resolveAuthorizations(parsed.sourceModuleId);
     if (parsed.kind === "scheduling") return resolveScheduling(parsed.sourceModuleId);
     if (parsed.kind === "staffing") return resolveStaffing(parsed.sourceModuleId);
+    if (parsed.kind === "hr") return resolveHr(parsed.sourceModuleId);
     return null;
   }, [parsed.kind, parsed.sourceModuleId]);
 
@@ -568,6 +570,35 @@ function resolveScheduling(sourceModuleId: string): ModuleCtx | null {
 
 function resolveStaffing(sourceModuleId: string): ModuleCtx | null {
   const d: StaffingDayModule | undefined = getStaffingDay(sourceModuleId);
+  if (!d) return null;
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  const checklist = [
+    ...d.checklist,
+    ...d.livePractice.map((p) => `Live practice: ${p}`),
+  ];
+  return {
+    title: d.title,
+    description: d.description,
+    type: `Week ${d.weekNumber} · Day ${d.dayNumber}`,
+    minutes,
+    required: true,
+    objectives: d.objectives,
+    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    checklist,
+    shadowing: d.shadowing,
+    knowledgeCheck: d.knowledgeCheck,
+    sopLinks: d.resources.map((r) => ({
+      label: r.pending ? `${r.label} (pending upload)` : r.label,
+      href: r.href,
+    })),
+    trainerNotes: d.trainerNotes,
+    reflectionPrompt: d.reflectionPrompt,
+    signoffRequired: d.signoffRequired,
+  };
+}
+
+function resolveHr(sourceModuleId: string): ModuleCtx | null {
+  const d: HrDayModule | undefined = getHrDay(sourceModuleId);
   if (!d) return null;
   const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
   const checklist = [
