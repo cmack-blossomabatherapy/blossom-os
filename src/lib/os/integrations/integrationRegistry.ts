@@ -204,7 +204,6 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
       "Marketing Dashboard",
       "Intake Dashboard",
       "Patient Lifetime Journey",
-      "Referral Queue",
       "Communications",
     ],
     sourceOfTruthFor: ["Inbound call attribution"],
@@ -255,7 +254,6 @@ export const BLOSSOM_INTEGRATIONS: BlossomIntegration[] = [
     dependentModules: [
       "LeadTrap",
       "Lead Sources",
-      "Referral Queue",
       "Intake Dashboard",
       "Patient Lifetime Journey",
     ],

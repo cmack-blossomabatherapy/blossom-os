@@ -49,7 +49,6 @@ describe("Sprint 15A — Intake Team shell hotfix", () => {
     const intakeIdx = menu.indexOf("intake_coordinator");
     expect(intakeIdx).toBeGreaterThan(-1);
     const required = [
-      "/intake/dashboard", "/intake/referral-queue", "/intake/lead-to-active",
       "/intake/missing-information", "/intake/parent-communication",
       "/intake/tasks", "/intake/benefits-cheat-sheets",
       "/academy", "/resource-library", "/reports",

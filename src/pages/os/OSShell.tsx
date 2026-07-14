@@ -129,7 +129,6 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   ]),
   intake_coordinator: new Set<string>([
     "/intake/dashboard",
-    "/intake/referral-queue",
     "/intake/lead-to-active",
     "/intake/missing-information",
     "/intake/parent-communication",

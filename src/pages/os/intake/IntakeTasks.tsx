@@ -66,9 +66,9 @@ function resolveDestination(row: TaskRow): Destination {
   }
   if (/referr/.test(text)) {
     return {
-      to: `/intake/referral-queue?leadId=${encodeURIComponent(leadId)}&${focus}`,
-      label: "Referral queue",
-      section: "Referral intake form",
+      to: `/intake/dashboard?leadId=${encodeURIComponent(leadId)}&${focus}`,
+      label: "Intake dashboard",
+      section: "Referral intake",
       nextStep: "Triage the referral and capture intake details.",
     };
   }

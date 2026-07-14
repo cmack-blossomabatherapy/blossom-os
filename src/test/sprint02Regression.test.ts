@@ -33,7 +33,6 @@ describe("Phase B — no /coming-soon or 'Coming Soon' copy in cleaned pages", (
   const FILES = [
     "src/pages/os/growth/BusinessDevelopmentDashboard.tsx",
     "src/pages/os/intake/IntakeDashboard.tsx",
-    "src/pages/os/intake/ReferralQueue.tsx",
     "src/pages/os/intake/LeadToActivePipeline.tsx",
     "src/pages/os/intake/IntakeTasks.tsx",
     "src/pages/os/operations-phase6/OperationsPages.tsx",

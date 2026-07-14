@@ -132,7 +132,6 @@ describe("Export 83 — LeadDetail upload buttons are wired", () => {
 describe("Export 83 — Intake Open Leads buttons standardized", () => {
   const files = [
     "src/pages/os/intake/IntakeDashboard.tsx",
-    "src/pages/os/intake/ReferralQueue.tsx",
     "src/pages/os/intake/LeadToActivePipeline.tsx",
     "src/pages/os/intake/ParentCommunication.tsx",
     "src/pages/os/intake/IntakeTasks.tsx",

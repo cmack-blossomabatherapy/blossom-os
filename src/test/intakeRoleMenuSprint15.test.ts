@@ -14,7 +14,6 @@ describe("Sprint 15 — Intake Team live menu", () => {
     const paths = intake!.sections.flatMap((s) => s.items.map((i) => i.path));
     for (const p of [
       "/intake/dashboard",
-      "/intake/referral-queue",
       "/intake/lead-to-active",
       "/intake/missing-information",
       "/intake/parent-communication",
@@ -55,7 +54,6 @@ describe("Sprint 15 — OSShell role-specific live paths", () => {
     expect(shell).toMatch(/intake_coordinator:\s*new Set/);
     for (const p of [
       "/intake/dashboard",
-      "/intake/referral-queue",
       "/intake/lead-to-active",
       "/intake/missing-information",
       "/intake/parent-communication",
@@ -91,7 +89,6 @@ describe("Sprint 15 — App.tsx mounts Intake routes", () => {
   const app = read("src/App.tsx");
   it.each([
     "/intake/dashboard",
-    "/intake/referral-queue",
     "/intake/lead-to-active",
     "/intake/missing-information",
     "/intake/parent-communication",
@@ -107,7 +104,6 @@ describe("Sprint 15 — App.tsx mounts Intake routes", () => {
 describe("Sprint 15 — Intake pages canonicalize lead deep links + use LeadActionPanel", () => {
   const files = [
     "src/pages/os/intake/IntakeDashboard.tsx",
-    "src/pages/os/intake/ReferralQueue.tsx",
     "src/pages/os/intake/LeadToActivePipeline.tsx",
     "src/pages/os/intake/MissingInformation.tsx",
     "src/pages/os/intake/ParentCommunication.tsx",

@@ -96,10 +96,9 @@ describe("Sprint 07 — Lead intake & patient journey engine", () => {
     }
   });
 
-  it("Intake Dashboard / Referral Queue / Lead-to-Active mount NewLeadDialog", () => {
+  it("Intake Dashboard / Lead-to-Active mount NewLeadDialog", () => {
     for (const p of [
       "src/pages/os/intake/IntakeDashboard.tsx",
-      "src/pages/os/intake/ReferralQueue.tsx",
       "src/pages/os/intake/LeadToActivePipeline.tsx",
     ]) {
       const src = read(p);
