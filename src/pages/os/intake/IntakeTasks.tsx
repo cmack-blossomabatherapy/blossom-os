@@ -24,6 +24,53 @@ import { Lock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AssigneePicker } from "@/components/tasks/AssigneePicker";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Circle, Loader2, Ban, CheckCircle2 as CheckIcon } from "lucide-react";
+
+const STATUS_META: Record<IntakeTaskRow["status"], { label: string; dot: string; text: string; bg: string; border: string; Icon: React.ComponentType<{ className?: string }> }> = {
+  "Open":        { label: "Not started", dot: "bg-slate-400",  text: "text-slate-700 dark:text-slate-200", bg: "bg-slate-500/10",  border: "border-slate-500/30",  Icon: Circle },
+  "In Progress": { label: "In progress", dot: "bg-sky-500",     text: "text-sky-700 dark:text-sky-200",     bg: "bg-sky-500/10",     border: "border-sky-500/30",     Icon: Loader2 },
+  "Blocked":     { label: "Blocked",     dot: "bg-rose-500",    text: "text-rose-700 dark:text-rose-200",   bg: "bg-rose-500/10",    border: "border-rose-500/30",    Icon: Ban },
+  "Completed":   { label: "Done",        dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-200", bg: "bg-emerald-500/10", border: "border-emerald-500/30", Icon: CheckIcon },
+};
+
+function InlineStatusPicker({ value, onChange, disabled }: {
+  value: IntakeTaskRow["status"];
+  onChange: (next: IntakeTaskRow["status"]) => void;
+  disabled?: boolean;
+}) {
+  const meta = STATUS_META[value];
+  const Icon = meta.Icon;
+  return (
+    <Select value={value} onValueChange={(v) => onChange(v as IntakeTaskRow["status"])} disabled={disabled}>
+      <SelectTrigger
+        aria-label="Change task status"
+        className={cn(
+          "h-7 w-[132px] px-2 py-0 text-[11px] font-medium rounded-full gap-1.5 border",
+          meta.bg, meta.text, meta.border,
+        )}
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <Icon className={cn("h-3 w-3", value === "In Progress" && "animate-spin")} />
+          <SelectValue>{meta.label}</SelectValue>
+        </span>
+      </SelectTrigger>
+      <SelectContent align="start" className="min-w-[168px]">
+        {(Object.keys(STATUS_META) as IntakeTaskRow["status"][]).map((s) => {
+          const m = STATUS_META[s];
+          return (
+            <SelectItem key={s} value={s} className="text-xs">
+              <span className="inline-flex items-center gap-2">
+                <span className={cn("h-2 w-2 rounded-full", m.dot)} />
+                {m.label}
+              </span>
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
+  );
+}
 
 type FilterKey = "all" | "today" | "overdue" | "escalated";
 type SortKey = "due" | "lead" | "owner" | "title";
@@ -105,7 +152,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
   const isUniversal = variant === "universal";
   const { leads: allLeads } = useLeads();
   const { matches } = useIntakeStateFilter();
-  const { tasks, loading, complete, snooze, reassign, markStarted } = useIntakeTasksLive();
+  const { tasks, loading, complete, snooze, reassign, markStarted, setStatus } = useIntakeTasksLive();
   const { openLead } = useLeadDrawer();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -451,7 +498,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs text-muted-foreground">
                   <tr className="text-left">
-                    <th className="px-3 py-2 w-24">Status</th>
+                    <th className="px-3 py-2 w-40">Status</th>
                     <th className="px-3 py-2"><SortBtn k="title">Task</SortBtn></th>
                     <th className="px-3 py-2"><SortBtn k="lead">Lead</SortBtn></th>
                     <th className="px-3 py-2 w-32">Type</th>
@@ -473,12 +520,22 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
                       catch (e) { toast.error(e instanceof Error ? e.message : `Could not ${label.toLowerCase()}`); }
                     };
                     return (
-                      <tr key={r.task.id} className="hover:bg-muted/30 transition-colors">
+                     <tr key={r.task.id} className="hover:bg-muted/30 transition-colors">
                         <td className="px-3 py-2">
-                          <div className="flex items-center gap-1">
-                            {c === "overdue" && <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30">Overdue</Badge>}
-                            {c === "today" && <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30">Today</Badge>}
-                            {c === "upcoming" && <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30">Upcoming</Badge>}
+                          <div className="flex items-center gap-1.5">
+                            <InlineStatusPicker
+                              value={r.task.status}
+                              onChange={async (next) => {
+                                try {
+                                  await setStatus(r.task, next);
+                                  toast.success(`Status → ${STATUS_META[next].label}`);
+                                } catch (e) {
+                                  toast.error(e instanceof Error ? e.message : "Could not update status");
+                                }
+                              }}
+                            />
+                            {c === "overdue" && <span className="h-1.5 w-1.5 rounded-full bg-rose-500" aria-label="Overdue" title="Overdue" />}
+                            {c === "today" && <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-label="Due today" title="Due today" />}
                             {isEscalated && <Flame className="h-3 w-3 text-violet-600" aria-label="Escalated" />}
                           </div>
                         </td>
