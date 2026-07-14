@@ -3,6 +3,7 @@ import {
   X, Phone, Mail, MapPin, Calendar, FileText, Activity, Sparkles,
   CheckCircle2, AlertCircle, ChevronRight, ExternalLink, StickyNote,
   Send, ShieldCheck, Ban, UserX, ListChecks, Plus, MailPlus,
+  Upload, Trash2, CalendarClock, Building2, User as UserIcon, Link2, Unlink,
 } from "lucide-react";
 import type { Lead } from "@/data/leads";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -27,6 +28,13 @@ import {
 } from "@/lib/intake/intakeWorkflow";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check } from "lucide-react";
+import { IntakeCoordinatorPicker } from "@/components/leads/IntakeCoordinatorPicker";
+import { AddLeadNoteDialog } from "@/components/leads/AddLeadNoteDialog";
+import { CreateLeadTaskDialog } from "@/components/leads/CreateLeadTaskDialog";
+import { LinkReferralDialog } from "@/components/leads/LinkReferralDialog";
+import { useLeadDocuments } from "@/hooks/useLeadDocuments";
+import { useLeadReferralLink } from "@/hooks/useLeadReferralLink";
+import { Button } from "@/components/ui/button";
 
 const STAGE_DETAILS: Record<string, { what: string; involves: string[]; owner: string }> = {
   "Lead Captured": {
