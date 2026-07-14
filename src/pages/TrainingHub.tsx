@@ -153,7 +153,7 @@ export default function TrainingHub() {
 
   return (
     <div className="aurora-bg -mx-3 -my-3 px-3 py-3 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full">
-      <div className="mx-auto max-w-7xl space-y-4 md:space-y-6 animate-fade-in">
+      <div className="mx-auto w-full max-w-6xl space-y-4 md:space-y-6 animate-fade-in">
         <GlassHero
           eyebrow="Internal learning OS"
           eyebrowIcon={Sparkles}

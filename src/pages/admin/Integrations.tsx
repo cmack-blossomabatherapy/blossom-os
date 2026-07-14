@@ -1307,7 +1307,7 @@ export default function Integrations() {
 
   return (
     <div className="min-h-full bg-background">
-      <div className="mx-auto max-w-7xl px-6 py-10 md:px-10">
+      <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10">
         {/* Header */}
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="max-w-2xl">

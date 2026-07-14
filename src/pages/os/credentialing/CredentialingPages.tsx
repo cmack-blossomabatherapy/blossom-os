@@ -50,7 +50,7 @@ import {
 function Shell({ children }: { children: ReactNode }) {
   return (
     <OSShell>
-      <div className="px-6 lg:px-10 py-8 max-w-[1500px] mx-auto space-y-6">{children}</div>
+      <div className="px-6 lg:px-10 py-8 max-w-6xl mx-auto space-y-6">{children}</div>
     </OSShell>
   );
 }

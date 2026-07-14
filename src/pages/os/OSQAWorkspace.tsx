@@ -216,7 +216,7 @@ export default function OSQAWorkspace() {
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-[1500px] px-4 md:px-8 pb-24 pt-6 md:pt-10 space-y-6">
+      <div className="mx-auto w-full max-w-[1400px] px-4 md:px-8 pb-24 pt-6 md:pt-10 space-y-6">
 
         {/* HEADER */}
         <header>

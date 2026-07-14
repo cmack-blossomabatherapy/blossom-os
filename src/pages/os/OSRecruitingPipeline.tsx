@@ -164,7 +164,7 @@ export default function OSRecruitingPipeline() {
       <div className="min-h-screen bg-background">
         {/* HEADER */}
         <header className="border-b border-border/70 bg-card/60 backdrop-blur sticky top-0 z-20">
-          <div className="max-w-[1500px] mx-auto px-6 py-5">
+          <div className="max-w-[1400px] mx-auto px-6 py-5">
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
               <Link to="/recruiting-team" className="hover:text-foreground transition">Recruiting</Link>
               <span>/</span>
@@ -212,7 +212,7 @@ export default function OSRecruitingPipeline() {
         </header>
 
         {/* BODY */}
-        <div className="max-w-[1500px] mx-auto px-6 py-6 space-y-6">
+        <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-6">
           {loading && (
             <div className="flex items-center justify-center py-10 text-muted-foreground gap-2 text-sm">
               <Loader2 className="h-4 w-4 animate-spin" /> Loading candidates…
