@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
+import { CheckSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
