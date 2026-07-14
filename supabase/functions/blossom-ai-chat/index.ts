@@ -151,6 +151,7 @@ Deno.serve(async (req) => {
       resourceType?: string;
       role?: string;
       activeState?: string;
+      conversationId?: string;
     };
     auditRole = body.role ?? null;
     auditActiveState = body.activeState ?? null;
@@ -161,6 +162,48 @@ Deno.serve(async (req) => {
       });
     }
     auditPrompt = question;
+
+    // 0. Resolve / create the persistent conversation so history survives reloads
+    //    and the user can switch between past chats. All writes go through the
+    //    user-scoped client so RLS on chat_conversations / chat_messages applies.
+    let conversationId = body.conversationId ?? null;
+    if (conversationId) {
+      const { data: existing } = await supabase
+        .from("chat_conversations")
+        .select("id")
+        .eq("id", conversationId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!existing) conversationId = null;
+    }
+    if (!conversationId) {
+      const title = question.length > 60 ? question.slice(0, 57) + "…" : question;
+      const { data: conv, error: convErr } = await supabase
+        .from("chat_conversations")
+        .insert({ user_id: user.id, title })
+        .select("id")
+        .single();
+      if (convErr) throw convErr;
+      conversationId = conv.id;
+    }
+
+    // Persist the user turn before we call the model so it shows in history
+    // even if the model call fails downstream.
+    await supabase.from("chat_messages").insert({
+      conversation_id: conversationId,
+      role: "user",
+      content: question,
+    });
+
+    // Pull recent turns for multi-turn context (bounded so we don't blow the
+    // context window). Newest last.
+    const { data: prior } = await supabase
+      .from("chat_messages")
+      .select("role,content")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(12);
+    const priorTurns = (prior ?? []).reverse().slice(0, -1); // drop the user turn we just wrote — we re-add it below
 
     // 1. Embed
     const qvec = await embedQuery(question, LOVABLE_API_KEY);
@@ -185,9 +228,22 @@ Deno.serve(async (req) => {
       auditStatus = "no_context";
       auditPreview = "No approved Blossom resource was found for that.";
       const logId = await logAudit(supabase);
+      const emptyAnswer =
+        "No approved Blossom resource was found for that. Try rephrasing, or contact the owning team.";
+      await supabase.from("chat_messages").insert({
+        conversation_id: conversationId,
+        role: "assistant",
+        content: emptyAnswer,
+        metadata: { sources: [], no_context: true },
+      });
+      await supabase
+        .from("chat_conversations")
+        .update({ last_message_at: new Date().toISOString() })
+        .eq("id", conversationId);
       return new Response(JSON.stringify({
-        content: "No approved Blossom resource was found for that. Try rephrasing, or contact the owning team.",
+        content: emptyAnswer,
         sources: [],
+        conversationId,
         logId,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -220,15 +276,29 @@ Deno.serve(async (req) => {
     // 4. Ask the model
     const answer = await chat([
       { role: "system", content: SYSTEM_PROMPT },
+      ...priorTurns.map((t) => ({ role: t.role, content: t.content })),
       { role: "user", content: `KNOWLEDGE:\n\n${contextParts.join("\n\n---\n\n")}\n\nQUESTION: ${question}` },
     ], LOVABLE_API_KEY);
     auditPreview = answer;
     const logId = await logAudit(supabase);
 
+    // Persist assistant turn + bump conversation timestamp so the sidebar sorts.
+    await supabase.from("chat_messages").insert({
+      conversation_id: conversationId,
+      role: "assistant",
+      content: answer,
+      metadata: { sources: cited },
+    });
+    await supabase
+      .from("chat_conversations")
+      .update({ last_message_at: new Date().toISOString() })
+      .eq("id", conversationId);
+
     return new Response(JSON.stringify({
       content: answer,
       sources: cited,
       matchedChunks: chunks.length,
+      conversationId,
       logId,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
