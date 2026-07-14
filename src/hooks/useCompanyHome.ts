@@ -42,8 +42,6 @@ export interface CompanyHighlight {
 
 const HR_MANAGE_ROLES = new Set([
   "super_admin",
-  "admin",
-  "systems_admin",
   "hr",
   "hr_lead",
   "hr_admin",
