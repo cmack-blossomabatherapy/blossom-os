@@ -40,6 +40,7 @@ export default function ResourceLibraryAdminQA() {
   const kpis = useMemo(() => {
     const total = resources.length;
     let missing = 0, imported = 0, sensitive = 0, needsAck = 0, untagged = 0, missingExec = 0;
+    let ingestReady = 0, ingestError = 0, ingestPending = 0, chunkTotal = 0;
     const bucketCounts = new Map<string, number>();
     const visibilityCounts = new Map<string, number>();
     for (const r of resources) {
@@ -53,12 +54,21 @@ export default function ResourceLibraryAdminQA() {
       const nonExec = roles.filter((x) => !EXEC_TIER.has(x));
       if (nonExec.length === 0) untagged++;
       if (!roles.some((x) => EXEC_TIER.has(x))) missingExec++;
+      const ing = r.ingestStatus ?? "pending";
+      if (ing === "ready") ingestReady++;
+      else if (ing === "error") ingestError++;
+      else if (ing === "pending" || ing === "queued") ingestPending++;
+      chunkTotal += r.chunkCount ?? 0;
       const b = r.storageBucket ?? "—";
       bucketCounts.set(b, (bucketCounts.get(b) ?? 0) + 1);
       const v = r.visibilityLevel ?? "—";
       visibilityCounts.set(v, (visibilityCounts.get(v) ?? 0) + 1);
     }
-    return { total, missing, imported, sensitive, needsAck, untagged, missingExec, bucketCounts, visibilityCounts };
+    return {
+      total, missing, imported, sensitive, needsAck, untagged, missingExec,
+      ingestReady, ingestError, ingestPending, chunkTotal,
+      bucketCounts, visibilityCounts,
+    };
   }, [resources]);
 
   const queues = useMemo(() => {
@@ -73,7 +83,11 @@ export default function ResourceLibraryAdminQA() {
       const roles = (r.roles ?? []) as string[];
       return !roles.some((x) => EXEC_TIER.has(x));
     });
-    return { missingStorage, untaggedList, missingExecList };
+    const ingestErrors = resources.filter((r) => r.ingestStatus === "error");
+    const ingestBacklog = resources.filter(
+      (r) => (r.ingestStatus ?? "pending") === "pending" && !!r.storagePath,
+    );
+    return { missingStorage, untaggedList, missingExecList, ingestErrors, ingestBacklog };
   }, [resources]);
 
   if (role !== "super_admin") {
@@ -123,6 +137,13 @@ export default function ResourceLibraryAdminQA() {
             value={queues.missingStorage.length}
             tone={queues.missingStorage.length > 0 ? "amber" : "emerald"}
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <KpiTile label="AI ready" value={kpis.ingestReady} tone={kpis.ingestReady > 0 ? "emerald" : "slate"} />
+          <KpiTile label="AI pending" value={kpis.ingestPending} tone={kpis.ingestPending > 0 ? "amber" : "emerald"} />
+          <KpiTile label="AI errors" value={kpis.ingestError} tone={kpis.ingestError > 0 ? "rose" : "emerald"} />
+          <KpiTile label="Chunks indexed" value={kpis.chunkTotal.toLocaleString()} tone="blue" />
         </div>
 
         <div className="rounded-2xl border border-border/60 bg-card p-4 text-[12.5px] text-muted-foreground">
@@ -182,6 +203,22 @@ export default function ResourceLibraryAdminQA() {
           <section className="space-y-2">
             <h2 className="text-[14px] font-semibold">QA queue · Missing executive tier ({queues.missingExecList.length})</h2>
             <ResourceListView resources={queues.missingExecList} loading={false} flat emptyMessage="All clear." />
+          </section>
+        )}
+        {queues.ingestErrors.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-[14px] font-semibold">QA queue · AI ingest errors ({queues.ingestErrors.length})</h2>
+            <ResourceListView resources={queues.ingestErrors} loading={false} flat emptyMessage="No ingest errors." />
+          </section>
+        )}
+        {queues.ingestBacklog.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-[14px] font-semibold">QA queue · AI ingest backlog ({queues.ingestBacklog.length})</h2>
+            <p className="text-[12px] text-muted-foreground">
+              Files exist in storage but Blossom AI has not chunked them yet. Trigger `blossom-ai-ingest`
+              to backfill.
+            </p>
+            <ResourceListView resources={queues.ingestBacklog.slice(0, 100)} loading={false} flat emptyMessage="Nothing waiting." />
           </section>
         )}
 
