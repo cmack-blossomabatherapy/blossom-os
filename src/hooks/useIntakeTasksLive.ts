@@ -91,6 +91,49 @@ export function useIntakeTasksLive() {
     if (error) throw error;
   }, []);
 
+  /**
+   * Inline status change with optimistic UI + activity logging.
+   * - Instantly patches local cache so the row reflects the new status.
+   * - Persists an audit line into `notes` (timestamped transition).
+   * - Mirrors the change to `intake_communications` when a lead is attached.
+   * - Rolls back local cache on failure.
+   */
+  const setStatus = useCallback(async (
+    task: IntakeTaskRow,
+    next: IntakeTaskRow["status"],
+    opts?: { actor?: string | null },
+  ) => {
+    if (task.status === next) return;
+    const stamp = new Date().toISOString();
+    const actor = opts?.actor?.trim();
+    const entry = `[${stamp}] Status: ${task.status} → ${next}${actor ? ` (by ${actor})` : ""}`;
+    const prev = (task.notes ?? "").trim();
+    const nextNotes = prev ? `${prev}\n${entry}` : entry;
+    const patch: Record<string, unknown> = { status: next, notes: nextNotes };
+    if (next === "Completed") patch.completed_at = stamp;
+    // Optimistic
+    setTasks((cur) => cur.map((t) => t.id === task.id ? { ...t, status: next, notes: nextNotes } : t));
+    const { error } = await supabase
+      .from("intake_tasks")
+      .update(patch as never)
+      .eq("id", task.id);
+    if (error) {
+      // Rollback
+      setTasks((cur) => cur.map((t) => t.id === task.id ? { ...t, status: task.status, notes: task.notes } : t));
+      throw error;
+    }
+    if (task.lead_id) {
+      await supabase.from("intake_communications").insert({
+        lead_id: task.lead_id,
+        communication_type: "note",
+        direction: "internal",
+        subject: `Task status: ${next}`,
+        preview: `${task.title} — ${task.status} → ${next}${actor ? ` (by ${actor})` : ""}`,
+        logged_by_name: actor || task.owner || "System",
+      } as never).then(({ error: e }) => { if (e) console.warn("activity log failed", e); });
+    }
+  }, []);
+
   const create = useCallback(async (input: CreateIntakeTaskInput): Promise<IntakeTaskRow> => {
     const payload = {
       lead_id: input.lead_id ?? null,
@@ -134,5 +177,5 @@ export function useIntakeTasksLive() {
     return parent;
   }, []);
 
-  return { tasks, loading, refetch, complete, snooze, reassign, markStarted, create };
+  return { tasks, loading, refetch, complete, snooze, reassign, markStarted, setStatus, create };
 }
