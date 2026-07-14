@@ -138,12 +138,10 @@ export function useCurrentRecordContext(): CurrentRecordContext {
           if (!data) return setState(EMPTY);
           const patient =
             fmt(data.child_name) ??
-            [fmt(data.patient_first_name), fmt(data.patient_last_name)].filter(Boolean).join(" ") ||
-            null;
+            (fmt([fmt(data.patient_first_name), fmt(data.patient_last_name)].filter(Boolean).join(" ")));
           const parent =
             fmt(data.parent_name) ??
-            [fmt(data.parent_first_name), fmt(data.parent_last_name)].filter(Boolean).join(" ") ||
-            null;
+            (fmt([fmt(data.parent_first_name), fmt(data.parent_last_name)].filter(Boolean).join(" ")));
           const lines = [
             `Lead: ${patient ?? "unnamed patient"}`,
             parent && `Parent/guardian: ${parent}`,
