@@ -48,6 +48,10 @@ const HR_MANAGE_ROLES = new Set([
   "hr_lead",
   "hr_admin",
   "hr_manager",
+  "executive_leadership",
+  "ceo",
+  "coo",
+  "director_of_operations",
 ]);
 
 export function useCanManageCompanyHome(): boolean {
