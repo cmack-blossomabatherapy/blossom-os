@@ -137,17 +137,41 @@ export default function OSAskBlossom() {
   // Stop dictation if the page unmounts.
   useEffect(() => () => { recognitionRef.current?.stop(); }, []);
 
-  /** Rename or delete a conversation locally + on the server. */
-  async function renameConversation(localId: string) {
+  /** Begin inline rename in the sidebar (Enter to save, Esc to cancel). */
+  function beginRename(localId: string) {
     const current = convs.find((c) => c.id === localId);
-    const next = window.prompt("Rename conversation", current?.title ?? "");
-    if (!next || next.trim() === "" || next === current?.title) return;
-    const title = next.trim().slice(0, 120);
+    setEditingId(localId);
+    setEditingTitle(current?.title ?? "");
+  }
+  function cancelRename() {
+    setEditingId(null);
+    setEditingTitle("");
+  }
+  async function commitRename(localId: string) {
+    const current = convs.find((c) => c.id === localId);
+    const title = editingTitle.trim().slice(0, 120);
+    setEditingId(null);
+    setEditingTitle("");
+    if (!title || title === current?.title) return;
     setConvs((list) => list.map((c) => (c.id === localId ? { ...c, title } : c)));
     const serverId = serverConvIds[localId];
     if (serverId) {
       const { error } = await supabase.from("chat_conversations").update({ title }).eq("id", serverId);
       if (error) toast.error("Could not rename on server");
+    }
+  }
+  async function togglePin(localId: string) {
+    const current = convs.find((c) => c.id === localId);
+    if (!current) return;
+    const nextPinned = !current.pinned;
+    setConvs((list) => list.map((c) => (c.id === localId ? { ...c, pinned: nextPinned } : c)));
+    const serverId = serverConvIds[localId];
+    if (serverId) {
+      const { error } = await supabase.from("chat_conversations").update({ pinned: nextPinned }).eq("id", serverId);
+      if (error) {
+        toast.error("Could not update pin on server");
+        setConvs((list) => list.map((c) => (c.id === localId ? { ...c, pinned: !nextPinned } : c)));
+      }
     }
   }
   async function deleteConversation(localId: string) {
