@@ -258,10 +258,11 @@ export default function OSAskBlossom() {
     setInput("");
 
     // Fold attachments into the prompt sent to the model.
+    const attachedSnapshot = attachments;
     let composed = text;
-    if (attachments.length) {
+    if (attachedSnapshot.length) {
       const parts: string[] = [];
-      for (const a of attachments) {
+      for (const a of attachedSnapshot) {
         if (a.kind === "text" && a.text) {
           parts.push(`\n\n--- Attached: ${a.name} (${Math.round(a.size / 1024)} KB) ---\n${a.text}`);
         } else {
@@ -270,7 +271,6 @@ export default function OSAskBlossom() {
       }
       composed = text + parts.join("");
     }
-    const attachedForDisplay = attachments;
     setAttachments([]);
 
     let convId = activeId;
@@ -326,7 +326,7 @@ export default function OSAskBlossom() {
       patchLastAssistant(convId, { content: "_Sorry — something went wrong._" });
       toast.error(e instanceof Error ? e.message : "AI error");
       // Restore attachments so the user can retry without re-picking files.
-      if (attachedForDisplay.length) setAttachments(attachedForDisplay);
+      if (attachedSnapshot.length) setAttachments(attachedSnapshot);
     } finally {
       setStreaming(false);
     }
