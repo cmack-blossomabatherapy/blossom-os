@@ -23,8 +23,9 @@ import { STAFFING_DAYS, STAFFING_WEEKS, type StaffingDayModule } from "@/lib/tra
 import { HR_DAYS, HR_WEEKS, type HrDayModule } from "@/lib/training/hrAcademy";
 import { CREDENTIALING_DAYS, CREDENTIALING_WEEKS, type CredentialingDayModule } from "@/lib/training/credentialingAcademy";
 import { QA_DAYS, QA_WEEKS, type QaDayModule } from "@/lib/training/qaAcademy";
+import { CASE_MANAGER_DAYS, CASE_MANAGER_WEEKS, type CaseManagerDayModule } from "@/lib/training/caseManagerAcademy";
 
-export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing" | "hr" | "credentialing" | "qa";
+export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing" | "hr" | "credentialing" | "qa" | "case-manager";
 
 /** Training-shaped record that carries the original source for routing & resource lookup. */
 export type AcademyJourneyModule = Training & {
@@ -106,7 +107,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
     case "scheduling":           return []; // sourced from schedulingAcademy.ts
     case "staffing":             return []; // sourced from staffingAcademy.ts
     case "qa":                   return []; // sourced from qaAcademy.ts
-    case "case-manager":         return byDept("case_management");
+    case "case-manager":         return []; // sourced from caseManagerAcademy.ts
     case "hr":                   return []; // sourced from hrAcademy.ts
     case "credentialing":        return []; // sourced from credentialingAcademy.ts
     case "marketing":            return byDept("marketing");
@@ -127,7 +128,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
 /** Build the live runtime route for a module id, source-aware. */
 function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
   return (id: string) => {
-    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::")) {
+    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::")) {
       return `/academy/path/${slug}/module/${encodeURIComponent(id)}`;
     }
     return `/training/${id}`;
@@ -136,7 +137,7 @@ function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
 
 /** Unified per-module status: runtime store for rbt/bcba, academyData for everything else. */
 function unifiedStatus(id: string): "completed" | "in_progress" | "overdue" | "not_started" {
-  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::")) {
+  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::")) {
     const s = getRuntimeStatus(id);
     return s === "completed" ? "completed" : s === "in_progress" ? "in_progress" : "not_started";
   }
@@ -516,6 +517,39 @@ function buildQaJourney(slug: string, path: TrainingPath): PathJourney {
   return journey;
 }
 
+/* ------------------- Case Manager source adapter ------------------- */
+
+function synthesizeCaseManagerModule(d: CaseManagerDayModule): AcademyJourneyModule {
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  return {
+    id: `case-manager::${d.id}`,
+    title: d.title,
+    description: d.description,
+    type: "Workflow",
+    estimatedMinutes: minutes,
+    required: true,
+    category: "role",
+    department: "case_management",
+    sourceKind: "case-manager",
+    sourceModuleId: d.id,
+    resources: [],
+  };
+}
+
+function buildCaseManagerJourney(slug: string, path: TrainingPath): PathJourney {
+  const dayGroups: AcademyJourneyModule[][] = CASE_MANAGER_DAYS.map((d) => [synthesizeCaseManagerModule(d)]);
+  const weekGroups = chunk(dayGroups, 5);
+  const dayTitles = CASE_MANAGER_DAYS.map((d) => `Day ${d.dayInJourney} · ${d.title}`);
+  const journey = assembleJourney({
+    slug, path, weekGroups, dayTitles, source: "case-manager",
+  });
+  journey.weeks = journey.weeks.map((w) => ({
+    ...w,
+    title: CASE_MANAGER_WEEKS.find((cw) => cw.weekNumber === w.weekNumber)?.title ?? w.title,
+  }));
+  return journey;
+}
+
 function assembleJourney(opts: {
   slug: string;
   path: TrainingPath;
@@ -647,6 +681,9 @@ export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }
   if (slug === "qa") {
     return buildQaJourney(slug, path);
   }
+  if (slug === "case-manager") {
+    return buildCaseManagerJourney(slug, path);
+  }
 
   const all = getTrainings();
   const trainings = sourceTrainingsForSlug(slug, all);
@@ -696,5 +733,6 @@ export function parseAcademyModuleId(id: string): {
   if (id.startsWith("hr::")) return { kind: "hr", sourceModuleId: id.slice("hr::".length) };
   if (id.startsWith("credentialing::")) return { kind: "credentialing", sourceModuleId: id.slice("credentialing::".length) };
   if (id.startsWith("qa::")) return { kind: "qa", sourceModuleId: id.slice("qa::".length) };
+  if (id.startsWith("case-manager::")) return { kind: "case-manager", sourceModuleId: id.slice("case-manager::".length) };
   return { kind: "academyData", sourceModuleId: id };
 }
