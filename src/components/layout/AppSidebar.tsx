@@ -487,7 +487,16 @@ export function AppSidebar({
             </div>
           </header>
           <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Mobile navigation">
-            <div className="mb-3 px-1">
+            <NavLink
+              to="/home"
+              onClick={() => onMobileOpenChange?.(false)}
+              className={cn("mobile-menu-item", isItemActive("/home") && "mobile-menu-item-active")}
+            >
+              <span className="mobile-menu-icon"><Home className="h-4 w-4" /></span>
+              <span className="min-w-0 flex-1"><span className="block truncate">Home</span></span>
+              {isItemActive("/home") && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />}
+            </NavLink>
+            <div className="mb-3 mt-1 px-1">
               <ResumeOnboardingButton variant="mobile" onNavigate={() => onMobileOpenChange?.(false)} />
             </div>
             {mobileSections.map((section, i) => {
