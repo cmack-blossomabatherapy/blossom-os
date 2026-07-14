@@ -319,133 +319,205 @@ export default function CompanyHome() {
                 style={{ background: "radial-gradient(circle, hsl(45 90% 65% / 0.35), transparent 70%)" }}
               />
 
-            <div className="relative flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <CalendarIcon className="size-4" />
-                </span>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
-                    Company Calendar
-                  </p>
-                  <h2 className="text-lg font-semibold tracking-tight text-foreground" style={{ fontFamily: "'Sora', system-ui, sans-serif" }}>
-                    {format(month, "MMMM yyyy")}
-                  </h2>
+            <div className="relative flex flex-col gap-4 mb-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <CalendarIcon className="size-4" />
+                  </span>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+                      Company Calendar
+                    </p>
+                    <h2 className="text-lg font-semibold tracking-tight text-foreground" style={{ fontFamily: "'Sora', system-ui, sans-serif" }}>
+                      {view === "week"
+                        ? `${format(weekRange.start, "MMM d")} – ${format(weekRange.end, "MMM d, yyyy")}`
+                        : format(month, "MMMM yyyy")}
+                    </h2>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Select value={rangePreset} onValueChange={(v) => setRangePreset(v as RangePreset)}>
-                  <SelectTrigger className="h-8 rounded-full text-xs w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(RANGE_LABELS) as RangePreset[]).map((k) => (
-                      <SelectItem key={k} value={k} className="text-xs">
-                        {RANGE_LABELS[k]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 rounded-full text-xs gap-1.5"
-                      disabled={availableCategories.length === 0}
+                <div className="flex flex-wrap items-center gap-2">
+                  <ToggleGroup
+                    type="single"
+                    value={view}
+                    onValueChange={(v) => v && setView(v as "month" | "week")}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                  >
+                    <ToggleGroupItem
+                      value="month"
+                      aria-label="Month view"
+                      className="h-8 px-2.5 rounded-l-full rounded-r-none text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                     >
-                      <Filter className="size-3.5" />
-                      Types
-                      {categoryFilter.size > 0 && (
-                        <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">
-                          {categoryFilter.size}
-                        </Badge>
-                      )}
+                      <Grid3X3 className="size-3.5 mr-1" /> Month
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="week"
+                      aria-label="Week view"
+                      className="h-8 px-2.5 rounded-l-none rounded-r-full text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    >
+                      <CalendarDays className="size-3.5 mr-1" /> Week
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+
+                  <div className="flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 p-0.5">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 rounded-full p-0"
+                      onClick={goPrevious}
+                      aria-label="Previous period"
+                    >
+                      <ChevronLeft className="size-4" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56 p-2" align="end">
-                    <div className="px-2 py-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
-                      Filter by type
-                    </div>
-                    <div className="max-h-64 overflow-auto space-y-0.5">
-                      {availableCategories.map((cat) => {
-                        const checked = categoryFilter.has(cat);
-                        return (
-                          <label
-                            key={cat}
-                            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted cursor-pointer"
-                          >
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={() => toggleCategory(cat)}
-                            />
-                            <span className="truncate">{formatCategory(cat)}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                {activeFilterCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 rounded-full p-0"
+                      onClick={goNext}
+                      aria-label="Next period"
+                    >
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
+
+                  <Popover open={jumpOpen} onOpenChange={setJumpOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-full text-xs gap-1.5"
+                      >
+                        <CalendarIcon className="size-3.5" />
+                        Jump
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(d) => d && jumpToDate(d)}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full text-xs gap-1"
-                    onClick={clearFilters}
+                    className="h-8 rounded-full text-xs"
+                    onClick={goToday}
                   >
-                    <X className="size-3.5" />
-                    Clear
+                    Today
                   </Button>
-                )}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label="Event legend"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition"
+
+                  <Select value={rangePreset} onValueChange={(v) => setRangePreset(v as RangePreset)}>
+                    <SelectTrigger className="h-8 rounded-full text-xs w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(RANGE_LABELS) as RangePreset[]).map((k) => (
+                        <SelectItem key={k} value={k} className="text-xs">
+                          {RANGE_LABELS[k]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-full text-xs gap-1.5"
+                        disabled={availableCategories.length === 0}
+                      >
+                        <Filter className="size-3.5" />
+                        Types
+                        {categoryFilter.size > 0 && (
+                          <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">
+                            {categoryFilter.size}
+                          </Badge>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-2" align="end">
+                      <div className="px-2 py-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
+                        Filter by type
+                      </div>
+                      <div className="max-h-64 overflow-auto space-y-0.5">
+                        {availableCategories.map((cat) => {
+                          const checked = categoryFilter.has(cat);
+                          return (
+                            <label
+                              key={cat}
+                              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted cursor-pointer"
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={() => toggleCategory(cat)}
+                              />
+                              <span className="truncate">{formatCategory(cat)}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  {activeFilterCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 rounded-full text-xs gap-1"
+                      onClick={clearFilters}
                     >
-                      <HelpCircle className="size-4" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64 p-3" align="end">
-                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
-                      Event legend
-                    </p>
-                    <ul className="space-y-1.5">
-                      {(() => {
-                        const seen = new Set<string>();
-                        const rows: Array<{ key: string; label: string; dot: string }> = [];
-                        const add = (cat: string, label?: string) => {
-                          const known = CATEGORY_COLORS[cat];
-                          const lbl = label ?? known?.label ?? formatCategory(cat);
-                          if (seen.has(lbl)) return;
-                          seen.add(lbl);
-                          rows.push({ key: cat, label: lbl, dot: categoryColor(cat) });
-                        };
-                        // Always include core defaults so the legend never looks empty.
-                        ["company_event", "training", "meeting", "deadline", "task", "holiday"].forEach((c) => add(c));
-                        availableCategories.forEach((c) => add(c));
-                        return rows.map((r) => (
-                          <li key={r.key} className="flex items-center gap-2 text-sm">
-                            <span className={cn("size-2.5 rounded-full", r.dot)} />
-                            <span className="text-foreground">{r.label}</span>
-                          </li>
-                        ));
-                      })()}
-                    </ul>
-                    <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
-                      Dots on days show that events are scheduled. Click a day to see details.
-                    </p>
-                  </PopoverContent>
-                </Popover>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 rounded-full text-xs"
-                  onClick={goToday}
-                >
-                  Today
-                </Button>
+                      <X className="size-3.5" />
+                      Clear
+                    </Button>
+                  )}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Event legend"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                      >
+                        <HelpCircle className="size-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-3" align="end">
+                      <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
+                        Event legend
+                      </p>
+                      <ul className="space-y-1.5">
+                        {(() => {
+                          const seen = new Set<string>();
+                          const rows: Array<{ key: string; label: string; dot: string }> = [];
+                          const add = (cat: string, label?: string) => {
+                            const known = CATEGORY_COLORS[cat];
+                            const lbl = label ?? known?.label ?? formatCategory(cat);
+                            if (seen.has(lbl)) return;
+                            seen.add(lbl);
+                            rows.push({ key: cat, label: lbl, dot: categoryColor(cat) });
+                          };
+                          // Always include core defaults so the legend never looks empty.
+                          ["company_event", "training", "meeting", "deadline", "task", "holiday"].forEach((c) => add(c));
+                          availableCategories.forEach((c) => add(c));
+                          return rows.map((r) => (
+                            <li key={r.key} className="flex items-center gap-2 text-sm">
+                              <span className={cn("size-2.5 rounded-full", r.dot)} />
+                              <span className="text-foreground">{r.label}</span>
+                            </li>
+                          ));
+                        })()}
+                      </ul>
+                      <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
+                        Dots on days show that events are scheduled. Click a day to see details.
+                      </p>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
             </div>
             {activeFilterCount > 0 && (
