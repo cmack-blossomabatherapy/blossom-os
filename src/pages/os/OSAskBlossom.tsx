@@ -300,22 +300,45 @@ export default function OSAskBlossom() {
                 ) : (
                   <div className="space-y-1">
                     {convs.map((c) => (
-                      <button
+                      <div
                         key={c.id}
-                        onClick={() => setActiveId(c.id)}
                         className={cn(
-                          "w-full rounded-xl px-3 py-2 text-left text-[12.5px] transition-colors",
+                          "group flex items-start gap-1 rounded-xl px-2 py-2 text-[12.5px] transition-colors",
                           activeId === c.id ? "bg-foreground/[0.07] text-foreground" : "hover:bg-foreground/[0.04] text-foreground/80",
                         )}
                       >
-                        <div className="flex items-center gap-1.5">
-                          {c.pinned && <Pin className="h-3 w-3 text-[hsl(265_70%_55%)]" />}
-                          <p className="truncate font-medium">{c.title}</p>
+                        <button
+                          type="button"
+                          onClick={() => setActiveId(c.id)}
+                          className="min-w-0 flex-1 text-left"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            {c.pinned && <Pin className="h-3 w-3 text-[hsl(265_70%_55%)]" />}
+                            <p className="truncate font-medium">{c.title}</p>
+                          </div>
+                          <p className="text-[10.5px] text-muted-foreground">
+                            {new Date(c.updatedAt).toLocaleString()}
+                          </p>
+                        </button>
+                        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                          <button
+                            type="button"
+                            aria-label="Rename"
+                            onClick={() => void renameConversation(c.id)}
+                            className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Delete"
+                            onClick={() => void deleteConversation(c.id)}
+                            className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
                         </div>
-                        <p className="text-[10.5px] text-muted-foreground">
-                          {new Date(c.updatedAt).toLocaleString()}
-                        </p>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 )}
