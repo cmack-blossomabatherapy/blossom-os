@@ -10664,9 +10664,14 @@ export type Database = {
           created_by: string | null
           due_date: string | null
           id: string
-          lead_id: string
+          lead_id: string | null
           notes: string | null
           owner: string | null
+          parent_task_id: string | null
+          related_record_id: string | null
+          related_record_label: string | null
+          related_record_type: string | null
+          related_url: string | null
           status: Database["public"]["Enums"]["intake_task_status"]
           task_type: Database["public"]["Enums"]["intake_task_type"]
           title: string
@@ -10677,9 +10682,14 @@ export type Database = {
           created_by?: string | null
           due_date?: string | null
           id?: string
-          lead_id: string
+          lead_id?: string | null
           notes?: string | null
           owner?: string | null
+          parent_task_id?: string | null
+          related_record_id?: string | null
+          related_record_label?: string | null
+          related_record_type?: string | null
+          related_url?: string | null
           status?: Database["public"]["Enums"]["intake_task_status"]
           task_type: Database["public"]["Enums"]["intake_task_type"]
           title: string
@@ -10690,9 +10700,14 @@ export type Database = {
           created_by?: string | null
           due_date?: string | null
           id?: string
-          lead_id?: string
+          lead_id?: string | null
           notes?: string | null
           owner?: string | null
+          parent_task_id?: string | null
+          related_record_id?: string | null
+          related_record_label?: string | null
+          related_record_type?: string | null
+          related_url?: string | null
           status?: Database["public"]["Enums"]["intake_task_status"]
           task_type?: Database["public"]["Enums"]["intake_task_type"]
           title?: string
@@ -10704,6 +10719,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "intake_tasks"
             referencedColumns: ["id"]
           },
         ]

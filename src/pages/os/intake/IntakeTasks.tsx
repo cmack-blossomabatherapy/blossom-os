@@ -23,6 +23,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Lock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AssigneePicker } from "@/components/tasks/AssigneePicker";
+import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 
 type FilterKey = "all" | "today" | "overdue" | "escalated";
 type SortKey = "due" | "lead" | "owner" | "title";
@@ -49,7 +50,7 @@ type Destination = {
 };
 
 function resolveDestination(row: TaskRow): Destination {
-  const leadId = row.lead?.id ?? row.task.lead_id;
+  const leadId = row.lead?.id ?? row.task.lead_id ?? "";
   const text = `${row.task.task_type ?? ""} ${row.task.title ?? ""}`.toLowerCase();
   const focus = `taskId=${encodeURIComponent(row.task.id)}#task-${row.task.id}`;
   if (/missing|packet|document|signature|consent/.test(text)) {
@@ -116,6 +117,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
   const [owners, setOwners] = useState<string[]>([]);
   const [dueRange, setDueRange] = useState<DueRangeKey>("any");
   const [flag, setFlag] = useState<FlagKey>("any");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const leadById = useMemo(() => {
     const map = new Map<string, Lead>();
@@ -126,7 +128,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
   const rows = useMemo<TaskRow[]>(
     () => tasks
       .filter((t) => t.status !== "Completed")
-      .map((t) => ({ task: t, lead: leadById.get(t.lead_id) }))
+      .map((t) => ({ task: t, lead: t.lead_id ? leadById.get(t.lead_id) : undefined }))
       .filter((r) => (r.lead ? matches(r.lead.state) : true)),
     [tasks, leadById, matches],
   );
@@ -262,7 +264,8 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
       toast.error(e instanceof Error ? e.message : "Could not mark task started");
     }
     if (dest.drawer) {
-      openLead(row.lead?.id ?? row.task.lead_id);
+      const openId = row.lead?.id ?? row.task.lead_id;
+      if (openId) openLead(openId);
     } else if (dest.to) {
       navigate(dest.to);
     }
@@ -280,13 +283,18 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
       headerRight={isUniversal ? undefined : <IntakeStateFilterToggle />}
       actions={
         isUniversal
-          ? [{ label: "Open Leads", icon: List, to: "/leads" }]
+          ? [
+              { label: "New task", icon: Plus, variant: "default", onClick: () => setCreateOpen(true) },
+              { label: "Open Leads", icon: List, to: "/leads" },
+            ]
           : [
-              { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
+              { label: "New task", icon: Plus, variant: "default", onClick: () => setCreateOpen(true) },
+              { label: "Add Lead", icon: Plus, to: "/leads?new=1" },
               { label: "Open Leads", icon: List, to: "/leads" },
             ]
       }
     >
+      <CreateTaskDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={() => { /* realtime refresh handles it */ }} />
       <section>
         <IntakeSectionHeader icon={ListTodo} tone="indigo" title="Task Pulse" subtitle="Tap a tile to filter the lists below." />
         <IntakePulseStrip tiles={pulseTiles} loading={loading} />
@@ -458,7 +466,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
                   ) : visible.map((r) => {
                     const c = classify(r);
                     const leadName = r.lead?.childName ?? "Lead";
-                    const leadId = r.lead?.id ?? r.task.lead_id;
+                    const leadId = r.lead?.id ?? r.task.lead_id ?? null;
                     const isEscalated = (r.lead?.tags ?? []).some((t) => /escalat/i.test(t));
                     const wrap = (label: string, fn: () => Promise<void>) => async () => {
                       try { await fn(); toast.success(`${label}: ${r.task.title}`); }
@@ -476,7 +484,11 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
                         </td>
                         <td className="px-3 py-2 font-medium text-foreground truncate max-w-[280px]">{r.task.title}</td>
                         <td className="px-3 py-2">
-                          <LeadNameLink leadId={leadId} className="hover:underline text-foreground">{leadName}</LeadNameLink>
+                          {leadId ? (
+                            <LeadNameLink leadId={leadId} className="hover:underline text-foreground">{leadName}</LeadNameLink>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">{r.task.task_type || "—"}</td>
                         <td className={cn("px-3 py-2 text-xs", c === "overdue" && "text-rose-700 dark:text-rose-300 font-medium")}>
