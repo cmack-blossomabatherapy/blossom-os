@@ -13,7 +13,7 @@ import {
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface IntakeSection {
+interface RecruitingSection {
   id: string;
   tag: string;
   title: string;
@@ -21,28 +21,27 @@ interface IntakeSection {
   adminOnly?: boolean;
 }
 
-const SECTIONS: IntakeSection[] = [
-  { id: "start_here",        tag: "intake_start_here",        title: "Start Here",                              subtitle: "Overview and role SOPs for Intake." },
-  { id: "lead_handling",     tag: "intake_lead_handling",     title: "Lead Handling",                           subtitle: "New leads, website/Facebook, disqualification, can't reach, transition to client." },
-  { id: "family_comm",       tag: "intake_family_communication", title: "Family Communication",                subtitle: "Family contact cadence, phone calls, and the parent communication template library." },
-  { id: "forms",             tag: "intake_forms",             title: "Forms and Missing Information",           subtitle: "Initial forms, consent, missing info, diagnosis, review packet." },
-  { id: "insurance_vob",     tag: "intake_insurance_vob",     title: "Insurance, Benefits, and VOB",            subtitle: "Insurance collection, benefits handoff, VOB submission and review, payment plans." },
-  { id: "afterhours",        tag: "intake_afterhours",        title: "After-Hours AI and Call Review",          subtitle: "After-hours AI receptionist review and phone system SOPs." },
-  { id: "training",          tag: "intake_training",          title: "Intake Training",                         subtitle: "Onboarding journey, training videos, and video requirements." },
-  { id: "cheatsheets",       tag: "intake_cheatsheets",       title: "Cheat Sheets, Benefits, and Insurance References", subtitle: "Quick-reference cheat sheets and by-state insurance references." },
-  { id: "board_exports",     tag: "intake_board_exports",     title: "Board Exports and Examples",              subtitle: "Reference exports of Leads, Clients, After-Hours AI, and marketing outreach." },
-  { id: "forms_references",  tag: "intake_forms_references",  title: "Forms and Current Process References",    subtitle: "DOCX process references and consent form template." },
-  { id: "admin_qa",          tag: "intake_admin_qa",          title: "Intake Upload QA / Admin Repair",         subtitle: "Reconciliation prompt and admin-only repair notes.", adminOnly: true },
+const SECTIONS: RecruitingSection[] = [
+  { id: "start_here",             tag: "recruiting_start_here",             title: "Start Here",                                subtitle: "Recruiting department overview, role SOP, and current workflow." },
+  { id: "candidate_pipeline",     tag: "recruiting_candidate_pipeline",     title: "Candidate Pipeline",                        subtitle: "Candidate intake, follow-up, and HireCare board exports." },
+  { id: "job_posting",            tag: "recruiting_job_posting",            title: "Job Posting and Sourcing",                  subtitle: "Job posting SOP, Indeed, ZipRecruiter, ClickUp, Apploi guides and videos." },
+  { id: "resume_review",          tag: "recruiting_resume_review",          title: "Resume Review",                             subtitle: "Screening resumes and prioritizing candidates." },
+  { id: "interviews",             tag: "recruiting_interviews",             title: "Interviews",                                subtitle: "Interview scheduling, running interviews, and interview training video." },
+  { id: "offers",                 tag: "recruiting_offers",                 title: "Offers and Hiring Handoff",                 subtitle: "Offer letters, hiring handoff to HR, and leadership-only offer letter templates." },
+  { id: "background_onboarding",  tag: "recruiting_background_onboarding",  title: "Background Checks and Onboarding Handoff",  subtitle: "Background checks, onboarding/orientation handoff awareness, Viventium transfer." },
+  { id: "state_kpi",              tag: "recruiting_state_kpi",              title: "State Recruiting Needs and KPIs",           subtitle: "State recruiting need review and Recruiting KPI academy." },
+  { id: "training_playbooks",     tag: "recruiting_training_playbooks",     title: "Training, Shadowing, and Playbooks",        subtitle: "Recruiting onboarding journey, shadow guides, and the Recruiting playbook." },
+  { id: "admin_qa",               tag: "recruiting_admin_qa",               title: "Needs Review / Admin QA",                   subtitle: "Unclear source media and admin reconciliation notes.", adminOnly: true },
 ];
 
 function isLeadershipRole(role: string): boolean {
   return [
     "super_admin","executive_leadership","operations_leadership","training_management",
-    "director_of_intake","intake_lead","state_director",
+    "recruiting_lead","hr_lead","hr","state_director",
   ].includes(role);
 }
 
-export default function ResourceLibraryIntake() {
+export default function ResourceLibraryRecruiting() {
   const { resources, loading } = useLibraryResources();
   const { role, activeState } = useOSRole();
   const [query, setQuery] = useState("");
@@ -51,18 +50,18 @@ export default function ResourceLibraryIntake() {
 
   const canSeeAdmin = isLeadershipRole(role);
 
-  const intakeResources = useMemo(
+  const recruitingResources = useMemo(
     () => resources.filter((r) => {
       if (!isVisibleToRole(r, role as any, activeState)) return false;
       const depts = (r.departments ?? []).map((d) => d.toLowerCase());
-      return depts.includes("intake") || (r.tags ?? []).some((t) => t?.startsWith("intake_"));
+      return depts.includes("recruiting") || (r.tags ?? []).some((t) => t?.startsWith("recruiting_"));
     }),
     [resources, role, activeState],
   );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return intakeResources.filter((r) => {
+    return recruitingResources.filter((r) => {
       if (q) {
         const hay = [r.title, r.description, r.fileName, ...(r.tags ?? [])]
           .filter(Boolean).join(" ").toLowerCase();
@@ -77,13 +76,13 @@ export default function ResourceLibraryIntake() {
       }
       return true;
     });
-  }, [intakeResources, query, fileType, audience]);
+  }, [recruitingResources, query, fileType, audience]);
 
   const grouped = useMemo(() => {
     const map: Record<string, typeof filtered> = {};
     for (const s of SECTIONS) map[s.id] = [];
     for (const r of filtered) {
-      const tag = (r.tags ?? []).find((t) => t?.startsWith("intake_") && SECTIONS.some((s) => s.tag === t));
+      const tag = (r.tags ?? []).find((t) => t?.startsWith("recruiting_") && SECTIONS.some((s) => s.tag === t));
       const section = SECTIONS.find((s) => s.tag === tag);
       if (section) map[section.id].push(r);
     }
@@ -91,17 +90,17 @@ export default function ResourceLibraryIntake() {
   }, [filtered]);
 
   const totalVisible = filtered.length;
-  const missing = intakeResources.filter((r) => !r.storagePath && !r.url).length;
+  const missing = recruitingResources.filter((r) => !r.storagePath && !r.url).length;
 
   return (
     <OSShell>
       <div className="mx-auto max-w-7xl space-y-6 p-6">
         <header className="rounded-3xl border border-border/60 bg-card/70 p-6 shadow-sm">
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Resource Library</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Intake Resources</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Recruiting Resources</h1>
           <p className="mt-1 max-w-3xl text-[13px] text-muted-foreground">
-            Every current-state Intake SOP, cheat sheet, training video, and process reference — organized so
-            you can find, open, or download exactly what you need.
+            Every current-state Recruiting SOP, platform guide, academy walkthrough, and training video —
+            organized so recruiters can find, open, or download exactly what they need.
           </p>
         </header>
         <LibraryTabs />
@@ -110,7 +109,7 @@ export default function ResourceLibraryIntake() {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search Intake resources — new lead, VOB, insurance, consent, after-hours…"
+              placeholder="Search Recruiting — candidate, Apploi, Indeed, ZipRecruiter, offer letter, background check…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="h-9 rounded-xl pl-9 text-[12.5px]"
@@ -139,7 +138,7 @@ export default function ResourceLibraryIntake() {
 
         <div className="flex flex-wrap gap-2 text-[11.5px] text-muted-foreground">
           <span className="rounded-full bg-muted px-2 py-0.5">{totalVisible} visible</span>
-          <span className="rounded-full bg-muted px-2 py-0.5">{intakeResources.length} total in your view</span>
+          <span className="rounded-full bg-muted px-2 py-0.5">{recruitingResources.length} total in your view</span>
           {canSeeAdmin && missing > 0 && (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">{missing} needs upload repair</span>
           )}
@@ -147,7 +146,7 @@ export default function ResourceLibraryIntake() {
 
         {loading && (
           <div className="rounded-2xl border border-dashed border-border/60 bg-card p-10 text-center text-sm text-muted-foreground">
-            Loading Intake resources…
+            Loading Recruiting resources…
           </div>
         )}
 
