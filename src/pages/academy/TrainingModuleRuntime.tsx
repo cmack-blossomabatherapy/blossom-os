@@ -20,6 +20,7 @@ import { getHrDay, type HrDayModule } from "@/lib/training/hrAcademy";
 import { getCredentialingDay, type CredentialingDayModule } from "@/lib/training/credentialingAcademy";
 import { getQaDay, type QaDayModule } from "@/lib/training/qaAcademy";
 import { getCaseManagerDay, type CaseManagerDayModule } from "@/lib/training/caseManagerAcademy";
+import { getBehavioralSupportDay, type BehavioralSupportDayModule } from "@/lib/training/behavioralSupportAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime, persistRuntimeElapsed,
   type RuntimeContext,
@@ -62,6 +63,7 @@ export default function TrainingModuleRuntime() {
     if (parsed.kind === "credentialing") return resolveCredentialing(parsed.sourceModuleId);
     if (parsed.kind === "qa") return resolveQa(parsed.sourceModuleId);
     if (parsed.kind === "case-manager") return resolveCaseManager(parsed.sourceModuleId);
+    if (parsed.kind === "behavioral-support") return resolveBehavioralSupport(parsed.sourceModuleId);
     return null;
   }, [parsed.kind, parsed.sourceModuleId]);
 
@@ -692,6 +694,35 @@ function resolveQa(sourceModuleId: string): ModuleCtx | null {
 
 function resolveCaseManager(sourceModuleId: string): ModuleCtx | null {
   const d: CaseManagerDayModule | undefined = getCaseManagerDay(sourceModuleId);
+  if (!d) return null;
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  const checklist = [
+    ...d.checklist,
+    ...d.livePractice.map((p) => `Live practice: ${p}`),
+  ];
+  return {
+    title: d.title,
+    description: d.description,
+    type: `Week ${d.weekNumber} · Day ${d.dayNumber}`,
+    minutes,
+    required: true,
+    objectives: d.objectives,
+    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    checklist,
+    shadowing: d.shadowing,
+    knowledgeCheck: d.knowledgeCheck,
+    sopLinks: d.resources.map((r) => ({
+      label: r.pending ? `${r.label} (pending upload)` : r.label,
+      href: r.href,
+    })),
+    trainerNotes: d.trainerNotes,
+    reflectionPrompt: d.reflectionPrompt,
+    signoffRequired: d.signoffRequired,
+  };
+}
+
+function resolveBehavioralSupport(sourceModuleId: string): ModuleCtx | null {
+  const d: BehavioralSupportDayModule | undefined = getBehavioralSupportDay(sourceModuleId);
   if (!d) return null;
   const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
   const checklist = [
