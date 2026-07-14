@@ -716,7 +716,7 @@ const App = () => (
                   <Route path="/recruiting/workspace"      element={<OSRecruitingWorkspace />} />
                   <Route path="/recruiting/academy"        element={<OSRecruitingTrainingAcademy />} />
                   <Route path="/recruiting/pipeline"       element={<OSRecruitingPipeline />} />
-                  <Route path="/recruiting/interviews"     element={<OSRecruitingInterviews />} />
+                  <Route path="/recruiting/interviews"     element={<SafeBoundary label="Interviews" fallbackTitle="Interviews could not load." showErrorDetails><OSRecruitingInterviews /></SafeBoundary>} />
                  <Route path="/recruiting/offers"         element={<OSRecruitingOffers />} />
                   <Route path="/recruiting/onboarding"     element={<OSRecruitingOnboarding />} />
                   <Route path="/recruiting/background"     element={<OSRecruitingBackgroundChecks />} />
