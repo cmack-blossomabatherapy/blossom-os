@@ -143,25 +143,22 @@ function day(
 
 const W1: StateDirectorDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + State Director Role Orientation",
+    title: "State Director Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what the State Director does and why it matters. The State Director owns the health and growth of the state — keeping it moving, knowing where it is winning or stuck, driving growth, escalating correctly, building local relationships, and making sure the state does not rely on memory or chaos.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what the State Director owns today",
       "Explain what the State Director does not own",
       "Explain why hours serviced is the ultimate state operating metric",
       "Explain the owner / status / next action / follow-up date rule",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What the State Director owns today", kind: "Overview", minutes: 10, summary: "State health, state growth, hours serviced, local relationships, escalation accountability, state performance, staff/client state visibility, and cross-department accountability." },
-      { id: "w1d1-l3", title: "What the State Director does not own", kind: "Overview", minutes: 8, summary: "Not the permanent operator of Intake, Recruiting, Authorizations, Scheduling, Staffing, QA, HR, Credentialing, Billing/RCM, Finance, or Clinical execution." },
-      { id: "w1d1-l4", title: "State health and hours serviced", kind: "SOP", minutes: 10, summary: "Hours serviced is the ultimate state operating metric. State health inputs feed it: leads, conversion, staffing capacity, open cases, auth readiness, family experience." },
-      { id: "w1d1-l5", title: "Leadership mindset: own outcomes, not every task", kind: "Workflow", minutes: 10, summary: "Every state issue must have owner, status, next action, and follow-up date. Drive accountability without becoming the bottleneck." },
+      { id: "w1d1-l1", title: "What the State Director owns today", kind: "Overview", minutes: 10, summary: "State health, state growth, hours serviced, local relationships, escalation accountability, state performance, staff/client state visibility, and cross-department accountability." },
+      { id: "w1d1-l2", title: "What the State Director does not own", kind: "Overview", minutes: 8, summary: "Not the permanent operator of Intake, Recruiting, Authorizations, Scheduling, Staffing, QA, HR, Credentialing, Billing/RCM, Finance, or Clinical execution." },
+      { id: "w1d1-l3", title: "State health and hours serviced", kind: "SOP", minutes: 10, summary: "Hours serviced is the ultimate state operating metric. State health inputs feed it: leads, conversion, staffing capacity, open cases, auth readiness, family experience." },
+      { id: "w1d1-l4", title: "Leadership mindset: own outcomes, not every task", kind: "Workflow", minutes: 10, summary: "Every state issue must have owner, status, next action, and follow-up date. Drive accountability without becoming the bottleneck." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what the State Director owns",
       "Can explain what the State Director does not own",
       "Can explain why hours serviced is the ultimate state operating metric",
@@ -169,7 +166,7 @@ const W1: StateDirectorDayModule[] = [
     ],
     shadowing: ["Sit with an experienced State Director, Regional State Director mentor, Executive/Operations leader, or assigned manager for 30–60 minutes and watch how they review state priorities."],
     livePractice: ["No live state ownership yet — observe only."],
-    resources: [R.welcome, R.l1Sd, R.binder, R.roleDeepDive, R.l1Asd, R.l1Rsd, R.l2Health],
+    resources: [R.l1Sd, R.binder, R.roleDeepDive, R.l1Asd, R.l1Rsd, R.l2Health],
     knowledgeCheck: {
       q: "What four things should every state issue have before you leave it, and does the State Director permanently own every department's work?",
       a: "Owner, status, next action, follow-up date. No — the State Director does not permanently own every department.",

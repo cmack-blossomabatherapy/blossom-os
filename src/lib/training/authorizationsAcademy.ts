@@ -130,23 +130,20 @@ function day(
 
 const W1: AuthorizationsDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + Authorizations Role Orientation",
+    title: "Authorizations Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what Authorizations does and why it matters. Authorizations bridges intake, clinical documentation, payer approval, scheduling, and billing. If auths are late, denied, or not updated, families wait and teams lose trust.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what Authorizations owns and does not own today",
       "Describe the authorization lifecycle end to end",
       "Explain the owner / status / next action / follow-up date rule",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What Authorizations owns today", kind: "Overview", minutes: 10, summary: "Auth readiness, submission, pending follow-up, approval updates, expirations, denials, and status accuracy." },
-      { id: "w1d1-l3", title: "What Authorizations does not own", kind: "Overview", minutes: 8, summary: "Not intake conversion, final clinical quality, payroll, recruiting, scheduling execution, staffing execution, or payer contract decisions." },
-      { id: "w1d1-l4", title: "The authorization lifecycle", kind: "Workflow", minutes: 12, summary: "Intake / VOB readiness → initial auth → assessment / treatment auth → renewals / reassessments → approval updates → scheduling / billing visibility → denial / escalation if needed." },
+      { id: "w1d1-l1", title: "What Authorizations owns today", kind: "Overview", minutes: 10, summary: "Auth readiness, submission, pending follow-up, approval updates, expirations, denials, and status accuracy." },
+      { id: "w1d1-l2", title: "What Authorizations does not own", kind: "Overview", minutes: 8, summary: "Not intake conversion, final clinical quality, payroll, recruiting, scheduling execution, staffing execution, or payer contract decisions." },
+      { id: "w1d1-l3", title: "The authorization lifecycle", kind: "Workflow", minutes: 12, summary: "Intake / VOB readiness → initial auth → assessment / treatment auth → renewals / reassessments → approval updates → scheduling / billing visibility → denial / escalation if needed." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what Authorizations owns",
       "Can explain what Authorizations does not own",
       "Can describe the basic authorization lifecycle",
@@ -154,7 +151,7 @@ const W1: AuthorizationsDayModule[] = [
     ],
     shadowing: ["Sit with Authorizations Manager, Coordinator, or assigned mentor for 30–60 minutes and watch how they start their auth queue review."],
     livePractice: ["No live authorization ownership yet — observe only."],
-    resources: [R.welcome, R.l1Overview, R.l1RoleSop, R.binder, R.roleDeepDive],
+    resources: [R.l1Overview, R.l1RoleSop, R.binder, R.roleDeepDive],
     knowledgeCheck: {
       q: "What four things should every auth item have before you leave it?",
       a: "Owner, status, next action, follow-up date. Authorizations does not own clinical quality or contract decisions.",

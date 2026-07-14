@@ -15,6 +15,7 @@ import { RBT_BUCKETS } from "@/lib/academy/trainingPaths";
 import { RBT_PATHS, type RBTPathId } from "@/lib/training/rbtAcademy";
 import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
 import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
+import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCard";
 
 /**
  * Real Journey Detail for /academy/path/:slug.
@@ -182,6 +183,10 @@ export default function TrainingPathDetail() {
 
       {/* Phase / week / day timeline */}
       <section className="mt-12">
+        {/* Universal Welcome to Blossom — Phase 0 for every role, above the curriculum */}
+        <div className="mb-8">
+          <WelcomeToBlossomCard />
+        </div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Curriculum</p>
         <h2 className="mt-1 text-xl font-semibold tracking-tight md:text-2xl">Week-by-week journey</h2>
 

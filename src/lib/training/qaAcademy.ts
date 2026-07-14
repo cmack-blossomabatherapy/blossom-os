@@ -130,25 +130,22 @@ function day(
 
 const W1: QaDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + QA Role Orientation",
+    title: "QA Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what QA does and why it matters. QA protects clinical quality, documentation accuracy, compliance readiness, and clinical process trust. When QA is unclear, treatment plans get delayed, reports sit too long, authorizations get blocked, documentation drifts, and leaders lose visibility into quality issues.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what QA owns and does not own today",
       "Describe the current QA lifecycle end-to-end",
       "Explain the owner / status / next action / follow-up date rule",
       "Explain confidentiality and clinical sensitivity",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What QA owns today", kind: "Overview", minutes: 10, summary: "Review of clinical reports and treatment plans, documentation standards, missing-item follow-up, corrections, compliance/audits, trend reporting, escalation." },
-      { id: "w1d1-l3", title: "What QA does not own", kind: "Overview", minutes: 8, summary: "Not clinical judgment, not writing the treatment plan for the BCBA, not authorizations, not intake, not scheduling, not payroll." },
-      { id: "w1d1-l4", title: "Current QA lifecycle", kind: "Workflow", minutes: 10, summary: "Item enters queue → review → missing/correction items documented → owner set → follow-up → corrections reviewed → escalated when needed → final status updated." },
-      { id: "w1d1-l5", title: "Confidentiality and clinical sensitivity", kind: "SOP", minutes: 10, summary: "Clinical QA content is sensitive; share on a need-to-know basis and stay respectful in every note." },
+      { id: "w1d1-l1", title: "What QA owns today", kind: "Overview", minutes: 10, summary: "Review of clinical reports and treatment plans, documentation standards, missing-item follow-up, corrections, compliance/audits, trend reporting, escalation." },
+      { id: "w1d1-l2", title: "What QA does not own", kind: "Overview", minutes: 8, summary: "Not clinical judgment, not writing the treatment plan for the BCBA, not authorizations, not intake, not scheduling, not payroll." },
+      { id: "w1d1-l3", title: "Current QA lifecycle", kind: "Workflow", minutes: 10, summary: "Item enters queue → review → missing/correction items documented → owner set → follow-up → corrections reviewed → escalated when needed → final status updated." },
+      { id: "w1d1-l4", title: "Confidentiality and clinical sensitivity", kind: "SOP", minutes: 10, summary: "Clinical QA content is sensitive; share on a need-to-know basis and stay respectful in every note." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what QA owns",
       "Can explain what QA does not own",
       "Can explain why QA impacts clinical quality, auth readiness, and compliance",
@@ -156,7 +153,7 @@ const W1: QaDayModule[] = [
     ],
     shadowing: ["Sit with QA Director (e.g. Rochel Walzman), QA Reviewer, or assigned mentor for 30–60 minutes and watch how they review the QA queue."],
     livePractice: ["No live QA ownership yet — observe only."],
-    resources: [R.welcome, R.l1QaSop, R.binder, R.roleDeepDive, R.l2Review, R.hipaa, R.clinStandards],
+    resources: [R.l1QaSop, R.binder, R.roleDeepDive, R.l2Review, R.hipaa, R.clinStandards],
     knowledgeCheck: {
       q: "What four things should every QA item have before you leave it?",
       a: "Owner, status, next action, follow-up date. QA does not replace the BCBA's clinical ownership.",

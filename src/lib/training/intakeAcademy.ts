@@ -125,30 +125,27 @@ function day(
 
 const W1: IntakeDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + Intake Role Orientation",
+    title: "Intake Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what Intake does and why it matters. Intake is the first operational trust point for families — no lead should sit without owner, status, next action, and follow-up date.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what Intake owns and does not own today",
       "Explain the family experience standard",
       "Explain why Monday must stay updated today",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What Intake owns today", kind: "Overview", minutes: 10, summary: "Leads, first contact, forms/consents, missing info, insurance collection, VOB readiness, handoff." },
-      { id: "w1d1-l3", title: "What Intake does not own", kind: "Overview", minutes: 8, summary: "Not Finance, RCM, Auth, Scheduling, Staffing, or Clinical — Intake supports handoff." },
-      { id: "w1d1-l4", title: "The family experience standard", kind: "Workflow", minutes: 10, summary: "Warm, clear, guided. Every family feels owned, not routed." },
+      { id: "w1d1-l1", title: "What Intake owns today", kind: "Overview", minutes: 10, summary: "Leads, first contact, forms/consents, missing info, insurance collection, VOB readiness, handoff." },
+      { id: "w1d1-l2", title: "What Intake does not own", kind: "Overview", minutes: 8, summary: "Not Finance, RCM, Auth, Scheduling, Staffing, or Clinical — Intake supports handoff." },
+      { id: "w1d1-l3", title: "The family experience standard", kind: "Workflow", minutes: 10, summary: "Warm, clear, guided. Every family feels owned, not routed." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what Intake owns",
       "Can explain what Intake does not own",
       "Can explain why Monday must stay updated today",
     ],
     shadowing: ["Sit with Intake Lead or assigned mentor for 30–60 minutes and watch how they start their day."],
     livePractice: ["No live lead ownership yet — observe only."],
-    resources: [R.welcome, R.l1Overview, R.l1RoleSop, R.l1RoleDeepDive],
+    resources: [R.l1Overview, R.l1RoleSop, R.l1RoleDeepDive],
     knowledgeCheck: {
       q: "What four things should every lead have before you leave it?",
       a: "Owner, status, next action, follow-up date. Intake does not own clinical documentation. Monday is today's intake source of truth.",

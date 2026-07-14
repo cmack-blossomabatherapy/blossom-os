@@ -135,25 +135,22 @@ function day(
 
 const W1: HrDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + HR Role Orientation",
+    title: "HR Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what HR / People Operations does and why it matters. HR protects the employee lifecycle — helping people join Blossom correctly, stay organized, complete training, move through performance processes appropriately, and exit cleanly when needed. When HR is messy, employees feel unsupported, managers lack visibility, compliance is at risk, and payroll/training/operations get harder.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what HR owns and does not own today",
       "Describe the employee lifecycle end to end",
       "Explain the owner / status / next action / follow-up date rule",
       "Explain the confidentiality rule",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What HR owns today", kind: "Overview", minutes: 10, summary: "Employee lifecycle, onboarding, background checks, records, reviews, benefits questions, corrective-action support, offboarding, confidentiality." },
-      { id: "w1d1-l3", title: "What HR does not own", kind: "Overview", minutes: 8, summary: "Not Recruiting's candidate pipeline, Payroll processing, Clinical supervision, or State Ops execution." },
-      { id: "w1d1-l4", title: "The employee lifecycle", kind: "Workflow", minutes: 10, summary: "Hiring handoff → onboarding → background checks → orientation → records → training visibility → reviews → HR support → corrective action → offboarding." },
-      { id: "w1d1-l5", title: "Confidentiality and professional judgment", kind: "SOP", minutes: 10, summary: "HR info is shared only with people who need it for their role, per current policy and leadership direction." },
+      { id: "w1d1-l1", title: "What HR owns today", kind: "Overview", minutes: 10, summary: "Employee lifecycle, onboarding, background checks, records, reviews, benefits questions, corrective-action support, offboarding, confidentiality." },
+      { id: "w1d1-l2", title: "What HR does not own", kind: "Overview", minutes: 8, summary: "Not Recruiting's candidate pipeline, Payroll processing, Clinical supervision, or State Ops execution." },
+      { id: "w1d1-l3", title: "The employee lifecycle", kind: "Workflow", minutes: 10, summary: "Hiring handoff → onboarding → background checks → orientation → records → training visibility → reviews → HR support → corrective action → offboarding." },
+      { id: "w1d1-l4", title: "Confidentiality and professional judgment", kind: "SOP", minutes: 10, summary: "HR info is shared only with people who need it for their role, per current policy and leadership direction." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what HR owns",
       "Can explain what HR does not own",
       "Can explain why confidentiality matters",
@@ -161,7 +158,7 @@ const W1: HrDayModule[] = [
     ],
     shadowing: ["Sit with HR / People Operations Lead or assigned mentor for 30–60 minutes and watch how they review the HR queue or employee lifecycle items."],
     livePractice: ["No live HR ownership yet — observe only."],
-    resources: [R.welcome, R.l1HrSop, R.binder, R.roleDeepDive, R.handbook, R.policies],
+    resources: [R.l1HrSop, R.binder, R.roleDeepDive, R.handbook, R.policies],
     knowledgeCheck: {
       q: "What four things should every HR item have before you leave it?",
       a: "Owner, status, next action, follow-up date. HR does not run the recruiting pipeline, run payroll, or supervise clinicians.",

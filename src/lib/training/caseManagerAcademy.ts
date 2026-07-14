@@ -138,25 +138,22 @@ function day(
 
 const W1: CaseManagerDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + Case Manager Role Orientation",
+    title: "Case Manager Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what Case Management does and why it matters. Case Managers help families and cases stay guided after a client enters services — keeping visibility on blockers, family needs, clinical coordination, services on pause, parent training visibility, discharge readiness, and cross-department follow-up. Strong case management makes families feel supported and helps clinical and operations leaders see what needs attention.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what Case Management owns and does not own today",
       "Describe the current client lifecycle end-to-end",
       "Explain the owner / status / next action / follow-up date rule",
       "Explain confidentiality and clinical sensitivity",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What Case Management owns today", kind: "Overview", minutes: 10, summary: "Coordination, visibility, family communication support, blocker tracking, escalation routing, parent-training/pause/discharge visibility." },
-      { id: "w1d1-l3", title: "What Case Management does not own", kind: "Overview", minutes: 8, summary: "Not clinical supervision, not writing plans for BCBAs, not intake, not auths, not scheduling, not staffing, not billing/payroll." },
-      { id: "w1d1-l4", title: "Current client lifecycle", kind: "Workflow", minutes: 10, summary: "Transition to client → assessment → treatment plan → parent training → ongoing sessions → documentation → progress reports → pause/escalation → discharge → follow-up." },
-      { id: "w1d1-l5", title: "Clinical boundary and confidentiality", kind: "SOP", minutes: 10, summary: "Case information is sensitive; share on a need-to-know basis and stay respectful in every note." },
+      { id: "w1d1-l1", title: "What Case Management owns today", kind: "Overview", minutes: 10, summary: "Coordination, visibility, family communication support, blocker tracking, escalation routing, parent-training/pause/discharge visibility." },
+      { id: "w1d1-l2", title: "What Case Management does not own", kind: "Overview", minutes: 8, summary: "Not clinical supervision, not writing plans for BCBAs, not intake, not auths, not scheduling, not staffing, not billing/payroll." },
+      { id: "w1d1-l3", title: "Current client lifecycle", kind: "Workflow", minutes: 10, summary: "Transition to client → assessment → treatment plan → parent training → ongoing sessions → documentation → progress reports → pause/escalation → discharge → follow-up." },
+      { id: "w1d1-l4", title: "Clinical boundary and confidentiality", kind: "SOP", minutes: 10, summary: "Case information is sensitive; share on a need-to-know basis and stay respectful in every note." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what Case Management owns",
       "Can explain what Case Management does not own",
       "Can explain the basic client lifecycle",
@@ -164,7 +161,7 @@ const W1: CaseManagerDayModule[] = [
     ],
     shadowing: ["Sit with Clinical Services lead, Case Manager mentor, BCBA/Clinical leader, or assigned manager for 30–60 minutes and watch how they review active case needs."],
     livePractice: ["No live case ownership yet — observe only."],
-    resources: [R.welcome, R.l1CmSop, R.binder, R.roleDeepDive, R.l2Case, R.l2Lifecycle, R.hipaa, R.clinOverview],
+    resources: [R.l1CmSop, R.binder, R.roleDeepDive, R.l2Case, R.l2Lifecycle, R.hipaa, R.clinOverview],
     knowledgeCheck: {
       q: "What four things should every case-management item have before you leave it?",
       a: "Owner, status, next action, follow-up date. Case Management does not replace BCBA clinical supervision.",
