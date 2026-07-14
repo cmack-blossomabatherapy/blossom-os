@@ -236,57 +236,80 @@ export default function OSAskBlossom() {
 
   return (
     <OSShell>
-      <div className="os-rise space-y-4">
-        {/* Header */}
-        <div className="os-glass-panel px-5 py-4 md:px-6 md:py-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_10px_26px_-12px_hsl(265_85%_60%/0.6)]">
-                <Sparkles className="h-5 w-5" />
-              </span>
-              <div>
-                <h1 className="text-[19px] font-semibold tracking-tight text-foreground">Operational Insights</h1>
-                <p className="text-[12.5px] text-muted-foreground">The operational brain of Blossom — search, summarize, decide.</p>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600&display=swap');`}</style>
+      <div className="os-rise mx-auto w-full max-w-6xl space-y-5" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+        {/* Header — petal-glow frame to match Company Home */}
+        <div
+          className="relative rounded-[28px] p-[1.5px] shadow-[0_18px_60px_-30px_hsl(265_60%_50%/0.35)]"
+          style={{
+            backgroundImage:
+              "conic-gradient(from 210deg at 50% 50%, hsl(189 55% 58% / 0.55), hsl(280 60% 70% / 0.5), hsl(330 75% 72% / 0.55), hsl(265 85% 65% / 0.5), hsl(189 55% 58% / 0.55))",
+          }}
+        >
+          <div className="relative overflow-hidden rounded-[26px] bg-card/95 backdrop-blur px-5 py-5 md:px-7 md:py-6">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full opacity-60 blur-3xl"
+              style={{ background: "radial-gradient(circle, hsl(280 75% 72% / 0.45), transparent 65%)" }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -bottom-24 -left-16 h-56 w-56 rounded-full opacity-50 blur-3xl"
+              style={{ background: "radial-gradient(circle, hsl(189 55% 58% / 0.4), transparent 65%)" }}
+            />
+            <div className="relative flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_10px_26px_-12px_hsl(265_85%_60%/0.6)]">
+                  <Sparkles className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+                    Blossom AI
+                  </p>
+                  <h1 className="text-xl font-semibold tracking-tight text-foreground" style={{ fontFamily: "'Sora', system-ui, sans-serif" }}>
+                    Ask, summarize, and decide — beautifully.
+                  </h1>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="rounded-full border-[hsl(265_70%_85%)] bg-[hsl(265_100%_98%)] text-[hsl(265_60%_45%)]">
+                  <ShieldCheck className="mr-1 h-3 w-3" /> {scope.label}
+                </Badge>
+                <Badge variant="outline" className="rounded-full">{activeState}</Badge>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="rounded-full border-[hsl(265_70%_85%)] bg-[hsl(265_100%_98%)] text-[hsl(265_60%_45%)]">
-                <ShieldCheck className="mr-1 h-3 w-3" /> Scoped: {scope.label}
-              </Badge>
-              <Badge variant="outline" className="rounded-full">{activeState}</Badge>
-            </div>
-          </div>
 
-          {/* Tabs */}
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {([
-              { id: "chat", label: "Conversation", icon: Sparkles },
-              { id: "saved", label: "Saved & Recent", icon: History },
-              { id: "knowledge", label: "Knowledge Base", icon: BookOpen },
-              { id: "insights", label: "AI Insights", icon: Brain },
-            ] as { id: Tab; label: string; icon: typeof Sparkles }[]).map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-all",
-                  tab === t.id
-                    ? "bg-foreground text-background shadow-sm"
-                    : "bg-foreground/[0.04] text-foreground/70 hover:bg-foreground/[0.08]",
-                )}
-              >
-                <t.icon className="h-3.5 w-3.5" />
-                {t.label}
-              </button>
-            ))}
+            {/* Tabs */}
+            <div className="relative mt-4 flex flex-wrap gap-1.5">
+              {([
+                { id: "chat", label: "Conversation", icon: Sparkles },
+                { id: "saved", label: "Saved & Recent", icon: History },
+                { id: "knowledge", label: "Knowledge Base", icon: BookOpen },
+                { id: "insights", label: "AI Insights", icon: Brain },
+              ] as { id: Tab; label: string; icon: typeof Sparkles }[]).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-all",
+                    tab === t.id
+                      ? "bg-foreground text-background shadow-sm"
+                      : "bg-foreground/[0.05] text-foreground/70 hover:bg-foreground/[0.09]",
+                  )}
+                >
+                  <t.icon className="h-3.5 w-3.5" />
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Body */}
         {tab === "chat" && (
-          <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_300px]">
+          <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px]">
             {/* LEFT: conversations */}
-            <aside className="os-glass-panel hidden flex-col p-3 lg:flex lg:max-h-[calc(100vh-220px)]">
+            <aside className="hidden flex-col rounded-2xl border border-border/60 bg-card/90 p-3 backdrop-blur lg:flex lg:max-h-[calc(100vh-240px)]">
               <Button
                 variant="default"
                 className="mb-3 w-full justify-start gap-2 rounded-xl bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white hover:opacity-95"
@@ -346,9 +369,21 @@ export default function OSAskBlossom() {
             </aside>
 
             {/* CENTER */}
-            <section className="os-glass-panel flex min-h-[60vh] flex-col">
+            <section
+              className="relative rounded-[26px] p-[1.5px] shadow-[0_18px_50px_-30px_hsl(265_60%_50%/0.3)]"
+              style={{
+                backgroundImage:
+                  "conic-gradient(from 210deg at 50% 50%, hsl(189 55% 58% / 0.35), hsl(280 60% 70% / 0.35), hsl(330 75% 72% / 0.4), hsl(265 85% 65% / 0.35), hsl(189 55% 58% / 0.35))",
+              }}
+            >
+             <div className="relative flex min-h-[62vh] flex-col overflow-hidden rounded-[24px] bg-card/95 backdrop-blur">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -top-24 -right-16 h-48 w-48 rounded-full opacity-40 blur-3xl"
+                style={{ background: "radial-gradient(circle, hsl(280 75% 72% / 0.35), transparent 65%)" }}
+              />
               {/* Command bar */}
-              <div className="border-b border-foreground/[0.06] p-3">
+              <div className="relative border-b border-foreground/[0.06] p-3">
                 <form
                   onSubmit={(e) => { e.preventDefault(); void send(input); }}
                   className="flex items-center gap-2 rounded-2xl border border-foreground/[0.08] bg-white/80 px-3 py-2 shadow-[0_8px_24px_-18px_hsl(265_60%_50%/0.25)] focus-within:border-[hsl(265_70%_70%)] focus-within:shadow-[0_0_0_4px_hsl(265_85%_92%/0.7)]"
@@ -370,11 +405,11 @@ export default function OSAskBlossom() {
               </div>
 
               {/* Stream */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto p-5">
+              <div ref={scrollRef} className="relative flex-1 overflow-y-auto p-5">
                 {messages.length === 0 ? (
                   <EmptyState prompts={quickPrompts} onPick={(p) => void send(p)} />
                 ) : (
-                  <div className="space-y-5">
+                  <div className="mx-auto max-w-3xl space-y-5">
                     {messages.map((m) => (
                       <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
                         <div className={cn(
@@ -471,10 +506,11 @@ export default function OSAskBlossom() {
                   </div>
                 )}
               </div>
+             </div>
             </section>
 
             {/* RIGHT: insights + actions */}
-            <aside className="os-glass-panel hidden flex-col p-4 lg:flex lg:max-h-[calc(100vh-220px)]">
+            <aside className="hidden flex-col rounded-2xl border border-border/60 bg-card/90 p-4 backdrop-blur lg:flex lg:max-h-[calc(100vh-240px)] overflow-y-auto">
               <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational Insights</h3>
               <div className="space-y-2">
                 {insights.map((i) => (
@@ -510,7 +546,7 @@ export default function OSAskBlossom() {
         )}
 
         {tab === "saved" && (
-          <div className="os-glass-panel p-5">
+          <div className="rounded-2xl border border-border/60 bg-card/90 p-5 backdrop-blur">
             <h3 className="mb-3 text-[13px] font-semibold text-foreground">Recent conversations</h3>
             {convs.length === 0 ? (
               <p className="text-[12.5px] text-muted-foreground">Conversations you start will appear here.</p>
@@ -532,7 +568,7 @@ export default function OSAskBlossom() {
         )}
 
         {tab === "knowledge" && (
-          <div className="os-glass-panel p-5">
+          <div className="rounded-2xl border border-border/60 bg-card/90 p-5 backdrop-blur">
             <div className="mb-4 flex items-center gap-2 rounded-2xl border border-foreground/[0.08] bg-white/80 px-3 py-2">
               <Search className="h-4 w-4 text-muted-foreground" />
               <input
@@ -566,7 +602,7 @@ export default function OSAskBlossom() {
         )}
 
         {tab === "insights" && (
-          <div className="os-glass-panel p-5">
+          <div className="rounded-2xl border border-border/60 bg-card/90 p-5 backdrop-blur">
             <h3 className="mb-3 text-[13px] font-semibold text-foreground">Proactive insights</h3>
             <div className="grid gap-2 md:grid-cols-2">
               {insights.map((i) => (
