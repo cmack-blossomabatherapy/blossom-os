@@ -1,19 +1,33 @@
-## Problem
+## Goal
+Remove the Referral Queue entirely — it duplicates the Intake Dashboard. Referrals are already surfaced per-lead on the Lead Drawer and tracked centrally in the Referral CRM for marketing.
 
-`/intake/cr-packet-prep` is fully built (`src/pages/os/intake/CentralReachPacketPrep.tsx`) and mounted in `App.tsx`, but the sidebar entry shows "Coming Soon" for the Intake Coordinator (and other roles that expose it) because the path is not in that role's `ROLE_SPECIFIC_LIVE_PATHS` set in `src/pages/os/OSShell.tsx`.
+## Changes
 
-Currently only `authorization_coordinator`, `authorization_manager`, and `billing_finance` have `/intake/cr-packet-prep` whitelisted. `intake_coordinator` (the primary owner) does not, so the menu item renders as an inert "Soon" chip.
+### Routing & page
+- Delete `src/pages/os/intake/ReferralQueue.tsx`.
+- Remove the import and `<Route path="/intake/referral-queue" ...>` from `src/App.tsx`.
+- Add a redirect: `/intake/referral-queue → /intake/dashboard` so any bookmarks/deep links keep working.
 
-## Fix
+### Navigation
+- Remove the "Referral Queue" entry from:
+  - `src/lib/os/roleMenus.ts` (Intake menu)
+  - `src/lib/os/superAdminMenu.ts`
+- Remove `/intake/referral-queue` from live-path allow-lists in `src/pages/os/OSShell.tsx`.
 
-1. **`src/pages/os/OSShell.tsx`** — add `/intake/cr-packet-prep` to the `intake_coordinator` role-specific live path set so the menu item is clickable for the role that owns it. Verify any other roles whose menus list the item (Intake Manager/Lead if present, State Director intake snapshots) are also whitelisted, matching the pattern already used for the Auth Section variant.
+### Cross-references
+- `src/pages/os/intake/IntakeTasks.tsx`: change the follow-up deep link from `/intake/referral-queue?leadId=…` to `/intake/dashboard?leadId=…` (Intake Dashboard already handles the leadId param for opening the drawer). If it doesn't, route through the Leads page instead.
+- `src/lib/os/moduleRegistry.ts` and `src/lib/os/phase3Reports.ts`: drop the "New Referral Queue" entries (report + module match name) — the same signal is already in the Intake Dashboard cards.
+- `src/lib/os/integrations/integrationRegistry.ts`: remove "Referral Queue" from the two `surfaces` lists.
+- `src/components/intake/LeadActionsButton.tsx`: remove Referral Queue from the doc comment.
 
-2. **Sanity audit** — confirm no other role menu entries pointing at `/intake/cr-packet-prep` (including the `?section=auth` deep-link) are stuck as "Coming Soon" by cross-checking each role that references the path in `src/lib/os/roleMenus.ts` against its live-path set. Add missing entries in the same edit.
+### Training content
+- `src/lib/training/academyData.ts`: delete the `intake-referral-queue-workflow` module and its resource, and remove its id from the intake journey array (line 1579). Merge any unique guidance ("first contact within 1 business hour") into the existing Intake Dashboard workflow module so nothing is lost.
 
-3. **No page changes** — the page component itself is functional (search, filters, readiness scoring, CR Handoff / Missing Info actions, lead drawer links). No refactor needed.
+### Tests
+Update to reflect the removal:
+- Delete Referral Queue assertions in: `sprint02Regression`, `sprint03Regression`, `sprint07LeadIntakeEngine`, `sprint08IntakeWorkflowActions`, `intakeSprint09`, `intakeExport83LeadsDocuments`, `intakeExport87UiCanonicalStageUsage`, `intakeExport88FullDepartmentLaunch`, `intakeShellHotfixSprint15A`, `intakeRoleMenuSprint15`.
+- Add one small test asserting `/intake/referral-queue` redirects to `/intake/dashboard` and that the string "Referral Queue" no longer appears in `roleMenus.ts` / `superAdminMenu.ts`.
 
-## Verification
-
-- Load `/intake/cr-packet-prep` as Intake Coordinator: sidebar link is active (no "Soon" chip), page renders with lead readiness cards.
-- Same check for Authorization Coordinator/Manager and Billing/Finance (already live — regression check).
-- Executive/COO/Super Admin already have full menu access — spot check.
+## Not changing
+- Referral CRM (`/marketing/referral-crm/*`) — kept as the single source of truth for referral relationships.
+- Per-lead referral linking inside `LeadDetailDrawer` (already wired via `useLeadReferralLink`) — kept.
