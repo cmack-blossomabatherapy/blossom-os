@@ -152,7 +152,9 @@ async function fetchAlerts(): Promise<MobileAlert[]> {
       title: t.title,
       body: t.owner ? `Owner: ${t.owner}` : "Intake task",
       source: "Intake",
-      href: t.lead_id ? `/leads/${t.lead_id}?focus=tasks&task=${t.id}&alert=it-${t.id}` : undefined,
+      href: t.lead_id
+        ? `/leads?view=pipeline&lead=${t.lead_id}&focus=tasks&task=${t.id}&alert=it-${t.id}`
+        : undefined,
       dueLabel: dueLabelFor(t.due_date),
       createdAt: t.created_at as string,
     });

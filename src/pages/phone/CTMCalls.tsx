@@ -137,7 +137,7 @@ export default function CTMCalls() {
                 const when = r.called_at ? new Date(r.called_at).toLocaleString() : "—";
                 const otherNumber = r.direction?.toLowerCase().startsWith("out") ? r.to_number : r.from_number;
                 const linkTo = r.matched_lead_id
-                  ? `/leads?lead=${r.matched_lead_id}`
+                  ? `/leads?view=pipeline&lead=${r.matched_lead_id}`
                   : r.matched_client_id
                     ? `/clients?client=${r.matched_client_id}`
                     : null;

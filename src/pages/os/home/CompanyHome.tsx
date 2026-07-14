@@ -1060,7 +1060,7 @@ function relatedRecordHref(ev: CompanyCalendarEvent): string | null {
   const id = ev.related_record_id;
   if (!type || !id) return null;
   switch (type) {
-    case "lead":            return `/os/leads?lead=${encodeURIComponent(id)}`;
+    case "lead":            return `/leads?view=pipeline&lead=${encodeURIComponent(id)}`;
     case "client":          return `/os/clients?client=${encodeURIComponent(id)}`;
     case "authorization":
     case "auth":            return `/os/authorizations?authId=${encodeURIComponent(id)}`;
