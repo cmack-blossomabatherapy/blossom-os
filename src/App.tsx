@@ -687,7 +687,7 @@ const App = () => (
                   <Route path="/executive/staffing-expansion" element={<StaffingExpansion />} />
                   <Route path="/executive/operational-consistency" element={<OperationalConsistency />} />
                   <Route path="/executive/updates" element={<ExecutiveUpdates />} />
-                  <Route path="/executive/resources" element={<ExecResourceLibrary />} />
+                  <Route path="/executive/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/operations" element={<OpsExecutiveDashboard />} />
                   <Route path="/operations/command-center" element={<OpsCommandCenter />} />
                   <Route path="/operations/briefing" element={<OpsLeadershipBriefing />} />
@@ -698,7 +698,7 @@ const App = () => (
                   <Route path="/operations/staffing-capacity" element={<OpsStaffingCapacity />} />
                   <Route path="/operations/training-adoption" element={<OpsTrainingAdoption />} />
                   <Route path="/operations/updates" element={<OpsLeadershipUpdates />} />
-                  <Route path="/operations/resources" element={<OpsResourceLibrary />} />
+                  <Route path="/operations/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/state-director" element={<OSStateDirector />} />
                   <Route path="/intake-coordinator" element={<OSIntakeCoordinator />} />
                   <Route path="/auth-coordinator" element={<OSAuthCoordinator />} />
@@ -730,7 +730,7 @@ const App = () => (
                   <Route path="/recruiting/follow-ups"     element={<OSRecruitingFollowUps />} />
                   <Route path="/recruiting/messages"       element={<OSRecruitingMessages />} />
                   <Route path="/recruiting/escalations"    element={<OSRecruitingEscalations />} />
-                  <Route path="/recruiting/resources"      element={<OSRecruitingResources />} />
+                  <Route path="/recruiting/resources"      element={<Navigate to="/resource-library" replace />} />
                   <Route path="/hr-team" element={<OSHRTeam />} />
                   <Route path="/hr/workspace" element={<OSHRWorkspace />} />
                   {/* /hr/training-academy is the universal LMS learner home; redirect to /academy. */}
@@ -745,7 +745,7 @@ const App = () => (
                   <Route path="/hr/requests" element={<OSHRRequests />} />
                   <Route path="/hr/compliance" element={<OSHRCompliance />} />
                   <Route path="/hr/messages" element={<OSHRMessages />} />
-                  <Route path="/hr/team-resources" element={<OSHRResources />} />
+                  <Route path="/hr/team-resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/billing-finance" element={<OSBillingFinance />} />
                   <Route path="/qa-team" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQATeam /></PermissionRoute>} />
                   <Route path="/qa-workspace" element={<OSQAWorkspace />} />
@@ -764,7 +764,7 @@ const App = () => (
                   <Route path="/supervision-visibility" element={<OSQASupervision />} />
                   <Route path="/qa-messages" element={<OSQAMessages />} />
                   <Route path="/escalations-followups" element={<OSQAEscalations />} />
-                  <Route path="/qa/resources" element={<OSQAResources />} />
+                  <Route path="/qa/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/payroll-coordinator" element={<OSPayrollCoordinator />} />
                   <Route path="/payroll/workspace" element={<OSPayrollWorkspace />} />
                   <Route path="/payroll/training-academy" element={<OSPayrollTrainingAcademy />} />
@@ -778,7 +778,7 @@ const App = () => (
                   <Route path="/payroll/compliance" element={<OSPayrollCompliance />} />
                   <Route path="/payroll/tax-documents" element={<OSPayrollTaxDocuments />} />
                   <Route path="/payroll/messages" element={<OSPayrollMessages />} />
-                  <Route path="/payroll/resources" element={<OSPayrollResources />} />
+                  <Route path="/payroll/resources" element={<Navigate to="/resource-library" replace />} />
                   {/* Case Manager role */}
                   <Route path="/case-manager" element={<OSCaseManager />} />
                   <Route path="/clinical-director" element={<ClinicalDirectorDashboard />} />
@@ -818,7 +818,7 @@ const App = () => (
                   <Route path="/bcba/supervision" element={<OSBCBASupervision />} />
                   <Route path="/bcba/parent-training" element={<OSBCBAParentTraining />} />
                   <Route path="/bcba/scheduling" element={<OSBCBAScheduling />} />
-                  <Route path="/bcba/resources" element={<OSBCBAResources />} />
+                  <Route path="/bcba/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/bcba/training-academy" element={<OSBCBATrainingAcademy />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/rbt/my-day" element={<OSRBTMyDay />} />
@@ -832,7 +832,7 @@ const App = () => (
                   <Route path="/rbt/supervision" element={<OSRBTSupervision />} />
                   <Route path="/rbt/messages" element={<OSRBTMessages />} />
                   <Route path="/rbt/help" element={<OSRBTHelp />} />
-                  <Route path="/rbt/resources" element={<OSRBTResources />} />
+                  <Route path="/rbt/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/rbt/reports" element={<Navigate to="/reports?audience=rbt" replace />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />
@@ -848,7 +848,7 @@ const App = () => (
                   <Route path="/authorizations/handoff" element={<OSAuthHandoff />} />
                   <Route path="/scheduling" element={<OSScheduling />} />
                   <Route path="/scheduling/board" element={<OSSchedulingBoard />} />
-                  <Route path="/scheduling/resources" element={<OSSchedulingResources />} />
+                  <Route path="/scheduling/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/scheduling/rbts" element={<OSSchedulingRosterRBTs />} />
                   <Route path="/scheduling/bcbas" element={<OSSchedulingRosterBCBAs />} />
                   <Route path="/cases" element={<OSCaseManagement />} />
@@ -902,7 +902,7 @@ const App = () => (
                   <Route path="/resource-library/resource/:id" element={<ResourceLibraryDetail />} />
                   <Route path="/resource-library/admin/qa" element={<ResourceLibraryAdminQA />} />
                   <Route path="/admin/blossom-ai" element={<OSBlossomAIManagement />} />
-                  <Route path="/authorizations/resources" element={<OSAuthorizationResources />} />
+                  <Route path="/authorizations/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/analytics" element={<Navigate to="/reports" replace />} />
                   <Route path="/tech-requests" element={<OSPlaceholder title="Tech Requests" description="Internal technology support requests." icon={LifeBuoy} />} />
                   <Route path="/internal-requests" element={<OSPlaceholder title="Internal Requests" description="Operational and internal forms and approvals." icon={Inbox} />} />
