@@ -923,6 +923,112 @@ function prettyCategory(c: string): string {
   return c.replace(/[_-]/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
+function WeekView({
+  days,
+  selectedDate,
+  onSelectDate,
+  eventsByDay,
+  onOpenEvent,
+  onOpenDayDrawer,
+}: {
+  days: Date[];
+  selectedDate: Date;
+  onSelectDate: (d: Date) => void;
+  eventsByDay: Map<string, CompanyCalendarEvent[]>;
+  onOpenEvent: (ev: CompanyCalendarEvent) => void;
+  onOpenDayDrawer: (date: Date, category: string | null) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-7 gap-2">
+        {days.map((day) => {
+          const key = format(day, "yyyy-MM-dd");
+          const dayEvents = eventsByDay.get(key) ?? [];
+          const selected = isSameDay(day, selectedDate);
+          const today = isSameDay(day, new Date());
+          const byCat = new Map<string, number>();
+          for (const ev of dayEvents) {
+            const c = ev.category || "company_event";
+            byCat.set(c, (byCat.get(c) ?? 0) + 1);
+          }
+          const dotCats = Array.from(byCat.keys()).slice(0, 3);
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelectDate(day)}
+              className={cn(
+                "relative flex flex-col items-center justify-start rounded-2xl border p-2 transition-all duration-200 min-h-[92px]",
+                selected
+                  ? "border-primary/40 bg-gradient-to-b from-primary/10 to-primary/5 shadow-[0_8px_20px_-8px_hsl(189_50%_45%/0.35)]"
+                  : "border-border/60 bg-card hover:bg-muted/60",
+                today && !selected && "ring-2 ring-primary/40 ring-offset-1 ring-offset-card"
+              )}
+            >
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {format(day, "EEE")}
+              </span>
+              <span
+                className={cn(
+                  "mt-0.5 text-xl font-semibold tabular-nums",
+                  selected ? "text-primary" : "text-foreground"
+                )}
+                style={{ fontFamily: "'Sora', system-ui, sans-serif" }}
+              >
+                {format(day, "d")}
+              </span>
+              <span className="mt-auto flex flex-wrap items-center justify-center gap-1">
+                {dotCats.map((c) => (
+                  <span
+                    key={c}
+                    className={cn("size-2 rounded-full ring-1 ring-card", categoryColor(c))}
+                  />
+                ))}
+                {dayEvents.length > dotCats.length && (
+                  <span className="text-[10px] font-semibold text-muted-foreground">
+                    +{dayEvents.length - dotCats.length}
+                  </span>
+                )}
+              </span>
+              {dayEvents.length > 0 && (
+                <span className="absolute top-1.5 right-1.5 text-[9px] font-semibold text-muted-foreground tabular-nums">
+                  {dayEvents.length}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="rounded-2xl border border-border/60 bg-card p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">
+            {format(selectedDate, "EEEE, MMMM d")}
+          </p>
+          {eventsByDay.get(format(selectedDate, "yyyy-MM-dd"))?.length ? (
+            <Badge variant="secondary" className="rounded-full text-[11px]">
+              {eventsByDay.get(format(selectedDate, "yyyy-MM-dd"))!.length} event
+              {eventsByDay.get(format(selectedDate, "yyyy-MM-dd"))!.length === 1 ? "" : "s"}
+            </Badge>
+          ) : null}
+        </div>
+        {eventsByDay.get(format(selectedDate, "yyyy-MM-dd"))?.length ? (
+          <ul className="space-y-1">
+            {eventsByDay.get(format(selectedDate, "yyyy-MM-dd"))!.map((ev) => (
+              <EventRow key={ev.id} ev={ev} onOpen={onOpenEvent} />
+            ))}
+          </ul>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border/70 bg-muted/40 p-6 text-center">
+            <p className="text-sm font-medium text-foreground">Nothing scheduled</p>
+            <p className="mt-1 text-xs text-muted-foreground">Select another day or switch to month view.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function EventRow({
   ev,
   onOpen,
