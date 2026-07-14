@@ -533,6 +533,9 @@ export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }
   if (slug === "scheduling") {
     return buildSchedulingJourney(slug, path);
   }
+  if (slug === "staffing") {
+    return buildStaffingJourney(slug, path);
+  }
 
   const all = getTrainings();
   const trainings = sourceTrainingsForSlug(slug, all);
