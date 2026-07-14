@@ -58,7 +58,7 @@ function resolveDestination(row: TaskRow): Destination {
   }
   if (/staff|match|schedul|assess|ready/.test(text)) {
     return {
-      to: `/leads?view=pipeline&leadId=${encodeURIComponent(leadId)}&${focus}`,
+      to: `/leads?view=pipeline&lead=${encodeURIComponent(leadId)}&${focus}`,
       label: "Lead → Active pipeline",
       section: "Scheduling / staffing card",
       nextStep: "Move the lead through staffing, scheduling, or assessment steps.",
