@@ -752,10 +752,10 @@ function OSLeadsV2Inner() {
               // Clear other groups' stages, then toggle this group's stages on/off
               for (const gg of PIPELINE_GROUPS) gg.stages.forEach((s) => next.delete(s));
               if (!allSelected) g.stages.forEach((s) => next.add(s));
-              setPipelineStages(next);
+              setPipelineStagesParam(next);
             }}
             onToggleStage={togglePipelineStage}
-            onClear={() => setPipelineStages(new Set())}
+            onClear={() => setPipelineStagesParam(new Set())}
           />
           <PipelineFilters
             mine={pipelineMine}
