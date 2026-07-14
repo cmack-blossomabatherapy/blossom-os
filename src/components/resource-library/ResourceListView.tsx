@@ -124,7 +124,7 @@ export function ResourceListView({
             options={[{ v: "all", l: "All" }, ...stateOptions.map((s) => ({ v: s, l: s }))]} />
           <FilterSelect label="Owner" value={owner} onChange={setOwner}
             options={[{ v: "all", l: "All" }, ...ownerOptions.map((o) => ({ v: o, l: o }))]} />
-          <div className="flex flex-col justify-between gap-2 rounded-xl border border-border/60 bg-white/70 px-3 py-2">
+          <div className="flex flex-col justify-between gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2">
             <div className="flex items-center justify-between text-[11.5px]">
               <Label htmlFor="sop-only" className="text-muted-foreground">SOP-related</Label>
               <Switch id="sop-only" checked={sopOnly} onCheckedChange={setSopOnly} />
@@ -184,7 +184,7 @@ function FilterSelect({
     <div className="flex flex-col gap-1">
       <span className="text-[10.5px] uppercase tracking-wider text-muted-foreground">{label}</span>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-9 rounded-xl bg-white/70 text-[12.5px]"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="h-9 rounded-xl bg-card/70 text-[12.5px]"><SelectValue /></SelectTrigger>
         <SelectContent className="max-h-72">
           {options.map((o) => (
             <SelectItem key={o.v} value={o.v} className="text-[12.5px]">{o.l}</SelectItem>
