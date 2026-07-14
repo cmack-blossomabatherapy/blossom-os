@@ -902,6 +902,8 @@ const App = () => (
                   <Route path="/resource-library/videos" element={<ResourceLibraryVideos />} />
                   <Route path="/resource-library/intake" element={<ResourceLibraryIntake />} />
                   <Route path="/resources/intake" element={<Navigate to="/resource-library/intake" replace />} />
+                  <Route path="/resource-library/recruiting" element={<ResourceLibraryRecruiting />} />
+                  <Route path="/resources/recruiting" element={<Navigate to="/resource-library/recruiting" replace />} />
                   <Route path="/resource-library/resource/:id" element={<ResourceLibraryDetail />} />
                   <Route path="/resource-library/admin/qa" element={<ResourceLibraryAdminQA />} />
                   <Route path="/admin/blossom-ai" element={<OSBlossomAIManagement />} />
