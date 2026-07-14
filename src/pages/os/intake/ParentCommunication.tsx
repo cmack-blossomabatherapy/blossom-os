@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import {
-  MessageSquare, Mail, Copy, Send, Search, ShieldAlert, FileText, StickyNote, X,
+  MessageSquare, Mail, Copy, Send, Search, ShieldAlert, FileText, StickyNote,
 } from "lucide-react";
 import { GrowthPageShell } from "@/components/os/growth/GrowthPageShell";
 import { Button } from "@/components/ui/button";
