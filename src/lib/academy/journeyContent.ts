@@ -27,7 +27,7 @@ import { CASE_MANAGER_DAYS, CASE_MANAGER_WEEKS, type CaseManagerDayModule } from
 import { BEHAVIORAL_SUPPORT_DAYS, BEHAVIORAL_SUPPORT_WEEKS, type BehavioralSupportDayModule } from "@/lib/training/behavioralSupportAcademy";
 import { ASSISTANT_STATE_DIRECTOR_DAYS, ASSISTANT_STATE_DIRECTOR_WEEKS, type AssistantStateDirectorDayModule } from "@/lib/training/assistantStateDirectorAcademy";
 
-export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing" | "hr" | "credentialing" | "qa" | "case-manager" | "behavioral-support" | "assistant-state-director";
+export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing" | "hr" | "credentialing" | "qa" | "case-manager" | "behavioral-support" | "assistant-state-director" | "state-director";
 
 /** Training-shaped record that carries the original source for routing & resource lookup. */
 export type AcademyJourneyModule = Training & {
@@ -112,13 +112,14 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
     case "case-manager":         return []; // sourced from caseManagerAcademy.ts
     case "behavioral-support":   return []; // sourced from behavioralSupportAcademy.ts
     case "assistant-state-director": return []; // sourced from assistantStateDirectorAcademy.ts
+    case "state-director": return []; // sourced from stateDirectorAcademy.ts
     case "hr":                   return []; // sourced from hrAcademy.ts
     case "credentialing":        return []; // sourced from credentialingAcademy.ts
     case "marketing":            return byDept("marketing");
     case "business-development": return byDept("business_development");
     case "clinical-director":   return byDept("clinical_director");
     case "behavioral-support":   return byDept("behavioral_support");
-    case "state-director":       return byDept("state_director", "state_operations", "leadership_state");
+    // "state-director" is sourced from stateDirectorAcademy.ts (current-state 4-week onboarding)
     case "finance":              return byDept("finance", "billing", "payroll", "rcm");
     case "operations":           return byDept("operations");
     case "executive":            return byDept("executive");

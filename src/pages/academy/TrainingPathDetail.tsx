@@ -25,8 +25,6 @@ import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
  */
 export default function TrainingPathDetail() {
   const { slug = "" } = useParams();
-  if (slug === "state-director") return <Navigate to="/training" replace />;
-
   const [params, setParams] = useSearchParams();
   const rbtTrackId = (params.get("track") as RBTPathId | null) ?? undefined;
   const journey = useMemo(
