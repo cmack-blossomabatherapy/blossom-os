@@ -132,9 +132,9 @@ export default function TrainingPathDayDetail() {
               const resCount = moduleResourceCount(m);
               return (
                 <li key={m.id}>
-                  <Link
-                    to={runtimeHref(m.id)}
-                    className="group flex items-start gap-4 rounded-2xl border border-border/70 bg-card p-5 transition hover:border-border"
+                  <div
+                    aria-disabled="true"
+                    className="flex items-start gap-4 rounded-2xl border border-border/70 bg-card p-5"
                   >
                     <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[12px] font-semibold ${done ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : active ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-muted text-muted-foreground"}`}>
                       {done ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
@@ -154,10 +154,7 @@ export default function TrainingPathDayDetail() {
                         )}
                       </div>
                     </div>
-                    <div className="hidden shrink-0 self-center text-muted-foreground transition-transform group-hover:translate-x-0.5 sm:block">
-                      <ArrowRight className="h-4 w-4" />
-                    </div>
-                  </Link>
+                  </div>
                 </li>
               );
             })}
