@@ -487,6 +487,38 @@ function OSLeadsV2Inner() {
     toast.success(`Exported ${filtered.length} leads`);
   };
 
+  // Pipeline-scoped subset applied on top of the shared `filtered` list.
+  const meName = (displayName ?? "").trim().toLowerCase();
+  const meEmail = (user?.email ?? "").toLowerCase();
+  const pipelineLeads = useMemo(() => {
+    if (view !== "pipeline") return filtered;
+    const cutoff = pipelineDays
+      ? Date.now() - pipelineDays * 24 * 60 * 60 * 1000
+      : null;
+    return filtered.filter((l) => {
+      if (pipelineStages.size) {
+        const canonical = canonicalFamilyLeadStage(l.status);
+        if (!pipelineStages.has(canonical)) return false;
+      }
+      if (pipelineMine) {
+        const owner = (l.owner ?? "").toLowerCase();
+        const matches =
+          (meName && owner === meName) ||
+          (meEmail && (owner === meEmail || owner === meEmail.split("@")[0]));
+        if (!matches) return false;
+      }
+      if (cutoff !== null) {
+        const iso = l.lastContacted ?? l.createdAt ?? null;
+        const t = iso ? new Date(iso).getTime() : NaN;
+        if (!Number.isFinite(t) || t < cutoff) return false;
+      }
+      return true;
+    });
+  }, [view, filtered, pipelineStages, pipelineMine, pipelineDays, meName, meEmail]);
+
+  const pipelineFilterCount =
+    (pipelineMine ? 1 : 0) + (pipelineDays ? 1 : 0) + pipelineStages.size;
+
   return (
     <OSShell rightRail={<AIRail />}>
       <div className="space-y-6">
