@@ -305,7 +305,7 @@ export default function OSQAProgressReports() {
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-6xl px-4 md:px-8 pb-24 pt-6 md:pt-10 space-y-6">
+      <div className="mx-auto w-full max-w-[1500px] px-4 md:px-8 pb-24 pt-6 md:pt-10 space-y-6">
         {/* HEADER */}
         <header>
           <div className="flex items-start justify-between flex-wrap gap-4">

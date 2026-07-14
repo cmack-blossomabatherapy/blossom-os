@@ -61,7 +61,7 @@ export default function ResourceLibraryDetail() {
   if (!resource) {
     return (
       <OSShell>
-        <div className="mx-auto w-full max-w-6xl space-y-4 px-6 py-10 md:px-10">
+        <div className="mx-auto max-w-4xl space-y-4 p-6">
           <Button variant="ghost" onClick={() => navigate(-1)}><ArrowLeft className="mr-1.5 h-4 w-4" /> Back</Button>
           <div className="rounded-2xl border border-dashed border-border/60 bg-card p-10 text-center text-sm text-muted-foreground">
             Resource not found or you don't have access.
@@ -76,7 +76,7 @@ export default function ResourceLibraryDetail() {
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-6xl space-y-5 px-6 py-10 md:px-10">
+      <div className="mx-auto max-w-5xl space-y-5 p-6">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild>
             <Link to="/resource-library"><ArrowLeft className="mr-1.5 h-4 w-4" /> Library</Link>

@@ -21,7 +21,7 @@ export function GlassPageShell({
   title, description, eyebrow, eyebrowIcon: Eyebrow, actions, stats, children, className,
 }: GlassPageShellProps) {
   return (
-    <div className={cn("mx-auto w-full max-w-6xl space-y-6 animate-fade-in", className)}>
+    <div className={cn("mx-auto w-full max-w-7xl space-y-6 animate-fade-in", className)}>
       <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow,var(--primary)))_55%,hsl(var(--accent))_120%)] p-6 text-primary-foreground shadow-lg sm:p-9">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,hsl(var(--primary-foreground)/0.25),transparent_45%),radial-gradient(circle_at_90%_120%,hsl(var(--primary-foreground)/0.18),transparent_50%)]" />
         <div className="relative grid gap-5 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">

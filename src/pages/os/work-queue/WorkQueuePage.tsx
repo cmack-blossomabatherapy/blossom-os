@@ -238,7 +238,7 @@ export default function WorkQueuePage() {
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-6xl px-6 md:px-10 py-10 space-y-6">
+      <div className="px-6 lg:px-10 py-8 max-w-[1500px] mx-auto space-y-6">
         <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">

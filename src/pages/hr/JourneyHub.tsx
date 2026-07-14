@@ -234,7 +234,7 @@ export default function JourneyHub() {
 
   return (
     <div className="aurora-bg -mx-4 -my-4 px-4 py-4 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full">
-      <div className="mx-auto w-full max-w-6xl space-y-6 animate-fade-in">
+      <div className="mx-auto max-w-7xl space-y-6 animate-fade-in">
       {isAdmin && (
         <div className="flex items-center justify-between rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-2">
           <div className="flex items-center gap-2 text-xs text-foreground">

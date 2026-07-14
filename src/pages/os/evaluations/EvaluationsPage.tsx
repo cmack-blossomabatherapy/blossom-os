@@ -81,7 +81,7 @@ export default function EvaluationsPage() {
 
   return (
     <OSShell>
-      <div className="px-6 md:px-10 py-10 mx-auto w-full max-w-6xl">
+      <div className="px-6 md:px-10 py-10 max-w-7xl mx-auto">
         {/* Header */}
         <header className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3 min-w-0">

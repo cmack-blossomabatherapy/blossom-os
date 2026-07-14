@@ -107,7 +107,7 @@ export default function OSStaffingWorkspace() {
 
   return (
     <OSShell>
-      <div className="px-6 lg:px-10 py-8 max-w-[1400px] mx-auto space-y-6">
+      <div className="px-6 lg:px-10 py-8 max-w-[1500px] mx-auto space-y-6">
         {/* Header */}
         <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>

@@ -334,7 +334,7 @@ export default function OSHRRequests() {
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-6xl px-6 md:px-10 py-10">
+      <div className="px-6 md:px-10 py-10 max-w-7xl mx-auto">
         {/* header */}
         <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-start">
           <div className="flex items-start gap-4 flex-1 min-w-0">

@@ -266,7 +266,7 @@ export default function OSHRNewHires() {
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-6xl px-6 md:px-10 py-10">
+      <div className="px-6 md:px-10 py-10 max-w-7xl mx-auto">
         {/* header */}
         <header className="mb-6 flex items-start gap-4">
           <div className="h-11 w-11 rounded-2xl bg-muted grid place-items-center shrink-0">
