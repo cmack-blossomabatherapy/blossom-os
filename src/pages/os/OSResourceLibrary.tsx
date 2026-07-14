@@ -432,6 +432,38 @@ export default function OSResourceLibrary() {
               </section>
             )}
 
+            {/* INTAKE SECTIONED VIEW */}
+            {isIntakeView && intakeGrouped && !query && !activeCategory && !activeCollection && !typeFilter && (
+              <div className="space-y-8" data-testid="intake-sections">
+                {INTAKE_SECTIONS.map((s) => {
+                  const items = intakeGrouped[s.id];
+                  if (!items || items.length === 0) return null;
+                  const shown = items.slice(0, 9);
+                  const Icon = s.icon;
+                  return (
+                    <section key={s.id} data-testid={`intake-section-${s.id}`}>
+                      <SectionHeader title={s.title} subtitle={s.subtitle} icon={Icon} />
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {shown.map((r) => (
+                          <ResourceCard
+                            key={r.id} r={r}
+                            onOpen={openResource}
+                            onFavorite={toggleFavorite}
+                            isFavorite={favorites.has(r.id)}
+                          />
+                        ))}
+                      </div>
+                      {items.length > shown.length && (
+                        <p className="mt-2 text-[11.5px] text-muted-foreground">
+                          + {items.length - shown.length} more — use search or filters to explore this section.
+                        </p>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+
             {/* STATE DIRECTOR LAUNCH SMART COLLECTION */}
             {showSdLaunchCollection && (
               <section data-testid="sd-launch-collection">
