@@ -18,7 +18,7 @@ import {
   type LibrarySectionId,
 } from "@/lib/resources/librarySections";
 import { useOSRole } from "@/contexts/OSRoleContext";
-import { cleanResourceTitle } from "@/lib/resources/resourceDisplay";
+import { cleanResourceTitle, resourceDisplayDescription } from "@/lib/resources/resourceDisplay";
 
 export interface ResourceListViewProps {
   resources: Resource[];
@@ -28,13 +28,16 @@ export interface ResourceListViewProps {
   sections?: LibrarySectionId[];
   /** Hide the section grouping and render as a single flat grid. */
   flat?: boolean;
+  /** `search` keeps only the search/count row; `none` hides filters entirely. */
+  filterMode?: "full" | "search" | "none";
+  departmentOptions?: typeof LIBRARY_DEPARTMENTS;
 }
 
 const FILE_TYPES = ["PDF", "DOCX", "XLSX", "CSV", "Video", "Image", "Text", "File"];
 
 export function ResourceListView({
   resources, loading, emptyMessage = "No resources match your filters yet.",
-  sections, flat,
+  sections, flat, filterMode = "full", departmentOptions,
 }: ResourceListViewProps) {
   const { role } = useOSRole();
   const isSuper = role === "super_admin";
@@ -64,6 +67,10 @@ export function ResourceListView({
     resources.forEach((r) => { if (r.owner) set.add(r.owner); });
     return Array.from(set).sort();
   }, [resources]);
+  const visibleDepartmentOptions = useMemo(
+    () => (departmentOptions ?? LIBRARY_DEPARTMENTS).filter((d) => resources.some((r) => d.match(r))),
+    [departmentOptions, resources],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -96,6 +103,7 @@ export function ResourceListView({
   return (
     <div className="space-y-6">
       {/* Filter panel */}
+      {filterMode !== "none" && (
       <div className="rounded-2xl border border-border/60 bg-card/60 p-4 backdrop-blur">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative flex-1">
@@ -113,9 +121,10 @@ export function ResourceListView({
           </div>
         </div>
 
+        {filterMode === "full" && (
         <div className="mt-3 grid gap-2 md:grid-cols-3 xl:grid-cols-6">
           <FilterSelect label="Department" value={dept} onChange={setDept}
-            options={[{ v: "all", l: "All" }, ...LIBRARY_DEPARTMENTS.map((d) => ({ v: d.id, l: d.name }))]} />
+            options={[{ v: "all", l: "All visible" }, ...visibleDepartmentOptions.map((d) => ({ v: d.id, l: d.name }))]} />
           <FilterSelect label="File type" value={fileType} onChange={setFileType}
             options={[{ v: "all", l: "All" }, ...FILE_TYPES.map((f) => ({ v: f, l: f }))]} />
           <FilterSelect label="Topic tag" value={tag} onChange={setTag}
@@ -141,7 +150,9 @@ export function ResourceListView({
             )}
           </div>
         </div>
+        )}
       </div>
+      )}
 
       {/* Results */}
       {loading ? (
@@ -226,7 +237,7 @@ function ResourceCard({ r }: { r: Resource }) {
           {cleanResourceTitle(r.title)}
         </h3>
         {r.description && (
-          <p className="line-clamp-2 text-[12px] text-muted-foreground">{r.description}</p>
+          <p className="line-clamp-2 text-[12px] text-muted-foreground">{resourceDisplayDescription(r)}</p>
         )}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">

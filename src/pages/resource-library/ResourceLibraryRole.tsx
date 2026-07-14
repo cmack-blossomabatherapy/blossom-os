@@ -7,8 +7,8 @@ import { isVisibleToRole } from "@/lib/resources/resourceData";
 
 export default function ResourceLibraryRole() {
   const { resources, loading } = useLibraryResources();
-  const { role } = useOSRole();
-  const mine = resources.filter((r) => isVisibleToRole(r, role));
+  const { role, activeState } = useOSRole();
+  const mine = resources.filter((r) => isVisibleToRole(r, role, activeState));
   return (
     <OSShell>
       <div className="mx-auto max-w-7xl space-y-6 p-6">

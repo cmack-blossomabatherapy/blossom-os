@@ -33,41 +33,43 @@ function hasTag(r: Resource, ...needles: string[]): boolean {
   return needles.some((n) => bag.includes(n));
 }
 
-function isVideoResource(r: Resource): boolean {
+export function isVideoResource(r: Resource): boolean {
   if (r.type === "Video") return true;
+  if (r.resourceType === "video") return true;
   if (r.storageBucket === "resource-videos") return true;
+  if ((r.mimeType ?? "").toLowerCase().startsWith("video/")) return true;
   const ext = (r.fileName || r.storagePath || "").toLowerCase();
   return /\.(mp4|webm|mov|m4v)$/i.test(ext);
 }
 
-function isSopResource(r: Resource): boolean {
+export function isSopResource(r: Resource): boolean {
   if (r.sopRelated) return true;
   if (r.type === "SOP") return true;
   if (r.resourceType === "sop" || r.resourceType === "policy") return true;
   return hasTag(r, "sop", "policy", "procedure");
 }
 
-function isTrainingResource(r: Resource): boolean {
+export function isTrainingResource(r: Resource): boolean {
   if (r.trainingRelated) return true;
   if (r.category === "training") return true;
   if (r.resourceType === "training" || r.resourceType === "guide") return true;
   return hasTag(r, "training", "academy", "journey");
 }
 
-function isPolicyOrHandbook(r: Resource): boolean {
+export function isPolicyOrHandbook(r: Resource): boolean {
   if (r.resourceType === "handbook" || r.resourceType === "policy") return true;
   if (r.category === "hr") return true;
   return hasTag(r, "handbook", "benefits", "policy");
 }
 
-function isFormOrTemplate(r: Resource): boolean {
+export function isFormOrTemplate(r: Resource): boolean {
   if (r.type === "Form" || r.type === "Template" || r.type === "Checklist") return true;
   if (r.resourceType === "template" || r.resourceType === "checklist") return true;
   if (r.category === "templates") return true;
   return hasTag(r, "template", "form", "worksheet");
 }
 
-function isCheatSheet(r: Resource): boolean {
+export function isCheatSheet(r: Resource): boolean {
   if (r.resourceType === "reference") return true;
   return hasTag(r, "cheat_sheet", "cheatsheet", "reference", "quick_reference");
 }
