@@ -1,0 +1,2 @@
+ALTER TABLE public.chat_conversations ADD COLUMN IF NOT EXISTS pinned boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_chat_conv_user_pinned ON public.chat_conversations(user_id, pinned DESC, last_message_at DESC);

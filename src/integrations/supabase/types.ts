@@ -3828,6 +3828,7 @@ export type Database = {
           created_at: string
           id: string
           last_message_at: string
+          pinned: boolean
           title: string
           updated_at: string
           user_id: string
@@ -3836,6 +3837,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string
+          pinned?: boolean
           title?: string
           updated_at?: string
           user_id: string
@@ -3844,6 +3846,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string
+          pinned?: boolean
           title?: string
           updated_at?: string
           user_id?: string

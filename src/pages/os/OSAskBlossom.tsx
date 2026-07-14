@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 import {
   Sparkles, Send, Plus, Mic, Paperclip, History, Pin, BookOpen,
   Brain, Workflow, ShieldCheck, ExternalLink, Loader2, Search, Pencil, Trash2,
-  MicOff, X, RefreshCw, AlertCircle,
+  MicOff, X, RefreshCw, AlertCircle, MessageSquare, PinOff, Check, MessagesSquare,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,11 @@ export default function OSAskBlossom() {
   type Attach = { id: string; name: string; size: number; kind: "text" | "binary"; text?: string };
   const [attachments, setAttachments] = useState<Attach[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sidebar UX state — inline rename + search.
+  const [convSearch, setConvSearch] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
 
   const MAX_FILES = 3;
   const MAX_BYTES = 5 * 1024 * 1024;
@@ -132,17 +137,41 @@ export default function OSAskBlossom() {
   // Stop dictation if the page unmounts.
   useEffect(() => () => { recognitionRef.current?.stop(); }, []);
 
-  /** Rename or delete a conversation locally + on the server. */
-  async function renameConversation(localId: string) {
+  /** Begin inline rename in the sidebar (Enter to save, Esc to cancel). */
+  function beginRename(localId: string) {
     const current = convs.find((c) => c.id === localId);
-    const next = window.prompt("Rename conversation", current?.title ?? "");
-    if (!next || next.trim() === "" || next === current?.title) return;
-    const title = next.trim().slice(0, 120);
+    setEditingId(localId);
+    setEditingTitle(current?.title ?? "");
+  }
+  function cancelRename() {
+    setEditingId(null);
+    setEditingTitle("");
+  }
+  async function commitRename(localId: string) {
+    const current = convs.find((c) => c.id === localId);
+    const title = editingTitle.trim().slice(0, 120);
+    setEditingId(null);
+    setEditingTitle("");
+    if (!title || title === current?.title) return;
     setConvs((list) => list.map((c) => (c.id === localId ? { ...c, title } : c)));
     const serverId = serverConvIds[localId];
     if (serverId) {
       const { error } = await supabase.from("chat_conversations").update({ title }).eq("id", serverId);
       if (error) toast.error("Could not rename on server");
+    }
+  }
+  async function togglePin(localId: string) {
+    const current = convs.find((c) => c.id === localId);
+    if (!current) return;
+    const nextPinned = !current.pinned;
+    setConvs((list) => list.map((c) => (c.id === localId ? { ...c, pinned: nextPinned } : c)));
+    const serverId = serverConvIds[localId];
+    if (serverId) {
+      const { error } = await supabase.from("chat_conversations").update({ pinned: nextPinned }).eq("id", serverId);
+      if (error) {
+        toast.error("Could not update pin on server");
+        setConvs((list) => list.map((c) => (c.id === localId ? { ...c, pinned: !nextPinned } : c)));
+      }
     }
   }
   async function deleteConversation(localId: string) {
@@ -166,7 +195,8 @@ export default function OSAskBlossom() {
     (async () => {
       const { data: convRows } = await supabase
         .from("chat_conversations")
-        .select("id,title,created_at,last_message_at")
+        .select("id,title,created_at,last_message_at,pinned")
+        .order("pinned", { ascending: false })
         .order("last_message_at", { ascending: false })
         .limit(40);
       if (cancelled || !convRows?.length) { setHistoryLoaded(true); return; }
@@ -207,6 +237,7 @@ export default function OSAskBlossom() {
         nextConvs.push({
           id: localId,
           title: c.title || "New chat",
+          pinned: Boolean((c as { pinned?: boolean }).pinned),
           createdAt: c.created_at,
           updatedAt: c.last_message_at,
           messages: grouped.get(c.id) ?? [],
@@ -419,54 +450,40 @@ export default function OSAskBlossom() {
               >
                 <Plus className="h-4 w-4" /> New conversation
               </Button>
-              <ScrollArea className="flex-1 -mx-1 px-1">
-                {convs.length === 0 ? (
-                  <p className="px-2 py-4 text-[12px] text-muted-foreground">No conversations yet.</p>
-                ) : (
-                  <div className="space-y-1">
-                    {convs.map((c) => (
-                      <div
-                        key={c.id}
-                        className={cn(
-                          "group flex items-start gap-1 rounded-xl px-2 py-2 text-[12.5px] transition-colors",
-                          activeId === c.id ? "bg-foreground/[0.07] text-foreground" : "hover:bg-foreground/[0.04] text-foreground/80",
-                        )}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setActiveId(c.id)}
-                          className="min-w-0 flex-1 text-left"
-                        >
-                          <div className="flex items-center gap-1.5">
-                            {c.pinned && <Pin className="h-3 w-3 text-[hsl(265_70%_55%)]" />}
-                            <p className="truncate font-medium">{c.title}</p>
-                          </div>
-                          <p className="text-[10.5px] text-muted-foreground">
-                            {new Date(c.updatedAt).toLocaleString()}
-                          </p>
-                        </button>
-                        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                          <button
-                            type="button"
-                            aria-label="Rename"
-                            onClick={() => void renameConversation(c.id)}
-                            className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label="Delete"
-                            onClick={() => void deleteConversation(c.id)}
-                            className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <div className="mb-2 flex items-center gap-1.5 rounded-xl border border-foreground/[0.06] bg-white/70 px-2.5 py-1.5">
+                <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <input
+                  value={convSearch}
+                  onChange={(e) => setConvSearch(e.target.value)}
+                  placeholder="Search chats"
+                  className="w-full bg-transparent text-[12px] outline-none placeholder:text-muted-foreground/70"
+                />
+                {convSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setConvSearch("")}
+                    aria-label="Clear search"
+                    className="grid h-4 w-4 place-items-center rounded-full text-muted-foreground hover:bg-foreground/[0.06]"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 )}
+              </div>
+              <ScrollArea className="flex-1 -mx-1 px-1">
+                <ConversationList
+                  convs={convs}
+                  activeId={activeId}
+                  search={convSearch}
+                  editingId={editingId}
+                  editingTitle={editingTitle}
+                  onSelect={(id) => { setActiveId(id); setEditingId(null); }}
+                  onBeginRename={beginRename}
+                  onEditingTitleChange={setEditingTitle}
+                  onCommitRename={commitRename}
+                  onCancelRename={cancelRename}
+                  onTogglePin={togglePin}
+                  onDelete={deleteConversation}
+                />
               </ScrollArea>
             </aside>
 
@@ -704,25 +721,20 @@ export default function OSAskBlossom() {
         )}
 
         {tab === "saved" && (
-          <div className="rounded-2xl border border-border/60 bg-card/90 p-5 backdrop-blur">
-            <h3 className="mb-3 text-[13px] font-semibold text-foreground">Recent conversations</h3>
-            {convs.length === 0 ? (
-              <p className="text-[12.5px] text-muted-foreground">Conversations you start will appear here.</p>
-            ) : (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {convs.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => { setActiveId(c.id); setTab("chat"); }}
-                    className="rounded-2xl border border-foreground/[0.06] bg-white/80 p-3 text-left transition hover:border-[hsl(265_70%_80%)] hover:shadow-[0_8px_24px_-18px_hsl(265_60%_50%/0.3)]"
-                  >
-                    <p className="text-[13px] font-semibold text-foreground">{c.title}</p>
-                    <p className="text-[11px] text-muted-foreground">{c.messages.length} messages · {new Date(c.updatedAt).toLocaleString()}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <SavedRecentTab
+            convs={convs}
+            search={convSearch}
+            onSearchChange={setConvSearch}
+            editingId={editingId}
+            editingTitle={editingTitle}
+            onOpen={(id) => { setActiveId(id); setTab("chat"); }}
+            onBeginRename={beginRename}
+            onEditingTitleChange={setEditingTitle}
+            onCommitRename={commitRename}
+            onCancelRename={cancelRename}
+            onTogglePin={togglePin}
+            onDelete={deleteConversation}
+          />
         )}
 
         {tab === "knowledge" && (
@@ -874,6 +886,405 @@ function EmptyState({ prompts, onPick }: { prompts: ReturnType<typeof quickPromp
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ---------- Conversation list building blocks ----------
+
+type ConvActions = {
+  editingId: string | null;
+  editingTitle: string;
+  onBeginRename: (id: string) => void;
+  onEditingTitleChange: (title: string) => void;
+  onCommitRename: (id: string) => void;
+  onCancelRename: () => void;
+  onTogglePin: (id: string) => void;
+  onDelete: (id: string) => void;
+};
+
+function conversationSnippet(c: AiConversation): string {
+  const lastUser = [...c.messages].reverse().find((m) => m.role === "user");
+  const lastAny = c.messages[c.messages.length - 1];
+  const text = (lastUser?.content ?? lastAny?.content ?? "").replace(/\s+/g, " ").trim();
+  if (!text) return "New conversation";
+  return text.length > 110 ? text.slice(0, 107) + "…" : text;
+}
+
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const now = Date.now();
+  const diff = Math.max(0, now - then);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function groupConversations(list: AiConversation[]) {
+  const pinned: AiConversation[] = [];
+  const today: AiConversation[] = [];
+  const yesterday: AiConversation[] = [];
+  const last7: AiConversation[] = [];
+  const last30: AiConversation[] = [];
+  const older: AiConversation[] = [];
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
+  const seven = startOfToday - 7 * 24 * 60 * 60 * 1000;
+  const thirty = startOfToday - 30 * 24 * 60 * 60 * 1000;
+  for (const c of list) {
+    if (c.pinned) { pinned.push(c); continue; }
+    const t = new Date(c.updatedAt).getTime();
+    if (t >= startOfToday) today.push(c);
+    else if (t >= startOfYesterday) yesterday.push(c);
+    else if (t >= seven) last7.push(c);
+    else if (t >= thirty) last30.push(c);
+    else older.push(c);
+  }
+  const sortByRecent = (a: AiConversation, b: AiConversation) =>
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  return [
+    { key: "Pinned", items: pinned.sort(sortByRecent) },
+    { key: "Today", items: today.sort(sortByRecent) },
+    { key: "Yesterday", items: yesterday.sort(sortByRecent) },
+    { key: "Previous 7 days", items: last7.sort(sortByRecent) },
+    { key: "Previous 30 days", items: last30.sort(sortByRecent) },
+    { key: "Older", items: older.sort(sortByRecent) },
+  ].filter((g) => g.items.length > 0);
+}
+
+function ConversationList({
+  convs, activeId, search, onSelect, ...actions
+}: ConvActions & {
+  convs: AiConversation[];
+  activeId: string | null;
+  search: string;
+  onSelect: (id: string) => void;
+}) {
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? convs.filter((c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.messages.some((m) => m.content.toLowerCase().includes(q)),
+      )
+    : convs;
+
+  if (convs.length === 0) {
+    return (
+      <div className="mx-2 my-3 rounded-2xl border border-dashed border-foreground/[0.08] bg-white/50 p-5 text-center">
+        <span className="mx-auto mb-2 grid h-9 w-9 place-items-center rounded-2xl bg-[hsl(265_85%_96%)] text-[hsl(265_60%_45%)]">
+          <MessagesSquare className="h-4 w-4" />
+        </span>
+        <p className="text-[12.5px] font-semibold text-foreground">Start your first chat</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">
+          Ask Blossom AI anything about training, SOPs, workflows, or your data.
+        </p>
+      </div>
+    );
+  }
+
+  if (filtered.length === 0) {
+    return (
+      <p className="mx-2 my-4 rounded-lg bg-foreground/[0.03] px-2 py-3 text-center text-[11.5px] text-muted-foreground">
+        No chats match “{search}”.
+      </p>
+    );
+  }
+
+  const groups = groupConversations(filtered);
+  return (
+    <div className="space-y-3 pb-2">
+      {groups.map((g) => (
+        <div key={g.key}>
+          <div className="flex items-center gap-1.5 px-2 pb-1">
+            {g.key === "Pinned" && <Pin className="h-2.5 w-2.5 text-[hsl(265_70%_55%)]" />}
+            <p className="text-[9.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">{g.key}</p>
+          </div>
+          <div className="space-y-0.5">
+            {g.items.map((c) => (
+              <ConversationRow
+                key={c.id}
+                conv={c}
+                active={activeId === c.id}
+                onSelect={() => onSelect(c.id)}
+                {...actions}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ConversationRow({
+  conv, active, onSelect,
+  editingId, editingTitle, onBeginRename, onEditingTitleChange, onCommitRename, onCancelRename,
+  onTogglePin, onDelete,
+}: ConvActions & {
+  conv: AiConversation;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  const isEditing = editingId === conv.id;
+  const snippet = conversationSnippet(conv);
+  const count = conv.messages.length;
+  return (
+    <div
+      className={cn(
+        "group relative rounded-xl px-2 py-2 transition-colors",
+        active ? "bg-gradient-to-r from-[hsl(265_85%_96%)] to-[hsl(280_85%_97%)] ring-1 ring-[hsl(265_70%_88%)]" : "hover:bg-foreground/[0.04]",
+      )}
+    >
+      {active && (
+        <span aria-hidden className="absolute left-0 top-1.5 h-[calc(100%-12px)] w-0.5 rounded-r-full bg-gradient-to-b from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)]" />
+      )}
+      <button
+        type="button"
+        onClick={onSelect}
+        disabled={isEditing}
+        className="block w-full min-w-0 text-left"
+      >
+        <div className="flex items-center gap-1.5">
+          {conv.pinned && <Pin className="h-3 w-3 shrink-0 text-[hsl(265_70%_55%)]" />}
+          {isEditing ? (
+            <input
+              autoFocus
+              value={editingTitle}
+              onChange={(e) => onEditingTitleChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); onCommitRename(conv.id); }
+                if (e.key === "Escape") { e.preventDefault(); onCancelRename(); }
+              }}
+              onBlur={() => onCommitRename(conv.id)}
+              onClick={(e) => e.stopPropagation()}
+              maxLength={120}
+              className="min-w-0 flex-1 rounded-md border border-[hsl(265_70%_75%)] bg-white px-1.5 py-0.5 text-[12.5px] font-medium text-foreground outline-none ring-2 ring-[hsl(265_85%_92%)]"
+            />
+          ) : (
+            <p className={cn(
+              "min-w-0 flex-1 truncate text-[12.5px] font-semibold",
+              active ? "text-foreground" : "text-foreground/90",
+            )}>
+              {conv.title || "New chat"}
+            </p>
+          )}
+        </div>
+        {!isEditing && (
+          <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">{snippet}</p>
+        )}
+        {!isEditing && (
+          <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground/80">
+            <MessageSquare className="h-2.5 w-2.5" />
+            <span>{count}</span>
+            <span aria-hidden>·</span>
+            <span>{relativeTime(conv.updatedAt)}</span>
+          </div>
+        )}
+      </button>
+      {isEditing ? (
+        <div className="mt-1 flex gap-1">
+          <button
+            type="button"
+            aria-label="Save name"
+            onMouseDown={(e) => { e.preventDefault(); onCommitRename(conv.id); }}
+            className="grid h-6 w-6 place-items-center rounded-md bg-[hsl(265_85%_65%)] text-white hover:bg-[hsl(265_85%_60%)]"
+          >
+            <Check className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            aria-label="Cancel"
+            onMouseDown={(e) => { e.preventDefault(); onCancelRename(); }}
+            className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-foreground/[0.06]"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          <button
+            type="button"
+            aria-label={conv.pinned ? "Unpin" : "Pin"}
+            onClick={(e) => { e.stopPropagation(); onTogglePin(conv.id); }}
+            className="grid h-6 w-6 place-items-center rounded-md bg-white/80 text-muted-foreground shadow-sm ring-1 ring-foreground/[0.05] hover:text-[hsl(265_70%_55%)]"
+          >
+            {conv.pinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+          </button>
+          <button
+            type="button"
+            aria-label="Rename"
+            onClick={(e) => { e.stopPropagation(); onBeginRename(conv.id); }}
+            className="grid h-6 w-6 place-items-center rounded-md bg-white/80 text-muted-foreground shadow-sm ring-1 ring-foreground/[0.05] hover:text-foreground"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            aria-label="Delete"
+            onClick={(e) => { e.stopPropagation(); onDelete(conv.id); }}
+            className="grid h-6 w-6 place-items-center rounded-md bg-white/80 text-muted-foreground shadow-sm ring-1 ring-foreground/[0.05] hover:bg-rose-500/10 hover:text-rose-600"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SavedRecentTab({
+  convs, search, onSearchChange, onOpen, ...actions
+}: ConvActions & {
+  convs: AiConversation[];
+  search: string;
+  onSearchChange: (v: string) => void;
+  onOpen: (id: string) => void;
+}) {
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? convs.filter((c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.messages.some((m) => m.content.toLowerCase().includes(q)),
+      )
+    : convs;
+  const groups = groupConversations(filtered);
+
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/90 p-5 backdrop-blur">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-[13px] font-semibold text-foreground">Saved & recent conversations</h3>
+          <p className="text-[11.5px] text-muted-foreground">
+            {convs.length === 0
+              ? "Conversations you start will appear here."
+              : `${convs.length} chat${convs.length === 1 ? "" : "s"} · pin, rename, or open any of them.`}
+          </p>
+        </div>
+        <div className="flex w-full max-w-[280px] items-center gap-1.5 rounded-xl border border-foreground/[0.06] bg-white/70 px-2.5 py-1.5">
+          <Search className="h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search chats"
+            className="w-full bg-transparent text-[12.5px] outline-none placeholder:text-muted-foreground/70"
+          />
+          {search && (
+            <button type="button" onClick={() => onSearchChange("")} aria-label="Clear" className="grid h-4 w-4 place-items-center rounded-full text-muted-foreground hover:bg-foreground/[0.06]">
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {convs.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-foreground/[0.08] bg-white/50 p-8 text-center">
+          <span className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-3xl bg-[hsl(265_85%_96%)] text-[hsl(265_60%_45%)]">
+            <MessagesSquare className="h-5 w-5" />
+          </span>
+          <p className="text-[13px] font-semibold text-foreground">No conversations yet</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            Start a new chat to see it show up here — you can pin favorites and rename any of them.
+          </p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <p className="rounded-lg bg-foreground/[0.03] px-3 py-4 text-center text-[12.5px] text-muted-foreground">
+          No chats match “{search}”.
+        </p>
+      ) : (
+        <div className="space-y-5">
+          {groups.map((g) => (
+            <div key={g.key}>
+              <div className="mb-2 flex items-center gap-1.5">
+                {g.key === "Pinned" && <Pin className="h-3 w-3 text-[hsl(265_70%_55%)]" />}
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{g.key}</p>
+                <span className="rounded-full bg-foreground/[0.05] px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">{g.items.length}</span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {g.items.map((c) => (
+                  <SavedConversationCard
+                    key={c.id}
+                    conv={c}
+                    onOpen={() => onOpen(c.id)}
+                    {...actions}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SavedConversationCard({
+  conv, onOpen,
+  editingId, editingTitle, onBeginRename, onEditingTitleChange, onCommitRename, onCancelRename,
+  onTogglePin, onDelete,
+}: ConvActions & {
+  conv: AiConversation;
+  onOpen: () => void;
+}) {
+  const isEditing = editingId === conv.id;
+  const snippet = conversationSnippet(conv);
+  return (
+    <div className="group relative rounded-2xl border border-foreground/[0.06] bg-white/85 p-3.5 transition-all hover:-translate-y-0.5 hover:border-[hsl(265_70%_82%)] hover:shadow-[0_18px_36px_-22px_hsl(265_60%_50%/0.4)]">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          {conv.pinned && <Pin className="h-3 w-3 shrink-0 text-[hsl(265_70%_55%)]" />}
+          {isEditing ? (
+            <input
+              autoFocus
+              value={editingTitle}
+              onChange={(e) => onEditingTitleChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); onCommitRename(conv.id); }
+                if (e.key === "Escape") { e.preventDefault(); onCancelRename(); }
+              }}
+              onBlur={() => onCommitRename(conv.id)}
+              maxLength={120}
+              className="min-w-0 flex-1 rounded-md border border-[hsl(265_70%_75%)] bg-white px-2 py-1 text-[13px] font-semibold text-foreground outline-none ring-2 ring-[hsl(265_85%_92%)]"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={onOpen}
+              className="min-w-0 flex-1 truncate text-left text-[13px] font-semibold text-foreground hover:text-[hsl(265_60%_45%)]"
+            >
+              {conv.title || "New chat"}
+            </button>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          <button type="button" aria-label={conv.pinned ? "Unpin" : "Pin"} onClick={() => onTogglePin(conv.id)}
+            className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:text-[hsl(265_70%_55%)]">
+            {conv.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+          </button>
+          <button type="button" aria-label="Rename" onClick={() => onBeginRename(conv.id)}
+            className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:text-foreground">
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button type="button" aria-label="Delete" onClick={() => onDelete(conv.id)}
+            className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+      <button type="button" onClick={onOpen} disabled={isEditing} className="mt-1 block w-full text-left">
+        <p className="line-clamp-2 text-[11.5px] leading-snug text-muted-foreground">{snippet}</p>
+        <div className="mt-1.5 flex items-center gap-1.5 text-[10.5px] text-muted-foreground/80">
+          <MessageSquare className="h-3 w-3" />
+          <span>{conv.messages.length} messages</span>
+          <span aria-hidden>·</span>
+          <span>{relativeTime(conv.updatedAt)}</span>
+        </div>
+      </button>
     </div>
   );
 }
