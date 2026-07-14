@@ -262,7 +262,8 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
       toast.error(e instanceof Error ? e.message : "Could not mark task started");
     }
     if (dest.drawer) {
-      openLead(row.lead?.id ?? row.task.lead_id);
+      const openId = row.lead?.id ?? row.task.lead_id;
+      if (openId) openLead(openId);
     } else if (dest.to) {
       navigate(dest.to);
     }
