@@ -195,7 +195,8 @@ export default function OSAskBlossom() {
     (async () => {
       const { data: convRows } = await supabase
         .from("chat_conversations")
-        .select("id,title,created_at,last_message_at")
+        .select("id,title,created_at,last_message_at,pinned")
+        .order("pinned", { ascending: false })
         .order("last_message_at", { ascending: false })
         .limit(40);
       if (cancelled || !convRows?.length) { setHistoryLoaded(true); return; }
@@ -236,6 +237,7 @@ export default function OSAskBlossom() {
         nextConvs.push({
           id: localId,
           title: c.title || "New chat",
+          pinned: Boolean((c as { pinned?: boolean }).pinned),
           createdAt: c.created_at,
           updatedAt: c.last_message_at,
           messages: grouped.get(c.id) ?? [],
