@@ -25,8 +25,9 @@ import { CREDENTIALING_DAYS, CREDENTIALING_WEEKS, type CredentialingDayModule } 
 import { QA_DAYS, QA_WEEKS, type QaDayModule } from "@/lib/training/qaAcademy";
 import { CASE_MANAGER_DAYS, CASE_MANAGER_WEEKS, type CaseManagerDayModule } from "@/lib/training/caseManagerAcademy";
 import { BEHAVIORAL_SUPPORT_DAYS, BEHAVIORAL_SUPPORT_WEEKS, type BehavioralSupportDayModule } from "@/lib/training/behavioralSupportAcademy";
+import { ASSISTANT_STATE_DIRECTOR_DAYS, ASSISTANT_STATE_DIRECTOR_WEEKS, type AssistantStateDirectorDayModule } from "@/lib/training/assistantStateDirectorAcademy";
 
-export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing" | "hr" | "credentialing" | "qa" | "case-manager" | "behavioral-support";
+export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing" | "hr" | "credentialing" | "qa" | "case-manager" | "behavioral-support" | "assistant-state-director";
 
 /** Training-shaped record that carries the original source for routing & resource lookup. */
 export type AcademyJourneyModule = Training & {
@@ -110,6 +111,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
     case "qa":                   return []; // sourced from qaAcademy.ts
     case "case-manager":         return []; // sourced from caseManagerAcademy.ts
     case "behavioral-support":   return []; // sourced from behavioralSupportAcademy.ts
+    case "assistant-state-director": return []; // sourced from assistantStateDirectorAcademy.ts
     case "hr":                   return []; // sourced from hrAcademy.ts
     case "credentialing":        return []; // sourced from credentialingAcademy.ts
     case "marketing":            return byDept("marketing");
@@ -130,7 +132,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
 /** Build the live runtime route for a module id, source-aware. */
 function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
   return (id: string) => {
-    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::")) {
+    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::") || id.startsWith("assistant-state-director::")) {
       return `/academy/path/${slug}/module/${encodeURIComponent(id)}`;
     }
     return `/training/${id}`;
@@ -139,7 +141,7 @@ function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
 
 /** Unified per-module status: runtime store for rbt/bcba, academyData for everything else. */
 function unifiedStatus(id: string): "completed" | "in_progress" | "overdue" | "not_started" {
-  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::")) {
+  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::") || id.startsWith("assistant-state-director::")) {
     const s = getRuntimeStatus(id);
     return s === "completed" ? "completed" : s === "in_progress" ? "in_progress" : "not_started";
   }
