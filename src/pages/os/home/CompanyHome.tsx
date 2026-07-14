@@ -1,6 +1,22 @@
 import { useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { format, parseISO, isSameDay, startOfDay, addDays, endOfMonth, startOfMonth } from "date-fns";
+import {
+  format,
+  parseISO,
+  isSameDay,
+  startOfDay,
+  addDays,
+  endOfMonth,
+  startOfMonth,
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  subWeeks,
+  subMonths,
+  addMonths,
+  eachDayOfInterval,
+  isWithinInterval,
+} from "date-fns";
 import {
   Calendar as CalendarIcon,
   Megaphone,
@@ -18,6 +34,10 @@ import {
   Filter,
   X,
   HelpCircle,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  Grid3X3,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
@@ -27,6 +47,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Select,
   SelectContent,
@@ -109,10 +130,12 @@ export default function CompanyHome() {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [month, setMonth] = useState<Date>(today);
+  const [view, setView] = useState<"month" | "week">("month");
   const [openEvent, setOpenEvent] = useState<CompanyCalendarEvent | null>(null);
   const [dayDrawer, setDayDrawer] = useState<{ date: Date; category: string | null } | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<Set<string>>(new Set());
   const [rangePreset, setRangePreset] = useState<RangePreset>("all");
+  const [jumpOpen, setJumpOpen] = useState(false);
 
   const availableCategories = useMemo(() => {
     const set = new Set<string>();
@@ -205,6 +228,43 @@ export default function CompanyHome() {
     setMonth(today);
   }, [today]);
 
+  const goPrevious = useCallback(() => {
+    if (view === "week") {
+      const prevWeek = subWeeks(month, 1);
+      setMonth(prevWeek);
+      setSelectedDate(prevWeek);
+    } else {
+      const prevMonth = subMonths(month, 1);
+      setMonth(prevMonth);
+      setSelectedDate(prevMonth);
+    }
+  }, [view, month]);
+
+  const goNext = useCallback(() => {
+    if (view === "week") {
+      const nextWeek = addWeeks(month, 1);
+      setMonth(nextWeek);
+      setSelectedDate(nextWeek);
+    } else {
+      const nextMonth = addMonths(month, 1);
+      setMonth(nextMonth);
+      setSelectedDate(nextMonth);
+    }
+  }, [view, month]);
+
+  const jumpToDate = useCallback((d: Date) => {
+    const normalized = startOfDay(d);
+    setSelectedDate(normalized);
+    setMonth(normalized);
+    setJumpOpen(false);
+  }, []);
+
+  const weekRange = useMemo(() => {
+    const start = startOfWeek(month, { weekStartsOn: 0 });
+    const end = endOfWeek(month, { weekStartsOn: 0 });
+    return { start, end, days: eachDayOfInterval({ start, end }) };
+  }, [month]);
+
   return (
     <OSShell>
       <div className="mx-auto max-w-6xl px-6 md:px-10 py-8 md:py-12 space-y-10">
@@ -259,133 +319,205 @@ export default function CompanyHome() {
                 style={{ background: "radial-gradient(circle, hsl(45 90% 65% / 0.35), transparent 70%)" }}
               />
 
-            <div className="relative flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <CalendarIcon className="size-4" />
-                </span>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
-                    Company Calendar
-                  </p>
-                  <h2 className="text-lg font-semibold tracking-tight text-foreground" style={{ fontFamily: "'Sora', system-ui, sans-serif" }}>
-                    {format(month, "MMMM yyyy")}
-                  </h2>
+            <div className="relative flex flex-col gap-4 mb-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <CalendarIcon className="size-4" />
+                  </span>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+                      Company Calendar
+                    </p>
+                    <h2 className="text-lg font-semibold tracking-tight text-foreground" style={{ fontFamily: "'Sora', system-ui, sans-serif" }}>
+                      {view === "week"
+                        ? `${format(weekRange.start, "MMM d")} – ${format(weekRange.end, "MMM d, yyyy")}`
+                        : format(month, "MMMM yyyy")}
+                    </h2>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Select value={rangePreset} onValueChange={(v) => setRangePreset(v as RangePreset)}>
-                  <SelectTrigger className="h-8 rounded-full text-xs w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(RANGE_LABELS) as RangePreset[]).map((k) => (
-                      <SelectItem key={k} value={k} className="text-xs">
-                        {RANGE_LABELS[k]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 rounded-full text-xs gap-1.5"
-                      disabled={availableCategories.length === 0}
+                <div className="flex flex-wrap items-center gap-2">
+                  <ToggleGroup
+                    type="single"
+                    value={view}
+                    onValueChange={(v) => v && setView(v as "month" | "week")}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                  >
+                    <ToggleGroupItem
+                      value="month"
+                      aria-label="Month view"
+                      className="h-8 px-2.5 rounded-l-full rounded-r-none text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                     >
-                      <Filter className="size-3.5" />
-                      Types
-                      {categoryFilter.size > 0 && (
-                        <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">
-                          {categoryFilter.size}
-                        </Badge>
-                      )}
+                      <Grid3X3 className="size-3.5 mr-1" /> Month
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="week"
+                      aria-label="Week view"
+                      className="h-8 px-2.5 rounded-l-none rounded-r-full text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    >
+                      <CalendarDays className="size-3.5 mr-1" /> Week
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+
+                  <div className="flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 p-0.5">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 rounded-full p-0"
+                      onClick={goPrevious}
+                      aria-label="Previous period"
+                    >
+                      <ChevronLeft className="size-4" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56 p-2" align="end">
-                    <div className="px-2 py-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
-                      Filter by type
-                    </div>
-                    <div className="max-h-64 overflow-auto space-y-0.5">
-                      {availableCategories.map((cat) => {
-                        const checked = categoryFilter.has(cat);
-                        return (
-                          <label
-                            key={cat}
-                            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted cursor-pointer"
-                          >
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={() => toggleCategory(cat)}
-                            />
-                            <span className="truncate">{formatCategory(cat)}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                {activeFilterCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 rounded-full p-0"
+                      onClick={goNext}
+                      aria-label="Next period"
+                    >
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
+
+                  <Popover open={jumpOpen} onOpenChange={setJumpOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-full text-xs gap-1.5"
+                      >
+                        <CalendarIcon className="size-3.5" />
+                        Jump
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(d) => d && jumpToDate(d)}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full text-xs gap-1"
-                    onClick={clearFilters}
+                    className="h-8 rounded-full text-xs"
+                    onClick={goToday}
                   >
-                    <X className="size-3.5" />
-                    Clear
+                    Today
                   </Button>
-                )}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label="Event legend"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition"
+
+                  <Select value={rangePreset} onValueChange={(v) => setRangePreset(v as RangePreset)}>
+                    <SelectTrigger className="h-8 rounded-full text-xs w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(RANGE_LABELS) as RangePreset[]).map((k) => (
+                        <SelectItem key={k} value={k} className="text-xs">
+                          {RANGE_LABELS[k]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-full text-xs gap-1.5"
+                        disabled={availableCategories.length === 0}
+                      >
+                        <Filter className="size-3.5" />
+                        Types
+                        {categoryFilter.size > 0 && (
+                          <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">
+                            {categoryFilter.size}
+                          </Badge>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-2" align="end">
+                      <div className="px-2 py-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
+                        Filter by type
+                      </div>
+                      <div className="max-h-64 overflow-auto space-y-0.5">
+                        {availableCategories.map((cat) => {
+                          const checked = categoryFilter.has(cat);
+                          return (
+                            <label
+                              key={cat}
+                              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted cursor-pointer"
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={() => toggleCategory(cat)}
+                              />
+                              <span className="truncate">{formatCategory(cat)}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  {activeFilterCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 rounded-full text-xs gap-1"
+                      onClick={clearFilters}
                     >
-                      <HelpCircle className="size-4" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64 p-3" align="end">
-                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
-                      Event legend
-                    </p>
-                    <ul className="space-y-1.5">
-                      {(() => {
-                        const seen = new Set<string>();
-                        const rows: Array<{ key: string; label: string; dot: string }> = [];
-                        const add = (cat: string, label?: string) => {
-                          const known = CATEGORY_COLORS[cat];
-                          const lbl = label ?? known?.label ?? formatCategory(cat);
-                          if (seen.has(lbl)) return;
-                          seen.add(lbl);
-                          rows.push({ key: cat, label: lbl, dot: categoryColor(cat) });
-                        };
-                        // Always include core defaults so the legend never looks empty.
-                        ["company_event", "training", "meeting", "deadline", "task", "holiday"].forEach((c) => add(c));
-                        availableCategories.forEach((c) => add(c));
-                        return rows.map((r) => (
-                          <li key={r.key} className="flex items-center gap-2 text-sm">
-                            <span className={cn("size-2.5 rounded-full", r.dot)} />
-                            <span className="text-foreground">{r.label}</span>
-                          </li>
-                        ));
-                      })()}
-                    </ul>
-                    <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
-                      Dots on days show that events are scheduled. Click a day to see details.
-                    </p>
-                  </PopoverContent>
-                </Popover>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 rounded-full text-xs"
-                  onClick={goToday}
-                >
-                  Today
-                </Button>
+                      <X className="size-3.5" />
+                      Clear
+                    </Button>
+                  )}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Event legend"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                      >
+                        <HelpCircle className="size-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-3" align="end">
+                      <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
+                        Event legend
+                      </p>
+                      <ul className="space-y-1.5">
+                        {(() => {
+                          const seen = new Set<string>();
+                          const rows: Array<{ key: string; label: string; dot: string }> = [];
+                          const add = (cat: string, label?: string) => {
+                            const known = CATEGORY_COLORS[cat];
+                            const lbl = label ?? known?.label ?? formatCategory(cat);
+                            if (seen.has(lbl)) return;
+                            seen.add(lbl);
+                            rows.push({ key: cat, label: lbl, dot: categoryColor(cat) });
+                          };
+                          // Always include core defaults so the legend never looks empty.
+                          ["company_event", "training", "meeting", "deadline", "task", "holiday"].forEach((c) => add(c));
+                          availableCategories.forEach((c) => add(c));
+                          return rows.map((r) => (
+                            <li key={r.key} className="flex items-center gap-2 text-sm">
+                              <span className={cn("size-2.5 rounded-full", r.dot)} />
+                              <span className="text-foreground">{r.label}</span>
+                            </li>
+                          ));
+                        })()}
+                      </ul>
+                      <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
+                        Dots on days show that events are scheduled. Click a day to see details.
+                      </p>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
             </div>
             {activeFilterCount > 0 && (
@@ -418,124 +550,135 @@ export default function CompanyHome() {
                 ))}
               </div>
             )}
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(d) => d && setSelectedDate(d)}
-              month={month}
-              onMonthChange={setMonth}
-              modifiers={{ hasEvent: eventDays }}
-              classNames={{
-                months: "flex flex-col w-full",
-                month: "space-y-4 w-full",
-                caption: "hidden",
-                nav: "hidden",
-                table: "w-full border-collapse",
-                head_row: "grid grid-cols-7 w-full",
-                head_cell:
-                  "text-muted-foreground/80 font-semibold text-[11px] uppercase tracking-[0.18em] h-9 flex items-center justify-center",
-                row: "grid grid-cols-7 w-full mt-1.5",
-                cell: "aspect-square w-full text-center p-0.5 relative focus-within:relative focus-within:z-20",
-                day: "h-full w-full rounded-2xl font-medium text-base hover:bg-muted/70 transition-all duration-200 aria-selected:opacity-100",
-                day_selected:
-                  "bg-gradient-to-br from-primary to-[hsl(189_55%_58%)] text-primary-foreground shadow-[0_8px_20px_-8px_hsl(189_50%_45%/0.6)] hover:from-primary hover:to-[hsl(189_55%_58%)] hover:text-primary-foreground",
-                day_today:
-                  "ring-2 ring-primary/40 ring-offset-2 ring-offset-card text-foreground font-semibold",
-                day_outside: "text-muted-foreground/30",
-              }}
-              components={{
-                DayContent: ({ date }) => {
-                  const key = format(date, "yyyy-MM-dd");
-                  const dayEvents = eventsByDay.get(key);
-                  const label = <span className="tabular-nums">{date.getDate()}</span>;
-                  if (!dayEvents || dayEvents.length === 0) {
-                    return (
-                      <span className="flex h-full w-full items-center justify-center">
-                        {label}
-                      </span>
-                    );
-                  }
-                  // Group by category for the summary line.
-                  const byCat = new Map<string, number>();
-                  for (const ev of dayEvents) {
-                    const c = ev.category || "company_event";
-                    byCat.set(c, (byCat.get(c) ?? 0) + 1);
-                  }
-                  // Distinct category colors as multi-dots (max 3).
-                  const dotCats = Array.from(byCat.keys()).slice(0, 3);
-                  const extra = dayEvents.length > dotCats.length ? dayEvents.length - dotCats.reduce((a, c) => a + (byCat.get(c) ?? 0), 0) : 0;
-                  return (
-                    <Tooltip delayDuration={120}>
-                      <TooltipTrigger asChild>
-                        <span className="relative flex h-full w-full flex-col items-center justify-center gap-0.5">
+            {view === "month" ? (
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(d) => d && setSelectedDate(d)}
+                month={month}
+                onMonthChange={setMonth}
+                modifiers={{ hasEvent: eventDays }}
+                classNames={{
+                  months: "flex flex-col w-full",
+                  month: "space-y-4 w-full",
+                  caption: "hidden",
+                  nav: "hidden",
+                  table: "w-full border-collapse",
+                  head_row: "grid grid-cols-7 w-full",
+                  head_cell:
+                    "text-muted-foreground/80 font-semibold text-[11px] uppercase tracking-[0.18em] h-9 flex items-center justify-center",
+                  row: "grid grid-cols-7 w-full mt-1.5",
+                  cell: "aspect-square w-full text-center p-0.5 relative focus-within:relative focus-within:z-20",
+                  day: "h-full w-full rounded-2xl font-medium text-base hover:bg-muted/70 transition-all duration-200 aria-selected:opacity-100",
+                  day_selected:
+                    "bg-gradient-to-br from-primary to-[hsl(189_55%_58%)] text-primary-foreground shadow-[0_8px_20px_-8px_hsl(189_50%_45%/0.6)] hover:from-primary hover:to-[hsl(189_55%_58%)] hover:text-primary-foreground",
+                  day_today:
+                    "ring-2 ring-primary/40 ring-offset-2 ring-offset-card text-foreground font-semibold",
+                  day_outside: "text-muted-foreground/30",
+                }}
+                components={{
+                  DayContent: ({ date }) => {
+                    const key = format(date, "yyyy-MM-dd");
+                    const dayEvents = eventsByDay.get(key);
+                    const label = <span className="tabular-nums">{date.getDate()}</span>;
+                    if (!dayEvents || dayEvents.length === 0) {
+                      return (
+                        <span className="flex h-full w-full items-center justify-center">
                           {label}
-                          <span className="flex items-center gap-[3px] absolute bottom-1.5">
-                            {dotCats.map((c) => (
-                              <span
-                                key={c}
-                                className={cn(
-                                  "size-1.5 rounded-full ring-1 ring-card",
-                                  categoryColor(c),
-                                )}
-                              />
-                            ))}
-                            {extra > 0 && (
-                              <span className="text-[8px] font-semibold text-muted-foreground ml-0.5">
-                                +
-                              </span>
-                            )}
-                          </span>
                         </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs p-3">
-                        <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-1">
-                          {format(date, "EEE, MMM d")} · {dayEvents.length} event
-                          {dayEvents.length === 1 ? "" : "s"}
-                        </p>
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          {Array.from(byCat.entries()).map(([cat, count]) => (
-                            <button
-                              key={cat}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedDate(date);
-                                setDayDrawer({ date, category: cat });
-                              }}
-                              className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[11px] hover:bg-primary/10 hover:text-primary transition"
-                            >
-                              <span className={cn("size-1.5 rounded-full", categoryColor(cat))} />
-                              {CATEGORY_COLORS[cat]?.label ?? formatCategory(cat)}
-                              <span className="text-muted-foreground">· {count}</span>
-                            </button>
-                          ))}
-                        </div>
-                        <ul className="space-y-1">
-                          {dayEvents.slice(0, 3).map((ev) => (
-                            <li key={ev.id} className="flex items-start gap-2 text-xs">
-                              <span className={cn("mt-1 size-1.5 rounded-full shrink-0", categoryColor(ev.category))} />
-                              <span className="min-w-0">
-                                <span className="font-medium text-foreground">{ev.title}</span>
-                                <span className="text-muted-foreground">
-                                  {" · "}
-                                  {ev.all_day ? "All day" : format(safeDate(ev.starts_on), "h:mma")}
+                      );
+                    }
+                    // Group by category for the summary line.
+                    const byCat = new Map<string, number>();
+                    for (const ev of dayEvents) {
+                      const c = ev.category || "company_event";
+                      byCat.set(c, (byCat.get(c) ?? 0) + 1);
+                    }
+                    // Distinct category colors as multi-dots (max 3).
+                    const dotCats = Array.from(byCat.keys()).slice(0, 3);
+                    const extra = dayEvents.length > dotCats.length ? dayEvents.length - dotCats.reduce((a, c) => a + (byCat.get(c) ?? 0), 0) : 0;
+                    return (
+                      <Tooltip delayDuration={120}>
+                        <TooltipTrigger asChild>
+                          <span className="relative flex h-full w-full flex-col items-center justify-center gap-0.5">
+                            {label}
+                            <span className="flex items-center gap-[3px] absolute bottom-1.5">
+                              {dotCats.map((c) => (
+                                <span
+                                  key={c}
+                                  className={cn(
+                                    "size-1.5 rounded-full ring-1 ring-card",
+                                    categoryColor(c),
+                                  )}
+                                />
+                              ))}
+                              {extra > 0 && (
+                                <span className="text-[8px] font-semibold text-muted-foreground ml-0.5">
+                                  +
                                 </span>
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                        {dayEvents.length > 3 && (
-                          <p className="mt-1.5 text-[11px] text-muted-foreground">
-                            +{dayEvents.length - 3} more
+                              )}
+                            </span>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs p-3">
+                          <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-1">
+                            {format(date, "EEE, MMM d")} · {dayEvents.length} event
+                            {dayEvents.length === 1 ? "" : "s"}
                           </p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                },
-              }}
-              className={cn("pointer-events-auto w-full relative")}
-            />
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {Array.from(byCat.entries()).map(([cat, count]) => (
+                              <button
+                                key={cat}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDate(date);
+                                  setDayDrawer({ date, category: cat });
+                                }}
+                                className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[11px] hover:bg-primary/10 hover:text-primary transition"
+                              >
+                                <span className={cn("size-1.5 rounded-full", categoryColor(cat))} />
+                                {CATEGORY_COLORS[cat]?.label ?? formatCategory(cat)}
+                                <span className="text-muted-foreground">· {count}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <ul className="space-y-1">
+                            {dayEvents.slice(0, 3).map((ev) => (
+                              <li key={ev.id} className="flex items-start gap-2 text-xs">
+                                <span className={cn("mt-1 size-1.5 rounded-full shrink-0", categoryColor(ev.category))} />
+                                <span className="min-w-0">
+                                  <span className="font-medium text-foreground">{ev.title}</span>
+                                  <span className="text-muted-foreground">
+                                    {" · "}
+                                    {ev.all_day ? "All day" : format(safeDate(ev.starts_on), "h:mma")}
+                                  </span>
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                          {dayEvents.length > 3 && (
+                            <p className="mt-1.5 text-[11px] text-muted-foreground">
+                              +{dayEvents.length - 3} more
+                            </p>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  },
+                }}
+                className={cn("pointer-events-auto w-full relative")}
+              />
+            ) : (
+              <WeekView
+                days={weekRange.days}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                eventsByDay={eventsByDay}
+                onOpenEvent={setOpenEvent}
+                onOpenDayDrawer={(date, category) => setDayDrawer({ date, category })}
+              />
+            )}
             </Card>
           </div>
 
@@ -778,6 +921,112 @@ export default function CompanyHome() {
 
 function prettyCategory(c: string): string {
   return c.replace(/[_-]/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+function WeekView({
+  days,
+  selectedDate,
+  onSelectDate,
+  eventsByDay,
+  onOpenEvent,
+  onOpenDayDrawer,
+}: {
+  days: Date[];
+  selectedDate: Date;
+  onSelectDate: (d: Date) => void;
+  eventsByDay: Map<string, CompanyCalendarEvent[]>;
+  onOpenEvent: (ev: CompanyCalendarEvent) => void;
+  onOpenDayDrawer: (date: Date, category: string | null) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-7 gap-2">
+        {days.map((day) => {
+          const key = format(day, "yyyy-MM-dd");
+          const dayEvents = eventsByDay.get(key) ?? [];
+          const selected = isSameDay(day, selectedDate);
+          const today = isSameDay(day, new Date());
+          const byCat = new Map<string, number>();
+          for (const ev of dayEvents) {
+            const c = ev.category || "company_event";
+            byCat.set(c, (byCat.get(c) ?? 0) + 1);
+          }
+          const dotCats = Array.from(byCat.keys()).slice(0, 3);
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelectDate(day)}
+              className={cn(
+                "relative flex flex-col items-center justify-start rounded-2xl border p-2 transition-all duration-200 min-h-[92px]",
+                selected
+                  ? "border-primary/40 bg-gradient-to-b from-primary/10 to-primary/5 shadow-[0_8px_20px_-8px_hsl(189_50%_45%/0.35)]"
+                  : "border-border/60 bg-card hover:bg-muted/60",
+                today && !selected && "ring-2 ring-primary/40 ring-offset-1 ring-offset-card"
+              )}
+            >
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {format(day, "EEE")}
+              </span>
+              <span
+                className={cn(
+                  "mt-0.5 text-xl font-semibold tabular-nums",
+                  selected ? "text-primary" : "text-foreground"
+                )}
+                style={{ fontFamily: "'Sora', system-ui, sans-serif" }}
+              >
+                {format(day, "d")}
+              </span>
+              <span className="mt-auto flex flex-wrap items-center justify-center gap-1">
+                {dotCats.map((c) => (
+                  <span
+                    key={c}
+                    className={cn("size-2 rounded-full ring-1 ring-card", categoryColor(c))}
+                  />
+                ))}
+                {dayEvents.length > dotCats.length && (
+                  <span className="text-[10px] font-semibold text-muted-foreground">
+                    +{dayEvents.length - dotCats.length}
+                  </span>
+                )}
+              </span>
+              {dayEvents.length > 0 && (
+                <span className="absolute top-1.5 right-1.5 text-[9px] font-semibold text-muted-foreground tabular-nums">
+                  {dayEvents.length}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="rounded-2xl border border-border/60 bg-card p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">
+            {format(selectedDate, "EEEE, MMMM d")}
+          </p>
+          {eventsByDay.get(format(selectedDate, "yyyy-MM-dd"))?.length ? (
+            <Badge variant="secondary" className="rounded-full text-[11px]">
+              {eventsByDay.get(format(selectedDate, "yyyy-MM-dd"))!.length} event
+              {eventsByDay.get(format(selectedDate, "yyyy-MM-dd"))!.length === 1 ? "" : "s"}
+            </Badge>
+          ) : null}
+        </div>
+        {eventsByDay.get(format(selectedDate, "yyyy-MM-dd"))?.length ? (
+          <ul className="space-y-1">
+            {eventsByDay.get(format(selectedDate, "yyyy-MM-dd"))!.map((ev) => (
+              <EventRow key={ev.id} ev={ev} onOpen={onOpenEvent} />
+            ))}
+          </ul>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border/70 bg-muted/40 p-6 text-center">
+            <p className="text-sm font-medium text-foreground">Nothing scheduled</p>
+            <p className="mt-1 text-xs text-muted-foreground">Select another day or switch to month view.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function EventRow({
