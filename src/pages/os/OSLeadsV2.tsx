@@ -657,12 +657,30 @@ function OSLeadsV2Inner() {
             ))}
           </div>
           <div className="text-xs text-muted-foreground flex items-center gap-2">
-            <span>{filtered.length.toLocaleString()} of {scopedLeads.length.toLocaleString()} leads</span>
+            <span>
+              {(view === "pipeline" ? pipelineLeads : filtered).length.toLocaleString()} of{" "}
+              {scopedLeads.length.toLocaleString()} leads
+            </span>
             <button onClick={refresh} className="hover:text-foreground" aria-label="Refresh">
               <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
             </button>
           </div>
         </div>
+
+        {/* Pipeline-only filters */}
+        {view === "pipeline" && (
+          <PipelineFilters
+            mine={pipelineMine}
+            days={pipelineDays}
+            stages={pipelineStages}
+            filterCount={pipelineFilterCount}
+            canFilterMine={Boolean(meName || meEmail)}
+            onToggleMine={() => setPipelineMine(!pipelineMine)}
+            onSetDays={setPipelineDays}
+            onToggleStage={togglePipelineStage}
+            onClear={clearPipelineFilters}
+          />
+        )}
 
         {/* Body */}
         {error && (
@@ -689,7 +707,11 @@ function OSLeadsV2Inner() {
             togglePage={togglePage}
           />
         ) : view === "pipeline" ? (
-          <PipelineView leads={filtered} onOpen={setOpenLeadId} />
+          pipelineLeads.length === 0 ? (
+            <EmptyState onReset={clearPipelineFilters} />
+          ) : (
+            <PipelineView leads={pipelineLeads} onOpen={setOpenLeadId} />
+          )
         ) : (
           <FollowUpView leads={filtered} onOpen={setOpenLeadId} />
         )}
