@@ -15,7 +15,7 @@ describe("Client / Authorization / Task deep-links resolve to the correct drawer
   const app = read("src/App.tsx");
   const clientsPage = read("src/pages/os/OSClientsOperations.tsx");
   const authsPage = read("src/pages/os/OSAuthorizations.tsx");
-  const tasksPage = read("src/pages/Tasks.tsx");
+  const tasksPage = read("src/pages/tasks/TasksPage.tsx");
   const linker = read("src/components/escalation/EscalationLinkPicker.tsx");
   const deepLink = read("src/lib/deepLink.ts");
 
