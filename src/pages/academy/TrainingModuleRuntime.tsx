@@ -15,6 +15,7 @@ import { getIntakeDay, type IntakeDayModule } from "@/lib/training/intakeAcademy
 import { getRecruitingDay, type RecruitingDayModule } from "@/lib/training/recruitingAcademy";
 import { getAuthorizationsDay, type AuthorizationsDayModule } from "@/lib/training/authorizationsAcademy";
 import { getSchedulingDay, type SchedulingDayModule } from "@/lib/training/schedulingAcademy";
+import { getStaffingDay, type StaffingDayModule } from "@/lib/training/staffingAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime, persistRuntimeElapsed,
   type RuntimeContext,
@@ -52,6 +53,7 @@ export default function TrainingModuleRuntime() {
     if (parsed.kind === "recruiting") return resolveRecruiting(parsed.sourceModuleId);
     if (parsed.kind === "authorizations") return resolveAuthorizations(parsed.sourceModuleId);
     if (parsed.kind === "scheduling") return resolveScheduling(parsed.sourceModuleId);
+    if (parsed.kind === "staffing") return resolveStaffing(parsed.sourceModuleId);
     return null;
   }, [parsed.kind, parsed.sourceModuleId]);
 
