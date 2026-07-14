@@ -613,16 +613,16 @@ export function isVisibleToRole(r: Resource, role: OSRole, state?: string): bool
   // Hard safety net — defensive keyword check on title/tags.
   if (containsCredentialKeywords(r.title) || r.tags.some(containsCredentialKeywords)) return false;
   // Executive tier: unconditional read access to the library (mirrors RLS).
-  const EXEC_TIER: OSRole[] = [
+  const EXEC_TIER = new Set<string>([
     "executive",
     "executive_leadership",
     "ceo",
     "coo",
     "doo",
-    "director_of_operations" as OSRole,
+    "director_of_operations",
     "super_admin",
-  ];
-  if (EXEC_TIER.includes(role)) return true;
+  ]);
+  if (EXEC_TIER.has(role)) return true;
   // Assistant State Director mirrors State Director resource visibility
   // (state operational SOPs, staffing/scheduling/auth support docs, etc.).
   const mirrored = role === "assistant_state_director" && r.roles.includes("state_director");
