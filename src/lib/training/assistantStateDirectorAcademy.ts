@@ -141,25 +141,22 @@ function day(
 
 const W1: AssistantStateDirectorDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + Assistant State Director Role Orientation",
+    title: "Assistant State Director Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what the Assistant State Director does and why it matters. The Assistant State Director helps the State Director keep the state moving every day — watching details, following up, helping execute state priorities, and making sure issues do not disappear into Monday, email, Teams, or memory.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what the Assistant State Director owns today",
       "Explain what the Assistant State Director does not own",
       "Explain State Director vs Assistant State Director vs VA responsibilities",
       "Explain the owner / status / next action / follow-up date rule",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What the Assistant State Director owns today", kind: "Overview", minutes: 10, summary: "Support execution, state issue follow-up, communication support, intake/recruiting support where currently assigned, and VA task oversight where a VA exists." },
-      { id: "w1d1-l3", title: "What the Assistant State Director does not own", kind: "Overview", minutes: 8, summary: "Not the permanent owner of Intake, Recruiting, Authorizations, Scheduling, Staffing, QA, HR, Credentialing, Billing/RCM, or Clinical execution." },
-      { id: "w1d1-l4", title: "State Director vs Assistant State Director vs VA", kind: "SOP", minutes: 10, summary: "State Director owns state health / growth / relationships / outcomes / escalation accountability. Assistant State Director supports execution and follow-up. VA supports assigned tasks as volume grows." },
-      { id: "w1d1-l5", title: "State health and daily execution", kind: "Workflow", minutes: 10, summary: "No state issue, support task, lead/candidate item, case follow-up, or VA task should sit without owner, status, next action, and follow-up date." },
+      { id: "w1d1-l1", title: "What the Assistant State Director owns today", kind: "Overview", minutes: 10, summary: "Support execution, state issue follow-up, communication support, intake/recruiting support where currently assigned, and VA task oversight where a VA exists." },
+      { id: "w1d1-l2", title: "What the Assistant State Director does not own", kind: "Overview", minutes: 8, summary: "Not the permanent owner of Intake, Recruiting, Authorizations, Scheduling, Staffing, QA, HR, Credentialing, Billing/RCM, or Clinical execution." },
+      { id: "w1d1-l3", title: "State Director vs Assistant State Director vs VA", kind: "SOP", minutes: 10, summary: "State Director owns state health / growth / relationships / outcomes / escalation accountability. Assistant State Director supports execution and follow-up. VA supports assigned tasks as volume grows." },
+      { id: "w1d1-l4", title: "State health and daily execution", kind: "Workflow", minutes: 10, summary: "No state issue, support task, lead/candidate item, case follow-up, or VA task should sit without owner, status, next action, and follow-up date." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what the Assistant State Director owns",
       "Can explain what the Assistant State Director does not own",
       "Can explain the State Director / Assistant State Director / VA difference",
@@ -167,7 +164,7 @@ const W1: AssistantStateDirectorDayModule[] = [
     ],
     shadowing: ["Sit with the State Director, Assistant State Director mentor, Regional State Director/mentor, or assigned manager for 30–60 minutes and watch how they review state priorities and open issues."],
     livePractice: ["No live state ownership yet — observe only."],
-    resources: [R.welcome, R.l1Asd, R.binder, R.roleDeepDive, R.l1Sd, R.l1Va, R.l2Health],
+    resources: [R.l1Asd, R.binder, R.roleDeepDive, R.l1Sd, R.l1Va, R.l2Health],
     knowledgeCheck: {
       q: "What four things should every state issue or support task have before you leave it?",
       a: "Owner, status, next action, follow-up date. The Assistant State Director does not permanently own every department.",

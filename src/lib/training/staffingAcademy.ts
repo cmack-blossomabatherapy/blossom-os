@@ -126,23 +126,20 @@ function day(
 
 const W1: StaffingDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + Staffing Role Orientation",
+    title: "Staffing Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what Staffing does and why it matters. Staffing is the bridge between approved/ready cases and actual service delivery. Strong staffing means families start faster, authorized hours are used better, and state leaders have fewer avoidable fires.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what Staffing owns and does not own today",
       "Describe how a case moves from ready → matched → confirmed → schedule handoff or escalation",
       "Explain the owner / status / next action / follow-up date rule",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What Staffing owns today", kind: "Overview", minutes: 10, summary: "Open case review, RBT/BT availability, case matching, pairing, coverage/open hours, follow-up, escalation, and scheduling handoff." },
-      { id: "w1d1-l3", title: "What Staffing does not own", kind: "Overview", minutes: 8, summary: "Not intake conversion, auth approval, clinical treatment, recruiting pipeline execution, payroll, or final CR schedule entry unless assigned." },
-      { id: "w1d1-l4", title: "Staffing vs Scheduling vs Recruiting vs State Ops", kind: "Overview", minutes: 10, summary: "Staffing matches; Scheduling builds the schedule; Recruiting owns candidates; State Ops owns state health." },
+      { id: "w1d1-l1", title: "What Staffing owns today", kind: "Overview", minutes: 10, summary: "Open case review, RBT/BT availability, case matching, pairing, coverage/open hours, follow-up, escalation, and scheduling handoff." },
+      { id: "w1d1-l2", title: "What Staffing does not own", kind: "Overview", minutes: 8, summary: "Not intake conversion, auth approval, clinical treatment, recruiting pipeline execution, payroll, or final CR schedule entry unless assigned." },
+      { id: "w1d1-l3", title: "Staffing vs Scheduling vs Recruiting vs State Ops", kind: "Overview", minutes: 10, summary: "Staffing matches; Scheduling builds the schedule; Recruiting owns candidates; State Ops owns state health." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what Staffing owns",
       "Can explain what Staffing does not own",
       "Can explain why open cases need owner/status/next action/follow-up date",
@@ -150,7 +147,7 @@ const W1: StaffingDayModule[] = [
     ],
     shadowing: ["Sit with Staffing Lead, Coordinator, or assigned mentor for 30–60 minutes and watch how they review open cases."],
     livePractice: ["No live staffing ownership yet — observe only."],
-    resources: [R.welcome, R.l1StaffingSop, R.binder, R.roleDeepDive, R.l2CaseMatch],
+    resources: [R.l1StaffingSop, R.binder, R.roleDeepDive, R.l2CaseMatch],
     knowledgeCheck: {
       q: "What four things should every open case / staffing item have before you leave it?",
       a: "Owner, status, next action, follow-up date. Staffing does not own recruiting pipeline execution or final schedule entry.",

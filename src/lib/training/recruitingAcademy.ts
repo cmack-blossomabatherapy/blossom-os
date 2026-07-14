@@ -122,30 +122,27 @@ function day(
 
 const W1: RecruitingDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + Recruiting Role Orientation",
+    title: "Recruiting Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what Recruiting owns today and why it matters. If recruiting is slow or messy, states cannot fill cases and families wait longer for care.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what Recruiting owns and does not own today",
       "Explain the candidate experience standard",
       "Explain the owner / status / next action / follow-up date rule",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What Recruiting owns today", kind: "Overview", minutes: 10, summary: "Candidate pipeline movement, communication, interview scheduling, clean HR handoff." },
-      { id: "w1d1-l3", title: "What Recruiting does not own", kind: "Overview", minutes: 8, summary: "Not payroll, final HR compliance, clinical credentialing, CentralReach clinical setup, or performance management." },
-      { id: "w1d1-l4", title: "The candidate experience standard", kind: "Workflow", minutes: 10, summary: "Warm, direct, professional. No candidate sits without owner, status, next action, follow-up date." },
+      { id: "w1d1-l1", title: "What Recruiting owns today", kind: "Overview", minutes: 10, summary: "Candidate pipeline movement, communication, interview scheduling, clean HR handoff." },
+      { id: "w1d1-l2", title: "What Recruiting does not own", kind: "Overview", minutes: 8, summary: "Not payroll, final HR compliance, clinical credentialing, CentralReach clinical setup, or performance management." },
+      { id: "w1d1-l3", title: "The candidate experience standard", kind: "Workflow", minutes: 10, summary: "Warm, direct, professional. No candidate sits without owner, status, next action, follow-up date." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what Recruiting owns",
       "Can explain what Recruiting does not own",
       "Can explain the owner/status/next action/follow-up date rule",
     ],
     shadowing: ["Sit with Recruiting Lead, Recruiting Assistant, or assigned mentor for 30–60 minutes and watch how they start their day."],
     livePractice: ["No live candidate ownership yet — observe only."],
-    resources: [R.welcome, R.l1RoleSop, R.binder, R.l2StateNeed],
+    resources: [R.l1RoleSop, R.binder, R.l2StateNeed],
     knowledgeCheck: {
       q: "What four things should every candidate have before you leave it?",
       a: "Owner, status, next action, follow-up date. Recruiting does not own payroll or final HR compliance.",

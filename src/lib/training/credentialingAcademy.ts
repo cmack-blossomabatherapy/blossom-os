@@ -135,25 +135,22 @@ function day(
 
 const W1: CredentialingDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + Credentialing Role Orientation",
+    title: "Credentialing Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what Credentialing does and why it matters. Credentialing makes sure Blossom can bill properly and use the right providers with the right payers/states. If credentialing status is unclear, authorizations get stuck, claims deny, collections slow down, and leaders cannot confidently grow a state or assign providers.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what Credentialing owns and does not own today",
       "Describe the credentialing lifecycle end-to-end",
       "Explain the owner / status / next action / follow-up date rule",
       "Explain the confidentiality and accuracy standards",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What Credentialing owns today", kind: "Overview", minutes: 10, summary: "Provider/BCBA info collection, payer enrollment/status tracking, missing item follow-up, payer portal review, effective date confirmation, billing/RCM visibility, auth impact, renewals." },
-      { id: "w1d1-l3", title: "What Credentialing does not own", kind: "Overview", minutes: 8, summary: "Not clinical supervision, auth submission, billing collections, payroll, HR onboarding compliance, or payer contract decisions." },
-      { id: "w1d1-l4", title: "Credentialing lifecycle overview", kind: "Workflow", minutes: 10, summary: "Provider info → payer enrollment → status tracking → missing-item follow-up → effective date/status → billing/auth visibility → renewals." },
-      { id: "w1d1-l5", title: "Confidentiality and accuracy standards", kind: "SOP", minutes: 10, summary: "Provider/payer information is sensitive; nothing should sit without owner, status, next action, and follow-up date." },
+      { id: "w1d1-l1", title: "What Credentialing owns today", kind: "Overview", minutes: 10, summary: "Provider/BCBA info collection, payer enrollment/status tracking, missing item follow-up, payer portal review, effective date confirmation, billing/RCM visibility, auth impact, renewals." },
+      { id: "w1d1-l2", title: "What Credentialing does not own", kind: "Overview", minutes: 8, summary: "Not clinical supervision, auth submission, billing collections, payroll, HR onboarding compliance, or payer contract decisions." },
+      { id: "w1d1-l3", title: "Credentialing lifecycle overview", kind: "Workflow", minutes: 10, summary: "Provider info → payer enrollment → status tracking → missing-item follow-up → effective date/status → billing/auth visibility → renewals." },
+      { id: "w1d1-l4", title: "Confidentiality and accuracy standards", kind: "SOP", minutes: 10, summary: "Provider/payer information is sensitive; nothing should sit without owner, status, next action, and follow-up date." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what Credentialing owns",
       "Can explain what Credentialing does not own",
       "Can explain why credentialing affects authorizations, billing, and collections",
@@ -161,7 +158,7 @@ const W1: CredentialingDayModule[] = [
     ],
     shadowing: ["Sit with Credentialing lead, Devorah/credentialing oversight owner, RCM leader, or assigned mentor for 30–60 minutes and watch how they review credentialing status items."],
     livePractice: ["No live credentialing ownership yet — observe only."],
-    resources: [R.welcome, R.l1CredSop, R.binder, R.roleDeepDive, R.l2StatusTracking, R.hipaa],
+    resources: [R.l1CredSop, R.binder, R.roleDeepDive, R.l2StatusTracking, R.hipaa],
     knowledgeCheck: {
       q: "What four things should every credentialing item have before you leave it?",
       a: "Owner, status, next action, follow-up date. Credentialing does not own clinical supervision or auth submission.",

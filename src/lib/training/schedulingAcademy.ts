@@ -129,23 +129,20 @@ function day(
 
 const W1: SchedulingDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + Scheduling Role Orientation",
+    title: "Scheduling Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what Scheduling does and why it matters. Scheduling turns approvals, staffing, family availability, and clinical readiness into actual services. If scheduling is messy, families lose confidence, hours drop, and state leaders get pulled into preventable fires.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what Scheduling owns and does not own today",
       "Describe the scheduling lifecycle end to end",
       "Explain the owner / status / next action / follow-up date rule",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What Scheduling owns today", kind: "Overview", minutes: 10, summary: "Schedule setup and accuracy, availability coordination, CentralReach updates, family/staff scheduling communication, and readiness escalation." },
-      { id: "w1d1-l3", title: "What Scheduling does not own", kind: "Overview", minutes: 8, summary: "Not intake conversion, auth approval, clinical treatment decisions, recruiting pipeline, payroll, or state escalation closure." },
-      { id: "w1d1-l4", title: "The scheduling lifecycle", kind: "Workflow", minutes: 12, summary: "Intake / auth readiness → assessment scheduling → new client setup → therapist/RBT scheduling → clinic / field scheduling → coverage → changes → ongoing maintenance." },
+      { id: "w1d1-l1", title: "What Scheduling owns today", kind: "Overview", minutes: 10, summary: "Schedule setup and accuracy, availability coordination, CentralReach updates, family/staff scheduling communication, and readiness escalation." },
+      { id: "w1d1-l2", title: "What Scheduling does not own", kind: "Overview", minutes: 8, summary: "Not intake conversion, auth approval, clinical treatment decisions, recruiting pipeline, payroll, or state escalation closure." },
+      { id: "w1d1-l3", title: "The scheduling lifecycle", kind: "Workflow", minutes: 12, summary: "Intake / auth readiness → assessment scheduling → new client setup → therapist/RBT scheduling → clinic / field scheduling → coverage → changes → ongoing maintenance." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what Scheduling owns",
       "Can explain what Scheduling does not own",
       "Can explain why CentralReach schedule accuracy matters",
@@ -153,7 +150,7 @@ const W1: SchedulingDayModule[] = [
     ],
     shadowing: ["Sit with Scheduling Lead, Coordinator, or assigned mentor for 30–60 minutes and watch how they start their schedule queue review."],
     livePractice: ["No live schedule ownership yet — observe only."],
-    resources: [R.welcome, R.l1RoleSop, R.binder, R.roleDeepDive, R.l2CrSync],
+    resources: [R.l1RoleSop, R.binder, R.roleDeepDive, R.l2CrSync],
     knowledgeCheck: {
       q: "What four things should every scheduling item have before you leave it?",
       a: "Owner, status, next action, follow-up date. Scheduling does not own auth approval or clinical decisions.",

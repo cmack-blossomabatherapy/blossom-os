@@ -132,25 +132,22 @@ function day(
 
 const W1: BehavioralSupportDayModule[] = [
   day(1, 1, 1, {
-    title: "Welcome to Blossom + Behavioral Support Role Orientation",
+    title: "Behavioral Support Role Orientation",
     description:
       "Start with Blossom's company welcome, then learn what Behavioral Support does and why it matters. Behavioral Support helps the clinical team keep behavior-related needs visible, organized, and supported — helping RBTs feel guided, families feel heard, BCBAs see support needs sooner, and clinical leadership catch patterns before they grow.",
     objectives: [
-      "Complete the existing Welcome to Blossom experience",
       "Explain what Behavioral Support owns and does not own today",
       "Explain BCBA clinical ownership and why it matters",
       "Describe the current behavioral support lifecycle",
       "Explain the owner / status / next action / follow-up date rule",
     ],
     lessons: [
-      { id: "w1d1-l1", title: "Welcome to Blossom", kind: "Video", minutes: 20, summary: "Open and complete the existing Welcome to Blossom module." },
-      { id: "w1d1-l2", title: "What Behavioral Support owns today", kind: "Overview", minutes: 10, summary: "Support-need visibility, RBT support routing, family support (bounded), behavior/treatment plan awareness, escalation routing, follow-up." },
-      { id: "w1d1-l3", title: "What Behavioral Support does not own", kind: "Overview", minutes: 8, summary: "Not clinical supervision, not writing plans, not final clinical decisions, not intake, not auths, not scheduling, not staffing, not billing/payroll." },
-      { id: "w1d1-l4", title: "BCBA clinical ownership boundary", kind: "SOP", minutes: 10, summary: "The BCBA owns clinical direction; Behavioral Support reinforces approved guidance and routes questions." },
-      { id: "w1d1-l5", title: "Behavioral support lifecycle", kind: "Workflow", minutes: 10, summary: "Concern identified → context reviewed → BCBA/clinical owner confirmed → action documented → RBT/family/team follow-up → escalation when needed." },
+      { id: "w1d1-l1", title: "What Behavioral Support owns today", kind: "Overview", minutes: 10, summary: "Support-need visibility, RBT support routing, family support (bounded), behavior/treatment plan awareness, escalation routing, follow-up." },
+      { id: "w1d1-l2", title: "What Behavioral Support does not own", kind: "Overview", minutes: 8, summary: "Not clinical supervision, not writing plans, not final clinical decisions, not intake, not auths, not scheduling, not staffing, not billing/payroll." },
+      { id: "w1d1-l3", title: "BCBA clinical ownership boundary", kind: "SOP", minutes: 10, summary: "The BCBA owns clinical direction; Behavioral Support reinforces approved guidance and routes questions." },
+      { id: "w1d1-l4", title: "Behavioral support lifecycle", kind: "Workflow", minutes: 10, summary: "Concern identified → context reviewed → BCBA/clinical owner confirmed → action documented → RBT/family/team follow-up → escalation when needed." },
     ],
     checklist: [
-      "Completed Welcome to Blossom",
       "Can explain what Behavioral Support owns",
       "Can explain what Behavioral Support does not own",
       "Can explain why BCBA clinical ownership matters",
@@ -158,7 +155,7 @@ const W1: BehavioralSupportDayModule[] = [
     ],
     shadowing: ["Sit with BCBA/Clinical leader, Behavioral Support mentor, Case Manager, or assigned manager for 30–60 minutes and watch how they review behavior-related support needs."],
     livePractice: ["No live behavioral support ownership yet — observe only."],
-    resources: [R.welcome, R.l1BcbaSup, R.l1CmSop, R.l2BP, R.l2Escalation, R.l2RbtSupport, R.hipaa, R.clinOverview],
+    resources: [R.l1BcbaSup, R.l1CmSop, R.l2BP, R.l2Escalation, R.l2RbtSupport, R.hipaa, R.clinOverview],
     knowledgeCheck: {
       q: "What four things should every behavioral support item have before you leave it?",
       a: "Owner, status, next action, follow-up date. Behavioral Support does not replace BCBA supervision.",
