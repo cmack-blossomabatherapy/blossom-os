@@ -12,16 +12,21 @@ import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import { canPreviewInline, fileTypeLabel } from "@/lib/resources/librarySections";
 import { cleanResourceTitle } from "@/lib/resources/resourceDisplay";
 import { toast } from "sonner";
-import type { Resource } from "@/lib/resources/resourceData";
+import { isVisibleToRole, type Resource } from "@/lib/resources/resourceData";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRole } from "@/contexts/OSRoleContext";
 
 export default function ResourceLibraryDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { resources, loading } = useLibraryResources();
   const { user } = useAuth();
-  const resource = useMemo(() => resources.find((r) => r.id === id) ?? null, [resources, id]);
+  const { role, activeState } = useOSRole();
+  const resource = useMemo(
+    () => resources.find((r) => r.id === id && isVisibleToRole(r, role, activeState)) ?? null,
+    [resources, id, role, activeState],
+  );
   const [signed, setSigned] = useState<string | null>(null);
   const [ack, setAck] = useState(false);
 
