@@ -311,6 +311,39 @@ function buildRecruitingJourney(slug: string, path: TrainingPath): PathJourney {
   return journey;
 }
 
+/* ------------------- Authorizations source adapter ------------------- */
+
+function synthesizeAuthorizationsModule(d: AuthorizationsDayModule): AcademyJourneyModule {
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  return {
+    id: `authorizations::${d.id}`,
+    title: d.title,
+    description: d.description,
+    type: "Workflow",
+    estimatedMinutes: minutes,
+    required: true,
+    category: "role",
+    department: "authorizations",
+    sourceKind: "authorizations",
+    sourceModuleId: d.id,
+    resources: [],
+  };
+}
+
+function buildAuthorizationsJourney(slug: string, path: TrainingPath): PathJourney {
+  const dayGroups: AcademyJourneyModule[][] = AUTHORIZATIONS_DAYS.map((d) => [synthesizeAuthorizationsModule(d)]);
+  const weekGroups = chunk(dayGroups, 5);
+  const dayTitles = AUTHORIZATIONS_DAYS.map((d) => `Day ${d.dayInJourney} · ${d.title}`);
+  const journey = assembleJourney({
+    slug, path, weekGroups, dayTitles, source: "authorizations",
+  });
+  journey.weeks = journey.weeks.map((w) => ({
+    ...w,
+    title: AUTHORIZATIONS_WEEKS.find((aw) => aw.weekNumber === w.weekNumber)?.title ?? w.title,
+  }));
+  return journey;
+}
+
 /* ------------------- Shared assembler ------------------- */
 
 function assembleJourney(opts: {
@@ -426,6 +459,9 @@ export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }
   if (slug === "recruiting") {
     return buildRecruitingJourney(slug, path);
   }
+  if (slug === "authorizations") {
+    return buildAuthorizationsJourney(slug, path);
+  }
 
   const all = getTrainings();
   const trainings = sourceTrainingsForSlug(slug, all);
@@ -469,5 +505,6 @@ export function parseAcademyModuleId(id: string): {
   if (id.startsWith("bcba::")) return { kind: "bcba", sourceModuleId: id.slice("bcba::".length) };
   if (id.startsWith("intake::")) return { kind: "intake", sourceModuleId: id.slice("intake::".length) };
   if (id.startsWith("recruiting::")) return { kind: "recruiting", sourceModuleId: id.slice("recruiting::".length) };
+  if (id.startsWith("authorizations::")) return { kind: "authorizations", sourceModuleId: id.slice("authorizations::".length) };
   return { kind: "academyData", sourceModuleId: id };
 }
