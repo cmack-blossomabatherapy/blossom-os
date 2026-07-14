@@ -101,6 +101,7 @@ export const STAGED_ROLE_LIVE_PATHS: ReadonlySet<string> = new Set([
   "/resource-library",
   "/reports",
   "/ai/assistant",
+  "/tasks",
 ]);
 
 /**
@@ -760,6 +761,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const bottomNav: NavEntry[] = [
     { to: "/home", label: "Home", icon: Home, end: true },
     { to: "/ai/assistant", label: "Blossom AI", icon: Sparkles },
+    { to: "/tasks", label: "Tasks", icon: CheckSquare },
     { to: trainingPath, label: "Training", icon: GraduationCap },
     { to: "/resource-library", label: "Resources", icon: BookOpen },
     { to: "/reports", label: "Reports", icon: BarChart3 },
