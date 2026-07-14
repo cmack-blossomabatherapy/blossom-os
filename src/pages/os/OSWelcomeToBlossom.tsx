@@ -180,7 +180,7 @@ export default function OSWelcomeToBlossom() {
       <div className="mx-auto w-full max-w-5xl space-y-10 pb-16">
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground">
-            <Link to="/training"><ArrowLeft className="h-3.5 w-3.5" /> Training Academy</Link>
+            <Link to="/academy"><ArrowLeft className="h-3.5 w-3.5" /> Training Academy</Link>
           </Button>
         </div>
 
