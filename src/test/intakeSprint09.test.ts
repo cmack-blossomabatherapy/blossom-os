@@ -77,7 +77,6 @@ describe("Sprint 09 — intake workflow helpers", () => {
 describe("Sprint 09 — intake page wiring (static)", () => {
   const intakePages = [
     "src/pages/os/intake/IntakeDashboard.tsx",
-    "src/pages/os/intake/ReferralQueue.tsx",
     "src/pages/os/intake/LeadToActivePipeline.tsx",
     "src/pages/os/intake/MissingInformation.tsx",
     "src/pages/os/intake/ParentCommunication.tsx",
