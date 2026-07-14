@@ -520,12 +520,22 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
                       catch (e) { toast.error(e instanceof Error ? e.message : `Could not ${label.toLowerCase()}`); }
                     };
                     return (
-                      <tr key={r.task.id} className="hover:bg-muted/30 transition-colors">
+                     <tr key={r.task.id} className="hover:bg-muted/30 transition-colors">
                         <td className="px-3 py-2">
-                          <div className="flex items-center gap-1">
-                            {c === "overdue" && <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30">Overdue</Badge>}
-                            {c === "today" && <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30">Today</Badge>}
-                            {c === "upcoming" && <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30">Upcoming</Badge>}
+                          <div className="flex items-center gap-1.5">
+                            <InlineStatusPicker
+                              value={r.task.status}
+                              onChange={async (next) => {
+                                try {
+                                  await setStatus(r.task, next);
+                                  toast.success(`Status → ${STATUS_META[next].label}`);
+                                } catch (e) {
+                                  toast.error(e instanceof Error ? e.message : "Could not update status");
+                                }
+                              }}
+                            />
+                            {c === "overdue" && <span className="h-1.5 w-1.5 rounded-full bg-rose-500" aria-label="Overdue" title="Overdue" />}
+                            {c === "today" && <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-label="Due today" title="Due today" />}
                             {isEscalated && <Flame className="h-3 w-3 text-violet-600" aria-label="Escalated" />}
                           </div>
                         </td>
