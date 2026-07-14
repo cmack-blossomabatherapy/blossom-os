@@ -292,16 +292,16 @@ export default function CompanyHome() {
         </header>
 
         {/* Calendar hero */}
-        <section className="grid gap-6 lg:grid-cols-[1.7fr_1fr]">
+        <section className="grid gap-6 items-start lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
           {/* Colorful blossom-petal frame around the calendar */}
           <div
-            className="relative rounded-[28px] p-[1.5px] shadow-[0_20px_60px_-30px_hsl(189_50%_45%/0.35)]"
+            className="relative min-w-0 rounded-[28px] p-[1.5px] shadow-[0_20px_60px_-30px_hsl(189_50%_45%/0.35)]"
             style={{
               backgroundImage:
                 "conic-gradient(from 210deg at 50% 50%, hsl(189 55% 58% / 0.55), hsl(280 60% 70% / 0.5), hsl(330 75% 72% / 0.55), hsl(20 85% 68% / 0.5), hsl(45 90% 65% / 0.5), hsl(160 55% 60% / 0.5), hsl(189 55% 58% / 0.55))",
             }}
           >
-            <Card className="relative overflow-hidden rounded-[26px] border-0 bg-card/95 backdrop-blur p-6 md:p-9">
+            <Card className="relative overflow-hidden rounded-[26px] border-0 bg-card/95 backdrop-blur p-4 sm:p-6 md:p-9 min-h-[560px] flex flex-col">
               {/* Soft petal glow backdrop */}
               <div
                 aria-hidden
@@ -568,8 +568,8 @@ export default function CompanyHome() {
                   head_cell:
                     "text-muted-foreground/80 font-semibold text-[11px] uppercase tracking-[0.18em] h-9 flex items-center justify-center",
                   row: "grid grid-cols-7 w-full mt-1.5",
-                  cell: "aspect-square w-full text-center p-0.5 relative focus-within:relative focus-within:z-20",
-                  day: "h-full w-full rounded-2xl font-medium text-base hover:bg-muted/70 transition-all duration-200 aria-selected:opacity-100",
+                  cell: "h-12 sm:h-14 md:h-16 lg:h-[84px] xl:h-[92px] w-full text-center p-0.5 relative focus-within:relative focus-within:z-20",
+                  day: "h-full w-full rounded-2xl font-medium text-sm md:text-base hover:bg-muted/70 transition-all duration-200 aria-selected:opacity-100",
                   day_selected:
                     "bg-gradient-to-br from-primary to-[hsl(189_55%_58%)] text-primary-foreground shadow-[0_8px_20px_-8px_hsl(189_50%_45%/0.6)] hover:from-primary hover:to-[hsl(189_55%_58%)] hover:text-primary-foreground",
                   day_today:
@@ -682,7 +682,7 @@ export default function CompanyHome() {
             </Card>
           </div>
 
-          <Card className="relative overflow-hidden rounded-[26px] border-border/60 bg-card p-6 md:p-7 space-y-5">
+          <Card className="relative overflow-hidden rounded-[26px] border-border/60 bg-card p-5 sm:p-6 md:p-7 space-y-5 min-w-0">
             <div
               aria-hidden
               className="pointer-events-none absolute -top-16 -right-10 h-40 w-40 rounded-full opacity-70 blur-2xl"
@@ -939,8 +939,8 @@ function WeekView({
   onOpenDayDrawer: (date: Date, category: string | null) => void;
 }) {
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-7 gap-2">
+    <div className="space-y-3 min-h-[360px]">
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
           const dayEvents = eventsByDay.get(key) ?? [];
