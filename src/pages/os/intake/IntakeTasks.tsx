@@ -4,6 +4,7 @@ import {
   Plus, AlertCircle, CheckCircle2, List, Play,
   CalendarClock, Flame, Inbox, ListTodo, Search, ArrowUpDown,
 } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import {
   IntakeSectionHeader, IntakePulseStrip, type PulseTileSpec,
@@ -25,6 +26,9 @@ import { AssigneePicker } from "@/components/tasks/AssigneePicker";
 
 type FilterKey = "all" | "today" | "overdue" | "escalated";
 type SortKey = "due" | "lead" | "owner" | "title";
+type StatusKey = "Open" | "In Progress" | "Blocked";
+type DueRangeKey = "any" | "overdue" | "today" | "7d" | "30d" | "unscheduled";
+type FlagKey = "any" | "blocked" | "actionable" | "unassigned";
 interface TaskRow { task: IntakeTaskRow; lead: Lead | undefined }
 
 function classify(r: TaskRow): "overdue" | "today" | "upcoming" {
@@ -107,6 +111,11 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("due");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  // Fast-filter state — status, owner, due range, and blocker/next-step flag.
+  const [statuses, setStatuses] = useState<StatusKey[]>([]);
+  const [owners, setOwners] = useState<string[]>([]);
+  const [dueRange, setDueRange] = useState<DueRangeKey>("any");
+  const [flag, setFlag] = useState<FlagKey>("any");
 
   const leadById = useMemo(() => {
     const map = new Map<string, Lead>();
@@ -121,6 +130,12 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
       .filter((r) => (r.lead ? matches(r.lead.state) : true)),
     [tasks, leadById, matches],
   );
+  const ownerOptions = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => { const o = (r.task.owner ?? "").trim(); if (o) set.add(o); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+  const hasUnassigned = useMemo(() => rows.some((r) => !r.task.owner || !r.task.owner.trim()), [rows]);
   const overdue = rows.filter((r) => classify(r) === "overdue");
   const dueToday = rows.filter((r) => classify(r) === "today");
   const upcoming = rows.filter((r) => classify(r) === "upcoming");
@@ -132,11 +147,48 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const inDays = (d: Date, n: number) => {
+      const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + n);
+      return d.getTime() >= today.getTime() && d.getTime() <= cutoff.getTime();
+    };
     let out = rows.filter((r) => {
       const c = classify(r);
       if (filter === "today" && c !== "today") return false;
       if (filter === "overdue" && c !== "overdue") return false;
       if (filter === "escalated" && !(r.lead?.tags ?? []).some((t) => /escalat/i.test(t))) return false;
+      // Status multi-select
+      if (statuses.length > 0 && !statuses.includes(r.task.status as StatusKey)) return false;
+      // Owner multi-select — "Unassigned" is a synthetic bucket
+      if (owners.length > 0) {
+        const owner = (r.task.owner ?? "").trim();
+        const isUnassigned = !owner;
+        const wantsUnassigned = owners.includes("__unassigned__");
+        const ownerMatch = owner && owners.includes(owner);
+        if (!(ownerMatch || (isUnassigned && wantsUnassigned))) return false;
+      }
+      // Due date range
+      if (dueRange !== "any") {
+        if (dueRange === "unscheduled") {
+          if (r.task.due_date) return false;
+        } else if (!r.task.due_date) {
+          return false;
+        } else {
+          const due = new Date(r.task.due_date); due.setHours(0, 0, 0, 0);
+          if (dueRange === "overdue" && !(due.getTime() < today.getTime())) return false;
+          if (dueRange === "today" && due.getTime() !== today.getTime()) return false;
+          if (dueRange === "7d" && !inDays(due, 7)) return false;
+          if (dueRange === "30d" && !inDays(due, 30)) return false;
+        }
+      }
+      // Blocker / next-step flag
+      if (flag !== "any") {
+        const reason = getBlockReason(r);
+        const isUnassignedRow = !r.task.owner || !r.task.owner.trim();
+        if (flag === "blocked" && !reason) return false;
+        if (flag === "actionable" && reason) return false;
+        if (flag === "unassigned" && !isUnassignedRow) return false;
+      }
       if (q) {
         const hay = [r.task.title, r.task.task_type, r.task.owner, r.lead?.childName, r.lead?.parentName]
           .map((s) => String(s ?? "").toLowerCase()).join(" ");
@@ -157,7 +209,23 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
       return get(a).localeCompare(get(b)) * dir;
     });
     return out;
-  }, [rows, filter, search, sortKey, sortDir]);
+  }, [rows, filter, search, sortKey, sortDir, statuses, owners, dueRange, flag]);
+
+  const activeFilterCount =
+    (statuses.length > 0 ? 1 : 0) +
+    (owners.length > 0 ? 1 : 0) +
+    (dueRange !== "any" ? 1 : 0) +
+    (flag !== "any" ? 1 : 0);
+  const clearAdvanced = () => { setStatuses([]); setOwners([]); setDueRange("any"); setFlag("any"); };
+  const toggleIn = <T,>(list: T[], v: T): T[] => list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
+  const dueRangeLabel: Record<DueRangeKey, string> = {
+    any: "Any date", overdue: "Overdue", today: "Today",
+    "7d": "Next 7 days", "30d": "Next 30 days", unscheduled: "No due date",
+  };
+  const flagLabel: Record<FlagKey, string> = {
+    any: "All tasks", blocked: "Blocked / needs next step",
+    actionable: "Ready to start", unassigned: "Unassigned",
+  };
 
   const pulseTiles: PulseTileSpec[] = [
     { key: "all",       label: "All Open",   value: openTotal,        hint: "Across all buckets",   icon: ListTodo,      tone: "indigo",  onClick: () => setFilter("all") },
