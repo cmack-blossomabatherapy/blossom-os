@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Compact "Actions" trigger that opens the full LeadActionPanel inside a
- * modal. Used on Intake list pages (Referral Queue, Missing Information,
+ * modal. Used on Intake list pages (Intake Dashboard, Missing Information,
  * etc.) so cards stay clean while still exposing the full action surface.
  */
 export function LeadActionsButton({

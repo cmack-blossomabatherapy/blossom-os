@@ -180,7 +180,7 @@ const ALL: ModuleDefinition[] = [
   // --------- Intake ---------
   generic({
     id: "intake-dashboard",
-    matchNames: ["Intake Dashboard", "New Referral Queue", "Lead to Ready-to-Start Pipeline", "Missing Information", "Parent Communication", "Intake Tasks", "Lead Benefits Cheat Sheets"],
+    matchNames: ["Intake Dashboard", "Lead to Ready-to-Start Pipeline", "Missing Information", "Parent Communication", "Intake Tasks", "Lead Benefits Cheat Sheets"],
     title: "Intake Workspace",
     description: "Owned by the Intake team. Moves leads from referral to ready-for-authorizations.",
     department: "Intake",
