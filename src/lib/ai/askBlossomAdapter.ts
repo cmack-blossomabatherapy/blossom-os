@@ -287,7 +287,7 @@ export async function* streamAskBlossom(
     let data: ChatFnResponse | null = null;
     let error: { message?: string } | null = null;
     const primary = await supabase.functions.invoke<ChatFnResponse>("blossom-ai-chat", {
-      body: { message: prompt, role, activeState: state },
+      body: { message: prompt, role, activeState: state, conversationId },
     });
     if (primary.error || !primary.data || primary.data.error) {
       const fallback = await supabase.functions.invoke<ChatFnResponse>("chat", {
