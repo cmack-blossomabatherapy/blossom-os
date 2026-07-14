@@ -364,6 +364,11 @@ function OSLeadsV2Inner() {
     });
   const clearPipelineFilters = () =>
     updateParams((p) => { p.delete("mine"); p.delete("pdays"); p.delete("pstage"); });
+  const setPipelineStagesParam = (next: Set<string>) =>
+    updateParams((p) => {
+      if (next.size) p.set("pstage", [...next].join(","));
+      else p.delete("pstage");
+    });
 
   // Missing-lead guard: if the ?lead=<id> deep link (from CTM or escalation
   // chips) doesn't resolve to a real lead once data is loaded, surface a
