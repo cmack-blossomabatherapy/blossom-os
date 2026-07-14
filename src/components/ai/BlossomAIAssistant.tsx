@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkles, X, Send, ExternalLink, HelpCircle, Loader2, ThumbsUp, ThumbsDown, ShieldAlert } from "lucide-react";
+import { Sparkles, Send, ExternalLink, HelpCircle, Loader2, ThumbsUp, ThumbsDown, ShieldAlert, Maximize2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
