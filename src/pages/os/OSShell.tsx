@@ -869,6 +869,10 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               </div>
               <nav className="flex-1 overflow-y-auto px-3 py-3">
                 <div className="space-y-3">
+                  <div className="space-y-0.5">
+                    {renderNavItem({ to: "/home", label: "Home", icon: Home, end: true }, () => { setMobileOpen(false); setMobileSearch(""); })}
+                    {renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles }, () => { setMobileOpen(false); setMobileSearch(""); })}
+                  </div>
                   {mobileSections.map((section) => (
                     <div key={section.id}>
                       <button
