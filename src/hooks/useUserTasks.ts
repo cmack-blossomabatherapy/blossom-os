@@ -62,6 +62,10 @@ export function useUserTasks(scope: TaskScope = "assigned_to_me") {
       assignee_id?: string;
       due_at?: string | null;
       priority?: UserTaskPriority;
+      related_record_type?: string | null;
+      related_record_id?: string | null;
+      related_record_label?: string | null;
+      related_url?: string | null;
     }) => {
       if (!userId) throw new Error("Not authenticated");
       const { data, error } = await supabase
@@ -74,6 +78,10 @@ export function useUserTasks(scope: TaskScope = "assigned_to_me") {
           due_at: input.due_at ?? null,
           priority: input.priority ?? "medium",
           status: "open",
+          related_record_type: input.related_record_type ?? null,
+          related_record_id: input.related_record_id ?? null,
+          related_record_label: input.related_record_label ?? null,
+          related_url: input.related_url ?? null,
         })
         .select(TASK_COLUMNS)
         .single();
