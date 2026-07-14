@@ -10,5 +10,5 @@ import { Navigate, useParams } from "react-router-dom";
 export default function LeadIdRedirect() {
   const { id } = useParams<{ id: string }>();
   if (!id) return <Navigate to="/leads" replace />;
-  return <Navigate to={`/leads?lead=${encodeURIComponent(id)}`} replace />;
+  return <Navigate to={`/leads?view=pipeline&lead=${encodeURIComponent(id)}`} replace />;
 }

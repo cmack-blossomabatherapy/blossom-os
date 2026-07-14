@@ -153,7 +153,7 @@ const leadToOpsItem = (l: Lead): OpsItem | null => {
     daysInStage: l.daysInStage,
     blockers: [],
     payor: l.payor,
-    href: `/leads/${l.id}`,
+    href: `/leads?view=pipeline&lead=${l.id}`,
   };
 };
 

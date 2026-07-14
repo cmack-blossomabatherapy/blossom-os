@@ -285,7 +285,7 @@ function PacketCard({
         </div>
         <div className="flex items-center gap-1">
           <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
-            <Link to={`/leads?lead=${lead.id}`}>Open lead</Link>
+            <Link to={`/leads?view=pipeline&lead=${lead.id}`}>Open lead</Link>
           </Button>
           {readiness.ready ? (
             <Button asChild size="sm" className="h-7 text-xs">
