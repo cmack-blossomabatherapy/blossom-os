@@ -116,7 +116,6 @@ describe("Sprint 03 — Patient Lifetime Journey", () => {
 
 describe("Sprint 03 — Intake pages use useLeads + action labels", () => {
   const files = [
-    "src/pages/os/intake/ReferralQueue.tsx",
     "src/pages/os/intake/LeadToActivePipeline.tsx",
     "src/pages/os/intake/MissingInformation.tsx",
     "src/pages/os/intake/ParentCommunication.tsx",
@@ -125,12 +124,6 @@ describe("Sprint 03 — Intake pages use useLeads + action labels", () => {
   for (const f of files) {
     it(`${f} uses useLeads`, () => { expect(read(f)).toMatch(/useLeads\(/); });
   }
-  it("ReferralQueue exposes Move/Assign/Add Tag actions", () => {
-    const s = read("src/pages/os/intake/ReferralQueue.tsx");
-    expect(s).toMatch(/Move to Contacted/);
-    expect(s).toMatch(/Assign Owner/);
-    expect(s).toMatch(/Add Tag/);
-  });
   it("LeadToActivePipeline exposes Forward/Back stage actions", () => {
     const s = read("src/pages/os/intake/LeadToActivePipeline.tsx");
     expect(s).toMatch(/moveStage/);

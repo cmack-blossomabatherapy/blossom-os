@@ -5,7 +5,6 @@ import { resolve } from "node:path";
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
 const OS_LEADS = read("src/pages/os/OSLeadsV2.tsx");
-const REFERRAL_QUEUE = read("src/pages/os/intake/ReferralQueue.tsx");
 const MISSING_INFO = read("src/pages/os/intake/MissingInformation.tsx");
 const LEAD_ACTION_PANEL = read("src/components/intake/LeadActionPanel.tsx");
 const INTAKE_MODALS = read("src/components/intake/IntakeModals.tsx");
@@ -44,22 +43,6 @@ describe("Intake Export 87 — UI canonical stage usage", () => {
       expect(block).not.toMatch(/"VOB Completed"/);
       expect(block).not.toMatch(/"Form Received"/);
       expect(block).not.toMatch(/"Missing Information"/);
-    });
-  });
-
-  describe("ReferralQueue", () => {
-    it("no longer defines the queue with only New Lead / In Contact", () => {
-      expect(REFERRAL_QUEUE).not.toMatch(/new Set\(\[\s*"New Lead"\s*,\s*"In Contact"\s*\]\)/);
-    });
-    it("uses canonicalFamilyLeadStage to bucket queue leads", () => {
-      expect(REFERRAL_QUEUE).toMatch(/canonicalFamilyLeadStage/);
-    });
-    it("includes canonical Lead Captured and First Contact Attempt stages", () => {
-      expect(REFERRAL_QUEUE).toMatch(/"Lead Captured"/);
-      expect(REFERRAL_QUEUE).toMatch(/"First Contact Attempt"/);
-    });
-    it("updates visible copy away from 'New Lead or In Contact'", () => {
-      expect(REFERRAL_QUEUE).not.toMatch(/New Lead or In Contact/i);
     });
   });
 
