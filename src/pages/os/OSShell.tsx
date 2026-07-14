@@ -919,9 +919,18 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
 
           <nav className={cn("os-sidebar-scroll flex-1 overflow-y-auto px-3 pb-3", collapsed ? "pt-4" : "pt-2")}>
             {collapsed ? (
-              <div className="flex flex-col items-center gap-1.5">{allItems.map((item) => renderNavItem(item))}</div>
+              <div className="flex flex-col items-center gap-1.5">
+                {renderNavItem({ to: "/home", label: "Home", icon: Home, end: true })}
+                {renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
+                <div className="my-2 h-px w-8 bg-foreground/[0.08]" />
+                {allItems.map((item) => renderNavItem(item))}
+              </div>
             ) : (
               <div className="space-y-2">
+                <div className="mb-2 space-y-0.5">
+                  {renderNavItem({ to: "/home", label: "Home", icon: Home, end: true })}
+                  {renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
+                </div>
                 {sections.map((section) => (
                   <div key={section.id}>
                     <button
