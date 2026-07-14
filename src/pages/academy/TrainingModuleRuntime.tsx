@@ -12,6 +12,7 @@ import { RBT_PATHS, type RBTModule, type RBTPath, type RBTPhase, type RBTPathId 
 import { getRbtModuleContent } from "@/lib/training/rbtModuleContent";
 import { BCBA_MODULES, type BCBAModule } from "@/lib/training/bcbaAcademy";
 import { getIntakeDay, type IntakeDayModule } from "@/lib/training/intakeAcademy";
+import { getRecruitingDay, type RecruitingDayModule } from "@/lib/training/recruitingAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime, persistRuntimeElapsed,
   type RuntimeContext,
@@ -46,6 +47,7 @@ export default function TrainingModuleRuntime() {
     if (parsed.kind === "rbt") return resolveRbt(parsed.sourceModuleId);
     if (parsed.kind === "bcba") return resolveBcba(parsed.sourceModuleId);
     if (parsed.kind === "intake") return resolveIntake(parsed.sourceModuleId);
+    if (parsed.kind === "recruiting") return resolveRecruiting(parsed.sourceModuleId);
     return null;
   }, [parsed.kind, parsed.sourceModuleId]);
 
