@@ -721,25 +721,20 @@ export default function OSAskBlossom() {
         )}
 
         {tab === "saved" && (
-          <div className="rounded-2xl border border-border/60 bg-card/90 p-5 backdrop-blur">
-            <h3 className="mb-3 text-[13px] font-semibold text-foreground">Recent conversations</h3>
-            {convs.length === 0 ? (
-              <p className="text-[12.5px] text-muted-foreground">Conversations you start will appear here.</p>
-            ) : (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {convs.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => { setActiveId(c.id); setTab("chat"); }}
-                    className="rounded-2xl border border-foreground/[0.06] bg-white/80 p-3 text-left transition hover:border-[hsl(265_70%_80%)] hover:shadow-[0_8px_24px_-18px_hsl(265_60%_50%/0.3)]"
-                  >
-                    <p className="text-[13px] font-semibold text-foreground">{c.title}</p>
-                    <p className="text-[11px] text-muted-foreground">{c.messages.length} messages · {new Date(c.updatedAt).toLocaleString()}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <SavedRecentTab
+            convs={convs}
+            search={convSearch}
+            onSearchChange={setConvSearch}
+            editingId={editingId}
+            editingTitle={editingTitle}
+            onOpen={(id) => { setActiveId(id); setTab("chat"); }}
+            onBeginRename={beginRename}
+            onEditingTitleChange={setEditingTitle}
+            onCommitRename={commitRename}
+            onCancelRename={cancelRename}
+            onTogglePin={togglePin}
+            onDelete={deleteConversation}
+          />
         )}
 
         {tab === "knowledge" && (
