@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Upload, Download, Filter, Sparkles, X, AlertCircle,
   PhoneCall, Mail, Send, StickyNote, ChevronRight, Users, RefreshCw,
-  Loader2, UserPlus, MoveRight, CalendarClock, CheckSquare,
+  Loader2, UserPlus, MoveRight, CalendarClock, CheckSquare, UserCheck,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLeads } from "@/contexts/LeadsContext";
