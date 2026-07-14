@@ -16,8 +16,9 @@ import { RBT_PATHS, type RBTPathId, type RBTModule, type ModuleType as RbtModule
 import { BCBA_MODULES, type BCBAModule } from "@/lib/training/bcbaAcademy";
 import { getRuntimeStatus } from "@/lib/academy/runtimeStore";
 import { INTAKE_DAYS, INTAKE_WEEKS, type IntakeDayModule } from "@/lib/training/intakeAcademy";
+import { RECRUITING_DAYS, RECRUITING_WEEKS, type RecruitingDayModule } from "@/lib/training/recruitingAcademy";
 
-export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake";
+export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting";
 
 /** Training-shaped record that carries the original source for routing & resource lookup. */
 export type AcademyJourneyModule = Training & {
@@ -94,10 +95,10 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
 
   switch (slug) {
     case "intake":               return []; // sourced from intakeAcademy.ts
+    case "recruiting":           return []; // sourced from recruitingAcademy.ts
     case "qa":                   return byDept("qa");
     case "case-manager":         return byDept("case_management");
     case "scheduling":           return byDept("scheduling");
-    case "recruiting":           return byDept("recruiting");
     case "hr":                   return byDept("hr");
     case "authorizations":       return byDept("authorizations");
     case "credentialing":        return byDept("credentialing");
@@ -120,7 +121,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
 /** Build the live runtime route for a module id, source-aware. */
 function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
   return (id: string) => {
-    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::")) {
+    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::")) {
       return `/academy/path/${slug}/module/${encodeURIComponent(id)}`;
     }
     return `/training/${id}`;
@@ -129,7 +130,7 @@ function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
 
 /** Unified per-module status: runtime store for rbt/bcba, academyData for everything else. */
 function unifiedStatus(id: string): "completed" | "in_progress" | "overdue" | "not_started" {
-  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::")) {
+  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::")) {
     const s = getRuntimeStatus(id);
     return s === "completed" ? "completed" : s === "in_progress" ? "in_progress" : "not_started";
   }
@@ -276,6 +277,39 @@ function buildIntakeJourney(slug: string, path: TrainingPath): PathJourney {
   return journey;
 }
 
+/* ------------------- Recruiting source adapter ------------------- */
+
+function synthesizeRecruitingModule(d: RecruitingDayModule): AcademyJourneyModule {
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  return {
+    id: `recruiting::${d.id}`,
+    title: d.title,
+    description: d.description,
+    type: "Workflow",
+    estimatedMinutes: minutes,
+    required: true,
+    category: "role",
+    department: "recruiting",
+    sourceKind: "recruiting",
+    sourceModuleId: d.id,
+    resources: [],
+  };
+}
+
+function buildRecruitingJourney(slug: string, path: TrainingPath): PathJourney {
+  const dayGroups: AcademyJourneyModule[][] = RECRUITING_DAYS.map((d) => [synthesizeRecruitingModule(d)]);
+  const weekGroups = chunk(dayGroups, 5);
+  const dayTitles = RECRUITING_DAYS.map((d) => `Day ${d.dayInJourney} · ${d.title}`);
+  const journey = assembleJourney({
+    slug, path, weekGroups, dayTitles, source: "recruiting",
+  });
+  journey.weeks = journey.weeks.map((w) => ({
+    ...w,
+    title: RECRUITING_WEEKS.find((rw) => rw.weekNumber === w.weekNumber)?.title ?? w.title,
+  }));
+  return journey;
+}
+
 /* ------------------- Shared assembler ------------------- */
 
 function assembleJourney(opts: {
@@ -388,6 +422,9 @@ export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }
   if (slug === "intake") {
     return buildIntakeJourney(slug, path);
   }
+  if (slug === "recruiting") {
+    return buildRecruitingJourney(slug, path);
+  }
 
   const all = getTrainings();
   const trainings = sourceTrainingsForSlug(slug, all);
@@ -430,5 +467,6 @@ export function parseAcademyModuleId(id: string): {
   if (id.startsWith("rbt::")) return { kind: "rbt", sourceModuleId: id.slice("rbt::".length) };
   if (id.startsWith("bcba::")) return { kind: "bcba", sourceModuleId: id.slice("bcba::".length) };
   if (id.startsWith("intake::")) return { kind: "intake", sourceModuleId: id.slice("intake::".length) };
+  if (id.startsWith("recruiting::")) return { kind: "recruiting", sourceModuleId: id.slice("recruiting::".length) };
   return { kind: "academyData", sourceModuleId: id };
 }
