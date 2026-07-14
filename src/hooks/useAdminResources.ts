@@ -43,6 +43,9 @@ interface HrResourceRow {
   requires_acknowledgement?: boolean | null;
   training_related?: boolean | null;
   sop_related?: boolean | null;
+  ingest_status?: string | null;
+  chunk_count?: number | null;
+  transcript_available?: boolean | null;
 }
 
 const KIND_TO_TYPE: Record<string, ResourceType> = {
@@ -103,6 +106,9 @@ function mapRow(r: HrResourceRow): Resource {
     requiresAcknowledgement: !!r.requires_acknowledgement,
     trainingRelated: !!r.training_related,
     sopRelated: !!r.sop_related,
+    ingestStatus: (r.ingest_status ?? "pending") as Resource["ingestStatus"],
+    chunkCount: r.chunk_count ?? 0,
+    transcriptAvailable: !!r.transcript_available,
   };
 }
 
@@ -135,7 +141,7 @@ export function useAdminResources(): AdminResourcesResult {
       const { data, error: err } = await (supabase
         .from("hr_resources") as any)
         .select(
-          "id,title,description,kind,category,url,storage_path,storage_bucket,resource_id,visibility_states,visibility_roles,is_pinned,is_active,uploaded_by_name,created_at,updated_at,upload_status,attachment_status,sensitivity,resource_type,tags,departments,file_name,file_size,mime_type,source_note,visibility_level,owner,last_reviewed_date,is_sensitive,requires_acknowledgement,training_related,sop_related",
+          "id,title,description,kind,category,url,storage_path,storage_bucket,resource_id,visibility_states,visibility_roles,is_pinned,is_active,uploaded_by_name,created_at,updated_at,upload_status,attachment_status,sensitivity,resource_type,tags,departments,file_name,file_size,mime_type,source_note,visibility_level,owner,last_reviewed_date,is_sensitive,requires_acknowledgement,training_related,sop_related,ingest_status,chunk_count,transcript_available",
         )
         .order("is_pinned", { ascending: false })
         .order("updated_at", { ascending: false });
