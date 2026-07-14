@@ -322,6 +322,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
   };
 
   return (
+    <>
     <GrowthPageShell
       eyebrow={isUniversal ? "Work" : "Growth & Admissions"}
       title="Tasks"
