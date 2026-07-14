@@ -156,6 +156,18 @@ export function LeadDetailDrawer({
   const [tab, setTab] = useState<Tab>("overview");
   const [raw, setRaw] = useState<Record<string, unknown> | null>(null);
   const { updates, loading: updatesLoading } = useLeadUpdates(lead?.childName, lead?.id ?? null);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [taskOpen, setTaskOpen] = useState<false | "task" | "follow_up">(false);
+  const [referralOpen, setReferralOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const {
+    docs: uploadedDocs,
+    loading: docsLoading,
+    upload: uploadDoc,
+    remove: removeDoc,
+  } = useLeadDocuments(lead?.id ?? null);
+  const { link: referralLink, linkReferral, unlink: unlinkReferral } = useLeadReferralLink(lead?.id ?? null);
 
   // Close on Escape
   useEffect(() => {
