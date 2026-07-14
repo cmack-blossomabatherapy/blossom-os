@@ -1,6 +1,22 @@
 import { useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { format, parseISO, isSameDay, startOfDay, addDays, endOfMonth, startOfMonth } from "date-fns";
+import {
+  format,
+  parseISO,
+  isSameDay,
+  startOfDay,
+  addDays,
+  endOfMonth,
+  startOfMonth,
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  subWeeks,
+  subMonths,
+  addMonths,
+  eachDayOfInterval,
+  isWithinInterval,
+} from "date-fns";
 import {
   Calendar as CalendarIcon,
   Megaphone,
@@ -18,6 +34,10 @@ import {
   Filter,
   X,
   HelpCircle,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  Grid3X3,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
@@ -27,6 +47,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Select,
   SelectContent,
