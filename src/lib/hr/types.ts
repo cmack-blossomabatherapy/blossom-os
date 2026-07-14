@@ -91,6 +91,7 @@ export interface Employee {
   kiosk_pin: string | null;
   kiosk_enabled: boolean;
   resource_hub_access: boolean;
+  is_people_manager?: boolean;
   notes: string | null;
   created_at: string;
   updated_at: string;
