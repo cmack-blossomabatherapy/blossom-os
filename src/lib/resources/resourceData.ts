@@ -632,6 +632,13 @@ export function isVisibleToRole(r: Resource, role: OSRole, state?: string): bool
   if (r.sensitivity === "admin_only" && role !== "super_admin") return false;
   // Hard safety net — defensive keyword check on title/tags.
   if (containsCredentialKeywords(r.title) || r.tags.some(containsCredentialKeywords)) return false;
+  // Sensitivity guardrail: sensitive resources are never surfaced to
+  // frontline clinical/operational roles even if the row's visibility_roles
+  // still lists them (defense in depth alongside the DB cleanup).
+  const FRONTLINE_BLOCKED_WHEN_SENSITIVE = new Set<string>([
+    "rbt", "bcba", "case_manager", "scheduling_team", "staffing_team", "behavioral_support",
+  ]);
+  if (r.isSensitive && FRONTLINE_BLOCKED_WHEN_SENSITIVE.has(role)) return false;
   // Executive tier: unconditional read access to the library (mirrors RLS).
   const EXEC_TIER = new Set<string>([
     "executive",
