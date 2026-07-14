@@ -16,6 +16,7 @@ import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCa
 import { resolveRoleJourney } from "@/lib/training/roleJourneyAssignments";
 import { useRoleJourneyAssignments } from "@/hooks/useRoleJourneyAssignments";
 import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 
 /** Warm, color-coded accents for the LMS home. Used sparingly on icon
  *  tiles and status chips so the page feels alive without losing the
@@ -38,11 +39,19 @@ const ROTATE: Accent[] = ["orchid", "sky", "mint", "citrus", "coral", "teal"];
  */
 export default function TrainingAcademyHome() {
   const { isAdmin, user, roles } = useAuth();
+  // Honor "View As Role" for Super Admins so the Training Academy shows the
+  // journey for the role they're currently previewing (e.g., Intake) instead
+  // of the systems admin default. OS role strings already match the keys in
+  // DEFAULT_ROLE_TO_SLUG, so no mapping table changes are needed.
+  const osRole = useOSRoleSafe()?.role;
   // Role → wireframe path mapping (default + HR overrides from
   // training_role_journey_assignments). Every signed-in user falls back
   // to "blossom-os-basics" so the home page never shows "No active journey".
   const { overrides } = useRoleJourneyAssignments();
-  const resolvedFromRoles = user ? resolveRoleJourney(roles as string[], overrides) : null;
+  const rolesForJourney = osRole
+    ? [osRole as string, ...(roles as string[])]
+    : (roles as string[]);
+  const resolvedFromRoles = user ? resolveRoleJourney(rolesForJourney, overrides) : null;
   const [home, setHome] = useState<LearnerHome>(() => emptyLearnerHome());
   useEffect(() => {
     let cancelled = false;
