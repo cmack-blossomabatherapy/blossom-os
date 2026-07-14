@@ -604,6 +604,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
       open={!!activityTask}
       onOpenChange={(o) => { if (!o) setActivityTask(null); }}
     />
+    </>
   );
 }
 
