@@ -1092,6 +1092,97 @@ const PIPELINE_DAY_OPTIONS: { value: number | null; label: string }[] = [
   { value: 90, label: "Last 90 days" },
 ];
 
+function PipelineSummaryBar({
+  groups, counts, perStage, total, selectedStages,
+  onSelectGroup, onToggleStage, onClear,
+}: {
+  groups: typeof PIPELINE_GROUPS;
+  counts: Record<string, number>;
+  perStage: Record<string, number>;
+  total: number;
+  selectedStages: Set<string>;
+  onSelectGroup: (g: (typeof PIPELINE_GROUPS)[number]) => void;
+  onToggleStage: (stage: string) => void;
+  onClear: () => void;
+}) {
+  const anySelected = selectedStages.size > 0;
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur p-3">
+      <div className="flex items-center justify-between mb-2 px-1">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Pipeline summary</span>
+          <span>·</span>
+          <span className="tabular-nums">{total.toLocaleString()} leads in view</span>
+        </div>
+        {anySelected && (
+          <button
+            onClick={onClear}
+            className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+          >
+            Show all stages
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        {groups.map((g, idx) => {
+          const allSelected = g.stages.every((s) => selectedStages.has(s));
+          const partiallySelected = !allSelected && g.stages.some((s) => selectedStages.has(s));
+          const active = allSelected || partiallySelected;
+          return (
+            <div key={g.key} className="relative">
+              <button
+                type="button"
+                onClick={() => onSelectGroup(g)}
+                className={cn(
+                  "w-full text-left rounded-xl border p-3 transition-all",
+                  active
+                    ? "border-primary/60 bg-primary/5 ring-1 ring-primary/20"
+                    : "border-border/60 bg-background hover:border-border hover:-translate-y-0.5",
+                )}
+                aria-pressed={allSelected}
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">{g.label}</span>
+                    {idx < groups.length - 1 && (
+                      <span className="text-muted-foreground/60 text-xs">→</span>
+                    )}
+                  </div>
+                  <span className="text-2xl font-semibold tabular-nums">
+                    {(counts[g.key] ?? 0).toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{g.hint}</p>
+              </button>
+              <div className="mt-1.5 flex flex-wrap gap-1 px-0.5">
+                {g.stages.map((s) => {
+                  const on = selectedStages.has(s);
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onToggleStage(s); }}
+                      className={cn(
+                        "text-[10px] rounded-full px-2 py-0.5 border transition-colors",
+                        on
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/60 text-muted-foreground border-transparent hover:bg-muted",
+                      )}
+                      title={`${s} · ${perStage[s] ?? 0}`}
+                    >
+                      {s} <span className="tabular-nums opacity-70">{perStage[s] ?? 0}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function PipelineFilters({
   mine, days, stages, filterCount, canFilterMine,
   onToggleMine, onSetDays, onToggleStage, onClear,
