@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import {
   Sparkles, Send, Plus, Mic, Paperclip, History, Pin, BookOpen,
   Brain, Workflow, ShieldCheck, ExternalLink, Loader2, Search, Pencil, Trash2,
+  MicOff, X, RefreshCw, AlertCircle,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { streamAskBlossom, mockInsightsFor } from "@/lib/ai/askBlossomAdapter";
+import { streamAskBlossom } from "@/lib/ai/askBlossomAdapter";
+import { useBlossomAiInsights, type BlossomInsight } from "@/hooks/useBlossomAiInsights";
+import { useNavigate } from "react-router-dom";
 import { quickPromptsFor } from "@/lib/ai/quickPrompts";
 import { listKnowledgeByCategory, searchKnowledge } from "@/lib/ai/knowledgeBase";
 import { getAiScope } from "@/lib/ai/aiPermissions";
@@ -31,8 +34,10 @@ export default function OSAskBlossom() {
   const { role, activeState } = useOSRole();
   const scope = useMemo(() => getAiScope(role), [role]);
   const quickPrompts = useMemo(() => quickPromptsFor(role), [role]);
-  const insights = useMemo(() => mockInsightsFor(role, activeState), [role, activeState]);
+  const { insights, loading: insightsLoading, refreshing: insightsRefreshing, error: insightsError, refresh: refreshInsights } =
+    useBlossomAiInsights(role, activeState);
   const kbByCategory = useMemo(() => listKnowledgeByCategory(role), [role]);
+  const navigate = useNavigate();
 
   const [tab, setTab] = useState<Tab>("chat");
   const [convs, setConvs] = useState<AiConversation[]>([]);
@@ -47,6 +52,85 @@ export default function OSAskBlossom() {
   const [kbSearch, setKbSearch] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [params, setParams] = useSearchParams();
+
+  // Attachments (text-readable inlined into prompt; binaries acknowledged only)
+  type Attach = { id: string; name: string; size: number; kind: "text" | "binary"; text?: string };
+  const [attachments, setAttachments] = useState<Attach[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_FILES = 3;
+  const MAX_BYTES = 5 * 1024 * 1024;
+  const MAX_TEXT_CHARS = 20_000;
+  const TEXT_EXT = /\.(txt|md|csv|json|log|tsv|yaml|yml)$/i;
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const remaining = MAX_FILES - attachments.length;
+    if (remaining <= 0) { toast.error(`Max ${MAX_FILES} attachments`); return; }
+    const picked = Array.from(files).slice(0, remaining);
+    const next: Attach[] = [];
+    for (const f of picked) {
+      if (f.size > MAX_BYTES) { toast.error(`${f.name} is larger than 5 MB`); continue; }
+      const isText = TEXT_EXT.test(f.name) || f.type.startsWith("text/") || f.type === "application/json";
+      if (isText) {
+        try {
+          const raw = await f.text();
+          next.push({
+            id: newId(), name: f.name, size: f.size, kind: "text",
+            text: raw.length > MAX_TEXT_CHARS ? raw.slice(0, MAX_TEXT_CHARS) + `\n…[truncated ${raw.length - MAX_TEXT_CHARS} chars]` : raw,
+          });
+        } catch {
+          next.push({ id: newId(), name: f.name, size: f.size, kind: "binary" });
+        }
+      } else {
+        next.push({ id: newId(), name: f.name, size: f.size, kind: "binary" });
+      }
+    }
+    if (next.length) setAttachments((cur) => [...cur, ...next]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  // Voice dictation via Web Speech API (client-side, no server cost)
+  type SR = { start: () => void; stop: () => void; onresult: ((e: unknown) => void) | null; onerror: ((e: unknown) => void) | null; onend: (() => void) | null; continuous: boolean; interimResults: boolean; lang: string };
+  const recognitionRef = useRef<SR | null>(null);
+  const [listening, setListening] = useState(false);
+  const dictationSupported = typeof window !== "undefined" &&
+    Boolean((window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).SpeechRecognition ||
+            (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition);
+
+  function toggleDictation() {
+    if (!dictationSupported) { toast.error("Voice dictation isn't supported in this browser"); return; }
+    if (listening) { recognitionRef.current?.stop(); return; }
+    const Ctor = (window as unknown as { SpeechRecognition?: new () => SR; webkitSpeechRecognition?: new () => SR })
+      .SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: new () => SR }).webkitSpeechRecognition;
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = navigator.language || "en-US";
+    const startingLen = input.length;
+    const base = input + (input && !input.endsWith(" ") ? " " : "");
+    rec.onresult = (e: unknown) => {
+      const ev = e as { results: ArrayLike<ArrayLike<{ transcript: string }>> };
+      let text = "";
+      for (let i = 0; i < ev.results.length; i++) text += ev.results[i][0].transcript;
+      setInput(base + text);
+      void startingLen;
+    };
+    rec.onerror = (e: unknown) => {
+      const ev = e as { error?: string };
+      if (ev.error && ev.error !== "aborted" && ev.error !== "no-speech") {
+        toast.error(`Mic error: ${ev.error}`);
+      }
+    };
+    rec.onend = () => { setListening(false); recognitionRef.current = null; };
+    recognitionRef.current = rec;
+    try { rec.start(); setListening(true); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Could not start mic"); }
+  }
+
+  // Stop dictation if the page unmounts.
+  useEffect(() => () => { recognitionRef.current?.stop(); }, []);
 
   /** Rename or delete a conversation locally + on the server. */
   async function renameConversation(localId: string) {
@@ -173,6 +257,22 @@ export default function OSAskBlossom() {
     if (!text || streaming) return;
     setInput("");
 
+    // Fold attachments into the prompt sent to the model.
+    const attachedSnapshot = attachments;
+    let composed = text;
+    if (attachedSnapshot.length) {
+      const parts: string[] = [];
+      for (const a of attachedSnapshot) {
+        if (a.kind === "text" && a.text) {
+          parts.push(`\n\n--- Attached: ${a.name} (${Math.round(a.size / 1024)} KB) ---\n${a.text}`);
+        } else {
+          parts.push(`\n\n[attached ${a.name}, ${Math.round(a.size / 1024)} KB — binary; content not indexed yet]`);
+        }
+      }
+      composed = text + parts.join("");
+    }
+    setAttachments([]);
+
     let convId = activeId;
     if (!convId) {
       const c: AiConversation = {
@@ -195,7 +295,7 @@ export default function OSAskBlossom() {
 
     try {
       const serverConvId = serverConvIds[convId];
-      const stream = streamAskBlossom(text, role, activeState, serverConvId);
+      const stream = streamAskBlossom(composed, role, activeState, serverConvId);
       let acc = "";
       let result: (AskBlossomResponse & { conversationId?: string }) | undefined;
       while (true) {
@@ -225,6 +325,8 @@ export default function OSAskBlossom() {
     } catch (e) {
       patchLastAssistant(convId, { content: "_Sorry — something went wrong._" });
       toast.error(e instanceof Error ? e.message : "AI error");
+      // Restore attachments so the user can retry without re-picking files.
+      if (attachedSnapshot.length) setAttachments(attachedSnapshot);
     } finally {
       setStreaming(false);
     }
@@ -384,6 +486,29 @@ export default function OSAskBlossom() {
               />
               {/* Command bar */}
               <div className="relative border-b border-foreground/[0.06] p-3">
+                {attachments.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {attachments.map((a) => (
+                      <span
+                        key={a.id}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] bg-white/80 px-2.5 py-1 text-[11.5px]"
+                        title={a.kind === "text" ? "Text will be sent inline" : "Binary — filename only"}
+                      >
+                        <Paperclip className="h-3 w-3 text-[hsl(265_70%_55%)]" />
+                        <span className="max-w-[180px] truncate">{a.name}</span>
+                        <span className="text-muted-foreground">{Math.round(a.size / 1024)}KB</span>
+                        <button
+                          type="button"
+                          onClick={() => setAttachments((cur) => cur.filter((x) => x.id !== a.id))}
+                          className="grid h-4 w-4 place-items-center rounded-full text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+                          aria-label={`Remove ${a.name}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <form
                   onSubmit={(e) => { e.preventDefault(); void send(input); }}
                   className="flex items-center gap-2 rounded-2xl border border-foreground/[0.08] bg-white/80 px-3 py-2 shadow-[0_8px_24px_-18px_hsl(265_60%_50%/0.25)] focus-within:border-[hsl(265_70%_70%)] focus-within:shadow-[0_0_0_4px_hsl(265_85%_92%/0.7)]"
@@ -392,12 +517,44 @@ export default function OSAskBlossom() {
                   <input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask anything about Blossom operations…"
+                    placeholder={listening ? "Listening…" : "Ask anything about Blossom operations…"}
                     disabled={streaming}
                     className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground/70"
                   />
-                  <button type="button" disabled className="opacity-40" title="Voice (coming soon)"><Mic className="h-4 w-4" /></button>
-                  <button type="button" disabled className="opacity-40" title="Attach (coming soon)"><Paperclip className="h-4 w-4" /></button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".txt,.md,.csv,.json,.log,.tsv,.yaml,.yml,.pdf,text/*,image/*,application/json,application/pdf"
+                    className="hidden"
+                    onChange={(e) => void handleFiles(e.target.files)}
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleDictation}
+                    disabled={!dictationSupported}
+                    aria-pressed={listening}
+                    aria-label={listening ? "Stop dictation" : "Start dictation"}
+                    title={dictationSupported ? (listening ? "Stop dictation" : "Dictate a message") : "Voice dictation isn't supported in this browser"}
+                    className={cn(
+                      "grid h-7 w-7 place-items-center rounded-full transition-colors",
+                      !dictationSupported && "opacity-40 cursor-not-allowed",
+                      listening
+                        ? "bg-rose-500/15 text-rose-600 animate-pulse"
+                        : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
+                    )}
+                  >
+                    {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Attach files"
+                    title={`Attach up to ${MAX_FILES} files (5 MB each)`}
+                    className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </button>
                   <Button type="submit" size="sm" disabled={streaming || !input.trim()} className="h-8 rounded-xl">
                     {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
@@ -511,23 +668,24 @@ export default function OSAskBlossom() {
 
             {/* RIGHT: insights + actions */}
             <aside className="hidden flex-col rounded-2xl border border-border/60 bg-card/90 p-4 backdrop-blur lg:flex lg:max-h-[calc(100vh-240px)] overflow-y-auto">
-              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational Insights</h3>
-              <div className="space-y-2">
-                {insights.map((i) => (
-                  <div key={i.id} className="rounded-xl border border-foreground/[0.06] bg-white/80 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-[12.5px] font-semibold text-foreground">{i.title}</p>
-                      <Badge variant="outline" className={cn(
-                        "rounded-full text-[10px]",
-                        i.severity === "risk" && "border-rose-200 bg-rose-50 text-rose-600",
-                        i.severity === "watch" && "border-amber-200 bg-amber-50 text-amber-700",
-                        i.severity === "info" && "border-emerald-200 bg-emerald-50 text-emerald-700",
-                      )}>{i.severity}</Badge>
-                    </div>
-                    <p className="mt-1 text-[11.5px] text-muted-foreground">{i.detail}</p>
-                  </div>
-                ))}
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Live Insights</h3>
+                <button
+                  type="button"
+                  onClick={refreshInsights}
+                  disabled={insightsRefreshing}
+                  aria-label="Refresh insights"
+                  className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50"
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5", insightsRefreshing && "animate-spin")} />
+                </button>
               </div>
+              <InsightsList
+                insights={insights}
+                loading={insightsLoading}
+                error={insightsError}
+                onOpen={(i) => i.href && navigate(i.href)}
+              />
               <h3 className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Shortcuts</h3>
               <div className="space-y-1">
                 {quickPrompts.slice(0, 5).map((p) => (
@@ -603,27 +761,96 @@ export default function OSAskBlossom() {
 
         {tab === "insights" && (
           <div className="rounded-2xl border border-border/60 bg-card/90 p-5 backdrop-blur">
-            <h3 className="mb-3 text-[13px] font-semibold text-foreground">Proactive insights</h3>
-            <div className="grid gap-2 md:grid-cols-2">
-              {insights.map((i) => (
-                <div key={i.id} className="rounded-2xl border border-foreground/[0.06] bg-white/80 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[13.5px] font-semibold text-foreground">{i.title}</p>
-                    <Badge variant="outline" className={cn(
-                      "rounded-full text-[10px]",
-                      i.severity === "risk" && "border-rose-200 bg-rose-50 text-rose-600",
-                      i.severity === "watch" && "border-amber-200 bg-amber-50 text-amber-700",
-                      i.severity === "info" && "border-emerald-200 bg-emerald-50 text-emerald-700",
-                    )}>{i.severity}</Badge>
-                  </div>
-                  <p className="mt-1 text-[12px] text-muted-foreground">{i.detail}</p>
-                </div>
-              ))}
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div>
+                <h3 className="text-[13px] font-semibold text-foreground">Live operational insights</h3>
+                <p className="text-[11.5px] text-muted-foreground">
+                  Real, role-scoped queries — refreshed on demand. Nothing here is a template.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={refreshInsights} disabled={insightsRefreshing} className="h-8 rounded-full">
+                <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", insightsRefreshing && "animate-spin")} />
+                {insightsRefreshing ? "Refreshing…" : "Refresh"}
+              </Button>
             </div>
+            <InsightsList
+              insights={insights}
+              loading={insightsLoading}
+              error={insightsError}
+              onOpen={(i) => i.href && navigate(i.href)}
+              variant="grid"
+            />
           </div>
         )}
       </div>
     </OSShell>
+  );
+}
+
+function InsightsList({
+  insights, loading, error, onOpen, variant = "stack",
+}: {
+  insights: BlossomInsight[];
+  loading: boolean;
+  error: string | null;
+  onOpen: (i: BlossomInsight) => void;
+  variant?: "stack" | "grid";
+}) {
+  if (loading) {
+    return (
+      <div className={cn(variant === "grid" ? "grid gap-2 md:grid-cols-2" : "space-y-2")}>
+        {[0, 1, 2].map((k) => (
+          <div key={k} className="h-16 animate-pulse rounded-xl border border-foreground/[0.06] bg-white/50" />
+        ))}
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+        <div>
+          <p className="font-semibold">Couldn’t load live insights</p>
+          <p className="text-[11.5px] opacity-80">{error}</p>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className={cn(variant === "grid" ? "grid gap-2 md:grid-cols-2" : "space-y-2")}>
+      {insights.map((i) => {
+        const clickable = Boolean(i.href);
+        const Wrapper: keyof JSX.IntrinsicElements = clickable ? "button" : "div";
+        return (
+          <Wrapper
+            key={i.id}
+            {...(clickable
+              ? { type: "button" as const, onClick: () => onOpen(i) }
+              : {})}
+            className={cn(
+              "block w-full rounded-xl border border-foreground/[0.06] bg-white/80 p-3 text-left transition-all",
+              clickable && "hover:-translate-y-0.5 hover:border-[hsl(265_70%_75%)] hover:shadow-[0_10px_24px_-18px_hsl(265_60%_50%/0.4)]",
+            )}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[12.5px] font-semibold text-foreground">{i.title}</p>
+              <Badge variant="outline" className={cn(
+                "rounded-full text-[10px]",
+                i.severity === "risk" && "border-rose-200 bg-rose-50 text-rose-600",
+                i.severity === "watch" && "border-amber-200 bg-amber-50 text-amber-700",
+                i.severity === "info" && "border-emerald-200 bg-emerald-50 text-emerald-700",
+              )}>{i.severity}</Badge>
+            </div>
+            <p className="mt-1 text-[11.5px] text-muted-foreground">{i.detail}</p>
+            {clickable && (
+              <p className="mt-1.5 inline-flex items-center gap-1 text-[10.5px] font-medium text-[hsl(265_70%_55%)]">
+                Open {i.module} <ExternalLink className="h-2.5 w-2.5" />
+              </p>
+            )}
+          </Wrapper>
+        );
+      })}
+    </div>
   );
 }
 
