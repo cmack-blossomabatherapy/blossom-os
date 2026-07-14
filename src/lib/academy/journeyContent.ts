@@ -24,8 +24,9 @@ import { HR_DAYS, HR_WEEKS, type HrDayModule } from "@/lib/training/hrAcademy";
 import { CREDENTIALING_DAYS, CREDENTIALING_WEEKS, type CredentialingDayModule } from "@/lib/training/credentialingAcademy";
 import { QA_DAYS, QA_WEEKS, type QaDayModule } from "@/lib/training/qaAcademy";
 import { CASE_MANAGER_DAYS, CASE_MANAGER_WEEKS, type CaseManagerDayModule } from "@/lib/training/caseManagerAcademy";
+import { BEHAVIORAL_SUPPORT_DAYS, BEHAVIORAL_SUPPORT_WEEKS, type BehavioralSupportDayModule } from "@/lib/training/behavioralSupportAcademy";
 
-export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing" | "hr" | "credentialing" | "qa" | "case-manager";
+export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing" | "hr" | "credentialing" | "qa" | "case-manager" | "behavioral-support";
 
 /** Training-shaped record that carries the original source for routing & resource lookup. */
 export type AcademyJourneyModule = Training & {
@@ -108,6 +109,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
     case "staffing":             return []; // sourced from staffingAcademy.ts
     case "qa":                   return []; // sourced from qaAcademy.ts
     case "case-manager":         return []; // sourced from caseManagerAcademy.ts
+    case "behavioral-support":   return []; // sourced from behavioralSupportAcademy.ts
     case "hr":                   return []; // sourced from hrAcademy.ts
     case "credentialing":        return []; // sourced from credentialingAcademy.ts
     case "marketing":            return byDept("marketing");
@@ -128,7 +130,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
 /** Build the live runtime route for a module id, source-aware. */
 function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
   return (id: string) => {
-    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::")) {
+    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::")) {
       return `/academy/path/${slug}/module/${encodeURIComponent(id)}`;
     }
     return `/training/${id}`;
@@ -137,7 +139,7 @@ function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
 
 /** Unified per-module status: runtime store for rbt/bcba, academyData for everything else. */
 function unifiedStatus(id: string): "completed" | "in_progress" | "overdue" | "not_started" {
-  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::")) {
+  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::")) {
     const s = getRuntimeStatus(id);
     return s === "completed" ? "completed" : s === "in_progress" ? "in_progress" : "not_started";
   }
@@ -550,6 +552,39 @@ function buildCaseManagerJourney(slug: string, path: TrainingPath): PathJourney 
   return journey;
 }
 
+/* ------------------- Behavioral Support source adapter ------------------- */
+
+function synthesizeBehavioralSupportModule(d: BehavioralSupportDayModule): AcademyJourneyModule {
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  return {
+    id: `behavioral-support::${d.id}`,
+    title: d.title,
+    description: d.description,
+    type: "Workflow",
+    estimatedMinutes: minutes,
+    required: true,
+    category: "role",
+    department: "behavioral_support",
+    sourceKind: "behavioral-support",
+    sourceModuleId: d.id,
+    resources: [],
+  };
+}
+
+function buildBehavioralSupportJourney(slug: string, path: TrainingPath): PathJourney {
+  const dayGroups: AcademyJourneyModule[][] = BEHAVIORAL_SUPPORT_DAYS.map((d) => [synthesizeBehavioralSupportModule(d)]);
+  const weekGroups = chunk(dayGroups, 5);
+  const dayTitles = BEHAVIORAL_SUPPORT_DAYS.map((d) => `Day ${d.dayInJourney} · ${d.title}`);
+  const journey = assembleJourney({
+    slug, path, weekGroups, dayTitles, source: "behavioral-support",
+  });
+  journey.weeks = journey.weeks.map((w) => ({
+    ...w,
+    title: BEHAVIORAL_SUPPORT_WEEKS.find((bw) => bw.weekNumber === w.weekNumber)?.title ?? w.title,
+  }));
+  return journey;
+}
+
 function assembleJourney(opts: {
   slug: string;
   path: TrainingPath;
@@ -684,6 +719,9 @@ export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }
   if (slug === "case-manager") {
     return buildCaseManagerJourney(slug, path);
   }
+  if (slug === "behavioral-support") {
+    return buildBehavioralSupportJourney(slug, path);
+  }
 
   const all = getTrainings();
   const trainings = sourceTrainingsForSlug(slug, all);
@@ -734,5 +772,6 @@ export function parseAcademyModuleId(id: string): {
   if (id.startsWith("credentialing::")) return { kind: "credentialing", sourceModuleId: id.slice("credentialing::".length) };
   if (id.startsWith("qa::")) return { kind: "qa", sourceModuleId: id.slice("qa::".length) };
   if (id.startsWith("case-manager::")) return { kind: "case-manager", sourceModuleId: id.slice("case-manager::".length) };
+  if (id.startsWith("behavioral-support::")) return { kind: "behavioral-support", sourceModuleId: id.slice("behavioral-support::".length) };
   return { kind: "academyData", sourceModuleId: id };
 }
