@@ -486,6 +486,29 @@ export default function OSAskBlossom() {
               />
               {/* Command bar */}
               <div className="relative border-b border-foreground/[0.06] p-3">
+                {attachments.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {attachments.map((a) => (
+                      <span
+                        key={a.id}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] bg-white/80 px-2.5 py-1 text-[11.5px]"
+                        title={a.kind === "text" ? "Text will be sent inline" : "Binary — filename only"}
+                      >
+                        <Paperclip className="h-3 w-3 text-[hsl(265_70%_55%)]" />
+                        <span className="max-w-[180px] truncate">{a.name}</span>
+                        <span className="text-muted-foreground">{Math.round(a.size / 1024)}KB</span>
+                        <button
+                          type="button"
+                          onClick={() => setAttachments((cur) => cur.filter((x) => x.id !== a.id))}
+                          className="grid h-4 w-4 place-items-center rounded-full text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+                          aria-label={`Remove ${a.name}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <form
                   onSubmit={(e) => { e.preventDefault(); void send(input); }}
                   className="flex items-center gap-2 rounded-2xl border border-foreground/[0.08] bg-white/80 px-3 py-2 shadow-[0_8px_24px_-18px_hsl(265_60%_50%/0.25)] focus-within:border-[hsl(265_70%_70%)] focus-within:shadow-[0_0_0_4px_hsl(265_85%_92%/0.7)]"
@@ -494,12 +517,44 @@ export default function OSAskBlossom() {
                   <input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask anything about Blossom operations…"
+                    placeholder={listening ? "Listening…" : "Ask anything about Blossom operations…"}
                     disabled={streaming}
                     className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground/70"
                   />
-                  <button type="button" disabled className="opacity-40" title="Voice (coming soon)"><Mic className="h-4 w-4" /></button>
-                  <button type="button" disabled className="opacity-40" title="Attach (coming soon)"><Paperclip className="h-4 w-4" /></button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".txt,.md,.csv,.json,.log,.tsv,.yaml,.yml,.pdf,text/*,image/*,application/json,application/pdf"
+                    className="hidden"
+                    onChange={(e) => void handleFiles(e.target.files)}
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleDictation}
+                    disabled={!dictationSupported}
+                    aria-pressed={listening}
+                    aria-label={listening ? "Stop dictation" : "Start dictation"}
+                    title={dictationSupported ? (listening ? "Stop dictation" : "Dictate a message") : "Voice dictation isn't supported in this browser"}
+                    className={cn(
+                      "grid h-7 w-7 place-items-center rounded-full transition-colors",
+                      !dictationSupported && "opacity-40 cursor-not-allowed",
+                      listening
+                        ? "bg-rose-500/15 text-rose-600 animate-pulse"
+                        : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
+                    )}
+                  >
+                    {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Attach files"
+                    title={`Attach up to ${MAX_FILES} files (5 MB each)`}
+                    className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </button>
                   <Button type="submit" size="sm" disabled={streaming || !input.trim()} className="h-8 rounded-xl">
                     {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
