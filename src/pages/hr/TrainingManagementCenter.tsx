@@ -77,6 +77,7 @@ import { useJourneyOverrides, applyOverridesToPhase } from "@/hooks/useJourneyOv
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { LayoutDashboard } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { ResourceAttachmentManager } from "@/components/training/ResourceAttachmentManager";
 import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
 import { RoleJourneyAssignmentsView } from "@/components/training/RoleJourneyAssignmentsView";
