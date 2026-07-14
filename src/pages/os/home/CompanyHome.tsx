@@ -232,12 +232,46 @@ export default function CompanyHome() {
         </header>
 
         {/* Calendar hero */}
-        <section className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-          <Card className="rounded-2xl border-border/70 bg-gradient-to-b from-card to-muted/40 p-5 md:p-8 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
-            <div className="flex items-center justify-between mb-2">
+        <section className="grid gap-6 lg:grid-cols-[1.7fr_1fr]">
+          {/* Colorful blossom-petal frame around the calendar */}
+          <div
+            className="relative rounded-[28px] p-[1.5px] shadow-[0_20px_60px_-30px_hsl(189_50%_45%/0.35)]"
+            style={{
+              backgroundImage:
+                "conic-gradient(from 210deg at 50% 50%, hsl(189 55% 58% / 0.55), hsl(280 60% 70% / 0.5), hsl(330 75% 72% / 0.55), hsl(20 85% 68% / 0.5), hsl(45 90% 65% / 0.5), hsl(160 55% 60% / 0.5), hsl(189 55% 58% / 0.55))",
+            }}
+          >
+            <Card className="relative overflow-hidden rounded-[26px] border-0 bg-card/95 backdrop-blur p-6 md:p-9">
+              {/* Soft petal glow backdrop */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full opacity-60 blur-3xl"
+                style={{ background: "radial-gradient(circle, hsl(330 75% 72% / 0.45), transparent 65%)" }}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -bottom-28 -left-16 h-72 w-72 rounded-full opacity-60 blur-3xl"
+                style={{ background: "radial-gradient(circle, hsl(189 55% 58% / 0.4), transparent 65%)" }}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute top-1/3 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full opacity-40 blur-3xl"
+                style={{ background: "radial-gradient(circle, hsl(45 90% 65% / 0.35), transparent 70%)" }}
+              />
+
+            <div className="relative flex flex-wrap items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <CalendarIcon className="size-4" />
-                <h2 className="text-sm font-medium uppercase tracking-widest">Company Calendar</h2>
+                <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <CalendarIcon className="size-4" />
+                </span>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+                    Company Calendar
+                  </p>
+                  <h2 className="text-lg font-semibold tracking-tight text-foreground" style={{ fontFamily: "'Sora', system-ui, sans-serif" }}>
+                    {format(month, "MMMM yyyy")}
+                  </h2>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Select value={rangePreset} onValueChange={(v) => setRangePreset(v as RangePreset)}>
@@ -355,7 +389,7 @@ export default function CompanyHome() {
               </div>
             </div>
             {activeFilterCount > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
+              <div className="relative flex flex-wrap gap-1.5 mb-3">
                 {rangePreset !== "all" && (
                   <Badge variant="secondary" className="rounded-full text-[11px] gap-1">
                     {RANGE_LABELS[rangePreset]}
@@ -391,43 +425,66 @@ export default function CompanyHome() {
               month={month}
               onMonthChange={setMonth}
               modifiers={{ hasEvent: eventDays }}
-              modifiersClassNames={{
-                hasEvent:
-                  "relative after:absolute after:bottom-1.5 after:left-1/2 after:-translate-x-1/2 after:h-1.5 after:w-1.5 after:rounded-full after:bg-primary",
-              }}
               classNames={{
                 months: "flex flex-col w-full",
                 month: "space-y-4 w-full",
-                caption: "flex justify-center pt-1 relative items-center mb-2",
-                caption_label: "text-base font-semibold tracking-tight",
+                caption: "hidden",
+                nav: "hidden",
                 table: "w-full border-collapse",
                 head_row: "grid grid-cols-7 w-full",
-                head_cell: "text-muted-foreground font-medium text-[11px] uppercase tracking-widest h-8 flex items-center justify-center",
-                row: "grid grid-cols-7 w-full mt-1",
-                cell: "aspect-square w-full text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
-                day: "h-full w-full rounded-xl font-medium text-sm hover:bg-muted transition aria-selected:opacity-100",
+                head_cell:
+                  "text-muted-foreground/80 font-semibold text-[11px] uppercase tracking-[0.18em] h-9 flex items-center justify-center",
+                row: "grid grid-cols-7 w-full mt-1.5",
+                cell: "aspect-square w-full text-center p-0.5 relative focus-within:relative focus-within:z-20",
+                day: "h-full w-full rounded-2xl font-medium text-base hover:bg-muted/70 transition-all duration-200 aria-selected:opacity-100",
                 day_selected:
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                day_today: "ring-1 ring-primary/60 text-foreground",
-                day_outside: "text-muted-foreground/40",
+                  "bg-gradient-to-br from-primary to-[hsl(189_55%_58%)] text-primary-foreground shadow-[0_8px_20px_-8px_hsl(189_50%_45%/0.6)] hover:from-primary hover:to-[hsl(189_55%_58%)] hover:text-primary-foreground",
+                day_today:
+                  "ring-2 ring-primary/40 ring-offset-2 ring-offset-card text-foreground font-semibold",
+                day_outside: "text-muted-foreground/30",
               }}
               components={{
                 DayContent: ({ date }) => {
                   const key = format(date, "yyyy-MM-dd");
                   const dayEvents = eventsByDay.get(key);
-                  const label = <span>{date.getDate()}</span>;
-                  if (!dayEvents || dayEvents.length === 0) return label;
+                  const label = <span className="tabular-nums">{date.getDate()}</span>;
+                  if (!dayEvents || dayEvents.length === 0) {
+                    return (
+                      <span className="flex h-full w-full items-center justify-center">
+                        {label}
+                      </span>
+                    );
+                  }
                   // Group by category for the summary line.
                   const byCat = new Map<string, number>();
                   for (const ev of dayEvents) {
                     const c = ev.category || "company_event";
                     byCat.set(c, (byCat.get(c) ?? 0) + 1);
                   }
+                  // Distinct category colors as multi-dots (max 3).
+                  const dotCats = Array.from(byCat.keys()).slice(0, 3);
+                  const extra = dayEvents.length > dotCats.length ? dayEvents.length - dotCats.reduce((a, c) => a + (byCat.get(c) ?? 0), 0) : 0;
                   return (
                     <Tooltip delayDuration={120}>
                       <TooltipTrigger asChild>
-                        <span className="flex h-full w-full items-center justify-center">
+                        <span className="relative flex h-full w-full flex-col items-center justify-center gap-0.5">
                           {label}
+                          <span className="flex items-center gap-[3px] absolute bottom-1.5">
+                            {dotCats.map((c) => (
+                              <span
+                                key={c}
+                                className={cn(
+                                  "size-1.5 rounded-full ring-1 ring-card",
+                                  categoryColor(c),
+                                )}
+                              />
+                            ))}
+                            {extra > 0 && (
+                              <span className="text-[8px] font-semibold text-muted-foreground ml-0.5">
+                                +
+                              </span>
+                            )}
+                          </span>
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-xs p-3">
@@ -477,26 +534,44 @@ export default function CompanyHome() {
                   );
                 },
               }}
-              className={cn("pointer-events-auto w-full")}
+              className={cn("pointer-events-auto w-full relative")}
             />
-          </Card>
+            </Card>
+          </div>
 
-          <Card className="rounded-2xl border-border/70 bg-card p-6 space-y-5">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                {isSameDay(selectedDate, today) ? "Today" : "Selected"}
-              </p>
-              <h3 className="text-lg font-semibold tracking-tight text-foreground mt-1">
-                {format(selectedDate, "EEEE, MMM d")}
-              </h3>
+          <Card className="relative overflow-hidden rounded-[26px] border-border/60 bg-card p-6 md:p-7 space-y-5">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-16 -right-10 h-40 w-40 rounded-full opacity-70 blur-2xl"
+              style={{ background: "radial-gradient(circle, hsl(20 85% 68% / 0.28), transparent 70%)" }}
+            />
+            <div className="relative flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+                  {isSameDay(selectedDate, today) ? "Today" : "Selected day"}
+                </p>
+                <h3 className="mt-1 text-2xl font-semibold tracking-tight text-foreground" style={{ fontFamily: "'Sora', system-ui, sans-serif" }}>
+                  {format(selectedDate, "EEEE")}
+                </h3>
+                <p className="text-sm text-muted-foreground">{format(selectedDate, "MMMM d, yyyy")}</p>
+              </div>
+              <div className="text-center rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 to-[hsl(330_75%_72%/0.15)] px-3 py-2 min-w-[64px]">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-primary/80">
+                  {format(selectedDate, "MMM")}
+                </p>
+                <p className="text-2xl font-bold text-foreground tabular-nums leading-none mt-0.5" style={{ fontFamily: "'Sora', system-ui, sans-serif" }}>
+                  {format(selectedDate, "d")}
+                </p>
+              </div>
             </div>
 
             {selectedDayEvents.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/70 bg-muted/40 p-6 text-center text-sm text-muted-foreground">
-                Nothing scheduled.
+              <div className="relative rounded-2xl border border-dashed border-border/70 bg-muted/40 p-8 text-center text-sm text-muted-foreground">
+                <Sparkles className="mx-auto mb-2 size-5 text-primary/60" />
+                Nothing scheduled — enjoy the calm.
               </div>
             ) : (
-              <ul className="space-y-3">
+              <ul className="relative space-y-2">
                 {selectedDayEvents.map((ev) => (
                   <EventRow key={ev.id} ev={ev} onOpen={setOpenEvent} />
                 ))}
