@@ -232,8 +232,8 @@ export default function CompanyHome() {
         </header>
 
         {/* Calendar hero */}
-        <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <Card className="rounded-2xl border-border/70 bg-card p-4 md:p-6">
+        <section className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+          <Card className="rounded-2xl border-border/70 bg-gradient-to-b from-card to-muted/40 p-5 md:p-8 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <CalendarIcon className="size-4" />
@@ -393,7 +393,23 @@ export default function CompanyHome() {
               modifiers={{ hasEvent: eventDays }}
               modifiersClassNames={{
                 hasEvent:
-                  "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary",
+                  "relative after:absolute after:bottom-1.5 after:left-1/2 after:-translate-x-1/2 after:h-1.5 after:w-1.5 after:rounded-full after:bg-primary",
+              }}
+              classNames={{
+                months: "flex flex-col w-full",
+                month: "space-y-4 w-full",
+                caption: "flex justify-center pt-1 relative items-center mb-2",
+                caption_label: "text-base font-semibold tracking-tight",
+                table: "w-full border-collapse",
+                head_row: "grid grid-cols-7 w-full",
+                head_cell: "text-muted-foreground font-medium text-[11px] uppercase tracking-widest h-8 flex items-center justify-center",
+                row: "grid grid-cols-7 w-full mt-1",
+                cell: "aspect-square w-full text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
+                day: "h-full w-full rounded-xl font-medium text-sm hover:bg-muted transition aria-selected:opacity-100",
+                day_selected:
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                day_today: "ring-1 ring-primary/60 text-foreground",
+                day_outside: "text-muted-foreground/40",
               }}
               components={{
                 DayContent: ({ date }) => {
