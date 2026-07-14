@@ -14,6 +14,7 @@ import { BCBA_MODULES, type BCBAModule } from "@/lib/training/bcbaAcademy";
 import { getIntakeDay, type IntakeDayModule } from "@/lib/training/intakeAcademy";
 import { getRecruitingDay, type RecruitingDayModule } from "@/lib/training/recruitingAcademy";
 import { getAuthorizationsDay, type AuthorizationsDayModule } from "@/lib/training/authorizationsAcademy";
+import { getSchedulingDay, type SchedulingDayModule } from "@/lib/training/schedulingAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime, persistRuntimeElapsed,
   type RuntimeContext,
@@ -50,6 +51,7 @@ export default function TrainingModuleRuntime() {
     if (parsed.kind === "intake") return resolveIntake(parsed.sourceModuleId);
     if (parsed.kind === "recruiting") return resolveRecruiting(parsed.sourceModuleId);
     if (parsed.kind === "authorizations") return resolveAuthorizations(parsed.sourceModuleId);
+    if (parsed.kind === "scheduling") return resolveScheduling(parsed.sourceModuleId);
     return null;
   }, [parsed.kind, parsed.sourceModuleId]);
 
