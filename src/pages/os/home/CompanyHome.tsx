@@ -566,9 +566,24 @@ export default function CompanyHome() {
             </div>
 
             {selectedDayEvents.length === 0 ? (
-              <div className="relative rounded-2xl border border-dashed border-border/70 bg-muted/40 p-8 text-center text-sm text-muted-foreground">
-                <Sparkles className="mx-auto mb-2 size-5 text-primary/60" />
-                Nothing scheduled — enjoy the calm.
+              <div className="relative rounded-2xl border border-dashed border-border/70 bg-muted/40 p-8 text-center">
+                <div className="mx-auto mb-3 inline-flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-[hsl(330_75%_72%/0.2)]">
+                  <Sparkles className="size-5 text-primary" />
+                </div>
+                <p className="text-sm font-medium text-foreground">Nothing scheduled</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Enjoy the calm — or get a head start on what's next.
+                </p>
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  <Button asChild size="sm" variant="outline" className="rounded-full h-8 text-xs">
+                    <Link to="/tasks">Open my tasks</Link>
+                  </Button>
+                  {canManage && (
+                    <Button asChild size="sm" className="rounded-full h-8 text-xs">
+                      <Link to="/home/manage">Add event</Link>
+                    </Button>
+                  )}
+                </div>
               </div>
             ) : (
               <ul className="relative space-y-2">
@@ -578,7 +593,7 @@ export default function CompanyHome() {
               </ul>
             )}
 
-            {upNext.length > 0 && (
+            {upNext.length > 0 ? (
               <div className="pt-4 border-t border-border/60">
                 <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">
                   Up next
@@ -618,6 +633,41 @@ export default function CompanyHome() {
                   ))}
                 </ul>
               </div>
+            ) : (
+              !loading && (
+                <div className="pt-4 border-t border-border/60">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">
+                    Up next
+                  </p>
+                  <div className="rounded-2xl bg-gradient-to-br from-primary/[0.06] to-[hsl(330_75%_72%/0.08)] border border-border/60 p-5 text-center">
+                    <div className="mx-auto mb-2 inline-flex size-9 items-center justify-center rounded-full bg-card shadow-sm">
+                      <CalendarIcon className="size-4 text-primary" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground">
+                      You're all caught up
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      No upcoming company events on the calendar.
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                      {canManage ? (
+                        <Button asChild size="sm" className="rounded-full h-8 text-xs">
+                          <Link to="/home/manage">Add company event</Link>
+                        </Button>
+                      ) : (
+                        <>
+                          <Button asChild size="sm" variant="outline" className="rounded-full h-8 text-xs">
+                            <Link to="/tasks">Open my tasks</Link>
+                          </Button>
+                          <Button asChild size="sm" variant="ghost" className="rounded-full h-8 text-xs">
+                            <Link to="/goals">View my goals</Link>
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
             )}
 
             {loading && events.length === 0 && <SkeletonList />}
