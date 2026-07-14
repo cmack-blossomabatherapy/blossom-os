@@ -26,6 +26,7 @@ import { QA_DAYS, QA_WEEKS, type QaDayModule } from "@/lib/training/qaAcademy";
 import { CASE_MANAGER_DAYS, CASE_MANAGER_WEEKS, type CaseManagerDayModule } from "@/lib/training/caseManagerAcademy";
 import { BEHAVIORAL_SUPPORT_DAYS, BEHAVIORAL_SUPPORT_WEEKS, type BehavioralSupportDayModule } from "@/lib/training/behavioralSupportAcademy";
 import { ASSISTANT_STATE_DIRECTOR_DAYS, ASSISTANT_STATE_DIRECTOR_WEEKS, type AssistantStateDirectorDayModule } from "@/lib/training/assistantStateDirectorAcademy";
+import { STATE_DIRECTOR_DAYS, STATE_DIRECTOR_WEEKS, type StateDirectorDayModule } from "@/lib/training/stateDirectorAcademy";
 
 export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing" | "hr" | "credentialing" | "qa" | "case-manager" | "behavioral-support" | "assistant-state-director" | "state-director";
 
@@ -849,5 +850,6 @@ export function parseAcademyModuleId(id: string): {
   if (id.startsWith("case-manager::")) return { kind: "case-manager", sourceModuleId: id.slice("case-manager::".length) };
   if (id.startsWith("behavioral-support::")) return { kind: "behavioral-support", sourceModuleId: id.slice("behavioral-support::".length) };
   if (id.startsWith("assistant-state-director::")) return { kind: "assistant-state-director", sourceModuleId: id.slice("assistant-state-director::".length) };
+  if (id.startsWith("state-director::")) return { kind: "state-director", sourceModuleId: id.slice("state-director::".length) };
   return { kind: "academyData", sourceModuleId: id };
 }
