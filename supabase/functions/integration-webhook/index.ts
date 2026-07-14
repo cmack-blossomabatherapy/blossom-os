@@ -135,6 +135,21 @@ Deno.serve(async (req) => {
     .single();
 
   if (error) {
+    // Duplicate delivery — providers legitimately retry the same event id.
+    // Return 200 with the existing row so they stop retrying instead of
+    // hammering us with 500s.
+    if ((error as { code?: string }).code === "23505" && providerEventId) {
+      const { data: existing } = await supabase
+        .from("integration_webhook_events")
+        .select("id")
+        .eq("integration_id", integrationId)
+        .eq("provider_event_id", providerEventId)
+        .maybeSingle();
+      return json(
+        { ok: true, id: existing?.id ?? null, duplicate: true, verification },
+        200,
+      );
+    }
     console.error("[integration-webhook] insert failed", error);
     return json({ ok: false, error: error.message }, 500);
   }
