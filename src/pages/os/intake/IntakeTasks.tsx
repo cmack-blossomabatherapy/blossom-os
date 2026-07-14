@@ -87,7 +87,17 @@ function getBlockReason(row: TaskRow): string | null {
   return null;
 }
 
-export default function IntakeTasks() {
+interface IntakeTasksProps {
+  /**
+   * `intake` (default) renders the Growth & Admissions workspace variant with
+   * lead-scoped filters and the "Add Lead" action. `universal` renders the
+   * generic Tasks page used at `/tasks` for every role.
+   */
+  variant?: "intake" | "universal";
+}
+
+export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {}) {
+  const isUniversal = variant === "universal";
   const { leads: allLeads } = useLeads();
   const { matches } = useIntakeStateFilter();
   const { tasks, loading, complete, snooze, reassign, markStarted } = useIntakeTasksLive();
@@ -192,14 +202,22 @@ export default function IntakeTasks() {
 
   return (
     <GrowthPageShell
-      eyebrow="Growth & Admissions"
+      eyebrow={isUniversal ? "Work" : "Growth & Admissions"}
       title="Tasks"
-      description="Your task list — follow-ups, actions, and reminders across every role."
-      headerRight={<IntakeStateFilterToggle />}
-      actions={[
-        { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
-        { label: "Open Leads", icon: List, to: "/leads" },
-      ]}
+      description={
+        isUniversal
+          ? "Your task list — follow-ups, actions, and reminders."
+          : "Your task list — follow-ups, actions, and reminders across every role."
+      }
+      headerRight={isUniversal ? undefined : <IntakeStateFilterToggle />}
+      actions={
+        isUniversal
+          ? [{ label: "Open Leads", icon: List, to: "/leads" }]
+          : [
+              { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
+              { label: "Open Leads", icon: List, to: "/leads" },
+            ]
+      }
     >
       <section>
         <IntakeSectionHeader icon={ListTodo} tone="indigo" title="Task Pulse" subtitle="Tap a tile to filter the lists below." />
