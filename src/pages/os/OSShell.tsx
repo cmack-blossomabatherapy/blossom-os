@@ -135,6 +135,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/intake/parent-communication",
     "/intake/tasks",
     "/intake/benefits-cheat-sheets",
+    "/intake/cr-packet-prep",
     "/phone/ai-calls",
     "/leads",
     "/ai/assistant",
