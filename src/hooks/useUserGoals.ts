@@ -28,6 +28,8 @@ export interface UserGoal {
   target_date: string | null;
   priority: "low" | "medium" | "high";
   status: UserGoalStatus;
+  goal_type: GoalType;
+  quarter: string | null;
   approval_notes: string | null;
   approved_by_id: string | null;
   approved_at: string | null;
@@ -72,6 +74,18 @@ const LEADERSHIP_ROLES = new Set([
   "operations_leadership",
 ]);
 
+// Strict leadership = who can assign top-level quarterly goals AND approve
+// milestones. Excludes operations_leadership + admin per product decision.
+const STRICT_LEADERSHIP_ROLES = new Set([
+  "super_admin",
+  "ceo",
+  "coo",
+  "director_of_operations",
+  "exec",
+  "executive",
+  "executive_leadership",
+]);
+
 export function useIsLeadership(): boolean {
   const { roles, isAdmin } = useAuth();
   return useMemo(
@@ -80,12 +94,44 @@ export function useIsLeadership(): boolean {
   );
 }
 
+export function useIsStrictLeadership(): boolean {
+  const { roles, isAdmin } = useAuth();
+  return useMemo(
+    () => isAdmin || (roles ?? []).some((r) => STRICT_LEADERSHIP_ROLES.has(r as string)),
+    [roles, isAdmin],
+  );
+}
+
+/** True if the current user is flagged as a people manager on the employees table. */
+export function useIsPeopleManager(): boolean {
+  const { user } = useAuth();
+  const q = useQuery({
+    queryKey: ["is_people_manager", user?.id ?? null],
+    enabled: !!user?.id,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("is_people_manager", true)
+        .maybeSingle();
+      return !!data;
+    },
+  });
+  return q.data ?? false;
+}
+
 export type GoalScope = "mine" | "assigned_by_me" | "approval_queue" | "all";
+export type GoalType = "assigned" | "personal" | "team";
 
 export function useUserGoals(scope: GoalScope = "mine") {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const isLeadership = useIsLeadership();
+  const isStrictLeadership = useIsStrictLeadership();
+  const isPeopleManager = useIsPeopleManager();
   const qc = useQueryClient();
 
   const query = useQuery({
@@ -129,9 +175,17 @@ export function useUserGoals(scope: GoalScope = "mine") {
       category?: string;
       target_date?: string | null;
       priority?: "low" | "medium" | "high";
+      goal_type?: GoalType;
+      quarter?: string | null;
     }) => {
       if (!userId) throw new Error("Not authenticated");
-      if (!isLeadership) throw new Error("Leadership only");
+      const goal_type: GoalType = input.goal_type ?? "assigned";
+      if (goal_type === "assigned" && !isStrictLeadership) {
+        throw new Error("Only Executive, CEO, COO, DOO, or Super Admin can create quarterly goals.");
+      }
+      if (goal_type === "team" && !isPeopleManager) {
+        throw new Error("Only people managers can create team goals.");
+      }
       const { data, error } = await supabase
         .from("user_goals")
         .insert({
@@ -143,11 +197,55 @@ export function useUserGoals(scope: GoalScope = "mine") {
           target_date: input.target_date ?? null,
           priority: input.priority ?? "medium",
           status: "draft_milestones",
+          goal_type,
+          quarter: input.quarter ?? null,
         })
         .select("*")
         .single();
       if (error) throw error;
-      await logActivity(data.id, "assigned", `Goal assigned by leadership`);
+      await logActivity(
+        data.id,
+        "assigned",
+        goal_type === "team"
+          ? "Team goal created by manager"
+          : goal_type === "assigned"
+          ? "Quarterly goal created by leadership"
+          : "Personal goal created",
+      );
+      return data as UserGoal;
+    },
+    onSuccess: invalidate,
+  });
+
+  /** Self-serve personal goal. Anyone can create one for themselves. */
+  const createPersonalGoal = useMutation({
+    mutationFn: async (input: {
+      title: string;
+      description?: string;
+      category?: string;
+      target_date?: string | null;
+      priority?: "low" | "medium" | "high";
+      quarter?: string | null;
+    }) => {
+      if (!userId) throw new Error("Not authenticated");
+      const { data, error } = await supabase
+        .from("user_goals")
+        .insert({
+          owner_id: userId,
+          assigned_by_id: userId,
+          title: input.title,
+          description: input.description ?? null,
+          category: input.category ?? null,
+          target_date: input.target_date ?? null,
+          priority: input.priority ?? "medium",
+          status: "active", // personal goals skip approval
+          goal_type: "personal",
+          quarter: input.quarter ?? null,
+        })
+        .select("*")
+        .single();
+      if (error) throw error;
+      await logActivity(data.id, "personal_created", "Personal goal created");
       return data as UserGoal;
     },
     onSuccess: invalidate,
@@ -217,7 +315,10 @@ export function useUserGoals(scope: GoalScope = "mine") {
     goals: query.data ?? [],
     loading: query.isLoading,
     isLeadership,
+    isStrictLeadership,
+    isPeopleManager,
     assignGoal,
+    createPersonalGoal,
     submitForApproval,
     approveGoal,
     requestChanges,

@@ -54,6 +54,7 @@ export function EmployeeInfoEditor({ employee, departments, canEditEmployee, can
       kiosk_pin: form.kiosk_pin.trim() || null,
       kiosk_enabled: form.kiosk_enabled,
       resource_hub_access: form.resource_hub_access,
+      is_people_manager: form.is_people_manager,
       notes: form.notes.trim() || null,
     }).eq("id", employee.id);
     setSaving(false);
@@ -108,6 +109,7 @@ export function EmployeeInfoEditor({ employee, departments, canEditEmployee, can
               <Field label="Kiosk PIN"><Input value={form.kiosk_pin} onChange={(e) => setForm({ ...form, kiosk_pin: e.target.value })} /></Field>
               <Toggle label="Kiosk enabled" checked={form.kiosk_enabled} onCheckedChange={(kiosk_enabled) => setForm({ ...form, kiosk_enabled })} />
               <Toggle label="Resource Hub access" checked={form.resource_hub_access} onCheckedChange={(resource_hub_access) => setForm({ ...form, resource_hub_access })} />
+              <Toggle label="People manager (can assign team goals)" checked={form.is_people_manager} onCheckedChange={(is_people_manager) => setForm({ ...form, is_people_manager })} />
             </Section>
           </div>
           <Field label="HR notes"><Textarea rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></Field>
@@ -137,6 +139,7 @@ function toForm(employee: Employee) {
     start_date: employee.start_date ?? "", termination_date: employee.termination_date ?? "", next_review_date: employee.next_review_date ?? "",
     last_review_date: employee.last_review_date ?? "", pay_rate: employee.pay_rate?.toString() ?? "", viventium_employee_id: employee.viventium_employee_id ?? "",
     kiosk_pin: employee.kiosk_pin ?? "", kiosk_enabled: employee.kiosk_enabled, resource_hub_access: employee.resource_hub_access, notes: employee.notes ?? "",
+    is_people_manager: employee.is_people_manager ?? false,
   };
 }
 

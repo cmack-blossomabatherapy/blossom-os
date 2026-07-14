@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Target, ArrowRight, CheckCircle2, Clock } from "lucide-react";
+import { Target, ArrowRight, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +63,7 @@ function GoalRow({ goal }: { goal: UserGoal }) {
 }
 
 export function MyGoalsCard() {
-  const { goals, loading, isLeadership } = useUserGoals("mine");
+  const { goals, loading } = useUserGoals("mine");
 
   const activeGoals = goals.filter((g) => g.status !== "archived" && g.status !== "completed").slice(0, 4);
   const needsAttention = goals.filter(
@@ -71,7 +71,15 @@ export function MyGoalsCard() {
   ).length;
 
   return (
-    <Card className="rounded-2xl border-border/70 bg-card p-6 space-y-4">
+    <Card className="relative overflow-hidden rounded-2xl border-border/70 bg-card p-6 space-y-4">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-70 blur-2xl"
+        style={{
+          background:
+            "radial-gradient(120% 100% at 0% 0%, hsl(var(--primary)/0.16), transparent 60%), radial-gradient(120% 100% at 100% 0%, hsl(280 85% 70% / 0.14), transparent 55%)",
+        }}
+      />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Target className="size-4 text-muted-foreground" />
@@ -97,13 +105,13 @@ export function MyGoalsCard() {
         <div className="rounded-xl border border-dashed border-border/70 bg-muted/40 p-6 text-center">
           <Target className="mx-auto mb-2 size-5 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            {isLeadership ? "No goals yet — assign your first goal." : "No goals yet. Leadership will assign your first goal."}
+            No goals yet. Add a personal goal or wait for leadership to hand one down.
           </p>
-          {isLeadership && (
-            <Button asChild variant="outline" size="sm" className="mt-3 rounded-full">
-              <Link to="/goals?tab=assign">Assign goal</Link>
-            </Button>
-          )}
+          <Button asChild variant="outline" size="sm" className="mt-3 rounded-full">
+            <Link to="/goals">
+              <Plus className="size-3.5" /> Open Goals
+            </Link>
+          </Button>
         </div>
       ) : (
         <div className="space-y-2">

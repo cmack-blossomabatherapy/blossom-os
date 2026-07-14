@@ -7688,6 +7688,7 @@ export type Database = {
           help_with: string[]
           hire_date: string | null
           id: string
+          is_people_manager: boolean
           job_title: string
           kiosk_enabled: boolean
           kiosk_pin: string | null
@@ -7754,6 +7755,7 @@ export type Database = {
           help_with?: string[]
           hire_date?: string | null
           id?: string
+          is_people_manager?: boolean
           job_title: string
           kiosk_enabled?: boolean
           kiosk_pin?: string | null
@@ -7820,6 +7822,7 @@ export type Database = {
           help_with?: string[]
           hire_date?: string | null
           id?: string
+          is_people_manager?: boolean
           job_title?: string
           kiosk_enabled?: boolean
           kiosk_pin?: string | null
@@ -20574,9 +20577,11 @@ export type Database = {
           completed_at: string | null
           created_at: string
           description: string | null
+          goal_type: string
           id: string
           owner_id: string
           priority: Database["public"]["Enums"]["user_task_priority"]
+          quarter: string | null
           status: Database["public"]["Enums"]["user_goal_status"]
           submitted_at: string | null
           target_date: string | null
@@ -20592,9 +20597,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          goal_type?: string
           id?: string
           owner_id: string
           priority?: Database["public"]["Enums"]["user_task_priority"]
+          quarter?: string | null
           status?: Database["public"]["Enums"]["user_goal_status"]
           submitted_at?: string | null
           target_date?: string | null
@@ -20610,9 +20617,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          goal_type?: string
           id?: string
           owner_id?: string
           priority?: Database["public"]["Enums"]["user_task_priority"]
+          quarter?: string | null
           status?: Database["public"]["Enums"]["user_goal_status"]
           submitted_at?: string | null
           target_date?: string | null
@@ -21425,7 +21434,9 @@ export type Database = {
       is_hr_operator: { Args: { _user_id: string }; Returns: boolean }
       is_leadership: { Args: { _user_id: string }; Returns: boolean }
       is_marketing_user: { Args: { _uid: string }; Returns: boolean }
+      is_people_manager: { Args: { _user_id: string }; Returns: boolean }
       is_platform_admin: { Args: { _uid: string }; Returns: boolean }
+      is_strict_leadership: { Args: { _user_id: string }; Returns: boolean }
       is_vault_admin: { Args: { _user_id: string }; Returns: boolean }
       kpi_can_manage: { Args: { _user_id: string }; Returns: boolean }
       kpi_can_read: { Args: { _user_id: string }; Returns: boolean }
@@ -21451,6 +21462,10 @@ export type Database = {
         Returns: undefined
       }
       log_sign_in: { Args: never; Returns: undefined }
+      manages_employee: {
+        Args: { _employee: string; _manager: string }
+        Returns: boolean
+      }
       match_knowledge_chunks: {
         Args: {
           match_count?: number
