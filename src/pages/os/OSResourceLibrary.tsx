@@ -480,7 +480,7 @@ export default function OSResourceLibrary() {
             )}
 
             {/* ROLE RESOURCES */}
-            {!query && !activeCategory && !activeCollection && (
+            {!isIntakeView && !query && !activeCategory && !activeCollection && (
               <section>
                 <SectionHeader
                   title={`Resources for ${roleLabelText}s`}
@@ -501,7 +501,7 @@ export default function OSResourceLibrary() {
             )}
 
             {/* CATEGORIES */}
-            {!query && !activeCollection && (
+            {!isIntakeView && !query && !activeCollection && (
               <section>
                 <SectionHeader title="Browse by category" subtitle="Organized operational knowledge" icon={BookOpen} />
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
