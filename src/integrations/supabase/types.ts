@@ -21396,6 +21396,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      hr_canonicalize_role: { Args: { _r: string }; Returns: string }
       hr_normalize_role: { Args: { _r: string }; Returns: string }
       hr_resource_visible: {
         Args: {
