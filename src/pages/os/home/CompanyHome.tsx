@@ -682,7 +682,7 @@ export default function CompanyHome() {
             </Card>
           </div>
 
-          <Card className="relative overflow-hidden rounded-[26px] border-border/60 bg-card p-6 md:p-7 space-y-5">
+          <Card className="relative overflow-hidden rounded-[26px] border-border/60 bg-card p-5 sm:p-6 md:p-7 space-y-5 min-w-0">
             <div
               aria-hidden
               className="pointer-events-none absolute -top-16 -right-10 h-40 w-40 rounded-full opacity-70 blur-2xl"
