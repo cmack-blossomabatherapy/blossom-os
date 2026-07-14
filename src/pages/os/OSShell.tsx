@@ -758,7 +758,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     role === "state_director" || role === "assistant_state_director" || role === "state_va" || role === "regional_state_director";
   const trainingPath = isStateTrainingRole ? "/training" : "/academy";
   const bottomNav: NavEntry[] = [
-    { to: homeForRole, label: "Home", icon: LayoutDashboard, end: true },
+    { to: "/home", label: "Home", icon: Home, end: true },
     { to: "/ai/assistant", label: "Blossom AI", icon: Sparkles },
     { to: trainingPath, label: "Training", icon: GraduationCap },
     { to: "/resource-library", label: "Resources", icon: BookOpen },
@@ -870,7 +870,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               <nav className="flex-1 overflow-y-auto px-3 py-3">
                 <div className="space-y-3">
                   <div className="space-y-0.5">
-                    {renderNavItem({ to: "/home", label: "Home", icon: Home, end: true }, () => { setMobileOpen(false); setMobileSearch(""); })}
+                    {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true }, () => { setMobileOpen(false); setMobileSearch(""); })}
                     {renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles }, () => { setMobileOpen(false); setMobileSearch(""); })}
                   </div>
                   {mobileSections.map((section) => (
@@ -924,7 +924,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           <nav className={cn("os-sidebar-scroll flex-1 overflow-y-auto px-3 pb-3", collapsed ? "pt-4" : "pt-2")}>
             {collapsed ? (
               <div className="flex flex-col items-center gap-1.5">
-                {renderNavItem({ to: "/home", label: "Home", icon: Home, end: true })}
+                {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
                 {renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
                 <div className="my-2 h-px w-8 bg-foreground/[0.08]" />
                 {allItems.map((item) => renderNavItem(item))}
@@ -932,7 +932,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             ) : (
               <div className="space-y-2">
                 <div className="mb-2 space-y-0.5">
-                  {renderNavItem({ to: "/home", label: "Home", icon: Home, end: true })}
+                  {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
                   {renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
                 </div>
                 {sections.map((section) => (
