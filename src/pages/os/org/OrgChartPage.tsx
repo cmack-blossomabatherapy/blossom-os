@@ -554,7 +554,7 @@ function PersonSheet({
 
 export default function OrgChartPage() {
   return (
-    <div className="mx-auto w-full max-w-7xl px-6 py-6 md:px-10">
+    <div className="mx-auto w-full max-w-6xl px-6 py-6 md:px-10">
       <ReactFlowProvider>
         <InnerOrgChart />
       </ReactFlowProvider>

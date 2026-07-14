@@ -240,7 +240,7 @@ export default function OnboardingHowItWorks() {
   }, [search]);
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-12 pb-20 animate-fade-in">
+    <div className="mx-auto w-full max-w-6xl space-y-12 pb-20 animate-fade-in">
       {/* HERO — cinematic */}
       <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow,var(--primary)))_55%,hsl(var(--accent))_120%)] p-8 text-primary-foreground shadow-2xl sm:p-14">
         {/* Animated glow blobs */}

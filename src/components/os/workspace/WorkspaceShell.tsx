@@ -137,7 +137,7 @@ export function WorkspaceShell({ config }: { config: WorkspaceConfig }) {
     <div className="min-h-screen bg-background">
       {/* ---------- Header ---------- */}
       <header className="border-b border-border/60 bg-background/80 px-6 py-5 backdrop-blur md:px-8">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-4">
+        <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{config.title}</h1>
@@ -190,7 +190,7 @@ export function WorkspaceShell({ config }: { config: WorkspaceConfig }) {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1600px] px-6 py-6 md:px-8">
+      <div className="mx-auto max-w-[1400px] px-6 py-6 md:px-8">
         {/* ---------- KPI row ---------- */}
         <section
           aria-label="Key metrics"
