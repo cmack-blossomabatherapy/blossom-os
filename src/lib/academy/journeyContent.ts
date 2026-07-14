@@ -545,5 +545,6 @@ export function parseAcademyModuleId(id: string): {
   if (id.startsWith("recruiting::")) return { kind: "recruiting", sourceModuleId: id.slice("recruiting::".length) };
   if (id.startsWith("authorizations::")) return { kind: "authorizations", sourceModuleId: id.slice("authorizations::".length) };
   if (id.startsWith("scheduling::")) return { kind: "scheduling", sourceModuleId: id.slice("scheduling::".length) };
+  if (id.startsWith("staffing::")) return { kind: "staffing", sourceModuleId: id.slice("staffing::".length) };
   return { kind: "academyData", sourceModuleId: id };
 }
