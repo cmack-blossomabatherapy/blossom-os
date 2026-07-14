@@ -33,12 +33,12 @@ export default function ResourceLibraryDepartment() {
                   "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] transition",
                   d.id === active
                     ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border/60 bg-white/70 text-foreground hover:bg-muted",
+                    : "border-border/60 bg-card/70 text-foreground hover:bg-muted",
                 )}
               >
                 {d.name}
                 <span className={cn("rounded-full px-1.5 py-0 text-[10.5px]",
-                  d.id === active ? "bg-white/20 text-white" : "bg-muted text-muted-foreground")}>{count}</span>
+                  d.id === active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground")}>{count}</span>
               </button>
             );
           })}
