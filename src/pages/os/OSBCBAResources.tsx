@@ -284,7 +284,7 @@ export default function OSBCBAResources() {
 
   return (
     <OSShell>
-      <div className="max-w-7xl mx-auto px-6 md:px-10 py-10 space-y-10">
+      <div className="mx-auto w-full max-w-6xl px-6 md:px-10 py-10 space-y-10">
         {/* Header */}
         <header className="space-y-3">
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
