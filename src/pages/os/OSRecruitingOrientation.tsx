@@ -283,7 +283,7 @@ export default function OSRecruitingOrientation() {
 
   return (
     <OSShell>
-      <div className="px-6 md:px-10 py-8 max-w-6xl mx-auto space-y-8">
+      <div className="px-6 md:px-10 py-8 max-w-[1600px] mx-auto space-y-8">
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>

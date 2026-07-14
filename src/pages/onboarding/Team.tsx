@@ -137,7 +137,7 @@ export default function OnboardingTeam() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 pb-16 animate-fade-in">
+    <div className="mx-auto w-full max-w-7xl space-y-8 pb-16 animate-fade-in">
       <JourneyHero
         eyebrow="Team Directory"
         title="The humans behind Blossom"

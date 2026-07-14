@@ -33,7 +33,7 @@ export default function BehavioralSupportEscalations() {
 
   return (
     <OSShell>
-      <div className="space-y-6 p-6 mx-auto w-full max-w-6xl">
+      <div className="space-y-6 p-6 max-w-7xl mx-auto">
         <header className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">

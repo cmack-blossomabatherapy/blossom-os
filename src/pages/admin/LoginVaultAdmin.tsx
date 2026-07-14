@@ -221,7 +221,7 @@ export default function LoginVaultAdmin() {
   }, [employees, coverageByEmployee]);
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 pb-12">
+    <div className="mx-auto w-full max-w-7xl space-y-5 pb-12">
       {/* HERO */}
       <section className="os-glass-panel relative overflow-hidden p-6 sm:p-8">
         <div className="absolute inset-0 -z-10 opacity-60"

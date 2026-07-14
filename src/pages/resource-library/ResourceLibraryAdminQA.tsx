@@ -96,7 +96,7 @@ export default function ResourceLibraryAdminQA() {
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-6xl space-y-6 px-6 py-10 md:px-10">
+      <div className="mx-auto max-w-7xl space-y-6 p-6">
         <header className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Resource Library</p>

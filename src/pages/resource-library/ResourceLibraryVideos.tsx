@@ -46,7 +46,7 @@ export default function ResourceLibraryVideos() {
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-6xl space-y-6 px-6 py-10 md:px-10">
+      <div className="mx-auto max-w-7xl space-y-6 p-6">
         <header className="rounded-3xl border border-border/60 bg-card/70 p-6 shadow-sm">
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Resource Library</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">Video walkthroughs</h1>

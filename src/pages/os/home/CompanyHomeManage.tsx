@@ -48,7 +48,7 @@ export default function CompanyHomeManage() {
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-6xl px-6 md:px-10 py-10 space-y-10">
+      <div className="mx-auto max-w-5xl px-6 md:px-10 py-8 md:py-12 space-y-10">
         <header className="flex items-center justify-between gap-4">
           <div>
             <Link

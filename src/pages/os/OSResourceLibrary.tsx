@@ -194,7 +194,7 @@ export default function OSResourceLibrary() {
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-6xl space-y-8 px-6 py-10 md:px-10">
+      <div className="mx-auto max-w-[1400px] space-y-8 px-1">
         <LibraryTabs />
         {/* HERO */}
         <header className="rounded-3xl border border-border/60 bg-gradient-to-br from-[hsl(265_70%_98%)] via-white to-[hsl(215_85%_98%)] p-8 shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_12px_36px_-16px_hsl(220_15%_30%/0.08)]">

@@ -146,7 +146,7 @@ export default function OSQAReviewBoard() {
 
   return (
     <OSShell>
-      <div className="mx-auto max-w-[1400px] px-6 md:px-10 py-8 space-y-6">
+      <div className="mx-auto max-w-[1600px] px-6 md:px-10 py-8 space-y-6">
         <header className="space-y-4">
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div>
