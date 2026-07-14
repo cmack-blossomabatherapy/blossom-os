@@ -15,7 +15,7 @@ describe("Client / Authorization / Task deep-links resolve to the correct drawer
   const app = read("src/App.tsx");
   const clientsPage = read("src/pages/os/OSClientsOperations.tsx");
   const authsPage = read("src/pages/os/OSAuthorizations.tsx");
-  const tasksPage = read("src/pages/Tasks.tsx");
+  const tasksPage = read("src/pages/tasks/TasksPage.tsx");
   const linker = read("src/components/escalation/EscalationLinkPicker.tsx");
   const deepLink = read("src/lib/deepLink.ts");
 
@@ -63,16 +63,20 @@ describe("Client / Authorization / Task deep-links resolve to the correct drawer
 
   describe("Tasks", () => {
     it("registers /tasks as a real route", () => {
-      expect(app).toMatch(/path="\/tasks"\s+element=\{<Tasks\s*\/>\}/);
+      // /tasks is mounted inside the OS shell and renders the universal
+      // TasksPage wrapper so every role (with a valid session) can reach it
+      // from the pinned bottom-nav "Tasks" entry.
+      expect(app).toMatch(/path="\/tasks"\s+element=\{<OSShellPage><TasksPage\s*\/><\/OSShellPage>\}/);
     });
 
     it("deepLink schema exposes a `task` param", () => {
       expect(deepLink).toMatch(/task\?:\s*string/);
     });
 
-    it("Tasks page reads deepLink.task to preselect and mounts <TaskDetailPanel task={selectedTask}", () => {
-      expect(tasksPage).toMatch(/deepLink\.task\s*\?\?\s*deepLink\.focus/);
-      expect(tasksPage).toMatch(/<TaskDetailPanel\s+task=\{selectedTask\}/);
+    it("universal TasksPage renders the shared IntakeTasks list in universal mode", () => {
+      // Every role hits the same list surface — no intake-only "Add Lead"
+      // framing, no lead-only header.
+      expect(tasksPage).toMatch(/IntakeTasks\s+variant="universal"/);
     });
   });
 
