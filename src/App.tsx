@@ -48,6 +48,7 @@ import GoogleAds from "./pages/os/growth/GoogleAds";
 import PatientLifetimeJourney from "./pages/os/growth/PatientLifetimeJourney";
 import IntakeWorkspaceLanding from "./pages/os/intake/IntakeDashboard";
 import IntakeTasks from "./pages/os/intake/IntakeTasks";
+import TasksPage from "./pages/tasks/TasksPage";
 import LeadBenefitsCheatSheets from "./pages/os/intake/LeadBenefitsCheatSheets";
 import MissingInformation from "./pages/os/intake/MissingInformation";
 import CentralReachPacketPrep from "./pages/os/intake/CentralReachPacketPrep";
@@ -1154,7 +1155,7 @@ const App = () => (
                   <Route path="/qa" element={<Navigate to="/qa-team" replace />} />
                   <Route path="/qa/:id" element={<QADetail />} />
                   <Route path="/documents" element={<Documents />} />
-                  <Route path="/tasks" element={<IntakeTasks />} />
+                  <Route path="/tasks" element={<OSShellPage><TasksPage /></OSShellPage>} />
                   <Route path="/automations" element={<PermissionRoute permission="automations.view" allowedRoles={AUTOMATIONS_ROLES}><Automations /></PermissionRoute>} />
                   <Route path="/training/academy" element={<AcademyHome />} />
                   <Route path="/training/academy/week/:weekId" element={<AcademyWeekDetail />} />
