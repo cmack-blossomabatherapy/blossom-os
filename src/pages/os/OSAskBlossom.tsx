@@ -257,6 +257,22 @@ export default function OSAskBlossom() {
     if (!text || streaming) return;
     setInput("");
 
+    // Fold attachments into the prompt sent to the model.
+    let composed = text;
+    if (attachments.length) {
+      const parts: string[] = [];
+      for (const a of attachments) {
+        if (a.kind === "text" && a.text) {
+          parts.push(`\n\n--- Attached: ${a.name} (${Math.round(a.size / 1024)} KB) ---\n${a.text}`);
+        } else {
+          parts.push(`\n\n[attached ${a.name}, ${Math.round(a.size / 1024)} KB — binary; content not indexed yet]`);
+        }
+      }
+      composed = text + parts.join("");
+    }
+    const attachedForDisplay = attachments;
+    setAttachments([]);
+
     let convId = activeId;
     if (!convId) {
       const c: AiConversation = {
@@ -279,7 +295,7 @@ export default function OSAskBlossom() {
 
     try {
       const serverConvId = serverConvIds[convId];
-      const stream = streamAskBlossom(text, role, activeState, serverConvId);
+      const stream = streamAskBlossom(composed, role, activeState, serverConvId);
       let acc = "";
       let result: (AskBlossomResponse & { conversationId?: string }) | undefined;
       while (true) {
@@ -309,6 +325,8 @@ export default function OSAskBlossom() {
     } catch (e) {
       patchLastAssistant(convId, { content: "_Sorry — something went wrong._" });
       toast.error(e instanceof Error ? e.message : "AI error");
+      // Restore attachments so the user can retry without re-picking files.
+      if (attachedForDisplay.length) setAttachments(attachedForDisplay);
     } finally {
       setStreaming(false);
     }
