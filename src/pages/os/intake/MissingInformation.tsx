@@ -4,6 +4,7 @@ import {
   AlertCircle, ArrowRight, List, Plus, FileWarning, Phone as PhoneIcon,
   ShieldQuestion, FileSearch, Clock, Hourglass,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import {
   IntakeSectionHeader, IntakePulseStrip, INTAKE_TONE, type PulseTileSpec,
@@ -129,6 +130,12 @@ export default function MissingInformation() {
                   })()}
                   <div className="mt-3">
                     <LeadActionsButton lead={lead} sourcePage="missing-information" />
+                    <Link
+                      to={`/leads?view=pipeline&lead=${encodeURIComponent(lead.id)}`}
+                      className="ml-2 inline-flex items-center gap-1 text-xs text-primary hover:underline underline-offset-2"
+                    >
+                      Open in Pipeline <ArrowRight className="h-3 w-3" />
+                    </Link>
                   </div>
                 </div>
               );
