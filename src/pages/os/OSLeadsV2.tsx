@@ -30,6 +30,8 @@ import {
   isCannotReachStatus,
   isLeadOutOfPipeline,
   hasMissingFormReview,
+  getLeadNextStep,
+  getLeadBlocker,
   type FamilyLeadPipelineStage,
 } from "@/lib/intake/intakeWorkflow";
 
@@ -710,7 +712,7 @@ function ListView({
                   aria-label="Select all on page"
                 />
               </th>
-              {["Patient", "Parent", "State", "Owner", "Status", "Last Contact", "Form", "Insurance", "VOB", "Next Action", ""].map((h) => (
+              {["Patient", "Parent", "State", "Owner", "Stage", "Last Contact", "Form", "Insurance", "VOB", "Next Step", "Blocker", ""].map((h) => (
                 <th key={h} className="text-left font-medium px-3 py-2.5 whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -755,7 +757,34 @@ function ListView({
                 <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{l.formStatus}</td>
                 <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap max-w-[160px] truncate" title={l.primaryInsurance}>{l.primaryInsurance || "—"}</td>
                 <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{l.vobStatus}</td>
-                <td className="px-3 py-2.5 text-muted-foreground max-w-[180px] truncate" title={l.nextAction}>{l.nextAction}</td>
+                {(() => {
+                  const step = getLeadNextStep(l);
+                  const blocker = getLeadBlocker(l);
+                  const tone = blocker
+                    ? blocker.tone === "urgent"
+                      ? "bg-destructive/10 text-destructive border-destructive/20"
+                      : blocker.tone === "risk"
+                        ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
+                        : "bg-muted text-muted-foreground border-border/60"
+                    : "";
+                  return (
+                    <>
+                      <td className="px-3 py-2.5 text-muted-foreground max-w-[200px] truncate" title={step}>{step}</td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        {blocker ? (
+                          <span
+                            className={cn("inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border max-w-[180px] truncate", tone)}
+                            title={blocker.reasons.join(" • ")}
+                          >
+                            {blocker.label}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    </>
+                  );
+                })()}
                 <td className="px-3 py-2.5 text-right opacity-0 group-hover:opacity-100 transition">
                   <RowQuickActions lead={l} />
                 </td>

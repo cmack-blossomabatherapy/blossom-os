@@ -558,3 +558,36 @@ export function getLeadPriority(lead: Lead): LeadPriorityScore {
     weight >= 4 ? "hot" : weight >= 2 ? "warm" : "cold";
   return { level, weight, reasons: risk.reasons };
 }
+
+/* ---------------------- Shared Next Step / Blocker ------------------------ */
+
+/**
+ * Canonical "next step" for a lead. Prefers the explicit `nextAction` field
+ * when set (product/ops overrides), otherwise falls back to the recommended
+ * action derived from workflow stage + missing info. Both the Leads table
+ * and the Lead Detail drawer read this so the pipeline direction stays
+ * consistent end-to-end.
+ */
+export function getLeadNextStep(lead: Lead): string {
+  const explicit = (lead.nextAction ?? "").trim();
+  if (explicit) return explicit;
+  return getRecommendedNextAction(lead);
+}
+
+export interface LeadBlocker {
+  label: string;
+  tone: Exclude<WorkflowRiskLevel, "ok">;
+  reasons: string[];
+}
+
+/**
+ * Canonical "blocker" chip content for a lead — derived from the same
+ * workflow risk model so table rows and the drawer header agree.
+ * Returns `null` when the lead is clear (risk === "ok").
+ */
+export function getLeadBlocker(lead: Lead): LeadBlocker | null {
+  const risk = getLeadWorkflowRisk(lead);
+  if (risk.level === "ok") return null;
+  const label = risk.reasons[0] ?? "Needs attention";
+  return { label, tone: risk.level, reasons: risk.reasons };
+}
