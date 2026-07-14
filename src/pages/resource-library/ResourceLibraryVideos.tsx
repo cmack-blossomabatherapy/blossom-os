@@ -100,7 +100,7 @@ export default function ResourceLibraryVideos() {
                     "flex w-full items-start gap-2 rounded-xl border p-3 text-left transition",
                     selected?.id === v.id
                       ? "border-primary bg-primary/5"
-                      : "border-border/60 bg-white/70 hover:bg-muted",
+                      : "border-border/60 bg-card/70 hover:bg-muted",
                   )}
                 >
                   <PlayCircle className="mt-0.5 h-4 w-4 text-primary" />
