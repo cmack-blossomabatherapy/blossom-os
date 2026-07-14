@@ -15,7 +15,7 @@ export const DEFAULT_ROLE_TO_SLUG: Record<string, string> = {
   clinical_director: "clinical-director",
   clinical_lead: "clinical-director",
   state_director: "state-director",
-  assistant_state_director: "state-director",
+  assistant_state_director: "assistant-state-director",
   intake: "intake",
   intake_coordinator: "intake",
   intake_lead: "intake",

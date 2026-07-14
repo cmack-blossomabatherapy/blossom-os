@@ -587,6 +587,39 @@ function buildBehavioralSupportJourney(slug: string, path: TrainingPath): PathJo
   return journey;
 }
 
+/* ------------------- Assistant State Director source adapter ------------------- */
+
+function synthesizeAssistantStateDirectorModule(d: AssistantStateDirectorDayModule): AcademyJourneyModule {
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  return {
+    id: `assistant-state-director::${d.id}`,
+    title: d.title,
+    description: d.description,
+    type: "Workflow",
+    estimatedMinutes: minutes,
+    required: true,
+    category: "role",
+    department: "state_operations",
+    sourceKind: "assistant-state-director",
+    sourceModuleId: d.id,
+    resources: [],
+  };
+}
+
+function buildAssistantStateDirectorJourney(slug: string, path: TrainingPath): PathJourney {
+  const dayGroups: AcademyJourneyModule[][] = ASSISTANT_STATE_DIRECTOR_DAYS.map((d) => [synthesizeAssistantStateDirectorModule(d)]);
+  const weekGroups = chunk(dayGroups, 5);
+  const dayTitles = ASSISTANT_STATE_DIRECTOR_DAYS.map((d) => `Day ${d.dayInJourney} · ${d.title}`);
+  const journey = assembleJourney({
+    slug, path, weekGroups, dayTitles, source: "assistant-state-director",
+  });
+  journey.weeks = journey.weeks.map((w) => ({
+    ...w,
+    title: ASSISTANT_STATE_DIRECTOR_WEEKS.find((aw) => aw.weekNumber === w.weekNumber)?.title ?? w.title,
+  }));
+  return journey;
+}
+
 function assembleJourney(opts: {
   slug: string;
   path: TrainingPath;
@@ -724,6 +757,9 @@ export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }
   if (slug === "behavioral-support") {
     return buildBehavioralSupportJourney(slug, path);
   }
+  if (slug === "assistant-state-director") {
+    return buildAssistantStateDirectorJourney(slug, path);
+  }
 
   const all = getTrainings();
   const trainings = sourceTrainingsForSlug(slug, all);
@@ -775,5 +811,6 @@ export function parseAcademyModuleId(id: string): {
   if (id.startsWith("qa::")) return { kind: "qa", sourceModuleId: id.slice("qa::".length) };
   if (id.startsWith("case-manager::")) return { kind: "case-manager", sourceModuleId: id.slice("case-manager::".length) };
   if (id.startsWith("behavioral-support::")) return { kind: "behavioral-support", sourceModuleId: id.slice("behavioral-support::".length) };
+  if (id.startsWith("assistant-state-director::")) return { kind: "assistant-state-director", sourceModuleId: id.slice("assistant-state-director::".length) };
   return { kind: "academyData", sourceModuleId: id };
 }

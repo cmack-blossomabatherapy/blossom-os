@@ -21,6 +21,7 @@ import { getCredentialingDay, type CredentialingDayModule } from "@/lib/training
 import { getQaDay, type QaDayModule } from "@/lib/training/qaAcademy";
 import { getCaseManagerDay, type CaseManagerDayModule } from "@/lib/training/caseManagerAcademy";
 import { getBehavioralSupportDay, type BehavioralSupportDayModule } from "@/lib/training/behavioralSupportAcademy";
+import { getAssistantStateDirectorDay, type AssistantStateDirectorDayModule } from "@/lib/training/assistantStateDirectorAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime, persistRuntimeElapsed,
   type RuntimeContext,
@@ -64,6 +65,7 @@ export default function TrainingModuleRuntime() {
     if (parsed.kind === "qa") return resolveQa(parsed.sourceModuleId);
     if (parsed.kind === "case-manager") return resolveCaseManager(parsed.sourceModuleId);
     if (parsed.kind === "behavioral-support") return resolveBehavioralSupport(parsed.sourceModuleId);
+    if (parsed.kind === "assistant-state-director") return resolveAssistantStateDirector(parsed.sourceModuleId);
     return null;
   }, [parsed.kind, parsed.sourceModuleId]);
 
