@@ -285,8 +285,42 @@ export function LeadDetailDrawer({
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-semibold tracking-tight truncate">{lead.childName}</h2>
               <p className="text-xs text-muted-foreground truncate">
-                {lead.parentName || "-"} - {lead.state || "-"} - {lead.owner || "Unassigned"}
+                {lead.parentName || "-"} · {lead.state || "-"}
               </p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">Owner</span>
+                <div className="min-w-[200px] max-w-[280px] flex-1">
+                  <IntakeCoordinatorPicker
+                    value={lead.owner || ""}
+                    onChange={(name, member) => {
+                      updateLead(lead.id, {
+                        owner: name || "Unassigned",
+                        automationLog: [
+                          `Intake: assigned to ${name || "Unassigned"}`,
+                          ...lead.automationLog,
+                        ],
+                      });
+                      if (isPersisted) {
+                        void supabase.from("intake_leads").update({
+                          assigned_intake_coordinator: name || null,
+                          assigned_intake_coordinator_employee_id: member?.id ?? null,
+                          assigned_intake_coordinator_user_id: member?.userId ?? null,
+                        } as never).eq("id", lead.id);
+                        void supabase.from("intake_communications").insert({
+                          lead_id: lead.id,
+                          communication_type: "note",
+                          direction: "internal",
+                          subject: "Assignment changed",
+                          preview: `Assigned to ${name || "Unassigned"}`,
+                          logged_by_name: "Intake",
+                        } as never);
+                      }
+                      toast.success(name ? `Assigned to ${name}` : "Unassigned");
+                    }}
+                    placeholder="Assign intake staff"
+                  />
+                </div>
+              </div>
             </div>
             <button onClick={onClose} className="rounded-full size-9 grid place-items-center hover:bg-muted transition">
               <X className="h-4 w-4" />
