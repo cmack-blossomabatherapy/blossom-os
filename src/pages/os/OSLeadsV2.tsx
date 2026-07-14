@@ -97,6 +97,54 @@ const PIPELINE_STAGES: { key: string; label: FamilyLeadPipelineStage; match: (l:
   }));
 
 /**
+ * Pipeline summary groups — collapses the 13 canonical stages into the three
+ * operational buckets shown at the top of the Pipeline view: Lead → Ready →
+ * Active. Clicking a group tile in the summary bar applies its stages as the
+ * `pstage` filter; clicking an individual stage chip toggles just that stage.
+ */
+type PipelineGroupKey = "lead" | "ready" | "active";
+
+const PIPELINE_GROUPS: {
+  key: PipelineGroupKey;
+  label: string;
+  hint: string;
+  stages: FamilyLeadPipelineStage[];
+}[] = [
+  {
+    key: "lead",
+    label: "Lead",
+    hint: "New captures and outreach",
+    stages: ["Lead Captured", "First Contact Attempt", "Engagement Track", "Qualification"],
+  },
+  {
+    key: "ready",
+    label: "Ready",
+    hint: "Intake packet + benefits",
+    stages: ["Intake Packet Sent", "Intake Packet Follow Up", "Intake Complete", "Benefits Verification"],
+  },
+  {
+    key: "active",
+    label: "Active",
+    hint: "Assessment, auth, staffing",
+    stages: [
+      "Assessment Scheduling",
+      "QA / Treatment Plan Authorization",
+      "Authorization Pending",
+      "Staffing Match",
+      "Ready to Start Services",
+    ],
+  },
+];
+
+const PIPELINE_GROUP_OF: Record<string, PipelineGroupKey> = PIPELINE_GROUPS.reduce(
+  (acc, g) => {
+    g.stages.forEach((s) => (acc[s] = g.key));
+    return acc;
+  },
+  {} as Record<string, PipelineGroupKey>,
+);
+
+/**
  * Operational Intake Pulse — the 6 cards from the spec.
  * Kept lightweight and clickable; each filters the active view.
  */
