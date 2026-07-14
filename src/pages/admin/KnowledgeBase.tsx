@@ -230,7 +230,7 @@ export default function KnowledgeBase() {
   if (!isAdmin) return null;
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 md:p-8 mx-auto w-full max-w-6xl space-y-6">
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
