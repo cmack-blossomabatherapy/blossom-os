@@ -7,7 +7,8 @@ import { BlossomAIIngestPanel } from "@/components/resource-library/BlossomAIIng
 import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Database, FileWarning, ShieldAlert, Video, RefreshCw, AlertTriangle, MessageSquare, ShieldOff, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Sparkles, Database, FileWarning, ShieldAlert, Video, RefreshCw, AlertTriangle, MessageSquare, ShieldOff, ThumbsUp, ThumbsDown, Zap } from "lucide-react";
+import { toast } from "sonner";
 
 interface HealthMetrics {
   totalResources: number;
@@ -100,6 +101,9 @@ export default function OSBlossomAIManagement() {
     prompt: string; response_preview: string | null; status: string; kb_hits: unknown;
   }>>([]);
   const [feedbackRows, setFeedbackRows] = useState<Array<{ id: string; rating: number; note: string | null; message_id: string | null; created_at: string }>>([]);
+  const [nullEmbeddings, setNullEmbeddings] = useState<number | null>(null);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState<{ processed: number; remaining: number } | null>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -119,8 +123,42 @@ export default function OSBlossomAIManagement() {
       setFailedRows((failed.data ?? []) as typeof failedRows);
       setRecentAudit((audit.data ?? []) as typeof recentAudit);
       setFeedbackRows((feedback.data ?? []) as typeof feedbackRows);
+      const { count: nullCount } = await supabase
+        .from("knowledge_chunks")
+        .select("id", { count: "exact", head: true })
+        .is("embedding", null);
+      setNullEmbeddings(nullCount ?? 0);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const runBackfill = async () => {
+    if (backfilling) return;
+    setBackfilling(true);
+    setBackfillProgress(null);
+    let totalProcessed = 0;
+    try {
+      // Loop calls to the edge function until remaining hits 0 or an error stops us.
+      // Each call embeds up to 96 chunks.
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await supabase.functions.invoke<{ processed: number; remaining: number; done: boolean; error?: string }>(
+          "blossom-ai-embed-backfill",
+          { body: { limit: 96 } },
+        );
+        if (error) throw error;
+        if (!data || data.error) throw new Error(data?.error || "Backfill failed");
+        totalProcessed += data.processed;
+        setBackfillProgress({ processed: totalProcessed, remaining: data.remaining });
+        if (data.done || data.processed === 0) break;
+      }
+      toast.success(`Embedded ${totalProcessed.toLocaleString()} chunks. Blossom AI can now answer from Resource Library.`);
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Backfill failed — check function logs.");
+    } finally {
+      setBackfilling(false);
     }
   };
 
@@ -160,6 +198,40 @@ export default function OSBlossomAIManagement() {
             />
           </div>
         </header>
+
+        {/* Embedding backfill banner — surfaces the #1 cause of "AI answers nothing". */}
+        {nullEmbeddings !== null && nullEmbeddings > 0 && (
+          <Card className="border-amber-300/60 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                  <Zap className="h-4 w-4" /> {nullEmbeddings.toLocaleString()} chunks missing embeddings
+                </div>
+                <p className="mt-1 text-xs text-amber-900/80 dark:text-amber-200/80">
+                  Blossom AI can't retrieve from the Resource Library until these are embedded. This is safe to run — it only fills the empty vector column.
+                </p>
+                {backfillProgress && (
+                  <p className="mt-1 text-xs font-medium text-amber-900 dark:text-amber-200">
+                    Progress: {backfillProgress.processed.toLocaleString()} processed · {backfillProgress.remaining.toLocaleString()} remaining
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={runBackfill}
+                disabled={backfilling}
+                className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-3 py-1.5 text-xs font-medium shadow-sm"
+              >
+                {backfilling ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+                {backfilling ? "Backfilling…" : "Run embedding backfill"}
+              </button>
+            </div>
+          </Card>
+        )}
+        {nullEmbeddings === 0 && (
+          <Card className="border-emerald-300/60 bg-emerald-50/60 dark:bg-emerald-950/20 p-3 text-xs text-emerald-800 dark:text-emerald-200">
+            ✓ All knowledge chunks are embedded. Blossom AI can retrieve from the Resource Library.
+          </Card>
+        )}
 
         {loading && !m ? (
           <div className="text-sm text-muted-foreground">Loading metrics…</div>
