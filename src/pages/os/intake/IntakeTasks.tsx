@@ -4,6 +4,7 @@ import {
   Plus, AlertCircle, CheckCircle2, List, Play,
   CalendarClock, Flame, Inbox, ListTodo, Search, ArrowUpDown,
 } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import {
   IntakeSectionHeader, IntakePulseStrip, type PulseTileSpec,
@@ -25,6 +26,9 @@ import { AssigneePicker } from "@/components/tasks/AssigneePicker";
 
 type FilterKey = "all" | "today" | "overdue" | "escalated";
 type SortKey = "due" | "lead" | "owner" | "title";
+type StatusKey = "Open" | "In Progress" | "Blocked";
+type DueRangeKey = "any" | "overdue" | "today" | "7d" | "30d" | "unscheduled";
+type FlagKey = "any" | "blocked" | "actionable" | "unassigned";
 interface TaskRow { task: IntakeTaskRow; lead: Lead | undefined }
 
 function classify(r: TaskRow): "overdue" | "today" | "upcoming" {
@@ -107,6 +111,11 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("due");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  // Fast-filter state — status, owner, due range, and blocker/next-step flag.
+  const [statuses, setStatuses] = useState<StatusKey[]>([]);
+  const [owners, setOwners] = useState<string[]>([]);
+  const [dueRange, setDueRange] = useState<DueRangeKey>("any");
+  const [flag, setFlag] = useState<FlagKey>("any");
 
   const leadById = useMemo(() => {
     const map = new Map<string, Lead>();
@@ -121,6 +130,12 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
       .filter((r) => (r.lead ? matches(r.lead.state) : true)),
     [tasks, leadById, matches],
   );
+  const ownerOptions = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => { const o = (r.task.owner ?? "").trim(); if (o) set.add(o); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+  const hasUnassigned = useMemo(() => rows.some((r) => !r.task.owner || !r.task.owner.trim()), [rows]);
   const overdue = rows.filter((r) => classify(r) === "overdue");
   const dueToday = rows.filter((r) => classify(r) === "today");
   const upcoming = rows.filter((r) => classify(r) === "upcoming");
@@ -132,11 +147,48 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const inDays = (d: Date, n: number) => {
+      const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + n);
+      return d.getTime() >= today.getTime() && d.getTime() <= cutoff.getTime();
+    };
     let out = rows.filter((r) => {
       const c = classify(r);
       if (filter === "today" && c !== "today") return false;
       if (filter === "overdue" && c !== "overdue") return false;
       if (filter === "escalated" && !(r.lead?.tags ?? []).some((t) => /escalat/i.test(t))) return false;
+      // Status multi-select
+      if (statuses.length > 0 && !statuses.includes(r.task.status as StatusKey)) return false;
+      // Owner multi-select — "Unassigned" is a synthetic bucket
+      if (owners.length > 0) {
+        const owner = (r.task.owner ?? "").trim();
+        const isUnassigned = !owner;
+        const wantsUnassigned = owners.includes("__unassigned__");
+        const ownerMatch = owner && owners.includes(owner);
+        if (!(ownerMatch || (isUnassigned && wantsUnassigned))) return false;
+      }
+      // Due date range
+      if (dueRange !== "any") {
+        if (dueRange === "unscheduled") {
+          if (r.task.due_date) return false;
+        } else if (!r.task.due_date) {
+          return false;
+        } else {
+          const due = new Date(r.task.due_date); due.setHours(0, 0, 0, 0);
+          if (dueRange === "overdue" && !(due.getTime() < today.getTime())) return false;
+          if (dueRange === "today" && due.getTime() !== today.getTime()) return false;
+          if (dueRange === "7d" && !inDays(due, 7)) return false;
+          if (dueRange === "30d" && !inDays(due, 30)) return false;
+        }
+      }
+      // Blocker / next-step flag
+      if (flag !== "any") {
+        const reason = getBlockReason(r);
+        const isUnassignedRow = !r.task.owner || !r.task.owner.trim();
+        if (flag === "blocked" && !reason) return false;
+        if (flag === "actionable" && reason) return false;
+        if (flag === "unassigned" && !isUnassignedRow) return false;
+      }
       if (q) {
         const hay = [r.task.title, r.task.task_type, r.task.owner, r.lead?.childName, r.lead?.parentName]
           .map((s) => String(s ?? "").toLowerCase()).join(" ");
@@ -157,7 +209,23 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
       return get(a).localeCompare(get(b)) * dir;
     });
     return out;
-  }, [rows, filter, search, sortKey, sortDir]);
+  }, [rows, filter, search, sortKey, sortDir, statuses, owners, dueRange, flag]);
+
+  const activeFilterCount =
+    (statuses.length > 0 ? 1 : 0) +
+    (owners.length > 0 ? 1 : 0) +
+    (dueRange !== "any" ? 1 : 0) +
+    (flag !== "any" ? 1 : 0);
+  const clearAdvanced = () => { setStatuses([]); setOwners([]); setDueRange("any"); setFlag("any"); };
+  const toggleIn = <T,>(list: T[], v: T): T[] => list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
+  const dueRangeLabel: Record<DueRangeKey, string> = {
+    any: "Any date", overdue: "Overdue", today: "Today",
+    "7d": "Next 7 days", "30d": "Next 30 days", unscheduled: "No due date",
+  };
+  const flagLabel: Record<FlagKey, string> = {
+    any: "All tasks", blocked: "Blocked / needs next step",
+    actionable: "Ready to start", unassigned: "Unassigned",
+  };
 
   const pulseTiles: PulseTileSpec[] = [
     { key: "all",       label: "All Open",   value: openTotal,        hint: "Across all buckets",   icon: ListTodo,      tone: "indigo",  onClick: () => setFilter("all") },
@@ -228,19 +296,145 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
         <ReadyForDataNotice message={loading ? "Loading tasks…" : "No open intake tasks. Tasks created from leads will appear here."} />
       ) : (
         <section className="space-y-3">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center p-2 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
-            <div className="relative flex-1 min-w-[220px]">
-              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search task, lead, owner…" className="pl-9 h-9 bg-transparent border-0 focus-visible:ring-0" />
+          <div className="flex flex-col gap-2 p-2 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search task, lead, owner…"
+                  className="pl-9 h-9 bg-transparent border-0 focus-visible:ring-0"
+                />
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {(["all", "today", "overdue", "escalated"] as const).map((k) => (
+                  <button key={k} onClick={() => setFilter(k)}
+                    className={cn("px-3 py-1 rounded-full text-xs border transition",
+                      filter === k ? "bg-foreground text-background border-foreground" : "bg-card border-border/70 hover:bg-muted")}>
+                    {k === "all" ? "All open" : k === "today" ? "Due today" : k === "overdue" ? "Overdue" : "Escalated"}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {(["all", "today", "overdue", "escalated"] as const).map((k) => (
-                <button key={k} onClick={() => setFilter(k)}
-                  className={cn("px-3 py-1 rounded-full text-xs border transition",
-                    filter === k ? "bg-foreground text-background border-foreground" : "bg-card border-border/70 hover:bg-muted")}>
-                  {k === "all" ? "All open" : k === "today" ? "Due today" : k === "overdue" ? "Overdue" : "Escalated"}
+
+            <div className="flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2">
+              <div className="inline-flex items-center gap-1 text-[11px] text-muted-foreground pr-1">
+                <Filter className="h-3 w-3" /> Filters
+              </div>
+
+              {/* Status */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className={cn("px-2.5 py-1 rounded-full text-xs border transition inline-flex items-center gap-1",
+                    statuses.length > 0 ? "bg-primary/10 border-primary/40 text-primary" : "bg-card border-border/70 hover:bg-muted")}>
+                    Status{statuses.length > 0 && <Badge variant="secondary" className="h-4 px-1 text-[10px]">{statuses.length}</Badge>}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-2 w-[220px]">
+                  <div className="text-[11px] text-muted-foreground px-1 pb-1">Task status</div>
+                  <div className="flex flex-col gap-1">
+                    {(["Open", "In Progress", "Blocked"] as StatusKey[]).map((s) => (
+                      <label key={s} className="flex items-center gap-2 text-xs px-1.5 py-1 rounded hover:bg-muted cursor-pointer">
+                        <input type="checkbox" checked={statuses.includes(s)}
+                          onChange={() => setStatuses((prev) => toggleIn(prev, s))} />
+                        {s}
+                      </label>
+                    ))}
+                    {statuses.length > 0 && (
+                      <button onClick={() => setStatuses([])} className="text-[11px] text-muted-foreground hover:text-foreground text-left px-1.5 pt-1">Clear</button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Owner */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className={cn("px-2.5 py-1 rounded-full text-xs border transition inline-flex items-center gap-1",
+                    owners.length > 0 ? "bg-primary/10 border-primary/40 text-primary" : "bg-card border-border/70 hover:bg-muted")}>
+                    Owner{owners.length > 0 && <Badge variant="secondary" className="h-4 px-1 text-[10px]">{owners.length}</Badge>}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-2 w-[260px]">
+                  <div className="text-[11px] text-muted-foreground px-1 pb-1">Assigned to</div>
+                  <div className="max-h-[260px] overflow-y-auto flex flex-col gap-0.5">
+                    {hasUnassigned && (
+                      <label className="flex items-center gap-2 text-xs px-1.5 py-1 rounded hover:bg-muted cursor-pointer">
+                        <input type="checkbox" checked={owners.includes("__unassigned__")}
+                          onChange={() => setOwners((prev) => toggleIn(prev, "__unassigned__"))} />
+                        <span className="italic text-muted-foreground">Unassigned</span>
+                      </label>
+                    )}
+                    {ownerOptions.length === 0 && !hasUnassigned && (
+                      <div className="text-[11px] text-muted-foreground px-1.5 py-2">No owners yet.</div>
+                    )}
+                    {ownerOptions.map((o) => (
+                      <label key={o} className="flex items-center gap-2 text-xs px-1.5 py-1 rounded hover:bg-muted cursor-pointer">
+                        <input type="checkbox" checked={owners.includes(o)}
+                          onChange={() => setOwners((prev) => toggleIn(prev, o))} />
+                        <span className="truncate">{o}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {owners.length > 0 && (
+                    <button onClick={() => setOwners([])} className="text-[11px] text-muted-foreground hover:text-foreground text-left px-1.5 pt-1">Clear</button>
+                  )}
+                </PopoverContent>
+              </Popover>
+
+              {/* Due date range */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className={cn("px-2.5 py-1 rounded-full text-xs border transition inline-flex items-center gap-1",
+                    dueRange !== "any" ? "bg-primary/10 border-primary/40 text-primary" : "bg-card border-border/70 hover:bg-muted")}>
+                    <CalendarClock className="h-3 w-3" /> {dueRangeLabel[dueRange]}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-2 w-[200px]">
+                  <div className="text-[11px] text-muted-foreground px-1 pb-1">Due date</div>
+                  <div className="flex flex-col gap-0.5">
+                    {(Object.keys(dueRangeLabel) as DueRangeKey[]).map((k) => (
+                      <button key={k} onClick={() => setDueRange(k)}
+                        className={cn("text-left text-xs px-2 py-1 rounded hover:bg-muted",
+                          dueRange === k && "bg-primary/10 text-primary font-medium")}>
+                        {dueRangeLabel[k]}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Blocker / next-step */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className={cn("px-2.5 py-1 rounded-full text-xs border transition inline-flex items-center gap-1",
+                    flag !== "any" ? "bg-primary/10 border-primary/40 text-primary" : "bg-card border-border/70 hover:bg-muted")}>
+                    <Lock className="h-3 w-3" /> {flagLabel[flag]}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-2 w-[240px]">
+                  <div className="text-[11px] text-muted-foreground px-1 pb-1">Blocker / next step</div>
+                  <div className="flex flex-col gap-0.5">
+                    {(Object.keys(flagLabel) as FlagKey[]).map((k) => (
+                      <button key={k} onClick={() => setFlag(k)}
+                        className={cn("text-left text-xs px-2 py-1 rounded hover:bg-muted",
+                          flag === k && "bg-primary/10 text-primary font-medium")}>
+                        {flagLabel[k]}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearAdvanced}
+                  className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded"
+                >
+                  <X className="h-3 w-3" /> Clear filters
                 </button>
-              ))}
+              )}
             </div>
           </div>
 
