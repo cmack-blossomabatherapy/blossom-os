@@ -21598,6 +21598,10 @@ export type Database = {
             }
             Returns: Json
           }
+      suggest_resource_roles: {
+        Args: { _description: string; _source: string; _title: string }
+        Returns: string[]
+      }
       upsert_knowledge_chunk: {
         Args: {
           _content: string
