@@ -22,6 +22,7 @@ import { getQaDay, type QaDayModule } from "@/lib/training/qaAcademy";
 import { getCaseManagerDay, type CaseManagerDayModule } from "@/lib/training/caseManagerAcademy";
 import { getBehavioralSupportDay, type BehavioralSupportDayModule } from "@/lib/training/behavioralSupportAcademy";
 import { getAssistantStateDirectorDay, type AssistantStateDirectorDayModule } from "@/lib/training/assistantStateDirectorAcademy";
+import { getStateDirectorDay, type StateDirectorDayModule } from "@/lib/training/stateDirectorAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime, persistRuntimeElapsed,
   type RuntimeContext,
@@ -66,6 +67,7 @@ export default function TrainingModuleRuntime() {
     if (parsed.kind === "case-manager") return resolveCaseManager(parsed.sourceModuleId);
     if (parsed.kind === "behavioral-support") return resolveBehavioralSupport(parsed.sourceModuleId);
     if (parsed.kind === "assistant-state-director") return resolveAssistantStateDirector(parsed.sourceModuleId);
+    if (parsed.kind === "state-director") return resolveStateDirector(parsed.sourceModuleId);
     return null;
   }, [parsed.kind, parsed.sourceModuleId]);
 
@@ -754,6 +756,35 @@ function resolveBehavioralSupport(sourceModuleId: string): ModuleCtx | null {
 
 function resolveAssistantStateDirector(sourceModuleId: string): ModuleCtx | null {
   const d: AssistantStateDirectorDayModule | undefined = getAssistantStateDirectorDay(sourceModuleId);
+  if (!d) return null;
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  const checklist = [
+    ...d.checklist,
+    ...d.livePractice.map((p) => `Live practice: ${p}`),
+  ];
+  return {
+    title: d.title,
+    description: d.description,
+    type: `Week ${d.weekNumber} · Day ${d.dayNumber}`,
+    minutes,
+    required: true,
+    objectives: d.objectives,
+    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    checklist,
+    shadowing: d.shadowing,
+    knowledgeCheck: d.knowledgeCheck,
+    sopLinks: d.resources.map((r) => ({
+      label: r.pending ? `${r.label} (pending upload)` : r.label,
+      href: r.href,
+    })),
+    trainerNotes: d.trainerNotes,
+    reflectionPrompt: d.reflectionPrompt,
+    signoffRequired: d.signoffRequired,
+  };
+}
+
+function resolveStateDirector(sourceModuleId: string): ModuleCtx | null {
+  const d: StateDirectorDayModule | undefined = getStateDirectorDay(sourceModuleId);
   if (!d) return null;
   const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
   const checklist = [
