@@ -137,7 +137,10 @@ export function computeLaunchSetup(input: LaunchSetupInput): LaunchSetupCheck[] 
 
   const firstWeek = input.curriculum?.phases[0]?.weeks?.[0];
   const firstWeekReady = Boolean(
-    firstWeek && firstWeek.modules.some((m) => /welcome to blossom/i.test(m.title) || /welcome video/i.test(m.title)),
+    // Welcome to Blossom now lives as its own Phase 0 above every role journey
+    // (WelcomeToBlossomCard on TrainingPathDetail) rather than inside a Day 1
+    // module. Week 1 is "ready" as long as it has at least one Day 1 module.
+    firstWeek && firstWeek.modules.length > 0,
   );
 
   const checks: LaunchSetupCheck[] = [
@@ -202,8 +205,8 @@ export function computeLaunchSetup(input: LaunchSetupInput): LaunchSetupCheck[] 
       label: "First week ready",
       status: firstWeekReady ? "ready" : "missing",
       note: firstWeekReady
-        ? "Week 1 Day 1 starts with Welcome to Blossom."
-        : "Week 1 Day 1 must start with Welcome to Blossom.",
+        ? "Week 1 Day 1 is ready. Welcome to Blossom is available above the curriculum for every learner."
+        : "Week 1 Day 1 must have at least one role orientation module.",
     },
     {
       key: "leadership_visibility",
