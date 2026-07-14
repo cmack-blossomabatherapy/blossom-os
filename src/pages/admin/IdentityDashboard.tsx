@@ -112,7 +112,7 @@ export default function IdentityDashboard() {
 
   return (
     <OSShell>
-      <div className="mx-auto w-full max-w-7xl px-1 md:px-2">
+      <div className="mx-auto w-full max-w-6xl px-1 md:px-2">
         <header className="mb-10">
           <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             <IdCard className="size-3.5" /> Identity System

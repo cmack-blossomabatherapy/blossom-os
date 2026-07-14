@@ -10,7 +10,7 @@ import { academyTracks } from "@/data/blossomOS";
 export default function OnboardingAcademyPreview() {
   const navigate = useNavigate();
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 pb-16 animate-fade-in">
+    <div className="mx-auto w-full max-w-6xl space-y-6 pb-16 animate-fade-in">
       <JourneyHero
         eyebrow="Operations Academy · Preview"
         title="A peek at the Operations Academy"
