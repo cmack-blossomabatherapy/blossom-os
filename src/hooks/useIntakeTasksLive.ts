@@ -110,7 +110,6 @@ export function useIntakeTasksLive() {
     const prev = (task.notes ?? "").trim();
     const nextNotes = prev ? `${prev}\n${entry}` : entry;
     const patch: Record<string, unknown> = { status: next, notes: nextNotes };
-    if (next === "Completed") patch.completed_at = stamp;
     // Optimistic
     setTasks((cur) => cur.map((t) => t.id === task.id ? { ...t, status: next, notes: nextNotes } : t));
     const { error } = await supabase
