@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRole } from "@/contexts/OSRoleContext";
 
 export interface CompanyCalendarEvent {
   id: string;
@@ -54,9 +55,15 @@ const HR_MANAGE_ROLES = new Set([
 
 export function useCanManageCompanyHome(): boolean {
   const { roles, isAdmin } = useAuth();
+  const { role: activeOsRole } = useOSRole();
   return useMemo(
-    () => isAdmin || (roles ?? []).some((r) => HR_MANAGE_ROLES.has(r as string)),
-    [roles, isAdmin],
+    () => {
+      // Respect the "view as role" switcher: even a super admin previewing
+      // as intake should NOT see the Manage button.
+      if (!HR_MANAGE_ROLES.has(activeOsRole as string)) return false;
+      return isAdmin || (roles ?? []).some((r) => HR_MANAGE_ROLES.has(r as string));
+    },
+    [roles, isAdmin, activeOsRole],
   );
 }
 
