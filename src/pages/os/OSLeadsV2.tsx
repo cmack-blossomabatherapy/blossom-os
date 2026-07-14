@@ -249,6 +249,18 @@ function OSLeadsV2Inner() {
   const activeTab = searchParams.get("tab") || "all";
   const openLeadId = searchParams.get("lead") || null;
   const page = Math.max(0, (Number(searchParams.get("p")) || 1) - 1);
+  // Pipeline-only filters (only applied when view === "pipeline").
+  const pipelineMine = searchParams.get("mine") === "1";
+  const pipelineDays = (() => {
+    const raw = searchParams.get("pdays");
+    const n = raw ? Number(raw) : NaN;
+    return [7, 14, 30, 90].includes(n) ? n : null;
+  })();
+  const pipelineStages = useMemo<Set<string>>(() => {
+    const csv = searchParams.get("pstage");
+    if (!csv) return new Set();
+    return new Set(csv.split(",").map((s) => s.trim()).filter(Boolean));
+  }, [searchParams]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   /** Mutate URL params. Push by default so back/forward traverses UI state. */
@@ -291,6 +303,19 @@ function OSLeadsV2Inner() {
     updateParams((p) => { if (id) p.set("lead", id); else p.delete("lead"); });
   const setPage = (n: number) =>
     updateParams((p) => { if (n > 0) p.set("p", String(n + 1)); else p.delete("p"); });
+
+  const setPipelineMine = (on: boolean) =>
+    updateParams((p) => { if (on) p.set("mine", "1"); else p.delete("mine"); });
+  const setPipelineDays = (n: number | null) =>
+    updateParams((p) => { if (n) p.set("pdays", String(n)); else p.delete("pdays"); });
+  const togglePipelineStage = (stage: string) =>
+    updateParams((p) => {
+      const cur = new Set((p.get("pstage") ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+      if (cur.has(stage)) cur.delete(stage); else cur.add(stage);
+      if (cur.size) p.set("pstage", [...cur].join(",")); else p.delete("pstage");
+    });
+  const clearPipelineFilters = () =>
+    updateParams((p) => { p.delete("mine"); p.delete("pdays"); p.delete("pstage"); });
 
   // Missing-lead guard: if the ?lead=<id> deep link (from CTM or escalation
   // chips) doesn't resolve to a real lead once data is loaded, surface a
