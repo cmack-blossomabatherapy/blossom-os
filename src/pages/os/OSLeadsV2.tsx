@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Upload, Download, Filter, Sparkles, X, AlertCircle,
   PhoneCall, Mail, Send, StickyNote, ChevronRight, Users, RefreshCw,
-  Loader2, UserPlus, MoveRight, CalendarClock, CheckSquare,
+  Loader2, UserPlus, MoveRight, CalendarClock, CheckSquare, UserCheck,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -249,6 +249,18 @@ function OSLeadsV2Inner() {
   const activeTab = searchParams.get("tab") || "all";
   const openLeadId = searchParams.get("lead") || null;
   const page = Math.max(0, (Number(searchParams.get("p")) || 1) - 1);
+  // Pipeline-only filters (only applied when view === "pipeline").
+  const pipelineMine = searchParams.get("mine") === "1";
+  const pipelineDays = (() => {
+    const raw = searchParams.get("pdays");
+    const n = raw ? Number(raw) : NaN;
+    return [7, 14, 30, 90].includes(n) ? n : null;
+  })();
+  const pipelineStages = useMemo<Set<string>>(() => {
+    const csv = searchParams.get("pstage");
+    if (!csv) return new Set();
+    return new Set(csv.split(",").map((s) => s.trim()).filter(Boolean));
+  }, [searchParams]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   /** Mutate URL params. Push by default so back/forward traverses UI state. */
@@ -291,6 +303,19 @@ function OSLeadsV2Inner() {
     updateParams((p) => { if (id) p.set("lead", id); else p.delete("lead"); });
   const setPage = (n: number) =>
     updateParams((p) => { if (n > 0) p.set("p", String(n + 1)); else p.delete("p"); });
+
+  const setPipelineMine = (on: boolean) =>
+    updateParams((p) => { if (on) p.set("mine", "1"); else p.delete("mine"); });
+  const setPipelineDays = (n: number | null) =>
+    updateParams((p) => { if (n) p.set("pdays", String(n)); else p.delete("pdays"); });
+  const togglePipelineStage = (stage: string) =>
+    updateParams((p) => {
+      const cur = new Set((p.get("pstage") ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+      if (cur.has(stage)) cur.delete(stage); else cur.add(stage);
+      if (cur.size) p.set("pstage", [...cur].join(",")); else p.delete("pstage");
+    });
+  const clearPipelineFilters = () =>
+    updateParams((p) => { p.delete("mine"); p.delete("pdays"); p.delete("pstage"); });
 
   // Missing-lead guard: if the ?lead=<id> deep link (from CTM or escalation
   // chips) doesn't resolve to a real lead once data is loaded, surface a
@@ -462,6 +487,38 @@ function OSLeadsV2Inner() {
     toast.success(`Exported ${filtered.length} leads`);
   };
 
+  // Pipeline-scoped subset applied on top of the shared `filtered` list.
+  const meName = (displayName ?? "").trim().toLowerCase();
+  const meEmail = (user?.email ?? "").toLowerCase();
+  const pipelineLeads = useMemo(() => {
+    if (view !== "pipeline") return filtered;
+    const cutoff = pipelineDays
+      ? Date.now() - pipelineDays * 24 * 60 * 60 * 1000
+      : null;
+    return filtered.filter((l) => {
+      if (pipelineStages.size) {
+        const canonical = canonicalFamilyLeadStage(l.status);
+        if (!pipelineStages.has(canonical)) return false;
+      }
+      if (pipelineMine) {
+        const owner = (l.owner ?? "").toLowerCase();
+        const matches =
+          (meName && owner === meName) ||
+          (meEmail && (owner === meEmail || owner === meEmail.split("@")[0]));
+        if (!matches) return false;
+      }
+      if (cutoff !== null) {
+        const iso = l.lastContacted ?? l.createdAt ?? null;
+        const t = iso ? new Date(iso).getTime() : NaN;
+        if (!Number.isFinite(t) || t < cutoff) return false;
+      }
+      return true;
+    });
+  }, [view, filtered, pipelineStages, pipelineMine, pipelineDays, meName, meEmail]);
+
+  const pipelineFilterCount =
+    (pipelineMine ? 1 : 0) + (pipelineDays ? 1 : 0) + pipelineStages.size;
+
   return (
     <OSShell rightRail={<AIRail />}>
       <div className="space-y-6">
@@ -600,12 +657,30 @@ function OSLeadsV2Inner() {
             ))}
           </div>
           <div className="text-xs text-muted-foreground flex items-center gap-2">
-            <span>{filtered.length.toLocaleString()} of {scopedLeads.length.toLocaleString()} leads</span>
+            <span>
+              {(view === "pipeline" ? pipelineLeads : filtered).length.toLocaleString()} of{" "}
+              {scopedLeads.length.toLocaleString()} leads
+            </span>
             <button onClick={refresh} className="hover:text-foreground" aria-label="Refresh">
               <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
             </button>
           </div>
         </div>
+
+        {/* Pipeline-only filters */}
+        {view === "pipeline" && (
+          <PipelineFilters
+            mine={pipelineMine}
+            days={pipelineDays}
+            stages={pipelineStages}
+            filterCount={pipelineFilterCount}
+            canFilterMine={Boolean(meName || meEmail)}
+            onToggleMine={() => setPipelineMine(!pipelineMine)}
+            onSetDays={setPipelineDays}
+            onToggleStage={togglePipelineStage}
+            onClear={clearPipelineFilters}
+          />
+        )}
 
         {/* Body */}
         {error && (
@@ -632,7 +707,11 @@ function OSLeadsV2Inner() {
             togglePage={togglePage}
           />
         ) : view === "pipeline" ? (
-          <PipelineView leads={filtered} onOpen={setOpenLeadId} />
+          pipelineLeads.length === 0 ? (
+            <EmptyState onReset={clearPipelineFilters} />
+          ) : (
+            <PipelineView leads={pipelineLeads} onOpen={setOpenLeadId} />
+          )
         ) : (
           <FollowUpView leads={filtered} onOpen={setOpenLeadId} />
         )}
@@ -868,6 +947,13 @@ function RowQuickActions({ lead }: { lead: Lead }) {
 
 function PipelineView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
   const cols = PIPELINE_STAGES.map((s) => ({ ...s, items: leads.filter(s.match) }));
+  return renderPipelineColumns(cols, onOpen);
+}
+
+function renderPipelineColumns(
+  cols: { key: string; label: string; items: Lead[] }[],
+  onOpen: (id: string) => void,
+) {
   return (
     <div className="overflow-x-auto pb-2">
       <div className="flex gap-3 min-w-min">
@@ -903,6 +989,135 @@ function PipelineView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) =
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────── Pipeline Filters (view=pipeline only) ─────────────────── */
+
+const PIPELINE_DAY_OPTIONS: { value: number | null; label: string }[] = [
+  { value: null, label: "Any time" },
+  { value: 7, label: "Last 7 days" },
+  { value: 14, label: "Last 14 days" },
+  { value: 30, label: "Last 30 days" },
+  { value: 90, label: "Last 90 days" },
+];
+
+function PipelineFilters({
+  mine, days, stages, filterCount, canFilterMine,
+  onToggleMine, onSetDays, onToggleStage, onClear,
+}: {
+  mine: boolean;
+  days: number | null;
+  stages: Set<string>;
+  filterCount: number;
+  canFilterMine: boolean;
+  onToggleMine: () => void;
+  onSetDays: (n: number | null) => void;
+  onToggleStage: (stage: string) => void;
+  onClear: () => void;
+}) {
+  const daysLabel =
+    PIPELINE_DAY_OPTIONS.find((o) => o.value === days)?.label ?? "Any time";
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-muted/30 px-3 py-2">
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground mr-1">
+        Pipeline filters
+      </span>
+
+      {/* Assigned to me */}
+      <Button
+        type="button"
+        size="sm"
+        variant={mine ? "default" : "outline"}
+        onClick={onToggleMine}
+        disabled={!canFilterMine}
+        title={canFilterMine ? "Only leads assigned to you" : "Sign in required"}
+        className="h-8"
+      >
+        <UserCheck className="mr-1.5 h-3.5 w-3.5" />
+        Assigned to me
+      </Button>
+
+      {/* Date range */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant={days ? "default" : "outline"}
+            className="h-8"
+          >
+            <CalendarClock className="mr-1.5 h-3.5 w-3.5" />
+            {daysLabel}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-56 p-1">
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 py-1.5">
+            Last contact within
+          </div>
+          {PIPELINE_DAY_OPTIONS.map((opt) => {
+            const active = opt.value === days;
+            return (
+              <button
+                key={opt.label}
+                onClick={() => onSetDays(opt.value)}
+                className={cn(
+                  "w-full text-left text-sm rounded-md px-2 py-1.5 transition",
+                  active ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </PopoverContent>
+      </Popover>
+
+      {/* Stage multi-select */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant={stages.size ? "default" : "outline"}
+            className="h-8"
+          >
+            <Filter className="mr-1.5 h-3.5 w-3.5" />
+            {stages.size ? `${stages.size} stage${stages.size === 1 ? "" : "s"}` : "Stages"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-64 p-1 max-h-80 overflow-y-auto">
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 py-1.5">
+            Show columns
+          </div>
+          {FAMILY_LEAD_PIPELINE_STAGES.map((stage) => {
+            const active = stages.has(stage);
+            return (
+              <button
+                key={stage}
+                onClick={() => onToggleStage(stage)}
+                className={cn(
+                  "w-full flex items-center justify-between text-left text-sm rounded-md px-2 py-1.5 transition",
+                  active ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                )}
+              >
+                <span className="truncate">{stage}</span>
+                {active && <CheckSquare className="h-3.5 w-3.5 flex-shrink-0" />}
+              </button>
+            );
+          })}
+        </PopoverContent>
+      </Popover>
+
+      {filterCount > 0 && (
+        <button
+          onClick={onClear}
+          className="ml-auto text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+        >
+          <X className="h-3 w-3" /> Clear pipeline filters
+        </button>
+      )}
     </div>
   );
 }
