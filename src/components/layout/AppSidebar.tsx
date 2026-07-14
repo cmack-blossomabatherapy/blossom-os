@@ -8,7 +8,7 @@ import {
   Plug, Briefcase, Building2, IdCard, KeyRound, Smartphone, Stethoscope,
   AlertTriangle, BarChart3, ClipboardList, ListTodo, MapPin, XCircle, CheckCircle2,
   PhoneCall, BookUser, Activity, Workflow as WorkflowIcon, Inbox, Bug,
-  Mail, Sparkles,
+  Mail, Sparkles, Home,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
