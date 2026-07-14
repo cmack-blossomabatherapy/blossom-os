@@ -11,6 +11,7 @@ import { parseAcademyModuleId } from "@/lib/academy/journeyContent";
 import { RBT_PATHS, type RBTModule, type RBTPath, type RBTPhase, type RBTPathId } from "@/lib/training/rbtAcademy";
 import { getRbtModuleContent } from "@/lib/training/rbtModuleContent";
 import { BCBA_MODULES, type BCBAModule } from "@/lib/training/bcbaAcademy";
+import { getIntakeDay, type IntakeDayModule } from "@/lib/training/intakeAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime, persistRuntimeElapsed,
   type RuntimeContext,
@@ -44,6 +45,7 @@ export default function TrainingModuleRuntime() {
   const ctx = useMemo(() => {
     if (parsed.kind === "rbt") return resolveRbt(parsed.sourceModuleId);
     if (parsed.kind === "bcba") return resolveBcba(parsed.sourceModuleId);
+    if (parsed.kind === "intake") return resolveIntake(parsed.sourceModuleId);
     return null;
   }, [parsed.kind, parsed.sourceModuleId]);
 
@@ -437,6 +439,35 @@ function resolveBcba(sourceModuleId: string): ModuleCtx | null {
     sopLinks: m.sopLinks,
     tangos: m.tangos,
     aiPrompts: m.aiPrompts,
+  };
+}
+
+function resolveIntake(sourceModuleId: string): ModuleCtx | null {
+  const d: IntakeDayModule | undefined = getIntakeDay(sourceModuleId);
+  if (!d) return null;
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  const checklist = [
+    ...d.checklist,
+    ...d.livePractice.map((p) => `Live practice: ${p}`),
+  ];
+  return {
+    title: d.title,
+    description: d.description,
+    type: `Week ${d.weekNumber} · Day ${d.dayNumber}`,
+    minutes,
+    required: true,
+    objectives: d.objectives,
+    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    checklist,
+    shadowing: d.shadowing,
+    knowledgeCheck: d.knowledgeCheck,
+    sopLinks: d.resources.map((r) => ({
+      label: r.pending ? `${r.label} (pending upload)` : r.label,
+      href: r.href,
+    })),
+    trainerNotes: d.trainerNotes,
+    reflectionPrompt: d.reflectionPrompt,
+    signoffRequired: d.signoffRequired,
   };
 }
 
