@@ -296,19 +296,145 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
         <ReadyForDataNotice message={loading ? "Loading tasks…" : "No open intake tasks. Tasks created from leads will appear here."} />
       ) : (
         <section className="space-y-3">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center p-2 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
-            <div className="relative flex-1 min-w-[220px]">
-              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search task, lead, owner…" className="pl-9 h-9 bg-transparent border-0 focus-visible:ring-0" />
+          <div className="flex flex-col gap-2 p-2 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search task, lead, owner…"
+                  className="pl-9 h-9 bg-transparent border-0 focus-visible:ring-0"
+                />
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {(["all", "today", "overdue", "escalated"] as const).map((k) => (
+                  <button key={k} onClick={() => setFilter(k)}
+                    className={cn("px-3 py-1 rounded-full text-xs border transition",
+                      filter === k ? "bg-foreground text-background border-foreground" : "bg-card border-border/70 hover:bg-muted")}>
+                    {k === "all" ? "All open" : k === "today" ? "Due today" : k === "overdue" ? "Overdue" : "Escalated"}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {(["all", "today", "overdue", "escalated"] as const).map((k) => (
-                <button key={k} onClick={() => setFilter(k)}
-                  className={cn("px-3 py-1 rounded-full text-xs border transition",
-                    filter === k ? "bg-foreground text-background border-foreground" : "bg-card border-border/70 hover:bg-muted")}>
-                  {k === "all" ? "All open" : k === "today" ? "Due today" : k === "overdue" ? "Overdue" : "Escalated"}
+
+            <div className="flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2">
+              <div className="inline-flex items-center gap-1 text-[11px] text-muted-foreground pr-1">
+                <Filter className="h-3 w-3" /> Filters
+              </div>
+
+              {/* Status */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className={cn("px-2.5 py-1 rounded-full text-xs border transition inline-flex items-center gap-1",
+                    statuses.length > 0 ? "bg-primary/10 border-primary/40 text-primary" : "bg-card border-border/70 hover:bg-muted")}>
+                    Status{statuses.length > 0 && <Badge variant="secondary" className="h-4 px-1 text-[10px]">{statuses.length}</Badge>}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-2 w-[220px]">
+                  <div className="text-[11px] text-muted-foreground px-1 pb-1">Task status</div>
+                  <div className="flex flex-col gap-1">
+                    {(["Open", "In Progress", "Blocked"] as StatusKey[]).map((s) => (
+                      <label key={s} className="flex items-center gap-2 text-xs px-1.5 py-1 rounded hover:bg-muted cursor-pointer">
+                        <input type="checkbox" checked={statuses.includes(s)}
+                          onChange={() => setStatuses((prev) => toggleIn(prev, s))} />
+                        {s}
+                      </label>
+                    ))}
+                    {statuses.length > 0 && (
+                      <button onClick={() => setStatuses([])} className="text-[11px] text-muted-foreground hover:text-foreground text-left px-1.5 pt-1">Clear</button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Owner */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className={cn("px-2.5 py-1 rounded-full text-xs border transition inline-flex items-center gap-1",
+                    owners.length > 0 ? "bg-primary/10 border-primary/40 text-primary" : "bg-card border-border/70 hover:bg-muted")}>
+                    Owner{owners.length > 0 && <Badge variant="secondary" className="h-4 px-1 text-[10px]">{owners.length}</Badge>}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-2 w-[260px]">
+                  <div className="text-[11px] text-muted-foreground px-1 pb-1">Assigned to</div>
+                  <div className="max-h-[260px] overflow-y-auto flex flex-col gap-0.5">
+                    {hasUnassigned && (
+                      <label className="flex items-center gap-2 text-xs px-1.5 py-1 rounded hover:bg-muted cursor-pointer">
+                        <input type="checkbox" checked={owners.includes("__unassigned__")}
+                          onChange={() => setOwners((prev) => toggleIn(prev, "__unassigned__"))} />
+                        <span className="italic text-muted-foreground">Unassigned</span>
+                      </label>
+                    )}
+                    {ownerOptions.length === 0 && !hasUnassigned && (
+                      <div className="text-[11px] text-muted-foreground px-1.5 py-2">No owners yet.</div>
+                    )}
+                    {ownerOptions.map((o) => (
+                      <label key={o} className="flex items-center gap-2 text-xs px-1.5 py-1 rounded hover:bg-muted cursor-pointer">
+                        <input type="checkbox" checked={owners.includes(o)}
+                          onChange={() => setOwners((prev) => toggleIn(prev, o))} />
+                        <span className="truncate">{o}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {owners.length > 0 && (
+                    <button onClick={() => setOwners([])} className="text-[11px] text-muted-foreground hover:text-foreground text-left px-1.5 pt-1">Clear</button>
+                  )}
+                </PopoverContent>
+              </Popover>
+
+              {/* Due date range */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className={cn("px-2.5 py-1 rounded-full text-xs border transition inline-flex items-center gap-1",
+                    dueRange !== "any" ? "bg-primary/10 border-primary/40 text-primary" : "bg-card border-border/70 hover:bg-muted")}>
+                    <CalendarClock className="h-3 w-3" /> {dueRangeLabel[dueRange]}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-2 w-[200px]">
+                  <div className="text-[11px] text-muted-foreground px-1 pb-1">Due date</div>
+                  <div className="flex flex-col gap-0.5">
+                    {(Object.keys(dueRangeLabel) as DueRangeKey[]).map((k) => (
+                      <button key={k} onClick={() => setDueRange(k)}
+                        className={cn("text-left text-xs px-2 py-1 rounded hover:bg-muted",
+                          dueRange === k && "bg-primary/10 text-primary font-medium")}>
+                        {dueRangeLabel[k]}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Blocker / next-step */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className={cn("px-2.5 py-1 rounded-full text-xs border transition inline-flex items-center gap-1",
+                    flag !== "any" ? "bg-primary/10 border-primary/40 text-primary" : "bg-card border-border/70 hover:bg-muted")}>
+                    <Lock className="h-3 w-3" /> {flagLabel[flag]}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-2 w-[240px]">
+                  <div className="text-[11px] text-muted-foreground px-1 pb-1">Blocker / next step</div>
+                  <div className="flex flex-col gap-0.5">
+                    {(Object.keys(flagLabel) as FlagKey[]).map((k) => (
+                      <button key={k} onClick={() => setFlag(k)}
+                        className={cn("text-left text-xs px-2 py-1 rounded hover:bg-muted",
+                          flag === k && "bg-primary/10 text-primary font-medium")}>
+                        {flagLabel[k]}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearAdvanced}
+                  className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded"
+                >
+                  <X className="h-3 w-3" /> Clear filters
                 </button>
-              ))}
+              )}
             </div>
           </div>
 
