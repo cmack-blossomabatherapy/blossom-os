@@ -344,6 +344,27 @@ export function LeadDetailDrawer({
                 Not qualified
               </span>
             )}
+            {(() => {
+              const blocker = getLeadBlocker(lead);
+              if (!blocker) return null;
+              const tone =
+                blocker.tone === "urgent"
+                  ? "bg-destructive/10 text-destructive border-destructive/20"
+                  : blocker.tone === "risk"
+                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
+                    : "bg-muted text-muted-foreground border-border/60";
+              return (
+                <span
+                  className={cn("text-[11px] px-2 py-1 rounded-full border", tone)}
+                  title={blocker.reasons.join(" • ")}
+                >
+                  Blocker: {blocker.label}
+                </span>
+              );
+            })()}
+            <span className="text-[11px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 max-w-[280px] truncate" title={getLeadNextStep(lead)}>
+              Next: {getLeadNextStep(lead)}
+            </span>
           </div>
 
           {/* Pipeline progress strip */}
@@ -481,7 +502,7 @@ export function LeadDetailDrawer({
                 </div>
                 <Field label="E/T Call Log" value={fallback(i.etCallLog, "E/T Call Log")} />
                 <Field label="Reg Call Log" value={fallback(i.regularCallLog, "Reg Call Log")} />
-                <Field label="Next action" value={lead.nextAction} />
+                <Field label="Next step" value={getLeadNextStep(lead)} />
               </section>
 
               <section className="rounded-2xl bg-muted/60 border border-border/60 p-4 space-y-3">
