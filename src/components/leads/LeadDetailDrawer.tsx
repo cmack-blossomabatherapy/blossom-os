@@ -553,8 +553,66 @@ export function LeadDetailDrawer({
           )}
 
           {tab === "documents" && (
-            <section className="space-y-2">
-              {documents.length === 0 ? (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {isPersisted ? "Upload insurance cards, packets, signed forms, or other lead docs." : "Uploading available after this lead syncs to the database."}
+                </p>
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => void handleUpload(e.target.files)}
+                    accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!isPersisted || uploading}
+                    className="h-8"
+                  >
+                    <Upload className="h-3.5 w-3.5 mr-1.5" />
+                    {uploading ? "Uploading…" : "Upload"}
+                  </Button>
+                </div>
+              </div>
+              {isPersisted && uploadedDocs.length > 0 && (
+                <div className="space-y-2">
+                  {uploadedDocs.map((d) => (
+                    <div key={d.id} className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card px-4 h-12">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <a
+                          href={d.signedUrl ?? "#"}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => { if (!d.signedUrl) e.preventDefault(); }}
+                          className="text-sm truncate hover:underline"
+                        >
+                          {d.label}
+                        </a>
+                        <span className="text-[11px] text-muted-foreground truncate">
+                          · {d.uploaded_by_name || "Intake"} · {new Date(d.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => { void removeDoc(d).then(() => toast.success("Document removed")); }}
+                        className="rounded-md h-7 w-7 grid place-items-center text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition"
+                        aria-label="Delete document"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isPersisted && docsLoading && uploadedDocs.length === 0 && (
+                <div className="h-12 rounded-xl bg-muted/50 animate-pulse" />
+              )}
+              {documents.length === 0 && (!isPersisted || uploadedDocs.length === 0) ? (
                 <p className="text-sm text-muted-foreground py-12 text-center">No documents on file.</p>
               ) : documents.map((d, idx) => {
                 const meta = [
