@@ -657,50 +657,6 @@ export default function OSWelcomeToBlossom() {
           </div>
         </section>
 
-        {/* COMPLETION CARD */}
-        <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary)/0.10),hsl(var(--accent)/0.06))] p-6 sm:p-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="max-w-xl space-y-2">
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                <Sparkles className="h-3 w-3 text-primary" /> Next up
-              </div>
-              <h3 className="text-[20px] font-semibold tracking-tight text-foreground">
-                You are ready for the State Director Journey.
-              </h3>
-              <p className="text-[13.5px] leading-relaxed text-muted-foreground">
-                You have met the company, read the leadership notes, reviewed the mission and values,
-                and walked the high-level Blossom flow. Now move into the State Director launch journey.
-                You will go one day at a time, with SOPs, walkthroughs, mentor check-ins, shadowing, and
-                readiness sign-off. Nothing here has to be solved alone.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 self-start sm:self-auto">
-              <Button
-                size="lg"
-                className="rounded-2xl shadow-md shadow-primary/20"
-                onClick={continueToStateDirectorJourney}
-                disabled={!allWelcomeDone}
-                data-testid="welcome-continue-launch-path"
-              >
-                {allWelcomeDone ? (
-                  <>Start Training <ArrowRight className="ml-1 h-4 w-4" /></>
-                ) : (
-                  <>Confirm all sections to start training ({welcomeDoneCount}/{welcomeTotal})</>
-                )}
-              </Button>
-              <span className="sr-only">Start Training — continues to your launch path</span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-2xl gap-1.5"
-                onClick={() => navigate("/resource-library")}
-              >
-                <BookOpen className="h-3.5 w-3.5" /> Open Resource Library
-              </Button>
-            </div>
-          </div>
-        </section>
-
         {/* REFLECTION — written, saved to the learner's training record */}
         <section
           data-testid="welcome-reflection-prompt"
@@ -723,6 +679,23 @@ export default function OSWelcomeToBlossom() {
               ]}
             />
           </div>
+        </section>
+
+        {/* CONTINUE TO JOURNEY */}
+        <section className="flex flex-col items-center gap-3 pt-2">
+          <Button
+            size="lg"
+            className="rounded-2xl shadow-md shadow-primary/20"
+            onClick={continueToStateDirectorJourney}
+            disabled={!allWelcomeDone}
+            data-testid="welcome-continue-launch-path"
+          >
+            {allWelcomeDone ? (
+              <>Continue to Journey <ArrowRight className="ml-1 h-4 w-4" /></>
+            ) : (
+              <>Confirm all sections to continue ({welcomeDoneCount}/{welcomeTotal})</>
+            )}
+          </Button>
         </section>
 
         <p className="text-center text-[12px] text-muted-foreground">
