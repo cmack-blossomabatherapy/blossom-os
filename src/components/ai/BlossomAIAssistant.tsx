@@ -10,6 +10,7 @@ import type { AiSource } from "@/lib/ai/types";
 import type { OSRole } from "@/lib/os/permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCurrentRecordContext, recordContextSuggestions } from "@/hooks/useCurrentRecordContext";
 
 /* ------------------------------------------------------------------ */
 /* Types & context                                                     */
@@ -160,7 +161,10 @@ function BlossomAIDrawer({
   const { role, activeState } = useOSRole();
   const surface = opts.surface ?? "global";
   const title = opts.title ?? SURFACE_LABEL[surface];
-  const suggestions = opts.suggestions ?? DEFAULT_SUGGESTIONS[surface];
+  const record = useCurrentRecordContext();
+  const suggestions =
+    opts.suggestions ??
+    (record.kind ? recordContextSuggestions(record.kind) ?? DEFAULT_SUGGESTIONS[surface] : DEFAULT_SUGGESTIONS[surface]);
 
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -190,6 +194,11 @@ function BlossomAIDrawer({
   const buildContextualPrompt = useCallback(
     (userText: string) => {
       const parts: string[] = [];
+      // Auto-inject the currently selected record (lead/client/authorization) so
+      // Blossom AI can answer "this" questions without the user re-typing IDs.
+      if (record.contextText) {
+        parts.push(`Selected record (${record.kind}):\n${record.contextText}`);
+      }
       if (opts.contextText) parts.push(`Context: ${opts.contextText}`);
       if (opts.guardrails?.length) {
         parts.push(`Guardrails: ${opts.guardrails.join("; ")}`);
@@ -197,7 +206,7 @@ function BlossomAIDrawer({
       parts.push(`Question: ${userText}`);
       return parts.join("\n\n");
     },
-    [opts.contextText, opts.guardrails],
+    [opts.contextText, opts.guardrails, record.contextText, record.kind],
   );
 
   const send = useCallback(
@@ -264,6 +273,11 @@ function BlossomAIDrawer({
               <SheetTitle className="text-base leading-tight">{title}</SheetTitle>
               {opts.hint && (
                 <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{opts.hint}</p>
+              )}
+              {record.label && (
+                <p className="text-[11px] text-primary mt-0.5 truncate" title={record.contextText ?? undefined}>
+                  Using context · {record.label}
+                </p>
               )}
             </div>
             <button
