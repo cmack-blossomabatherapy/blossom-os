@@ -710,9 +710,36 @@ export function LeadDetailDrawer({
           {tab === "actions" && (
             <section className="space-y-2">
               <ActionButton
+                icon={ListChecks}
+                label="Create Task"
+                onClick={() => {
+                  if (!isPersisted) { toast.error("This lead isn't synced yet."); return; }
+                  setTaskOpen("task");
+                }}
+              />
+              <ActionButton
+                icon={CalendarClock}
+                label="Create Follow-Up"
+                onClick={() => {
+                  if (!isPersisted) { toast.error("This lead isn't synced yet."); return; }
+                  setTaskOpen("follow_up");
+                }}
+              />
+              <ActionButton
                 icon={StickyNote}
                 label="Add Note"
-                onClick={() => toast("Notes are read-only in this view (Monday source)")}
+                onClick={() => {
+                  if (!isPersisted) { toast.error("This lead isn't synced yet."); return; }
+                  setNoteOpen(true);
+                }}
+              />
+              <ActionButton
+                icon={Link2}
+                label={referralLink ? "Update Referral Source" : "Link Referral Source"}
+                onClick={() => {
+                  if (!isPersisted) { toast.error("This lead isn't synced yet."); return; }
+                  setReferralOpen(true);
+                }}
               />
               <ActionButton
                 icon={Send}
@@ -755,15 +782,34 @@ export function LeadDetailDrawer({
                 onClick={() => { updateLead(lead.id, { status: "Non-Qualified" }); toast("Marked non-qualified"); }}
                 tone="danger"
               />
-              <ActionButton
-                icon={ListChecks}
-                label="Create Task"
-                onClick={() => toast("Task creation coming next")}
-              />
             </section>
           )}
         </div>
       </aside>
+      {isPersisted && (
+        <>
+          <AddLeadNoteDialog
+            open={noteOpen}
+            onOpenChange={setNoteOpen}
+            leadId={lead.id}
+            leadName={lead.childName}
+          />
+          <CreateLeadTaskDialog
+            open={taskOpen !== false}
+            onOpenChange={(v) => { if (!v) setTaskOpen(false); }}
+            leadId={lead.id}
+            leadName={lead.childName}
+            defaultOwner={lead.owner}
+            mode={taskOpen === "follow_up" ? "follow_up" : "task"}
+          />
+          <LinkReferralDialog
+            open={referralOpen}
+            onOpenChange={setReferralOpen}
+            leadId={lead.id}
+            onLink={linkReferral}
+          />
+        </>
+      )}
     </>
   );
 }
