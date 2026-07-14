@@ -18,7 +18,7 @@ export function LibraryTabs() {
   const { role } = useOSRole();
   const isSuper = role === "super_admin";
   return (
-    <nav className="flex flex-wrap gap-1.5 rounded-2xl border border-border/60 bg-white/70 p-1.5 backdrop-blur">
+    <nav className="flex flex-wrap gap-1.5 rounded-2xl border border-border/60 bg-card/70 p-1.5 backdrop-blur">
       {TABS.map((t) => {
         const Icon = t.icon;
         return (
@@ -46,8 +46,8 @@ export function LibraryTabs() {
             cn(
               "ml-auto inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12.5px] font-medium transition",
               isActive
-                ? "bg-amber-500 text-white shadow-sm"
-                : "text-amber-700 hover:bg-amber-50",
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )
           }
         >
