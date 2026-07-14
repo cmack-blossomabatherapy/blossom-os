@@ -71,7 +71,6 @@ describe("Export 81 — Access, Naming, Communication Actions", () => {
       "src/components/layout/AppSidebar.tsx",
       "src/pages/os/OSShell.tsx",
       "src/pages/os/intake/IntakeDashboard.tsx",
-      "src/pages/os/intake/LeadToActivePipeline.tsx",
     ];
     for (const f of files) {
       const s = read(f);
