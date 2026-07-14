@@ -668,23 +668,24 @@ export default function OSAskBlossom() {
 
             {/* RIGHT: insights + actions */}
             <aside className="hidden flex-col rounded-2xl border border-border/60 bg-card/90 p-4 backdrop-blur lg:flex lg:max-h-[calc(100vh-240px)] overflow-y-auto">
-              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational Insights</h3>
-              <div className="space-y-2">
-                {insights.map((i) => (
-                  <div key={i.id} className="rounded-xl border border-foreground/[0.06] bg-white/80 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-[12.5px] font-semibold text-foreground">{i.title}</p>
-                      <Badge variant="outline" className={cn(
-                        "rounded-full text-[10px]",
-                        i.severity === "risk" && "border-rose-200 bg-rose-50 text-rose-600",
-                        i.severity === "watch" && "border-amber-200 bg-amber-50 text-amber-700",
-                        i.severity === "info" && "border-emerald-200 bg-emerald-50 text-emerald-700",
-                      )}>{i.severity}</Badge>
-                    </div>
-                    <p className="mt-1 text-[11.5px] text-muted-foreground">{i.detail}</p>
-                  </div>
-                ))}
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Live Insights</h3>
+                <button
+                  type="button"
+                  onClick={refreshInsights}
+                  disabled={insightsRefreshing}
+                  aria-label="Refresh insights"
+                  className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50"
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5", insightsRefreshing && "animate-spin")} />
+                </button>
               </div>
+              <InsightsList
+                insights={insights}
+                loading={insightsLoading}
+                error={insightsError}
+                onOpen={(i) => i.href && navigate(i.href)}
+              />
               <h3 className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Shortcuts</h3>
               <div className="space-y-1">
                 {quickPrompts.slice(0, 5).map((p) => (
