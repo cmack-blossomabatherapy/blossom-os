@@ -7,6 +7,7 @@ import type {
   ResourceStatus,
 } from "@/lib/resources/resourceData";
 import type { OSRole } from "@/lib/os/permissions";
+import { cleanResourceTitle, resourceDisplayDescription } from "@/lib/resources/resourceDisplay";
 
 interface HrResourceRow {
   id: string;
@@ -64,16 +65,55 @@ const CATEGORY_MAP: Record<string, ResourceCategoryId> = {
   general: "operational",
 };
 
+const RESOURCE_TYPE_TO_TYPE: Partial<Record<string, ResourceType>> = {
+  sop: "SOP",
+  policy: "SOP",
+  workflow: "Workflow",
+  template: "Template",
+  form: "Form",
+  checklist: "Checklist",
+  cheat_sheet: "Checklist",
+  video: "Video",
+  training: "PDF",
+  guide: "PDF",
+  handbook: "PDF",
+  role_packet: "PDF",
+  org_reference: "PDF",
+  admin_reference: "PDF",
+  report_reference: "PDF",
+};
+
+function inferType(r: HrResourceRow): ResourceType {
+  const file = `${r.file_name ?? ""} ${r.storage_path ?? ""}`.toLowerCase();
+  const mime = (r.mime_type ?? "").toLowerCase();
+  const resourceType = (r.resource_type ?? "").toLowerCase();
+  if (r.kind === "video" || resourceType === "video" || r.storage_bucket === "resource-videos" || mime.startsWith("video/") || /\.(mp4|mov|m4v|webm)$/.test(file)) return "Video";
+  if (mime === "application/pdf" || /\.pdf$/.test(file)) return RESOURCE_TYPE_TO_TYPE[resourceType] ?? "PDF";
+  if (/\.(doc|docx)$/.test(file)) return "DOCX";
+  if (/\.(xls|xlsx)$/.test(file)) return "XLSX";
+  if (/\.csv$/.test(file)) return "CSV";
+  if (/\.(png|jpe?g|webp|gif|svg)$/.test(file)) return "Image";
+  return RESOURCE_TYPE_TO_TYPE[resourceType] ?? KIND_TO_TYPE[r.kind] ?? "PDF";
+}
+
 function mapRow(r: HrResourceRow): Resource {
+  const base = {
+    title: cleanResourceTitle(r.title || r.file_name || "Resource"),
+    description: r.description ?? "",
+    type: inferType(r),
+    departments: r.departments ?? [],
+    resourceType: (r.resource_type as Resource["resourceType"]) ?? undefined,
+    category: CATEGORY_MAP[r.category] ?? "operational",
+  };
   return {
     id: r.id,
-    title: r.title,
-    description: r.description ?? "",
-    type: KIND_TO_TYPE[r.kind] ?? "PDF",
-    category: CATEGORY_MAP[r.category] ?? "operational",
+    title: base.title,
+    description: resourceDisplayDescription(base),
+    type: base.type,
+    category: base.category,
     status: (r.is_active ? "Published" : "Archived") as ResourceStatus,
     roles: ((r.visibility_roles ?? []) as OSRole[]),
-    departments: r.departments ?? [],
+    departments: base.departments,
     states: r.visibility_states ?? [],
     tags: r.tags ?? [],
     uploadedBy: r.uploaded_by_name ?? "—",
@@ -81,7 +121,7 @@ function mapRow(r: HrResourceRow): Resource {
     updatedAt: r.updated_at,
     url: r.url ?? undefined,
     pinned: r.is_pinned,
-    resourceType: (r.resource_type as Resource["resourceType"]) ?? undefined,
+    resourceType: base.resourceType,
     sensitivity: (r.sensitivity as Resource["sensitivity"]) ?? undefined,
     attachmentStatus: (r.attachment_status as Resource["attachmentStatus"]) ?? undefined,
     uploadStatus: (r.upload_status as Resource["uploadStatus"]) ?? "published",

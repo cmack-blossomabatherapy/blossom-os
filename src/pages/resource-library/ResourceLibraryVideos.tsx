@@ -4,25 +4,25 @@ import { LibraryTabs } from "@/components/resource-library/LibraryTabs";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { isVisibleToRole, type Resource } from "@/lib/resources/resourceData";
-import { canPreviewInline, fileTypeLabel } from "@/lib/resources/librarySections";
+import { fileTypeLabel, isVideoResource } from "@/lib/resources/librarySections";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import { Input } from "@/components/ui/input";
-import { PlayCircle, Search } from "lucide-react";
-import { cleanResourceTitle } from "@/lib/resources/resourceDisplay";
+import { PlayCircle, Search, Video } from "lucide-react";
+import { cleanResourceTitle, resourceDisplayDescription } from "@/lib/resources/resourceDisplay";
 import { cn } from "@/lib/utils";
 
 export default function ResourceLibraryVideos() {
   const { resources, loading } = useLibraryResources();
-  const { role } = useOSRole();
+  const { role, activeState } = useOSRole();
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Resource | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
   const videos = useMemo(
     () => resources
-      .filter((r) => isVisibleToRole(r, role))
-      .filter((r) => canPreviewInline(r) === "video" || r.type === "Video" || r.storageBucket === "resource-videos"),
-    [resources, role],
+      .filter((r) => isVisibleToRole(r, role, activeState))
+      .filter(isVideoResource),
+    [resources, role, activeState],
   );
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -47,11 +47,11 @@ export default function ResourceLibraryVideos() {
   return (
     <OSShell>
       <div className="mx-auto max-w-7xl space-y-6 p-6">
-        <header className="space-y-1">
+        <header className="rounded-3xl border border-border/60 bg-card/70 p-6 shadow-sm">
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Resource Library</p>
-          <h1 className="text-2xl font-semibold tracking-tight">Videos</h1>
-          <p className="text-[13px] text-muted-foreground">
-            Recorded walkthroughs and screen captures. Playback is signed for your session.
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Video walkthroughs</h1>
+          <p className="mt-1 max-w-2xl text-[13px] text-muted-foreground">
+            Recorded walkthroughs and screen captures assigned to your role. Playback uses a secure session link.
           </p>
         </header>
         <LibraryTabs />
@@ -74,14 +74,13 @@ export default function ResourceLibraryVideos() {
                 )}
                 <div>
                   <h2 className="text-[15px] font-semibold">{cleanResourceTitle(selected.title)}</h2>
-                  {selected.description && (
-                    <p className="mt-1 text-[12.5px] text-muted-foreground">{selected.description}</p>
-                  )}
+                  <p className="mt-1 text-[12.5px] text-muted-foreground">{resourceDisplayDescription(selected)}</p>
                 </div>
               </div>
             ) : (
-              <div className="flex aspect-video items-center justify-center text-sm text-muted-foreground">
-                {loading ? "Loading videos…" : "No videos available."}
+              <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 bg-muted/30 text-center text-sm text-muted-foreground">
+                <Video className="h-8 w-8" />
+                {loading ? "Loading videos…" : "No videos are assigned to this role yet."}
               </div>
             )}
           </div>

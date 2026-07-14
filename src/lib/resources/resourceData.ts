@@ -85,7 +85,14 @@ export interface Resource {
     | "policy"
     | "checklist"
     | "training"
-    | "reference";
+    | "reference"
+    | "video"
+    | "form"
+    | "cheat_sheet"
+    | "admin_reference"
+    | "org_reference"
+    | "role_packet"
+    | "report_reference";
   /**
    * Sensitivity classification. `excluded` and `admin_only` are kept out of
    * the standard Resource Library by `visibleResources`.

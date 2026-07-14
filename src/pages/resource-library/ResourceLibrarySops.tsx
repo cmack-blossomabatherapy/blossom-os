@@ -4,17 +4,14 @@ import { ResourceListView } from "@/components/resource-library/ResourceListView
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { isVisibleToRole } from "@/lib/resources/resourceData";
+import { isCheatSheet, isFormOrTemplate, isPolicyOrHandbook, isSopResource } from "@/lib/resources/librarySections";
 
 export default function ResourceLibrarySops() {
   const { resources, loading } = useLibraryResources();
-  const { role } = useOSRole();
+  const { role, activeState } = useOSRole();
   const list = resources
-    .filter((r) => isVisibleToRole(r, role))
-    .filter((r) =>
-      r.sopRelated || r.type === "SOP" || r.resourceType === "sop" || r.resourceType === "policy"
-      || r.type === "Form" || r.type === "Template" || r.type === "Checklist"
-      || r.resourceType === "handbook",
-    );
+    .filter((r) => isVisibleToRole(r, role, activeState))
+    .filter((r) => isSopResource(r) || isPolicyOrHandbook(r) || isFormOrTemplate(r) || isCheatSheet(r));
   return (
     <OSShell>
       <div className="mx-auto max-w-7xl space-y-6 p-6">

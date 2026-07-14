@@ -4,13 +4,14 @@ import { ResourceListView } from "@/components/resource-library/ResourceListView
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { isVisibleToRole } from "@/lib/resources/resourceData";
+import { isTrainingResource } from "@/lib/resources/librarySections";
 
 export default function ResourceLibraryTraining() {
   const { resources, loading } = useLibraryResources();
-  const { role } = useOSRole();
+  const { role, activeState } = useOSRole();
   const list = resources
-    .filter((r) => isVisibleToRole(r, role))
-    .filter((r) => r.trainingRelated || r.category === "training" || r.resourceType === "training" || r.resourceType === "guide");
+    .filter((r) => isVisibleToRole(r, role, activeState))
+    .filter(isTrainingResource);
   return (
     <OSShell>
       <div className="mx-auto max-w-7xl space-y-6 p-6">
