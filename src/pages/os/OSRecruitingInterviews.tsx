@@ -68,7 +68,7 @@ function toneFor(c: RecruitingCandidate): Tone {
   if (c.interviewStatus === "No-Show") return "crit";
   if (c.interviewStatus === "Needs Outcome" && c.daysInStage >= 3) return "crit";
   if (c.daysInStage >= 7) return "crit";
-  if (c.daysInStage >= 4 || c.blockers.length > 0) return "warn";
+  if (c.daysInStage >= 4 || (c.blockers ?? []).length > 0) return "warn";
   if (c.interviewStatus === "Today") return "info";
   return "ok";
 }
@@ -140,7 +140,9 @@ const OUTCOME_STEPS = [
 export default function OSRecruitingInterviews() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
-  const { items: liveInterviews } = useRecruitingInterviews();
+  // Live interviews subscription is kept to trigger realtime refreshes of the
+  // legacy mapper; the raw items aren't needed here.
+  useRecruitingInterviews();
   const [activeChip, setActiveChip] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [state, setState] = useState<string>("all");
@@ -228,11 +230,10 @@ export default function OSRecruitingInterviews() {
         default: return true;
       }
     });
-  }, [activeChip, search, state, role, recruiter, source]);
+  }, [activeChip, search, state, role, recruiter, source, recruitingCandidates]);
 
-  const all = recruitingCandidates;
   const summary = useMemo(() => {
-    const get = (pred: (c: RecruitingCandidate) => boolean) => all.filter(pred).length;
+    const get = (pred: (c: RecruitingCandidate) => boolean) => recruitingCandidates.filter(pred).length;
     return {
       today:        get((c) => isToday(c.interviewAt) || c.interviewStatus === "Today"),
       needsSchedule:get((c) => stageOf(c) === "needsSchedule"),
@@ -241,16 +242,15 @@ export default function OSRecruitingInterviews() {
       noShows:      get((c) => stageOf(c) === "noShow"),
       needsDecision:get((c) => stageOf(c) === "needsDecision"),
       offerRec:     get((c) => stageOf(c) === "offerRec"),
-      followUp:     get((c) => c.blockers.length > 0 && c.daysInStage >= 3),
+      followUp:     get((c) => (c.blockers ?? []).length > 0 && c.daysInStage >= 3),
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [recruitingCandidates]);
 
   const todays = useMemo(() => {
     return recruitingCandidates
       .filter((c) => isToday(c.interviewAt) || c.interviewStatus === "Today")
       .sort((a, b) => (a.interviewAt ?? "").localeCompare(b.interviewAt ?? ""));
-  }, []);
+  }, [recruitingCandidates]);
 
   const followUpQueue = useMemo(() => {
     return recruitingCandidates.filter((c) => {
@@ -258,8 +258,7 @@ export default function OSRecruitingInterviews() {
       return s === "noShow" || s === "needsDecision" || (s === "offerRec" && c.offerStatus !== "Sent" && c.offerStatus !== "Accepted")
         || (s === "completed" && c.daysInStage >= 2);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [recruitingCandidates]);
 
   const selected = selectedId ? recruitingCandidates.find((c) => c.id === selectedId) ?? null : null;
 
@@ -596,7 +595,7 @@ function TimelineRow({ c, onOpen }: { c: RecruitingCandidate; onOpen: () => void
       </div>
       <div className="hidden md:flex items-center gap-1.5">
         <Pill tone={tone}>{c.interviewStatus}</Pill>
-        {c.blockers.length > 0 && <Pill tone="warn">{c.blockers.length} blocker</Pill>}
+        {(c.blockers ?? []).length > 0 && <Pill tone="warn">{(c.blockers ?? []).length} blocker</Pill>}
       </div>
       <div className="hidden md:flex items-center gap-1">
         <IconBtn icon={Video} title="Join" />
@@ -642,7 +641,7 @@ function BoardCard({ c, onOpen, onDragStart }: { c: RecruitingCandidate; onOpen:
 
 function FollowUpCard({ c, onOpen }: { c: RecruitingCandidate; onOpen: () => void }) {
   const tone = toneFor(c);
-  const reason = c.blockers[0] ?? c.nextAction;
+  const reason = ((c.blockers ?? [])[0]) ?? c.nextAction;
   return (
     <button onClick={onOpen} className="text-left rounded-2xl bg-card border border-border/70 p-4 hover:border-border hover:-translate-y-0.5 transition-all duration-200">
       <div className="flex items-start justify-between gap-2 mb-1">
@@ -701,7 +700,7 @@ function CandidateSlideout({
             <Pill tone={tone}>{c.interviewStatus}</Pill>
             <Pill tone="muted">{c.candidateStatus}</Pill>
             <Pill tone="muted">{c.daysInStage}d in stage</Pill>
-            {c.blockers.map((b) => <Pill key={b} tone="warn">{b}</Pill>)}
+            {(c.blockers ?? []).map((b) => <Pill key={b} tone="warn">{b}</Pill>)}
           </div>
 
           {/* Interview details */}

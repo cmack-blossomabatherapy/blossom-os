@@ -286,6 +286,7 @@ import OSRecruitingWorkspace from "./pages/os/OSRecruitingWorkspace";
 import OSRecruitingTrainingAcademy from "./pages/os/OSRecruitingTrainingAcademy";
 import OSRecruitingPipeline from "./pages/os/OSRecruitingPipeline";
 import OSRecruitingInterviews from "./pages/os/OSRecruitingInterviews";
+import { SafeBoundary } from "@/components/common/SafeBoundary";
 import OSRecruitingOffers from "./pages/os/OSRecruitingOffers";
 import OSRecruitingOnboarding from "./pages/os/OSRecruitingOnboarding";
 import OSRecruitingBackgroundChecks from "./pages/os/OSRecruitingBackgroundChecks";
@@ -716,7 +717,7 @@ const App = () => (
                   <Route path="/recruiting/workspace"      element={<OSRecruitingWorkspace />} />
                   <Route path="/recruiting/academy"        element={<OSRecruitingTrainingAcademy />} />
                   <Route path="/recruiting/pipeline"       element={<OSRecruitingPipeline />} />
-                  <Route path="/recruiting/interviews"     element={<OSRecruitingInterviews />} />
+                  <Route path="/recruiting/interviews"     element={<SafeBoundary label="Interviews" fallbackTitle="Interviews could not load." showErrorDetails><OSRecruitingInterviews /></SafeBoundary>} />
                  <Route path="/recruiting/offers"         element={<OSRecruitingOffers />} />
                   <Route path="/recruiting/onboarding"     element={<OSRecruitingOnboarding />} />
                   <Route path="/recruiting/background"     element={<OSRecruitingBackgroundChecks />} />

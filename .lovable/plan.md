@@ -1,49 +1,43 @@
-## Problem
+## What's happening
 
-Visiting `/tasks` shows a blank page with just a spinner — no sidebar, no header, no content.
+`/recruiting/interviews` renders a blank white page. That means a JavaScript error is being thrown during render and nothing is catching it (no route-level error boundary), so React unmounts the tree. I cannot reproduce it directly right now because the sandbox has no signed-in session, so the fix does two things in parallel: (1) make the page surface real errors instead of going blank, and (2) fix the fragile spots most likely to be throwing.
 
-Two root causes:
+## Root-cause candidates I found while reading the code
 
-1. In `src/App.tsx` the route is registered as `<Route path="/tasks" element={<IntakeTasks />} />` — it is NOT wrapped in `<OSShellPage>`. Every other in-app destination (`/home`, `/academy`, `/leads`, etc.) is wrapped in `OSShellPage`, which is what renders the left sidebar, the top bar (Home button, role switcher), and the auth/MFA gating that gets a signed-in user past the loading state. Without it, `/tasks` renders the intake page alone and, when auth/MFA hooks that normally live inside the shell are missing, the app stalls on a plain spinner (redirect to `/mfa/verify` in some cases).
-2. The component behind `/tasks` is still `IntakeTasks` — labelled "Growth & Admissions → Tasks" and scoped to leads/intake data via `useIntakeTasksLive` + `useLeads`. That contradicts the earlier promise that "Every role should have a Tasks page and it should look and work the same." For non-intake roles it either loads with intake-only pulse tiles or shows nothing meaningful.
+`src/pages/os/OSRecruitingInterviews.tsx`:
 
-## Fix
+- `const candidates = useMemo(..., [activeChip, search, state, role, recruiter, source])` — **missing `recruitingCandidates` in the deps**. The board, chips, and AI panel all read from `candidates`, so when data finally loads the memo never refreshes.
+- `summary`, `todays`, `followUpQueue` all use `useMemo(..., [])` with `eslint-disable-next-line react-hooks/exhaustive-deps`. They freeze the empty first-render array forever.
+- `summary.followUp` / board cards read `c.blockers.length` and `(c.tags ?? []).includes(...)`. If any candidate in `useLegacyRecruitingCandidates` returns a `blockers` value that isn't an array (e.g. from a partially-migrated row), `.length` throws and the whole page crashes to blank.
+- `useLegacyRecruitingCandidates` fans across 7 realtime hooks; if any single row has an unexpected shape (e.g. `iv.status` undefined, `c.tags` non-array), the `.forEach` / `.filter` chain throws inside the memo — again, no boundary → blank page.
 
-Frontend / routing only — no schema or business-logic changes.
+## Fix plan
 
-### 1. Wrap the route in OSShell (`src/App.tsx`)
+### 1. Route-level error boundary so this never blank-screens again
+- Wrap the `<Route path="/recruiting/interviews">` element in `src/App.tsx` with the existing `ErrorBoundary` (or a small local one if none is exported) that renders a friendly "Something went wrong on Interviews" panel with the error message + a Retry button.
 
-Change:
-```
-<Route path="/tasks" element={<IntakeTasks />} />
-```
-to:
-```
-<Route path="/tasks" element={<OSShellPage><TasksPage /></OSShellPage>} />
-```
+### 2. Fix stale memo dependencies in `OSRecruitingInterviews.tsx`
+- Add `recruitingCandidates` to the deps for `candidates`, `summary`, `todays`, `followUpQueue`.
+- Remove the `eslint-disable-next-line react-hooks/exhaustive-deps` comments — they're masking the exact bug that leaves the board empty after data loads.
+- Drop the unused `liveInterviews` / `toggleStep` destructures.
 
-This restores the sidebar, Home button, top bar, and auth flow so the page actually renders for a signed-in user.
+### 3. Harden `useLegacyRecruitingCandidates.ts` against bad rows
+- Wrap the per-candidate `.map(...)` body in a try/catch that logs the offending candidate id and returns `null`, then `.filter(Boolean)` the result. One bad row can no longer take down the entire page.
+- Coerce `c.tags` to `Array.isArray(c.tags) ? c.tags : []` before every `.includes` / `.find`.
+- Guarantee `blockers` is always an array (already is, but assert with `[]` fallback where it's produced).
 
-### 2. Introduce a universal Tasks page (`src/pages/tasks/TasksPage.tsx`)
+### 4. Defensive reads in the page component
+- Replace `c.blockers.length` with `(c.blockers ?? []).length` in `summary.followUp` and `FollowUpCard`.
+- Replace `(c.tags ?? []).includes` style reads similarly wherever raw fields are touched.
 
-New thin page that renders the same tasks experience for every role:
+### 5. Verify
+- Reload `/recruiting/interviews`. Expected outcomes:
+  - If the underlying data error still exists, the error boundary shows the actual message instead of a blank page → we fix that specific field next.
+  - If the crash was from one of the shapes covered in step 3, the page now renders with real interview data.
+- Run the existing `recruitingRoleMenuSprint20` and `recruitingWorkspaceTabsPass8` tests to confirm no regression.
 
-- Header: "Tasks" (no "Growth & Admissions" eyebrow), description "Your task list — follow-ups, actions, and reminders."
-- Uses the existing `useIntakeTasksLive` hook (which is already the source of `user_tasks` for the current user regardless of role) plus, when the current role has intake permissions, the lead-linked columns; for non-intake roles the lead column is hidden and lead-specific filters (Escalated tag) are suppressed.
-- Reuses the current filter chips (All / Overdue / Due Today), search, sort, `AssigneePicker`, and complete/snooze/reassign actions from `IntakeTasks` — pulled into shared subcomponents so both the universal page and the intake workspace stay in sync.
-- Keeps the "Add Lead" action ONLY when the viewer has an intake-facing role; other roles get a generic "New Task" action that opens the existing task-creation dialog (`CreateLeadTaskDialog` reused in "generic task" mode, or the existing generic task dialog if present in `src/components/tasks/`).
+## Technical notes
 
-### 3. Keep IntakeTasks for the intake workspace
-
-`IntakeTasks.tsx` (mounted at `/intake/tasks`) stays intact for intake coordinators who want the lead-scoped view. The new `TasksPage` is what `/tasks` renders for everyone.
-
-### 4. Sanity checks
-
-- Re-run the existing `src/test/deepLinksResolve.test.ts` to confirm `/tasks?task=…` still resolves.
-- Verify via Playwright at `/tasks` that the sidebar renders, the Home button is present, and the tasks list appears with the current user's `user_tasks` rows.
-
-## Out of scope
-
-- No changes to the `user_tasks` schema, RLS, hooks, or task-creation flows.
-- No changes to `/intake/tasks` behavior.
-- No design-system or menu changes beyond what's needed to render the shell.
+- Files touched: `src/App.tsx`, `src/pages/os/OSRecruitingInterviews.tsx`, `src/hooks/useLegacyRecruitingCandidates.ts`, and possibly a tiny `src/components/errors/RouteErrorBoundary.tsx` if an equivalent doesn't already exist.
+- No schema changes, no new tables, no data migrations.
+- No behavior change to any other recruiting page — the mapper hardening is purely defensive.

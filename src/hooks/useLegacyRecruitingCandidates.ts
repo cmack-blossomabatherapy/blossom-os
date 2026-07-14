@@ -171,7 +171,8 @@ export function useLegacyRecruitingCandidates(): LegacyCandidate[] {
       followsByCand.set(f.candidate_id, arr);
     });
 
-    return candidates.map<LegacyCandidate>((c: DbCandidate) => {
+    return candidates.map<LegacyCandidate | null>((c: DbCandidate) => {
+      try {
       const iv = ivByCand.get(c.id);
       const off = offerByCand.get(c.id);
       const bg = bgByCand.get(c.id);
@@ -206,6 +207,7 @@ export function useLegacyRecruitingCandidates(): LegacyCandidate[] {
         : (["Ready to Staff", "Staffed"].includes(stage) ? "Active" : "Needed");
 
       const days = daysInStage(c);
+      const tags = Array.isArray(c.tags) ? c.tags : [];
       const blockers: string[] = [];
       fups.filter((f) => f.status !== "Done").forEach((f) => blockers.push(f.title));
       if (off?.status === "Unsigned" && days >= 2) blockers.push("Offer unsigned");
@@ -255,7 +257,7 @@ export function useLegacyRecruitingCandidates(): LegacyCandidate[] {
         resume: c.resume_url ? "Received" : "Missing",
         certification,
         bacbCheck: bacb,
-        kidsExperience: (c.tags ?? []).includes("High") ? "High" : (c.tags ?? []).includes("Entry") ? "Entry" : "Moderate",
+        kidsExperience: tags.includes("High") ? "High" : tags.includes("Entry") ? "Entry" : "Moderate",
         screeningOutcome: screening,
         eligibility,
         notQualifiedReason: stage === "Rejected" || stage === "Withdrawn" ? (c.notes ?? undefined) : undefined,
@@ -272,10 +274,10 @@ export function useLegacyRecruitingCandidates(): LegacyCandidate[] {
         i9,
         everify,
         centralReach,
-        availability: c.tags?.find((t) => /hrs|hours|week|day|am|pm/i.test(t)) ?? "Flexible",
+        availability: tags.find((t) => /hrs|hours|week|day|am|pm/i.test(t)) ?? "Flexible",
         travelRadius: 20,
-        preferredHours: c.tags?.find((t) => /\d+\s*hrs?/i.test(t)) ?? "25 hrs/week",
-        blockers,
+        preferredHours: tags.find((t) => /\d+\s*hrs?/i.test(t)) ?? "25 hrs/week",
+        blockers: blockers ?? [],
         tasks: tasks.map((t) => ({
           id: t.id,
           title: t.title,
@@ -290,6 +292,12 @@ export function useLegacyRecruitingCandidates(): LegacyCandidate[] {
           ...(bg?.initiated_at ? [{ id: `${c.id}-bg`, date: bg.initiated_at, title: "Background check", detail: `Status: ${bg.status}.`, actor: bg.vendor ?? "Vendor", type: bg.status === "Delayed" || bg.status === "Flagged" ? "alert" as const : "system" as const }] : []),
         ],
       };
-    });
+      } catch (err) {
+        // Never let one malformed candidate blank the whole page.
+        // eslint-disable-next-line no-console
+        console.error("[useLegacyRecruitingCandidates] skipping candidate", c?.id, err);
+        return null;
+      }
+    }).filter((x): x is LegacyCandidate => x !== null);
   }, [candidates, interviews, offers, bgChecks, orientation, onbTasks, followups]);
 }
