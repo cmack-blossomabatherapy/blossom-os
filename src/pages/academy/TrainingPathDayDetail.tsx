@@ -10,6 +10,7 @@ import {
   buildPathJourney, findDay, firstIncompleteModule, moduleStatus,
   parseAcademyModuleId,
 } from "@/lib/academy/journeyContent";
+import { useRuntimeVersion } from "@/lib/academy/runtimeStore";
 import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
 import type { RBTPathId } from "@/lib/training/rbtAcademy";
 
@@ -24,9 +25,12 @@ export default function TrainingPathDayDetail() {
   const [params] = useSearchParams();
   const rbtTrackId = (params.get("track") as RBTPathId | null) ?? undefined;
   const trackSuffix = slug === "rbt" && rbtTrackId ? `?track=${rbtTrackId}` : "";
+  // Re-render on any runtime progress change so the day view reflects
+  // completed modules immediately after returning from the runtime.
+  const runtimeVersion = useRuntimeVersion();
   const journey = useMemo(
     () => buildPathJourney(slug, slug === "rbt" && rbtTrackId ? { rbtTrackId } : undefined),
-    [slug, rbtTrackId],
+    [slug, rbtTrackId, runtimeVersion],
   );
   const day = useMemo(() => (journey ? findDay(journey, decodeURIComponent(dayId)) : undefined), [journey, dayId]);
 
