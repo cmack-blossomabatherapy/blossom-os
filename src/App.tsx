@@ -286,6 +286,7 @@ import OSRecruitingWorkspace from "./pages/os/OSRecruitingWorkspace";
 import OSRecruitingTrainingAcademy from "./pages/os/OSRecruitingTrainingAcademy";
 import OSRecruitingPipeline from "./pages/os/OSRecruitingPipeline";
 import OSRecruitingInterviews from "./pages/os/OSRecruitingInterviews";
+import { SafeBoundary } from "@/components/common/SafeBoundary";
 import OSRecruitingOffers from "./pages/os/OSRecruitingOffers";
 import OSRecruitingOnboarding from "./pages/os/OSRecruitingOnboarding";
 import OSRecruitingBackgroundChecks from "./pages/os/OSRecruitingBackgroundChecks";
