@@ -159,6 +159,7 @@ function BlossomAIDrawer({
   opts: BlossomAIOpenOptions;
 }) {
   const { role, activeState } = useOSRole();
+  const navigate = useNavigate();
   const surface = opts.surface ?? "global";
   const title = opts.title ?? SURFACE_LABEL[surface];
   const record = useCurrentRecordContext();
