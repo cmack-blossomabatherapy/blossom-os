@@ -8,7 +8,7 @@ import {
   Plug, Briefcase, Building2, IdCard, KeyRound, Smartphone, Stethoscope,
   AlertTriangle, BarChart3, ClipboardList, ListTodo, MapPin, XCircle, CheckCircle2,
   PhoneCall, BookUser, Activity, Workflow as WorkflowIcon, Inbox, Bug,
-  Mail, Sparkles,
+  Mail, Sparkles, Home,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -487,7 +487,16 @@ export function AppSidebar({
             </div>
           </header>
           <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Mobile navigation">
-            <div className="mb-3 px-1">
+            <NavLink
+              to="/home"
+              onClick={() => onMobileOpenChange?.(false)}
+              className={cn("mobile-menu-item", isItemActive("/home") && "mobile-menu-item-active")}
+            >
+              <span className="mobile-menu-icon"><Home className="h-4 w-4" /></span>
+              <span className="min-w-0 flex-1"><span className="block truncate">Home</span></span>
+              {isItemActive("/home") && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />}
+            </NavLink>
+            <div className="mb-3 mt-1 px-1">
               <ResumeOnboardingButton variant="mobile" onNavigate={() => onMobileOpenChange?.(false)} />
             </div>
             {mobileSections.map((section, i) => {
@@ -662,6 +671,15 @@ export function AppSidebar({
               placeholder="Search menu — Enter to jump"
               className="h-9 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/30 pl-10 text-xs text-sidebar-foreground placeholder:text-sidebar-muted shadow-inner backdrop-blur-md focus-visible:ring-1 focus-visible:ring-sidebar-primary"
             />
+          </div>
+          <div className="px-1">
+            <NavLink
+              to="/home"
+              className={cn("nav-item", isItemActive("/home") ? "nav-item-active" : "nav-item-inactive")}
+            >
+              <Home className="h-4 w-4 shrink-0" />
+              <span className="truncate">Home</span>
+            </NavLink>
           </div>
           {sections.map((section) => {
             const sectionOpen = openSections.has(section.title);
