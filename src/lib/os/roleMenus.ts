@@ -59,6 +59,7 @@ const TRAINING_AND_RESOURCES: RoleMenuSection = {
   items: [
     { label: "Training Academy", path: "/academy",          icon: GraduationCap },
     { label: "Resource Library", path: "/resource-library", icon: BookOpen },
+    { label: "Parent Communication", path: "/intake/parent-communication", icon: MessageSquare },
     { label: "Reports",          path: "/reports",          icon: FileText },
   ],
 };
@@ -73,6 +74,7 @@ const STATE_TRAINING_AND_RESOURCES: RoleMenuSection = {
   items: [
     { label: "Training Academy", path: "/training",         icon: GraduationCap },
     { label: "Resource Library", path: "/resource-library", icon: BookOpen },
+    { label: "Parent Communication", path: "/intake/parent-communication", icon: MessageSquare },
     { label: "Reports",          path: "/reports",          icon: FileText },
   ],
 };
