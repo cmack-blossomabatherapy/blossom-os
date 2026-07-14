@@ -58,6 +58,11 @@ export default function OSAskBlossom() {
   const [attachments, setAttachments] = useState<Attach[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Sidebar UX state — inline rename + search.
+  const [convSearch, setConvSearch] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+
   const MAX_FILES = 3;
   const MAX_BYTES = 5 * 1024 * 1024;
   const MAX_TEXT_CHARS = 20_000;
