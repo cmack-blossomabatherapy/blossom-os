@@ -201,19 +201,10 @@ export async function askBlossomOnce(
     : fallback(prompt, role);
 }
 
-/** Mock proactive insights surfaced in the right rail. */
-export function mockInsightsFor(role: OSRole, state: string) {
-  const scope = getAiScope(role);
-  const base = [
-    { id: "i1", title: "3 auths are at risk", detail: `Two BCBS expirations and one Aetna PR overdue in ${state}.`, severity: "risk" as const, module: "authorizations" },
-    { id: "i2", title: "Staffing shortage predicted", detail: `${state} float pool depleted by Thursday.`, severity: "watch" as const, module: "scheduling" },
-    { id: "i3", title: "Parent training improving", detail: "97156 compliance up 6 pts week-over-week.", severity: "info" as const, module: "kpi" },
-  ];
-  if (scope.dataScope === "company") {
-    base.push({ id: "i4", title: "Recruiting slowing in VA", detail: "6 candidates active, down from 11.", severity: "watch" as const, module: "recruiting" });
-  }
-  return base;
-}
+/**
+ * @deprecated Removed — the Ask Blossom AI page now uses real, role-scoped queries via
+ * `useBlossomAiInsights`. Do not reintroduce mock insights.
+ */
 
 /* ============================================================================
  * Live Insights adapter — wires the UI to the `chat` edge function
