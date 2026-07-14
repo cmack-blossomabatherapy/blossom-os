@@ -97,6 +97,54 @@ const PIPELINE_STAGES: { key: string; label: FamilyLeadPipelineStage; match: (l:
   }));
 
 /**
+ * Pipeline summary groups — collapses the 13 canonical stages into the three
+ * operational buckets shown at the top of the Pipeline view: Lead → Ready →
+ * Active. Clicking a group tile in the summary bar applies its stages as the
+ * `pstage` filter; clicking an individual stage chip toggles just that stage.
+ */
+type PipelineGroupKey = "lead" | "ready" | "active";
+
+const PIPELINE_GROUPS: {
+  key: PipelineGroupKey;
+  label: string;
+  hint: string;
+  stages: FamilyLeadPipelineStage[];
+}[] = [
+  {
+    key: "lead",
+    label: "Lead",
+    hint: "New captures and outreach",
+    stages: ["Lead Captured", "First Contact Attempt", "Engagement Track", "Qualification"],
+  },
+  {
+    key: "ready",
+    label: "Ready",
+    hint: "Intake packet + benefits",
+    stages: ["Intake Packet Sent", "Intake Packet Follow Up", "Intake Complete", "Benefits Verification"],
+  },
+  {
+    key: "active",
+    label: "Active",
+    hint: "Assessment, auth, staffing",
+    stages: [
+      "Assessment Scheduling",
+      "QA / Treatment Plan Authorization",
+      "Authorization Pending",
+      "Staffing Match",
+      "Ready to Start Services",
+    ],
+  },
+];
+
+const PIPELINE_GROUP_OF: Record<string, PipelineGroupKey> = PIPELINE_GROUPS.reduce(
+  (acc, g) => {
+    g.stages.forEach((s) => (acc[s] = g.key));
+    return acc;
+  },
+  {} as Record<string, PipelineGroupKey>,
+);
+
+/**
  * Operational Intake Pulse — the 6 cards from the spec.
  * Kept lightweight and clickable; each filters the active view.
  */
@@ -316,6 +364,11 @@ function OSLeadsV2Inner() {
     });
   const clearPipelineFilters = () =>
     updateParams((p) => { p.delete("mine"); p.delete("pdays"); p.delete("pstage"); });
+  const setPipelineStagesParam = (next: Set<string>) =>
+    updateParams((p) => {
+      if (next.size) p.set("pstage", [...next].join(","));
+      else p.delete("pstage");
+    });
 
   // Missing-lead guard: if the ?lead=<id> deep link (from CTM or escalation
   // chips) doesn't resolve to a real lead once data is loaded, surface a
@@ -519,6 +572,23 @@ function OSLeadsV2Inner() {
   const pipelineFilterCount =
     (pipelineMine ? 1 : 0) + (pipelineDays ? 1 : 0) + pipelineStages.size;
 
+  // Counts for the pipeline summary bar. Counted against `filtered` (not
+  // `pipelineLeads`) so the summary tiles reflect what's available before
+  // the stage sub-filter narrows the columns — otherwise clicking a group
+  // would zero out siblings.
+  const pipelineGroupCounts = useMemo(() => {
+    const counts: Record<string, number> = { lead: 0, ready: 0, active: 0 };
+    const perStage: Record<string, number> = {};
+    for (const s of FAMILY_LEAD_PIPELINE_STAGES) perStage[s] = 0;
+    for (const l of filtered) {
+      const canonical = canonicalFamilyLeadStage(l.status);
+      const group = PIPELINE_GROUP_OF[canonical];
+      if (group) counts[group] += 1;
+      if (canonical in perStage) perStage[canonical] += 1;
+    }
+    return { groups: counts, perStage, total: filtered.length };
+  }, [filtered]);
+
   return (
     <OSShell rightRail={<AIRail />}>
       <div className="space-y-6">
@@ -669,6 +739,24 @@ function OSLeadsV2Inner() {
 
         {/* Pipeline-only filters */}
         {view === "pipeline" && (
+          <>
+          <PipelineSummaryBar
+            groups={PIPELINE_GROUPS}
+            counts={pipelineGroupCounts.groups}
+            perStage={pipelineGroupCounts.perStage}
+            total={pipelineGroupCounts.total}
+            selectedStages={pipelineStages}
+            onSelectGroup={(g) => {
+              const allSelected = g.stages.every((s) => pipelineStages.has(s));
+              const next = new Set(pipelineStages);
+              // Clear other groups' stages, then toggle this group's stages on/off
+              for (const gg of PIPELINE_GROUPS) gg.stages.forEach((s) => next.delete(s));
+              if (!allSelected) g.stages.forEach((s) => next.add(s));
+              setPipelineStagesParam(next);
+            }}
+            onToggleStage={togglePipelineStage}
+            onClear={() => setPipelineStagesParam(new Set())}
+          />
           <PipelineFilters
             mine={pipelineMine}
             days={pipelineDays}
@@ -680,6 +768,7 @@ function OSLeadsV2Inner() {
             onToggleStage={togglePipelineStage}
             onClear={clearPipelineFilters}
           />
+          </>
         )}
 
         {/* Body */}
@@ -1002,6 +1091,97 @@ const PIPELINE_DAY_OPTIONS: { value: number | null; label: string }[] = [
   { value: 30, label: "Last 30 days" },
   { value: 90, label: "Last 90 days" },
 ];
+
+function PipelineSummaryBar({
+  groups, counts, perStage, total, selectedStages,
+  onSelectGroup, onToggleStage, onClear,
+}: {
+  groups: typeof PIPELINE_GROUPS;
+  counts: Record<string, number>;
+  perStage: Record<string, number>;
+  total: number;
+  selectedStages: Set<string>;
+  onSelectGroup: (g: (typeof PIPELINE_GROUPS)[number]) => void;
+  onToggleStage: (stage: string) => void;
+  onClear: () => void;
+}) {
+  const anySelected = selectedStages.size > 0;
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur p-3">
+      <div className="flex items-center justify-between mb-2 px-1">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Pipeline summary</span>
+          <span>·</span>
+          <span className="tabular-nums">{total.toLocaleString()} leads in view</span>
+        </div>
+        {anySelected && (
+          <button
+            onClick={onClear}
+            className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+          >
+            Show all stages
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        {groups.map((g, idx) => {
+          const allSelected = g.stages.every((s) => selectedStages.has(s));
+          const partiallySelected = !allSelected && g.stages.some((s) => selectedStages.has(s));
+          const active = allSelected || partiallySelected;
+          return (
+            <div key={g.key} className="relative">
+              <button
+                type="button"
+                onClick={() => onSelectGroup(g)}
+                className={cn(
+                  "w-full text-left rounded-xl border p-3 transition-all",
+                  active
+                    ? "border-primary/60 bg-primary/5 ring-1 ring-primary/20"
+                    : "border-border/60 bg-background hover:border-border hover:-translate-y-0.5",
+                )}
+                aria-pressed={allSelected}
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">{g.label}</span>
+                    {idx < groups.length - 1 && (
+                      <span className="text-muted-foreground/60 text-xs">→</span>
+                    )}
+                  </div>
+                  <span className="text-2xl font-semibold tabular-nums">
+                    {(counts[g.key] ?? 0).toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{g.hint}</p>
+              </button>
+              <div className="mt-1.5 flex flex-wrap gap-1 px-0.5">
+                {g.stages.map((s) => {
+                  const on = selectedStages.has(s);
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onToggleStage(s); }}
+                      className={cn(
+                        "text-[10px] rounded-full px-2 py-0.5 border transition-colors",
+                        on
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/60 text-muted-foreground border-transparent hover:bg-muted",
+                      )}
+                      title={`${s} · ${perStage[s] ?? 0}`}
+                    >
+                      {s} <span className="tabular-nums opacity-70">{perStage[s] ?? 0}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function PipelineFilters({
   mine, days, stages, filterCount, canFilterMine,
