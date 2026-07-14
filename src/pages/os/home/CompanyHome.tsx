@@ -267,7 +267,7 @@ export default function CompanyHome() {
 
   return (
     <OSShell>
-      <div className="mx-auto max-w-6xl px-6 md:px-10 py-8 md:py-12 space-y-10">
+      <div className="mx-auto w-full max-w-6xl px-6 md:px-10 py-10 space-y-10">
         {/* Hero */}
         <header className="flex flex-wrap items-end justify-between gap-6">
           <div>
