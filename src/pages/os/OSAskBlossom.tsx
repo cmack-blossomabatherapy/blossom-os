@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import {
   Sparkles, Send, Plus, Mic, Paperclip, History, Pin, BookOpen,
   Brain, Workflow, ShieldCheck, ExternalLink, Loader2, Search, Pencil, Trash2,
+  MicOff, X, RefreshCw, AlertCircle,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { streamAskBlossom, mockInsightsFor } from "@/lib/ai/askBlossomAdapter";
+import { streamAskBlossom } from "@/lib/ai/askBlossomAdapter";
+import { useBlossomAiInsights, type BlossomInsight } from "@/hooks/useBlossomAiInsights";
+import { useNavigate } from "react-router-dom";
 import { quickPromptsFor } from "@/lib/ai/quickPrompts";
 import { listKnowledgeByCategory, searchKnowledge } from "@/lib/ai/knowledgeBase";
 import { getAiScope } from "@/lib/ai/aiPermissions";
@@ -31,8 +34,10 @@ export default function OSAskBlossom() {
   const { role, activeState } = useOSRole();
   const scope = useMemo(() => getAiScope(role), [role]);
   const quickPrompts = useMemo(() => quickPromptsFor(role), [role]);
-  const insights = useMemo(() => mockInsightsFor(role, activeState), [role, activeState]);
+  const { insights, loading: insightsLoading, refreshing: insightsRefreshing, error: insightsError, refresh: refreshInsights } =
+    useBlossomAiInsights(role, activeState);
   const kbByCategory = useMemo(() => listKnowledgeByCategory(role), [role]);
+  const navigate = useNavigate();
 
   const [tab, setTab] = useState<Tab>("chat");
   const [convs, setConvs] = useState<AiConversation[]>([]);
@@ -47,6 +52,85 @@ export default function OSAskBlossom() {
   const [kbSearch, setKbSearch] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [params, setParams] = useSearchParams();
+
+  // Attachments (text-readable inlined into prompt; binaries acknowledged only)
+  type Attach = { id: string; name: string; size: number; kind: "text" | "binary"; text?: string };
+  const [attachments, setAttachments] = useState<Attach[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_FILES = 3;
+  const MAX_BYTES = 5 * 1024 * 1024;
+  const MAX_TEXT_CHARS = 20_000;
+  const TEXT_EXT = /\.(txt|md|csv|json|log|tsv|yaml|yml)$/i;
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const remaining = MAX_FILES - attachments.length;
+    if (remaining <= 0) { toast.error(`Max ${MAX_FILES} attachments`); return; }
+    const picked = Array.from(files).slice(0, remaining);
+    const next: Attach[] = [];
+    for (const f of picked) {
+      if (f.size > MAX_BYTES) { toast.error(`${f.name} is larger than 5 MB`); continue; }
+      const isText = TEXT_EXT.test(f.name) || f.type.startsWith("text/") || f.type === "application/json";
+      if (isText) {
+        try {
+          const raw = await f.text();
+          next.push({
+            id: newId(), name: f.name, size: f.size, kind: "text",
+            text: raw.length > MAX_TEXT_CHARS ? raw.slice(0, MAX_TEXT_CHARS) + `\n…[truncated ${raw.length - MAX_TEXT_CHARS} chars]` : raw,
+          });
+        } catch {
+          next.push({ id: newId(), name: f.name, size: f.size, kind: "binary" });
+        }
+      } else {
+        next.push({ id: newId(), name: f.name, size: f.size, kind: "binary" });
+      }
+    }
+    if (next.length) setAttachments((cur) => [...cur, ...next]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  // Voice dictation via Web Speech API (client-side, no server cost)
+  type SR = { start: () => void; stop: () => void; onresult: ((e: unknown) => void) | null; onerror: ((e: unknown) => void) | null; onend: (() => void) | null; continuous: boolean; interimResults: boolean; lang: string };
+  const recognitionRef = useRef<SR | null>(null);
+  const [listening, setListening] = useState(false);
+  const dictationSupported = typeof window !== "undefined" &&
+    Boolean((window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).SpeechRecognition ||
+            (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition);
+
+  function toggleDictation() {
+    if (!dictationSupported) { toast.error("Voice dictation isn't supported in this browser"); return; }
+    if (listening) { recognitionRef.current?.stop(); return; }
+    const Ctor = (window as unknown as { SpeechRecognition?: new () => SR; webkitSpeechRecognition?: new () => SR })
+      .SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: new () => SR }).webkitSpeechRecognition;
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = navigator.language || "en-US";
+    const startingLen = input.length;
+    const base = input + (input && !input.endsWith(" ") ? " " : "");
+    rec.onresult = (e: unknown) => {
+      const ev = e as { results: ArrayLike<ArrayLike<{ transcript: string }>> };
+      let text = "";
+      for (let i = 0; i < ev.results.length; i++) text += ev.results[i][0].transcript;
+      setInput(base + text);
+      void startingLen;
+    };
+    rec.onerror = (e: unknown) => {
+      const ev = e as { error?: string };
+      if (ev.error && ev.error !== "aborted" && ev.error !== "no-speech") {
+        toast.error(`Mic error: ${ev.error}`);
+      }
+    };
+    rec.onend = () => { setListening(false); recognitionRef.current = null; };
+    recognitionRef.current = rec;
+    try { rec.start(); setListening(true); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Could not start mic"); }
+  }
+
+  // Stop dictation if the page unmounts.
+  useEffect(() => () => { recognitionRef.current?.stop(); }, []);
 
   /** Rename or delete a conversation locally + on the server. */
   async function renameConversation(localId: string) {
