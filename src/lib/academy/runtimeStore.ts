@@ -190,8 +190,8 @@ export function getRuntimeStatus(moduleId: string, ctx?: RuntimeContext): Academ
  * this so completing a module in TrainingModuleRuntime instantly rolls up
  * into aggregate progress without a page refresh.
  */
-export function useRuntimeVersion(): number {
-  return useSyncExternalStore(subscribe, () => memory as unknown as number, () => memory as unknown as number) as unknown as number;
+export function useRuntimeVersion(): Store {
+  return useSyncExternalStore(subscribe, snapshot, snapshot);
 }
 
 export async function startRuntime(moduleId: string, ctx: RuntimeContext) {
