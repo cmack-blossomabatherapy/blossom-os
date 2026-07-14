@@ -382,7 +382,7 @@ export default function OSResourceLibrary() {
             )}
 
             {/* SMART COLLECTIONS GRID */}
-            {!query && !activeCategory && !activeCollection && (
+            {!isIntakeView && !query && !activeCategory && !activeCollection && (
               <section data-testid="smart-collections">
                 <SectionHeader
                   title="Smart collections"
