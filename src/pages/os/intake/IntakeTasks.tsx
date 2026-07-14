@@ -23,6 +23,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Lock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AssigneePicker } from "@/components/tasks/AssigneePicker";
+import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 
 type FilterKey = "all" | "today" | "overdue" | "escalated";
 type SortKey = "due" | "lead" | "owner" | "title";
@@ -116,6 +117,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
   const [owners, setOwners] = useState<string[]>([]);
   const [dueRange, setDueRange] = useState<DueRangeKey>("any");
   const [flag, setFlag] = useState<FlagKey>("any");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const leadById = useMemo(() => {
     const map = new Map<string, Lead>();
@@ -281,13 +283,18 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
       headerRight={isUniversal ? undefined : <IntakeStateFilterToggle />}
       actions={
         isUniversal
-          ? [{ label: "Open Leads", icon: List, to: "/leads" }]
+          ? [
+              { label: "New task", icon: Plus, variant: "default", onClick: () => setCreateOpen(true) },
+              { label: "Open Leads", icon: List, to: "/leads" },
+            ]
           : [
-              { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
+              { label: "New task", icon: Plus, variant: "default", onClick: () => setCreateOpen(true) },
+              { label: "Add Lead", icon: Plus, to: "/leads?new=1" },
               { label: "Open Leads", icon: List, to: "/leads" },
             ]
       }
     >
+      <CreateTaskDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={() => { /* realtime refresh handles it */ }} />
       <section>
         <IntakeSectionHeader icon={ListTodo} tone="indigo" title="Task Pulse" subtitle="Tap a tile to filter the lists below." />
         <IntakePulseStrip tiles={pulseTiles} loading={loading} />
