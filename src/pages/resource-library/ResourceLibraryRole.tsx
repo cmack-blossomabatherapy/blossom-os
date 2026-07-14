@@ -11,7 +11,7 @@ export default function ResourceLibraryRole() {
   const mine = resources.filter((r) => isVisibleToRole(r, role, activeState));
   return (
     <OSShell>
-      <div className="mx-auto max-w-7xl space-y-6 p-6">
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-6 py-10 md:px-10">
         <header className="space-y-1">
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Resource Library</p>
           <h1 className="text-2xl font-semibold tracking-tight">My Role Bundle</h1>
