@@ -1156,7 +1156,7 @@ const App = () => (
                   <Route path="/qa" element={<Navigate to="/qa-team" replace />} />
                   <Route path="/qa/:id" element={<QADetail />} />
                   <Route path="/documents" element={<Documents />} />
-                  <Route path="/tasks" element={<OSShellPage><TasksPage /></OSShellPage>} />
+                  <Route path="/tasks" element={<TasksPage />} />
                   <Route path="/automations" element={<PermissionRoute permission="automations.view" allowedRoles={AUTOMATIONS_ROLES}><Automations /></PermissionRoute>} />
                   <Route path="/training/academy" element={<AcademyHome />} />
                   <Route path="/training/academy/week/:weekId" element={<AcademyWeekDetail />} />
