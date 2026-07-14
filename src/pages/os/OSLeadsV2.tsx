@@ -519,6 +519,23 @@ function OSLeadsV2Inner() {
   const pipelineFilterCount =
     (pipelineMine ? 1 : 0) + (pipelineDays ? 1 : 0) + pipelineStages.size;
 
+  // Counts for the pipeline summary bar. Counted against `filtered` (not
+  // `pipelineLeads`) so the summary tiles reflect what's available before
+  // the stage sub-filter narrows the columns — otherwise clicking a group
+  // would zero out siblings.
+  const pipelineGroupCounts = useMemo(() => {
+    const counts: Record<string, number> = { lead: 0, ready: 0, active: 0 };
+    const perStage: Record<string, number> = {};
+    for (const s of FAMILY_LEAD_PIPELINE_STAGES) perStage[s] = 0;
+    for (const l of filtered) {
+      const canonical = canonicalFamilyLeadStage(l.status);
+      const group = PIPELINE_GROUP_OF[canonical];
+      if (group) counts[group] += 1;
+      if (canonical in perStage) perStage[canonical] += 1;
+    }
+    return { groups: counts, perStage, total: filtered.length };
+  }, [filtered]);
+
   return (
     <OSShell rightRail={<AIRail />}>
       <div className="space-y-6">
