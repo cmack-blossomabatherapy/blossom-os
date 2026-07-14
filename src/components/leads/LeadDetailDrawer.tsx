@@ -3,6 +3,7 @@ import {
   X, Phone, Mail, MapPin, Calendar, FileText, Activity, Sparkles,
   CheckCircle2, AlertCircle, ChevronRight, ExternalLink, StickyNote,
   Send, ShieldCheck, Ban, UserX, ListChecks, Plus, MailPlus,
+  Upload, Trash2, CalendarClock, Building2, User as UserIcon, Link2, Unlink,
 } from "lucide-react";
 import type { Lead } from "@/data/leads";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -27,6 +28,13 @@ import {
 } from "@/lib/intake/intakeWorkflow";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check } from "lucide-react";
+import { IntakeCoordinatorPicker } from "@/components/leads/IntakeCoordinatorPicker";
+import { AddLeadNoteDialog } from "@/components/leads/AddLeadNoteDialog";
+import { CreateLeadTaskDialog } from "@/components/leads/CreateLeadTaskDialog";
+import { LinkReferralDialog } from "@/components/leads/LinkReferralDialog";
+import { useLeadDocuments } from "@/hooks/useLeadDocuments";
+import { useLeadReferralLink } from "@/hooks/useLeadReferralLink";
+import { Button } from "@/components/ui/button";
 
 const STAGE_DETAILS: Record<string, { what: string; involves: string[]; owner: string }> = {
   "Lead Captured": {
@@ -148,6 +156,18 @@ export function LeadDetailDrawer({
   const [tab, setTab] = useState<Tab>("overview");
   const [raw, setRaw] = useState<Record<string, unknown> | null>(null);
   const { updates, loading: updatesLoading } = useLeadUpdates(lead?.childName, lead?.id ?? null);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [taskOpen, setTaskOpen] = useState<false | "task" | "follow_up">(false);
+  const [referralOpen, setReferralOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const {
+    docs: uploadedDocs,
+    loading: docsLoading,
+    upload: uploadDoc,
+    remove: removeDoc,
+  } = useLeadDocuments(lead?.id ?? null);
+  const { link: referralLink, linkReferral, unlink: unlinkReferral } = useLeadReferralLink(lead?.id ?? null);
 
   // Close on Escape
   useEffect(() => {
@@ -215,6 +235,28 @@ export function LeadDetailDrawer({
   }));
   const documents: DrawerDoc[] = [...mondayDocs, ...attachedDocs];
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isPersisted = UUID_RE.test(lead.id);
+
+  const handleUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    if (!isPersisted) {
+      toast.error("This lead isn't synced to the database yet.");
+      return;
+    }
+    setUploading(true);
+    try {
+      await uploadDoc(files);
+      toast.success("Document uploaded");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      toast.error(msg);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <>
       {/* Backdrop */}
@@ -243,8 +285,42 @@ export function LeadDetailDrawer({
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-semibold tracking-tight truncate">{lead.childName}</h2>
               <p className="text-xs text-muted-foreground truncate">
-                {lead.parentName || "-"} - {lead.state || "-"} - {lead.owner || "Unassigned"}
+                {lead.parentName || "-"} · {lead.state || "-"}
               </p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">Owner</span>
+                <div className="min-w-[200px] max-w-[280px] flex-1">
+                  <IntakeCoordinatorPicker
+                    value={lead.owner || ""}
+                    onChange={(name, member) => {
+                      updateLead(lead.id, {
+                        owner: name || "Unassigned",
+                        automationLog: [
+                          `Intake: assigned to ${name || "Unassigned"}`,
+                          ...lead.automationLog,
+                        ],
+                      });
+                      if (isPersisted) {
+                        void supabase.from("intake_leads").update({
+                          assigned_intake_coordinator: name || null,
+                          assigned_intake_coordinator_employee_id: member?.id ?? null,
+                          assigned_intake_coordinator_user_id: member?.userId ?? null,
+                        } as never).eq("id", lead.id);
+                        void supabase.from("intake_communications").insert({
+                          lead_id: lead.id,
+                          communication_type: "note",
+                          direction: "internal",
+                          subject: "Assignment changed",
+                          preview: `Assigned to ${name || "Unassigned"}`,
+                          logged_by_name: "Intake",
+                        } as never);
+                      }
+                      toast.success(name ? `Assigned to ${name}` : "Unassigned");
+                    }}
+                    placeholder="Assign intake staff"
+                  />
+                </div>
+              </div>
             </div>
             <button onClick={onClose} className="rounded-full size-9 grid place-items-center hover:bg-muted transition">
               <X className="h-4 w-4" />
@@ -324,6 +400,61 @@ export function LeadDetailDrawer({
                 <Field label="Zip" value={str("Zip Code")} />
               </section>
               <Field label="Address" value={str("Address")} />
+
+              <section className="rounded-2xl border border-border/60 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Referral Source</p>
+                  {referralLink ? (
+                    <button
+                      onClick={() => { void unlinkReferral().then(() => toast.success("Referral unlinked")); }}
+                      className="text-[11px] text-muted-foreground hover:text-destructive transition inline-flex items-center gap-1"
+                    >
+                      <Unlink className="h-3 w-3" /> Unlink
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setReferralOpen(true)}
+                      disabled={!isPersisted}
+                      className="text-[11px] text-primary hover:underline inline-flex items-center gap-1 disabled:text-muted-foreground disabled:no-underline"
+                    >
+                      <Link2 className="h-3 w-3" /> Link referral
+                    </button>
+                  )}
+                </div>
+                {referralLink ? (
+                  <div className="space-y-1.5 text-sm">
+                    {referralLink.company && (
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Link to={`/referrals/companies/${referralLink.company.id}`} className="text-foreground hover:underline truncate">
+                          {referralLink.company.company_name}
+                        </Link>
+                        {referralLink.company.company_type && (
+                          <span className="text-[10.5px] text-muted-foreground">{referralLink.company.company_type}</span>
+                        )}
+                      </div>
+                    )}
+                    {referralLink.contact && (
+                      <div className="flex items-center gap-2">
+                        <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Link to={`/referrals/contacts/${referralLink.contact.id}`} className="text-foreground hover:underline truncate">
+                          {referralLink.contact.full_name || [referralLink.contact.first_name, referralLink.contact.last_name].filter(Boolean).join(" ") || referralLink.contact.email}
+                        </Link>
+                        {referralLink.contact.title && (
+                          <span className="text-[10.5px] text-muted-foreground">{referralLink.contact.title}</span>
+                        )}
+                      </div>
+                    )}
+                    {referralLink.notes && (
+                      <p className="text-xs text-muted-foreground pt-1 whitespace-pre-wrap">{referralLink.notes}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {isPersisted ? "Not linked. Connect this lead to a doctor's office, referral partner, or specific contact." : "Available after this lead syncs to the database."}
+                  </p>
+                )}
+              </section>
 
               <section className="rounded-2xl bg-muted/60 border border-border/60 p-4 space-y-3">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Parent / Guardian</p>
@@ -422,8 +553,66 @@ export function LeadDetailDrawer({
           )}
 
           {tab === "documents" && (
-            <section className="space-y-2">
-              {documents.length === 0 ? (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {isPersisted ? "Upload insurance cards, packets, signed forms, or other lead docs." : "Uploading available after this lead syncs to the database."}
+                </p>
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => void handleUpload(e.target.files)}
+                    accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!isPersisted || uploading}
+                    className="h-8"
+                  >
+                    <Upload className="h-3.5 w-3.5 mr-1.5" />
+                    {uploading ? "Uploading…" : "Upload"}
+                  </Button>
+                </div>
+              </div>
+              {isPersisted && uploadedDocs.length > 0 && (
+                <div className="space-y-2">
+                  {uploadedDocs.map((d) => (
+                    <div key={d.id} className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card px-4 h-12">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <a
+                          href={d.signedUrl ?? "#"}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => { if (!d.signedUrl) e.preventDefault(); }}
+                          className="text-sm truncate hover:underline"
+                        >
+                          {d.label}
+                        </a>
+                        <span className="text-[11px] text-muted-foreground truncate">
+                          · {d.uploaded_by_name || "Intake"} · {new Date(d.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => { void removeDoc(d).then(() => toast.success("Document removed")); }}
+                        className="rounded-md h-7 w-7 grid place-items-center text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition"
+                        aria-label="Delete document"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isPersisted && docsLoading && uploadedDocs.length === 0 && (
+                <div className="h-12 rounded-xl bg-muted/50 animate-pulse" />
+              )}
+              {documents.length === 0 && (!isPersisted || uploadedDocs.length === 0) ? (
                 <p className="text-sm text-muted-foreground py-12 text-center">No documents on file.</p>
               ) : documents.map((d, idx) => {
                 const meta = [
@@ -521,9 +710,36 @@ export function LeadDetailDrawer({
           {tab === "actions" && (
             <section className="space-y-2">
               <ActionButton
+                icon={ListChecks}
+                label="Create Task"
+                onClick={() => {
+                  if (!isPersisted) { toast.error("This lead isn't synced yet."); return; }
+                  setTaskOpen("task");
+                }}
+              />
+              <ActionButton
+                icon={CalendarClock}
+                label="Create Follow-Up"
+                onClick={() => {
+                  if (!isPersisted) { toast.error("This lead isn't synced yet."); return; }
+                  setTaskOpen("follow_up");
+                }}
+              />
+              <ActionButton
                 icon={StickyNote}
                 label="Add Note"
-                onClick={() => toast("Notes are read-only in this view (Monday source)")}
+                onClick={() => {
+                  if (!isPersisted) { toast.error("This lead isn't synced yet."); return; }
+                  setNoteOpen(true);
+                }}
+              />
+              <ActionButton
+                icon={Link2}
+                label={referralLink ? "Update Referral Source" : "Link Referral Source"}
+                onClick={() => {
+                  if (!isPersisted) { toast.error("This lead isn't synced yet."); return; }
+                  setReferralOpen(true);
+                }}
               />
               <ActionButton
                 icon={Send}
@@ -566,15 +782,34 @@ export function LeadDetailDrawer({
                 onClick={() => { updateLead(lead.id, { status: "Non-Qualified" }); toast("Marked non-qualified"); }}
                 tone="danger"
               />
-              <ActionButton
-                icon={ListChecks}
-                label="Create Task"
-                onClick={() => toast("Task creation coming next")}
-              />
             </section>
           )}
         </div>
       </aside>
+      {isPersisted && (
+        <>
+          <AddLeadNoteDialog
+            open={noteOpen}
+            onOpenChange={setNoteOpen}
+            leadId={lead.id}
+            leadName={lead.childName}
+          />
+          <CreateLeadTaskDialog
+            open={taskOpen !== false}
+            onOpenChange={(v) => { if (!v) setTaskOpen(false); }}
+            leadId={lead.id}
+            leadName={lead.childName}
+            defaultOwner={lead.owner}
+            mode={taskOpen === "follow_up" ? "follow_up" : "task"}
+          />
+          <LinkReferralDialog
+            open={referralOpen}
+            onOpenChange={setReferralOpen}
+            leadId={lead.id}
+            onLink={linkReferral}
+          />
+        </>
+      )}
     </>
   );
 }

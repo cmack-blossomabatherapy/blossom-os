@@ -11815,6 +11815,45 @@ export type Database = {
           },
         ]
       }
+      lead_documents: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          lead_id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          lead_id: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          lead_id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Relationships: []
+      }
       leadership_video_progress: {
         Row: {
           completed: boolean
