@@ -761,27 +761,96 @@ export default function OSAskBlossom() {
 
         {tab === "insights" && (
           <div className="rounded-2xl border border-border/60 bg-card/90 p-5 backdrop-blur">
-            <h3 className="mb-3 text-[13px] font-semibold text-foreground">Proactive insights</h3>
-            <div className="grid gap-2 md:grid-cols-2">
-              {insights.map((i) => (
-                <div key={i.id} className="rounded-2xl border border-foreground/[0.06] bg-white/80 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[13.5px] font-semibold text-foreground">{i.title}</p>
-                    <Badge variant="outline" className={cn(
-                      "rounded-full text-[10px]",
-                      i.severity === "risk" && "border-rose-200 bg-rose-50 text-rose-600",
-                      i.severity === "watch" && "border-amber-200 bg-amber-50 text-amber-700",
-                      i.severity === "info" && "border-emerald-200 bg-emerald-50 text-emerald-700",
-                    )}>{i.severity}</Badge>
-                  </div>
-                  <p className="mt-1 text-[12px] text-muted-foreground">{i.detail}</p>
-                </div>
-              ))}
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div>
+                <h3 className="text-[13px] font-semibold text-foreground">Live operational insights</h3>
+                <p className="text-[11.5px] text-muted-foreground">
+                  Real, role-scoped queries — refreshed on demand. Nothing here is a template.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={refreshInsights} disabled={insightsRefreshing} className="h-8 rounded-full">
+                <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", insightsRefreshing && "animate-spin")} />
+                {insightsRefreshing ? "Refreshing…" : "Refresh"}
+              </Button>
             </div>
+            <InsightsList
+              insights={insights}
+              loading={insightsLoading}
+              error={insightsError}
+              onOpen={(i) => i.href && navigate(i.href)}
+              variant="grid"
+            />
           </div>
         )}
       </div>
     </OSShell>
+  );
+}
+
+function InsightsList({
+  insights, loading, error, onOpen, variant = "stack",
+}: {
+  insights: BlossomInsight[];
+  loading: boolean;
+  error: string | null;
+  onOpen: (i: BlossomInsight) => void;
+  variant?: "stack" | "grid";
+}) {
+  if (loading) {
+    return (
+      <div className={cn(variant === "grid" ? "grid gap-2 md:grid-cols-2" : "space-y-2")}>
+        {[0, 1, 2].map((k) => (
+          <div key={k} className="h-16 animate-pulse rounded-xl border border-foreground/[0.06] bg-white/50" />
+        ))}
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+        <div>
+          <p className="font-semibold">Couldn’t load live insights</p>
+          <p className="text-[11.5px] opacity-80">{error}</p>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className={cn(variant === "grid" ? "grid gap-2 md:grid-cols-2" : "space-y-2")}>
+      {insights.map((i) => {
+        const clickable = Boolean(i.href);
+        const Wrapper: keyof JSX.IntrinsicElements = clickable ? "button" : "div";
+        return (
+          <Wrapper
+            key={i.id}
+            {...(clickable
+              ? { type: "button" as const, onClick: () => onOpen(i) }
+              : {})}
+            className={cn(
+              "block w-full rounded-xl border border-foreground/[0.06] bg-white/80 p-3 text-left transition-all",
+              clickable && "hover:-translate-y-0.5 hover:border-[hsl(265_70%_75%)] hover:shadow-[0_10px_24px_-18px_hsl(265_60%_50%/0.4)]",
+            )}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[12.5px] font-semibold text-foreground">{i.title}</p>
+              <Badge variant="outline" className={cn(
+                "rounded-full text-[10px]",
+                i.severity === "risk" && "border-rose-200 bg-rose-50 text-rose-600",
+                i.severity === "watch" && "border-amber-200 bg-amber-50 text-amber-700",
+                i.severity === "info" && "border-emerald-200 bg-emerald-50 text-emerald-700",
+              )}>{i.severity}</Badge>
+            </div>
+            <p className="mt-1 text-[11.5px] text-muted-foreground">{i.detail}</p>
+            {clickable && (
+              <p className="mt-1.5 inline-flex items-center gap-1 text-[10.5px] font-medium text-[hsl(265_70%_55%)]">
+                Open {i.module} <ExternalLink className="h-2.5 w-2.5" />
+              </p>
+            )}
+          </Wrapper>
+        );
+      })}
+    </div>
   );
 }
 
