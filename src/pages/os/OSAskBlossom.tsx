@@ -450,54 +450,40 @@ export default function OSAskBlossom() {
               >
                 <Plus className="h-4 w-4" /> New conversation
               </Button>
-              <ScrollArea className="flex-1 -mx-1 px-1">
-                {convs.length === 0 ? (
-                  <p className="px-2 py-4 text-[12px] text-muted-foreground">No conversations yet.</p>
-                ) : (
-                  <div className="space-y-1">
-                    {convs.map((c) => (
-                      <div
-                        key={c.id}
-                        className={cn(
-                          "group flex items-start gap-1 rounded-xl px-2 py-2 text-[12.5px] transition-colors",
-                          activeId === c.id ? "bg-foreground/[0.07] text-foreground" : "hover:bg-foreground/[0.04] text-foreground/80",
-                        )}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setActiveId(c.id)}
-                          className="min-w-0 flex-1 text-left"
-                        >
-                          <div className="flex items-center gap-1.5">
-                            {c.pinned && <Pin className="h-3 w-3 text-[hsl(265_70%_55%)]" />}
-                            <p className="truncate font-medium">{c.title}</p>
-                          </div>
-                          <p className="text-[10.5px] text-muted-foreground">
-                            {new Date(c.updatedAt).toLocaleString()}
-                          </p>
-                        </button>
-                        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                          <button
-                            type="button"
-                            aria-label="Rename"
-                            onClick={() => void renameConversation(c.id)}
-                            className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label="Delete"
-                            onClick={() => void deleteConversation(c.id)}
-                            className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <div className="mb-2 flex items-center gap-1.5 rounded-xl border border-foreground/[0.06] bg-white/70 px-2.5 py-1.5">
+                <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <input
+                  value={convSearch}
+                  onChange={(e) => setConvSearch(e.target.value)}
+                  placeholder="Search chats"
+                  className="w-full bg-transparent text-[12px] outline-none placeholder:text-muted-foreground/70"
+                />
+                {convSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setConvSearch("")}
+                    aria-label="Clear search"
+                    className="grid h-4 w-4 place-items-center rounded-full text-muted-foreground hover:bg-foreground/[0.06]"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 )}
+              </div>
+              <ScrollArea className="flex-1 -mx-1 px-1">
+                <ConversationList
+                  convs={convs}
+                  activeId={activeId}
+                  search={convSearch}
+                  editingId={editingId}
+                  editingTitle={editingTitle}
+                  onSelect={(id) => { setActiveId(id); setEditingId(null); }}
+                  onBeginRename={beginRename}
+                  onEditingTitleChange={setEditingTitle}
+                  onCommitRename={commitRename}
+                  onCancelRename={cancelRename}
+                  onTogglePin={togglePin}
+                  onDelete={deleteConversation}
+                />
               </ScrollArea>
             </aside>
 
