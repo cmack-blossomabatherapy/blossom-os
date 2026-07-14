@@ -77,6 +77,7 @@ import { useJourneyOverrides, applyOverridesToPhase } from "@/hooks/useJourneyOv
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { LayoutDashboard } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { ResourceAttachmentManager } from "@/components/training/ResourceAttachmentManager";
 import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
 import { RoleJourneyAssignmentsView } from "@/components/training/RoleJourneyAssignmentsView";
@@ -1994,9 +1995,9 @@ function ResourceLibraryView() {
               <Button
                 size="sm"
                 className="rounded-xl"
-                onClick={() => navigate("/hr/resource-management#bulk-upload")}
+                onClick={() => navigate("/resource-library")}
               >
-                <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
+                <Library className="mr-1.5 h-3.5 w-3.5" /> Open Resource Library
               </Button>
               <Button
                 size="sm"
@@ -2004,7 +2005,7 @@ function ResourceLibraryView() {
                 className="rounded-xl"
                 onClick={() => navigate("/hr/resource-management")}
               >
-                <Library className="mr-1.5 h-3.5 w-3.5" /> Open Resource Management
+                <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage / Upload
               </Button>
               <Button
                 size="sm"
@@ -2012,7 +2013,7 @@ function ResourceLibraryView() {
                 className="rounded-xl"
                 onClick={() => navigate("/hr/resource-management#bulk-upload")}
               >
-                <ArrowRight className="mr-1.5 h-3.5 w-3.5" /> Upload first document batch
+                <Upload className="mr-1.5 h-3.5 w-3.5" /> Bulk upload
               </Button>
             </div>
           )}
@@ -2025,7 +2026,7 @@ function ResourceLibraryView() {
           return (
             <button
               key={c.title}
-              onClick={() => navigate(canUploadResources ? "/hr/resource-management" : "/resource-library")}
+              onClick={() => navigate("/resource-library")}
               className="group rounded-2xl border border-border/70 bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40"
             >
               <div className="flex items-start gap-3">
