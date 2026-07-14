@@ -752,6 +752,35 @@ function resolveBehavioralSupport(sourceModuleId: string): ModuleCtx | null {
   };
 }
 
+function resolveAssistantStateDirector(sourceModuleId: string): ModuleCtx | null {
+  const d: AssistantStateDirectorDayModule | undefined = getAssistantStateDirectorDay(sourceModuleId);
+  if (!d) return null;
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  const checklist = [
+    ...d.checklist,
+    ...d.livePractice.map((p) => `Live practice: ${p}`),
+  ];
+  return {
+    title: d.title,
+    description: d.description,
+    type: `Week ${d.weekNumber} · Day ${d.dayNumber}`,
+    minutes,
+    required: true,
+    objectives: d.objectives,
+    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    checklist,
+    shadowing: d.shadowing,
+    knowledgeCheck: d.knowledgeCheck,
+    sopLinks: d.resources.map((r) => ({
+      label: r.pending ? `${r.label} (pending upload)` : r.label,
+      href: r.href,
+    })),
+    trainerNotes: d.trainerNotes,
+    reflectionPrompt: d.reflectionPrompt,
+    signoffRequired: d.signoffRequired,
+  };
+}
+
 function formatElapsed(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
