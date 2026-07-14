@@ -734,6 +734,24 @@ function OSLeadsV2Inner() {
 
         {/* Pipeline-only filters */}
         {view === "pipeline" && (
+          <>
+          <PipelineSummaryBar
+            groups={PIPELINE_GROUPS}
+            counts={pipelineGroupCounts.groups}
+            perStage={pipelineGroupCounts.perStage}
+            total={pipelineGroupCounts.total}
+            selectedStages={pipelineStages}
+            onSelectGroup={(g) => {
+              const allSelected = g.stages.every((s) => pipelineStages.has(s));
+              const next = new Set(pipelineStages);
+              // Clear other groups' stages, then toggle this group's stages on/off
+              for (const gg of PIPELINE_GROUPS) gg.stages.forEach((s) => next.delete(s));
+              if (!allSelected) g.stages.forEach((s) => next.add(s));
+              setPipelineStages(next);
+            }}
+            onToggleStage={togglePipelineStage}
+            onClear={() => setPipelineStages(new Set())}
+          />
           <PipelineFilters
             mine={pipelineMine}
             days={pipelineDays}
@@ -745,6 +763,7 @@ function OSLeadsV2Inner() {
             onToggleStage={togglePipelineStage}
             onClear={clearPipelineFilters}
           />
+          </>
         )}
 
         {/* Body */}
