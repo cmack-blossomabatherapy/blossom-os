@@ -381,6 +381,39 @@ function buildSchedulingJourney(slug: string, path: TrainingPath): PathJourney {
   return journey;
 }
 
+/* ------------------- Staffing source adapter ------------------- */
+
+function synthesizeStaffingModule(d: StaffingDayModule): AcademyJourneyModule {
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  return {
+    id: `staffing::${d.id}`,
+    title: d.title,
+    description: d.description,
+    type: "Workflow",
+    estimatedMinutes: minutes,
+    required: true,
+    category: "role",
+    department: "staffing",
+    sourceKind: "staffing",
+    sourceModuleId: d.id,
+    resources: [],
+  };
+}
+
+function buildStaffingJourney(slug: string, path: TrainingPath): PathJourney {
+  const dayGroups: AcademyJourneyModule[][] = STAFFING_DAYS.map((d) => [synthesizeStaffingModule(d)]);
+  const weekGroups = chunk(dayGroups, 5);
+  const dayTitles = STAFFING_DAYS.map((d) => `Day ${d.dayInJourney} · ${d.title}`);
+  const journey = assembleJourney({
+    slug, path, weekGroups, dayTitles, source: "staffing",
+  });
+  journey.weeks = journey.weeks.map((w) => ({
+    ...w,
+    title: STAFFING_WEEKS.find((sw) => sw.weekNumber === w.weekNumber)?.title ?? w.title,
+  }));
+  return journey;
+}
+
 function assembleJourney(opts: {
   slug: string;
   path: TrainingPath;
