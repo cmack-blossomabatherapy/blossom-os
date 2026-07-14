@@ -18,8 +18,9 @@ import { getRuntimeStatus } from "@/lib/academy/runtimeStore";
 import { INTAKE_DAYS, INTAKE_WEEKS, type IntakeDayModule } from "@/lib/training/intakeAcademy";
 import { RECRUITING_DAYS, RECRUITING_WEEKS, type RecruitingDayModule } from "@/lib/training/recruitingAcademy";
 import { AUTHORIZATIONS_DAYS, AUTHORIZATIONS_WEEKS, type AuthorizationsDayModule } from "@/lib/training/authorizationsAcademy";
+import { SCHEDULING_DAYS, SCHEDULING_WEEKS, type SchedulingDayModule } from "@/lib/training/schedulingAcademy";
 
-export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations";
+export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling";
 
 /** Training-shaped record that carries the original source for routing & resource lookup. */
 export type AcademyJourneyModule = Training & {
@@ -98,9 +99,9 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
     case "intake":               return []; // sourced from intakeAcademy.ts
     case "recruiting":           return []; // sourced from recruitingAcademy.ts
     case "authorizations":       return []; // sourced from authorizationsAcademy.ts
+    case "scheduling":           return []; // sourced from schedulingAcademy.ts
     case "qa":                   return byDept("qa");
     case "case-manager":         return byDept("case_management");
-    case "scheduling":           return byDept("scheduling");
     case "hr":                   return byDept("hr");
     case "credentialing":        return byDept("credentialing");
     case "staffing":             return byDept("staffing");
@@ -122,7 +123,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
 /** Build the live runtime route for a module id, source-aware. */
 function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
   return (id: string) => {
-    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::")) {
+    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::")) {
       return `/academy/path/${slug}/module/${encodeURIComponent(id)}`;
     }
     return `/training/${id}`;
@@ -131,7 +132,7 @@ function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
 
 /** Unified per-module status: runtime store for rbt/bcba, academyData for everything else. */
 function unifiedStatus(id: string): "completed" | "in_progress" | "overdue" | "not_started" {
-  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::")) {
+  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::")) {
     const s = getRuntimeStatus(id);
     return s === "completed" ? "completed" : s === "in_progress" ? "in_progress" : "not_started";
   }
@@ -346,6 +347,39 @@ function buildAuthorizationsJourney(slug: string, path: TrainingPath): PathJourn
 
 /* ------------------- Shared assembler ------------------- */
 
+/* ------------------- Scheduling source adapter ------------------- */
+
+function synthesizeSchedulingModule(d: SchedulingDayModule): AcademyJourneyModule {
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  return {
+    id: `scheduling::${d.id}`,
+    title: d.title,
+    description: d.description,
+    type: "Workflow",
+    estimatedMinutes: minutes,
+    required: true,
+    category: "role",
+    department: "scheduling",
+    sourceKind: "scheduling",
+    sourceModuleId: d.id,
+    resources: [],
+  };
+}
+
+function buildSchedulingJourney(slug: string, path: TrainingPath): PathJourney {
+  const dayGroups: AcademyJourneyModule[][] = SCHEDULING_DAYS.map((d) => [synthesizeSchedulingModule(d)]);
+  const weekGroups = chunk(dayGroups, 5);
+  const dayTitles = SCHEDULING_DAYS.map((d) => `Day ${d.dayInJourney} · ${d.title}`);
+  const journey = assembleJourney({
+    slug, path, weekGroups, dayTitles, source: "scheduling",
+  });
+  journey.weeks = journey.weeks.map((w) => ({
+    ...w,
+    title: SCHEDULING_WEEKS.find((sw) => sw.weekNumber === w.weekNumber)?.title ?? w.title,
+  }));
+  return journey;
+}
+
 function assembleJourney(opts: {
   slug: string;
   path: TrainingPath;
@@ -462,6 +496,9 @@ export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }
   if (slug === "authorizations") {
     return buildAuthorizationsJourney(slug, path);
   }
+  if (slug === "scheduling") {
+    return buildSchedulingJourney(slug, path);
+  }
 
   const all = getTrainings();
   const trainings = sourceTrainingsForSlug(slug, all);
@@ -506,5 +543,6 @@ export function parseAcademyModuleId(id: string): {
   if (id.startsWith("intake::")) return { kind: "intake", sourceModuleId: id.slice("intake::".length) };
   if (id.startsWith("recruiting::")) return { kind: "recruiting", sourceModuleId: id.slice("recruiting::".length) };
   if (id.startsWith("authorizations::")) return { kind: "authorizations", sourceModuleId: id.slice("authorizations::".length) };
+  if (id.startsWith("scheduling::")) return { kind: "scheduling", sourceModuleId: id.slice("scheduling::".length) };
   return { kind: "academyData", sourceModuleId: id };
 }
