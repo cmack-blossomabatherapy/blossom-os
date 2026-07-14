@@ -15,6 +15,7 @@ import { getIntakeDay, type IntakeDayModule } from "@/lib/training/intakeAcademy
 import { getRecruitingDay, type RecruitingDayModule } from "@/lib/training/recruitingAcademy";
 import { getAuthorizationsDay, type AuthorizationsDayModule } from "@/lib/training/authorizationsAcademy";
 import { getSchedulingDay, type SchedulingDayModule } from "@/lib/training/schedulingAcademy";
+import { getStaffingDay, type StaffingDayModule } from "@/lib/training/staffingAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime, persistRuntimeElapsed,
   type RuntimeContext,
@@ -52,6 +53,7 @@ export default function TrainingModuleRuntime() {
     if (parsed.kind === "recruiting") return resolveRecruiting(parsed.sourceModuleId);
     if (parsed.kind === "authorizations") return resolveAuthorizations(parsed.sourceModuleId);
     if (parsed.kind === "scheduling") return resolveScheduling(parsed.sourceModuleId);
+    if (parsed.kind === "staffing") return resolveStaffing(parsed.sourceModuleId);
     return null;
   }, [parsed.kind, parsed.sourceModuleId]);
 
@@ -537,6 +539,35 @@ function resolveAuthorizations(sourceModuleId: string): ModuleCtx | null {
 
 function resolveScheduling(sourceModuleId: string): ModuleCtx | null {
   const d: SchedulingDayModule | undefined = getSchedulingDay(sourceModuleId);
+  if (!d) return null;
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  const checklist = [
+    ...d.checklist,
+    ...d.livePractice.map((p) => `Live practice: ${p}`),
+  ];
+  return {
+    title: d.title,
+    description: d.description,
+    type: `Week ${d.weekNumber} · Day ${d.dayNumber}`,
+    minutes,
+    required: true,
+    objectives: d.objectives,
+    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    checklist,
+    shadowing: d.shadowing,
+    knowledgeCheck: d.knowledgeCheck,
+    sopLinks: d.resources.map((r) => ({
+      label: r.pending ? `${r.label} (pending upload)` : r.label,
+      href: r.href,
+    })),
+    trainerNotes: d.trainerNotes,
+    reflectionPrompt: d.reflectionPrompt,
+    signoffRequired: d.signoffRequired,
+  };
+}
+
+function resolveStaffing(sourceModuleId: string): ModuleCtx | null {
+  const d: StaffingDayModule | undefined = getStaffingDay(sourceModuleId);
   if (!d) return null;
   const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
   const checklist = [
