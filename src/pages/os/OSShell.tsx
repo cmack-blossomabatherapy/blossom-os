@@ -103,6 +103,7 @@ export const STAGED_ROLE_LIVE_PATHS: ReadonlySet<string> = new Set([
   "/reports",
   "/ai/assistant",
   "/tasks",
+  "/intake/parent-communication",
 ]);
 
 /**
