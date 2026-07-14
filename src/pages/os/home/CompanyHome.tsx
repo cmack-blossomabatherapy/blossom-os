@@ -568,8 +568,8 @@ export default function CompanyHome() {
                   head_cell:
                     "text-muted-foreground/80 font-semibold text-[11px] uppercase tracking-[0.18em] h-9 flex items-center justify-center",
                   row: "grid grid-cols-7 w-full mt-1.5",
-                  cell: "aspect-square w-full text-center p-0.5 relative focus-within:relative focus-within:z-20",
-                  day: "h-full w-full rounded-2xl font-medium text-base hover:bg-muted/70 transition-all duration-200 aria-selected:opacity-100",
+                  cell: "h-12 sm:h-14 md:h-16 lg:h-[84px] xl:h-[92px] w-full text-center p-0.5 relative focus-within:relative focus-within:z-20",
+                  day: "h-full w-full rounded-2xl font-medium text-sm md:text-base hover:bg-muted/70 transition-all duration-200 aria-selected:opacity-100",
                   day_selected:
                     "bg-gradient-to-br from-primary to-[hsl(189_55%_58%)] text-primary-foreground shadow-[0_8px_20px_-8px_hsl(189_50%_45%/0.6)] hover:from-primary hover:to-[hsl(189_55%_58%)] hover:text-primary-foreground",
                   day_today:
