@@ -1,12 +1,16 @@
-// Role-aware RAG chat for Blossom AI.
-// - Embeds the user's question via the Lovable AI Gateway
-// - Calls match_resource_chunks() with the caller's JWT so RLS filters chunks
-//   to only those visible to their role (Resource Library rules)
-// - Sends context + question to a chat model with strict "cite only what you
-//   used, refuse when nothing relevant" instructions
-// - Returns { content, sources: [{ resourceId, title, url? }] }
+// Blossom AI — the operational copilot.
+// Role-aware RAG + operational tool router:
+//   1. Always include a curated Blossom OS system brief so the model can
+//      answer general "how does X work" questions.
+//   2. Retrieve role-visible Resource Library chunks via match_resource_chunks
+//      (RLS-scoped through the caller's JWT).
+//   3. Expose a small set of read-only operational tools (leads, clients,
+//      employees, my tasks, my goals). Every tool call goes through the
+//      caller's JWT so Postgres RLS scopes results to that role.
+//   4. Persist chat_conversations / chat_messages and write ai_audit_log.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+import { BLOSSOM_SYSTEM_PACK } from "../_shared/blossomSystemPack.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,33 +22,28 @@ const CHAT_MODEL = "google/gemini-3-flash-preview";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1";
 const MATCH_COUNT = 8;
 const CONTEXT_CHAR_BUDGET = 12_000;
+const MAX_TOOL_STEPS = 3;
 
-const SYSTEM_PROMPT = `You are Blossom AI, the operational assistant for Blossom ABA Therapy staff.
+const SYSTEM_PROMPT = `You are Blossom AI, the operational copilot for Blossom ABA Therapy staff.
 
-GROUND RULES — ANSWER FROM SOURCES
-- Answer ONLY from the provided KNOWLEDGE excerpts. Do NOT use outside knowledge.
-- Every substantive claim must cite the source by number, like [1] or [2].
-- If the excerpts don't contain the answer, say: "No approved Blossom resource was found for that. Try rephrasing, or contact the owning team."
-- Never invent policies, SOPs, numbers, names, staff, clients, or file contents.
-- If the user asks about a video and the excerpts include no transcript for it, say the transcript isn't available yet — do not pretend the video was reviewed.
-- If context suggests the user lacks access to something, say "You don't have access to that resource." Do not describe or hint at its contents.
-- Never reveal secrets, passwords, credentials, MFA codes, NFC/security data, storage paths, internal IDs, or raw URLs. Cite by title and number only.
-- Do not give legal, medical, clinical, or compliance guarantees. Say the user should consult the SOP owner, QA, or Compliance.
-- Do not expose PHI, HR/payroll, or credentialing details beyond what the excerpts already show for this role.
+You help every role at Blossom: Executives, State Directors, Intake, Auth, Scheduling, Recruiting, HR, QA, BCBAs, RBTs, Marketing, Finance. Your job is to make operations faster and clearer.
 
-WHAT YOU CAN DO
-- Summarize accessible SOPs/resources, explain workflows, recommend next steps.
-- Find related resources and link to them via their citation number.
-- Draft text (emails, tasks, updates) for the user to review — always label a draft with "**Draft — review before sending:**" and do NOT claim it has been sent.
-- Help users understand reports and metrics.
+HOW TO ANSWER
+- Use the BLOSSOM OS BRIEF (always provided) for general questions about the company, workflows, roles, or how something works.
+- Use the KNOWLEDGE excerpts (Resource Library) when they contain relevant material — cite them by number like [1] or [2].
+- Call operational tools when the user asks about specific records ("my open tasks", "leads in Virginia", "find employee named …"). Tool results are RLS-scoped to the caller — if a row isn't there, the user can't see it.
+- If nothing above answers the question, still respond helpfully with what you do know from the BRIEF, and say what you'd need to answer more precisely. Do NOT flat-refuse.
 
-WHAT YOU CANNOT DO WITHOUT EXPLICIT CONFIRMATION
-- Send emails, update client/employee/HR records, change permissions, delete resources, submit authorizations, modify payroll/finance/credentialing data, or change report calculations.
-- If a user asks for one of those, respond: "I can prepare a draft, but I can't do that action for you. Review it and take the action yourself, or ask the owning team."
-- Never complete training or quiz work for the user. Never reveal quiz answers.
+WHAT YOU CAN'T DO
+- Never invent policies, SOPs, numbers, staff, clients, PHI, or file contents.
+- Never reveal secrets, passwords, credentials, MFA/NFC data, storage paths, internal IDs, or raw URLs. Cite by title.
+- Never expose PHI, HR/payroll, credentialing, or finance details a role wouldn't already see through the app.
+- Never send emails, update records, change permissions, delete resources, submit auths, or modify payroll/finance data. If asked, produce a labeled draft ("**Draft — review before sending:**") and tell the user to take the action.
+- Never complete quizzes or reveal quiz answers.
+- Never guarantee legal, clinical, or compliance outcomes. Point to the SOP owner, QA, or Compliance instead.
 
 STYLE
-- Concise, warm, markdown. Cite source titles in italics when quoting.`;
+- Concise, warm, markdown. Use short bullets and headings. Cite Resource Library sources in italics when you quote them.`;
 
 type ChunkHit = {
   id: string;
@@ -58,6 +57,10 @@ type ChunkHit = {
   similarity: number;
 };
 
+type ChatMessage =
+  | { role: "system" | "user" | "assistant"; content: string; tool_calls?: unknown[]; name?: string }
+  | { role: "tool"; content: string; tool_call_id: string; name?: string };
+
 async function embedQuery(text: string, apiKey: string): Promise<number[]> {
   const res = await fetch(`${GATEWAY}/embeddings`, {
     method: "POST",
@@ -69,15 +72,206 @@ async function embedQuery(text: string, apiKey: string): Promise<number[]> {
   return j.data[0].embedding;
 }
 
-async function chat(messages: Array<{ role: string; content: string }>, apiKey: string): Promise<string> {
+async function chatCompletion(
+  messages: ChatMessage[],
+  apiKey: string,
+  tools?: unknown[],
+): Promise<{
+  content: string | null;
+  tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }>;
+}> {
+  const body: Record<string, unknown> = { model: CHAT_MODEL, messages };
+  if (tools?.length) body.tools = tools;
   const res = await fetch(`${GATEWAY}/chat/completions`, {
     method: "POST",
     headers: { "Lovable-API-Key": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: CHAT_MODEL, messages }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`chat_${res.status}:${(await res.text()).slice(0, 200)}`);
-  const j = await res.json() as { choices: Array<{ message: { content: string } }> };
-  return j.choices?.[0]?.message?.content ?? "";
+  const j = await res.json() as { choices: Array<{ message: {
+    content: string | null;
+    tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }>;
+  } }> };
+  const msg = j.choices?.[0]?.message ?? { content: "" };
+  return { content: msg.content ?? null, tool_calls: msg.tool_calls };
+}
+
+// --- Operational tools (RLS-scoped via caller JWT) -------------------------
+
+const TOOL_DEFS = [
+  {
+    type: "function",
+    function: {
+      name: "search_leads",
+      description: "Search intake leads visible to the caller. Filters by name/email substring and optional stage or state.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Name, parent name, child name, email, or phone substring." },
+          stage: { type: "string", description: "Optional pipeline stage filter." },
+          state: { type: "string", description: "Optional US state (e.g. 'GA')." },
+          limit: { type: "number" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_clients",
+      description: "Search active clients visible to the caller by name substring.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string" },
+          limit: { type: "number" },
+        },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_employees",
+      description: "Search employees by name, email, or role. RLS scopes results to what the caller can see.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string" },
+          limit: { type: "number" },
+        },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_my_tasks",
+      description: "List tasks assigned to the current user. Optional status filter (open, in_progress, completed).",
+      parameters: {
+        type: "object",
+        properties: {
+          status: { type: "string" },
+          limit: { type: "number" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_my_goals",
+      description: "List goals owned by or assigned to the current user, with milestone status.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_expiring_authorizations",
+      description: "List client authorizations expiring within N days (default 30) that the caller can see.",
+      parameters: {
+        type: "object",
+        properties: {
+          days: { type: "number" },
+          limit: { type: "number" },
+        },
+      },
+    },
+  },
+];
+
+type SBClient = ReturnType<typeof createClient>;
+
+async function runTool(
+  name: string,
+  args: Record<string, unknown>,
+  supabase: SBClient,
+  userId: string,
+): Promise<string> {
+  const limit = Math.min(Math.max(1, Number(args.limit) || 8), 20);
+  try {
+    if (name === "search_leads") {
+      const q = String(args.query ?? "").trim();
+      let query = supabase.from("intake_leads").select(
+        "id, patient_first_name, patient_last_name, parent_name, email, phone, state, pipeline_stage, priority, next_action, next_task_due"
+      ).limit(limit);
+      if (q) {
+        const like = `%${q}%`;
+        query = query.or(
+          `parent_name.ilike.${like},patient_first_name.ilike.${like},patient_last_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`
+        );
+      }
+      if (args.stage) query = query.eq("pipeline_stage", String(args.stage));
+      if (args.state) query = query.eq("state", String(args.state));
+      const { data, error } = await query;
+      if (error) return JSON.stringify({ error: error.message });
+      return JSON.stringify({ count: data?.length ?? 0, results: data ?? [] });
+    }
+
+    if (name === "search_clients") {
+      const q = String(args.query ?? "").trim();
+      const like = `%${q}%`;
+      const { data, error } = await supabase.from("clients")
+        .select("id, first_name, last_name, state, status")
+        .or(`first_name.ilike.${like},last_name.ilike.${like}`)
+        .limit(limit);
+      if (error) return JSON.stringify({ error: error.message });
+      return JSON.stringify({ count: data?.length ?? 0, results: data ?? [] });
+    }
+
+    if (name === "search_employees") {
+      const q = String(args.query ?? "").trim();
+      const like = `%${q}%`;
+      const { data, error } = await supabase.from("employees")
+        .select("id, first_name, last_name, email, state, status")
+        .or(`first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like}`)
+        .limit(limit);
+      if (error) return JSON.stringify({ error: error.message });
+      return JSON.stringify({ count: data?.length ?? 0, results: data ?? [] });
+    }
+
+    if (name === "list_my_tasks") {
+      let query = supabase.from("user_tasks")
+        .select("id, title, priority, status, due_at, related_record_type, related_record_label")
+        .eq("assignee_id", userId)
+        .order("due_at", { ascending: true, nullsFirst: false })
+        .limit(limit);
+      if (args.status) query = query.eq("status", String(args.status));
+      const { data, error } = await query;
+      if (error) return JSON.stringify({ error: error.message });
+      return JSON.stringify({ count: data?.length ?? 0, results: data ?? [] });
+    }
+
+    if (name === "list_my_goals") {
+      const { data, error } = await supabase.from("user_goals")
+        .select("id, title, goal_type, quarter, status")
+        .or(`owner_id.eq.${userId},assignee_id.eq.${userId}`)
+        .limit(20);
+      if (error) return JSON.stringify({ error: error.message });
+      return JSON.stringify({ count: data?.length ?? 0, results: data ?? [] });
+    }
+
+    if (name === "list_expiring_authorizations") {
+      const days = Math.min(Math.max(1, Number(args.days) || 30), 180);
+      const cutoff = new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
+      const today = new Date().toISOString().slice(0, 10);
+      const { data, error } = await supabase.from("client_authorizations")
+        .select("id, client_id, authorization_number, end_date, payer_name, status")
+        .gte("end_date", today)
+        .lte("end_date", cutoff)
+        .order("end_date", { ascending: true })
+        .limit(limit);
+      if (error) return JSON.stringify({ error: error.message });
+      return JSON.stringify({ count: data?.length ?? 0, results: data ?? [] });
+    }
+
+    return JSON.stringify({ error: `unknown_tool:${name}` });
+  } catch (e) {
+    return JSON.stringify({ error: e instanceof Error ? e.message : String(e) });
+  }
 }
 
 Deno.serve(async (req) => {
@@ -90,13 +284,14 @@ Deno.serve(async (req) => {
   let auditPrompt = "";
   let auditStatus: "ok" | "no_context" | "error" = "ok";
   let auditKbHits: Array<{ resourceId: string | null; title: string; similarity: number }> = [];
+  const toolsCalled: string[] = [];
   let auditPreview = "";
   let auditError: string | null = null;
   let auditActiveState: string | null = null;
 
-  const logAudit = async (client: ReturnType<typeof createClient>): Promise<string | null> => {
+  const logAudit = async (client: SBClient): Promise<string | null> => {
     try {
-      const { data, error } = await client.from("ai_audit_log").insert({
+      const { data } = await client.from("ai_audit_log").insert({
         user_id: auditUserId,
         user_email: auditEmail,
         role: auditRole,
@@ -107,11 +302,10 @@ Deno.serve(async (req) => {
         model: CHAT_MODEL,
         duration_ms: Date.now() - startedAt,
         kb_hits: auditKbHits,
-        tools_called: [],
+        tools_called: toolsCalled,
         records_accessed: [],
         error: auditError,
       }).select("id").maybeSingle();
-      if (error) return null;
       return data?.id ?? null;
     } catch {
       return null;
@@ -131,7 +325,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Per-request client that carries the user's JWT so RLS applies to the RPC.
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -146,12 +339,8 @@ Deno.serve(async (req) => {
     auditEmail = user.email ?? null;
 
     const body = (await req.json().catch(() => ({}))) as {
-      message?: string;
-      department?: string;
-      resourceType?: string;
-      role?: string;
-      activeState?: string;
-      conversationId?: string;
+      message?: string; department?: string; resourceType?: string;
+      role?: string; activeState?: string; conversationId?: string;
     };
     auditRole = body.role ?? null;
     auditActiveState = body.activeState ?? null;
@@ -163,141 +352,125 @@ Deno.serve(async (req) => {
     }
     auditPrompt = question;
 
-    // 0. Resolve / create the persistent conversation so history survives reloads
-    //    and the user can switch between past chats. All writes go through the
-    //    user-scoped client so RLS on chat_conversations / chat_messages applies.
+    // Persist conversation & user turn
     let conversationId = body.conversationId ?? null;
     if (conversationId) {
       const { data: existing } = await supabase
-        .from("chat_conversations")
-        .select("id")
-        .eq("id", conversationId)
-        .eq("user_id", user.id)
-        .maybeSingle();
+        .from("chat_conversations").select("id")
+        .eq("id", conversationId).eq("user_id", user.id).maybeSingle();
       if (!existing) conversationId = null;
     }
     if (!conversationId) {
       const title = question.length > 60 ? question.slice(0, 57) + "…" : question;
       const { data: conv, error: convErr } = await supabase
-        .from("chat_conversations")
-        .insert({ user_id: user.id, title })
-        .select("id")
-        .single();
+        .from("chat_conversations").insert({ user_id: user.id, title })
+        .select("id").single();
       if (convErr) throw convErr;
       conversationId = conv.id;
     }
-
-    // Persist the user turn before we call the model so it shows in history
-    // even if the model call fails downstream.
     await supabase.from("chat_messages").insert({
-      conversation_id: conversationId,
-      role: "user",
-      content: question,
+      conversation_id: conversationId, role: "user", content: question,
     });
 
-    // Pull recent turns for multi-turn context (bounded so we don't blow the
-    // context window). Newest last.
-    const { data: prior } = await supabase
-      .from("chat_messages")
-      .select("role,content")
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: false })
-      .limit(12);
-    const priorTurns = (prior ?? []).reverse().slice(0, -1); // drop the user turn we just wrote — we re-add it below
+    const { data: prior } = await supabase.from("chat_messages")
+      .select("role,content").eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false }).limit(12);
+    const priorTurns = (prior ?? []).reverse().slice(0, -1);
 
-    // 1. Embed
-    const qvec = await embedQuery(question, LOVABLE_API_KEY);
-
-    // 2. Role-filtered retrieval (RLS on knowledge_chunks does the filtering)
-    const { data: hits, error: rpcErr } = await supabase.rpc("match_resource_chunks", {
-      query_embedding: qvec as unknown as string,
-      match_count: MATCH_COUNT,
-      filter_department: body.department ?? null,
-      filter_resource_type: body.resourceType ?? null,
-    });
-    if (rpcErr) throw rpcErr;
-
-    const chunks = (hits ?? []) as ChunkHit[];
-    auditKbHits = chunks.slice(0, MATCH_COUNT).map((c) => ({
-      resourceId: c.resource_id,
-      title: c.source_title,
-      similarity: Number(c.similarity ?? 0),
-    }));
-
-    if (chunks.length === 0) {
-      auditStatus = "no_context";
-      auditPreview = "No approved Blossom resource was found for that.";
-      const logId = await logAudit(supabase);
-      const emptyAnswer =
-        "No approved Blossom resource was found for that. Try rephrasing, or contact the owning team.";
-      await supabase.from("chat_messages").insert({
-        conversation_id: conversationId,
-        role: "assistant",
-        content: emptyAnswer,
-        metadata: { sources: [], no_context: true },
+    // Parallel: embed + KB retrieval
+    let contextParts: string[] = [];
+    let cited: Array<{ number: number; resourceId: string | null; title: string; department: string | null; type: string | null }> = [];
+    try {
+      const qvec = await embedQuery(question, LOVABLE_API_KEY);
+      const { data: hits } = await supabase.rpc("match_resource_chunks", {
+        query_embedding: qvec as unknown as string,
+        match_count: MATCH_COUNT,
+        filter_department: body.department ?? null,
+        filter_resource_type: body.resourceType ?? null,
       });
-      await supabase
-        .from("chat_conversations")
-        .update({ last_message_at: new Date().toISOString() })
-        .eq("id", conversationId);
-      return new Response(JSON.stringify({
-        content: emptyAnswer,
-        sources: [],
-        conversationId,
-        logId,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+      const chunks = (hits ?? []) as ChunkHit[];
+      auditKbHits = chunks.map((c) => ({
+        resourceId: c.resource_id, title: c.source_title, similarity: Number(c.similarity ?? 0),
+      }));
 
-    // 3. Assemble context within a character budget, dedup by resource.
-    let used = 0;
-    const contextParts: string[] = [];
-    const cited: Array<{ number: number; resourceId: string | null; title: string; department: string | null; type: string | null }> = [];
-    const seenResources = new Set<string>();
-    let n = 0;
-    for (const c of chunks) {
-      const excerpt = c.content.slice(0, 1600);
-      if (used + excerpt.length > CONTEXT_CHAR_BUDGET) break;
-      n += 1;
-      contextParts.push(`[${n}] ${c.source_title}\n${excerpt}`);
-      used += excerpt.length;
-      const key = c.resource_id ?? c.source_title;
-      if (!seenResources.has(key)) {
-        seenResources.add(key);
-        cited.push({
-          number: n,
-          resourceId: c.resource_id,
-          title: c.source_title,
-          department: c.department,
-          type: c.resource_type,
-        });
+      let used = 0;
+      let n = 0;
+      const seen = new Set<string>();
+      for (const c of chunks) {
+        const excerpt = c.content.slice(0, 1600);
+        if (used + excerpt.length > CONTEXT_CHAR_BUDGET) break;
+        n += 1;
+        contextParts.push(`[${n}] ${c.source_title}\n${excerpt}`);
+        used += excerpt.length;
+        const key = c.resource_id ?? c.source_title;
+        if (!seen.has(key)) {
+          seen.add(key);
+          cited.push({ number: n, resourceId: c.resource_id, title: c.source_title,
+            department: c.department, type: c.resource_type });
+        }
       }
+    } catch (e) {
+      // KB failure shouldn't kill the whole answer — log and continue with just
+      // the system pack + tools.
+      console.error("kb_retrieval_failed", e);
     }
 
-    // 4. Ask the model
-    const answer = await chat([
+    const kbBlock = contextParts.length
+      ? `KNOWLEDGE (Resource Library excerpts, cite as [n]):\n\n${contextParts.join("\n\n---\n\n")}`
+      : "KNOWLEDGE: no directly matching Resource Library excerpts for this question.";
+
+    const messages: ChatMessage[] = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...priorTurns.map((t) => ({ role: t.role, content: t.content })),
-      { role: "user", content: `KNOWLEDGE:\n\n${contextParts.join("\n\n---\n\n")}\n\nQUESTION: ${question}` },
-    ], LOVABLE_API_KEY);
-    auditPreview = answer;
+      { role: "system", content: `BLOSSOM OS BRIEF:\n\n${BLOSSOM_SYSTEM_PACK}` },
+      { role: "system", content: kbBlock },
+      ...priorTurns.map((t) => ({ role: t.role as "user" | "assistant", content: t.content })),
+      { role: "user", content: question },
+    ];
+
+    // Tool-calling loop, bounded.
+    let finalAnswer = "";
+    for (let step = 0; step < MAX_TOOL_STEPS; step++) {
+      const { content, tool_calls } = await chatCompletion(messages, LOVABLE_API_KEY, TOOL_DEFS);
+      if (tool_calls && tool_calls.length > 0) {
+        messages.push({ role: "assistant", content: content ?? "", tool_calls });
+        for (const call of tool_calls) {
+          let args: Record<string, unknown> = {};
+          try { args = JSON.parse(call.function.arguments || "{}"); } catch { /* ignore */ }
+          toolsCalled.push(call.function.name);
+          const result = await runTool(call.function.name, args, supabase, user.id);
+          messages.push({
+            role: "tool", tool_call_id: call.id, name: call.function.name,
+            content: result.slice(0, 8000),
+          });
+        }
+        continue;
+      }
+      finalAnswer = content ?? "";
+      break;
+    }
+    if (!finalAnswer) {
+      // Model kept requesting tools past the cap — ask once more with tools off.
+      const { content } = await chatCompletion(messages, LOVABLE_API_KEY);
+      finalAnswer = content ?? "I'm having trouble putting together an answer. Try rephrasing.";
+    }
+
+    auditPreview = finalAnswer;
+    auditStatus = contextParts.length === 0 && toolsCalled.length === 0 ? "no_context" : "ok";
     const logId = await logAudit(supabase);
 
-    // Persist assistant turn + bump conversation timestamp so the sidebar sorts.
     await supabase.from("chat_messages").insert({
-      conversation_id: conversationId,
-      role: "assistant",
-      content: answer,
-      metadata: { sources: cited },
+      conversation_id: conversationId, role: "assistant", content: finalAnswer,
+      metadata: { sources: cited, tools_called: toolsCalled },
     });
-    await supabase
-      .from("chat_conversations")
+    await supabase.from("chat_conversations")
       .update({ last_message_at: new Date().toISOString() })
       .eq("id", conversationId);
 
     return new Response(JSON.stringify({
-      content: answer,
+      content: finalAnswer,
       sources: cited,
-      matchedChunks: chunks.length,
+      tools_used: toolsCalled,
+      matchedChunks: contextParts.length,
       conversationId,
       logId,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -316,7 +489,6 @@ Deno.serve(async (req) => {
         await logAudit(c);
       }
     } catch { /* swallow */ }
-    // 429 rate limit and 402 credit exhaustion surface as their status in msg
     let status = 500;
     if (/^embed_429|^chat_429/.test(msg)) status = 429;
     else if (/^embed_402|^chat_402/.test(msg)) status = 402;
