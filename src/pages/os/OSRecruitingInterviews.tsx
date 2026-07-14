@@ -150,7 +150,7 @@ export default function OSRecruitingInterviews() {
   const [recruiter, setRecruiter] = useState<string>("all");
   const [source, setSource] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const { getArray: getChecks } = useInterviewChecklist(OUTCOME_STEPS);
+  const { getArray: getChecks, toggleStep } = useInterviewChecklist(OUTCOME_STEPS);
 
   // Operational Insights panel state
   const [aiQuestion, setAiQuestion] = useState("");
