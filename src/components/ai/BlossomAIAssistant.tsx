@@ -263,30 +263,54 @@ function BlossomAIDrawer({
 
   return (
     <Sheet open={isOpen} onOpenChange={(v) => (!v ? onClose() : null)}>
-      <SheetContent side="right" className="w-full sm:max-w-[440px] p-0 flex flex-col">
-        <SheetHeader className="px-5 pt-5 pb-3 border-b border-border/60">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-[460px] p-0 flex flex-col border-l border-border/60 bg-background/95 backdrop-blur-xl shadow-2xl rounded-l-2xl"
+      >
+        <SheetHeader className="px-5 pt-5 pb-4 border-b border-border/60 bg-gradient-to-b from-muted/40 to-transparent">
+          <div className="flex items-start gap-3 pr-8">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary via-fuchsia-500 to-indigo-500 flex items-center justify-center shadow-sm shrink-0">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <SheetTitle className="text-base leading-tight">{title}</SheetTitle>
-              {opts.hint && (
+              <SheetTitle className="text-base leading-tight tracking-tight">{title}</SheetTitle>
+              {opts.hint ? (
                 <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{opts.hint}</p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground mt-0.5">Grounded in your role · sources cited</p>
               )}
               {record.label && (
-                <p className="text-[11px] text-primary mt-0.5 truncate" title={record.contextText ?? undefined}>
+                <p className="text-[11px] text-primary mt-1 truncate" title={record.contextText ?? undefined}>
                   Using context · {record.label}
                 </p>
               )}
             </div>
-            <button
-              onClick={onClose}
-              className="h-7 w-7 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground"
-              aria-label="Close"
+          </div>
+          <div className="flex items-center gap-1.5 mt-3">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="h-7 px-2.5 text-xs gap-1.5"
+              onClick={() => setMessages([])}
+              disabled={messages.length === 0 || busy}
             >
-              <X className="h-4 w-4" />
-            </button>
+              <RotateCcw className="h-3.5 w-3.5" />
+              New chat
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2.5 text-xs gap-1.5"
+              onClick={() => {
+                onClose();
+                navigate("/ai/assistant");
+              }}
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+              Open full page
+            </Button>
           </div>
         </SheetHeader>
 
