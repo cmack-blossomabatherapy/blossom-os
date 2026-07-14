@@ -947,6 +947,13 @@ function RowQuickActions({ lead }: { lead: Lead }) {
 
 function PipelineView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
   const cols = PIPELINE_STAGES.map((s) => ({ ...s, items: leads.filter(s.match) }));
+  return renderPipelineColumns(cols, onOpen);
+}
+
+function renderPipelineColumns(
+  cols: { key: string; label: string; items: Lead[] }[],
+  onOpen: (id: string) => void,
+) {
   return (
     <div className="overflow-x-auto pb-2">
       <div className="flex gap-3 min-w-min">
@@ -982,6 +989,135 @@ function PipelineView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) =
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────── Pipeline Filters (view=pipeline only) ─────────────────── */
+
+const PIPELINE_DAY_OPTIONS: { value: number | null; label: string }[] = [
+  { value: null, label: "Any time" },
+  { value: 7, label: "Last 7 days" },
+  { value: 14, label: "Last 14 days" },
+  { value: 30, label: "Last 30 days" },
+  { value: 90, label: "Last 90 days" },
+];
+
+function PipelineFilters({
+  mine, days, stages, filterCount, canFilterMine,
+  onToggleMine, onSetDays, onToggleStage, onClear,
+}: {
+  mine: boolean;
+  days: number | null;
+  stages: Set<string>;
+  filterCount: number;
+  canFilterMine: boolean;
+  onToggleMine: () => void;
+  onSetDays: (n: number | null) => void;
+  onToggleStage: (stage: string) => void;
+  onClear: () => void;
+}) {
+  const daysLabel =
+    PIPELINE_DAY_OPTIONS.find((o) => o.value === days)?.label ?? "Any time";
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-muted/30 px-3 py-2">
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground mr-1">
+        Pipeline filters
+      </span>
+
+      {/* Assigned to me */}
+      <Button
+        type="button"
+        size="sm"
+        variant={mine ? "default" : "outline"}
+        onClick={onToggleMine}
+        disabled={!canFilterMine}
+        title={canFilterMine ? "Only leads assigned to you" : "Sign in required"}
+        className="h-8"
+      >
+        <UserCheck className="mr-1.5 h-3.5 w-3.5" />
+        Assigned to me
+      </Button>
+
+      {/* Date range */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant={days ? "default" : "outline"}
+            className="h-8"
+          >
+            <CalendarClock className="mr-1.5 h-3.5 w-3.5" />
+            {daysLabel}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-56 p-1">
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 py-1.5">
+            Last contact within
+          </div>
+          {PIPELINE_DAY_OPTIONS.map((opt) => {
+            const active = opt.value === days;
+            return (
+              <button
+                key={opt.label}
+                onClick={() => onSetDays(opt.value)}
+                className={cn(
+                  "w-full text-left text-sm rounded-md px-2 py-1.5 transition",
+                  active ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </PopoverContent>
+      </Popover>
+
+      {/* Stage multi-select */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant={stages.size ? "default" : "outline"}
+            className="h-8"
+          >
+            <Filter className="mr-1.5 h-3.5 w-3.5" />
+            {stages.size ? `${stages.size} stage${stages.size === 1 ? "" : "s"}` : "Stages"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-64 p-1 max-h-80 overflow-y-auto">
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 py-1.5">
+            Show columns
+          </div>
+          {FAMILY_LEAD_PIPELINE_STAGES.map((stage) => {
+            const active = stages.has(stage);
+            return (
+              <button
+                key={stage}
+                onClick={() => onToggleStage(stage)}
+                className={cn(
+                  "w-full flex items-center justify-between text-left text-sm rounded-md px-2 py-1.5 transition",
+                  active ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                )}
+              >
+                <span className="truncate">{stage}</span>
+                {active && <CheckSquare className="h-3.5 w-3.5 flex-shrink-0" />}
+              </button>
+            );
+          })}
+        </PopoverContent>
+      </Popover>
+
+      {filterCount > 0 && (
+        <button
+          onClick={onClear}
+          className="ml-auto text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+        >
+          <X className="h-3 w-3" /> Clear pipeline filters
+        </button>
+      )}
     </div>
   );
 }
