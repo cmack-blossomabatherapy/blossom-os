@@ -162,7 +162,7 @@ describe("Intake Export 88 — full department launch", () => {
       const required = [
         "/intake/dashboard",
         "/leads",
-        "/intake/lead-to-active",
+        "/leads?view=pipeline",
         "/intake/missing-information",
         "/intake/parent-communication",
         "/intake/tasks",

@@ -47,7 +47,6 @@ import FacebookAds from "./pages/os/growth/FacebookAds";
 import GoogleAds from "./pages/os/growth/GoogleAds";
 import PatientLifetimeJourney from "./pages/os/growth/PatientLifetimeJourney";
 import IntakeWorkspaceLanding from "./pages/os/intake/IntakeDashboard";
-import LeadToActivePipeline from "./pages/os/intake/LeadToActivePipeline";
 import IntakeTasks from "./pages/os/intake/IntakeTasks";
 import LeadBenefitsCheatSheets from "./pages/os/intake/LeadBenefitsCheatSheets";
 import MissingInformation from "./pages/os/intake/MissingInformation";
@@ -1035,7 +1034,7 @@ const App = () => (
                     }
                   />
                   <Route path="/intake/dashboard" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><IntakeWorkspaceLanding /></PermissionRoute>} />
-                  <Route path="/intake/lead-to-active" element={<LeadToActivePipeline />} />
+                  <Route path="/intake/lead-to-active" element={<Navigate to="/leads?view=pipeline" replace />} />
                   <Route path="/intake/referral-queue" element={<Navigate to="/intake/dashboard" replace />} />
                   <Route path="/intake/tasks" element={<IntakeTasks />} />
                   <Route path="/intake/benefits-cheat-sheets" element={<LeadBenefitsCheatSheets />} />

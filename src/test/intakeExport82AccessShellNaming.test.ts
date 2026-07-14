@@ -101,7 +101,6 @@ describe("Export 82 — Lead to Ready-to-Start naming polish", () => {
     const candidates = [
       "src/pages/os/intake/MissingInformation.tsx",
       "src/pages/os/intake/IntakeDashboard.tsx",
-      "src/pages/os/intake/LeadToActivePipeline.tsx",
       "src/components/intake/LeadActionPanel.tsx",
       "src/pages/os/OSShell.tsx",
       "src/components/layout/AppSidebar.tsx",

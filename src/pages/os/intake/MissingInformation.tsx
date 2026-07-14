@@ -63,7 +63,7 @@ export default function MissingInformation() {
       actions={[
         { label: "Add Lead", icon: Plus, variant: "default", to: "/leads?new=1" },
         { label: "Open Leads", icon: List, to: "/leads" },
-        { label: "Open Ready-to-Start Pipeline", icon: ArrowRight, to: "/intake/lead-to-active" },
+        { label: "Open Ready-to-Start Pipeline", icon: ArrowRight, to: "/leads?view=pipeline" },
       ]}
     >
       <section>

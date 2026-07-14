@@ -336,7 +336,7 @@ const SEED_TRAININGS: Training[] = [
     category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-06-23",
     sopMarkdown: "## Stages\nNew Lead → In Contact → Sent Form → Missing Information → Form Received → Sent to VOB → VOB Completed.",
     checklist: [{ id: "c1", item: "Walk one lead through every stage", required: true }],
-    resources: [{ id: "r1", type: "Link", title: "Lead to Ready-to-Start Pipeline", url: "/intake/lead-to-active" }],
+    resources: [{ id: "r1", type: "Link", title: "Lead to Ready-to-Start Pipeline", url: "/leads?view=pipeline" }],
   },
   {
     id: "intake-handoff-authorizations",
