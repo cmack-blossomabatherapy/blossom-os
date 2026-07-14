@@ -228,6 +228,43 @@ export default function CompanyHome() {
     setMonth(today);
   }, [today]);
 
+  const goPrevious = useCallback(() => {
+    if (view === "week") {
+      const prevWeek = subWeeks(month, 1);
+      setMonth(prevWeek);
+      setSelectedDate(prevWeek);
+    } else {
+      const prevMonth = subMonths(month, 1);
+      setMonth(prevMonth);
+      setSelectedDate(prevMonth);
+    }
+  }, [view, month]);
+
+  const goNext = useCallback(() => {
+    if (view === "week") {
+      const nextWeek = addWeeks(month, 1);
+      setMonth(nextWeek);
+      setSelectedDate(nextWeek);
+    } else {
+      const nextMonth = addMonths(month, 1);
+      setMonth(nextMonth);
+      setSelectedDate(nextMonth);
+    }
+  }, [view, month]);
+
+  const jumpToDate = useCallback((d: Date) => {
+    const normalized = startOfDay(d);
+    setSelectedDate(normalized);
+    setMonth(normalized);
+    setJumpOpen(false);
+  }, []);
+
+  const weekRange = useMemo(() => {
+    const start = startOfWeek(month, { weekStartsOn: 0 });
+    const end = endOfWeek(month, { weekStartsOn: 0 });
+    return { start, end, days: eachDayOfInterval({ start, end }) };
+  }, [month]);
+
   return (
     <OSShell>
       <div className="mx-auto max-w-6xl px-6 md:px-10 py-8 md:py-12 space-y-10">
