@@ -361,6 +361,47 @@ export default function CompanyHome() {
                     </ToggleGroupItem>
                   </ToggleGroup>
 
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-full text-xs gap-1.5"
+                        disabled={availableCategories.length === 0}
+                      >
+                        <Filter className="size-3.5" />
+                        Types
+                        {categoryFilter.size > 0 && (
+                          <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">
+                            {categoryFilter.size}
+                          </Badge>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-2" align="end">
+                      <div className="px-2 py-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
+                        Filter by type
+                      </div>
+                      <div className="max-h-64 overflow-auto space-y-0.5">
+                        {availableCategories.map((cat) => {
+                          const checked = categoryFilter.has(cat);
+                          return (
+                            <label
+                              key={cat}
+                              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted cursor-pointer"
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={() => toggleCategory(cat)}
+                              />
+                              <span className="truncate">{formatCategory(cat)}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+
                   <div className="flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 p-0.5">
                     <Button
                       variant="ghost"
@@ -412,59 +453,6 @@ export default function CompanyHome() {
                   >
                     Today
                   </Button>
-
-                  <Select value={rangePreset} onValueChange={(v) => setRangePreset(v as RangePreset)}>
-                    <SelectTrigger className="h-8 rounded-full text-xs w-[140px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(RANGE_LABELS) as RangePreset[]).map((k) => (
-                        <SelectItem key={k} value={k} className="text-xs">
-                          {RANGE_LABELS[k]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-full text-xs gap-1.5"
-                        disabled={availableCategories.length === 0}
-                      >
-                        <Filter className="size-3.5" />
-                        Types
-                        {categoryFilter.size > 0 && (
-                          <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">
-                            {categoryFilter.size}
-                          </Badge>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-56 p-2" align="end">
-                      <div className="px-2 py-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
-                        Filter by type
-                      </div>
-                      <div className="max-h-64 overflow-auto space-y-0.5">
-                        {availableCategories.map((cat) => {
-                          const checked = categoryFilter.has(cat);
-                          return (
-                            <label
-                              key={cat}
-                              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted cursor-pointer"
-                            >
-                              <Checkbox
-                                checked={checked}
-                                onCheckedChange={() => toggleCategory(cat)}
-                              />
-                              <span className="truncate">{formatCategory(cat)}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
                   {activeFilterCount > 0 && (
                     <Button
                       variant="ghost"
