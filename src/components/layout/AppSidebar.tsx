@@ -672,6 +672,15 @@ export function AppSidebar({
               className="h-9 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/30 pl-10 text-xs text-sidebar-foreground placeholder:text-sidebar-muted shadow-inner backdrop-blur-md focus-visible:ring-1 focus-visible:ring-sidebar-primary"
             />
           </div>
+          <div className="px-1">
+            <NavLink
+              to="/home"
+              className={cn("nav-item", isItemActive("/home") ? "nav-item-active" : "nav-item-inactive")}
+            >
+              <Home className="h-4 w-4 shrink-0" />
+              <span className="truncate">Home</span>
+            </NavLink>
+          </div>
           {sections.map((section) => {
             const sectionOpen = openSections.has(section.title);
             return (
