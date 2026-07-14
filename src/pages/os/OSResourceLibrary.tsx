@@ -41,6 +41,9 @@ import {
   type SmartCollectionId,
   type SmartCollectionResult,
 } from "@/lib/resources/smartCollections";
+import {
+  INTAKE_SECTIONS, groupByIntakeSection, isIntakeRelevant,
+} from "@/lib/resources/intakeSections";
 
 const TONE_BG: Record<string, string> = {
   purple:  "bg-[hsl(265_70%_96%)] text-[hsl(265_70%_45%)]",
@@ -88,6 +91,7 @@ export default function OSResourceLibrary() {
   const { create: createSystemIssue } = useSystemIssues();
   const canManage = role === "super_admin" || role === "hr_team";
   const { resources: libraryResources, loading } = useLibraryResources();
+  const isIntakeView = role === "intake_coordinator";
 
   const [query, setQuery] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -105,8 +109,12 @@ export default function OSResourceLibrary() {
 
   // Role-aware scope, pulled live from the operational library.
   const scope = useMemo(
-    () => libraryResources.filter((r) => isVisibleToRole(r, role, activeState)),
-    [libraryResources, role, activeState],
+    () => {
+      const base = libraryResources.filter((r) => isVisibleToRole(r, role, activeState));
+      // Intake team should only see resources that are actually about intake work.
+      return isIntakeView ? base.filter(isIntakeRelevant) : base;
+    },
+    [libraryResources, role, activeState, isIntakeView],
   );
   const filteredScope = useMemo(
     () => (typeFilter ? scope.filter((r) => r.type === typeFilter) : scope),
@@ -153,6 +161,12 @@ export default function OSResourceLibrary() {
   );
   const showSdLaunchCollection =
     isSdSopVisibleToRole(role) && !query && !activeCategory && !activeCollection;
+
+  // Intake-specific sectioning.
+  const intakeGrouped = useMemo(
+    () => (isIntakeView ? groupByIntakeSection(filteredScope) : null),
+    [isIntakeView, filteredScope],
+  );
 
   const visibleList: Resource[] = useMemo(() => {
     if (query) return searchResults;
