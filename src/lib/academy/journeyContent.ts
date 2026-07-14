@@ -134,7 +134,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
 /** Build the live runtime route for a module id, source-aware. */
 function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
   return (id: string) => {
-    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::") || id.startsWith("assistant-state-director::")) {
+    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::") || id.startsWith("assistant-state-director::") || id.startsWith("state-director::")) {
       return `/academy/path/${slug}/module/${encodeURIComponent(id)}`;
     }
     return `/training/${id}`;
@@ -143,7 +143,7 @@ function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
 
 /** Unified per-module status: runtime store for rbt/bcba, academyData for everything else. */
 function unifiedStatus(id: string): "completed" | "in_progress" | "overdue" | "not_started" {
-  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::") || id.startsWith("assistant-state-director::")) {
+  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::") || id.startsWith("assistant-state-director::") || id.startsWith("state-director::")) {
     const s = getRuntimeStatus(id);
     return s === "completed" ? "completed" : s === "in_progress" ? "in_progress" : "not_started";
   }
