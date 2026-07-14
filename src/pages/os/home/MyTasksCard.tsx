@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { format, parseISO, isPast } from "date-fns";
-import { CheckCircle2, Circle, Plus, ListTodo, Clock, ArrowRight } from "lucide-react";
+import { CheckCircle2, Circle, Plus, ListTodo, Clock, ArrowRight, Link2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useUserTasks, type TaskScope, type UserTask } from "@/hooks/useUserTasks";
 import { toast } from "sonner";
+import { resolveRelatedRecordHref, relatedRecordChipLabel } from "@/lib/tasks/relatedRecord";
 
 function priorityColor(p: UserTask["priority"]) {
   if (p === "high") return "text-rose-500 bg-rose-500/10";
@@ -17,6 +19,8 @@ function priorityColor(p: UserTask["priority"]) {
 
 function TaskRow({ task, onComplete }: { task: UserTask; onComplete: (id: string) => void }) {
   const overdue = task.due_at && isPast(parseISO(task.due_at));
+  const relatedHref = resolveRelatedRecordHref(task);
+  const relatedLabel = relatedRecordChipLabel(task);
   return (
     <li className="group flex items-start gap-3 rounded-xl p-2 -mx-2 hover:bg-muted/60 transition">
       <button
@@ -31,7 +35,7 @@ function TaskRow({ task, onComplete }: { task: UserTask; onComplete: (id: string
         <p className="text-sm font-medium text-foreground leading-tight truncate">
           {task.title}
         </p>
-        <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
           {task.due_at && (
             <span className={cn("inline-flex items-center gap-1", overdue && "text-rose-500 font-medium")}>
               <Clock className="size-3" />
@@ -41,6 +45,23 @@ function TaskRow({ task, onComplete }: { task: UserTask; onComplete: (id: string
           <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-medium capitalize", priorityColor(task.priority))}>
             {task.priority}
           </span>
+          {relatedLabel && relatedHref && (
+            <Link
+              to={relatedHref}
+              className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-1.5 py-0.5 text-[10px] font-medium text-foreground/80 hover:border-primary/40 hover:bg-primary/5 hover:text-primary transition max-w-[220px]"
+              title={`Open ${relatedLabel}`}
+            >
+              <Link2 className="size-3 shrink-0" />
+              <span className="truncate">{relatedLabel}</span>
+              <ArrowRight className="size-3 shrink-0 opacity-60" />
+            </Link>
+          )}
+          {relatedLabel && !relatedHref && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground max-w-[220px]">
+              <Link2 className="size-3 shrink-0" />
+              <span className="truncate">{relatedLabel}</span>
+            </span>
+          )}
         </div>
       </div>
     </li>
