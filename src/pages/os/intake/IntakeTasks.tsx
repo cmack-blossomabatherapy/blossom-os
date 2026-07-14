@@ -49,7 +49,7 @@ type Destination = {
 };
 
 function resolveDestination(row: TaskRow): Destination {
-  const leadId = row.lead?.id ?? row.task.lead_id;
+  const leadId = row.lead?.id ?? row.task.lead_id ?? "";
   const text = `${row.task.task_type ?? ""} ${row.task.title ?? ""}`.toLowerCase();
   const focus = `taskId=${encodeURIComponent(row.task.id)}#task-${row.task.id}`;
   if (/missing|packet|document|signature|consent/.test(text)) {
@@ -126,7 +126,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
   const rows = useMemo<TaskRow[]>(
     () => tasks
       .filter((t) => t.status !== "Completed")
-      .map((t) => ({ task: t, lead: leadById.get(t.lead_id) }))
+      .map((t) => ({ task: t, lead: t.lead_id ? leadById.get(t.lead_id) : undefined }))
       .filter((r) => (r.lead ? matches(r.lead.state) : true)),
     [tasks, leadById, matches],
   );
