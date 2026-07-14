@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 import {
   Sparkles, Send, Plus, Mic, Paperclip, History, Pin, BookOpen,
   Brain, Workflow, ShieldCheck, ExternalLink, Loader2, Search, Pencil, Trash2,
-  MicOff, X, RefreshCw, AlertCircle,
+  MicOff, X, RefreshCw, AlertCircle, MessageSquare, PinOff, Check, MessagesSquare,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
