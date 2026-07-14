@@ -100,6 +100,7 @@ export const STAGED_ROLE_LIVE_PATHS: ReadonlySet<string> = new Set([
   "/training",
   "/resource-library",
   "/reports",
+  "/ai/assistant",
 ]);
 
 /**
@@ -758,6 +759,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const trainingPath = isStateTrainingRole ? "/training" : "/academy";
   const bottomNav: NavEntry[] = [
     { to: homeForRole, label: "Home", icon: LayoutDashboard, end: true },
+    { to: "/ai/assistant", label: "Blossom AI", icon: Sparkles },
     { to: trainingPath, label: "Training", icon: GraduationCap },
     { to: "/resource-library", label: "Resources", icon: BookOpen },
     { to: "/reports", label: "Reports", icon: BarChart3 },
@@ -1210,7 +1212,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       </CommandDialog>
       <FloatingEscalationChat />
       <TrainingProgressCloudBridge />
-      <BlossomAILauncher />
     </div>
     </BlossomAIProvider>
   );
