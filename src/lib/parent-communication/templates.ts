@@ -27,10 +27,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake / Marketing",
     "channel": "SMS + Email",
     "useWhen": "A parent submits a website, Facebook, referral, phone, or other lead and Blossom is reaching out for the first time.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, this is {{team_member_first_name}} from Blossom ABA Therapy. Thank you for reaching out about services for {{child_first_name}}. We received your inquiry and would love to help. What is a good time today for a quick call?",
+    "subject": "Welcome to Blossom ABA Therapy",
+    "body": "Hi {{parent_first_name}},\n\nThank you for reaching out to Blossom ABA Therapy. We received your inquiry about services for {{child_first_name}}, and we are happy to help guide you through the next steps.\n\nThe next step is a quick intake call so we can learn more about what you are looking for, confirm basic information, and explain what we need to move forward.\n\nYou can reply to this email or call/text us at {{team_member_phone}} with a good time to connect.\n\nWarmly,\n{{team_member_full_name}}\n{{team_member_title}}\nBlossom ABA Therapy",
+    "after": "Update the lead in Monday/current tracker with contact attempt, date/time, channel, and next follow-up date."
   },
   {
     "id": "1.02",
@@ -40,10 +40,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Intake calls a new parent lead and they do not answer.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, this is {{team_member_first_name}} from Blossom ABA Therapy. I just tried calling about your inquiry for {{child_first_name}}. Please call or text me back at {{team_member_phone}} when you have a chance.",
+    "subject": "Following up on your Blossom ABA Therapy inquiry",
+    "body": "Hi {{parent_first_name}},\n\nI just tried calling you regarding your inquiry for {{child_first_name}}. I am sorry I missed you.\n\nWhen you have a moment, please reply with a good time to speak, or call/text me at {{team_member_phone}}. We would like to help you understand the intake process and next steps.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Log no answer. Set follow-up date/time."
   },
   {
     "id": "1.03",
@@ -53,10 +53,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Parent has not responded after first outreach.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, just checking in from Blossom ABA Therapy. We still want to help with services for {{child_first_name}}. Please let me know if you would still like to continue intake.",
+    "subject": "Checking in - Blossom ABA Therapy intake",
+    "body": "Hi {{parent_first_name}},\n\nI wanted to check in again regarding your inquiry for {{child_first_name}}.\n\nIf you are still interested in services, we are happy to help you move through the intake process. If now is not the right time, that is completely okay too. Please reply and let us know how you would like to proceed.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update contact attempt count and next follow-up."
   },
   {
     "id": "1.04",
@@ -66,10 +66,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Parent has not responded after the required contact cadence.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, this is our final follow-up for now regarding Blossom ABA services for {{child_first_name}}. If you still need support, please reply anytime and we can reopen the intake conversation.",
+    "subject": "Final follow-up for now - Blossom ABA Therapy",
+    "body": "Hi {{parent_first_name}},\n\nWe have tried reaching you a few times regarding your inquiry for {{child_first_name}} and have not been able to connect.\n\nWe will pause outreach for now. If you are still interested in services, please reply to this email or call us at {{office_phone}}, and we will be happy to continue helping you.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Move/update lead according to current Can't Reach process and document final outreach."
   },
   {
     "id": "1.05",
@@ -79,10 +79,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "A parent responds after being marked Can't Reach or inactive.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, thank you for getting back to us. We can reopen the intake conversation for {{child_first_name}}. I will review the information we have and follow up with the next step.",
+    "subject": "Reopening your Blossom ABA Therapy intake",
+    "body": "Hi {{parent_first_name}},\n\nThank you for getting back to us. We can reopen the intake process for {{child_first_name}}.\n\nI will review the information we already have and let you know what is still needed so we can move forward as smoothly as possible.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Reactivate/update lead status, confirm owner, next action, and follow-up date."
   },
   {
     "id": "2.01",
@@ -92,10 +92,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Retell AI answered a new family call after hours or when the team was unavailable.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, this is {{team_member_first_name}} from Blossom ABA Therapy. Thank you for calling us. Our after-hours assistant shared your message, and I wanted to follow up personally. What is a good time to connect today?",
+    "subject": "Following up from your call to Blossom ABA Therapy",
+    "body": "Hi {{parent_first_name}},\n\nThank you for calling Blossom ABA Therapy. Our after-hours assistant shared your message, and I wanted to follow up personally.\n\nWe would be happy to learn more about what you are looking for and explain the next steps for intake.\n\nPlease reply with a good time to speak, or call/text me at {{team_member_phone}}.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update Monday/current tracker from the AI call spreadsheet. Mark caller type, owner, status, next action, and follow-up date."
   },
   {
     "id": "2.02",
@@ -105,10 +105,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake / State Ops / Scheduling / Clinical depending on issue",
     "channel": "SMS + Email",
     "useWhen": "Existing family called after hours and needs routing.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, this is {{team_member_first_name}} from Blossom ABA Therapy. We received your message from after hours and are routing it to the right team member. We will follow up as soon as possible.",
+    "subject": "We received your message",
+    "body": "Hi {{parent_first_name}},\n\nWe received your after-hours message and are making sure it gets to the correct team member.\n\nIf there is any additional detail you would like us to know, please reply here. Otherwise, someone from the appropriate team will follow up as soon as possible.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Route internally to correct owner. Update patient/client tracker and Monday/current tracker as applicable."
   },
   {
     "id": "2.03",
@@ -118,10 +118,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake / Scheduling / State Ops",
     "channel": "SMS",
     "useWhen": "A parent called during business hours and team missed the call.",
-    "sms": "",
+    "sms": "Hi {{parent_first_name}}, this is {{team_member_first_name}} from Blossom ABA Therapy. Sorry we missed your call. How can I help you today?",
     "subject": "",
     "body": "",
-    "after": ""
+    "after": "Document missed call response and next step."
   },
   {
     "id": "3.01",
@@ -131,10 +131,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Parent needs to schedule intake call.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, let's schedule a quick intake call for {{child_first_name}}. You can use this link: {{calendar_link}} or send me a few times that work for you.",
+    "subject": "Schedule your intake call with Blossom ABA Therapy",
+    "body": "Hi {{parent_first_name}},\n\nThe next step is to schedule a quick intake call for {{child_first_name}}.\n\nDuring the call, we will confirm basic information, answer your questions, and explain what we need to move forward.\n\nYou can schedule here: {{calendar_link}}\n\nOr reply with a few times that work for you.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update call scheduling status and follow-up date."
   },
   {
     "id": "3.02",
@@ -144,10 +144,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Intake call is scheduled.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, confirming our Blossom intake call for {{appointment_date}} at {{appointment_time}}. If anything changes, please call or text {{team_member_phone}}.",
+    "subject": "Confirmed: Blossom intake call for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nThis confirms our intake call for {{child_first_name}} on {{appointment_date}} at {{appointment_time}}.\n\nDuring the call, we will review your goals, basic information, insurance details, and next steps.\n\nIf you need to reschedule, please reply to this email or call/text {{team_member_phone}}.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update appointment details."
   },
   {
     "id": "3.03",
@@ -157,10 +157,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS",
     "useWhen": "Reminder before intake call.",
-    "sms": "",
+    "sms": "Hi {{parent_first_name}}, reminder that your Blossom intake call for {{child_first_name}} is today at {{appointment_time}}. Talk soon.",
     "subject": "",
     "body": "",
-    "after": ""
+    "after": "No extra action unless parent responds."
   },
   {
     "id": "3.04",
@@ -170,10 +170,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Parent misses scheduled intake call.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we missed you for the intake call today. No worries. Please reply with a better time or use this link to reschedule: {{calendar_link}}",
+    "subject": "Reschedule your Blossom intake call",
+    "body": "Hi {{parent_first_name}},\n\nWe missed you for the scheduled intake call today. No worries.\n\nPlease use this link to reschedule: {{calendar_link}}\n\nOr reply with a few times that work for you, and we will help coordinate.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update missed call status and next follow-up date."
   },
   {
     "id": "4.01",
@@ -183,10 +183,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Sending initial intake packet/forms.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, here are the Blossom intake forms for {{child_first_name}}: {{forms_link}}. Please complete them when you can so we can keep the process moving.",
+    "subject": "Blossom intake forms for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nThank you for speaking with us. The next step is to complete the intake forms for {{child_first_name}}.\n\nPlease complete the forms here:\n{{forms_link}}\n\nThese forms help us understand your needs, confirm important information, and prepare for the next step in the intake process.\n\nIf you have any trouble opening or completing the forms, please let me know.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update forms sent date/status and next follow-up."
   },
   {
     "id": "4.02",
@@ -196,10 +196,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Forms are not completed.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, just a reminder to complete the Blossom intake forms for {{child_first_name}}: {{forms_link}}. Please let me know if you need help.",
+    "subject": "Reminder: Blossom intake forms",
+    "body": "Hi {{parent_first_name}},\n\nI wanted to remind you that we are still waiting for the intake forms for {{child_first_name}}.\n\nYou can complete them here:\n{{forms_link}}\n\nOnce we receive the completed forms, we can continue moving forward with the next steps.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update reminder attempt and next follow-up date."
   },
   {
     "id": "4.03",
@@ -209,10 +209,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Forms are completed/received.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, thank you. We received the intake forms for {{child_first_name}} and will review them for next steps.",
+    "subject": "Forms received - Blossom ABA Therapy",
+    "body": "Hi {{parent_first_name}},\n\nThank you. We received the intake forms for {{child_first_name}}.\n\nOur team will review everything and let you know if anything else is needed before we move to the next step.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update forms received/review status."
   },
   {
     "id": "4.04",
@@ -222,10 +222,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Specific documents/items are missing.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we are missing a few items for {{child_first_name}}: {{missing_items}}. Please send them when you can so we can keep moving.",
+    "subject": "Missing items needed for {{child_first_name}}'s intake",
+    "body": "Hi {{parent_first_name}},\n\nWe reviewed the intake information for {{child_first_name}}, and we are still missing the following:\n\n{{missing_items}}\n\nPlease send these items when you can. Once we have them, we can continue the intake process and prepare the next handoff.\n\nIf you have questions or are having trouble getting any of these items, please let me know.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update missing items clearly in Monday/current tracker. Do not write vague notes."
   },
   {
     "id": "4.05",
@@ -235,10 +235,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Diagnosis documentation is needed.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, to continue intake for {{child_first_name}}, we need diagnosis documentation. Please send it to {{team_member_email}} or let us know if you need help.",
+    "subject": "Diagnosis documentation needed for Blossom intake",
+    "body": "Hi {{parent_first_name}},\n\nTo continue the intake process for {{child_first_name}}, we need a copy of diagnosis documentation.\n\nYou can reply to this email with the document attached or send it to {{team_member_email}}.\n\nIf you do not have this available or are unsure what qualifies, please let us know and we will help guide you.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update Need Diagnosis status and next follow-up."
   },
   {
     "id": "4.06",
@@ -248,10 +248,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Parent needs to provide insurance card.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, please send a clear photo of the front and back of {{child_first_name}}'s insurance card so we can prepare the benefits review.",
+    "subject": "Insurance card needed for benefits review",
+    "body": "Hi {{parent_first_name}},\n\nTo prepare the benefits review for {{child_first_name}}, please send a clear copy or photo of the front and back of the insurance card.\n\nOnce we have the insurance information, our team can review next steps and let you know if anything else is needed.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update insurance card status."
   },
   {
     "id": "4.07",
@@ -261,10 +261,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Consent forms are missing or incomplete.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we still need the consent forms completed for {{child_first_name}}. Please use this link: {{forms_link}}. Let me know if you have any questions.",
+    "subject": "Consent forms needed for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nWe still need the consent forms completed for {{child_first_name}} before we can continue with the next steps.\n\nPlease complete them here:\n{{forms_link}}\n\nIf you have any questions about the forms, please let me know.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update consent status and follow-up date."
   },
   {
     "id": "5.01",
@@ -274,10 +274,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake / RCM / Benefits",
     "channel": "SMS + Email",
     "useWhen": "Benefits/VOB review is being started.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we have the information needed to begin the benefits review for {{child_first_name}}. We will update you once we have more information.",
+    "subject": "Benefits review started for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nWe have the information needed to begin the benefits review for {{child_first_name}}.\n\nOur team will review the insurance information and let you know what the next step is once we have an update.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update VOB/benefits status and owner."
   },
   {
     "id": "5.02",
@@ -287,10 +287,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "RCM / Intake",
     "channel": "SMS + Email",
     "useWhen": "Benefits review is still pending.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we are still waiting on the benefits review for {{child_first_name}}. We will update you as soon as we have the next step.",
+    "subject": "Benefits review update",
+    "body": "Hi {{parent_first_name}},\n\nWe wanted to let you know that the benefits review for {{child_first_name}} is still in progress.\n\nWe will update you as soon as we have the next step. Thank you for your patience while this is being reviewed.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update parent communication log."
   },
   {
     "id": "5.03",
@@ -300,10 +300,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "RCM / Intake",
     "channel": "SMS + Email",
     "useWhen": "Benefits team needs more information.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, our team needs a little more insurance information for {{child_first_name}}: {{missing_items}}. Please send when you can.",
+    "subject": "Additional insurance information needed",
+    "body": "Hi {{parent_first_name}},\n\nOur team needs a little more information to continue the benefits review for {{child_first_name}}.\n\nNeeded items:\n{{missing_items}}\n\nPlease send these items when you can. Once received, we can continue reviewing next steps.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update missing insurance information and follow-up date."
   },
   {
     "id": "5.04",
@@ -313,10 +313,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "RCM / Intake",
     "channel": "Email preferred, SMS brief only",
     "useWhen": "Family needs a benefits/payment discussion. Do not include detailed financial information in SMS.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we need to discuss the insurance review for {{child_first_name}}. Please let us know a good time to speak.",
+    "subject": "Insurance review discussion needed",
+    "body": "Hi {{parent_first_name}},\n\nOur team completed an initial review and would like to speak with you about the insurance information for {{child_first_name}}.\n\nPlease reply with a good time to connect, or call us at {{office_phone}}.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Route to RCM/Benefits owner. Do not text detailed benefit or financial decisions."
   },
   {
     "id": "5.05",
@@ -326,10 +326,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "RCM / Intake",
     "channel": "Email preferred",
     "useWhen": "Benefits review creates a barrier and family needs next-step discussion.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we have an update from the insurance review and would like to discuss next steps with you. Please let us know a good time to speak.",
+    "subject": "Insurance review update for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nWe have an update from the insurance review for {{child_first_name}} and would like to discuss the next steps with you directly.\n\nPlease reply with a good time to speak, or call us at {{office_phone}}.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "RCM/Benefits owner should document outcome after conversation."
   },
   {
     "id": "5.06",
@@ -339,10 +339,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "RCM / Finance",
     "channel": "Email preferred",
     "useWhen": "Family may need payment plan discussion.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we would like to discuss payment options for {{child_first_name}}'s services. Please let us know a good time to connect.",
+    "subject": "Payment options discussion",
+    "body": "Hi {{parent_first_name}},\n\nWe would like to discuss payment options related to {{child_first_name}}'s services and answer any questions you may have.\n\nPlease reply with a good time to speak, or call us at {{office_phone}}.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Route to correct RCM/Finance owner."
   },
   {
     "id": "5.07",
@@ -352,10 +352,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Finance / RCM",
     "channel": "Email preferred",
     "useWhen": "Payment method is needed. Do not request full card details by SMS/email if secure process exists.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we need to complete payment method setup for {{child_first_name}}. Please contact us at {{office_phone}} so we can guide you securely.",
+    "subject": "Payment method setup needed",
+    "body": "Hi {{parent_first_name}},\n\nWe need to complete payment method setup for {{child_first_name}}.\n\nFor security, please do not send full credit card details by email or text. Please contact us at {{office_phone}}, and we will guide you through the approved process.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Document request and route to Finance/RCM owner."
   },
   {
     "id": "6.01",
@@ -365,10 +365,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Authorizations",
     "channel": "SMS + Email",
     "useWhen": "Authorization submission process begins.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, the authorization process for {{child_first_name}} has started. We will update you when we receive the next status.",
+    "subject": "Authorization process started",
+    "body": "Hi {{parent_first_name}},\n\nThe authorization process for {{child_first_name}} has started.\n\nOur team will monitor the status and let you know when we receive an update or if anything else is needed.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update authorization status and parent communication note."
   },
   {
     "id": "6.02",
@@ -378,10 +378,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Authorizations",
     "channel": "SMS + Email",
     "useWhen": "Authorization is pending.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, the authorization for {{child_first_name}} is still pending. We are monitoring it and will update you when we have news.",
+    "subject": "Authorization update for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nThe authorization for {{child_first_name}} is still pending.\n\nWe are continuing to monitor it and will update you once we receive the next status.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update parent communication log."
   },
   {
     "id": "6.03",
@@ -391,10 +391,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Authorizations / Scheduling / Staffing",
     "channel": "SMS + Email",
     "useWhen": "Authorization is approved and next steps begin.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, good news. Authorization for {{child_first_name}} has been approved. Our team will follow up with next steps for scheduling/services.",
+    "subject": "Authorization approved for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nGood news. Authorization for {{child_first_name}} has been approved.\n\nOur team will now work on the next steps for scheduling and services. Someone will follow up with you shortly regarding what comes next.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Route to Scheduling/Staffing/State Ops as current process requires."
   },
   {
     "id": "6.04",
@@ -404,10 +404,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Authorizations",
     "channel": "SMS + Email",
     "useWhen": "Additional info is needed for auth.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we need one more item for {{child_first_name}}'s authorization: {{missing_items}}. Please send when you can so we can continue.",
+    "subject": "Additional information needed for authorization",
+    "body": "Hi {{parent_first_name}},\n\nWe need additional information to continue the authorization process for {{child_first_name}}.\n\nNeeded item:\n{{missing_items}}\n\nPlease send this when you can, and let us know if you have questions.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update missing auth item and follow-up date."
   },
   {
     "id": "6.05",
@@ -417,10 +417,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Authorizations / Clinical / RCM",
     "channel": "Email preferred, SMS brief only",
     "useWhen": "Authorization was denied or requires careful discussion.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we received an authorization update for {{child_first_name}} and would like to discuss it with you. Please let us know a good time to speak.",
+    "subject": "Authorization update for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nWe received an authorization update for {{child_first_name}} and would like to discuss it with you directly.\n\nPlease reply with a good time to speak, or call us at {{office_phone}}.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Escalate to appropriate authorization/clinical/RCM owner. Avoid detailed denial explanations over SMS."
   },
   {
     "id": "7.01",
@@ -430,10 +430,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling / Clinical / State Ops",
     "channel": "SMS + Email",
     "useWhen": "Child is ready for assessment scheduling.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we are ready to schedule {{child_first_name}}'s assessment. Please send a few days/times that work for you.",
+    "subject": "Ready to schedule {{child_first_name}}'s assessment",
+    "body": "Hi {{parent_first_name}},\n\nWe are ready to schedule {{child_first_name}}'s assessment.\n\nPlease reply with a few days and times that work for you, and our team will coordinate the schedule.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update assessment scheduling status and follow-up date."
   },
   {
     "id": "7.02",
@@ -443,10 +443,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling / Clinical",
     "channel": "SMS + Email",
     "useWhen": "Assessment is scheduled.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, confirming {{child_first_name}}'s assessment on {{appointment_date}} at {{appointment_time}} with {{bcba_name}}.",
+    "subject": "Confirmed: Assessment for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nThis confirms {{child_first_name}}'s assessment:\n\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nProvider: {{bcba_name}}\nLocation/Format: {{clinic_address}}\n\nIf anything changes, please contact us at {{team_member_phone}}.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update schedule and notify relevant team members."
   },
   {
     "id": "7.03",
@@ -456,10 +456,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling",
     "channel": "SMS",
     "useWhen": "Reminder before assessment.",
-    "sms": "",
+    "sms": "Hi {{parent_first_name}}, reminder that {{child_first_name}}'s Blossom assessment is scheduled for {{appointment_date}} at {{appointment_time}}.",
     "subject": "",
     "body": "",
-    "after": ""
+    "after": "No extra action unless parent responds."
   },
   {
     "id": "7.04",
@@ -469,10 +469,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling",
     "channel": "SMS + Email",
     "useWhen": "Assessment needs rescheduling.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we need to reschedule {{child_first_name}}'s assessment. Please send a few times that work for you.",
+    "subject": "Rescheduling {{child_first_name}}'s assessment",
+    "body": "Hi {{parent_first_name}},\n\nWe need to reschedule {{child_first_name}}'s assessment.\n\nPlease reply with a few days and times that work for you, and we will coordinate a new appointment.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update schedule status and reason if appropriate."
   },
   {
     "id": "7.05",
@@ -482,10 +482,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Clinical / Scheduling / State Ops",
     "channel": "SMS + Email",
     "useWhen": "Assessment is completed and family needs next-step update.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, thank you for completing {{child_first_name}}'s assessment. Our team will review next steps and follow up with you.",
+    "subject": "Next steps after {{child_first_name}}'s assessment",
+    "body": "Hi {{parent_first_name}},\n\nThank you for completing {{child_first_name}}'s assessment.\n\nOur team will review the next steps and follow up with you regarding services, scheduling, or anything else that is needed.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update assessment completion and next owner."
   },
   {
     "id": "8.01",
@@ -495,10 +495,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling / Staffing",
     "channel": "SMS + Email",
     "useWhen": "Need family availability for services.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, to help schedule services for {{child_first_name}}, please send your current availability by day/time.",
+    "subject": "Availability needed for {{child_first_name}}'s schedule",
+    "body": "Hi {{parent_first_name}},\n\nTo help build a schedule for {{child_first_name}}, please send your current availability by day and time.\n\nIf there are days/times that do not work, please include those as well.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update availability fields/notes."
   },
   {
     "id": "8.02",
@@ -508,10 +508,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling",
     "channel": "SMS + Email",
     "useWhen": "Proposing service schedule.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we have a proposed schedule for {{child_first_name}}: {{schedule_summary}}. Please confirm if this works for your family.",
+    "subject": "Proposed schedule for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nWe have a proposed schedule for {{child_first_name}}:\n\n{{schedule_summary}}\n\nPlease confirm if this works for your family or let us know what needs to be adjusted.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update proposed schedule status and parent response."
   },
   {
     "id": "8.03",
@@ -521,10 +521,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling / Staffing",
     "channel": "SMS + Email",
     "useWhen": "Schedule is confirmed.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, {{child_first_name}}'s schedule is confirmed: {{schedule_summary}}. We will let you know if there are any updates.",
+    "subject": "Confirmed schedule for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\n{{child_first_name}}'s schedule is confirmed:\n\n{{schedule_summary}}\n\nIf anything changes or you have questions, please contact {{scheduling_contact_name}} at {{team_member_phone}}.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update confirmed schedule and notify relevant team."
   },
   {
     "id": "8.04",
@@ -534,10 +534,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Staffing / State Ops",
     "channel": "SMS + Email",
     "useWhen": "Introducing assigned RBT/therapist.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we are happy to introduce {{rbt_name}}, who will be working with {{child_first_name}}. We will share next steps for the first session shortly.",
+    "subject": "Introducing {{child_first_name}}'s therapist",
+    "body": "Hi {{parent_first_name}},\n\nWe are happy to introduce {{rbt_name}}, who will be working with {{child_first_name}}.\n\nOur team will confirm the first session details and make sure you know what to expect.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update staffing assignment and first session plan."
   },
   {
     "id": "8.05",
@@ -547,10 +547,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Clinical / State Ops",
     "channel": "SMS + Email",
     "useWhen": "Introducing BCBA.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, {{bcba_name}} will be the BCBA supporting {{child_first_name}}. We are excited to have you connected.",
+    "subject": "Introducing {{child_first_name}}'s BCBA",
+    "body": "Hi {{parent_first_name}},\n\nWe are happy to introduce {{bcba_name}}, who will be the BCBA supporting {{child_first_name}}.\n\n{{bcba_name}} will help guide the clinical side of services and support the care plan.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update BCBA assignment communication."
   },
   {
     "id": "8.06",
@@ -560,10 +560,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling / Staffing / State Ops",
     "channel": "SMS + Email",
     "useWhen": "First 97153/session date is confirmed.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, confirming {{child_first_name}}'s first session on {{appointment_date}} at {{appointment_time}} with {{rbt_name}}.",
+    "subject": "Confirmed: First session for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nThis confirms {{child_first_name}}'s first session:\n\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nTherapist: {{rbt_name}}\nLocation: {{clinic_address}}\n\nIf you have any questions before the first session, please let us know.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update first session confirmed and notify assigned team."
   },
   {
     "id": "8.07",
@@ -573,10 +573,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Staffing / State Ops",
     "channel": "SMS + Email",
     "useWhen": "Family is waiting for staffing match.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we are still working on staffing for {{child_first_name}}. We know this is important and will update you as soon as we have a match.",
+    "subject": "Staffing update for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nWe are still working on staffing for {{child_first_name}}.\n\nWe know this is important and appreciate your patience. Our team is actively working on finding the right staffing solution and will update you as soon as we have more information.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update staffing status and next follow-up date. Do not leave family without a next update date."
   },
   {
     "id": "8.08",
@@ -586,10 +586,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling",
     "channel": "SMS + Email",
     "useWhen": "Schedule changes.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, there is a schedule update for {{child_first_name}}: {{schedule_summary}}. Please confirm you received this.",
+    "subject": "Schedule update for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nThere is a schedule update for {{child_first_name}}:\n\n{{schedule_summary}}\n\nPlease reply to confirm you received this update.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update schedule and parent confirmation status."
   },
   {
     "id": "8.09",
@@ -599,10 +599,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling / Staffing / Clinical",
     "channel": "SMS",
     "useWhen": "Provider is late.",
-    "sms": "",
+    "sms": "Hi {{parent_first_name}}, we wanted to let you know that {{rbt_name}} is running late for {{child_first_name}}'s session. Updated arrival time: {{appointment_time}}. Thank you for your patience.",
     "subject": "",
     "body": "",
-    "after": ""
+    "after": "Document late notice and notify relevant team."
   },
   {
     "id": "8.10",
@@ -612,10 +612,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling / Staffing",
     "channel": "SMS + Email",
     "useWhen": "Blossom must cancel/reschedule session.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we need to cancel/reschedule {{child_first_name}}'s session on {{appointment_date}}. We are sorry for the inconvenience and will follow up with options.",
+    "subject": "Session schedule update for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nWe need to cancel/reschedule {{child_first_name}}'s session on {{appointment_date}}.\n\nWe are sorry for the inconvenience. Our team will follow up with options and work to keep services as consistent as possible.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update cancellation reason and replacement/coverage plan."
   },
   {
     "id": "8.11",
@@ -625,10 +625,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling",
     "channel": "SMS",
     "useWhen": "Parent cancels and team confirms.",
-    "sms": "",
+    "sms": "Hi {{parent_first_name}}, confirming we received your cancellation for {{child_first_name}} on {{appointment_date}}. We will update the schedule.",
     "subject": "",
     "body": "",
-    "after": ""
+    "after": "Update cancellation in current scheduling system/process."
   },
   {
     "id": "8.12",
@@ -638,10 +638,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling / State Ops",
     "channel": "SMS + Email",
     "useWhen": "Provider arrives or logs in and family is unavailable/no-show. Keep tone neutral.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we were not able to begin {{child_first_name}}'s session today. Please contact us so we can confirm the schedule moving forward.",
+    "subject": "Schedule confirmation needed for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nWe were not able to begin {{child_first_name}}'s session today.\n\nPlease contact us so we can confirm the schedule moving forward and make sure everyone is aligned.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Document according to current attendance/cancellation process and alert appropriate owner."
   },
   {
     "id": "9.01",
@@ -651,10 +651,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Clinical / Case Manager",
     "channel": "SMS + Email",
     "useWhen": "Scheduling parent training.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we would like to schedule parent training for {{child_first_name}}. Please send a few times that work for you.",
+    "subject": "Scheduling parent training for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nWe would like to schedule parent training for {{child_first_name}}.\n\nParent training helps keep everyone aligned and supports progress outside of sessions.\n\nPlease reply with a few times that work for you.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update parent training scheduling status."
   },
   {
     "id": "9.02",
@@ -664,10 +664,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Clinical / Case Manager",
     "channel": "SMS + Email",
     "useWhen": "Reminding parent of BCBA/case meeting.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, reminder of your meeting for {{child_first_name}} with {{bcba_name}} on {{appointment_date}} at {{appointment_time}}.",
+    "subject": "Reminder: Meeting for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nThis is a reminder of your meeting for {{child_first_name}}:\n\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nProvider: {{bcba_name}}\n\nPlease let us know if you need to reschedule.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "No extra action unless parent responds."
   },
   {
     "id": "9.03",
@@ -677,10 +677,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Clinical / Case Manager",
     "channel": "SMS + Email",
     "useWhen": "Parent asks clinical question and non-clinical team needs to route.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, thank you for reaching out. I am sending your question to the clinical team so the right person can follow up.",
+    "subject": "Your question has been sent to the clinical team",
+    "body": "Hi {{parent_first_name}},\n\nThank you for reaching out. I am sending your question regarding {{child_first_name}} to the clinical team so the right person can follow up.\n\nSomeone will get back to you as soon as possible.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Route to BCBA/case manager/clinical owner. Document parent question without interpreting clinically if not qualified."
   },
   {
     "id": "9.04",
@@ -690,10 +690,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Clinical / State Ops / QA",
     "channel": "Email preferred, SMS brief only",
     "useWhen": "Parent reports concern/incident. Do not include sensitive details in SMS.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, thank you for letting us know. We are sending this to the appropriate leadership/clinical team member for follow-up.",
+    "subject": "We received your concern",
+    "body": "Hi {{parent_first_name}},\n\nThank you for letting us know. We received your concern and are sending it to the appropriate leadership/clinical team member for review and follow-up.\n\nSomeone will follow up with you as soon as possible.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Escalate immediately according to incident/escalation process. Document only appropriate facts."
   },
   {
     "id": "9.05",
@@ -703,10 +703,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "State Ops / Clinical / Scheduling",
     "channel": "SMS + Email",
     "useWhen": "Services are paused.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, confirming that services for {{child_first_name}} are currently paused. We will stay in touch about next steps.",
+    "subject": "Services paused for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nThis confirms that services for {{child_first_name}} are currently paused.\n\nOur team will stay in touch regarding next steps and what is needed before services resume.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update services-on-pause status and next review date."
   },
   {
     "id": "9.06",
@@ -716,10 +716,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "State Ops / Clinical / Scheduling",
     "channel": "SMS + Email",
     "useWhen": "Family may resume services.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we would like to discuss next steps for resuming services for {{child_first_name}}. Please let us know a good time to speak.",
+    "subject": "Discussing next steps to resume services",
+    "body": "Hi {{parent_first_name}},\n\nWe would like to discuss next steps for resuming services for {{child_first_name}}.\n\nPlease reply with a good time to connect, and we will review what is needed.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Route to state/clinical/scheduling owner."
   },
   {
     "id": "10.01",
@@ -729,10 +729,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Any Team / State Ops / Leadership",
     "channel": "SMS + Email",
     "useWhen": "Parent expresses concern and you need to acknowledge quickly.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, thank you for letting us know. I understand this is important, and I am making sure the right person reviews it and follows up.",
+    "subject": "We received your concern",
+    "body": "Hi {{parent_first_name}},\n\nThank you for letting us know. I understand this is important, and I am making sure the right person reviews it and follows up.\n\nWe appreciate you bringing this to our attention and will work to respond as quickly and clearly as possible.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Escalate to correct owner. Do not promise an outcome before review."
   },
   {
     "id": "10.02",
@@ -742,10 +742,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "State Ops / Leadership",
     "channel": "SMS + Email",
     "useWhen": "Parent concern has assigned owner.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, {{state_director_name}} will be helping with this and will follow up with you directly.",
+    "subject": "Follow-up owner assigned",
+    "body": "Hi {{parent_first_name}},\n\n{{state_director_name}} will be helping with this concern and will follow up with you directly.\n\nThank you for your patience while we review and work through this.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Confirm owner accepted escalation."
   },
   {
     "id": "10.03",
@@ -755,10 +755,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "State Ops / Leadership / QA",
     "channel": "SMS + Email",
     "useWhen": "Review is underway and parent needs update.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we are reviewing this and will follow up with you once we have a clearer update. Thank you for your patience.",
+    "subject": "Update: We are reviewing this",
+    "body": "Hi {{parent_first_name}},\n\nWe are reviewing this and will follow up with you once we have a clearer update.\n\nThank you for your patience while we look into it properly.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Add review update and next expected contact date."
   },
   {
     "id": "10.04",
@@ -768,10 +768,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "State Ops / Leadership",
     "channel": "Email preferred",
     "useWhen": "Issue is resolved or next step is confirmed.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, thank you for speaking with us. We have documented the next step and will continue from here.",
+    "subject": "Follow-up from our conversation",
+    "body": "Hi {{parent_first_name}},\n\nThank you for speaking with us.\n\nBased on our conversation, the next step is:\n{{next_step}}\n\nWe appreciate your communication and will continue working to support {{child_first_name}} and your family.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Document resolution/next step and owner."
   },
   {
     "id": "11.01",
@@ -782,9 +782,9 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "channel": "Email",
     "useWhen": "Referral partner sends family.",
     "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "subject": "Thank you for the referral",
+    "body": "Hi {{parent_first_name}},\n\nThank you for connecting with Blossom ABA Therapy.\n\nWe appreciate the referral and will make sure your family is guided through the intake process with care.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Log referral source and parent communication."
   },
   {
     "id": "11.02",
@@ -794,10 +794,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Marketing / Intake",
     "channel": "SMS + Email",
     "useWhen": "Parent met Blossom at event.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, this is {{team_member_first_name}} from Blossom ABA Therapy. It was great connecting with you. Would you like to schedule a quick call about services for {{child_first_name}}?",
+    "subject": "Great connecting with you",
+    "body": "Hi {{parent_first_name}},\n\nIt was great connecting with you.\n\nIf you would like to learn more about Blossom ABA Therapy services for {{child_first_name}}, we would be happy to schedule a quick call and walk you through the next steps.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update lead source/event source."
   },
   {
     "id": "11.03",
@@ -807,10 +807,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Marketing / Clinic / State Ops",
     "channel": "SMS + Email",
     "useWhen": "Inviting parent to tour clinic.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we would love to invite you to tour {{clinic_name}}. Please send a few times that work for you.",
+    "subject": "Tour {{clinic_name}} with Blossom ABA Therapy",
+    "body": "Hi {{parent_first_name}},\n\nWe would love to invite you to tour {{clinic_name}} and learn more about services for {{child_first_name}}.\n\nPlease reply with a few times that work for you, and we will help schedule the visit.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update clinic tour status/date."
   },
   {
     "id": "11.04",
@@ -820,10 +820,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Marketing / Intake",
     "channel": "SMS + Email",
     "useWhen": "Need to confirm how parent heard about Blossom.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, quick question so we can keep our records accurate: how did you hear about Blossom ABA Therapy?",
+    "subject": "Quick question about your Blossom inquiry",
+    "body": "Hi {{parent_first_name}},\n\nQuick question so we can keep our records accurate: how did you hear about Blossom ABA Therapy?\n\nThank you,\n{{team_member_full_name}}",
+    "after": "Update source attribution."
   },
   {
     "id": "12.01",
@@ -833,10 +833,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Office / Intake / HR/Admin",
     "channel": "SMS + Email",
     "useWhen": "Parent sends documents.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, thank you. We received the documents you sent and will review/update the file.",
+    "subject": "Documents received",
+    "body": "Hi {{parent_first_name}},\n\nThank you. We received the documents you sent and will review/update the file.\n\nIf anything else is needed, we will let you know.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update document status and file location."
   },
   {
     "id": "12.02",
@@ -846,10 +846,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Any Team",
     "channel": "SMS + Email",
     "useWhen": "Contact info is outdated or missing.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, can you please confirm the best phone number and email for your family so we can keep records updated?",
+    "subject": "Please confirm your contact information",
+    "body": "Hi {{parent_first_name}},\n\nCan you please confirm the best phone number and email for your family?\n\nWe want to make sure we have the correct contact information on file.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update contact fields."
   },
   {
     "id": "12.03",
@@ -859,10 +859,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Operations / Scheduling / State Ops",
     "channel": "SMS + Email",
     "useWhen": "Weather or closure affects services.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, due to {{after_hours_note}}, there may be a schedule change for {{child_first_name}}. We will follow up with details as soon as possible.",
+    "subject": "Schedule update due to {{after_hours_note}}",
+    "body": "Hi {{parent_first_name}},\n\nDue to {{after_hours_note}}, there may be a schedule change for {{child_first_name}}.\n\nOur team will follow up with details as soon as possible and keep you updated.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update affected schedules and notify teams."
   },
   {
     "id": "12.04",
@@ -872,10 +872,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Scheduling / Operations",
     "channel": "SMS + Email",
     "useWhen": "Holiday schedule affects services.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, reminder that Blossom has a holiday schedule change on {{appointment_date}}. Please contact us with any questions.",
+    "subject": "Holiday schedule reminder",
+    "body": "Hi {{parent_first_name}},\n\nThis is a reminder that Blossom has a holiday schedule change on {{appointment_date}}.\n\nIf this affects {{child_first_name}}'s schedule, our team will confirm the details with you.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update schedule if applicable."
   },
   {
     "id": "13.01",
@@ -885,10 +885,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "State Ops / Clinical",
     "channel": "Email preferred, SMS brief only",
     "useWhen": "Parent requests discharge or pause.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we received your message about pausing/discharging services for {{child_first_name}}. The appropriate team member will follow up.",
+    "subject": "We received your request",
+    "body": "Hi {{parent_first_name}},\n\nWe received your message about pausing or discharging services for {{child_first_name}}.\n\nThe appropriate team member will follow up to discuss next steps and make sure everything is handled properly.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Escalate to clinical/state operations owner."
   },
   {
     "id": "13.02",
@@ -898,10 +898,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "Intake",
     "channel": "SMS + Email",
     "useWhen": "Lead is being closed/inactivated after no movement.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we are closing this intake inquiry for now. If your family needs support in the future, please reach out and we will be happy to help.",
+    "subject": "Closing your Blossom intake inquiry for now",
+    "body": "Hi {{parent_first_name}},\n\nWe are closing this intake inquiry for now because we have not been able to move forward at this time.\n\nIf your family needs support in the future, please reach out and we will be happy to help.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Update inactive/closed reason."
   },
   {
     "id": "13.03",
@@ -912,9 +912,9 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "channel": "Email",
     "useWhen": "Services are ending and needs formal confirmation.",
     "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "subject": "Services ending confirmation for {{child_first_name}}",
+    "body": "Hi {{parent_first_name}},\n\nThis email confirms that services for {{child_first_name}} are ending as of {{deadline_date}}.\n\nIf you have questions or need anything else from our team, please contact {{team_member_full_name}} at {{team_member_email}}.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Complete current discharge/closure process and route to clinical/admin teams."
   },
   {
     "id": "14.01",
@@ -924,10 +924,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "QA / State Ops / Leadership",
     "channel": "SMS + Email",
     "useWhen": "Asking family for feedback.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we would appreciate your feedback about your experience with Blossom. Please share anything you think we should know.",
+    "subject": "We would appreciate your feedback",
+    "body": "Hi {{parent_first_name}},\n\nWe would appreciate your feedback about your experience with Blossom ABA Therapy.\n\nYour feedback helps us understand what is working and where we need to improve.\n\nPlease reply with anything you think we should know.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Route feedback to QA/leadership if issue is raised."
   },
   {
     "id": "14.02",
@@ -937,10 +937,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "QA / Operations",
     "channel": "SMS + Email",
     "useWhen": "Sending survey link.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, we would love your feedback. Please complete this quick Blossom survey: {{forms_link}}",
+    "subject": "Quick Blossom feedback survey",
+    "body": "Hi {{parent_first_name}},\n\nWe would love your feedback about your experience with Blossom ABA Therapy.\n\nPlease complete this quick survey:\n{{forms_link}}\n\nThank you for helping us improve.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Track survey sent date."
   },
   {
     "id": "14.03",
@@ -950,10 +950,10 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "team": "QA / Leadership / Marketing",
     "channel": "SMS + Email",
     "useWhen": "Parent gives positive feedback.",
-    "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "sms": "Hi {{parent_first_name}}, thank you for sharing that. It means a lot to our team, and we are grateful to support your family.",
+    "subject": "Thank you for your feedback",
+    "body": "Hi {{parent_first_name}},\n\nThank you for sharing your feedback. It means a lot to our team, and we are grateful for the opportunity to support your family.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Share internally if appropriate. Ask separately before using testimonial publicly."
   },
   {
     "id": "14.04",
@@ -964,9 +964,9 @@ export const PARENT_COMM_TEMPLATES: ParentCommTemplate[] = [
     "channel": "Email",
     "useWhen": "Asking parent permission to use testimonial.",
     "sms": "",
-    "subject": "",
-    "body": "",
-    "after": ""
+    "subject": "Permission to share your feedback",
+    "body": "Hi {{parent_first_name}},\n\nThank you again for your kind feedback about Blossom ABA Therapy.\n\nWould you be comfortable with Blossom using your feedback as a testimonial? We would only use it with your permission and can discuss whether your name is included or kept anonymous.\n\nPlease reply and let us know what you are comfortable with.\n\nWarmly,\n{{team_member_full_name}}",
+    "after": "Do not publish anything without explicit written permission."
   }
 ];
 
@@ -974,27 +974,27 @@ export const PARENT_COMM_INTERNAL_NOTES: ParentCommInternalNote[] = [
   {
     "id": "15.01",
     "title": "Parent Contact Attempt",
-    "body": "Template:\r\nContacted parent via {{channel}} on {{date_time}}. Outcome: {{outcome}}. Next action: {{next_step}}. Follow-up date: {{deadline_date}}. Owner: {{team_member_full_name}}."
+    "body": "Contacted parent via {{channel}} on {{date_time}}. Outcome: {{outcome}}. Next action: {{next_step}}. Follow-up date: {{deadline_date}}. Owner: {{team_member_full_name}}."
   },
   {
     "id": "15.02",
     "title": "Parent Reached",
-    "body": "Template:\r\nSpoke with {{parent_first_name}} on {{date_time}}. Summary: {{summary}}. Parent needs: {{parent_needs}}. Blossom next step: {{next_step}}. Owner: {{team_member_full_name}}. Follow-up date: {{deadline_date}}."
+    "body": "Spoke with {{parent_first_name}} on {{date_time}}. Summary: {{summary}}. Parent needs: {{parent_needs}}. Blossom next step: {{next_step}}. Owner: {{team_member_full_name}}. Follow-up date: {{deadline_date}}."
   },
   {
     "id": "15.03",
     "title": "Missing Information",
-    "body": "Template:\r\nMissing items requested from parent: {{missing_items}}. Request sent via {{channel}} on {{date_time}}. Follow-up due: {{deadline_date}}. Do not move forward until resolved unless manager approves exception."
+    "body": "Missing items requested from parent: {{missing_items}}. Request sent via {{channel}} on {{date_time}}. Follow-up due: {{deadline_date}}. Do not move forward until resolved unless manager approves exception."
   },
   {
     "id": "15.04",
     "title": "Escalation Routed",
-    "body": "Template:\r\nParent concern/escalation routed to {{owner_name}} on {{date_time}}. Issue summary: {{summary}}. Parent was told: {{parent_message_summary}}. Next update due: {{deadline_date}}."
+    "body": "Parent concern/escalation routed to {{owner_name}} on {{date_time}}. Issue summary: {{summary}}. Parent was told: {{parent_message_summary}}. Next update due: {{deadline_date}}."
   },
   {
     "id": "15.05",
     "title": "Handoff to Next Department",
-    "body": "Template:\r\nHandoff sent to {{department}} / {{owner_name}}. Reason: {{reason}}. Required action: {{next_step}}. Supporting info complete: {{yes_no}}. Follow-up date: {{deadline_date}}."
+    "body": "Handoff sent to {{department}} / {{owner_name}}. Reason: {{reason}}. Required action: {{next_step}}. Supporting info complete: {{yes_no}}. Follow-up date: {{deadline_date}}."
   }
 ];
 
