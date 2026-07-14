@@ -422,6 +422,7 @@ import ResourceLibrarySops from "./pages/resource-library/ResourceLibrarySops";
 import ResourceLibraryVideos from "./pages/resource-library/ResourceLibraryVideos";
 import ResourceLibraryDetail from "./pages/resource-library/ResourceLibraryDetail";
 import ResourceLibraryAdminQA from "./pages/resource-library/ResourceLibraryAdminQA";
+import ResourceLibraryIntake from "./pages/resource-library/ResourceLibraryIntake";
 import OSBlossomAIManagement from "./pages/os/OSBlossomAIManagement";
 import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
 import OSAuthHandoff from "./pages/os/OSAuthHandoff";
@@ -898,6 +899,8 @@ const App = () => (
                   <Route path="/resource-library/training" element={<ResourceLibraryTraining />} />
                   <Route path="/resource-library/sops" element={<ResourceLibrarySops />} />
                   <Route path="/resource-library/videos" element={<ResourceLibraryVideos />} />
+                  <Route path="/resource-library/intake" element={<ResourceLibraryIntake />} />
+                  <Route path="/resources/intake" element={<Navigate to="/resource-library/intake" replace />} />
                   <Route path="/resource-library/resource/:id" element={<ResourceLibraryDetail />} />
                   <Route path="/resource-library/admin/qa" element={<ResourceLibraryAdminQA />} />
                   <Route path="/admin/blossom-ai" element={<OSBlossomAIManagement />} />

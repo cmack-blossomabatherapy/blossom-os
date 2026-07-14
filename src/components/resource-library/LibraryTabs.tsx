@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
-  BookOpen, User, Building2, GraduationCap, FileText, PlayCircle, ShieldAlert,
+  BookOpen, User, Building2, GraduationCap, FileText, PlayCircle, ShieldAlert, Inbox,
 } from "lucide-react";
 import { useOSRole } from "@/contexts/OSRoleContext";
 
@@ -9,6 +9,7 @@ const TABS = [
   { to: "/resource-library",              label: "Home",        icon: BookOpen, end: true },
   { to: "/resource-library/role",         label: "My Role",     icon: User },
   { to: "/resource-library/department",   label: "Departments", icon: Building2 },
+  { to: "/resource-library/intake",       label: "Intake",      icon: Inbox },
   { to: "/resource-library/training",     label: "Training",    icon: GraduationCap },
   { to: "/resource-library/sops",         label: "SOPs & Forms",icon: FileText },
   { to: "/resource-library/videos",       label: "Videos",      icon: PlayCircle },
