@@ -68,7 +68,7 @@ function toneFor(c: RecruitingCandidate): Tone {
   if (c.interviewStatus === "No-Show") return "crit";
   if (c.interviewStatus === "Needs Outcome" && c.daysInStage >= 3) return "crit";
   if (c.daysInStage >= 7) return "crit";
-  if (c.daysInStage >= 4 || c.blockers.length > 0) return "warn";
+  if (c.daysInStage >= 4 || (c.blockers ?? []).length > 0) return "warn";
   if (c.interviewStatus === "Today") return "info";
   return "ok";
 }
@@ -595,7 +595,7 @@ function TimelineRow({ c, onOpen }: { c: RecruitingCandidate; onOpen: () => void
       </div>
       <div className="hidden md:flex items-center gap-1.5">
         <Pill tone={tone}>{c.interviewStatus}</Pill>
-        {c.blockers.length > 0 && <Pill tone="warn">{c.blockers.length} blocker</Pill>}
+        {(c.blockers ?? []).length > 0 && <Pill tone="warn">{(c.blockers ?? []).length} blocker</Pill>}
       </div>
       <div className="hidden md:flex items-center gap-1">
         <IconBtn icon={Video} title="Join" />
@@ -641,7 +641,7 @@ function BoardCard({ c, onOpen, onDragStart }: { c: RecruitingCandidate; onOpen:
 
 function FollowUpCard({ c, onOpen }: { c: RecruitingCandidate; onOpen: () => void }) {
   const tone = toneFor(c);
-  const reason = c.blockers[0] ?? c.nextAction;
+  const reason = ((c.blockers ?? [])[0]) ?? c.nextAction;
   return (
     <button onClick={onOpen} className="text-left rounded-2xl bg-card border border-border/70 p-4 hover:border-border hover:-translate-y-0.5 transition-all duration-200">
       <div className="flex items-start justify-between gap-2 mb-1">
@@ -700,7 +700,7 @@ function CandidateSlideout({
             <Pill tone={tone}>{c.interviewStatus}</Pill>
             <Pill tone="muted">{c.candidateStatus}</Pill>
             <Pill tone="muted">{c.daysInStage}d in stage</Pill>
-            {c.blockers.map((b) => <Pill key={b} tone="warn">{b}</Pill>)}
+            {(c.blockers ?? []).map((b) => <Pill key={b} tone="warn">{b}</Pill>)}
           </div>
 
           {/* Interview details */}
