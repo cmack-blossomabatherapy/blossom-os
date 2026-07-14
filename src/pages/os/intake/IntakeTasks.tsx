@@ -26,6 +26,8 @@ import { AssigneePicker } from "@/components/tasks/AssigneePicker";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Circle, Loader2, Ban, CheckCircle2 as CheckIcon } from "lucide-react";
+import { Activity as ActivityIcon } from "lucide-react";
+import { TaskActivityDrawer } from "@/components/tasks/TaskActivityDrawer";
 
 const STATUS_META: Record<IntakeTaskRow["status"], { label: string; dot: string; text: string; bg: string; border: string; Icon: React.ComponentType<{ className?: string }> }> = {
   "Open":        { label: "Not started", dot: "bg-slate-400",  text: "text-slate-700 dark:text-slate-200", bg: "bg-slate-500/10",  border: "border-slate-500/30",  Icon: Circle },
