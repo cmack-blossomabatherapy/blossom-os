@@ -235,6 +235,28 @@ export function LeadDetailDrawer({
   }));
   const documents: DrawerDoc[] = [...mondayDocs, ...attachedDocs];
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isPersisted = UUID_RE.test(lead.id);
+
+  const handleUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    if (!isPersisted) {
+      toast.error("This lead isn't synced to the database yet.");
+      return;
+    }
+    setUploading(true);
+    try {
+      await uploadDoc(files);
+      toast.success("Document uploaded");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      toast.error(msg);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <>
       {/* Backdrop */}
