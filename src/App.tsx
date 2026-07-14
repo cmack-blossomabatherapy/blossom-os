@@ -423,6 +423,7 @@ import ResourceLibraryVideos from "./pages/resource-library/ResourceLibraryVideo
 import ResourceLibraryDetail from "./pages/resource-library/ResourceLibraryDetail";
 import ResourceLibraryAdminQA from "./pages/resource-library/ResourceLibraryAdminQA";
 import ResourceLibraryIntake from "./pages/resource-library/ResourceLibraryIntake";
+import ResourceLibraryRecruiting from "./pages/resource-library/ResourceLibraryRecruiting";
 import OSBlossomAIManagement from "./pages/os/OSBlossomAIManagement";
 import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
 import OSAuthHandoff from "./pages/os/OSAuthHandoff";
