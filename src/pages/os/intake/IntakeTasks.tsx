@@ -498,7 +498,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs text-muted-foreground">
                   <tr className="text-left">
-                    <th className="px-3 py-2 w-24">Status</th>
+                    <th className="px-3 py-2 w-40">Status</th>
                     <th className="px-3 py-2"><SortBtn k="title">Task</SortBtn></th>
                     <th className="px-3 py-2"><SortBtn k="lead">Lead</SortBtn></th>
                     <th className="px-3 py-2 w-32">Type</th>
