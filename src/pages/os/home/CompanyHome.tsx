@@ -550,124 +550,135 @@ export default function CompanyHome() {
                 ))}
               </div>
             )}
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(d) => d && setSelectedDate(d)}
-              month={month}
-              onMonthChange={setMonth}
-              modifiers={{ hasEvent: eventDays }}
-              classNames={{
-                months: "flex flex-col w-full",
-                month: "space-y-4 w-full",
-                caption: "hidden",
-                nav: "hidden",
-                table: "w-full border-collapse",
-                head_row: "grid grid-cols-7 w-full",
-                head_cell:
-                  "text-muted-foreground/80 font-semibold text-[11px] uppercase tracking-[0.18em] h-9 flex items-center justify-center",
-                row: "grid grid-cols-7 w-full mt-1.5",
-                cell: "aspect-square w-full text-center p-0.5 relative focus-within:relative focus-within:z-20",
-                day: "h-full w-full rounded-2xl font-medium text-base hover:bg-muted/70 transition-all duration-200 aria-selected:opacity-100",
-                day_selected:
-                  "bg-gradient-to-br from-primary to-[hsl(189_55%_58%)] text-primary-foreground shadow-[0_8px_20px_-8px_hsl(189_50%_45%/0.6)] hover:from-primary hover:to-[hsl(189_55%_58%)] hover:text-primary-foreground",
-                day_today:
-                  "ring-2 ring-primary/40 ring-offset-2 ring-offset-card text-foreground font-semibold",
-                day_outside: "text-muted-foreground/30",
-              }}
-              components={{
-                DayContent: ({ date }) => {
-                  const key = format(date, "yyyy-MM-dd");
-                  const dayEvents = eventsByDay.get(key);
-                  const label = <span className="tabular-nums">{date.getDate()}</span>;
-                  if (!dayEvents || dayEvents.length === 0) {
-                    return (
-                      <span className="flex h-full w-full items-center justify-center">
-                        {label}
-                      </span>
-                    );
-                  }
-                  // Group by category for the summary line.
-                  const byCat = new Map<string, number>();
-                  for (const ev of dayEvents) {
-                    const c = ev.category || "company_event";
-                    byCat.set(c, (byCat.get(c) ?? 0) + 1);
-                  }
-                  // Distinct category colors as multi-dots (max 3).
-                  const dotCats = Array.from(byCat.keys()).slice(0, 3);
-                  const extra = dayEvents.length > dotCats.length ? dayEvents.length - dotCats.reduce((a, c) => a + (byCat.get(c) ?? 0), 0) : 0;
-                  return (
-                    <Tooltip delayDuration={120}>
-                      <TooltipTrigger asChild>
-                        <span className="relative flex h-full w-full flex-col items-center justify-center gap-0.5">
+            {view === "month" ? (
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(d) => d && setSelectedDate(d)}
+                month={month}
+                onMonthChange={setMonth}
+                modifiers={{ hasEvent: eventDays }}
+                classNames={{
+                  months: "flex flex-col w-full",
+                  month: "space-y-4 w-full",
+                  caption: "hidden",
+                  nav: "hidden",
+                  table: "w-full border-collapse",
+                  head_row: "grid grid-cols-7 w-full",
+                  head_cell:
+                    "text-muted-foreground/80 font-semibold text-[11px] uppercase tracking-[0.18em] h-9 flex items-center justify-center",
+                  row: "grid grid-cols-7 w-full mt-1.5",
+                  cell: "aspect-square w-full text-center p-0.5 relative focus-within:relative focus-within:z-20",
+                  day: "h-full w-full rounded-2xl font-medium text-base hover:bg-muted/70 transition-all duration-200 aria-selected:opacity-100",
+                  day_selected:
+                    "bg-gradient-to-br from-primary to-[hsl(189_55%_58%)] text-primary-foreground shadow-[0_8px_20px_-8px_hsl(189_50%_45%/0.6)] hover:from-primary hover:to-[hsl(189_55%_58%)] hover:text-primary-foreground",
+                  day_today:
+                    "ring-2 ring-primary/40 ring-offset-2 ring-offset-card text-foreground font-semibold",
+                  day_outside: "text-muted-foreground/30",
+                }}
+                components={{
+                  DayContent: ({ date }) => {
+                    const key = format(date, "yyyy-MM-dd");
+                    const dayEvents = eventsByDay.get(key);
+                    const label = <span className="tabular-nums">{date.getDate()}</span>;
+                    if (!dayEvents || dayEvents.length === 0) {
+                      return (
+                        <span className="flex h-full w-full items-center justify-center">
                           {label}
-                          <span className="flex items-center gap-[3px] absolute bottom-1.5">
-                            {dotCats.map((c) => (
-                              <span
-                                key={c}
-                                className={cn(
-                                  "size-1.5 rounded-full ring-1 ring-card",
-                                  categoryColor(c),
-                                )}
-                              />
-                            ))}
-                            {extra > 0 && (
-                              <span className="text-[8px] font-semibold text-muted-foreground ml-0.5">
-                                +
-                              </span>
-                            )}
-                          </span>
                         </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs p-3">
-                        <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-1">
-                          {format(date, "EEE, MMM d")} · {dayEvents.length} event
-                          {dayEvents.length === 1 ? "" : "s"}
-                        </p>
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          {Array.from(byCat.entries()).map(([cat, count]) => (
-                            <button
-                              key={cat}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedDate(date);
-                                setDayDrawer({ date, category: cat });
-                              }}
-                              className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[11px] hover:bg-primary/10 hover:text-primary transition"
-                            >
-                              <span className={cn("size-1.5 rounded-full", categoryColor(cat))} />
-                              {CATEGORY_COLORS[cat]?.label ?? formatCategory(cat)}
-                              <span className="text-muted-foreground">· {count}</span>
-                            </button>
-                          ))}
-                        </div>
-                        <ul className="space-y-1">
-                          {dayEvents.slice(0, 3).map((ev) => (
-                            <li key={ev.id} className="flex items-start gap-2 text-xs">
-                              <span className={cn("mt-1 size-1.5 rounded-full shrink-0", categoryColor(ev.category))} />
-                              <span className="min-w-0">
-                                <span className="font-medium text-foreground">{ev.title}</span>
-                                <span className="text-muted-foreground">
-                                  {" · "}
-                                  {ev.all_day ? "All day" : format(safeDate(ev.starts_on), "h:mma")}
+                      );
+                    }
+                    // Group by category for the summary line.
+                    const byCat = new Map<string, number>();
+                    for (const ev of dayEvents) {
+                      const c = ev.category || "company_event";
+                      byCat.set(c, (byCat.get(c) ?? 0) + 1);
+                    }
+                    // Distinct category colors as multi-dots (max 3).
+                    const dotCats = Array.from(byCat.keys()).slice(0, 3);
+                    const extra = dayEvents.length > dotCats.length ? dayEvents.length - dotCats.reduce((a, c) => a + (byCat.get(c) ?? 0), 0) : 0;
+                    return (
+                      <Tooltip delayDuration={120}>
+                        <TooltipTrigger asChild>
+                          <span className="relative flex h-full w-full flex-col items-center justify-center gap-0.5">
+                            {label}
+                            <span className="flex items-center gap-[3px] absolute bottom-1.5">
+                              {dotCats.map((c) => (
+                                <span
+                                  key={c}
+                                  className={cn(
+                                    "size-1.5 rounded-full ring-1 ring-card",
+                                    categoryColor(c),
+                                  )}
+                                />
+                              ))}
+                              {extra > 0 && (
+                                <span className="text-[8px] font-semibold text-muted-foreground ml-0.5">
+                                  +
                                 </span>
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                        {dayEvents.length > 3 && (
-                          <p className="mt-1.5 text-[11px] text-muted-foreground">
-                            +{dayEvents.length - 3} more
+                              )}
+                            </span>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs p-3">
+                          <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-1">
+                            {format(date, "EEE, MMM d")} · {dayEvents.length} event
+                            {dayEvents.length === 1 ? "" : "s"}
                           </p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                },
-              }}
-              className={cn("pointer-events-auto w-full relative")}
-            />
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {Array.from(byCat.entries()).map(([cat, count]) => (
+                              <button
+                                key={cat}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDate(date);
+                                  setDayDrawer({ date, category: cat });
+                                }}
+                                className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[11px] hover:bg-primary/10 hover:text-primary transition"
+                              >
+                                <span className={cn("size-1.5 rounded-full", categoryColor(cat))} />
+                                {CATEGORY_COLORS[cat]?.label ?? formatCategory(cat)}
+                                <span className="text-muted-foreground">· {count}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <ul className="space-y-1">
+                            {dayEvents.slice(0, 3).map((ev) => (
+                              <li key={ev.id} className="flex items-start gap-2 text-xs">
+                                <span className={cn("mt-1 size-1.5 rounded-full shrink-0", categoryColor(ev.category))} />
+                                <span className="min-w-0">
+                                  <span className="font-medium text-foreground">{ev.title}</span>
+                                  <span className="text-muted-foreground">
+                                    {" · "}
+                                    {ev.all_day ? "All day" : format(safeDate(ev.starts_on), "h:mma")}
+                                  </span>
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                          {dayEvents.length > 3 && (
+                            <p className="mt-1.5 text-[11px] text-muted-foreground">
+                              +{dayEvents.length - 3} more
+                            </p>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  },
+                }}
+                className={cn("pointer-events-auto w-full relative")}
+              />
+            ) : (
+              <WeekView
+                days={weekRange.days}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                eventsByDay={eventsByDay}
+                onOpenEvent={setOpenEvent}
+                onOpenDayDrawer={(date, category) => setDayDrawer({ date, category })}
+              />
+            )}
             </Card>
           </div>
 
