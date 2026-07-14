@@ -11,6 +11,7 @@ import {
   buildPathJourney, journeyProgressPct, firstIncompleteModule,
   type JourneyDay,
 } from "@/lib/academy/journeyContent";
+import { useRuntimeVersion } from "@/lib/academy/runtimeStore";
 import { RBT_BUCKETS } from "@/lib/academy/trainingPaths";
 import { RBT_PATHS, type RBTPathId } from "@/lib/training/rbtAcademy";
 import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
@@ -28,9 +29,12 @@ export default function TrainingPathDetail() {
   const { slug = "" } = useParams();
   const [params, setParams] = useSearchParams();
   const rbtTrackId = (params.get("track") as RBTPathId | null) ?? undefined;
+  // Re-render whenever runtime progress changes so aggregate journey
+  // progress (Journey progress / In progress / week % / day chips) stays live.
+  const runtimeVersion = useRuntimeVersion();
   const journey = useMemo(
     () => buildPathJourney(slug, rbtTrackId ? { rbtTrackId } : undefined),
-    [slug, rbtTrackId],
+    [slug, rbtTrackId, runtimeVersion],
   );
   if (!journey) {
     return (

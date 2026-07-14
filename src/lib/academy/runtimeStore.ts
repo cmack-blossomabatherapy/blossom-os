@@ -168,13 +168,30 @@ function pushLocal(moduleId: string, ctx: RuntimeContext | undefined, rec: Acade
 }
 
 export function getRuntimeRecord(moduleId: string, ctx?: RuntimeContext): AcademyRuntimeRecord {
-  return memory[runtimeKey(moduleId, ctx)] ?? {
-    moduleId, status: "not_started", elapsedSeconds: 0,
-  };
+  const primary = memory[runtimeKey(moduleId, ctx)];
+  if (primary) return primary;
+  // Fallback: if no ctx (or a different ctx) was passed, look up any cached
+  // record that ends with `::${moduleId}`. This keeps aggregated journey
+  // progress in sync with writes that happened under a specific journeySlug
+  // (e.g. TrainingModuleRuntime writes with journeySlug: "intake" while
+  // journeyContent.unifiedStatus reads without ctx).
+  for (const key of Object.keys(memory)) {
+    if (key.endsWith(`::${moduleId}`)) return memory[key];
+  }
+  return { moduleId, status: "not_started", elapsedSeconds: 0 };
 }
 
 export function getRuntimeStatus(moduleId: string, ctx?: RuntimeContext): AcademyRuntimeStatus {
   return getRuntimeRecord(moduleId, ctx).status;
+}
+
+/**
+ * Subscribe to any runtime store change. Journey/day detail screens use
+ * this so completing a module in TrainingModuleRuntime instantly rolls up
+ * into aggregate progress without a page refresh.
+ */
+export function useRuntimeVersion(): Store {
+  return useSyncExternalStore(subscribe, snapshot, snapshot);
 }
 
 export async function startRuntime(moduleId: string, ctx: RuntimeContext) {
