@@ -401,6 +401,61 @@ export function LeadDetailDrawer({
               </section>
               <Field label="Address" value={str("Address")} />
 
+              <section className="rounded-2xl border border-border/60 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Referral Source</p>
+                  {referralLink ? (
+                    <button
+                      onClick={() => { void unlinkReferral().then(() => toast.success("Referral unlinked")); }}
+                      className="text-[11px] text-muted-foreground hover:text-destructive transition inline-flex items-center gap-1"
+                    >
+                      <Unlink className="h-3 w-3" /> Unlink
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setReferralOpen(true)}
+                      disabled={!isPersisted}
+                      className="text-[11px] text-primary hover:underline inline-flex items-center gap-1 disabled:text-muted-foreground disabled:no-underline"
+                    >
+                      <Link2 className="h-3 w-3" /> Link referral
+                    </button>
+                  )}
+                </div>
+                {referralLink ? (
+                  <div className="space-y-1.5 text-sm">
+                    {referralLink.company && (
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Link to={`/referrals/companies/${referralLink.company.id}`} className="text-foreground hover:underline truncate">
+                          {referralLink.company.company_name}
+                        </Link>
+                        {referralLink.company.company_type && (
+                          <span className="text-[10.5px] text-muted-foreground">{referralLink.company.company_type}</span>
+                        )}
+                      </div>
+                    )}
+                    {referralLink.contact && (
+                      <div className="flex items-center gap-2">
+                        <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Link to={`/referrals/contacts/${referralLink.contact.id}`} className="text-foreground hover:underline truncate">
+                          {referralLink.contact.full_name || [referralLink.contact.first_name, referralLink.contact.last_name].filter(Boolean).join(" ") || referralLink.contact.email}
+                        </Link>
+                        {referralLink.contact.title && (
+                          <span className="text-[10.5px] text-muted-foreground">{referralLink.contact.title}</span>
+                        )}
+                      </div>
+                    )}
+                    {referralLink.notes && (
+                      <p className="text-xs text-muted-foreground pt-1 whitespace-pre-wrap">{referralLink.notes}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {isPersisted ? "Not linked. Connect this lead to a doctor's office, referral partner, or specific contact." : "Available after this lead syncs to the database."}
+                  </p>
+                )}
+              </section>
+
               <section className="rounded-2xl bg-muted/60 border border-border/60 p-4 space-y-3">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Parent / Guardian</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
