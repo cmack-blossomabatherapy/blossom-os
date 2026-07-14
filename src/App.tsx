@@ -48,6 +48,7 @@ import GoogleAds from "./pages/os/growth/GoogleAds";
 import PatientLifetimeJourney from "./pages/os/growth/PatientLifetimeJourney";
 import IntakeWorkspaceLanding from "./pages/os/intake/IntakeDashboard";
 import IntakeTasks from "./pages/os/intake/IntakeTasks";
+import TasksPage from "./pages/tasks/TasksPage";
 import LeadBenefitsCheatSheets from "./pages/os/intake/LeadBenefitsCheatSheets";
 import MissingInformation from "./pages/os/intake/MissingInformation";
 import CentralReachPacketPrep from "./pages/os/intake/CentralReachPacketPrep";
