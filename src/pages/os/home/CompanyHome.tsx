@@ -939,8 +939,8 @@ function WeekView({
   onOpenDayDrawer: (date: Date, category: string | null) => void;
 }) {
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-7 gap-2">
+    <div className="space-y-3 min-h-[360px]">
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
           const dayEvents = eventsByDay.get(key) ?? [];
