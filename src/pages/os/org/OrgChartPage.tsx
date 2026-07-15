@@ -613,14 +613,23 @@ function PersonSheet({
                   type="button"
                   onClick={() => setForm({ ...form, accent_color: c })}
                   className={[
-                    "size-7 rounded-full ring-offset-2 ring-offset-background transition-all",
-                    form.accent_color === c ? "ring-2 ring-foreground/70" : "ring-0",
+                    "flex items-center gap-2 rounded-full border px-2 py-1 text-[11px] transition-all",
+                    form.accent_color === c
+                      ? "border-foreground/60 bg-muted"
+                      : "border-border/70 hover:bg-muted/60",
                   ].join(" ")}
-                  style={{ background: c }}
-                  aria-label={c}
-                />
+                  aria-label={ACCENT_LABELS[c] ?? c}
+                >
+                  <span className="size-4 rounded-full" style={{ background: c }} />
+                  <span className="text-muted-foreground">
+                    {ACCENT_LABELS[c] ?? c}
+                  </span>
+                </button>
               ))}
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              Purple = department header, teal = leadership, green = coordinator/IC.
+            </p>
           </div>
         </div>
 
@@ -650,10 +659,12 @@ function PersonSheet({
 
 export default function OrgChartPage() {
   return (
-    <div className="mx-auto w-full max-w-7xl px-6 py-6 md:px-10">
-      <ReactFlowProvider>
-        <InnerOrgChart />
-      </ReactFlowProvider>
-    </div>
+    <OSShell>
+      <div className="mx-auto w-full max-w-7xl px-6 py-6 md:px-10">
+        <ReactFlowProvider>
+          <InnerOrgChart />
+        </ReactFlowProvider>
+      </div>
+    </OSShell>
   );
 }
