@@ -678,36 +678,99 @@ export async function listBcbaProductivityUploadBatches(): Promise<BcbaUploadBat
 
 export interface GetSharedRowsOptions {
   limit?: number;
+  /** Progress callback: fired after each page loads. */
+  onProgress?: (loaded: number, total: number) => void;
+  /** Force a fresh fetch, bypassing the in-memory cache. */
+  force?: boolean;
+}
+
+/**
+ * In-memory cache of the shared dataset so repeated Refresh clicks (and
+ * cross-navigations back to the report) don't re-download 47k+ rows unless
+ * the underlying dataset actually changed. Keyed by `activeRowCount` +
+ * `lastUploadAt` so any admin upload or void invalidates it automatically.
+ */
+let SHARED_CACHE: { key: string; rows: BcbaSharedBillingRow[] } | null = null;
+
+export function invalidateBcbaProductivitySharedCache() {
+  SHARED_CACHE = null;
 }
 
 export async function getBcbaProductivitySharedRows(
   opts: GetSharedRowsOptions = {},
 ): Promise<BcbaSharedBillingRow[]> {
-  const PAGE = 1000;
-  const max = opts.limit ?? 100000;
-  const out: BcbaSharedBillingRow[] = [];
-  let from = 0;
-  while (out.length < max) {
-    const to = Math.min(from + PAGE - 1, max - 1);
+  const max = opts.limit ?? 250000;
+
+  // Get authoritative count first so we can size the fetch, drive an honest
+  // progress bar, and cache-key against dataset state.
+  const { count, error: countErr } = await supabase
+    .from("bcba_productivity_billing_rows")
+    .select("id", { count: "exact", head: true })
+    .eq("active", true);
+  if (countErr) throw countErr;
+  const total = Math.min(count ?? 0, max);
+  if (total === 0) return [];
+
+  // Also fingerprint by newest batch so uploads bust the cache.
+  const { data: lastBatch } = await supabase
+    .from("bcba_productivity_upload_batches")
+    .select("id,created_at")
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const cacheKey = `${total}|${lastBatch?.[0]?.id ?? ""}|${lastBatch?.[0]?.created_at ?? ""}`;
+
+  if (!opts.force && SHARED_CACHE && SHARED_CACHE.key === cacheKey) {
+    opts.onProgress?.(SHARED_CACHE.rows.length, SHARED_CACHE.rows.length);
+    return SHARED_CACHE.rows;
+  }
+
+  // Fetch pages in parallel batches. `raw` (huge JSONB) is intentionally
+  // omitted from the select — state is already normalized into `normalized`
+  // at insert time, and pulling `raw` for 47k rows was the primary reason
+  // Refresh Data spun forever (payload was ~10x the size the report needs).
+  const PAGE = 5000;
+  const CONCURRENCY = 4;
+  const pageCount = Math.ceil(total / PAGE);
+  const results: BcbaSharedBillingRow[][] = new Array(pageCount);
+  let loaded = 0;
+
+  async function fetchPage(pageIndex: number): Promise<void> {
+    const from = pageIndex * PAGE;
+    const to = Math.min(from + PAGE - 1, total - 1);
     const { data, error } = await supabase
       .from("bcba_productivity_billing_rows")
-      .select("normalized,raw")
+      .select("normalized")
       .eq("active", true)
       .order("service_date", { ascending: true })
       .range(from, to);
     if (error) throw error;
-    if (!data || data.length === 0) break;
-    for (const d of data) {
+    const slice: BcbaSharedBillingRow[] = [];
+    for (const d of data ?? []) {
       const n = (d.normalized as unknown as BcbaSharedBillingRow) || null;
       if (n && n.date && n.code) {
-        const normState = normalizeUsState(n.state);
-        const state = normState || resolveRowState((d as any).raw as Record<string, unknown>);
-        out.push({ ...n, state });
+        const state = normalizeUsState(n.state) || n.state || "";
+        slice.push(state === n.state ? n : { ...n, state });
       }
     }
-    if (data.length < PAGE) break;
-    from += PAGE;
+    results[pageIndex] = slice;
+    loaded += slice.length;
+    opts.onProgress?.(loaded, total);
   }
+
+  // Simple worker pool for bounded parallelism.
+  let next = 0;
+  async function worker() {
+    while (next < pageCount) {
+      const idx = next++;
+      await fetchPage(idx);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, pageCount) }, worker));
+
+  const out: BcbaSharedBillingRow[] = [];
+  for (const s of results) if (s) out.push(...s);
+  SHARED_CACHE = { key: cacheKey, rows: out };
   return out;
 }
 
