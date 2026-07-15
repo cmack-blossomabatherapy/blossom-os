@@ -274,6 +274,7 @@ import OpsTrainingAdoption from "./pages/os/operations/OpsTrainingAdoption";
 import OpsLeadershipUpdates from "./pages/os/operations/OpsLeadershipUpdates";
 import OpsResourceLibrary from "./pages/os/operations/OpsResourceLibrary";
 import OSStateDirector from "./pages/os/OSStateDirector";
+import OSStateDirectorResources from "./pages/os/OSStateDirectorResources";
 import OSCommandCenter from "./pages/os/OSCommandCenter";
 import OSIntakeCoordinator from "./pages/os/OSIntakeCoordinator";
 import OSAuthCoordinator from "./pages/os/OSAuthCoordinator";
