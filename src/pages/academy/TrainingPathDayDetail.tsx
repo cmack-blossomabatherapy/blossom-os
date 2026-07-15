@@ -50,7 +50,10 @@ export default function TrainingPathDayDetail() {
   const dayPct = day.modules.length === 0 ? 0 : Math.round((completedCount / day.modules.length) * 100);
   const next = firstIncompleteModule(day);
   const runtimeHref = (id: string) => `${journey.runtimeRouteFor(id)}${trackSuffix}`;
-  const startHref = next ? runtimeHref(next.id) : runtimeHref(day.modules[0]?.id ?? "");
+  // Append autostart so the runtime page begins the timer immediately —
+  // preserves any existing querystring (e.g. RBT track).
+  const withAutostart = (href: string) => href + (href.includes("?") ? "&" : "?") + "autostart=1";
+  const startHref = withAutostart(next ? runtimeHref(next.id) : runtimeHref(day.modules[0]?.id ?? ""));
   // "Continue day" as soon as any module is completed OR already in progress —
   // so returning to the day after clicking Start on a module never resets the
   // CTA back to "Start day".
