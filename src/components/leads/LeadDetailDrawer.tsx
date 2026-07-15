@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  X, Phone, Mail, MapPin, Calendar, FileText, Activity, Sparkles,
+  X, Phone, Mail, MapPin, Calendar, FileText, Activity, Sparkles, Pencil,
   CheckCircle2, AlertCircle, ChevronRight, ExternalLink, StickyNote,
   Send, ShieldCheck, Ban, UserX, ListChecks, Plus, MailPlus,
   Upload, Trash2, CalendarClock, Building2, User as UserIcon, Link2, Unlink,
@@ -34,6 +34,7 @@ import { IntakeCoordinatorPicker } from "@/components/leads/IntakeCoordinatorPic
 import { AddLeadNoteDialog } from "@/components/leads/AddLeadNoteDialog";
 import { CreateLeadTaskDialog } from "@/components/leads/CreateLeadTaskDialog";
 import { LinkReferralDialog } from "@/components/leads/LinkReferralDialog";
+import { EditLeadDialog } from "@/components/leads/EditLeadDialog";
 import { useLeadDocuments } from "@/hooks/useLeadDocuments";
 import { useLeadReferralLink } from "@/hooks/useLeadReferralLink";
 import { Button } from "@/components/ui/button";
@@ -161,6 +162,7 @@ export function LeadDetailDrawer({
   const [noteOpen, setNoteOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState<false | "task" | "follow_up">(false);
   const [referralOpen, setReferralOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const {
@@ -324,9 +326,18 @@ export function LeadDetailDrawer({
                 </div>
               </div>
             </div>
-            <button onClick={onClose} className="rounded-full size-9 grid place-items-center hover:bg-muted transition">
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setEditOpen(true)}
+                className="rounded-full h-9 px-3 grid place-items-center hover:bg-muted transition text-xs font-medium inline-flex items-center gap-1.5"
+                aria-label="Edit lead"
+              >
+                <Pencil className="h-3.5 w-3.5" /> Edit
+              </button>
+              <button onClick={onClose} className="rounded-full size-9 grid place-items-center hover:bg-muted transition" aria-label="Close">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 flex items-center gap-2 flex-wrap">
