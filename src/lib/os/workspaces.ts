@@ -456,7 +456,7 @@ export const LEGACY_GROUPS: { title: string; items: LegacyLink[] }[] = [
     title: "HR Suite (Legacy)",
     items: [
       { label: "HR Dashboard", path: "/hr" },
-      { label: "Employees", path: "/hr/directory" },
+      { label: "Employees", path: "/user-management" },
       { label: "Org Chart", path: "/hr/org-chart" },
       { label: "Onboarding", path: "/hr/onboarding" },
       { label: "Reviews", path: "/hr/reviews" },

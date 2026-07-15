@@ -1250,7 +1250,7 @@ const App = () => (
                     <Route path="analytics" element={<AiAnalytics />} />
                     <Route path="appearance" element={<AiAppearance />} />
                   </Route>
-                  <Route path="/hr/directory" element={<PermissionRoute permission="hr.employees.view"><EmployeeDirectory /></PermissionRoute>} />
+                  <Route path="/hr/directory" element={<Navigate to="/user-management" replace />} />
                   <Route path="/hr/employees/:id" element={<PermissionRoute permission="hr.employees.view"><EmployeeProfile /></PermissionRoute>} />
                   <Route path="/hr/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
                   <Route path="/hr/org-chart/manage" element={<PermissionRoute permission="hr.employees.edit"><OrgChartManage /></PermissionRoute>} />
