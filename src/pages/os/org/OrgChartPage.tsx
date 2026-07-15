@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -15,6 +15,7 @@ import {
   type Node,
   type NodeChange,
   type NodeMouseHandler,
+  type NodeDragHandler,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -119,6 +120,14 @@ function InnerOrgChart() {
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const { fitView } = useReactFlow();
+
+  // Drag session: snapshot of the dragged subtree's positions at drag-start,
+  // so descendants move by the same delta and hierarchy is preserved.
+  const dragSessionRef = useRef<{
+    rootId: string;
+    startRoot: { x: number; y: number };
+    descendants: Array<{ id: string; start: { x: number; y: number } }>;
+  } | null>(null);
 
   const toggleCollapse = useCallback((id: string) => {
     setCollapsed((prev) => {
