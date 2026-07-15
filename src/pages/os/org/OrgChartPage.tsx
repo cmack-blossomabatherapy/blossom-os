@@ -10,6 +10,8 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
+  getNodesBounds,
+  getViewportForBounds,
   type Connection,
   type Edge,
   type Node,
@@ -32,7 +34,7 @@ import {
 } from "@/components/ui/sheet";
 import { OrgChartNodeCard, type OrgNodeData } from "@/components/org/OrgChartNodeCard";
 import { toast } from "sonner";
-import { Plus, Save, Trash2, Users, Lock, DownloadCloud, LayoutGrid, Search, X, ChevronsDownUp } from "lucide-react";
+import { Plus, Save, Trash2, Users, Lock, DownloadCloud, LayoutGrid, Search, X, ChevronsDownUp, Download, FileImage, FileText } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import {
   Select,
@@ -41,6 +43,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 
 type DbRow = {
   id: string;
