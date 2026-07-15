@@ -17,6 +17,7 @@ import { Loader2 } from "lucide-react";
 import LeadIdRedirect from "./components/leads/LeadIdRedirect";
 import MapslyHub from "./pages/os/mapsly/MapslyHub";
 import OrgChartPage from "./pages/os/org/OrgChartPage";
+import LiveOrgChart from "./pages/os/org/LiveOrgChart";
 import CompanyHome from "./pages/os/home/CompanyHome";
 import CompanyHomeManage from "./pages/os/home/CompanyHomeManage";
 import GoalsPage from "./pages/os/goals/GoalsPage";
@@ -803,7 +804,8 @@ const App = () => (
                   <Route path="/clinical-director" element={<ClinicalDirectorDashboard />} />
                   {/* Live Org Chart — HR + admins can edit; every authenticated
                       teammate can view. Edit gate is enforced inside OrgChartPage. */}
-                  <Route path="/org-chart" element={<OrgChartPage />} />
+                  <Route path="/org-chart" element={<LiveOrgChart />} />
+                  <Route path="/org-chart/editor" element={<OrgChartPage />} />
                   {/* Company Home — universal landing for every signed-in user */}
                   <Route path="/home" element={<CompanyHome />} />
                   <Route path="/home/manage" element={<CompanyHomeManage />} />
