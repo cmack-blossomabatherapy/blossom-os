@@ -385,6 +385,24 @@ async function currentUserId(): Promise<string | null> {
   catch { return null; }
 }
 
+// Legacy seeder retained for backwards compatibility. The starter catalog is
+// now merged into the store on every hydrate, so this is a no-op unless a
+// caller explicitly wants to bulk-write the seed set into Supabase.
+async function seedStarterIfEmpty() {
+  try {
+    const { count, error } = await supabase
+      .from("rbt_resources")
+      .select("id", { count: "exact", head: true });
+    if (error || (count ?? 0) > 0) return;
+    const uid = await currentUserId();
+    const rows = STARTER_RBT_RESOURCES.map((r) =>
+      resourceToRow({ ...r, seeded: true }, { is_hidden: false, created_by: uid }),
+    );
+    await supabase.from("rbt_resources").upsert(rows, { onConflict: "id" });
+  } catch { /* ignore — cache renders starter */ }
+}
+void seedStarterIfEmpty;
+
 async function refreshFromSupabase(): Promise<void> {
   try {
     const { data, error } = await supabase
