@@ -31,7 +31,8 @@ import {
 } from "@/components/ui/sheet";
 import { OrgChartNodeCard, type OrgNodeData } from "@/components/org/OrgChartNodeCard";
 import { toast } from "sonner";
-import { Plus, Save, Trash2, Users, Lock, DownloadCloud } from "lucide-react";
+import { Plus, Save, Trash2, Users, Lock, DownloadCloud, LayoutGrid } from "lucide-react";
+import { OSShell } from "@/pages/os/OSShell";
 
 type DbRow = {
   id: string;
@@ -57,7 +58,19 @@ const EDITOR_ROLES = new Set([
   "hr_lead",
 ]);
 
-const ACCENTS = ["#F472B6", "#60A5FA", "#34D399", "#FBBF24", "#A78BFA", "#F97316"];
+// Palette aligned with the Blossom organizational chart:
+//   Purple = department / division header
+//   Teal   = director / manager / leadership
+//   Green  = coordinator / IC
+const ACCENTS = ["#7C3AED", "#14B8A6", "#22C55E", "#60A5FA", "#F472B6", "#F59E0B"];
+const ACCENT_LABELS: Record<string, string> = {
+  "#7C3AED": "Department",
+  "#14B8A6": "Leadership",
+  "#22C55E": "Coordinator",
+  "#60A5FA": "Support",
+  "#F472B6": "Highlight",
+  "#F59E0B": "Alert",
+};
 
 function rowToNode(row: DbRow, isEditor: boolean): Node<OrgNodeData> {
   return {
