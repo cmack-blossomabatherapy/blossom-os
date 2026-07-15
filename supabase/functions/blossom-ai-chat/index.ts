@@ -487,10 +487,37 @@ Deno.serve(async (req) => {
       ? `KNOWLEDGE (Resource Library excerpts, cite as [n]):\n\n${contextParts.join("\n\n---\n\n")}`
       : "KNOWLEDGE: no directly matching Resource Library excerpts for this question.";
 
+    // Fallback mode: when semantic retrieval finds nothing, pre-fetch
+    // people/client/lead/resource-index context using the question as a
+    // keyword probe so the model has real internal data to answer from
+    // instead of refusing. RLS still scopes every query to the caller.
+    let fallbackBlock = "";
+    if (contextParts.length === 0) {
+      const probe = question.slice(0, 120);
+      const [people, leadsRes, clientsRes, resIndex] = await Promise.all([
+        runTool("find_person", { query: probe, limit: 6 }, supabase, user.id),
+        runTool("search_leads", { query: probe, limit: 6 }, supabase, user.id),
+        runTool("search_clients", { query: probe, limit: 6 }, supabase, user.id),
+        runTool("search_resource_library", { query: probe, limit: 8 }, supabase, user.id),
+      ]);
+      const parse = (s: string) => { try { return JSON.parse(s); } catch { return null; } };
+      const p = parse(people), l = parse(leadsRes), cl = parse(clientsRes), r = parse(resIndex);
+      const hasAny =
+        (p && ((p.employees?.length ?? 0) + (p.org_chart?.length ?? 0)) > 0) ||
+        (l?.count ?? 0) > 0 || (cl?.count ?? 0) > 0 || (r?.count ?? 0) > 0;
+      if (hasAny) {
+        fallbackBlock =
+          "FALLBACK CONTEXT (no Resource Library match — use this internal data to answer helpfully; treat as authoritative for the records shown, RLS-scoped to the caller):\n\n" +
+          `people: ${people}\n\nleads: ${leadsRes}\n\nclients: ${clientsRes}\n\nresource_index: ${resIndex}`;
+        toolsCalled.push("fallback:find_person", "fallback:search_leads", "fallback:search_clients", "fallback:search_resource_library");
+      }
+    }
+
     const messages: ChatMessage[] = [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "system", content: `BLOSSOM OS BRIEF:\n\n${BLOSSOM_SYSTEM_PACK}` },
       { role: "system", content: kbBlock },
+      ...(fallbackBlock ? [{ role: "system" as const, content: fallbackBlock }] : []),
       ...priorTurns.map((t) => ({ role: t.role as "user" | "assistant", content: t.content })),
       { role: "user", content: question },
     ];
