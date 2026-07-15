@@ -379,16 +379,21 @@ export function visibleReportsForRole(role: OSRole): ReportDef[] {
     .map((id) => REPORTS.find((r) => r.id === id))
     .filter((r): r is ReportDef => Boolean(r));
 
-  // Department Dashboards Pass 01 — additive layer on top of the six.
-  // Each department dashboard opts in explicit role visibility so
-  // leadership sees everything and each team sees their own dashboard.
-  const departmentReports = REPORTS.filter((r) => {
+  // Department dashboards are intentionally excluded from /reports —
+  // see `visibleDepartmentDashboardsForRole` for that separate surface.
+  return approved;
+}
+
+/**
+ * Department dashboards visible to a given role. Kept OUT of
+ * visibleReportsForRole so /reports only ever renders the approved six.
+ */
+export function visibleDepartmentDashboardsForRole(role: OSRole): ReportDef[] {
+  return REPORTS.filter((r) => {
     if (!DEPARTMENT_DASHBOARD_IDS.has(r.id)) return false;
     if (r.visibleTo === "all") return true;
     return r.visibleTo.includes(role);
   });
-
-  return [...approved, ...departmentReports];
 }
 
 export function visibleCategoriesForRole(role: OSRole): (ReportCategoryDef & { count: number; mostViewed?: ReportDef })[] {
