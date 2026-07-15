@@ -171,6 +171,50 @@ export default function IntakeTasks({ variant = "intake", noShell = false }: Int
   const [flag, setFlag] = useState<FlagKey>("any");
   const [createOpen, setCreateOpen] = useState(false);
   const [activityTask, setActivityTask] = useState<IntakeTaskRow | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
+  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+  const consumedDeepLinkRef = useRef(false);
+
+  // Apply deep-link params once on mount (filter, status, owner, due, flag, q).
+  useEffect(() => {
+    if (consumedDeepLinkRef.current) return;
+    const f = searchParams.get("filter");
+    if (f === "all" || f === "today" || f === "overdue" || f === "escalated") setFilter(f);
+    const st = searchParams.get("status");
+    if (st) {
+      const parts = st.split(",").map((s) => s.trim()).filter(Boolean) as StatusKey[];
+      const valid = parts.filter((s) => s === "Open" || s === "In Progress" || s === "Blocked");
+      if (valid.length) setStatuses(valid);
+    }
+    const ow = searchParams.get("owner");
+    if (ow) setOwners(ow.split(",").map((s) => s.trim()).filter(Boolean));
+    const dr = searchParams.get("due");
+    if (dr === "any" || dr === "overdue" || dr === "today" || dr === "7d" || dr === "30d" || dr === "unscheduled") setDueRange(dr);
+    const fl = searchParams.get("flag");
+    if (fl === "any" || fl === "blocked" || fl === "actionable" || fl === "unassigned") setFlag(fl);
+    const q = searchParams.get("q");
+    if (q) setSearch(q);
+    consumedDeepLinkRef.current = true;
+  }, [searchParams]);
+
+  // When a taskId is deep-linked, scroll to and highlight the row, and open
+  // the activity drawer if `?activity=1`.
+  const deepTaskId = searchParams.get("taskId");
+  const deepActivity = searchParams.get("activity") === "1";
+  useEffect(() => {
+    if (!deepTaskId || loading) return;
+    const target = tasks.find((t) => t.id === deepTaskId);
+    if (!target) return;
+    setFocusedTaskId(deepTaskId);
+    if (deepActivity) setActivityTask(target);
+    const el = rowRefs.current[deepTaskId];
+    if (el) {
+      requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "center" }));
+    }
+    const timer = window.setTimeout(() => setFocusedTaskId(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [deepTaskId, deepActivity, loading, tasks]);
 
   const leadById = useMemo(() => {
     const map = new Map<string, Lead>();
