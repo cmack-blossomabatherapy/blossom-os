@@ -502,6 +502,10 @@ function FeaturedCard({ r, saved, onToggleSave }: { r: Resource; saved: boolean;
       <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{r.description}</p>
       <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
         <Badge variant="secondary" className="rounded-full text-[10px]">{r.type}</Badge>
+        {r.format && <Badge variant="outline" className="rounded-full text-[10px]">{r.format}</Badge>}
+        {r.needsReview && <Badge className="rounded-full bg-amber-500/15 text-amber-700 hover:bg-amber-500/15 text-[10px]">Needs Review</Badge>}
+        {r.planningOnly && <Badge variant="outline" className="rounded-full border-amber-500/40 text-amber-700 text-[10px]">Planning Reference · Not Current SOP</Badge>}
+        {r.journeyDay && <Badge variant="outline" className="rounded-full text-[10px]">Journey · {r.journeyDay}</Badge>}
         <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {r.minutes} min</span>
         <span>·</span>
         <span>Updated {formatDate(r.updated)}</span>
@@ -528,6 +532,9 @@ function ResourceRow({ r, saved, onToggleSave }: { r: Resource; saved: boolean; 
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-sm font-medium text-foreground">{r.title}</p>
           <Badge variant="secondary" className="rounded-full text-[10px]">{r.type}</Badge>
+          {r.format && <Badge variant="outline" className="rounded-full text-[10px]">{r.format}</Badge>}
+          {r.needsReview && <Badge className="rounded-full bg-amber-500/15 text-amber-700 hover:bg-amber-500/15 text-[10px]">Needs Review</Badge>}
+          {r.planningOnly && <Badge variant="outline" className="rounded-full border-amber-500/40 text-amber-700 text-[10px]">Not Current SOP</Badge>}
           <span className="text-[11px] text-muted-foreground">{r.category}</span>
         </div>
         <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{r.description}</p>
