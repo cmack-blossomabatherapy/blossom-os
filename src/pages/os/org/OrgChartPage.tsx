@@ -558,6 +558,59 @@ function InnerOrgChart() {
               ? "Drag to reposition, connect handles to change reporting lines."
               : "A live view of who reports to whom across Blossom."}
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {ALL_TIERS.map((t) => {
+              const meta = TIER_META[t];
+              const active = activeTiers.has(t);
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => toggleTier(t)}
+                  aria-pressed={active}
+                  title={meta.hint}
+                  className={[
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors",
+                    active
+                      ? "border-border/70 bg-card text-foreground shadow-sm"
+                      : "border-border/40 bg-muted/40 text-muted-foreground hover:bg-muted",
+                  ].join(" ")}
+                >
+                  <span
+                    className="size-2.5 rounded-full ring-1 ring-inset ring-white/20"
+                    style={{ background: meta.swatch, opacity: active ? 1 : 0.5 }}
+                  />
+                  <span className="font-medium">{meta.label}</span>
+                  <span className="tabular-nums text-muted-foreground">{tierCounts[t]}</span>
+                </button>
+              );
+            })}
+            {departments.length > 0 && (
+              <Select value={activeDept} onValueChange={setActiveDept}>
+                <SelectTrigger className="h-8 w-[180px] rounded-full border-border/70 bg-card text-xs">
+                  <SelectValue placeholder="All departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All departments</SelectItem>
+                  {departments.map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {d}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {(activeTiers.size !== ALL_TIERS.length || activeDept !== "all" || query) && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3" />
+                Clear filters
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
