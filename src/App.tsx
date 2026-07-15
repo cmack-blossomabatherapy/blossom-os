@@ -237,6 +237,7 @@ import BehavioralSupportPlans from "./pages/os/behavioral-support/BehavioralSupp
 import BehavioralSupportFollowUps from "./pages/os/behavioral-support/BehavioralSupportFollowUps";
 import BehavioralSupportSupervisionVisibility from "./pages/os/behavioral-support/BehavioralSupportSupervisionVisibility";
 import BehavioralSupportEvaluations from "./pages/os/behavioral-support/BehavioralSupportEvaluations";
+import OSBehavioralSupportResources from "./pages/os/OSBehavioralSupportResources";
 import {
   CMAssignedFamilies, CMParentCommunication, CMFamilySupport,
   CMProgressFollowUps, CMSchedulingCoordination, CMAuthorizationsVisibility,
