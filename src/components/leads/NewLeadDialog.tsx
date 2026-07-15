@@ -152,18 +152,7 @@ const schema = z
   .refine((v) => (v.phone && v.phone.length >= 7) || (v.email && v.email.includes("@")), {
     message: "Phone or email required",
     path: ["phone"],
-  })
-  .refine(
-    (v) => v.preferredContactMethod !== "Email" || (!!v.email && v.email.includes("@")),
-    { message: "Email is required when preferred contact is Email", path: ["email"] },
-  )
-  .refine(
-    (v) =>
-      !["Phone", "Cell", "Text"].includes(v.preferredContactMethod ?? "") ||
-      (!!v.phone && v.phone.length >= 7) ||
-      (!!v.parentCellPhone && v.parentCellPhone.length >= 7),
-    { message: "Phone or parent cell required for this preferred contact", path: ["phone"] },
-  );
+  });
 
 type FormShape = z.input<typeof schema>;
 
@@ -249,7 +238,11 @@ export function NewLeadDialog({ open, onOpenChange, onCreated, defaults }: NewLe
       const fieldErrors: Record<string, string> = {};
       parsed.error.issues.forEach((i) => { fieldErrors[i.path[0] as string] = i.message; });
       setErrors(fieldErrors);
-      toast.error("Please fix the highlighted fields");
+      const first = parsed.error.issues[0];
+      const label = first?.path?.[0] ? String(first.path[0]) : "form";
+      toast.error("Please fix the highlighted fields", {
+        description: `${label}: ${first?.message ?? "Missing or invalid value"}`,
+      });
       return;
     }
     setErrors({});
