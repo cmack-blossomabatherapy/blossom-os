@@ -214,6 +214,16 @@ export default function TrainingModuleRuntime() {
               <ArrowRight className="h-4 w-4" /> Review again
             </button>
           )}
+          {(ctx.lessons?.length ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={onExportModulePdf}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-4 h-9 text-[12px] font-medium transition hover:bg-muted"
+              title="Download every lesson in this module as a single PDF for offline review"
+            >
+              <Download className="h-3.5 w-3.5" /> Export module PDF
+            </button>
+          )}
           <p className="text-right text-[11px] text-muted-foreground">Elapsed: {elapsedLabel}</p>
         </div>
       </header>
