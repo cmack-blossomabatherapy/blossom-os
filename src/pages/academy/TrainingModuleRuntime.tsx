@@ -413,7 +413,7 @@ interface ModuleCtx {
   minutes: number;
   required: boolean;
   objectives?: string[];
-  lessons?: { title: string; summary: string; kind: string; minutes: number }[];
+  lessons?: { id: string; title: string; summary: string; kind: string; minutes: number }[];
   checklist?: string[];
   shadowing?: string[];
   knowledgeCheck?: { q: string; a: string };
@@ -423,6 +423,32 @@ interface ModuleCtx {
   trainerNotes?: string;
   reflectionPrompt?: string;
   signoffRequired?: string;
+}
+
+export type { ModuleCtx };
+
+/**
+ * External entry point for other pages (e.g. the per-lesson runtime) that
+ * need the same resolved ModuleCtx as this page.
+ */
+export function resolveModuleCtxFromDecodedId(decodedId: string): { ctx: ModuleCtx | null; kind: string | null; sourceModuleId: string | null } {
+  const parsed = parseAcademyModuleId(decodedId);
+  let ctx: ModuleCtx | null = null;
+  if (parsed.kind === "rbt") ctx = resolveRbt(parsed.sourceModuleId);
+  else if (parsed.kind === "bcba") ctx = resolveBcba(parsed.sourceModuleId);
+  else if (parsed.kind === "intake") ctx = resolveIntake(parsed.sourceModuleId);
+  else if (parsed.kind === "recruiting") ctx = resolveRecruiting(parsed.sourceModuleId);
+  else if (parsed.kind === "authorizations") ctx = resolveAuthorizations(parsed.sourceModuleId);
+  else if (parsed.kind === "scheduling") ctx = resolveScheduling(parsed.sourceModuleId);
+  else if (parsed.kind === "staffing") ctx = resolveStaffing(parsed.sourceModuleId);
+  else if (parsed.kind === "hr") ctx = resolveHr(parsed.sourceModuleId);
+  else if (parsed.kind === "credentialing") ctx = resolveCredentialing(parsed.sourceModuleId);
+  else if (parsed.kind === "qa") ctx = resolveQa(parsed.sourceModuleId);
+  else if (parsed.kind === "case-manager") ctx = resolveCaseManager(parsed.sourceModuleId);
+  else if (parsed.kind === "behavioral-support") ctx = resolveBehavioralSupport(parsed.sourceModuleId);
+  else if (parsed.kind === "assistant-state-director") ctx = resolveAssistantStateDirector(parsed.sourceModuleId);
+  else if (parsed.kind === "state-director") ctx = resolveStateDirector(parsed.sourceModuleId);
+  return { ctx, kind: parsed.kind ?? null, sourceModuleId: parsed.sourceModuleId ?? null };
 }
 
 function resolveRbt(sourceModuleId: string): ModuleCtx | null {
