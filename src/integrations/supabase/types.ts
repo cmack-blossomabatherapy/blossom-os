@@ -21242,6 +21242,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_set_chunk_embedding: {
+        Args: { _emb: string; _id: string }
+        Returns: undefined
+      }
       alerts_can_read: { Args: { _user_id: string }; Returns: boolean }
       app_role_for_department: {
         Args: { _dept_name: string }
