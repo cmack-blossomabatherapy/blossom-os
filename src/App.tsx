@@ -412,6 +412,10 @@ import {
   WorkflowInventoryPage, RequestIntakePage, IssueTrackerPage,
 } from "./pages/os/system-tools/SystemToolsPages";
 import BcbaProductivityUploads from "./pages/os/system/BcbaProductivityUploads";
+import {
+  AuthorizationSharedUploadsPage,
+  CancellationSharedUploadsPage,
+} from "./pages/os/system/SharedReportDatasetUploads";
 import AuditLogPage from "./pages/os/system-tools/AuditLogPage";
 import EmailCommandCenter from "./pages/os/system/EmailCommandCenter";
 import BlossomOSHome from "./pages/os/home/BlossomOSHome";
@@ -1019,6 +1023,12 @@ const App = () => (
                   <Route path="/system/request-intake" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><RequestIntakePage /></PermissionRoute>} />
                   <Route path="/system/issue-tracker" element={<AdminRoute><IssueTrackerPage /></AdminRoute>} />
                   <Route path="/system/bcba-productivity-uploads" element={<AdminRoute><BcbaProductivityUploads /></AdminRoute>} />
+                  <Route path="/system/authorization-uploads" element={<AdminRoute><AuthorizationSharedUploadsPage /></AdminRoute>} />
+                  <Route path="/system/cancellation-uploads" element={<AdminRoute><CancellationSharedUploadsPage /></AdminRoute>} />
+                  {/* Legacy redirects for old QA report cards → canonical approved routes */}
+                  <Route path="/reports/qa-supervision" element={<Navigate to="/reports/bcba-supervision" replace />} />
+                  <Route path="/reports/qa-parent-training" element={<Navigate to="/reports/parent-training" replace />} />
+                  <Route path="/reports/auth-utilization" element={<Navigate to="/reports/authorization-utilization-hour-based" replace />} />
                   <Route path="/system/integration-registry" element={<Navigate to="/admin/integrations" replace />} />
                   <Route path="/system/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
                   <Route path="/system/email-command-center" element={<AdminRoute><EmailCommandCenter /></AdminRoute>} />

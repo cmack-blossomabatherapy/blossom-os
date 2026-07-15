@@ -1,8 +1,8 @@
-import { useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Upload, FileSpreadsheet, Sparkles, Download, Search,
-  AlertTriangle, CheckCircle2, Brain, Trash2,
+  AlertTriangle, CheckCircle2, Brain, Trash2, Database,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { ReportAIButton } from "@/components/ai/ReportAIButton";
@@ -18,6 +18,10 @@ import { ChartCard } from "@/components/dashboards/ChartCard";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
 import type { KpiSpec, ChartSpec, DrilldownSpec } from "@/lib/os/dashboardEngine/types";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
+import {
+  getActiveSharedReportDataset,
+  downloadSharedReportDatasetFile,
+} from "@/lib/os/sharedReportDatasets";
 
 /* ============================================================
  * QA Authorization Utilization Dashboard
@@ -131,11 +135,32 @@ function statusFor(authorizedHours: number, workedHours: number, expirationDate:
 /* ===================== PAGE ===================== */
 
 export default function QaAuthUtilizationDashboard() {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const viewParam = (searchParams.get("view") || "").toLowerCase();
+  const isAnalysis =
+    location.pathname.endsWith("/reports/authorization-analysis") ||
+    viewParam === "analysis";
+  const isHourBased =
+    location.pathname.endsWith("/reports/authorization-utilization-hour-based") ||
+    viewParam === "hours" || viewParam === "hour-based";
+  const pageTitle = isAnalysis
+    ? "Authorization Analysis"
+    : isHourBased
+      ? "Authorization Utilization — Hour Based"
+      : "Authorization Utilization Dashboard";
+  const pageSubtitle = isAnalysis
+    ? "Per-client authorization health: authorized vs worked vs pending vs remaining hours by client, auth #, payor, and service code."
+    : isHourBased
+      ? "Hour-based utilization vs authorized (and prorated authorized where available) by client, service code, location/state and date range."
+      : "Upload a CentralReach authorization export to instantly identify utilization risks, expiring auths, and client authorization health.";
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<AuthRow[]>([]);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [generated, setGenerated] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sharedLoading, setSharedLoading] = useState(false);
+  const [sharedAvailable, setSharedAvailable] = useState<boolean | null>(null);
 
   // filters
   const [search, setSearch] = useState("");
@@ -246,6 +271,45 @@ export default function QaAuthUtilizationDashboard() {
     setFileName(""); setRows([]); setMissingFields([]); setGenerated(false);
     if (inputRef.current) inputRef.current.value = "";
   }
+
+  /* ---- Shared admin dataset auto-load ---- */
+  async function loadSharedAdminDataset(silent = false) {
+    setSharedLoading(true);
+    try {
+      const ds = await getActiveSharedReportDataset("authorization");
+      if (!ds) {
+        setSharedAvailable(false);
+        if (!silent) toast.info("No admin-uploaded authorization dataset found. Ask an admin to upload the CentralReach authorization export.");
+        return;
+      }
+      setSharedAvailable(true);
+      const file = await downloadSharedReportDatasetFile(ds);
+      await handleFiles([file]);
+      setGenerated(true);
+      if (!silent) toast.success(`Loaded admin dataset: ${ds.fileName}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!silent) toast.error(`Failed to load admin dataset: ${msg}`);
+    } finally {
+      setSharedLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const ds = await getActiveSharedReportDataset("authorization");
+        if (cancelled) return;
+        setSharedAvailable(!!ds);
+        if (ds && !fileName) await loadSharedAdminDataset(true);
+      } catch {
+        if (!cancelled) setSharedAvailable(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ---- Filter dropdown options ---- */
   const payors = useMemo(() => Array.from(new Set(rows.map(r => r.payor).filter(p => p && p !== "—"))).sort(), [rows]);
@@ -499,10 +563,8 @@ export default function QaAuthUtilizationDashboard() {
             <Badge variant="secondary" className="rounded-full bg-[hsl(265_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(265_70%_55%)]">
               QA · Featured Dashboard
             </Badge>
-            <h1 className="mt-1 text-[28px] font-semibold tracking-tight">Authorization Utilization Dashboard</h1>
-            <p className="text-[12.5px] text-muted-foreground">
-              Upload a CentralReach authorization export to instantly identify utilization risks, expiring auths, and client authorization health.
-            </p>
+            <h1 className="mt-1 text-[28px] font-semibold tracking-tight">{pageTitle}</h1>
+            <p className="text-[12.5px] text-muted-foreground">{pageSubtitle}</p>
           </div>
         </div>
         <ReportAIButton preset="auth-utilization" />
@@ -516,8 +578,29 @@ export default function QaAuthUtilizationDashboard() {
           "PendingHours", "RemainingHours", "StartDate", "ExpirationDate",
           "BCBA (optional)", "State (optional)",
         ]}
-        filterNote="Powers both Authorization Analysis and Authorization Utilization — Hour Based. Admin-fed auth dataset is coming; upload the CR export below to run the report today."
+        filterNote="Powers both Authorization Analysis and Authorization Utilization — Hour Based. Uses the shared admin authorization dataset by default — upload a file below only if you want a one-off view."
+        adminUploadsHref="/system/authorization-uploads"
+        adminSourceLabel={sharedAvailable ? "Auto-loads from Admin Uploads" : "No admin dataset yet"}
       />
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card p-4">
+        <div className="text-[12px] text-muted-foreground">
+          {sharedAvailable === false
+            ? "No admin-uploaded authorization dataset found. Ask an admin to upload the CentralReach authorization export via Admin → Authorization Uploads, or upload one below for a one-off view."
+            : sharedAvailable
+              ? "Shared admin authorization dataset is active for every user."
+              : "Checking for shared admin authorization dataset…"}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => loadSharedAdminDataset(false)}
+          disabled={sharedLoading}
+        >
+          <Database className="mr-1.5 h-3.5 w-3.5" />
+          {sharedLoading ? "Loading…" : "Reload Admin Dataset"}
+        </Button>
+      </div>
 
       {/* Upload */}
       <section className="mt-6 rounded-3xl border border-border/60 bg-card p-6 shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.25)]">

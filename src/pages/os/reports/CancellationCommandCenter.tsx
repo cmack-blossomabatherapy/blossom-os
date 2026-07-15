@@ -7,7 +7,7 @@ import {
 import {
   Upload, FileSpreadsheet, Download, Sparkles, AlertTriangle, CheckCircle2,
   Save, Trash2, X, CalendarRange, DollarSign, Clock, MapPin, Users, Stethoscope,
-  Printer, TrendingDown, TrendingUp, Search,
+  Printer, TrendingDown, TrendingUp, Search, Database,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { ReportAIButton } from "@/components/ai/ReportAIButton";
@@ -26,6 +26,11 @@ import {
 } from "@/lib/os/cancellationSavedReports";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
+import {
+  getActiveSharedReportDataset,
+  downloadSharedReportDatasetFile,
+  type SharedReportKey,
+} from "@/lib/os/sharedReportDatasets";
 
 /* ============================================================
  * Cancellation Command Center
@@ -598,6 +603,77 @@ export default function CancellationCommandCenter() {
     if (authInput.current) authInput.current.value = "";
   }
 
+  /* ---- Shared admin dataset auto-load ---- */
+  const [sharedLoading, setSharedLoading] = useState(false);
+  const [sharedAvailable, setSharedAvailable] = useState<{
+    scheduling: boolean; billing: boolean; authorization: boolean;
+  }>({ scheduling: false, billing: false, authorization: false });
+
+  async function loadSharedKind(kind: SharedReportKey, silent = false): Promise<boolean> {
+    try {
+      const ds = await getActiveSharedReportDataset(kind);
+      if (!ds) {
+        if (!silent) toast.info(`No admin-uploaded ${kind} dataset found.`);
+        return false;
+      }
+      const file = await downloadSharedReportDatasetFile(ds);
+      // Build a FileList-like input by using DataTransfer
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      if (kind === "cancellation-scheduling") await handleSchedule(dt.files);
+      else if (kind === "cancellation-billing") await handleBilling(dt.files);
+      else if (kind === "cancellation-authorization") await handleAuths(dt.files);
+      if (!silent) toast.success(`Loaded admin ${kind} dataset: ${ds.fileName}`);
+      return true;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!silent) toast.error(`Failed to load admin ${kind} dataset: ${msg}`);
+      return false;
+    }
+  }
+
+  async function loadAllAdminDatasets(silent = false) {
+    setSharedLoading(true);
+    try {
+      const [s, b, a] = await Promise.all([
+        loadSharedKind("cancellation-scheduling", silent),
+        loadSharedKind("cancellation-billing", silent),
+        loadSharedKind("cancellation-authorization", silent),
+      ]);
+      setSharedAvailable({ scheduling: s, billing: b, authorization: a });
+      if (!silent && !s && !b && !a) {
+        toast.info("No admin-uploaded cancellation datasets found yet.");
+      }
+    } finally {
+      setSharedLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [s, b, a] = await Promise.all([
+          getActiveSharedReportDataset("cancellation-scheduling"),
+          getActiveSharedReportDataset("cancellation-billing"),
+          getActiveSharedReportDataset("cancellation-authorization"),
+        ]);
+        if (cancelled) return;
+        setSharedAvailable({
+          scheduling: !!s, billing: !!b, authorization: !!a,
+        });
+        // Auto-load only when the user has no manually uploaded files yet
+        if (!scheduleRaws.length && !billingRaws.length && !authRecords.length) {
+          if (s || b || a) await loadAllAdminDatasets(true);
+        }
+      } catch {
+        /* noop */
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* ---- processed data ---- */
   const processedAll: ScheduleRow[] = useMemo(() => {
     if (!scheduleRaws.length) return [];
@@ -877,8 +953,35 @@ export default function CancellationCommandCenter() {
             "Billing: DateOfService, ClientName, ProcedureCode, TimeWorkedInHours, ClientChargesTotal",
             "Authorizations: ClientName, BCBA, StartDate, EndDate",
           ]}
-          filterNote="Scheduling export is required to run the dashboard. Billing enables lost-revenue math. Authorization export drives coverage/leakage. Admin-fed cancellation dataset is coming — upload the CR exports here for now."
+          filterNote="Scheduling export is required to run the dashboard. Billing enables lost-revenue math. Authorization export drives coverage/leakage. Uses the shared admin cancellation datasets by default — upload files here only for a one-off view."
+          adminUploadsHref="/system/cancellation-uploads"
+          adminSourceLabel={
+            sharedAvailable.scheduling || sharedAvailable.billing || sharedAvailable.authorization
+              ? "Auto-loads from Admin Uploads"
+              : "No admin datasets yet"
+          }
         />
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/60 p-3 backdrop-blur">
+          <div className="text-[12px] text-muted-foreground">
+            Admin datasets:
+            <span className="ml-2 font-semibold text-foreground">Scheduling</span>{" "}
+            <span>{sharedAvailable.scheduling ? "✓" : "—"}</span>
+            <span className="ml-3 font-semibold text-foreground">Billing</span>{" "}
+            <span>{sharedAvailable.billing ? "✓" : "—"}</span>
+            <span className="ml-3 font-semibold text-foreground">Authorization</span>{" "}
+            <span>{sharedAvailable.authorization ? "✓" : "—"}</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadAllAdminDatasets(false)}
+            disabled={sharedLoading}
+          >
+            <Database className="mr-1 h-3.5 w-3.5" />
+            {sharedLoading ? "Loading…" : "Reload Admin Datasets"}
+          </Button>
+        </div>
 
         {/* upload chips */}
         <div className="mt-5 grid gap-3 md:grid-cols-3">

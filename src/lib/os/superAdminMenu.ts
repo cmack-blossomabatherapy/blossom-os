@@ -207,6 +207,8 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
       { label: "Email Command Center",      to: "/system/email-command-center",        icon: Mail },
       { label: "Automated Emails",          to: "/admin/automated-emails",             icon: Mail },
       { label: "BCBA Productivity Uploads", to: "/system/bcba-productivity-uploads",   icon: UploadCloud },
+      { label: "Authorization Uploads",     to: "/system/authorization-uploads",       icon: UploadCloud },
+      { label: "Cancellation Uploads",      to: "/system/cancellation-uploads",        icon: UploadCloud },
       { label: "Workflow Inventory",        to: "/system/workflow-inventory",          icon: Workflow },
       { label: "Request Intake",            to: "/system/request-intake",              icon: Inbox },
       { label: "Issue Tracker",             to: "/system/issue-tracker",               icon: Bug },

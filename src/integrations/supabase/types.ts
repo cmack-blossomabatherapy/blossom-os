@@ -18447,6 +18447,45 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_report_datasets: {
+        Row: {
+          file_name: string
+          file_size: number | null
+          id: string
+          is_active: boolean
+          mime_type: string | null
+          notes: string | null
+          report_key: string
+          storage_path: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          file_name: string
+          file_size?: number | null
+          id?: string
+          is_active?: boolean
+          mime_type?: string | null
+          notes?: string | null
+          report_key: string
+          storage_path: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          is_active?: boolean
+          mime_type?: string | null
+          notes?: string | null
+          report_key?: string
+          storage_path?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       shared_report_recents: {
         Row: {
           id: string

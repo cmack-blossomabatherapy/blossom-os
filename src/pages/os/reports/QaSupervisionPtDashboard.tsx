@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Upload, FileSpreadsheet, Sparkles, Download, Search, Database,
   AlertTriangle, CheckCircle2, X, Filter, Brain, Trash2,
@@ -183,6 +183,25 @@ function downloadCsv(filename: string, columns: string[], rows: (string | number
 /* ===================== PAGE ===================== */
 
 export default function QaSupervisionPtDashboard() {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const viewParam = (searchParams.get("view") || "").toLowerCase();
+  const isParentTraining =
+    location.pathname.endsWith("/reports/parent-training") ||
+    viewParam === "parent-training" || viewParam === "pt";
+  const isSupervision =
+    location.pathname.endsWith("/reports/bcba-supervision") ||
+    viewParam === "supervision" || viewParam === "bcba-supervision";
+  const pageTitle = isParentTraining
+    ? "Parent Training"
+    : isSupervision
+      ? "BCBA Supervision"
+      : "Supervision & Parent Training Dashboard";
+  const pageSubtitle = isParentTraining
+    ? "97156 parent training presence, hours, and gaps by client, provider and payor. Auto-loads the shared admin billing dataset."
+    : isSupervision
+      ? "97153 vs 97155 supervision ratios, below-threshold clients, and BCBA supervision load. Auto-loads the shared admin billing dataset."
+      : "Upload a CentralReach billing CSV for the month you want to review. Blossom OS will calculate supervision percentages and parent training completion automatically.";
   const [fileName, setFileName] = useState<string>("");
   const [allRows, setAllRows] = useState<ServiceRow[]>([]);
   const [missingFields, setMissingFields] = useState<string[]>([]);
@@ -695,10 +714,8 @@ export default function QaSupervisionPtDashboard() {
             <Badge variant="secondary" className="rounded-full bg-[hsl(265_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(265_70%_55%)]">
               QA · Featured Dashboard
             </Badge>
-            <h1 className="mt-1 text-[28px] font-semibold tracking-tight">Supervision &amp; Parent Training Dashboard</h1>
-            <p className="text-[12.5px] text-muted-foreground">
-              Upload a CentralReach billing CSV for the month you want to review. Blossom OS will calculate supervision percentages and parent training completion automatically.
-            </p>
+            <h1 className="mt-1 text-[28px] font-semibold tracking-tight">{pageTitle}</h1>
+            <p className="text-[12.5px] text-muted-foreground">{pageSubtitle}</p>
           </div>
         </div>
         <ReportAIButton preset="supervision-pt" />
