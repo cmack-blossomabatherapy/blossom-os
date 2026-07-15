@@ -354,6 +354,64 @@ function matchesQuery(e: Emp | undefined, q: string) {
   return s.includes(q.toLowerCase());
 }
 
+/* --- Directory (all employees) --- */
+function DirectoryPanel({ data, query }: PanelProps) {
+  if (data.loading) {
+    return <Card className="p-6"><p className="text-sm text-muted-foreground">Loading employees…</p></Card>;
+  }
+  const rows = data.employees.filter((e) => matchesQuery(e, query));
+  const active = rows.filter((e) => e.status === "active");
+  const other = rows.filter((e) => e.status !== "active");
+  if (!rows.length) {
+    return (
+      <Card className="p-6">
+        <Empty icon={Search} title="No employees match your search." hint="Try clearing filters or updating the search term." />
+      </Card>
+    );
+  }
+  const Row = ({ e }: { e: Emp }) => (
+    <Link
+      to={`/user-management/${e.id}`}
+      className="flex items-center gap-3 px-4 py-3 hover:bg-muted/60 transition-colors"
+    >
+      <Avatar first={e.first_name} last={e.last_name} />
+      <div className="min-w-0 flex-1">
+        <p className="text-[13.5px] font-medium tracking-tight truncate">{fullName(e)}</p>
+        <p className="text-[12px] text-muted-foreground truncate">{e.job_title} · {e.state}</p>
+      </div>
+      <Pill tone={e.status === "active" ? "ok" : e.status === "pending_start" ? "warn" : "muted"}>
+        {e.status.replace(/_/g, " ")}
+      </Pill>
+      <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+    </Link>
+  );
+  return (
+    <div className="space-y-4">
+      <Card>
+        <div className="px-4 py-2.5 border-b border-border/70 flex items-center justify-between">
+          <p className="text-[12px] font-medium tracking-tight">Active</p>
+          <span className="text-[11px] text-muted-foreground">{active.length}</span>
+        </div>
+        <div className="divide-y divide-border/70 max-h-[560px] overflow-auto">
+          {active.map((e) => <Row key={e.id} e={e} />)}
+          {!active.length && <p className="px-4 py-6 text-[12px] text-muted-foreground">No active employees match.</p>}
+        </div>
+      </Card>
+      {other.length > 0 && (
+        <Card>
+          <div className="px-4 py-2.5 border-b border-border/70 flex items-center justify-between">
+            <p className="text-[12px] font-medium tracking-tight">Other</p>
+            <span className="text-[11px] text-muted-foreground">{other.length}</span>
+          </div>
+          <div className="divide-y divide-border/70 max-h-[360px] overflow-auto">
+            {other.map((e) => <Row key={e.id} e={e} />)}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 /* --- Onboarding board --- */
 function OnboardingPanel({ data, empById, query }: PanelProps) {
   const stages = ONBOARDING_STAGES.filter((s) => !["on_hold", "incomplete"].includes(s.key));
