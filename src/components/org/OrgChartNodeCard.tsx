@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { Mail } from "lucide-react";
+import { Mail, ChevronDown, ChevronRight } from "lucide-react";
 
 export type OrgNodeData = {
   name: string;
@@ -10,6 +10,10 @@ export type OrgNodeData = {
   avatar_url?: string | null;
   accent_color?: string | null;
   isEditor: boolean;
+  hasChildren?: boolean;
+  collapsed?: boolean;
+  hiddenCount?: number;
+  onToggleCollapse?: () => void;
 };
 
 // Tier is inferred from accent_color so the chart can be styled to look like
@@ -29,6 +33,26 @@ function OrgChartNodeCardImpl({ data, selected }: NodeProps) {
   const d = data as unknown as OrgNodeData;
   const accent = d.accent_color || "#22C55E";
   const tier = tierFromAccent(accent);
+
+  const CollapseChip = d.hasChildren ? (
+    <button
+      type="button"
+      aria-label={d.collapsed ? "Expand reports" : "Collapse reports"}
+      title={
+        d.collapsed
+          ? `Show ${d.hiddenCount ?? ""} report${d.hiddenCount === 1 ? "" : "s"}`.trim()
+          : "Hide reports"
+      }
+      onClick={(e) => {
+        e.stopPropagation();
+        d.onToggleCollapse?.();
+      }}
+      className="nodrag absolute -bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border/70 bg-card px-2 py-0.5 text-[10px] font-semibold text-foreground shadow-sm hover:bg-muted"
+    >
+      {d.collapsed ? <ChevronRight className="size-3" /> : <ChevronDown className="size-3" />}
+      {typeof d.hiddenCount === "number" && d.hiddenCount > 0 ? d.hiddenCount : null}
+    </button>
+  ) : null;
 
   if (tier === "group") {
     // Department / division pill — big rounded pill in purple like the reference.
@@ -50,6 +74,7 @@ function OrgChartNodeCardImpl({ data, selected }: NodeProps) {
           </p>
         )}
         <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-white/70" />
+        {CollapseChip}
       </div>
     );
   }
@@ -87,6 +112,7 @@ function OrgChartNodeCardImpl({ data, selected }: NodeProps) {
         )}
       </div>
       <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-white/70" />
+      {CollapseChip}
     </div>
   );
 }
