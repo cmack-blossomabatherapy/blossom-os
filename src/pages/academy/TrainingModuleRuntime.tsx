@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Clock, PlayCircle, FileText,
-  ListChecks, BookOpen, ShieldCheck, Sparkles, Library, ExternalLink,
+  ListChecks, BookOpen, ShieldCheck, Sparkles, Library, ExternalLink, Download,
   Link2, Wand2, Copy, Map,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,8 @@ import {
 import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
 import { getTrainingPath } from "@/lib/academy/trainingPaths";
 import { useLessonStatuses } from "@/lib/academy/lessonProgress";
+import { getLessonContent, getLessonShell } from "@/lib/academy/lessonContent";
+import { exportModuleToPdf } from "@/lib/academy/lessonPdfExport";
 
 /**
  * Unified academy module runtime for /academy/path/:slug/module/:moduleId.
@@ -152,6 +154,14 @@ export default function TrainingModuleRuntime() {
   const lessonIds = (ctx.lessons ?? []).map((l) => l.id);
   const { statuses: lessonStatuses, completedCount: lessonsDone, total: lessonsTotal } = useLessonStatuses(decodedId, lessonIds);
 
+  const onExportModulePdf = () => {
+    const lessons = (ctx.lessons ?? []).map((meta) => ({
+      meta,
+      content: getLessonContent(decodedId, meta.id) ?? getLessonShell(meta, ctx.title),
+    }));
+    exportModuleToPdf(path.title, ctx.title, ctx.description, lessons);
+  };
+
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
       <Link to={`/academy/path/${slug}${trackSuffix}`} className="inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">
@@ -202,6 +212,16 @@ export default function TrainingModuleRuntime() {
           {status === "completed" && (
             <button onClick={() => { void startRuntime(decodedId, runtimeCtx); }} className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 h-11 text-sm font-medium transition hover:bg-muted">
               <ArrowRight className="h-4 w-4" /> Review again
+            </button>
+          )}
+          {(ctx.lessons?.length ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={onExportModulePdf}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-4 h-9 text-[12px] font-medium transition hover:bg-muted"
+              title="Download every lesson in this module as a single PDF for offline review"
+            >
+              <Download className="h-3.5 w-3.5" /> Export module PDF
             </button>
           )}
           <p className="text-right text-[11px] text-muted-foreground">Elapsed: {elapsedLabel}</p>
