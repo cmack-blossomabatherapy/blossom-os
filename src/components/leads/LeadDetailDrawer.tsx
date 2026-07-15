@@ -844,6 +844,7 @@ export function LeadDetailDrawer({
           />
         </>
       )}
+      <EditLeadDialog open={editOpen} onOpenChange={setEditOpen} lead={lead} />
     </>
   );
 }
