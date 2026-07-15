@@ -802,6 +802,11 @@ const App = () => (
                       teammate can view. Edit gate is enforced inside OrgChartPage. */}
                   <Route path="/org-chart" element={<OSShellPage><LiveOrgChart /></OSShellPage>} />
                   <Route path="/org-chart/editor" element={<OSShellPage><OrgChartPage /></OSShellPage>} />
+                  {/* Universal Tasks page — must sit OUTSIDE the AppLayout parent
+                      group so we don't get AppLayout's sidebar/header AND the OS
+                      shell rendering at the same time (the "2 menus / 2 headers"
+                      bug). OSShellPage provides the single Blossom OS shell. */}
+                  <Route path="/tasks" element={<OSShellPage><TasksPage /></OSShellPage>} />
                   {/* Company Home — universal landing for every signed-in user */}
                   <Route path="/home" element={<CompanyHome />} />
                   <Route path="/home/manage" element={<CompanyHomeManage />} />
@@ -1213,7 +1218,6 @@ const App = () => (
                   <Route path="/qa" element={<Navigate to="/qa-team" replace />} />
                   <Route path="/qa/:id" element={<QADetail />} />
                   <Route path="/documents" element={<Documents />} />
-                  <Route path="/tasks" element={<OSShellPage><TasksPage /></OSShellPage>} />
                   <Route path="/automations" element={<PermissionRoute permission="automations.view" allowedRoles={AUTOMATIONS_ROLES}><Automations /></PermissionRoute>} />
                   <Route path="/training/academy" element={<AcademyHome />} />
                   <Route path="/training/academy/week/:weekId" element={<AcademyWeekDetail />} />
