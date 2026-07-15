@@ -1064,8 +1064,11 @@ export default function BcbaProductivityReportV3() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" variant="outline" onClick={() => loadSharedDataset()} disabled={sharedLoading}>
-                  <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", sharedLoading && "animate-spin")} /> Refresh dataset
+                <Button size="sm" variant="outline" onClick={() => loadSharedDataset({ force: true })} disabled={sharedLoading}>
+                  <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", sharedLoading && "animate-spin")} />
+                  {sharedLoading && sharedProgress
+                    ? `Loading ${sharedProgress.loaded.toLocaleString()} / ${sharedProgress.total.toLocaleString()}`
+                    : "Refresh dataset"}
                 </Button>
                 <Button size="sm" asChild>
                   <Link to="/system/bcba-productivity-uploads">Manage uploads</Link>
