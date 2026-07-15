@@ -145,7 +145,7 @@ export const REPORTS: ReportDef[] = [
     ],
     sparkline: [40, 46, 52, 58, 62, 68, 72, 76, 80],
     tags: ["Authorization", "Analysis", "Featured"],
-    drilldownPath: "/reports/qa-auth-utilization?view=analysis",
+    drilldownPath: "/reports/authorization-analysis",
   },
   {
     id: "authorization-utilization-hour-based",
@@ -168,7 +168,7 @@ export const REPORTS: ReportDef[] = [
     ],
     sparkline: [42, 48, 55, 60, 65, 68, 72, 76, 80],
     tags: ["Authorization", "Utilization", "Hours", "Featured"],
-    drilldownPath: "/reports/qa-auth-utilization?view=hours",
+    drilldownPath: "/reports/authorization-utilization-hour-based",
   },
   {
     id: "parent-training",
@@ -191,7 +191,7 @@ export const REPORTS: ReportDef[] = [
     ],
     sparkline: [40, 48, 52, 60, 58, 64, 70, 74, 78],
     tags: ["97156", "Parent Training", "Featured"],
-    drilldownPath: "/reports/qa-supervision-pt?view=parent-training",
+    drilldownPath: "/reports/parent-training",
   },
   {
     id: "bcba-supervision",
@@ -214,7 +214,7 @@ export const REPORTS: ReportDef[] = [
     ],
     sparkline: [50, 55, 60, 64, 68, 72, 70, 74],
     tags: ["97153", "97155", "Supervision", "Featured"],
-    drilldownPath: "/reports/qa-supervision-pt?view=supervision",
+    drilldownPath: "/reports/bcba-supervision",
   },
 
   // Leadership
