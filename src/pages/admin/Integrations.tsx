@@ -558,6 +558,12 @@ function IntegrationDrawer({
 
   const [testing, setTesting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [viventiumBusy, setViventiumBusy] = useState<null | "test" | "preview">(null);
+  const [viventiumResult, setViventiumResult] = useState<null | {
+    ok: boolean; mode: string; received?: number; normalized?: number;
+    matched?: number; created?: number; updated?: number; skipped?: number;
+    error?: string; samples?: unknown[];
+  }>(null);
 
   const integrationSyncRuns = syncRuns.filter((r) => r.integration_id === integration.id);
   const integrationWebhookEvents = webhookEvents.filter((e) => e.integration_id === integration.id);
@@ -653,7 +659,66 @@ function IntegrationDrawer({
               {testing ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
               Test connection
             </Button>
+            {integration.id === "viventium" && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 gap-1.5 rounded-xl"
+                  disabled={viventiumBusy !== null}
+                  onClick={async () => {
+                    setViventiumBusy("test");
+                    try {
+                      const { supabase } = await import("@/integrations/supabase/client");
+                      const { data, error } = await supabase.functions.invoke("viventium-sync", { body: { mode: "connection-test" } });
+                      if (error) { setViventiumResult({ ok: false, mode: "connection-test", error: error.message }); toast.error(`Viventium: ${error.message}`); }
+                      else { setViventiumResult(data as never); (data as { ok?: boolean })?.ok ? toast.success("Viventium: connection ok") : toast.error(`Viventium: ${(data as { error?: string })?.error ?? "failed"}`); }
+                    } finally { setViventiumBusy(null); }
+                  }}
+                >
+                  {viventiumBusy === "test" ? <Loader2 className="size-3.5 animate-spin" /> : <Plug className="size-3.5" />}
+                  Test Viventium
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 gap-1.5 rounded-xl"
+                  disabled={viventiumBusy !== null}
+                  onClick={async () => {
+                    setViventiumBusy("preview");
+                    try {
+                      const { supabase } = await import("@/integrations/supabase/client");
+                      const { data, error } = await supabase.functions.invoke("viventium-sync", { body: { mode: "employees-dry-run" } });
+                      if (error) { setViventiumResult({ ok: false, mode: "employees-dry-run", error: error.message }); toast.error(`Viventium: ${error.message}`); }
+                      else { setViventiumResult(data as never); (data as { ok?: boolean })?.ok ? toast.success(`Viventium preview: ${(data as { received?: number }).received ?? 0} received`) : toast.error(`Viventium: ${(data as { error?: string })?.error ?? "failed"}`); }
+                    } finally { setViventiumBusy(null); }
+                  }}
+                >
+                  {viventiumBusy === "preview" ? <Loader2 className="size-3.5 animate-spin" /> : <Users className="size-3.5" />}
+                  Preview employee sync
+                </Button>
+              </>
+            )}
           </div>
+          {integration.id === "viventium" && viventiumResult && (
+            <div className="mt-3 rounded-xl border border-border/60 bg-muted/40 p-3 text-xs">
+              <div className="mb-1 font-medium">
+                Last {viventiumResult.mode === "connection-test" ? "connection test" : "preview"}: {viventiumResult.ok ? "OK" : "Failed"}
+              </div>
+              {viventiumResult.ok ? (
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+                  <span>received: {viventiumResult.received ?? 0}</span>
+                  <span>normalized: {viventiumResult.normalized ?? 0}</span>
+                  <span>matched: {viventiumResult.matched ?? 0}</span>
+                  <span>created: {viventiumResult.created ?? 0}</span>
+                  <span>updated: {viventiumResult.updated ?? 0}</span>
+                  <span>skipped: {viventiumResult.skipped ?? 0}</span>
+                </div>
+              ) : (
+                <div className="text-destructive">{viventiumResult.error ?? "Unknown error"}</div>
+              )}
+            </div>
+          )}
         </SheetHeader>
 
         <div className="p-6">
