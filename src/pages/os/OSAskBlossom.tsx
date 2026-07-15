@@ -544,7 +544,7 @@ export default function OSAskBlossom() {
                   "conic-gradient(from 210deg at 50% 50%, hsl(189 55% 58% / 0.35), hsl(280 60% 70% / 0.35), hsl(330 75% 72% / 0.4), hsl(265 85% 65% / 0.35), hsl(189 55% 58% / 0.35))",
               }}
             >
-             <div className="relative flex min-h-[62vh] flex-col overflow-hidden rounded-[24px] bg-card/95 backdrop-blur">
+             <div className="relative flex h-[calc(100vh-240px)] min-h-[62vh] max-h-[calc(100vh-200px)] flex-col overflow-hidden rounded-[24px] bg-card/95 backdrop-blur">
               <div
                 aria-hidden
                 className="pointer-events-none absolute -top-24 -right-16 h-48 w-48 rounded-full opacity-40 blur-3xl"
