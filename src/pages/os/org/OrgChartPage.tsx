@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/sheet";
 import { OrgChartNodeCard, type OrgNodeData } from "@/components/org/OrgChartNodeCard";
 import { toast } from "sonner";
-import { Plus, Save, Trash2, Users, Lock, DownloadCloud, LayoutGrid, Search, X } from "lucide-react";
+import { Plus, Save, Trash2, Users, Lock, DownloadCloud, LayoutGrid, Search, X, ChevronsDownUp } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 
 type DbRow = {
@@ -117,7 +117,86 @@ function InnerOrgChart() {
   const [editing, setEditing] = useState<DbRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const { fitView } = useReactFlow();
+
+  const toggleCollapse = useCallback((id: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // parent -> children map + descendant lookup
+  const childrenMap = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const r of rows) {
+      if (!r.parent_id) continue;
+      const arr = m.get(r.parent_id) ?? [];
+      arr.push(r.id);
+      m.set(r.parent_id, arr);
+    }
+    return m;
+  }, [rows]);
+
+  const descendantsOf = useCallback(
+    (id: string): string[] => {
+      const out: string[] = [];
+      const stack = [...(childrenMap.get(id) ?? [])];
+      while (stack.length) {
+        const cur = stack.pop()!;
+        out.push(cur);
+        for (const c of childrenMap.get(cur) ?? []) stack.push(c);
+      }
+      return out;
+    },
+    [childrenMap],
+  );
+
+  const hiddenByCollapse = useMemo(() => {
+    const hidden = new Set<string>();
+    for (const id of collapsed) for (const d of descendantsOf(id)) hidden.add(d);
+    return hidden;
+  }, [collapsed, descendantsOf]);
+
+  // Apply collapse state (hasChildren chip, hidden flag on hidden descendants)
+  useEffect(() => {
+    setNodes((ns) =>
+      ns.map((n) => {
+        const kids = childrenMap.get(n.id) ?? [];
+        const isCollapsed = collapsed.has(n.id);
+        const hiddenCount = isCollapsed ? descendantsOf(n.id).length : 0;
+        return {
+          ...n,
+          hidden: hiddenByCollapse.has(n.id),
+          data: {
+            ...(n.data as OrgNodeData),
+            hasChildren: kids.length > 0,
+            collapsed: isCollapsed,
+            hiddenCount,
+            onToggleCollapse: () => toggleCollapse(n.id),
+          },
+        };
+      }),
+    );
+    setEdges((es) =>
+      es.map((e) => ({
+        ...e,
+        hidden: hiddenByCollapse.has(e.source) || hiddenByCollapse.has(e.target),
+      })),
+    );
+  }, [
+    collapsed,
+    childrenMap,
+    descendantsOf,
+    hiddenByCollapse,
+    toggleCollapse,
+    setNodes,
+    setEdges,
+    rows,
+  ]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -389,6 +468,17 @@ function InnerOrgChart() {
                 size="sm"
                 variant="outline"
                 className="rounded-xl"
+                onClick={() => setCollapsed(new Set())}
+                disabled={collapsed.size === 0}
+                title="Expand all"
+              >
+                <ChevronsDownUp className="size-4" />
+                Expand all
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl"
                 onClick={autoArrange}
                 disabled={rows.length === 0}
               >
@@ -405,10 +495,22 @@ function InnerOrgChart() {
               </Button>
             </>
           ) : (
-            <div className="flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground">
-              <Lock className="size-3.5" />
-              View only
-            </div>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => setCollapsed(new Set())}
+                disabled={collapsed.size === 0}
+              >
+                <ChevronsDownUp className="size-4" />
+                Expand all
+              </Button>
+              <div className="flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground">
+                <Lock className="size-3.5" />
+                View only
+              </div>
+            </>
           )}
         </div>
       </header>
