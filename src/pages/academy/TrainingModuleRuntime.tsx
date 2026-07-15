@@ -29,6 +29,7 @@ import {
 } from "@/lib/academy/runtimeStore";
 import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
 import { getTrainingPath } from "@/lib/academy/trainingPaths";
+import { useLessonStatuses } from "@/lib/academy/lessonProgress";
 
 /**
  * Unified academy module runtime for /academy/path/:slug/module/:moduleId.
@@ -146,6 +147,9 @@ export default function TrainingModuleRuntime() {
   const elapsedLabel = formatElapsed(record.elapsedSeconds);
   const status = record.status;
 
+  const lessonIds = (ctx.lessons ?? []).map((l) => l.id);
+  const { statuses: lessonStatuses, completedCount: lessonsDone, total: lessonsTotal } = useLessonStatuses(decodedId, lessonIds);
+
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
       <Link to={`/academy/path/${slug}${trackSuffix}`} className="inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">
@@ -217,20 +221,42 @@ export default function TrainingModuleRuntime() {
           )}
 
           {ctx.lessons && ctx.lessons.length > 0 && (
-            <Card title="Lessons" icon={PlayCircle}>
+            <Card title={`Lessons · ${lessonsDone}/${lessonsTotal} complete`} icon={PlayCircle}>
               <ol className="space-y-2 text-[13px]">
-                {ctx.lessons.map((l, i) => (
-                  <li key={i} className="flex items-start justify-between gap-3 rounded-lg border border-border/60 bg-card px-3 py-2">
-                    <div className="min-w-0">
-                      <p className="font-medium">{l.title}</p>
-                      <p className="text-[12px] text-muted-foreground">{l.summary}</p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end text-[11px] text-muted-foreground">
-                      <Badge variant="outline" className="text-[10px]">{l.kind}</Badge>
-                      <span className="mt-1"><Clock className="mr-1 inline h-3 w-3" />{l.minutes}m</span>
-                    </div>
-                  </li>
-                ))}
+                {ctx.lessons.map((l, i) => {
+                  const s = lessonStatuses[l.id] ?? "not_started";
+                  const to = `/academy/path/${slug}/module/${encodeURIComponent(decodedId)}/lesson/${encodeURIComponent(l.id)}${trackSuffix}`;
+                  return (
+                    <li key={l.id}>
+                      <Link
+                        to={to}
+                        className="group flex items-start justify-between gap-3 rounded-lg border border-border/60 bg-card px-3 py-2 transition hover:border-primary/40 hover:bg-muted/40"
+                      >
+                        <div className="flex min-w-0 items-start gap-2.5">
+                          <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border border-border bg-muted text-[10px] font-semibold text-muted-foreground">
+                            {i + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-medium group-hover:text-foreground">{l.title}</p>
+                            <p className="text-[12px] text-muted-foreground">{l.summary}</p>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end text-[11px] text-muted-foreground">
+                          {s === "completed" ? (
+                            <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-[10px] text-emerald-700">
+                              <CheckCircle2 className="mr-1 h-3 w-3" /> Completed
+                            </Badge>
+                          ) : s === "in_progress" ? (
+                            <Badge variant="outline" className="border-sky-300 bg-sky-50 text-[10px] text-sky-700">In progress</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px]">{l.kind}</Badge>
+                          )}
+                          <span className="mt-1"><Clock className="mr-1 inline h-3 w-3" />{l.minutes}m</span>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ol>
             </Card>
           )}
