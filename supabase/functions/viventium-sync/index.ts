@@ -47,6 +47,33 @@ const pick = (obj: Record<string, unknown>, keys: string[]): unknown => {
 
 const toStr = (v: unknown) => (v == null ? null : String(v));
 
+const VALID_STATUSES = new Set(["pending_start", "active", "on_leave", "on_hold", "terminated", "resigned"]);
+const VALID_EMPLOYMENT_TYPES = new Set(["full_time", "part_time", "contractor", "prn"]);
+
+function mapEmploymentType(raw: string | null): string | null {
+  if (!raw) return null;
+  const s = raw.toLowerCase().replace(/[\s-]+/g, "_");
+  if (VALID_EMPLOYMENT_TYPES.has(s)) return s;
+  if (/full/.test(s)) return "full_time";
+  if (/part/.test(s)) return "part_time";
+  if (/contract/.test(s)) return "contractor";
+  if (/prn|per_diem|perdiem/.test(s)) return "prn";
+  return null;
+}
+
+function mapStatus(rawStatus: string, termDate: string | null): string {
+  if (termDate) return "terminated";
+  const s = rawStatus.toLowerCase();
+  if (VALID_STATUSES.has(s)) return s;
+  if (/leave/.test(s)) return "on_leave";
+  if (/hold|suspend/.test(s)) return "on_hold";
+  if (/resign/.test(s)) return "resigned";
+  if (/term|separat|inactive/.test(s)) return "terminated";
+  if (/pend|new|prehire/.test(s)) return "pending_start";
+  if (!s || /active|employed/.test(s)) return "active";
+  return "active";
+}
+
 interface NormalizedEmployee {
   viventium_employee_id: string | null;
   employee_code: string | null;
@@ -69,7 +96,6 @@ function normalize(v: Record<string, unknown>): NormalizedEmployee {
   const vId = toStr(pick(v, ["viventium_employee_id", "id", "employeeId", "EmployeeId", "EmployeeID", "employeeNumber", "EmployeeNumber"]));
   const rawStatus = String(pick(v, ["status", "Status", "employmentStatus", "EmploymentStatus"]) ?? "").toLowerCase();
   const termDate = toStr(pick(v, ["terminationDate", "TerminationDate", "termination_date", "endDate", "EndDate"]));
-  const isActive = !termDate && !/(term|inactive|separated|leave)/.test(rawStatus);
   return {
     viventium_employee_id: vId,
     employee_code: toStr(pick(v, ["employeeNumber", "EmployeeNumber", "employee_code", "employeeCode"])),
@@ -85,7 +111,7 @@ function normalize(v: Record<string, unknown>): NormalizedEmployee {
     hire_date: toStr(pick(v, ["hireDate", "HireDate", "hire_date", "dateOfHire", "DateOfHire", "originalHireDate", "OriginalHireDate"])),
     start_date: toStr(pick(v, ["startDate", "StartDate", "start_date"])),
     termination_date: termDate,
-    status: isActive ? "active" : (rawStatus || "inactive"),
+    status: mapStatus(rawStatus, termDate),
   };
 }
 
@@ -265,10 +291,25 @@ Deno.serve(async (req) => {
     }
 
     // ---- upsert active employees ----
-    let created = 0, updated = 0, matched = 0, skipped = 0;
+    let created = 0, updated = 0, matched = 0, skipped = 0, linked = 0;
     const now = new Date().toISOString();
 
-    for (const n of normalized) {
+    // Preload profiles email -> user_id map (bounded — same order of magnitude as workforce).
+    const emailToUserId = new Map<string, string>();
+    {
+      const { data: profs } = await admin.from("profiles").select("user_id,email").not("email", "is", null);
+      for (const p of (profs ?? []) as { user_id: string; email: string | null }[]) {
+        if (p.email && p.user_id) emailToUserId.set(p.email.toLowerCase(), p.user_id);
+      }
+    }
+
+    // Only sync ACTIVE employees per operator requirement. Terminated/resigned
+    // rows are counted as skipped so numbers stay honest.
+    const activeOnly = normalized.filter((n) => n.status === "active");
+    const nonActiveCount = normalized.length - activeOnly.length;
+    skipped += nonActiveCount;
+
+    for (const n of activeOnly) {
       let existingId: string | null = null;
       if (n.viventium_employee_id) {
         const { data } = await admin
@@ -289,7 +330,10 @@ Deno.serve(async (req) => {
         existingId = data?.id ?? null;
       }
 
-      const directoryPatch = {
+      const empType = mapEmploymentType(n.employment_type);
+      const linkedUserId = n.email ? emailToUserId.get(n.email) ?? null : null;
+
+      const directoryPatch: Record<string, unknown> = {
         first_name: n.first_name ?? undefined,
         last_name: n.last_name ?? undefined,
         preferred_name: n.preferred_name ?? undefined,
@@ -297,7 +341,7 @@ Deno.serve(async (req) => {
         phone: n.phone ?? undefined,
         job_title: n.job_title ?? undefined,
         state: n.state ?? undefined,
-        employment_type: n.employment_type ?? undefined,
+        employment_type: empType ?? undefined,
         hire_date: n.hire_date ?? undefined,
         start_date: n.start_date ?? undefined,
         status: n.status,
@@ -305,18 +349,24 @@ Deno.serve(async (req) => {
         viventium_sync_status: "synced",
         viventium_last_sync: now,
       };
+      if (linkedUserId) directoryPatch.user_id = linkedUserId;
 
       if (existingId) {
         matched++;
         const { error } = await admin.from("employees").update(directoryPatch).eq("id", existingId);
-        if (error) skipped++; else updated++;
+        if (error) { skipped++; console.error("update failed", error.message); }
+        else { updated++; if (linkedUserId) linked++; }
       } else {
-        if (!n.first_name || !n.last_name) { skipped++; continue; }
+        // Inserts need required NOT NULL fields.
+        if (!n.first_name || !n.last_name || !n.job_title) { skipped++; continue; }
         const { error } = await admin.from("employees").insert({
           ...directoryPatch,
+          state: n.state ?? "unknown",
+          job_title: n.job_title,
           employee_code: n.employee_code ?? undefined,
         });
-        if (error) skipped++; else created++;
+        if (error) { skipped++; console.error("insert failed", error.message); }
+        else { created++; if (linkedUserId) linked++; }
       }
     }
 
@@ -328,13 +378,13 @@ Deno.serve(async (req) => {
       records_updated: updated,
       records_matched: matched,
       records_skipped: skipped,
-      metadata: { sample_keys: sampleKeys },
+      metadata: { sample_keys: sampleKeys, linked_to_auth_users: linked, non_active_skipped: nonActiveCount },
     });
 
     return jsonResponse({
       ok: true, connected: true, mode, dryRun, runId,
       received, normalized: normalized.length,
-      created, updated, matched, skipped, samples, sampleKeys,
+      created, updated, matched, skipped, linked, nonActiveSkipped: nonActiveCount, samples, sampleKeys,
     });
   } catch (e) {
     await finalize({ status: "failed", error_message: (e as Error).message?.slice(0, 500) ?? "unknown error" });
