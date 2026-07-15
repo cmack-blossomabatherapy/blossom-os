@@ -31,7 +31,7 @@ You help every role at Blossom: Executives, State Directors, Intake, Auth, Sched
 
 HOW TO ANSWER
 - Use the BLOSSOM OS BRIEF (always provided) for general questions about the company, workflows, roles, or how something works.
-- Use the KNOWLEDGE excerpts (Resource Library) when they contain relevant material — cite them by number like [1] or [2].
+- Use the KNOWLEDGE excerpts (Resource Library) whenever they contain relevant material. When you use one, cite it inline as [n] immediately after the sentence or bullet that used it (matching the numbers in the KNOWLEDGE block). Cite every factual claim that came from a Resource Library excerpt. If two excerpts back a claim, cite both, e.g. [1][3]. Do not fabricate citation numbers; only use numbers that appear in the KNOWLEDGE block.
 - Call operational tools when the user asks about specific records ("my open tasks", "leads in Virginia", "find employee named …", "who is X", "tell me about client Y"). Tool results are RLS-scoped to the caller — if a row isn't there, the user can't see it.
 - If nothing above answers the question, still respond helpfully with what you do know from the BRIEF and general operational knowledge, and say what you'd need to answer more precisely. Do NOT flat-refuse. NEVER say "no approved Blossom resource was found" — that phrase is banned; always try the BRIEF, tools, or ask a clarifying question first.
 
@@ -458,19 +458,24 @@ Deno.serve(async (req) => {
 
       let used = 0;
       let n = 0;
-      const seen = new Set<string>();
       for (const c of chunks) {
         const excerpt = c.content.slice(0, 1600);
         if (used + excerpt.length > CONTEXT_CHAR_BUDGET) break;
         n += 1;
         contextParts.push(`[${n}] ${c.source_title}\n${excerpt}`);
         used += excerpt.length;
-        const key = c.resource_id ?? c.source_title;
-        if (!seen.has(key)) {
-          seen.add(key);
-          cited.push({ number: n, resourceId: c.resource_id, title: c.source_title,
-            department: c.department, type: c.resource_type });
-        }
+        const snippet = c.content.replace(/\s+/g, " ").trim().slice(0, 220);
+        const url = c.resource_id ? `/resource-library/resource/${c.resource_id}` : null;
+        cited.push({
+          number: n,
+          resourceId: c.resource_id,
+          title: c.source_title,
+          department: c.department,
+          type: c.resource_type,
+          snippet,
+          url,
+          similarity: Number(c.similarity ?? 0),
+        } as never);
       }
     } catch (e) {
       // KB failure shouldn't kill the whole answer — log and continue with just
@@ -534,6 +539,19 @@ Deno.serve(async (req) => {
           finalAnswer.replace(REFUSAL_RE, "").trim() +
           "\n\nWant me to search a different phrasing, look up a specific person/client, or pull a related SOP?";
       }
+    }
+
+    // Narrow citations to only those actually referenced in the final answer,
+    // so the UI shows the sources the model actually used. If none matched
+    // (model forgot to cite), keep the top-3 retrieved as best-effort.
+    const referenced = new Set<number>();
+    for (const m of finalAnswer.matchAll(/\[(\d{1,2})\]/g)) {
+      referenced.add(Number(m[1]));
+    }
+    if (referenced.size > 0) {
+      cited = cited.filter((c: { number: number }) => referenced.has(c.number));
+    } else {
+      cited = cited.slice(0, 3);
     }
 
     auditPreview = finalAnswer;
