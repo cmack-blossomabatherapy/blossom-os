@@ -884,6 +884,15 @@ const App = () => (
                  <Route path="/reports/bcba-productivity-report" element={<ReportRoleGuard reportId="bcba-productivity-report"><BcbaProductivityReport /></ReportRoleGuard>} />
                  <Route path="/reports/bcba-productivity-report-v3" element={<ReportRoleGuard reportId="bcba-productivity-report-v3"><BcbaProductivityReportV3 /></ReportRoleGuard>} />
                   <Route path="/reports/cancellation-command-center" element={<ReportRoleGuard reportId="cancellation-command-center"><CancellationCommandCenter /></ReportRoleGuard>} />
+                  {/* Approved-Six aliases: Authorization Analysis + Hour-Based Utilization share the CR auth
+                      utilization dashboard; Parent Training + BCBA Supervision share the QA supervision & PT dashboard. */}
+                  <Route path="/reports/authorization-analysis" element={<ReportRoleGuard reportId="authorization-analysis"><QaAuthUtilizationDashboard /></ReportRoleGuard>} />
+                  <Route path="/reports/authorization-utilization-hour-based" element={<ReportRoleGuard reportId="authorization-utilization-hour-based"><QaAuthUtilizationDashboard /></ReportRoleGuard>} />
+                  <Route path="/reports/parent-training" element={<ReportRoleGuard reportId="parent-training"><QaSupervisionPtDashboard /></ReportRoleGuard>} />
+                  <Route path="/reports/bcba-supervision" element={<ReportRoleGuard reportId="bcba-supervision"><QaSupervisionPtDashboard /></ReportRoleGuard>} />
+                  {/* Legacy report routes → redirect to the approved replacements. */}
+                  <Route path="/reports/intake-perf" element={<Navigate to="/reports" replace />} />
+                  <Route path="/reports/intake-performance" element={<Navigate to="/reports" replace />} />
                   <Route path="/reports/progress-reports" element={<ReportRoleGuard reportId="progress-reports"><OSQAProgressReports /></ReportRoleGuard>} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
