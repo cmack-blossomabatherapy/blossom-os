@@ -220,9 +220,11 @@ export default function OSAskBlossom() {
             title: s.title,
             category: s.category ?? "sop",
             sourceType: s.tool ?? "knowledge",
-            url: s.url,
+            url: s.url ?? (s.resourceId ? `/resource-library/resource/${s.resourceId}` : undefined),
             snippet: s.snippet,
             similarity: s.similarity,
+            number: typeof s.number === "number" ? s.number : i + 1,
+            sourceId: s.resourceId ?? undefined,
           })) : undefined,
         });
         grouped.set(m.conversation_id, arr);
