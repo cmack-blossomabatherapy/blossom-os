@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -119,6 +119,14 @@ function InnerOrgChart() {
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const { fitView } = useReactFlow();
+
+  // Drag session: snapshot of the dragged subtree's positions at drag-start,
+  // so descendants move by the same delta and hierarchy is preserved.
+  const dragSessionRef = useRef<{
+    rootId: string;
+    startRoot: { x: number; y: number };
+    descendants: Array<{ id: string; start: { x: number; y: number } }>;
+  } | null>(null);
 
   const toggleCollapse = useCallback((id: string) => {
     setCollapsed((prev) => {
@@ -288,26 +296,86 @@ function InnerOrgChart() {
     };
   }, [load]);
 
-  // Persist drag positions on drag-stop
+  // Node changes (position/selection/etc). Persistence is handled by the
+  // drag lifecycle below so the dragged root + all descendants save together.
   const handleNodesChange = useCallback(
     (changes: NodeChange<Node<OrgNodeData>>[]) => {
       onNodesChange(changes);
+    },
+    [onNodesChange],
+  );
+
+  // Drag start: snapshot the dragged subtree so we can preserve relative
+  // spacing between the parent and every descendant.
+  const onNodeDragStart = useCallback(
+    (_e: MouseEvent | TouchEvent, node: Node<OrgNodeData>) => {
       if (!isEditor) return;
-      for (const c of changes) {
-        if (c.type === "position" && c.dragging === false && c.position) {
-          const id = c.id;
-          const { x, y } = c.position;
-          void supabase
-            .from("org_chart_nodes")
-            .update({ position_x: x, position_y: y })
-            .eq("id", id)
-            .then(({ error }) => {
-              if (error) toast.error("Move not saved", { description: error.message });
-            });
+      const descIds = descendantsOf(node.id);
+      const posById = new Map(nodes.map((n) => [n.id, n.position] as const));
+      dragSessionRef.current = {
+        rootId: node.id,
+        startRoot: { x: node.position.x, y: node.position.y },
+        descendants: descIds
+          .map((id) => {
+            const p = posById.get(id);
+            return p ? { id, start: { x: p.x, y: p.y } } : null;
+          })
+          .filter((v): v is { id: string; start: { x: number; y: number } } => !!v),
+      };
+    },
+    [isEditor, descendantsOf, nodes],
+  );
+
+  // Drag: apply the same delta to every descendant so the subtree moves as one.
+  const onNodeDrag = useCallback(
+    (_e: MouseEvent | TouchEvent, node: Node<OrgNodeData>) => {
+      const session = dragSessionRef.current;
+      if (!isEditor || !session || session.rootId !== node.id) return;
+      const dx = node.position.x - session.startRoot.x;
+      const dy = node.position.y - session.startRoot.y;
+      if (session.descendants.length === 0) return;
+      const nextPos = new Map(
+        session.descendants.map((d) => [d.id, { x: d.start.x + dx, y: d.start.y + dy }]),
+      );
+      setNodes((ns) =>
+        ns.map((n) => (nextPos.has(n.id) ? { ...n, position: nextPos.get(n.id)! } : n)),
+      );
+    },
+    [isEditor, setNodes],
+  );
+
+  // Drag stop: persist the root + every descendant that moved with it.
+  const onNodeDragStop = useCallback(
+    async (_e: MouseEvent | TouchEvent, node: Node<OrgNodeData>) => {
+      const session = dragSessionRef.current;
+      dragSessionRef.current = null;
+      if (!isEditor) return;
+      const dx = node.position.x - (session?.startRoot.x ?? node.position.x);
+      const dy = node.position.y - (session?.startRoot.y ?? node.position.y);
+      const updates = [
+        (supabase
+          .from("org_chart_nodes")
+          .update({ position_x: node.position.x, position_y: node.position.y })
+          .eq("id", node.id) as unknown as Promise<{ error: { message: string } | null }>),
+      ];
+      if (session && (dx !== 0 || dy !== 0)) {
+        for (const d of session.descendants) {
+          updates.push(
+            (supabase
+              .from("org_chart_nodes")
+              .update({ position_x: d.start.x + dx, position_y: d.start.y + dy })
+              .eq("id", d.id) as unknown as Promise<{ error: { message: string } | null }>),
+          );
         }
       }
+      const results = await Promise.all(updates);
+      const firstError = results.find((r) => r.error);
+      if (firstError?.error) {
+        toast.error("Move not saved", { description: firstError.error.message });
+        void load();
+      }
     },
-    [isEditor, onNodesChange],
+    [isEditor, load],
   );
 
   // Connect: set parent_id on target
@@ -531,6 +599,9 @@ function InnerOrgChart() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
+            onNodeDragStart={onNodeDragStart}
+            onNodeDrag={onNodeDrag}
+            onNodeDragStop={onNodeDragStop}
             nodesDraggable={isEditor}
             nodesConnectable={isEditor}
             elementsSelectable
