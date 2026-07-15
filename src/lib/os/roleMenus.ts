@@ -502,12 +502,12 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       {
         id: "hr_command", label: "HR Command", items: [
           { label: "HR Dashboard",             path: "/hr-team",                     icon: LayoutDashboard },
-          { label: "Employees",                path: "/hr/workspace",                icon: Users },
+          { label: "Employees",                path: "/user-management",             icon: Users },
+          { label: "HR Workspace",             path: "/hr/workspace",                icon: Workflow },
           { label: "Onboarding",               path: "/hr/new-hires",                icon: UserPlus },
           { label: "Employee Support",         path: "/hr/employee-support",         icon: LifeBuoy },
           { label: "Training Assignments",     path: "/hr/training-certifications",  icon: GraduationCap },
           { label: "Compliance",               path: "/hr/compliance",               icon: ShieldCheck },
-          { label: "User Management",          path: "/user-management",             icon: IdCard },
           { label: "Viventium Handoff",        path: "/admin/integrations?connector=viventium", icon: Workflow },
         ],
       },
@@ -521,12 +521,12 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       {
         id: "hr_command", label: "HR Command", items: [
           { label: "HR Dashboard",             path: "/hr-team",                     icon: LayoutDashboard },
-          { label: "Employees",                path: "/hr/workspace",                icon: Users },
+          { label: "Employees",                path: "/user-management",             icon: Users },
+          { label: "HR Workspace",             path: "/hr/workspace",                icon: Workflow },
           { label: "Onboarding",               path: "/hr/new-hires",                icon: UserPlus },
           { label: "Employee Support",         path: "/hr/employee-support",         icon: LifeBuoy },
           { label: "Training Assignments",     path: "/hr/training-certifications",  icon: GraduationCap },
           { label: "Compliance",               path: "/hr/compliance",               icon: ShieldCheck },
-          { label: "User Management",          path: "/user-management",             icon: IdCard },
           { label: "Viventium Handoff",        path: "/admin/integrations?connector=viventium", icon: Workflow },
         ],
       },
