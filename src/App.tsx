@@ -917,6 +917,9 @@ const App = () => (
                   <Route path="/resources/recruiting" element={<Navigate to="/resource-library/recruiting" replace />} />
                   <Route path="/resource-library/authorizations" element={<ResourceLibraryAuthorizations />} />
                   <Route path="/resources/authorizations" element={<Navigate to="/resource-library/authorizations" replace />} />
+                  <Route path="/resource-library/scheduling" element={<ResourceLibraryScheduling />} />
+                  <Route path="/resources/scheduling" element={<Navigate to="/resource-library/scheduling" replace />} />
+                  <Route path="/scheduling/resources" element={<Navigate to="/resource-library/scheduling" replace />} />
                   <Route path="/resource-library/resource/:id" element={<ResourceLibraryDetail />} />
                   <Route path="/resource-library/admin/qa" element={<ResourceLibraryAdminQA />} />
                   <Route path="/admin/blossom-ai" element={<OSBlossomAIManagement />} />
