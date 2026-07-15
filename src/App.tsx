@@ -1115,6 +1115,12 @@ const App = () => (
                   <Route path="/academy/path/:slug/module/:moduleId" element={<OSShellPage><TrainingModuleRuntime /></OSShellPage>} />
                   <Route path="/my-learning" element={<OSShellPage><MyLearning /></OSShellPage>} />
                   <Route path="/catalog" element={<OSShellPage><TrainingCatalog /></OSShellPage>} />
+                  {/* Integrations pages render inside the OS shell only. They
+                      used to live under AppLayout which produced a double
+                      sidebar/header. Keep them here so the OS shell is the
+                      single source of chrome. */}
+                  <Route path="/admin/integrations" element={<PermissionRoute allowedRoles={["admin"]}><OSShellPage><Integrations /></OSShellPage></PermissionRoute>} />
+                  <Route path="/admin/integration-ingest" element={<AdminRoute><OSShellPage><IntegrationIngestAdminPage /></OSShellPage></AdminRoute>} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />
@@ -1228,8 +1234,6 @@ const App = () => (
                   <Route path="/admin/role-audit" element={<PermissionRoute allowedRoles={["admin"]}><RoleAuditLog /></PermissionRoute>} />
                   <Route path="/admin/knowledge-base" element={<PermissionRoute allowedRoles={["admin"]}><KnowledgeBase /></PermissionRoute>} />
                   <Route path="/admin/ai-audit" element={<PermissionRoute allowedRoles={["admin"]}><AiAuditLog /></PermissionRoute>} />
-                  <Route path="/admin/integrations" element={<PermissionRoute allowedRoles={["admin"]}><OSShellPage><Integrations /></OSShellPage></PermissionRoute>} />
-                  <Route path="/admin/integration-ingest" element={<AdminRoute><OSShellPage><IntegrationIngestAdminPage /></OSShellPage></AdminRoute>} />
                   <Route path="/admin/mapsly" element={<PermissionRoute allowedRoles={["admin"]}><MapslyHub /></PermissionRoute>} />
                   <Route path="/mileage" element={<MileageCenter />} />
                   <Route path="/bd/territories" element={<BDTerritories />} />
