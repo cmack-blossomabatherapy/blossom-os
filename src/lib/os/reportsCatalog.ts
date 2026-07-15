@@ -389,11 +389,11 @@ export function visibleReportsForRole(role: OSRole): ReportDef[] {
  * visibleReportsForRole so /reports only ever renders the approved six.
  */
 export function visibleDepartmentDashboardsForRole(role: OSRole): ReportDef[] {
-  return REPORTS.filter((r) => {
-    if (!DEPARTMENT_DASHBOARD_IDS.has(r.id)) return false;
-    if (r.visibleTo === "all") return true;
-    return r.visibleTo.includes(role);
-  });
+  // Department dashboards on the /reports surface are intentionally visible
+  // to every Blossom OS role — leadership asked for a single company-wide
+  // dashboard shelf that anyone can browse regardless of department.
+  void role;
+  return REPORTS.filter((r) => DEPARTMENT_DASHBOARD_IDS.has(r.id));
 }
 
 export function visibleCategoriesForRole(role: OSRole): (ReportCategoryDef & { count: number; mostViewed?: ReportDef })[] {
