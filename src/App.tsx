@@ -1224,7 +1224,7 @@ const App = () => (
                   <Route path="/admin/role-audit" element={<PermissionRoute allowedRoles={["admin"]}><RoleAuditLog /></PermissionRoute>} />
                   <Route path="/admin/knowledge-base" element={<PermissionRoute allowedRoles={["admin"]}><KnowledgeBase /></PermissionRoute>} />
                   <Route path="/admin/ai-audit" element={<PermissionRoute allowedRoles={["admin"]}><AiAuditLog /></PermissionRoute>} />
-                  <Route path="/admin/integrations" element={<PermissionRoute allowedRoles={["admin"]}><Integrations /></PermissionRoute>} />
+                  <Route path="/admin/integrations" element={<PermissionRoute allowedRoles={["admin"]}><OSShellPage><Integrations /></OSShellPage></PermissionRoute>} />
                   <Route path="/admin/integration-ingest" element={<AdminRoute><IntegrationIngestAdminPage /></AdminRoute>} />
                   <Route path="/admin/mapsly" element={<PermissionRoute allowedRoles={["admin"]}><MapslyHub /></PermissionRoute>} />
                   <Route path="/mileage" element={<MileageCenter />} />
