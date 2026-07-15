@@ -558,10 +558,10 @@ function IntegrationDrawer({
 
   const [testing, setTesting] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [viventiumBusy, setViventiumBusy] = useState<null | "test" | "preview">(null);
+  const [viventiumBusy, setViventiumBusy] = useState<null | "test" | "preview" | "sync">(null);
   const [viventiumResult, setViventiumResult] = useState<null | {
     ok: boolean; mode: string; received?: number; normalized?: number;
-    matched?: number; created?: number; updated?: number; skipped?: number;
+    matched?: number; created?: number; updated?: number; skipped?: number; linked?: number; nonActiveSkipped?: number;
     error?: string; samples?: unknown[];
   }>(null);
 
@@ -697,6 +697,31 @@ function IntegrationDrawer({
                   {viventiumBusy === "preview" ? <Loader2 className="size-3.5 animate-spin" /> : <Users className="size-3.5" />}
                   Preview employee sync
                 </Button>
+                <Button
+                  size="sm"
+                  className="h-9 gap-1.5 rounded-xl"
+                  disabled={viventiumBusy !== null}
+                  onClick={async () => {
+                    if (!confirm("Sync ACTIVE Viventium employees into the employees directory now? This will create/update records and link them to auth users by email.")) return;
+                    setViventiumBusy("sync");
+                    try {
+                      const { supabase } = await import("@/integrations/supabase/client");
+                      const { data, error } = await supabase.functions.invoke("viventium-sync", { body: { mode: "employees-sync", dryRun: false } });
+                      if (error) { setViventiumResult({ ok: false, mode: "employees-sync", error: error.message }); toast.error(`Viventium: ${error.message}`); }
+                      else {
+                        setViventiumResult(data as never);
+                        const d = data as { ok?: boolean; created?: number; updated?: number; linked?: number; error?: string };
+                        d?.ok
+                          ? toast.success(`Viventium sync: ${d.created ?? 0} created, ${d.updated ?? 0} updated, ${d.linked ?? 0} linked`)
+                          : toast.error(`Viventium: ${d?.error ?? "failed"}`);
+                      }
+                      onRefresh();
+                    } finally { setViventiumBusy(null); }
+                  }}
+                >
+                  {viventiumBusy === "sync" ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+                  Sync active employees
+                </Button>
               </>
             )}
           </div>
@@ -713,6 +738,8 @@ function IntegrationDrawer({
                   <span>created: {viventiumResult.created ?? 0}</span>
                   <span>updated: {viventiumResult.updated ?? 0}</span>
                   <span>skipped: {viventiumResult.skipped ?? 0}</span>
+                  {typeof viventiumResult.linked === "number" && <span>linked to users: {viventiumResult.linked}</span>}
+                  {typeof viventiumResult.nonActiveSkipped === "number" && <span>inactive skipped: {viventiumResult.nonActiveSkipped}</span>}
                 </div>
               ) : (
                 <div className="text-destructive">{viventiumResult.error ?? "Unknown error"}</div>
