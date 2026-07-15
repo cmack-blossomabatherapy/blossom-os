@@ -74,6 +74,7 @@ const STATE_TRAINING_AND_RESOURCES: RoleMenuSection = {
   items: [
     { label: "Training Academy", path: "/training",         icon: GraduationCap },
     { label: "Resource Library", path: "/resource-library", icon: BookOpen },
+    { label: "State Director Resources", path: "/state-director/resources", icon: BookOpen },
     { label: "Parent Communication", path: "/intake/parent-communication", icon: MessageSquare },
     { label: "Reports",          path: "/reports",          icon: FileText },
   ],
