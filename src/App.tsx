@@ -387,7 +387,7 @@ import { BlockIntakeRoute } from "./components/auth/BlockIntakeRoute";
 import { PhoneSystemRoute } from "./components/auth/PhoneSystemRoute";
 import { IntakeAiCallsRoute } from "./components/auth/IntakeAiCallsRoute";
 import {
-  RoleManagementPage, EmployeeDirectoryPage, UserLoginsVaultPage,
+  RoleManagementPage, UserLoginsVaultPage,
   NFCBadgeManagementPage, DeviceRequestsPage,
 } from "./pages/os/people/PeoplePages";
 import {
