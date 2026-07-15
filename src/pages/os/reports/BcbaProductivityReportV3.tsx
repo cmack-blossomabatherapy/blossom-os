@@ -229,7 +229,7 @@ export default function BcbaProductivityReportV3() {
         const s = await getBcbaProductivityDatasetStatus();
         setSharedStatus(s);
         if (s.activeRowCount > 0) {
-          await loadSharedDataset();
+          await loadSharedDataset({ silent: true });
         }
       } catch {
         /* ignore — banner will say no admin data found */
@@ -1058,7 +1058,7 @@ export default function BcbaProductivityReportV3() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" variant="outline" onClick={loadSharedDataset} disabled={sharedLoading}>
+                <Button size="sm" variant="outline" onClick={() => loadSharedDataset()} disabled={sharedLoading}>
                   <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", sharedLoading && "animate-spin")} /> Refresh dataset
                 </Button>
                 <Button size="sm" asChild>
@@ -1177,7 +1177,7 @@ export default function BcbaProductivityReportV3() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={loadSharedDataset} disabled={sharedLoading}>
+                  <Button size="sm" variant="outline" onClick={() => loadSharedDataset()} disabled={sharedLoading}>
                     <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", sharedLoading && "animate-spin")} /> Refresh dataset
                   </Button>
                   <Button size="sm" variant="outline" asChild>
